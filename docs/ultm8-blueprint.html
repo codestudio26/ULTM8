@@ -1,0 +1,878 @@
+<title>ULTM8 Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ============ TOKENS ============ */
+  :root{
+    --paper: #EAECE4;
+    --paper-2: #F5F6F1;
+    --surface: #FFFFFF;
+    --ink: #1B2333;
+    --ink-soft: #4B5566;
+    --ink-faint: #7C8494;
+    --line: rgba(27,35,51,0.14);
+    --line-strong: rgba(27,35,51,0.28);
+
+    --accent: #A9711F;       /* belt gold, dialed down for AA on paper */
+    --accent-soft: #B8842C;
+    --accent-2: #33564D;     /* tatami jade */
+    --accent-2-soft: #3E6259;
+    --flag: #9C3B2B;         /* brick red — open questions */
+    --flag-soft: #C1594A;
+
+    --decided-bg: rgba(62,98,89,0.10);
+    --decided-line: rgba(62,98,89,0.35);
+    --open-bg: rgba(156,59,43,0.08);
+    --open-line: rgba(156,59,43,0.32);
+    --info-bg: rgba(27,35,51,0.05);
+
+    --shadow: 0 1px 2px rgba(27,35,51,0.06), 0 8px 24px -12px rgba(27,35,51,0.18);
+    --radius: 8px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper: #12161E;
+      --paper-2: #171C26;
+      --surface: #1B212D;
+      --ink: #EAE8DF;
+      --ink-soft: #B9BCC4;
+      --ink-faint: #7E8494;
+      --line: rgba(234,232,223,0.14);
+      --line-strong: rgba(234,232,223,0.26);
+
+      --accent: #D9A44E;
+      --accent-soft: #E3B368;
+      --accent-2: #6FA090;
+      --accent-2-soft: #82AF9F;
+      --flag: #DD7A66;
+      --flag-soft: #E69684;
+
+      --decided-bg: rgba(111,160,144,0.14);
+      --decided-line: rgba(111,160,144,0.4);
+      --open-bg: rgba(221,122,102,0.12);
+      --open-line: rgba(221,122,102,0.38);
+      --info-bg: rgba(234,232,223,0.06);
+
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper: #12161E;
+    --paper-2: #171C26;
+    --surface: #1B212D;
+    --ink: #EAE8DF;
+    --ink-soft: #B9BCC4;
+    --ink-faint: #7E8494;
+    --line: rgba(234,232,223,0.14);
+    --line-strong: rgba(234,232,223,0.26);
+
+    --accent: #D9A44E;
+    --accent-soft: #E3B368;
+    --accent-2: #6FA090;
+    --accent-2-soft: #82AF9F;
+    --flag: #DD7A66;
+    --flag-soft: #E69684;
+
+    --decided-bg: rgba(111,160,144,0.14);
+    --decided-line: rgba(111,160,144,0.4);
+    --open-bg: rgba(221,122,102,0.12);
+    --open-line: rgba(221,122,102,0.38);
+    --info-bg: rgba(234,232,223,0.06);
+
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  /* ============ BASE ============ */
+  *{ box-sizing: border-box; }
+  html{ background: var(--paper); }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16.5px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent); color: var(--paper); }
+  a{ color: var(--accent-2); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1,h2,h3{
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--ink);
+  }
+  .mono{ font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .eyebrow{
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .wrap{ max-width: 880px; margin: 0 auto; padding: 0 28px; }
+  img,svg{ max-width:100%; }
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+
+  @media (prefers-reduced-motion: no-preference){
+    .fade-up{ animation: fadeUp .7s ease both; }
+    .fade-up.d1{ animation-delay: .08s; }
+    .fade-up.d2{ animation-delay: .16s; }
+    @keyframes fadeUp{ from{ opacity:0; transform: translateY(10px);} to{ opacity:1; transform:none; } }
+  }
+
+  /* ============ HERO ============ */
+  .hero{
+    padding: 72px 0 40px;
+    border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(640px 260px at 88% -10%, var(--decided-bg), transparent 60%),
+      var(--paper);
+  }
+  .hero .eyebrow{ display:block; margin-bottom: 18px; }
+  .hero h1{
+    font-size: clamp(2.6rem, 5vw, 3.6rem);
+    letter-spacing: -0.01em;
+    line-height: 1.02;
+  }
+  .hero h1 em{ font-style: normal; color: var(--accent-2); }
+  .hero .dek{
+    max-width: 62ch;
+    margin-top: 18px;
+    font-size: 1.14rem;
+    color: var(--ink-soft);
+  }
+  .hero .dek b{ color: var(--ink); font-weight: 600; }
+
+  .kpi-strip{
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .kpi{
+    padding: 18px 20px;
+    border-left: 1px solid var(--line);
+  }
+  .kpi:first-child{ border-left: none; padding-left: 2px; }
+  .kpi .n{
+    font-family: "Fraunces", serif;
+    font-size: 2.1rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .kpi .lbl{
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* ============ SECTIONS ============ */
+  section{ padding: 64px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type{ border-bottom: none; }
+  .sec-head{
+    display:flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  .sec-num{
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--ink-faint);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    padding: 2px 7px;
+  }
+  .sec-head h2{ font-size: 1.7rem; }
+  .sec-intro{ color: var(--ink-soft); max-width: 66ch; margin: -14px 0 30px; }
+
+  /* ---- file cards ---- */
+  .file-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .file-card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 22px 24px;
+    box-shadow: var(--shadow);
+  }
+  .file-card .plat{
+    font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent-2); font-weight: 600; font-family: "IBM Plex Mono", monospace;
+  }
+  .file-card h3{ font-size: 1.28rem; margin-top: 6px; }
+  .file-card .path{
+    margin-top: 4px; font-size: 12.5px; color: var(--ink-faint);
+  }
+  .file-stats{
+    display:flex; gap: 18px; margin: 16px 0 14px;
+    padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .file-stats div{ font-size: 12px; color: var(--ink-faint); }
+  .file-stats strong{
+    display:block; font-family:"Fraunces",serif; font-size: 1.3rem; color: var(--ink); font-weight:600;
+    font-variant-numeric: tabular-nums;
+  }
+  .chips{ display:flex; flex-wrap:wrap; gap: 7px; margin-top: 12px; }
+  .chip{
+    font-size: 12px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line-strong); color: var(--ink-soft);
+    background: var(--paper-2);
+  }
+  .file-card .note{ margin-top: 14px; font-size: 13px; color: var(--ink-faint); }
+
+  /* ---- evidence line ---- */
+  .evidence{
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    background: var(--info-bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+
+  /* ---- findings list ---- */
+  .finding{
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 18px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+  }
+  .finding:first-child{ border-top: none; }
+  .finding .area{
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px; font-weight: 600;
+    color: var(--ink);
+    padding-top: 2px;
+  }
+  .finding .area small{ display:block; color: var(--ink-faint); font-weight: 400; margin-top: 3px; }
+  .finding p{ margin: 0 0 8px; color: var(--ink-soft); }
+  .finding .ev-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top: 8px; }
+
+  /* ---- decisions ---- */
+  .decisions{ display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .decision{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent-2);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .pill{
+    display: inline-flex; align-items:center; gap:6px;
+    font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight:600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .pill.decided{ background: var(--decided-bg); color: var(--accent-2); border: 1px solid var(--decided-line); }
+  .pill.open{ background: var(--open-bg); color: var(--flag); border: 1px solid var(--open-line); }
+  .decision h3{ font-size: 1.02rem; margin: 10px 0 6px; font-family:"IBM Plex Sans",sans-serif; font-weight:600; }
+  .decision p{ margin:0; font-size: 14px; color: var(--ink-soft); }
+
+  /* ---- architecture diagram ---- */
+  figure{ margin: 0; }
+  .diagram-frame{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 10px 8px;
+    box-shadow: var(--shadow);
+  }
+  figcaption{
+    margin-top: 14px; font-size: 13.5px; color: var(--ink-faint); max-width: 68ch;
+  }
+  svg text{ font-family: "IBM Plex Mono", monospace; fill: currentColor; }
+  .diagram-frame svg{ color: var(--ink); }
+  .diagram-frame .accent-node{ color: var(--accent-2); }
+  .diagram-frame .accent-edge{ color: var(--accent); }
+
+  /* ---- module list ---- */
+  .modules{
+    margin-top: 26px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .module{
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: var(--paper-2);
+    font-size: 12.5px;
+  }
+  .module .m-name{ font-family:"IBM Plex Mono", monospace; font-weight: 600; color: var(--ink); }
+  .module .m-desc{ color: var(--ink-faint); margin-top: 3px; }
+
+  /* ---- data model glossary ---- */
+  .glossary{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .term{
+    background: var(--surface);
+    padding: 14px 16px;
+  }
+  .term dt{
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600; font-size: 13px; color: var(--accent-2);
+  }
+  .term dd{
+    margin: 5px 0 0; font-size: 12.8px; color: var(--ink-soft); line-height:1.45;
+  }
+
+  /* ---- gaps ---- */
+  .gap-groups{ display:grid; gap: 34px; }
+  .gap-group h3{
+    font-family: "IBM Plex Mono", monospace; font-size: 12.5px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--flag); font-weight:600; margin-bottom: 12px;
+  }
+  .gap-list{ list-style:none; margin:0; padding:0; display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius: var(--radius); overflow:hidden;}
+  .gap-item{
+    background: var(--surface);
+    padding: 13px 16px;
+    display:grid; grid-template-columns: 20px 1fr; gap:10px;
+    font-size: 14px; color: var(--ink-soft);
+  }
+  .gap-item::before{
+    content:"";
+    width:9px; height:9px; margin-top:5px;
+    background: var(--flag);
+    border-radius: 2px;
+    transform: rotate(45deg);
+  }
+  .gap-item b{ color: var(--ink); font-weight:600; }
+
+  /* ---- footer ---- */
+  footer{ padding: 48px 0 80px; }
+  footer .card{
+    background: var(--surface); border:1px solid var(--line); border-radius: var(--radius);
+    padding: 22px 24px; box-shadow: var(--shadow);
+    display:flex; justify-content: space-between; align-items:center; gap: 20px; flex-wrap: wrap;
+  }
+  footer .card .t{ font-family:"Fraunces",serif; font-weight:600; font-size:1.05rem; }
+  footer .card .s{ color: var(--ink-faint); font-size: 13px; margin-top:3px; }
+  footer .fine{ margin-top: 22px; font-size: 12.5px; color: var(--ink-faint); }
+
+  @media (max-width: 760px){
+    .kpi-strip{ grid-template-columns: repeat(2,1fr); }
+    .kpi:nth-child(3){ border-left:none; }
+    .file-grid, .decisions{ grid-template-columns: 1fr; }
+    .finding{ grid-template-columns: 1fr; }
+    .modules{ grid-template-columns: 1fr 1fr; }
+    .glossary{ grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px){
+    .modules, .glossary{ grid-template-columns: 1fr; }
+    .kpi-strip{ grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+<div class="wrap hero">
+  <span class="eyebrow fade-up">Figma Audit → Technical Read-out</span>
+  <h1 class="fade-up d1">What we understood<br>building <em>ULTM8</em>.</h1>
+  <p class="dek fade-up d2">
+    Every screen in both connected Figma files was opened and read — not skimmed — before a
+    line of architecture was written. This page is the visual companion to the full write-up:
+    <b>what the designs actually show</b>, the conflicts we resolved with you directly, the
+    Platform Admin isolation architecture and the white-label app-distribution model we
+    escalated to on 21 Aug 2026, and everything still left open.
+  </p>
+
+  <div class="kpi-strip fade-up d2">
+    <div class="kpi"><div class="n">646</div><div class="lbl">Figma frames scanned</div></div>
+    <div class="kpi"><div class="n">542</div><div class="lbl">Uniquely named screens</div></div>
+    <div class="kpi"><div class="n">11</div><div class="lbl">Decisions resolved with you</div></div>
+    <div class="kpi"><div class="n">22</div><div class="lbl">Open questions flagged</div></div>
+  </div>
+</div>
+
+<section class="wrap" id="sources">
+  <div class="sec-head"><span class="sec-num">§01</span><h2>The two files, as they actually exist</h2></div>
+  <p class="sec-intro">Two Figma files, each holding a single page. Neither is named or organized the way the three planned applications are described — that gap is exactly what §03 resolves.</p>
+
+  <div class="file-grid">
+    <div class="file-card">
+      <div class="plat">Web · React</div>
+      <h3>School Portal + Platform Admin</h3>
+      <div class="path">"ULTM8 – New Versions (1)" → page "School Portal"</div>
+      <div class="file-stats">
+        <div><strong>541</strong>frames</div>
+        <div><strong>448</strong>unique screens</div>
+        <div><strong>~360</strong>belt/stripe icons</div>
+      </div>
+      <div class="chips">
+        <span class="chip">Auth</span><span class="chip">School &amp; Franchise profile</span>
+        <span class="chip">Payment gateways</span><span class="chip">Instructors</span>
+        <span class="chip">Timetable</span><span class="chip">Classes</span>
+        <span class="chip">Memberships</span><span class="chip">Transactions</span>
+        <span class="chip">Translations CMS</span><span class="chip">Dashboard</span>
+      </div>
+      <div class="note">One flat page mixes franchise/platform-level admin with day-to-day school management — no separate "Platform Admin" section exists.</div>
+    </div>
+
+    <div class="file-card">
+      <div class="plat">Mobile · React Native</div>
+      <h3>Student App</h3>
+      <div class="path">"Application (1)" → page "Working"</div>
+      <div class="file-stats">
+        <div><strong>105</strong>frames</div>
+        <div><strong>94</strong>unique screens</div>
+        <div><strong>2</strong>nav configs found</div>
+      </div>
+      <div class="chips">
+        <span class="chip">Onboarding</span><span class="chip">Auth</span>
+        <span class="chip">Discovery</span><span class="chip">Booking</span>
+        <span class="chip">Membership</span><span class="chip">Payments</span>
+        <span class="chip">Waivers</span><span class="chip">QR check-in</span>
+        <span class="chip">Ranking</span><span class="chip">Notifications</span>
+      </div>
+      <div class="note">Bottom navigation is drawn two different ways across the file — flagged in §08, not silently picked for you.</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="findings">
+  <div class="sec-head"><span class="sec-num">§02</span><h2>What the screens told us</h2></div>
+  <p class="sec-intro">A sample of the feature areas with the most architectural weight — field labels and sample values quoted verbatim from the design tree, with the source node id alongside.</p>
+
+  <div class="findings">
+    <div class="finding">
+      <div class="area">Auth<small>both apps</small></div>
+      <div>
+        <p>Email + a <b>6-digit passcode</b> (not a normal-length password), "Remember me", and social login for Microsoft, Apple, Facebook and Google. Forgot-password runs an SMS OTP to a 4-digit veriﬁcationPin screen with a visible countdown.</p>
+        <div class="ev-row"><span class="evidence">loginScreen · 2301:71</span><span class="evidence">veriﬁcationPin · 2301:1596</span></div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="area">Payments<small>School Portal</small></div>
+      <div>
+        <p>Each school can store its own <b>live credentials for five methods</b> — Stripe, GoCardless, Bank Transfer, PayPal, Cash — directly conflicting with a Stripe-only stack. transactionsHistory even tracks separate Pending/Available balances per gateway.</p>
+        <div class="ev-row"><span class="evidence">stripePaymentInfo · 2309:2366</span><span class="evidence">gocardlessPaymentInfo · 2328:6732</span><span class="evidence">bankAccountPaymentInfo · 2328:6756</span></div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="area">Franchise<small>School Portal</small></div>
+      <div>
+        <p>franchiseInformation shows "<i>Affiliated School Information</i>" and "<i>Franchise Plans Subscribed</i>" — a Franchise owns Schools, and Schools pay into a plan. Whether that plan is platform billing or franchise-to-school billing is unresolved (§08).</p>
+        <div class="ev-row"><span class="evidence">franchiseSubscriptionPlans · 2337:9823</span><span class="evidence">franchiseInformation · 2638:1678</span></div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="area">Ranking<small>Student App</small></div>
+      <div>
+        <p>Belt progression is tracked <b>per discipline</b> (Jiu Jitsu, MMA, …): last/next grading date, a class-count readiness bucket (Ready / Almost Ready / Not Ready), and a progress percentage. ~360 belt-colour/stripe icon combinations back this up in File 1.</p>
+        <div class="ev-row"><span class="evidence">rankingScreen · 666:235</span></div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="area">Waivers<small>Student App</small></div>
+      <div>
+        <p>Liability waivers are signed with a typed full name as an e-signature, tracked per school with four states: Signed, Unsigned, Expired, Pending.</p>
+        <div class="ev-row"><span class="evidence">waiverDetail · 424:1474</span><span class="evidence">waiverSchool · 424:1541</span></div>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="area">Dashboard<small>canonical, §03</small></div>
+      <div>
+        <p>The newer School Portal dashboard reads as KPI cards — Attendance, Membership, Training Time, Booking — each Present/Absent-style, plus a transactions table whose Payment Method column shows "Stripe – Credit Card" and "Cash" side by side.</p>
+        <div class="ev-row"><span class="evidence">Dashboard · 40000023:3474</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="decisions">
+  <div class="sec-head"><span class="sec-num">§03</span><h2>Eleven decisions, resolved with you</h2></div>
+  <p class="sec-intro">The designs disagreed with the confirmed stack, or with themselves, in four places that reshaped the architecture. Two follow-up discussions on 21 Aug 2026 then escalated three of those calls to a more rigorous position — the best approach rather than the fastest — and added a whole new decision area: how each School gets its own branded mobile app. Nothing below was assumed — each was a direct question, answered in this session.</p>
+
+  <div class="decisions">
+    <div class="decision">
+      <span class="pill decided">Decided</span>
+      <h3>Payment scope</h3>
+      <p>Stripe (cards) plus manually-recorded Cash and Bank Transfer. GoCardless and PayPal — both fully designed — are out of scope for this build.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">Decided · revised 21 Aug</span>
+      <h3>App boundary</h3>
+      <p>School Portal and Platform Admin are <b>two separately deployed React apps in one monorepo</b> from day one, each with its own subdomain, deployment, and identity realm — not a single codebase with role-gated views. Full detail in §04.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">Decided</span>
+      <h3>Canonical screen set</h3>
+      <p>Where a feature was designed twice, the newer KPI/dashboard-driven, card-based version is the source of truth — not the older plain CRUD tables.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">Decided</span>
+      <h3>Tenancy hierarchy</h3>
+      <p>Franchise → Schools → Branches, with a School's franchise link optional — independent, non-franchised schools are fully supported.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">New · 21 Aug</span>
+      <h3>Payment-credential custody</h3>
+      <p>Move to <b>Stripe Connect</b> as the primary model, with a secrets manager as fallback — ULTM8 never custodies a tenant's raw, decryptable Stripe secret key. See §04 and §07.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">New · 21 Aug</span>
+      <h3>Tenant isolation</h3>
+      <p>Enforced at the database via <b>PostgreSQL Row-Level Security</b>, backed by a required CI test suite that asserts cross-tenant access is impossible before any merge. Full detail in §04.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">New · 21 Aug</span>
+      <h3>Platform Admin identity</h3>
+      <p>A <b>separate identity realm</b> from customer accounts — SSO, mandatory 2FA, and least-privilege sub-roles instead of one Admin bucket. Full detail in §04.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">New · 21 Aug</span>
+      <h3>White-label app model</h3>
+      <p>Every School ships inside one <b>shared "ULTM8" app</b> by default; a paid plan upgrade adds the School's own branded app on both stores. Full detail in §05.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">New · 21 Aug</span>
+      <h3>White-label publish ownership</h3>
+      <p>ULTM8 requests admin access to each School's Apple/Google accounts and <b>runs the build-and-submit pipeline on the School's behalf</b> — Schools don't self-serve releases. Full detail in §05.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">New · 21 Aug</span>
+      <h3>White-label downgrade policy</h3>
+      <p>A branded app is <b>frozen at its last build</b> on downgrade or cancellation, not unpublished — it stays live and keeps working against the API. Full detail in §05.</p>
+    </div>
+    <div class="decision">
+      <span class="pill decided">New · 21 Aug</span>
+      <h3>White-label build timing</h3>
+      <p>The publishing pipeline is <b>built alongside the initial platform</b>, not deferred until the first paying upgrade, so it's a feature Schools hear about from launch. Full detail in §05.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="platform-admin">
+  <div class="sec-head"><span class="sec-num">§04</span><h2>Why Platform Admin gets its own app</h2></div>
+  <p class="sec-intro">
+    A single role-gated app was the faster build, but it means one leaked customer JWT, one
+    forgotten <span class="mono">@Roles()</span> check, or one over-broad query is all that stands
+    between a support ticket and every tenant's data. You asked for the approach that avoids
+    scaling problems later, not the quickest one now — so this supersedes §03's original
+    App Boundary call.
+  </p>
+
+  <figure class="diagram-frame">
+    <svg viewBox="0 0 900 330" role="img" aria-label="React School Portal, using the customer identity realm, and React Platform Admin, using a separate SSO plus two-factor identity realm, both call the NestJS API but through different guard chains. The tenant guard chain reaches PostgreSQL protected by Row-Level Security. The admin guard chain also reaches PostgreSQL through Row-Level Security, and additionally writes every action to an immutable audit log.">
+      <defs>
+        <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- client apps -->
+      <rect x="20" y="20" width="210" height="62" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="125" y="46" text-anchor="middle" font-size="13" font-weight="600">React — School Portal</text>
+      <text x="125" y="63" text-anchor="middle" font-size="11" opacity="0.65">customer identity · tenant JWT</text>
+
+      <rect x="20" y="230" width="210" height="70" rx="6" class="accent-edge" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <text x="125" y="256" text-anchor="middle" font-size="13" font-weight="600" class="accent-edge">React — Platform Admin</text>
+      <text x="125" y="273" text-anchor="middle" font-size="11" opacity="0.75">separate app · own deploy</text>
+      <text x="125" y="289" text-anchor="middle" font-size="11" opacity="0.75">SSO + mandatory 2FA</text>
+
+      <!-- api box -->
+      <rect x="330" y="90" width="230" height="150" rx="6" class="accent-node" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <text x="445" y="120" text-anchor="middle" font-size="14" font-weight="600" class="accent-node">NestJS API</text>
+      <text x="445" y="140" text-anchor="middle" font-size="11" opacity="0.7">Tenant guard chain</text>
+      <text x="445" y="156" text-anchor="middle" font-size="11" opacity="0.7">/* — customer JWT</text>
+      <text x="445" y="182" text-anchor="middle" font-size="11" opacity="0.7">Admin guard chain</text>
+      <text x="445" y="198" text-anchor="middle" font-size="11" opacity="0.7">/admin/* — SSO realm, §04</text>
+
+      <!-- clients -> api -->
+      <line x1="230" y1="55" x2="330" y2="140" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow2)"/>
+      <line x1="230" y1="260" x2="330" y2="195" stroke="currentColor" stroke-width="1.5" class="accent-edge" marker-end="url(#arrow2)"/>
+
+      <!-- api -> db -->
+      <rect x="670" y="70" width="200" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="770" y="94" text-anchor="middle" font-size="12.5" font-weight="600">PostgreSQL</text>
+      <text x="770" y="110" text-anchor="middle" font-size="10.5" opacity="0.65">Row-Level Security</text>
+      <text x="770" y="123" text-anchor="middle" font-size="10.5" opacity="0.65">enforces tenant scope</text>
+
+      <line x1="560" y1="150" x2="670" y2="105" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow2)"/>
+
+      <!-- admin -> audit log -->
+      <rect x="670" y="200" width="200" height="60" rx="6" class="accent-edge" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="770" y="224" text-anchor="middle" font-size="12.5" font-weight="600" class="accent-edge">Audit log</text>
+      <text x="770" y="240" text-anchor="middle" font-size="10.5" opacity="0.7">immutable, §04.7</text>
+      <text x="770" y="253" text-anchor="middle" font-size="10.5" opacity="0.7">every admin action</text>
+
+      <line x1="560" y1="190" x2="670" y2="230" stroke="currentColor" stroke-width="1.4" class="accent-edge" marker-end="url(#arrow2)"/>
+    </svg>
+    <figcaption>
+      One NestJS API, two guard chains: the tenant chain (customer JWT) and the admin chain
+      (separate SSO realm) both terminate in the same RLS-protected PostgreSQL database — but
+      only the admin chain also writes an immutable audit-log row for every action it takes.
+    </figcaption>
+  </figure>
+
+  <div class="modules">
+    <div class="module"><div class="m-name">apps/school-portal</div><div class="m-desc">Tenant-facing web app, own deploy</div></div>
+    <div class="module"><div class="m-name">apps/platform-admin</div><div class="m-desc">Internal-only, own subdomain + realm</div></div>
+    <div class="module"><div class="m-name">apps/student</div><div class="m-desc">React Native, unchanged</div></div>
+    <div class="module"><div class="m-name">apps/api</div><div class="m-desc">Shared NestJS backend, two guard chains</div></div>
+    <div class="module"><div class="m-name">packages/ui</div><div class="m-desc">Shared component library</div></div>
+    <div class="module"><div class="m-name">packages/api-client</div><div class="m-desc">Shared typed API client</div></div>
+    <div class="module"><div class="m-name">packages/auth</div><div class="m-desc">Shared auth primitives, two realms</div></div>
+    <div class="module"><div class="m-name">CI isolation gate</div><div class="m-desc">Cross-tenant test suite, required to merge</div></div>
+    <div class="module"><div class="m-name">AuditLogEntry</div><div class="m-desc">Immutable, every admin action, §06</div></div>
+  </div>
+</section>
+
+<section class="wrap" id="white-label">
+  <div class="sec-head"><span class="sec-num">§05</span><h2>How each School gets its own app</h2></div>
+  <p class="sec-intro">
+    Code Studio's direction: once the platform is live, a School can have its own branded app —
+    own name, own icon — listed separately on the App Store and Google Play. Apple and Google
+    both regulate this directly (an app built from a template is rejected unless the business
+    itself is the publisher of record), so it's modeled as a gated upgrade, not a toggle.
+  </p>
+
+  <figure class="diagram-frame">
+    <svg viewBox="0 0 940 380" role="img" aria-label="A School's SubscriptionPlan is checked against a whiteLabelApp entitlement gate. Without the entitlement, the School is included in one shared ULTM8 app. With the entitlement, ULTM8 runs a managed build, sign, and submit pipeline that publishes a branded app under the School's own store accounts. If the School later downgrades, that branded app freezes at its last build rather than being unpublished.">
+      <defs>
+        <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- School -->
+      <rect x="20" y="140" width="150" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="95" y="166" text-anchor="middle" font-size="13" font-weight="600">School</text>
+      <text x="95" y="183" text-anchor="middle" font-size="11" opacity="0.65">SubscriptionPlan</text>
+
+      <!-- Gate -->
+      <rect x="205" y="140" width="180" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 3"/>
+      <text x="295" y="163" text-anchor="middle" font-size="12.5" font-weight="600">Entitlement gate</text>
+      <text x="295" y="180" text-anchor="middle" font-size="10.5" opacity="0.7">whiteLabelApp? — §5.3</text>
+
+      <line x1="170" y1="170" x2="205" y2="170" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow3)"/>
+
+      <!-- No branch: shared app -->
+      <rect x="450" y="30" width="240" height="62" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="570" y="56" text-anchor="middle" font-size="13" font-weight="600">Shared "ULTM8" app</text>
+      <text x="570" y="73" text-anchor="middle" font-size="10.5" opacity="0.65">included · one dev account · §5.2</text>
+      <line x1="385" y1="150" x2="450" y2="75" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow3)"/>
+      <text x="410" y="105" font-size="10.5" opacity="0.7">no</text>
+
+      <!-- Yes branch: pipeline -->
+      <rect x="450" y="235" width="235" height="62" rx="6" class="accent-edge" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <text x="567" y="258" text-anchor="middle" font-size="12.5" font-weight="600" class="accent-edge">ULTM8-managed pipeline</text>
+      <text x="567" y="275" text-anchor="middle" font-size="10.5" opacity="0.75">build → sign → submit — §5.4</text>
+      <line x1="385" y1="190" x2="450" y2="255" stroke="currentColor" stroke-width="1.5" class="accent-edge" marker-end="url(#arrow3)"/>
+      <text x="405" y="230" font-size="10.5" class="accent-edge">yes</text>
+
+      <!-- Branded app -->
+      <rect x="720" y="235" width="200" height="62" rx="6" class="accent-edge" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <text x="820" y="258" text-anchor="middle" font-size="12.5" font-weight="600" class="accent-edge">Branded app</text>
+      <text x="820" y="275" text-anchor="middle" font-size="10.5" opacity="0.75">own listing, own store account</text>
+      <line x1="685" y1="266" x2="720" y2="266" stroke="currentColor" stroke-width="1.5" class="accent-edge" marker-end="url(#arrow3)"/>
+
+      <!-- downgrade -->
+      <rect x="700" y="325" width="240" height="46" rx="6" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="820" y="345" text-anchor="middle" font-size="10.5" font-weight="600">On downgrade: frozen build</text>
+      <text x="820" y="360" text-anchor="middle" font-size="9.5" opacity="0.65">stays live, no more rebuilds — §5.5</text>
+      <path d="M830,297 C 830,310 830,315 825,325" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow3)"/>
+    </svg>
+    <figcaption>
+      A School's plan is checked once against the whiteLabelApp entitlement: without it, the
+      School lives inside the one shared, included app; with it, ULTM8 runs the whole
+      build-sign-submit pipeline into the School's own store accounts. Downgrading freezes that
+      branded app at its last build rather than pulling it.
+    </figcaption>
+  </figure>
+
+  <div class="modules">
+    <div class="module"><div class="m-name">TenantAppConfig</div><div class="m-desc">Branding, bundle id, store credential refs — §7.1</div></div>
+    <div class="module"><div class="m-name">MobileAppPublishingModule</div><div class="m-desc">Build/submit API, Platform Admin realm — §5.4</div></div>
+    <div class="module"><div class="m-name">Apple Developer account</div><div class="m-desc">Held by the School — $99/yr, Guideline 4.2.6</div></div>
+    <div class="module"><div class="m-name">Google Play account</div><div class="m-desc">Held by the School — $25 one-time</div></div>
+    <div class="module"><div class="m-name">Secrets manager</div><div class="m-desc">Store credentials — same custody as Stripe, §4.5</div></div>
+    <div class="module"><div class="m-name">Audit log</div><div class="m-desc">Every publish action logged — §4.7</div></div>
+  </div>
+</section>
+
+<section class="wrap" id="architecture">
+  <div class="sec-head"><span class="sec-num">§06</span><h2>The system we're proposing</h2></div>
+  <p class="sec-intro">Three clients — two separately-deployed React web apps (§04) plus the React Native student app — share one API, with Stripe kept off the request/response path: its webhooks land on the same queue that already handles OTP and notifications, so a slow or retried Stripe event never blocks a user-facing call.</p>
+
+  <figure class="diagram-frame">
+    <svg viewBox="0 0 900 300" role="img" aria-label="React Web (two separately deployed apps, per section 4) and React Native clients call the NestJS API over REST with JWT. The API writes to PostgreSQL, enqueues jobs to Redis and BullMQ, and charges cards via Stripe. Stripe webhook events are delivered back into the Redis and BullMQ queue, which writes results to PostgreSQL — keeping webhook processing off the main request path.">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- grid baselines: clients y=45/165 ; api y=105 ; right col y=35/135/235 -->
+
+      <!-- client boxes -->
+      <rect x="20" y="20" width="190" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="115" y="46" text-anchor="middle" font-size="13" font-weight="600">React Web ×2</text>
+      <text x="115" y="63" text-anchor="middle" font-size="11" opacity="0.65">School Portal, Platform Admin — §04</text>
+
+      <rect x="20" y="140" width="190" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="115" y="166" text-anchor="middle" font-size="13" font-weight="600">React Native</text>
+      <text x="115" y="183" text-anchor="middle" font-size="11" opacity="0.65">Student App</text>
+
+      <!-- api box -->
+      <rect x="330" y="80" width="220" height="100" rx="6" class="accent-node" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <text x="440" y="120" text-anchor="middle" font-size="14" font-weight="600" class="accent-node">NestJS API</text>
+      <text x="440" y="138" text-anchor="middle" font-size="11" opacity="0.7">Auth · RBAC · modules</text>
+      <text x="440" y="154" text-anchor="middle" font-size="11" opacity="0.7">(§07)</text>
+
+      <!-- client -> api -->
+      <line x1="210" y1="50" x2="330" y2="105" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow)"/>
+      <text x="255" y="70" font-size="10.5" opacity="0.7">REST</text>
+      <line x1="210" y1="170" x2="330" y2="150" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow)"/>
+      <text x="255" y="192" font-size="10.5" opacity="0.7">+ JWT</text>
+
+      <!-- right column: db / queue / stripe -->
+      <rect x="670" y="10" width="200" height="55" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="770" y="33" text-anchor="middle" font-size="12.5" font-weight="600">PostgreSQL</text>
+      <text x="770" y="49" text-anchor="middle" font-size="10.5" opacity="0.65">system of record</text>
+
+      <rect x="670" y="103" width="200" height="55" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      <text x="770" y="126" text-anchor="middle" font-size="12.5" font-weight="600">Redis + BullMQ</text>
+      <text x="770" y="142" text-anchor="middle" font-size="10.5" opacity="0.65">job queue (§09)</text>
+
+      <rect x="670" y="196" width="200" height="55" rx="6" class="accent-edge" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <text x="770" y="219" text-anchor="middle" font-size="12.5" font-weight="600" class="accent-edge">Stripe</text>
+      <text x="770" y="235" text-anchor="middle" font-size="10.5" opacity="0.7">Connect — §10</text>
+
+      <!-- api -> right col -->
+      <line x1="550" y1="105" x2="670" y2="40" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow)"/>
+      <text x="600" y="65" font-size="10.5" opacity="0.7">writes</text>
+
+      <line x1="550" y1="130" x2="670" y2="130" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow)"/>
+      <text x="590" y="123" font-size="10.5" opacity="0.7">enqueues</text>
+
+      <line x1="550" y1="155" x2="670" y2="215" stroke="currentColor" stroke-width="1.5" class="accent-edge" marker-end="url(#arrow)"/>
+      <text x="596" y="200" font-size="10.5" class="accent-edge">charges</text>
+
+      <!-- stripe webhook back into queue -->
+      <path d="M670,224 C 640,224 640,131 670,131" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+      <text x="600" y="190" font-size="10.5" opacity="0.7">webhook event</text>
+
+      <!-- queue writes to db -->
+      <path d="M770,103 C 770,80 770,65 770,65" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#arrow)"/>
+      <text x="812" y="86" font-size="10.5" opacity="0.7">result</text>
+    </svg>
+    <figcaption>
+      Stripe never sits on the request path: charges are initiated by the API, but the resulting
+      webhook is delivered into the same Redis/BullMQ queue used for OTP and notifications, then
+      written to PostgreSQL — so a delayed or retried Stripe event can't block a user-facing request.
+    </figcaption>
+  </figure>
+
+  <div class="modules">
+    <div class="module"><div class="m-name">AuthModule</div><div class="m-desc">Login, OTP, social auth, passcode reset</div></div>
+    <div class="module"><div class="m-name">TenantsModule</div><div class="m-desc">Franchise, School, Branch</div></div>
+    <div class="module"><div class="m-name">PaymentsModule</div><div class="m-desc">Stripe + manual Cash/Bank ledger</div></div>
+    <div class="module"><div class="m-name">ClassesModule</div><div class="m-desc">Classes, timetable, bookings</div></div>
+    <div class="module"><div class="m-name">MembershipsModule</div><div class="m-desc">Plans, purchases, expiry</div></div>
+    <div class="module"><div class="m-name">RanksModule</div><div class="m-desc">Belt reference data, grading</div></div>
+    <div class="module"><div class="m-name">WaiversModule</div><div class="m-desc">Assignment + e-signature</div></div>
+    <div class="module"><div class="m-name">TranslationsModule</div><div class="m-desc">CMS content — Platform Admin app only</div></div>
+    <div class="module"><div class="m-name">NotificationsModule</div><div class="m-desc">Push · email · in-app</div></div>
+    <div class="module"><div class="m-name">PlatformAdminModule</div><div class="m-desc">/admin/* — separate realm + guard, §04</div></div>
+    <div class="module"><div class="m-name">MobileAppPublishingModule</div><div class="m-desc">Branded-app build/submit pipeline, §05</div></div>
+  </div>
+</section>
+
+<section class="wrap" id="data-model">
+  <div class="sec-head"><span class="sec-num">§07</span><h2>Data model, at a glance</h2></div>
+  <p class="sec-intro">Every entity below traces to fields drawn on screen — the full field list and relationship notes are in the companion document. Three entities are new: two for the Platform Admin isolation architecture in §04, one for white-label app distribution in §05.</p>
+
+  <dl class="glossary">
+    <div class="term"><dt>Franchise</dt><dd>Owns Schools; optional — a School may stand alone</dd></div>
+    <div class="term"><dt>School</dt><dd>Owns Branches, Instructors, Classes, Plans</dd></div>
+    <div class="term"><dt>Branch</dt><dd>Physical location under a School</dd></div>
+    <div class="term"><dt>PaymentAccount</dt><dd>Stripe Connect account id — no raw secret keys held</dd></div>
+    <div class="term"><dt>SubscriptionPlan</dt><dd>Platform-level plan a tenant pays into; carries the whiteLabelApp entitlement (§05.3)</dd></div>
+    <div class="term"><dt>Instructor</dt><dd>Belt, specialization, years of experience</dd></div>
+    <div class="term"><dt>TimetableSlot</dt><dd>Weekly recurring class slot</dd></div>
+    <div class="term"><dt>Class</dt><dd>Capacity, booking window, QR-attendance window</dd></div>
+    <div class="term"><dt>MembershipPlan</dt><dd>Subscription · Single Pass · Trial</dd></div>
+    <div class="term"><dt>Booking</dt><dd>Student ↔ Class, with attendee roster</dd></div>
+    <div class="term"><dt>Transaction</dt><dd>Ledger row; method, status, invoice</dd></div>
+    <div class="term"><dt>Waiver</dt><dd>Assigned per school; has signatures</dd></div>
+    <div class="term"><dt>StudentRank</dt><dd>Belt, grading dates, readiness — per discipline</dd></div>
+    <div class="term"><dt>User</dt><dd>Customer-facing only — Student, School staff</dd></div>
+    <div class="term"><dt>Translation</dt><dd>Screen · label key · locale · content</dd></div>
+    <div class="term"><dt>AdminUser <span class="chip" style="font-size:10px;padding:1px 7px;">new</span></dt><dd>Separate identity realm; never joined to tenant User rows</dd></div>
+    <div class="term"><dt>AuditLogEntry <span class="chip" style="font-size:10px;padding:1px 7px;">new</span></dt><dd>Immutable; written on every Platform Admin action</dd></div>
+    <div class="term"><dt>TenantAppConfig <span class="chip" style="font-size:10px;padding:1px 7px;">new</span></dt><dd>Branding, bundle id, store credential refs — only when whiteLabelApp is entitled</dd></div>
+  </dl>
+</section>
+
+<section class="wrap" id="gaps">
+  <div class="sec-head"><span class="sec-num">§08</span><h2>Where the designs run out</h2></div>
+  <p class="sec-intro">Nothing here was quietly decided for you. Each item is either undesigned, contradictory, or a technical convention the confirmed stack doesn't cover.</p>
+
+  <div class="gap-groups">
+    <div class="gap-group">
+      <h3>Needs a provider or convention decision</h3>
+      <ul class="gap-list">
+        <li class="gap-item"><span><b>Object storage / CDN</b> — for banners, galleries, profile photos, signed waivers and invoice PDFs. Not part of the confirmed stack.</span></li>
+        <li class="gap-item"><span><b>SMS, push, and email providers</b> — every OTP and Notification screen implies delivery; none is specified.</span></li>
+        <li class="gap-item"><span><b>ORM and API style</b> — Prisma vs. TypeORM, REST vs. GraphQL — neither is fixed by the stack.</span></li>
+        <li class="gap-item"><span><b>Environments &amp; CI/CD</b> — no dev/staging/production or hosting strategy exists anywhere in scope.</span></li>
+        <li class="gap-item"><span><b>Stripe Connect onboarding fit</b> — §04 commits to Connect as the primary custody model; still to confirm is whether Express vs. Standard accounts and per-country availability fit every market, and which flows genuinely need the secrets-manager fallback.</span></li>
+        <li class="gap-item"><span><b>White-label add-on pricing</b> — §05 decides the branded-app upgrade is a recurring plan add-on, sized to cover build/submission cost and each School's own store fees, but the actual price point isn't set.</span></li>
+        <li class="gap-item"><span><b>Shared-app store approval</b> — the included, shared Student app needs to pass App Review as a legitimate aggregator/directory app itself, not a template shell; recommend a pre-submission consultation with Apple before the first branded upgrade goes live.</span></li>
+      </ul>
+    </div>
+    <div class="gap-group">
+      <h3>Needs product clarification</h3>
+      <ul class="gap-list">
+        <li class="gap-item"><span><b>Passcode as credential</b> — is the 6-digit passcode the entire login, or a PIN over a longer password not shown?</span></li>
+        <li class="gap-item"><span><b>Franchise Subscription Plans</b> — platform billing, or a plan the franchise resells to its own schools?</span></li>
+        <li class="gap-item"><span><b>"User" role</b> — the translations CMS groups content under Student / School / Admin / <i>User</i>, which maps to nothing else in the designs.</span></li>
+        <li class="gap-item"><span><b>No instructor login</b> — instructors exist only as records; confirm whether they need their own access.</span></li>
+        <li class="gap-item"><span><b>Unlabeled profile stats</b> — four unexplained numbers (870 / 120k / 354k / 3.8Gb) on the Student profile.</span></li>
+        <li class="gap-item"><span><b>Currency conversion</b> — unclear whether the 6 supported currencies convert automatically or are entered independently.</span></li>
+      </ul>
+    </div>
+    <div class="gap-group">
+      <h3>Sidebar items with no screen behind them</h3>
+      <ul class="gap-list">
+        <li class="gap-item"><span><b>QR Code, Notification, Rules, Subscription History, Reports, Customer Services</b> — all appear in the School Portal navigation; none has a corresponding designed screen.</span></li>
+        <li class="gap-item"><span><b>Two mobile bottom-nav layouts</b> — most screens vs. Coach Profile/video screens disagree on what belongs in the tab bar.</span></li>
+        <li class="gap-item"><span><b>Likely copy/paste artifacts</b> — a duplicated "Microsoft" login button, and near-duplicate frames like createSchoolProfi / createSchoolProfile.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="card">
+    <div>
+      <div class="t">Full detail lives in the companion write-up</div>
+      <div class="s mono">ULTM8_Technical_Specification.docx — field-level screens, complete data model, NestJS module contracts, §12 open-question ledger</div>
+    </div>
+  </div>
+  <p class="fine">Compiled directly from the connected Figma files (accounts: Code Studio) on 21 August 2026, with two same-day follow-up discussions that produced §04 and §05. Every claim in §01–§02 and §06–§07 traces to a specific screen; §04, §05, and the revised parts of the payment-credential story are engineering and product architecture adopted on ULTM8's advice rather than something drawn in Figma; everything else undecided is listed in §08, not guessed.</p>
+</footer>

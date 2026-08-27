@@ -1,0 +1,400 @@
+<title>ULTM8 Spec Tracker</title>
+<style>
+  :root {
+    --paper: oklch(98% 0.004 95);
+    --paper-raised: oklch(100% 0 0);
+    --ink: oklch(22% 0.02 260);
+    --ink-soft: oklch(42% 0.02 260);
+    --ink-faint: oklch(58% 0.015 260);
+    --border: oklch(90% 0.008 260);
+    --border-soft: oklch(94% 0.006 260);
+    --accent: oklch(42% 0.13 265);
+    --accent-soft: oklch(94% 0.03 265);
+    --accent-ink: oklch(96% 0.01 265);
+    --done: oklch(52% 0.13 155);
+    --done-soft: oklch(94% 0.05 155);
+    --review: oklch(60% 0.15 55);
+    --review-soft: oklch(94% 0.06 55);
+    --partial: oklch(62% 0.13 90);
+    --partial-soft: oklch(95% 0.05 90);
+    --queued: oklch(55% 0.01 260);
+    --queued-soft: oklch(93% 0.006 260);
+    --ongoing: oklch(50% 0.13 300);
+    --ongoing-soft: oklch(94% 0.04 300);
+    --shadow: 0 1px 2px oklch(22% 0.02 260 / 0.06), 0 8px 24px oklch(22% 0.02 260 / 0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: oklch(19% 0.014 260);
+      --paper-raised: oklch(24% 0.016 260);
+      --ink: oklch(94% 0.006 260);
+      --ink-soft: oklch(78% 0.012 260);
+      --ink-faint: oklch(58% 0.014 260);
+      --border: oklch(32% 0.016 260);
+      --border-soft: oklch(27% 0.014 260);
+      --accent: oklch(74% 0.11 265);
+      --accent-soft: oklch(28% 0.06 265);
+      --accent-ink: oklch(15% 0.03 265);
+      --done: oklch(72% 0.15 155);
+      --done-soft: oklch(28% 0.06 155);
+      --review: oklch(75% 0.15 55);
+      --review-soft: oklch(30% 0.07 55);
+      --partial: oklch(78% 0.13 90);
+      --partial-soft: oklch(30% 0.06 90);
+      --queued: oklch(65% 0.012 260);
+      --queued-soft: oklch(28% 0.012 260);
+      --ongoing: oklch(76% 0.12 300);
+      --ongoing-soft: oklch(30% 0.06 300);
+      --shadow: 0 1px 2px oklch(0% 0 0 / 0.3), 0 8px 24px oklch(0% 0 0 / 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: oklch(19% 0.014 260);
+    --paper-raised: oklch(24% 0.016 260);
+    --ink: oklch(94% 0.006 260);
+    --ink-soft: oklch(78% 0.012 260);
+    --ink-faint: oklch(58% 0.014 260);
+    --border: oklch(32% 0.016 260);
+    --border-soft: oklch(27% 0.014 260);
+    --accent: oklch(74% 0.11 265);
+    --accent-soft: oklch(28% 0.06 265);
+    --accent-ink: oklch(15% 0.03 265);
+    --done: oklch(72% 0.15 155);
+    --done-soft: oklch(28% 0.06 155);
+    --review: oklch(75% 0.15 55);
+    --review-soft: oklch(30% 0.07 55);
+    --partial: oklch(78% 0.13 90);
+    --partial-soft: oklch(30% 0.06 90);
+    --queued: oklch(65% 0.012 260);
+    --queued-soft: oklch(28% 0.012 260);
+    --ongoing: oklch(76% 0.12 300);
+    --ongoing-soft: oklch(30% 0.06 300);
+    --shadow: 0 1px 2px oklch(0% 0 0 / 0.3), 0 8px 24px oklch(0% 0 0 / 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    padding: 40px 28px 80px;
+  }
+  h1, h2, h3 { font-family: "Archivo", "IBM Plex Sans", sans-serif; text-wrap: balance; margin: 0; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  .shell { max-width: 1080px; margin: 0 auto; }
+
+  /* ---------- header ---------- */
+  header { margin-bottom: 34px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+  .sub { color: var(--ink-soft); font-size: 15px; margin-top: 8px; max-width: 62ch; }
+
+  /* ---------- stat bar ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 26px 0 8px;
+    box-shadow: var(--shadow);
+  }
+  .stat {
+    background: var(--paper-raised);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat .n { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--ink-faint); }
+  .stat.done .n { color: var(--done); }
+  .stat.review .n { color: var(--review); }
+  .stat.queued .n { color: var(--queued); }
+
+  .progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--border-soft);
+    overflow: hidden;
+    display: flex;
+    margin: 18px 0 40px;
+    border: 1px solid var(--border);
+  }
+  .progress-track div { height: 100%; }
+
+  /* ---------- section headers ---------- */
+  h2 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); font-weight: 700; margin: 52px 0 16px; }
+  h2:first-of-type { margin-top: 0; }
+
+  /* ---------- process strip ---------- */
+  .process {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .step {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .step .num { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+  .step h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .step p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+  /* ---------- roadmap ---------- */
+  .roadmap { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--paper-raised); box-shadow: var(--shadow); }
+  .pass-row { display: grid; grid-template-columns: 96px 1fr auto; gap: 16px; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); }
+  .pass-row:last-child { border-bottom: none; }
+  .pass-row .tag { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--ink-faint); }
+  .pass-row .name { font-size: 14px; font-weight: 600; }
+  .pass-row .scope { font-size: 12.5px; color: var(--ink-soft); font-weight: 400; margin-top: 2px; }
+
+  /* ---------- pills ---------- */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 4px 10px 4px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+  .pill.done { background: var(--done-soft); color: var(--done); }
+  .pill.done::before { background: var(--done); }
+  .pill.review { background: var(--review-soft); color: var(--review); }
+  .pill.review::before { background: var(--review); }
+  .pill.partial { background: var(--partial-soft); color: var(--partial); }
+  .pill.partial::before { background: var(--partial); }
+  .pill.queued { background: var(--queued-soft); color: var(--queued); }
+  .pill.queued::before { background: var(--queued); }
+  .pill.ongoing { background: var(--ongoing-soft); color: var(--ongoing); }
+  .pill.ongoing::before { background: var(--ongoing); }
+
+  /* ---------- table ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--paper-raised); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; }
+  thead th {
+    text-align: left;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--border-soft);
+  }
+  tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: top; font-size: 13.5px; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.cluster-head td {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+    padding: 8px 16px;
+  }
+  td.sec { font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); font-size: 12.5px; white-space: nowrap; width: 1%; }
+  td.name { font-weight: 600; color: var(--ink); }
+  td.note { color: var(--ink-soft); font-size: 13px; max-width: 40ch; }
+  td.status { white-space: nowrap; }
+
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border-soft); font-size: 12.5px; color: var(--ink-faint); }
+
+  @media (max-width: 720px) {
+    .process { grid-template-columns: 1fr 1fr; }
+    .pass-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+  @media (max-width: 480px) {
+    .process { grid-template-columns: 1fr; }
+    body { padding: 28px 16px 60px; }
+    h1 { font-size: 24px; }
+  }
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+
+<div class="shell">
+
+  <header>
+    <div class="eyebrow">ULTM8 Technical Specification &middot; Review Status</div>
+    <h1>Where the spec stands</h1>
+    <p class="sub">Every numbered section of the document, tracked against the same audit process used on Classes, Membership, Grading and Payments — so nothing gets handed to the dev team on an assumption.</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat done"><div class="n">26</div><div class="l">Sections closed out</div></div>
+    <div class="stat review"><div class="n">0</div><div class="l">Findings ready, awaiting decisions</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Partially reviewed</div></div>
+    <div class="stat queued"><div class="n">0</div><div class="l">Queued for a pass</div></div>
+  </div>
+  <div class="progress-track" role="img" aria-label="26 of 28 sections fully closed out">
+    <div style="width:92.9%; background:var(--done);"></div>
+    <div style="width:7.1%; background:var(--ongoing);"></div>
+  </div>
+
+  <h2>How each pass works</h2>
+  <div class="process">
+    <div class="step">
+      <div class="num">01</div>
+      <h3>Fan out</h3>
+      <p>Several agents review the same section in parallel, each with a different adversarial lens — data model, security, feasibility, cross-doc consistency. No agent sees the others' work.</p>
+    </div>
+    <div class="step">
+      <div class="num">02</div>
+      <h3>Triage</h3>
+      <p>Findings get sorted into two piles: plain bugs and stale cross-references I fix outright, versus real product or architecture calls that need your judgment.</p>
+    </div>
+    <div class="step">
+      <div class="num">03</div>
+      <h3>Decide</h3>
+      <p>You answer the calls that need a human — I bring a recommendation and the reasoning behind it every time, never a bare question.</p>
+    </div>
+    <div class="step">
+      <div class="num">04</div>
+      <h3>Encode &amp; verify</h3>
+      <p>Every change is written into the live document, schema-validated, rendered to PDF, and checked page by page before it's sent — then this tracker gets updated.</p>
+    </div>
+  </div>
+
+  <h2>Pass roadmap</h2>
+  <div class="roadmap">
+    <div class="pass-row">
+      <span class="tag">PASS 0</span>
+      <div><div class="name">Classes, Membership, Attendance, Grading, Payments</div><div class="scope">Section 6.1, Section 7, Section 9, Section 11.5, Section 12</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 1</span>
+      <div><div class="name">System architecture &amp; tenant isolation</div><div class="scope">Section 3, Section 4 (Platform Admin), Section 6.2 (tenancy)</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 2</span>
+      <div><div class="name">Authentication &amp; role/permission model</div><div class="scope">Section 8 — Instructor role, session revocation, Branch Staff RLS, Franchise Owner privacy, Guardian model, RoleGrant</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 3</span>
+      <div><div class="name">White-label mobile app distribution</div><div class="scope">Section 5 — credential model, Publishing Ops role, downgrade/cancellation redesign</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 4</span>
+      <div><div class="name">Payments completeness check</div><div class="scope">Section 10.1–10.4 — five decisions locked: SubscriptionPlan direction, refund/credit mechanism, dunning/failure handling, GoCardless exclusion reaffirmed</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 5</span>
+      <div><div class="name">Remaining NFRs &amp; Figma-inventory consistency</div><div class="scope">Section 1.1–1.2, Section 2.1–2.2, Section 11.1–11.4, Section 11.6 — six decisions locked: Membership-creation timing, multi-currency, i18n/RTL, storage, notifications, environments/CI-CD</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 6</span>
+      <div><div class="name">Final whole-document consistency sweep</div><div class="scope">The developer-readiness gate — five parallel audits (cross-references, terminology/enums, decision-log fidelity, Section 12.2 accuracy, entity/API/job schema) found three straight fixes and one new Section 12.2 item, all closed out</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 7</span>
+      <div><div class="name">Security deep dive</div><div class="scope">Section 11.5 — five parallel adversarial lenses found 22 findings; every recommendation then independently re-verified for correctness and proportionality before encoding. Ten decisions locked (Decisions 12&ndash;21), five stale cross-references fixed</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 8.1</span>
+      <div><div class="name">Iterative deep-review, Round 1 &mdash; implementability, timing, outage-resilience, scale, operability</div><div class="scope">Whole-document sweep, five fresh adversarial lenses, ~25 findings. Fifteen decisions locked (Decisions 22&ndash;36: API conventions, job retry policy, field types, timezone, live-computed expiry, credential-purge race, Guardian cascade, checkout UX, data-layer scale hardening, observability &amp; tracing, deploy rollback + ORM=Prisma, Twilio/Postmark fallbacks, franchise-fee timing, R2 risk acceptance) plus the ORM open item resolved and a new StudentRank open item flagged. First round of an open-ended loop-until-dry process &mdash; more rounds likely</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 8.2</span>
+      <div><div class="name">Iterative deep-review, Round 2 &mdash; cross-tenant/RLS edge cases, financial correctness, legal &amp; data-governance, mobile/client edge cases, testing/QA readiness</div><div class="scope">Whole-document sweep, five fresh adversarial lenses, 25 findings. Sixteen straight technical completions encoded (Decisions 37&ndash;52: private-bucket waiver/invoice access, Stripe webhook tenant-derivation, impersonation scope narrowing, white-label usage-reporting generalization, partial-refund rounding, PlatformCharge ledger, AuditLogEntry subject granularity, account-deletion endpoint, client idempotency keys, push-token routing, forced-LTR fields, concurrency-regression CI, grading-prototype test handoff, webhook contract testing, load-test plan, migration-safety CI). All nine genuine product/architecture findings presented with recommendations are now confirmed and encoded (Decision 53: Bull Board/CloudWatch cross-tenant side channel &mdash; payload-thinning at the source for internally-triggered jobs, tenant-scoped &amp; audit-logged job-detail access for the two queues that can't avoid raw external payloads, a metadata-only logging rule for CloudWatch; Decision 54: &quot;active student&quot; defined as an Active Membership of type Subscription/Class Pack/Weekly Pass, excluding Friend Pass and Trial, plus a 30-day platform-enforced Trial-duration cap closing the resulting gap; Decision 55: Stripe chargeback/dispute handling &mdash; idempotent status-driven webhook processing across Transaction/FranchiseFeeCharge/PlatformCharge, refund/credit-restore frozen while disputed, Membership force-Expiry plus Stripe Subscription cancellation on a loss, notification routed by who's financially exposed; Decision 56: the &quot;money-transmission resolved&quot; claim corrected across Section 10.2 and the Pass 4 decision log &mdash; the destination-charge architecture was sound but conflated credential custody with funds custody, so both passages now say the structure is intended to avoid exposure rather than asserting it does, with a new Section 12.2 item tracking legal confirmation across both the Membership-purchase and Franchise-fee flows, not just Franchise-fee; Decision 57: a new two-tier ConsentRecord entity &mdash; baseline plus a camera-specific tier mirroring the confirmed QR-check-in use case &mdash; giving Guardian consent its own auditable, versioned, per-minor-revocable trail distinct from WaiverSignature, jurisdiction-general rather than COPPA-only; Decision 58: the mobile app's undefined videoScreen confirmed as a real feature &mdash; short instructional Lesson videos (both prerecorded and live), Lesson/CurriculumModule promoted from candidate to confirmed with new format/videoRef/captionStatus/captionTrackRef fields, captioning via an ULTM8-built automated pipeline, with video-hosting infrastructure and audio description split out as their own open items; Decision 59: accessibility target set to WCAG 2.2 AA, differentiated by surface (native RN APIs for the Student app, ARIA for the School Portal, accommodate-on-request for Platform Admin), grounding belt/rank color-independence and the QR check-in staff-override fallback in already-confirmed data, flagging WCAG 2.2's Accessible Authentication criterion against the still-open passcode-security item, and committing to advisory-only automated a11y CI scanning mirroring the Decision 18 CodeQL precedent; Decision 60: a minimum-supported-client-version policy &mdash; one build-number floor shared by the ULTM8 app and every branded rebuild alike, additive-only API evolution as the default so the version-gate is reserved for the rare unavoidable break, and a 30-day deprecation-notice window before any bump actually enforces; Decision 61: app-level biometric/PIN re-lock, mobile only &mdash; OS keychain/keystore-bound biometric gate on the stored refresh token itself, re-lock on every return from backgrounding rather than a timed grace window, one uniform threshold rather than a redundant second tier for Owner/Manager since Decision 12's step-up MFA already covers that specific risk, with the resulting Guardian coverage gap flagged explicitly rather than assumed away; Decision 62: staging/test-data provisioning strategy &mdash; synthetic-first seed data as standing infrastructure for dev and staging alike, Stripe's own test-mode credentials ruling out payment-data exposure structurally rather than by policy, and a break-glass-plus-audit-logged path reusing existing mechanisms for the rare real-data debugging case). Round 2's decision-making is closed out; three new Section 12.2 items this round's own decisions surfaced remain for a future pass</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+    <div class="pass-row">
+      <span class="tag">PASS 8.3</span>
+      <div><div class="name">Iterative deep-review, Round 3 &mdash; all eight genuine decisions resolved</div><div class="scope">Whole-document sweep, five fresh adversarial lenses (verified non-overlapping with Rounds 1&ndash;2), ~35 raw findings triaged into straight completions and eight genuine product/architecture decisions. First straight-completion batch encoded: three entities that existed only in Decision-log prose &mdash; PlatformCharge, DeviceToken, ConsentRecord &mdash; added as real Section 6.1 table rows; AuditLogEntry gained its subjectUserId field; Transaction/Invoice and FranchiseFeeCharge gained the Disputed status value + disputedAmount field; Section 7 gained DELETE /users/me; Section 9 gained the account-deletion-processing job row plus a Decision 40 scope note on franchise-fee-usage-reporting; all four stale &quot;16 jobs&quot; references corrected to 17. All eight genuine decisions are now resolved: Decision 63 locked (RDS Proxy connection-budget verification, after five self-critical passes); the Stripe Connect per-country finding resolved without a new decision after catching that the document's own market list wrongly named Pakistan (Stripe doesn't support it at all) instead of Malaysia (fully supported) &mdash; corrected across all eight places it appeared, and UAE checked out fine once verified directly against Stripe's own current docs; Decision 64 locked (Trial-reissuance fee dodge closed, extending Decision 54's existing 30-day cap to a rolling 12-month cumulative window per Student-School pair); Decision 65 locked after four self-critical passes (Trial-volume visibility routed to the Franchise/Platform Admin level) alongside an honest new Section 12.2 item flagging real prevention remains unresolved given genuine GDPR tension; Decision 66 locked after two self-critical passes (QR check-in liveness bound to the School Portal's existing undesigned &quot;QR Code&quot; screen item rather than logged as a freestanding fix); Decision 67 locked after three self-critical passes (unverified self-reported DOB bypassing Guardian consent, closed via a shared entry guard at the account's first consequential action) alongside a new Section 12.2 item on e-signature legal sufficiency for waivers; Decision 68 locked after three self-critical passes (serial chargeback/friendly-fraud pattern, closed via a system-internal job restricting repeat offenders to Cash/Bank Transfer); Decision 69 locked after four self-critical passes (Decision 57's consent-withdrawal cascade made proportional to tier &mdash; camera-only withdrawal no longer force-deletes the whole account &mdash; alongside two new Section 12.2 items: no non-camera check-in alternative exists, and no consent-management interface exists anywhere in the confirmed designs for a Guardian to exercise this at all). Remaining independent straight completions still queued for a future pass</div></div>
+      <span class="pill done">Complete</span>
+    </div>
+  </div>
+
+  <h2>Section-by-section status</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Section</th><th>Title</th><th>Status</th><th>Note</th></tr>
+      </thead>
+      <tbody>
+        <tr class="cluster-head"><td colspan="4">Foundations &amp; Figma audit</td></tr>
+        <tr><td class="sec mono">1.1</td><td class="name">What the Figma project contains</td><td class="status"><span class="pill done">Done</span></td><td class="note">Consistency pass complete — Pass 5; Pass 8.3 corrected a market-list error — Pakistan (which Stripe doesn't support at all) replaced with Malaysia, Urdu dropped from the language list</td></tr>
+        <tr><td class="sec mono">1.2</td><td class="name">Decisions locked in for this spec</td><td class="status"><span class="pill done">Done</span></td><td class="note">Pending/Paid&#8594;Pending/Successful terminology fix — Pass 5</td></tr>
+        <tr><td class="sec mono">1.3</td><td class="name">Domain summary</td><td class="status"><span class="pill done">Done</span></td><td class="note">Commercial loop encoded end to end</td></tr>
+        <tr><td class="sec mono">2.1</td><td class="name">School Portal screen inventory</td><td class="status"><span class="pill done">Done</span></td><td class="note">Franchise commerce &amp; Translations stale cross-refs fixed — Pass 5; stale &quot;Single Pass&quot; terminology in Membership plans row fixed — Pass 6</td></tr>
+        <tr><td class="sec mono">2.2</td><td class="name">Student Mobile App screen inventory</td><td class="status"><span class="pill done">Done</span></td><td class="note">Coach/instructor &amp; Transactions rows fixed — Pass 5</td></tr>
+        <tr><td class="sec mono">2.3</td><td class="name">Belt/rank icon library &amp; prototype</td><td class="status"><span class="pill done">Done</span></td><td class="note">Prototype's role in the build handoff clarified</td></tr>
+
+        <tr class="cluster-head"><td colspan="4">System architecture &amp; Platform Admin isolation</td></tr>
+        <tr><td class="sec mono">3.1</td><td class="name">High-level component map</td><td class="status"><span class="pill done">Done</span></td><td class="note">Job list and white-label model now match Section 5/9</td></tr>
+        <tr><td class="sec mono">3.2</td><td class="name">Request flow examples</td><td class="status"><span class="pill done">Done</span></td><td class="note">Worked Platform Admin request-flow example added</td></tr>
+        <tr><td class="sec mono">4</td><td class="name">Platform Admin isolation architecture</td><td class="status"><span class="pill done">Done</span></td><td class="note">Bypass-role hardening, CI-gate timing, sub-roles, Branch RLS — all encoded</td></tr>
+        <tr><td class="sec mono">6.2</td><td class="name">Tenancy hierarchy</td><td class="status"><span class="pill done">Done</span></td><td class="note">Branch RLS boundary defined; Franchise/School PaymentAccount question resolved in Pass 2</td></tr>
+
+        <tr class="cluster-head"><td colspan="4">Core product data model &amp; logic</td></tr>
+        <tr><td class="sec mono">6.1</td><td class="name">Core entities</td><td class="status"><span class="pill done">Done</span></td><td class="note">Full multi-round audit — Classes, Membership, Grading, Waitlist; new FranchiseFeeCharge entity added in Pass 4; Pass 8.1 closed field types/units (Decision 24), timezone convention (Decision 25), live-computed expiry (Decision 26), Guardian revocation cascade (Decision 28); Pass 8.3 added PlatformCharge/DeviceToken/ConsentRecord as real table rows (Decisions 42/46/57) plus AuditLogEntry.subjectUserId and Disputed/disputedAmount on Transaction &amp; FranchiseFeeCharge (Decision 55) — all previously decision-log-only</td></tr>
+        <tr><td class="sec mono">7</td><td class="name">API surface / NestJS module breakdown</td><td class="status"><span class="pill done">Done</span></td><td class="note">Kept in sync with every 6.1 change, including Pass 4's franchise-fee endpoints; platform-wide API conventions locked in Pass 8.1 (Decision 22); DELETE /users/me added Pass 8.3 (Decision 44)</td></tr>
+        <tr><td class="sec mono">9</td><td class="name">Background jobs / queues</td><td class="status"><span class="pill done">Done</span></td><td class="note">17 jobs, all cross-checked against triggers — franchise-fee usage reporting added in Pass 4; Pass 8.1 closed the credential-purge same-day race (Decision 27), the franchise-fee stale-report risk (Decision 35), and a default retry/backoff/alerting policy (Decision 23); Pass 8.3 added the account-deletion-processing job row (Decision 44) and a Decision 40 scope note on franchise-fee-usage-reporting</td></tr>
+
+        <tr class="cluster-head"><td colspan="4">Authentication &amp; roles — Pass 2</td></tr>
+        <tr><td class="sec mono">8</td><td class="name">Authentication &amp; role/permission model</td><td class="status"><span class="pill done">Done</span></td><td class="note">Instructor role, RoleGrant model, session revocation, Branch Staff &amp; Franchise Owner scope, Guardian accounts; Franchise Owner's fee-charging mechanics resolved in Pass 4</td></tr>
+
+        <tr class="cluster-head"><td colspan="4">White-label mobile app distribution — Pass 3</td></tr>
+        <tr><td class="sec mono">5</td><td class="name">Entitlement, publishing, downgrade</td><td class="status"><span class="pill done">Done</span></td><td class="note">Scoped API-key credential model, Publishing Ops sub-role, 90-day grace period, cancellation carve-out — flags a blocking Apple 4.2.6/4.3 risk in 12.2, with a confirmed fallback: drop the branded-app tier from v1 if it can't be resolved</td></tr>
+
+        <tr class="cluster-head"><td colspan="4">Payments — Pass 4</td></tr>
+        <tr><td class="sec mono">10.1</td><td class="name">What the designs show for payments</td><td class="status"><span class="pill done">Done</span></td><td class="note">Stale &ldquo;Single Pass&rdquo;/ledger bullets fixed; all five Pass 4 decisions locked — SubscriptionPlan direction (1), Auto-Refund/Auto-Credit mechanism (3), recurring-payment dunning/failure handling (4), and GoCardless exclusion reaffirmed as-is (5)</td></tr>
+        <tr><td class="sec mono">10.2</td><td class="name">Proposed backend flow</td><td class="status"><span class="pill done">Done</span></td><td class="note">Franchise-fee/SubscriptionPlan/white-label Stripe-automation flow, webhook idempotency, the refund/credit mechanism (Decision 3), and the dunning/failure-handling mechanism (Decision 4) all added in Pass 4; synchronous checkout-failure UX added in Pass 8.1 (Decision 29)</td></tr>
+        <tr><td class="sec mono">10.3</td><td class="name">Explicitly out of scope</td><td class="status"><span class="pill done">Done</span></td><td class="note">IAP disclaimer added; refund-API-failure handling closed under Decision 4; GoCardless exclusion reconsidered against the UK-market economic case and reaffirmed as-is (Decision 5) — Section 1.2 unchanged</td></tr>
+        <tr><td class="sec mono">10.4</td><td class="name">Payment-credential custody</td><td class="status"><span class="pill done">Done</span></td><td class="note">Verified consistent against Section 4.5 in Pass 1; Decision 4 tied Express/Standard choice to retry-schedule control, raising the stakes of the already-open Section 12.2 item</td></tr>
+
+        <tr class="cluster-head"><td colspan="4">Non-functional considerations — Pass 5</td></tr>
+        <tr><td class="sec mono">11.1</td><td class="name">Internationalization &amp; localization</td><td class="status"><span class="pill done">Done</span></td><td class="note">i18next + i18next-http-backend; RN-specific RTL mechanism (Decision 8)</td></tr>
+        <tr><td class="sec mono">11.2</td><td class="name">Multi-currency</td><td class="status"><span class="pill done">Done</span></td><td class="note">Per-currency MembershipPlan pricing vs. USD-anchored ULTM8 revenue (Decision 7); white-label price wording corrected to stop overstating the exact rate as settled — Pass 6; PKR corrected to MYR — Pass 8.3</td></tr>
+        <tr><td class="sec mono">11.3</td><td class="name">Media &amp; file storage</td><td class="status"><span class="pill done">Done</span></td><td class="note">Cloudflare R2 + Cloudflare Images (Decision 9); brief R2 read-availability risk accepted rather than engineered around — Pass 8.1 (Decision 36)</td></tr>
+        <tr><td class="sec mono">11.4</td><td class="name">Notifications</td><td class="status"><span class="pill done">Done</span></td><td class="note">FCM/APNs + Twilio Verify + Postmark (Decision 10); Pass 8.1 closed the single-point-of-failure gap — Twilio Verify outage falls back to email OTP, AWS SES named as the Postmark fallback (Decisions 33&ndash;34)</td></tr>
+        <tr><td class="sec mono">11.5</td><td class="name">Security</td><td class="status"><span class="pill done">Done</span></td><td class="note">Full adversarial audit — Pass 7: 5 lenses, 22 findings, every recommendation independently re-verified before encoding; 10 decisions + 5 cross-ref fixes</td></tr>
+        <tr><td class="sec mono">11.6</td><td class="name">Environments &amp; delivery</td><td class="status"><span class="pill done">Done</span></td><td class="note">AWS (RDS/ElastiCache/ECS Fargate) + GitHub Actions CI/CD (Decision 11); Pass 8.1 added data-layer scale hardening, observability &amp; tracing, and deploy rollback/migration discipline naming Prisma as the ORM (Decisions 30&ndash;32)</td></tr>
+
+        <tr class="cluster-head"><td colspan="4">Decisions log &amp; appendix</td></tr>
+        <tr><td class="sec mono">12.1</td><td class="name">Decisions already made</td><td class="status"><span class="pill ongoing">Ongoing</span></td><td class="note">Grows with every pass — this is the audit trail itself; Decisions 6–11 added in Pass 5; two fidelity fixes caught in Pass 6; Decisions 12–21 (Security) added in Pass 7; Decisions 22–36 added in Pass 8.1; Decisions 37–52 added in Pass 8.2 round-2 straight completions, Decisions 53–62 confirming all nine Pass 8.2 genuine decisions; Decisions 63–69 added in Pass 8.3 (RDS Proxy connection-budget verification, Trial-reissuance cap, Trial-volume visibility, QR check-in liveness, unverified self-reported DOB, serial chargeback pattern, Decision 57 consent-withdrawal proportionality) — 69 decisions logged in total, all eight of Round 3's genuine decisions now resolved</td></tr>
+        <tr><td class="sec mono">12.2</td><td class="name">Still open — please advise</td><td class="status"><span class="pill ongoing">Ongoing</span></td><td class="note">Shrinks as each pass resolves items; two items added in Pass 6; Pass 7 resolved the MFA item and extended three others; Pass 8.1 resolved the ORM item (Prisma, Decision 32) and added one new item — StudentRank readiness-bucket thresholds/progress-% formula, a product call flagged rather than invented; Pass 8.2 surfaced nine further genuine decisions, all nine confirmed and encoded (Decisions 53–62) — which also resolved the videoScreen candidate-resolution item and added three new items of its own (video hosting/streaming infrastructure, audio description, Guardian-specific step-up authentication); Pass 8.3 sharpened the existing Stripe Connect onboarding-fit item with a directly-verified UAE trade-license caveat, sharpened the existing &quot;QR Code&quot; undesigned-screen item with a binding constraint from Decision 66 (rotating, not static, if and when it's built), added one new item on whether a precise Trial-reissuance prevention mechanism is worth building given genuine GDPR tension in the strong version, flagged honestly rather than resolved, and added a further new item on e-signature legal sufficiency for waivers — a gap this review's own standing domain reference had recommended tracking here but that never actually made it into the spec until Decision 67 sharpened its stakes — and Decision 69 added two more: no non-camera self-service check-in alternative exists, and no consent-management interface exists anywhere in the confirmed designs for a Guardian to withdraw consent at all, full or tier-specific</td></tr>
+        <tr><td class="sec mono">13</td><td class="name">Appendix — verification notes</td><td class="status"><span class="pill done">Done</span></td><td class="note">Pass 8.1 appended a short three-scenario runbook stub; Pass 8.2 Round 2 expanded it to eight first-response entries as a scannable bulleted list (added: general job-backlog triage, R2 outage, SMS-OTP fallback confirmation, dispute-after-refund, Platform Admin token-TTL window) — all grounded in accepted risks/mitigations already decided elsewhere in the spec, no new procedures invented</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>Updated after every pass. Reflects <span class="mono">ULTM8_Technical_Specification_53.docx</span>. Pass 8, Round 3's decision-making is now fully closed out: five fresh adversarial lenses (verified non-overlapping with Rounds 1&ndash;2) returned ~35 raw findings, triaged into a batch of straight technical completions and eight genuine product/architecture decisions, and all eight are now resolved. The table-row batch is encoded — PlatformCharge, DeviceToken, and ConsentRecord promoted from decision-log-only mentions to real Section 6.1 entity rows; AuditLogEntry.subjectUserId and Disputed/disputedAmount on Transaction and FranchiseFeeCharge added; Section 7's DELETE /users/me and Section 9's account-deletion-processing job row added; the franchise-fee-usage-reporting job's Decision 40 scope generalization noted; all four stale &quot;16 jobs&quot; references corrected to 17. Decision 63 (RDS Proxy connection-budget verification) locked after five self-critical passes; the Stripe Connect per-country finding resolved without needing a decision at all, after catching a market-list error (Pakistan, unsupported by Stripe, corrected to Malaysia) and verifying UAE checks out fine with only a small onboarding caveat; Decision 64 (Trial-reissuance fee dodge closed, extending Decision 54's cap to a rolling 12-month window); Decision 65 locked after four self-critical passes that reversed course twice, landing on cheap Franchise/Platform-level visibility paired with an honest new Section 12.2 item admitting real prevention remains unresolved given genuine GDPR tension; Decision 66 (QR check-in liveness/spoofing) locked after two self-critical passes that found the real gap was a display screen that was never designed at all, binding a rotating-not-static constraint onto the existing undesigned &quot;QR Code&quot; item instead of inventing new infrastructure; Decision 67 (unverified self-reported DOB bypassing Guardian consent) locked after three self-critical passes, converging on one shared entry guard at the account's first consequential action rather than the account-type migration the confirmed design has never supported, plus a new companion item on e-signature legal sufficiency for waivers; Decision 68 (serial chargeback/friendly-fraud pattern) locked after three self-critical passes — a system-internal job restricting repeat offenders to Cash/Bank Transfer, global in scope once correctly designed as a job with no human-facing cross-tenant view; Decision 69 (Decision 57's consent-withdrawal cascade made proportional to tier) locked after four self-critical passes — camera-tier-only withdrawal no longer force-deletes the whole account, plus two further new Section 12.2 items this decision's own scrutiny surfaced: no non-camera check-in alternative exists for the resulting staff-override reliance, and no consent-management interface exists anywhere in the confirmed designs for a Guardian to exercise any consent right at all. Every decision this round that left something open did so honestly, as a new Section 12.2 item, rather than overclaiming resolution. Still to come: the remaining independent straight completions (RoleGrant enum split, bulk-grading pagination, composite-index additions, job timezone staggering, R2 versioning, Cloudflare Images cost note, AWS Secrets Manager risk note, AWS added to the GDPR sub-processor list, a new i18n-captioning Section 12.2 item, Decision 61's citation fix).</footer>
+
+</div>
