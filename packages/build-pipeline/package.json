@@ -1,0 +1,10 @@
+{
+  "name": "@ultm8/build-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native build tooling, long-running async jobs, and per-tenant signing-secret management for the white-label pipeline (Spec §5, ultm8-app-publishing). Out of scope for Phase 1 (Payments/publishing/etc. explicitly excluded). Placeholder only.",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo \"@ultm8/build-pipeline: placeholder — out of scope until white-label work is scoped\""
+  }
+}

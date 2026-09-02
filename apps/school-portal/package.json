@@ -1,0 +1,10 @@
+{
+  "name": "@ultm8/school-portal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "React — School Portal. Placeholder for Phase 1 (monorepo scaffold only, per ultm8-nestjs-module §6). Not implemented yet.",
+  "scripts": {
+    "build": "echo \"@ultm8/school-portal: placeholder — not implemented yet\"",
+    "dev": "echo \"@ultm8/school-portal: placeholder — not implemented yet\""
+  }
+}

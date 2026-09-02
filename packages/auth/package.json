@@ -1,0 +1,10 @@
+{
+  "name": "@ultm8/auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared token-handling utilities for the 3 frontend apps (NOT shared identity — Platform Admin's realm stays separate, Spec §4.4). Placeholder for Phase 1.",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo \"@ultm8/auth: placeholder — not implemented yet\""
+  }
+}

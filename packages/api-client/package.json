@@ -1,0 +1,10 @@
+{
+  "name": "@ultm8/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed SDK generated from apps/api's OpenAPI spec (ultm8-nestjs-module §3) — one source of truth for request/response shapes, consumed by all three frontend apps. Not yet generated — apps/api's Swagger contract (/v1/docs) is the source once a real generation step is wired up.",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo \"@ultm8/api-client: placeholder — generate from apps/api's /v1/docs-json once the contract stabilizes\""
+  }
+}

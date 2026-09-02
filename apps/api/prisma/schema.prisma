@@ -1,0 +1,274 @@
+// ULTM8 Prisma schema — Phase 1 walking skeleton.
+//
+// Scope: exactly the 6 core entities named in Phase 1's task — User, RoleGrant,
+// AdminUser, Franchise, School, Branch. Everything else (Class, Booking, Membership,
+// Waiver, StudentRank, ...) is out of scope for this pass and intentionally absent.
+//
+// Sources (cite-back, per ultm8-domain-rules §20 rule 5):
+//   - Field lists: ultm8-domain-rules §2/§3/§6.1, Spec 55 §6.1 (Franchise/School entity rows)
+//   - Branch field set: Decision 76, docs/decisions/POST-SPEC-55-DECISION-LOG.md
+//   - RoleGrant shape (user_id, role, scope, granted_by, granted_at, revoked_at): domain-rules §3
+//   - AdminUser as a wholly separate identity, never joined to User: ultm8-tenant-isolation §3
+//   - RLS keying (franchise_id/school_id, +branch_id for the 4 Branch-scoped entities —
+//     none of which exist yet in this schema pass): ultm8-tenant-isolation §2
+//   - Composite indexes leading with the tenant column: Decision 30
+//
+// RLS policies are NOT expressible in schema.prisma (Prisma has no first-class RLS
+// feature) — they live in prisma/migrations/20260902000000_init/migration.sql, hand-
+// authored and clearly marked as a Developer-level design applying the confirmed
+// tenant-isolation principles above. Flagged for Architect review, same as the AuthModule
+// lockout/recovery minimum below — see the Phase 1 summary for the full list.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// The 6 confirmed customer-facing roles a RoleGrant can carry (Spec 55 §8.2).
+/// Platform Admin is deliberately excluded — that's the separate AdminUser realm below,
+/// never a RoleGrant value (ultm8-tenant-isolation §3).
+enum Role {
+  STUDENT
+  SCHOOL_OWNER_MANAGER
+  BRANCH_STAFF
+  INSTRUCTOR
+  FRANCHISE_OWNER
+  GUARDIAN
+}
+
+/// Platform Admin's three least-privilege sub-roles (ultm8-tenant-isolation §3).
+enum AdminSubRole {
+  SUPPORT
+  BILLING_PAYMENTS_OPS
+  FULL_ADMIN
+}
+
+/// Franchise.feeModel — Flat or Per-Headcount (domain-rules §2, confirmed).
+enum FeeModel {
+  FLAT
+  PER_HEADCOUNT
+}
+
+/// School.classCancellationPolicy — Manual (default) / Auto-Refund / Auto-Credit
+/// (domain-rules §7, confirmed). Not exercised by any Phase 1 endpoint yet — Bookings/
+/// Classes are out of scope — but it's a confirmed School-entity column, so it's modeled
+/// now rather than half-modeling School.
+enum ClassCancellationPolicy {
+  MANUAL
+  AUTO_REFUND
+  AUTO_CREDIT
+}
+
+/// School.franchiseFeeSubscriptionStatus — synced from the Franchise-fee Stripe
+/// Subscription (domain-rules §2, Spec §6.1). Nullable on the model since it only
+/// applies to a School actually under a Franchise.
+enum FranchiseFeeSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+// ---------------------------------------------------------------------------
+// Core identity
+// ---------------------------------------------------------------------------
+
+/// Base customer-facing identity shared by every tenant-side role (Student, School
+/// Owner/Manager, Branch Staff, Instructor, Franchise Owner, Guardian). Role/scope is
+/// NEVER a column here — RoleGrant is the sole source of truth (domain-rules §3).
+model User {
+  id     String @id @default(uuid())
+  email  String @unique
+  phone  String @unique // E.164, validated at the DTO layer
+
+  firstName String
+  surname   String
+  username  String? @unique // mobile-only per confirmed field list; nullable elsewhere
+
+  /// bcrypt hash of the 6-digit passcode — the account's sole login credential
+  /// (Decision 72). Never store the raw passcode.
+  passcodeHash String
+
+  /// Set once Twilio Verify OTP confirms this phone (Spec §8.1's registerScreen ->
+  /// verificationPin flow). NOT a confirmed schema field — a Developer-added column
+  /// needed to make that two-step, spec-described flow actually functional; flagged
+  /// for Architect review. Login is blocked while this is null (see AuthService) —
+  /// that gate is a reasonable-minimum choice, not a confirmed business rule; flag if
+  /// wrong.
+  phoneVerifiedAt DateTime?
+
+  dateOfBirth DateTime @db.Date // ISO 8601 date, no time component (confirmed)
+  gender      String?
+  nationality String?
+  language    String? // one of the 4 confirmed languages; stored as free text pending
+                       // a confirmed canonical code list (not specified anywhere)
+  currency    String? // one of the 6 confirmed currencies; same caveat as above
+  address     String?
+  profilePhotoUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roleGrants       RoleGrant[] @relation("RoleGrantUser")
+  grantsIssued     RoleGrant[] @relation("RoleGrantGrantedBy")
+
+  @@index([email])
+  @@index([phone])
+}
+
+/// Platform Admin identity — wholly separate from User, never joined to it
+/// (ultm8-tenant-isolation §3). Authenticates via SSO against the company's own IdP
+/// (Spec §4.4); ssoSubject is the federated-identity linkage, not a local password.
+model AdminUser {
+  id      String @id @default(uuid())
+  email   String @unique
+  name    String
+  subRole AdminSubRole
+
+  /// Subject identifier from the external SSO IdP (§4.4) — no local credential is
+  /// stored here; ULTM8 never owns Platform Admin's authentication factor directly.
+  ssoSubject String @unique
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  revokedAt DateTime? // access revoked immediately on offboarding (§4.4)
+}
+
+/// The sole source of truth for who holds what role, where (domain-rules §3, §6.1).
+/// franchiseId / schoolId / branchId together encode "scope": a Franchise Owner grant
+/// sets only franchiseId; a School-scoped grant (Owner/Manager, Instructor) sets
+/// schoolId with branchId null (== "sees all Branches under this School", §4.3); a
+/// Branch Staff grant sets both schoolId and branchId.
+model RoleGrant {
+  id   String @id @default(uuid())
+  role Role
+
+  userId String
+  user   User   @relation("RoleGrantUser", fields: [userId], references: [id])
+
+  franchiseId String?
+  franchise   Franchise? @relation(fields: [franchiseId], references: [id])
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  grantedById String?
+  grantedBy   User?   @relation("RoleGrantGrantedBy", fields: [grantedById], references: [id])
+
+  grantedAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30).
+  @@index([schoolId, revokedAt])
+  @@index([franchiseId, revokedAt])
+  @@index([branchId, revokedAt])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy: Franchise -> School -> Branch
+// ---------------------------------------------------------------------------
+
+/// Franchise (domain-rules §2, Spec §6.1). A School's link to a Franchise is optional —
+/// modeled as a nullable FK on School, not required here.
+model Franchise {
+  id   String @id @default(uuid())
+  name String
+
+  mobileNumber    String?
+  address         String?
+  type            String?
+  activities      String[] @default([])
+  facilities      String[] @default([])
+  defaultLanguage String?
+  defaultCurrency String?
+  description     String?
+  logoUrl         String?
+  bannerUrl       String?
+
+  feeModel FeeModel @default(FLAT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schools    School[]
+  roleGrants RoleGrant[]
+
+  @@index([name])
+}
+
+/// School (domain-rules §2, Spec §6.1). franchiseId is nullable — an independent,
+/// non-franchised School is a first-class case, not an edge case (confirmed).
+model School {
+  id String @id @default(uuid())
+
+  franchiseId String?
+  franchise   Franchise? @relation(fields: [franchiseId], references: [id])
+
+  name         String
+  mobileNumber String?
+  address      String?
+  businessType String?
+  activities   String[] @default([])
+  facilities   String[] @default([])
+  ranksToggle  Boolean  @default(false)
+
+  defaultLanguage String?
+  defaultCurrency String?
+  description     String?
+  logoUrl         String?
+  bannerUrl       String?
+
+  classCancellationPolicy       ClassCancellationPolicy        @default(MANUAL)
+  waitlistClaimWindowMinutes    Int                             @default(120)
+  franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches   Branch[]
+  roleGrants RoleGrant[]
+
+  // Composite index leading with the tenant column (Decision 30) — School's own
+  // "tenant column" one level up is franchiseId.
+  @@index([franchiseId])
+}
+
+/// Branch (Decision 76 — field set mirrors School's profile fields; the RLS-enforced
+/// access-boundary role for TimetableSlot/Class/Instructor/Booking is asserted in
+/// ultm8-tenant-isolation §2, but none of those 4 entities exist in this schema pass yet).
+model Branch {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  name            String
+  address         String?
+  contactPhone    String?
+  timezone        String? // IANA tz name, per the glossary convention (Spec §14)
+  currencyOverride String?
+  logoUrl         String?
+  bannerUrl       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roleGrants RoleGrant[]
+
+  // Composite index leading with the tenant column (Decision 30).
+  @@index([schoolId])
+}

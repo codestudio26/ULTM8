@@ -14,7 +14,7 @@ When sources disagree, resolve in this order, highest first:
 2. **Canonical domain rules**
    `skills/ultm8-domain-rules/SKILL.md`
    A tagged, scannable distillation of Spec 55's business rules. Load it before any work touching domain or business logic. If this skill and the current spec ever disagree, the spec wins — flag the mismatch, don't silently pick one.
-3. **Approved architectural/product decisions** — as recorded in Spec 55 §12.1, or made directly with the product owner since. These never override Spec 55 Sections 1–11.
+3. **Approved architectural/product decisions** — as recorded in Spec 55 §12.1, or made directly with the product owner since. These never override Spec 55 Sections 1–11. Decisions made after the Spec 55 handover are recorded in `docs/decisions/POST-SPEC-55-DECISION-LOG.md` — an append-only log continuing the spec's own decision numbering, starting at Decision 70.
 4. **Existing code** — once implementation begins, working code is authoritative for *how* something is built, but it never overrides an unresolved spec item simply by existing.
 5. **Figma/design references** — illustrative only. Useful for screen inventory and observed UI flow, never a substitute for a confirmed business rule.
 

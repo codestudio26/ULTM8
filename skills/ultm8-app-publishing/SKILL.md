@@ -1,0 +1,65 @@
+---
+name: ultm8-app-publishing
+description: White-label mobile app distribution for ULTM8 — the branded-app entitlement, the ULTM8-managed publishing pipeline, and downgrade/cancellation behavior. Load before implementing, reviewing, or writing tests for TenantAppConfig, MobileAppPublishingModule, or any Publishing Ops workflow.
+---
+
+# ULTM8 White-Label App Publishing
+
+**Derived from:** `deep-review/ULTM8-Dev-Handover-v55/ULTM8_Technical_Specification_55.docx` Section 5 (White-Label Mobile App Distribution) in full, cross-checked against `skills/ultm8-domain-rules/SKILL.md` §17.
+**Maintained by:** the Architect agent only, per the same convention as `ultm8-domain-rules`. If this skill and Spec 55 ever disagree, the spec wins — flag the mismatch rather than trusting whichever one you read first.
+**Status:** living reference. Re-verify against the spec every time it's updated; do not assume this file is current.
+
+> **Golden rule:** every rule below is tagged `[CONFIRMED]`, `[OBSERVED IN DESIGNS]`, `[UI BEHAVIOUR]`, or `[UNRESOLVED]`, exactly as in `ultm8-domain-rules`. Only `[CONFIRMED]` items may be treated as settled. If a task requires something tagged `[UNRESOLVED]`, stop and escalate — do not fill the gap with a plausible guess.
+
+**Scope note:** this skill covers the white-label *feature* end-to-end — entitlement, pipeline, lifecycle. General Platform Admin identity/audit mechanics live in `ultm8-tenant-isolation`; don't duplicate them here, only reference them.
+
+---
+
+## 1. Why this needs its own architecture
+
+- **[CONFIRMED]** This is engineering architecture adopted on ULTM8's advice in a follow-up discussion (21 Aug 2026) — it is not something drawn in Figma. (§5)
+- **[CONFIRMED]** It is regulated by both app stores, not a simple rebrand toggle. Apple Guideline 4.2.6: an app generated from a commercialized template is rejected unless submitted directly by the business it belongs to — in practice, each School must be the App Store Connect account holder for its own branded app; ULTM8 cannot publish it under ULTM8's own developer account. Google Play has no equivalent mandated pattern, but the safer reading favors decentralized account management. (§5.1)
+- **[CONFIRMED]** Engineering constraint: one React Native codebase must produce a distinct signed binary per School — its own bundle identifier/package name, app icon, splash screen, display name, theme, push-notification credentials, and deep-link domain — baked in at build time, then submitted through that School's own store account. (§5.1)
+
+## 2. The entitlement model
+
+- **[CONFIRMED]** Two-tier structure: every School is included by default in a single shared "ULTM8" consumer app — same Student experience, no extra cost or setup, one ULTM8-branded app submitted once under one ULTM8 developer account, no per-School store presence. The paid upgrade adds a School's own named, iconed app with its own listing on both stores, built from the same codebase and published under that School's own Apple Developer + Google Play accounts. (§5.2)
+- **[CONFIRMED]** This model is **contingent** on clearing the Apple 4.2.6/4.3 template-farm compliance risk (§12.2). If that risk can't be resolved before launch, the branded-app tier drops from v1 entirely — every School ships on the shared ULTM8 app only — rather than shipping a feature that risks the whole app family being rejected or pulled. (§5.2)
+- **[CONFIRMED]** The upgrade is modeled as an entitlement on the existing platform-level `SubscriptionPlan` entity — a `whiteLabelApp` flag/tier, not a separate product. Toggling `whiteLabelApp` is a **Full Platform Admin** action, the same rare, structural class of change as creating a `SubscriptionPlan` — not something the narrower Publishing Ops sub-role can do; Publishing Ops operates the pipeline once the entitlement already exists, it does not grant it. (§5.3, §4.4)
+- **[CONFIRMED]** The upgrade is priced as a recurring add-on, not one-time — because the ongoing cost isn't the first build, it's that every future ULTM8 core release means rebuilding and resubmitting a binary per branded School, plus each School's own $99/year Apple Developer fee and $25 one-time Google Play fee. (§5.3)
+- **[UNRESOLVED]** The exact metered rate for the white-label add-on — referenced only as a $0.99–$1.99/active-student/month range, billed to the School (or the Franchise where it manages rollout centrally) — has not been finalized. (§5.3, §10.2, §12.2; see `ultm8-payments` §5)
+
+## 3. Publishing pipeline
+
+- **[CONFIRMED]** ULTM8 runs the publishing pipeline on each School's behalf (the School does not self-serve updates), and the pipeline is built from day one alongside the rest of the platform — not deferred until the first paying upgrade — so the branded-app option is one of the features Schools are told about from launch. (§5.4)
+- **[CONFIRMED]** A `TenantAppConfig` record per School holds: display name, bundle ID/package name, icon and splash assets, theme tokens, APNs key reference and FCM project reference, Play App Signing enrollment status, and the School's own App Store Connect / Google Play Developer API credentials — stored only in the secrets manager, never in the application database. Unlike Stripe, there is no Connect-equivalent for Apple/Google, so these credentials are always held by ULTM8 directly, with the same monitored-rotation treatment as APNs/FCM credentials. (§5.4, §5.6; see `ultm8-payments` §1 for the parallel Stripe custody model)
+- **[CONFIRMED]** ULTM8 does **not** request interactive Admin access to a School's Apple Developer or Google Play account. Each School's Account Holder instead provisions a scoped, revocable App Store Connect API key and a Google Play Developer API service account — scoped for build/submit, credential status-read, and dual-approval-gated unpublish from the outset — through a guided School Portal flow; ULTM8 stores only that credential and fetches it per build job rather than holding a standing session. (§5.4)
+- **[CONFIRMED]** Only the Account Holder can personally accept Apple's and Google's developer agreements — ULTM8 cannot do this on a School's behalf. This is a documented support-escalation limitation, not a security gap. The School remains the legal publisher of record (satisfying Guideline 4.2.6); ULTM8 operates the pipeline against the scoped credential only. (§5.4)
+- **[CONFIRMED]** A white-label build pipeline (Fastlane, or EAS Build if the Student app moves to Expo) is parameterized per tenant and triggered from a "Publish my app" flow in School Portal. Every core-app release fans out into N branded rebuilds — real, ongoing release-engineering work sized into the team's release cadence from the first sprint it's built. (§5.4)
+- **[CONFIRMED]** When a School upgrades, its existing Students stay on the shared ULTM8 app — the upgrade doesn't move them automatically. They get a persistent, non-naggy in-app prompt to install the branded app (not a single push notification); the School can optionally turn on a firmer nudge after a set delay if adoption stays low. Some tail of Students never migrating is an accepted outcome. (§5.4)
+- **[CONFIRMED]** Set expectations with Schools up front: Apple App Review typically takes 1–2 days per submission; each School needs its own Apple Developer Program ($99/yr) and Google Play Console ($25 one-time) account before ULTM8 can publish for them; Apple's Organization-type enrollment needs a D-U-N-S number that can itself take weeks; Google Play requires a closed testing track before production release. (§5.4)
+
+## 4. Downgrade and cancellation
+
+- **[CONFIRMED]** If a School downgrades the white-label add-on (but the School itself stays active), its branded app is **frozen at its last build, not pulled**: the app stays live on both stores and continues to work against the shared API, but stops receiving core-feature rebuilds until the School re-upgrades. "Stays live" describes ULTM8's own behavior only — it does not grant immunity from Apple's/Google's own review and takedown policies. (§5.5)
+- **[CONFIRMED]** ULTM8 retains the School's Apple/Google credential in the secrets manager for a **90-day grace period** after downgrade, in case the School re-upgrades. After 90 days without re-upgrade, a scheduled job purges ULTM8's own stored copy of the credential; the School's own underlying account and its own copy of the credential are untouched — this only removes ULTM8's ability to push further builds. Re-upgrading after the purge means re-provisioning the credential through the same guided setup flow. (§5.5, Decision 27)
+- **[CONFIRMED]** Each School's own store fees are independent of the ULTM8 subscription and continue regardless of `whiteLabelApp` status — disclosed at upgrade time and repeated as a reminder at downgrade. Because Google's fee is one-time, the renewal-monitoring job and reminder apply to Apple only: an Apple-specific background job escalates a reminder to the School at 30 days, 7 days, and the day of the membership's renewal date, since a lapsed Apple Developer membership pulls every app under it — not just the branded one — from sale. (§5.5)
+- **[CONFIRMED]** If a School cancels its subscription entirely (not just the white-label add-on), the branded app moves to a graceful degraded state in-app (a clear "no longer active" message in place of live data), rather than silently breaking or being auto-unpublished. Store-side removal, if the School wants it, is a distinct, slower, **dual-approval-gated Publishing Ops action** — not the automatic in-app-only step above, and not the break-glass procedure (which covers only ULTM8's own emergency credential access). (§5.5)
+- **[CONFIRMED]** Fault-based crediting: where a build/submission fails or is delayed for a reason on ULTM8's side, the affected billing period is creditable at support's discretion; a rejection caused by the School's own submitted content is not — support judges this case by case. (§5.5)
+- **[UNRESOLVED]** General tenant/School cancellation and offboarding — beyond the branded-app-specific handling above — is not otherwise specified anywhere in Spec 55. This paragraph scopes the branded-app-specific behavior only; the broader gap is flagged as its own new open item. (§5.5, §12.2)
+
+## 5. Module and data model
+
+- **[CONFIRMED]** New entity `TenantAppConfig` — branding, store identifiers, and credential references per School. `SubscriptionPlan` gains the `whiteLabelApp` entitlement tier. (§5.6, §6.1)
+- **[CONFIRMED]** Two new scheduled background jobs: the Apple developer-membership-renewal reminder (escalating cadence, §4 above) and the credential grace-period purge job (§4 above). (§5.6, §9)
+- **[CONFIRMED]** `MobileAppPublishingModule` sits under the Platform Admin surface — build/submit pipeline, `TenantAppConfig` CRUD, credential status-read — guarded by the same admin identity realm and audit trail as the rest of Platform Admin (see `ultm8-tenant-isolation`), scoped to the **Publishing Ops** sub-role for routine operation. Store-side unpublish requires dual approval. Representative endpoints: `GET/PATCH /admin/tenants/{id}/app-config`, `POST /admin/tenants/{id}/app-config/publish`, `GET /admin/tenants/{id}/app-config/status`, `POST /admin/tenants/{id}/app-config/unpublish` (dual-approval-gated). (§5.6, §7)
+- **[CONFIRMED]** Publishing Ops's scope: `TenantAppConfig` CRUD, publishing-pipeline retry/support operations, credential status-read for renewal monitoring across tenants; store-side unpublish requires dual approval. Publishing Ops does **not** grant or revoke a School's `whiteLabelApp` entitlement itself — that stays a Full Platform Admin action (§2 above). (§8.2, §4.4)
+
+## 6. Security posture
+
+- **[CONFIRMED]** A School's App Store Connect / Google Play credentials are held only in AWS Secrets Manager (never the application database), scoped to `MobileAppPublishingModule`'s own service identity — the same custody model as Stripe Connect credentials. (§11.5, §4.5, §5.4)
+- **[CONFIRMED]** Unlike Stripe (moved to Connect specifically to remove this single-point-of-compromise risk), `MobileAppPublishingModule`'s service identity holds every School's scoped app-store credential centrally, with no equivalent per-tenant isolation of the pipeline itself — a compromise there could reach every School's live app at once. Compensating controls: a fixed rate limit on build/submission volume per tenant per day, and the dual-approval pattern already required for store-side unpublish is extended to abnormal or bulk publish actions too. (§11.5, resolved Pass 7)
+
+## 7. Rules for AI agents using this skill
+
+Follow `ultm8-domain-rules` §20 in full — the tagging discipline, escalation rule, and citation requirement all apply here identically. In short: only `[CONFIRMED]` authorizes building against a rule; an `[UNRESOLVED]` item is a stop-and-escalate, never a guess; cite the `(§...)` reference in code comments/PRs so a reviewer can trace it back in one step; only the Architect agent edits this file directly.

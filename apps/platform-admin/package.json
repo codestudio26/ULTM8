@@ -1,0 +1,10 @@
+{
+  "name": "@ultm8/platform-admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "React — Platform Admin (separate app/deployment/identity realm, Spec §4). Placeholder for Phase 1. Not implemented yet.",
+  "scripts": {
+    "build": "echo \"@ultm8/platform-admin: placeholder — not implemented yet\"",
+    "dev": "echo \"@ultm8/platform-admin: placeholder — not implemented yet\""
+  }
+}

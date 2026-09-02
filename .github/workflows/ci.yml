@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # Cross-tenant isolation gate (ultm8-tenant-isolation §5): required to merge, from
+  # day one — not bolted on once more modules exist. Runs the RLS integration suite
+  # against a real Postgres service container.
+  cross-tenant-isolation:
+    name: Cross-tenant isolation gate (required)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ultm8
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Superuser connection — used for migrations and RLS-bypassing fixture setup.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ultm8?schema=public
+      # Set only after the migration creates the ultm8_app role (step below).
+      DATABASE_URL_APP: postgresql://ultm8_app:changeme@localhost:5432/ultm8?schema=public
+      JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Apply migration (creates schema, RLS policies, ultm8_app/ultm8_auth roles)
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: Run cross-tenant isolation test suite
+        working-directory: apps/api
+        run: npx jest --config ./test/jest-e2e.json --runInBand
+
+  # Everything else that doesn't need a live database (build, unit tests).
+  build-and-unit-test:
+    name: Build & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Build
+        run: npx turbo run build
+
+      - name: Unit tests
+        run: npx turbo run test

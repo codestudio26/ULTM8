@@ -1,0 +1,10 @@
+{
+  "name": "@ultm8/student",
+  "version": "0.1.0",
+  "private": true,
+  "description": "React Native — Student app. Placeholder for Phase 1. Not implemented yet — real RN init (Metro/Xcode/Android toolchains) is out of scope for this pass.",
+  "scripts": {
+    "build": "echo \"@ultm8/student: placeholder — not implemented yet\"",
+    "dev": "echo \"@ultm8/student: placeholder — not implemented yet\""
+  }
+}
