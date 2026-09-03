@@ -163,6 +163,51 @@ CREATE INDEX "RoleGrant_branchId_revokedAt_idx" ON "RoleGrant"("branchId", "revo
 CREATE INDEX "RoleGrant_userId_idx" ON "RoleGrant"("userId");
 
 -- ============================================================================
+-- Application roles
+--
+-- Created BEFORE any RLS policy below, deliberately — the user_auth_lookup policy
+-- further down grants privileges TO ultm8_auth specifically, and Postgres runs a
+-- migration's statements sequentially, so that role must already exist by the time
+-- that CREATE POLICY statement runs. (This is the fix for CI run failure P3018 /
+-- "role ultm8_auth does not exist" — the roles used to be created in a block at the
+-- end of this file, after the policy that references one of them.)
+--
+-- ultm8_app is the role apps/api actually connects as for tenant-scoped queries
+-- (DATABASE_URL_APP in .env.example). It deliberately does NOT own these tables and is
+-- NOT a superuser — both would silently bypass RLS regardless of FORCE, defeating the
+-- point. Migrations themselves still run as the table-owning/superuser connection
+-- (DATABASE_URL), which is standard and does not go through this role.
+-- ============================================================================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ultm8_app') THEN
+    CREATE ROLE ultm8_app LOGIN PASSWORD 'changeme';
+  END IF;
+END
+$$;
+
+GRANT USAGE ON SCHEMA public TO ultm8_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "User", "AdminUser", "Franchise", "School", "Branch", "RoleGrant" TO ultm8_app;
+-- AdminUser has no RLS policy (not tenant data, §4.4) — access to it is gated entirely
+-- at the application layer via the separate Platform Admin identity realm, which
+-- doesn't exist yet in this phase (PlatformAdminModule is out of scope).
+
+-- ultm8_auth: minimal, SELECT-only role for the pre-authentication credential-lookup
+-- path (see the user_auth_lookup policy below). Deliberately cannot INSERT/UPDATE/
+-- DELETE anything, and has no grant on any table but User.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ultm8_auth') THEN
+    CREATE ROLE ultm8_auth LOGIN PASSWORD 'changeme';
+  END IF;
+END
+$$;
+
+GRANT USAGE ON SCHEMA public TO ultm8_auth;
+GRANT SELECT ON "User" TO ultm8_auth;
+
+-- ============================================================================
 -- Row-Level Security
 --
 -- Convention: every tenant-scoped query runs inside a transaction that first sets
@@ -176,7 +221,7 @@ CREATE INDEX "RoleGrant_userId_idx" ON "RoleGrant"("userId");
 --
 -- FORCE ROW LEVEL SECURITY is required on every table below — without it, Postgres
 -- exempts the table owner from RLS entirely, which would silently defeat this the
--- moment the app's migration role is reused for queries. ultm8_app (created below) is
+-- moment the app's migration role is reused for queries. ultm8_app (created above) is
 -- deliberately NOT the table owner and NOT a superuser, so policies apply to it.
 -- ============================================================================
 
@@ -275,40 +320,3 @@ CREATE POLICY "branch_tenant_isolation" ON "Branch"
     )
   );
 
--- ============================================================================
--- Application role
---
--- ultm8_app is the role apps/api actually connects as for tenant-scoped queries
--- (DATABASE_URL_APP in .env.example). It deliberately does NOT own these tables and is
--- NOT a superuser — both would silently bypass RLS regardless of FORCE, defeating the
--- point. Migrations themselves still run as the table-owning/superuser connection
--- (DATABASE_URL), which is standard and does not go through this role.
--- ============================================================================
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ultm8_app') THEN
-    CREATE ROLE ultm8_app LOGIN PASSWORD 'changeme';
-  END IF;
-END
-$$;
-
-GRANT USAGE ON SCHEMA public TO ultm8_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON "User", "AdminUser", "Franchise", "School", "Branch", "RoleGrant" TO ultm8_app;
--- AdminUser has no RLS policy (not tenant data, §4.4) — access to it is gated entirely
--- at the application layer via the separate Platform Admin identity realm, which
--- doesn't exist yet in this phase (PlatformAdminModule is out of scope).
-
--- ultm8_auth: minimal, SELECT-only role for the pre-authentication credential-lookup
--- path (see the user_auth_lookup policy above). Deliberately cannot INSERT/UPDATE/
--- DELETE anything, and has no grant on any table but User.
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ultm8_auth') THEN
-    CREATE ROLE ultm8_auth LOGIN PASSWORD 'changeme';
-  END IF;
-END
-$$;
-
-GRANT USAGE ON SCHEMA public TO ultm8_auth;
-GRANT SELECT ON "User" TO ultm8_auth;
