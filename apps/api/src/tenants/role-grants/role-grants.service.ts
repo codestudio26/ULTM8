@@ -31,28 +31,37 @@ export class RoleGrantsService {
   async create(callerId: string, targetUserId: string, dto: CreateRoleGrantDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, dto.schoolId);
 
+    // The verification gate from "we verify the accounts" (Decision 80) applies to the
+    // GRANTOR, not the grantee — corrected by Decision 81 after the product owner was
+    // asked directly, which ruled out the target-side check this originally had.
+    // Checked fresh against the DB (not the JWT, which carries no phoneVerifiedAt
+    // claim) via the caller's own ordinary RLS-scoped context — this is a self-lookup
+    // (user_self_or_shared_school's "id = current_setting(...)" clause), so it doesn't
+    // need PrismaAuthService's pre-tenant-context bypass the way the target-existence
+    // check below does.
+    const caller = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.user.findUnique({ where: { id: callerId }, select: { phoneVerifiedAt: true } }),
+    );
+    if (!caller?.phoneVerifiedAt) {
+      throw new ForbiddenException(
+        'Your account must complete phone verification (POST /auth/otp/verify) before you can grant roles.',
+      );
+    }
+
     if (dto.role === 'BRANCH_STAFF' && !dto.branchId) {
       throw new BadRequestException('branchId is required when role is BRANCH_STAFF');
     }
 
-    // Target user must exist and already be a verified account before a role can be
-    // granted to them — interpretation of "we verify the accounts" from the Phase 2
-    // scoping discussion; flagged in the Phase 2 summary as an interpretation, not a
-    // spec-confirmed rule, since no confirmed material states this precondition
-    // explicitly. Uses PrismaAuthService (see its updated header comment) because no
-    // shared RoleGrant exists yet to make the target visible via the ordinary
+    // Target user must exist — no verification precondition on the target as of
+    // Decision 81 (see above). Uses PrismaAuthService (see its header comment) because
+    // no shared RoleGrant exists yet to make the target visible via the ordinary
     // RLS-scoped path.
     const targetUser = await this.prismaAuth.user.findUnique({
       where: { id: targetUserId },
-      select: { id: true, phoneVerifiedAt: true },
+      select: { id: true },
     });
     if (!targetUser) {
       throw new NotFoundException('User not found');
-    }
-    if (!targetUser.phoneVerifiedAt) {
-      throw new BadRequestException(
-        'This user has not yet verified their account — they must complete registration (POST /auth/otp/verify) before a role can be granted.',
-      );
     }
 
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
