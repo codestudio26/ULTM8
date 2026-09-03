@@ -11,6 +11,16 @@ interface AuthContextValue {
    * credential, not a step-up factor alongside OTP. */
   login: (email: string, passcode: string) => Promise<void>;
   logout: () => void;
+  /**
+   * Swaps in an already-obtained token without hitting /auth/login — for the one
+   * narrow, approved case (ultm8-nestjs-module §7): SchoolsService.create() re-mints
+   * the caller's own token after granting them SCHOOL_OWNER_MANAGER and returns it in
+   * the School response, so CreateSchoolPage can apply it directly instead of forcing
+   * a log-out/back-in. Not a general-purpose token setter for anything else — the
+   * invite-grant case and every other "caller's grants might be stale" spot stays
+   * inside the accepted staleness window on purpose (same section).
+   */
+  setAccessToken: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -25,18 +35,28 @@ function readClaims(): { accessToken: string | null; claims: JwtClaims | null } 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [{ accessToken, claims }, setState] = useState(readClaims);
 
-  const login = useCallback(async (email: string, passcode: string) => {
-    const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
-    sessionStorageTokenStore.set(result.accessToken);
+  const applyToken = useCallback((token: string) => {
+    sessionStorageTokenStore.set(token);
     setState(readClaims());
   }, []);
+
+  const login = useCallback(
+    async (email: string, passcode: string) => {
+      const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
+      applyToken(result.accessToken);
+    },
+    [applyToken],
+  );
 
   const logout = useCallback(() => {
     sessionStorageTokenStore.clear();
     setState({ accessToken: null, claims: null });
   }, []);
 
-  const value = useMemo(() => ({ accessToken, claims, login, logout }), [accessToken, claims, login, logout]);
+  const value = useMemo(
+    () => ({ accessToken, claims, login, logout, setAccessToken: applyToken }),
+    [accessToken, claims, login, logout, applyToken],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

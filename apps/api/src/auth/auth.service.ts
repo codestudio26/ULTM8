@@ -148,12 +148,41 @@ export class AuthService {
 
     this.loginAttempts.recordSuccess(dto.email);
 
-    const grants = await this.prismaApp.withTenantContext(user.id, (tx) =>
-      tx.roleGrant.findMany({
-        where: { userId: user.id, revokedAt: null },
+    const accessToken = await this.issueAccessToken(user.id);
+    return { accessToken };
+  }
+
+  /**
+   * Signs a fresh access token for `userId`, built from their full set of currently-
+   * active RoleGrants — the same claims shape and freshness rule login() itself uses
+   * (ultm8-domain-rules §3: "sessions/JWTs are built from the full set of currently-
+   * active grants... at login/refresh time"), factored out so both share one
+   * implementation rather than two copies of the signing logic drifting apart.
+   *
+   * Callable outside the login flow for exactly one narrow, approved case
+   * (ultm8-nestjs-module §7): SchoolsService.create() re-mints the caller's own token
+   * after granting them SCHOOL_OWNER_MANAGER, so their session reflects it immediately
+   * instead of needing to log out and back in. `userId` must always be the caller's own
+   * id in that context — this method itself does no authorization check of its own
+   * (there's nothing to check: it only ever signs a token for whatever active grants
+   * `userId` already, actually holds in the DB at call time, never a claim the caller
+   * asked for).
+   */
+  async issueAccessToken(userId: string): Promise<string> {
+    const { user, grants } = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId }, select: { email: true } });
+      if (!user) {
+        // Shouldn't happen — userId is always the already-authenticated caller's own
+        // id at every call site — but fail loudly rather than sign a token with no
+        // email if it ever somehow does.
+        throw new Error(`issueAccessToken: no User found for id ${userId}`);
+      }
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, revokedAt: null },
         select: { role: true, franchiseId: true, schoolId: true, branchId: true },
-      }),
-    );
+      });
+      return { user, grants };
+    });
 
     const claims: RoleGrantClaim[] = grants.map((g) => ({
       role: g.role,
@@ -162,10 +191,8 @@ export class AuthService {
       branchId: g.branchId,
     }));
 
-    const payload: JwtPayload = { sub: user.id, email: user.email, grants: claims };
-    const accessToken = this.jwt.sign(payload);
-
-    return { accessToken };
+    const payload: JwtPayload = { sub: userId, email: user.email, grants: claims };
+    return this.jwt.sign(payload);
   }
 
   /**

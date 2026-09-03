@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
+import { AuthService } from '../../auth/auth.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 
@@ -11,6 +12,7 @@ export class SchoolsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
+    private readonly authService: AuthService,
   ) {}
 
   /**
@@ -64,7 +66,17 @@ export class SchoolsService {
       return created;
     });
 
-    return school;
+    // Re-mint the caller's own access token now that their SCHOOL_OWNER_MANAGER grant
+    // is committed, so the frontend can swap it in immediately instead of forcing a
+    // log-out/back-in (ultm8-nestjs-module §7's narrow, approved exception — scoped
+    // deliberately to this one case; see AuthService.issueAccessToken()'s own header
+    // comment). Called AFTER the transaction above commits, not from inside it —
+    // issueAccessToken() opens its own transaction, and nesting one inside the still-
+    // open one above would try to read the RoleGrant row before it's actually
+    // committed, from a separate connection that can't see it yet.
+    const accessToken = await this.authService.issueAccessToken(callerId);
+
+    return { ...school, accessToken };
   }
 
   /** Schools visible to the caller — RLS already restricts this to Schools where the

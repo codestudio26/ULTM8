@@ -71,6 +71,18 @@ export class SchoolResponseDto {
 
   @ApiProperty()
   updatedAt!: string;
+
+  /**
+   * Present only on the response from POST /schools (self-service creation) — a
+   * freshly-minted token reflecting the caller's new SCHOOL_OWNER_MANAGER grant
+   * (ultm8-nestjs-module §7's narrow, approved exception to "JWTs only rebuild at
+   * login"). Absent everywhere else (GET/PATCH never re-mint anything). Optional, not
+   * required, specifically so this is a backward-compatible addition to the response
+   * shape rather than a breaking one — a client that doesn't know about this field
+   * still gets a valid School back.
+   */
+  @ApiPropertyOptional({ type: String })
+  accessToken?: string;
 }
 
 export class SchoolListResponseDto {

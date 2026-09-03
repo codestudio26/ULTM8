@@ -12,7 +12,18 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     prismaAuth = { user: { findFirst: jest.fn(), findUnique: jest.fn() } };
-    prismaApp = { withTenantContext: jest.fn((_id: string, fn: any) => fn({ user: { create: jest.fn(), update: jest.fn() }, roleGrant: { findMany: jest.fn().mockResolvedValue([]) } })) };
+    prismaApp = {
+      withTenantContext: jest.fn((_id: string, fn: any) =>
+        fn({
+          // findUnique backs AuthService.issueAccessToken()'s own email lookup
+          // (factored out of login(), also used by SchoolsService.create()'s
+          // token-remint) — mocked to resolve the same email login()'s own
+          // prismaAuth mock already uses below, so the two stay consistent.
+          user: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ email: 'a@example.test' }) },
+          roleGrant: { findMany: jest.fn().mockResolvedValue([]) },
+        }),
+      ),
+    };
     twilio = { sendOtp: jest.fn(), checkOtp: jest.fn() };
     jwt = { sign: jest.fn().mockReturnValue('signed.jwt.token') };
     loginAttempts = { isLocked: jest.fn().mockReturnValue(false), recordFailure: jest.fn(), recordSuccess: jest.fn() };

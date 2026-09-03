@@ -299,6 +299,7 @@ export interface components {
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
             updatedAt: string;
+            accessToken?: string;
         };
         SchoolListResponseDto: {
             items: components["schemas"]["SchoolResponseDto"][];

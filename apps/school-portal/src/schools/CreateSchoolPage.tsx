@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthCard, Button, Checkbox, ErrorBanner, Field, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
@@ -16,7 +17,8 @@ import { useCreateSchool } from './schoolQueries';
  * (see that file's own header comment on why).
  */
 export function CreateSchoolPage() {
-  const { logout } = useAuth();
+  const { logout, setAccessToken } = useAuth();
+  const navigate = useNavigate();
   const createSchool = useCreateSchool();
 
   const [form, setForm] = useState({
@@ -44,7 +46,7 @@ export function CreateSchoolPage() {
     e.preventDefault();
     setError(null);
     try {
-      await createSchool.mutateAsync({
+      const result = await createSchool.mutateAsync({
         name: form.name,
         mobileNumber: form.mobileNumber || undefined,
         address: form.address || undefined,
@@ -58,7 +60,18 @@ export function CreateSchoolPage() {
         classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
       });
-      setCreated(true);
+      // SchoolsService.create() re-mints the caller's own token and returns it
+      // (ultm8-nestjs-module §7's narrow, approved exception) — swap it in directly so
+      // the new SCHOOL_OWNER_MANAGER grant is reflected immediately, no log-out/back-in
+      // needed. Defensive fallback if the field is ever absent: don't assume it's
+      // always there just because it should be — fall back to the old workaround
+      // rather than erroring or silently stranding the user on this screen.
+      if (result.accessToken) {
+        setAccessToken(result.accessToken);
+        navigate('/school', { replace: true });
+      } else {
+        setCreated(true);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
     }
