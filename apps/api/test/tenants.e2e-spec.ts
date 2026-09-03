@@ -265,6 +265,20 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     });
     expect(grant).not.toBeNull();
 
+    // SchoolsService.create() re-mints the caller's own access token and returns it
+    // (ultm8-nestjs-module §7's narrow, approved exception — commit 6a5eb98) so the
+    // frontend can swap it in immediately instead of forcing a log-out/back-in. Assert
+    // it's actually present, and — the real proof the fix works, not just that a
+    // string came back — decode it (jwt.decode(), no signature check needed here,
+    // same JwtService instance already used to sign fixtures above) and confirm its
+    // claims actually carry the new SCHOOL_OWNER_MANAGER grant for this School.
+    expect(createRes.body.accessToken).toEqual(expect.any(String));
+    const decoded = jwt.decode(createRes.body.accessToken) as { sub: string; grants: Array<Record<string, unknown>> };
+    expect(decoded.sub).toBe(ownerA.id);
+    expect(decoded.grants).toContainEqual(
+      expect.objectContaining({ role: 'SCHOOL_OWNER_MANAGER', schoolId: createRes.body.id }),
+    );
+
     await superuser.roleGrant.deleteMany({ where: { schoolId: createRes.body.id } });
     await superuser.school.delete({ where: { id: createRes.body.id } });
   });
