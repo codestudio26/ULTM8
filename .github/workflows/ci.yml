@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   # Cross-tenant isolation gate (ultm8-tenant-isolation §5): required to merge, from
