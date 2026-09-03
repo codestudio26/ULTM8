@@ -2,9 +2,28 @@
   "name": "@ultm8/school-portal",
   "version": "0.1.0",
   "private": true,
-  "description": "React — School Portal. Placeholder for Phase 1 (monorepo scaffold only, per ultm8-nestjs-module §6). Not implemented yet.",
+  "description": "React — School Portal (Spec §4.2). Tenant-facing web app: School/Branch management, auth, and staff invitations built in Phase 3. Classes, memberships, instructors, timetable, transactions are not built yet — those endpoints don't exist in apps/api.",
+  "type": "module",
   "scripts": {
-    "build": "echo \"@ultm8/school-portal: placeholder — not implemented yet\"",
-    "dev": "echo \"@ultm8/school-portal: placeholder — not implemented yet\""
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "@ultm8/api-client": "*",
+    "@ultm8/auth": "*",
+    "@ultm8/ui": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^5.2.0",
+    "typescript": "^5.6.3",
+    "vite": "^8.2.2"
   }
 }

@@ -1,0 +1,13 @@
+# packages/ui
+
+Shared design-system components for `apps/school-portal` and (once built) `apps/platform-admin` (Spec §4.2).
+
+## Engineering choices made here (Phase 3), and why
+
+These are implementation calls in the same category as Phase 1's Turborepo-vs-Nx decision — not business logic, not a design decision requiring product sign-off, but worth recording so they aren't silently re-litigated or assumed to be arbitrary later.
+
+- **No external UI/component framework** (no MUI, Chakra, Bootstrap, Ant Design, etc.). `DESIGN.md` is explicit that ULTM8 must "develop its own visual identity rather than reproducing" any borrowed look, and every mainstream component library carries a strong, immediately-recognizable visual signature of its own — adopting one would work directly against that requirement, not just be a style preference. Components here are hand-built with plain CSS.
+- **Plain CSS with custom properties (design tokens), not CSS-in-JS or Tailwind.** Keeps the dependency surface minimal, keeps styles inspectable/overridable without a build-time abstraction layer, and keeps the token system (`tokens.css`) as the single, explicit source of the visual language — colour, spacing, radius, shadow, and type scale all live in one file.
+- **The actual token values (colours, spacing scale, etc.) are placeholder, not final.** `DESIGN.md` itself says "actual values for these items are not defined in this initial document" and that they'll be "refined from the approved Figma/design materials before or during implementation." What's in `tokens.css` is a reasonable, minimal, Apple/Tesla-inspired-but-original starting point (near-monochrome base, one accent colour, generous whitespace, system font stack) chosen so Phase 3's screens are usable and coherent — not a claim that this is the final ULTM8 visual identity. Swap the token values, not the component structure, once real design work lands.
+- **Components are deliberately minimal and scoped to what Phase 3's screens actually need**: `Button`, `TextField`, `Select`, `Checkbox`, `Card`, `PageHeader`, `Table`, `Badge`, `Spinner`, `EmptyState`, `ErrorBanner`, `AppShell`, `Modal`. No component exists here that isn't used by a real Phase 3 screen — don't add speculative components ahead of a screen that needs them.
+- **Accessibility baseline**: every interactive component uses semantic HTML (`<button>`, `<label>`, real form elements), visible focus states (via `tokens.css`'s `--focus-ring`, never `outline: none` without a replacement), and associates labels/errors with their inputs via `aria-describedby`/`aria-invalid` — per `DESIGN.md`'s accessibility expectations. This is a baseline, not a full accessibility audit.

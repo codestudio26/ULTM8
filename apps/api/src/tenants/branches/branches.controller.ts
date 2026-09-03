@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
@@ -7,6 +7,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { BranchesService } from './branches.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
+import { BranchListResponseDto, BranchResponseDto } from './dto/branch-response.dto';
 
 @ApiTags('branches')
 @ApiBearerAuth()
@@ -15,6 +16,7 @@ import { UpdateBranchDto } from './dto/update-branch.dto';
 export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
 
+  @ApiCreatedResponse({ type: BranchResponseDto })
   @Post('schools/:schoolId/branches')
   create(
     @CurrentUser() user: JwtPayload,
@@ -24,6 +26,7 @@ export class BranchesController {
     return this.branchesService.create(user.sub, schoolId, dto);
   }
 
+  @ApiOkResponse({ type: BranchListResponseDto })
   @Get('schools/:schoolId/branches')
   findAll(
     @CurrentUser() user: JwtPayload,
@@ -33,11 +36,13 @@ export class BranchesController {
     return this.branchesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
   }
 
+  @ApiOkResponse({ type: BranchResponseDto })
   @Get('branches/:id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.branchesService.findOne(user.sub, id);
   }
 
+  @ApiOkResponse({ type: BranchResponseDto })
   @Patch('branches/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateBranchDto) {
     return this.branchesService.update(user.sub, id, dto);
