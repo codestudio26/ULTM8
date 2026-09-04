@@ -22,6 +22,22 @@ import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 
 const BCRYPT_ROUNDS = 12;
 
+/**
+ * A real bcrypt hash (not an eyeballed string) of a value nobody will ever type as a
+ * passcode — compared against on every login attempt for an email that doesn't exist,
+ * so a nonexistent-user rejection takes roughly the same time as a wrong-passcode
+ * rejection for a real user, rather than short-circuiting instantly and leaking which
+ * emails are registered via timing. Generated once via
+ * `bcrypt.hashSync('a value that will never be typed as a real passcode', 12)` and
+ * hardcoded here — a hand-typed placeholder previously used here
+ * (`$2a$12$invalidinvalidinvalidinvalidinvalidinva`) was the wrong length for a real
+ * bcrypt hash (39 chars after the cost prefix instead of the required 22-char salt +
+ * 31-char hash = 53), which risked bcryptjs's malformed-input handling itself taking a
+ * different amount of time than a well-formed comparison — this hash is real output
+ * from the library, guaranteed correct shape.
+ */
+const DECOY_PASSCODE_HASH = '$2a$12$KC.JM0GG3LUNutCFB3SKbu1poEdSC6djHNvDgq3kxcU7vw5f8Z3fq';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -120,22 +136,41 @@ export class AuthService {
   /**
    * Login is email + passcode only (Decision 72). JWT claims are built from the full
    * set of currently-active RoleGrants at login time (ultm8-domain-rules §3).
+   *
+   * The DB lookup runs BEFORE the lockout check (not after, as this originally read) —
+   * deliberately, to narrow a timing side-channel: a locked account used to be
+   * rejected instantly (no DB round-trip, no bcrypt), while every other outcome (wrong
+   * email, wrong passcode, unlocked account) always paid the DB round-trip, making
+   * "instant rejection" itself an observable signal that the account exists and is
+   * locked. Making a locked account also pay the DB round-trip narrows that gap at
+   * near-zero cost. Deliberately NOT running bcrypt for a locked account too, even
+   * though that would narrow the gap further — that's real CPU spent on an outcome
+   * that's already determined regardless of passcode correctness, not an oversight.
+   * This is a calibrated narrowing, not a claim that the timing channel is fully
+   * closed — the lockout system itself is already flagged elsewhere (Spec §11.5,
+   * LoginAttemptTracker's own header comment) as a stopgap needing a real
+   * Architect-level redesign; full constant-time behavior belongs in that redesign,
+   * not bolted on here piecemeal.
+   *
+   * The lock check still runs, and still rejects, BEFORE the compare-and-record step
+   * below — recordFailure() never fires for an already-locked account, same as before
+   * this reorder; only the DB-lookup timing changed, not this control flow.
    */
   async login(dto: LoginDto) {
+    const user = await this.prismaAuth.user.findUnique({
+      where: { email: dto.email },
+      select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true },
+    });
+
     if (this.loginAttempts.isLocked(dto.email)) {
       throw new ForbiddenException(
         'Too many failed attempts — account temporarily locked. Try again later.',
       );
     }
 
-    const user = await this.prismaAuth.user.findUnique({
-      where: { email: dto.email },
-      select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true },
-    });
-
     const passcodeMatches = user
       ? await bcrypt.compare(dto.passcode, user.passcodeHash)
-      : await bcrypt.compare(dto.passcode, '$2a$12$invalidinvalidinvalidinvalidinvalidinva'); // constant-time-ish decoy
+      : await bcrypt.compare(dto.passcode, DECOY_PASSCODE_HASH);
 
     if (!user || !passcodeMatches) {
       this.loginAttempts.recordFailure(dto.email);
@@ -218,7 +253,7 @@ export class AuthService {
 
     const user = await this.prismaAuth.user.findUnique({
       where: { phone: dto.phone },
-      select: { id: true },
+      select: { id: true, email: true },
     });
     if (!user) {
       throw new BadRequestException('No account found for this phone number');
@@ -228,7 +263,11 @@ export class AuthService {
     await this.prismaApp.withTenantContext(user.id, (tx) =>
       tx.user.update({ where: { id: user.id }, data: { passcodeHash } }),
     );
-    this.loginAttempts.recordSuccess(dto.phone);
+    // LoginAttemptTracker is keyed by email everywhere else (isLocked/recordFailure in
+    // login() both use email) — this previously called recordSuccess(dto.phone),
+    // which was a silent no-op against a different key and never actually cleared the
+    // lockout a successful passcode reset is clearly meant to clear.
+    this.loginAttempts.recordSuccess(user.email);
 
     return { message: 'Passcode updated — you can now log in with your new passcode.' };
   }

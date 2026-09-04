@@ -60,9 +60,20 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('rejects when locked out', async () => {
+    it('rejects when locked out — after paying the DB lookup, but before recordFailure', async () => {
       loginAttempts.isLocked.mockReturnValue(true);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: 'x', phoneVerifiedAt: new Date() });
       await expect(service.login({ email: 'a@example.test', passcode: '123456' })).rejects.toThrow(ForbiddenException);
+      // The DB lookup now runs before the lock check (timing-gap fix) — confirm it
+      // actually happened, not skipped.
+      expect(prismaAuth.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'a@example.test' },
+        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true },
+      });
+      // The lock check must still reject before ever reaching the compare-and-record
+      // step — recordFailure() must not fire for an already-locked account, same as
+      // before the reorder.
+      expect(loginAttempts.recordFailure).not.toHaveBeenCalled();
     });
 
     it('rejects an unknown email without revealing that it is unknown', async () => {
@@ -93,6 +104,20 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('signed.jwt.token');
       expect(loginAttempts.recordSuccess).toHaveBeenCalledWith('a@example.test');
       expect(jwt.sign).toHaveBeenCalledWith(expect.objectContaining({ sub: 'u1', email: 'a@example.test', grants: [] }));
+    });
+  });
+
+  describe('confirmPasscodeReset', () => {
+    it('clears the lockout by the user\'s email, not the request\'s phone (LoginAttemptTracker is keyed by email everywhere else)', async () => {
+      twilio.checkOtp.mockResolvedValue(true);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test' });
+      await service.confirmPasscodeReset({
+        phone: '+15551234567',
+        code: '123456',
+        newPasscode: '654321',
+      } as any);
+      expect(loginAttempts.recordSuccess).toHaveBeenCalledWith('a@example.test');
+      expect(loginAttempts.recordSuccess).not.toHaveBeenCalledWith('+15551234567');
     });
   });
 });
