@@ -21,10 +21,17 @@ import { TenantAuthorizationService } from './tenant-authorization.service';
  * self-service School creation (ultm8-nestjs-module §7's narrow, approved exception).
  * One-directional: nothing under apps/api/src/auth imports from tenants, confirmed
  * before adding this — no circular import.
+ *
+ * Exports SchoolsService and TenantAuthorizationService (added in Phase 4) so
+ * ClassesModule — a separate module, not folded into this one — can reuse both rather
+ * than duplicating the School-existence check and the School-Owner-Manager write gate.
+ * Nothing inside TenantsModule's own controllers/services needed this before, which is
+ * why no `exports` array existed prior to Phase 4.
  */
 @Module({
   imports: [AuthModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController],
   providers: [SchoolsService, BranchesService, RoleGrantsService, TenantAuthorizationService],
+  exports: [SchoolsService, TenantAuthorizationService],
 })
 export class TenantsModule {}
