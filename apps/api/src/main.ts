@@ -8,6 +8,33 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // CORS — apps/school-portal (and any other browser client) calls this API
+  // cross-origin, and without this, a real browser blocks every request starting
+  // with the first login attempt (confirmed missing in a full-codebase review;
+  // nothing in tsc/build/the existing supertest-based e2e suite can catch this,
+  // since none of them make an actual cross-origin request through a real
+  // browser). Origin allowlist comes from CORS_ALLOWED_ORIGINS (comma-separated),
+  // defaulting to the school-portal dev server if unset — same "sensible default
+  // if unset" pattern as PORT below. Deliberately fails safe: if this env var is
+  // ever forgotten in a real deployment, production is loudly, obviously broken
+  // (every request blocked) rather than silently permissive.
+  //
+  // credentials is deliberately NOT enabled — this API is Bearer-token auth via
+  // the Authorization header (packages/api-client's authMiddleware attaches it
+  // manually), not cookies; openapi-fetch's underlying fetch() defaults to
+  // credentials: 'same-origin', so no credential is sent cross-origin regardless.
+  // Credentialed CORS is a Tier 2 concern tied to the deferred httpOnly-cookie
+  // refresh-token design (ultm8-nestjs-module §7) — revisit together, not now (a
+  // permissive origin list can't legally combine with credentials per spec).
+  //
+  // methods/headers are left on the `cors` package's defaults (it reflects
+  // whatever the browser's preflight actually requests) rather than a
+  // hand-maintained list that can drift as endpoints get added.
+  const corsAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS
+    ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+    : ['http://localhost:5173'];
+  app.enableCors({ origin: corsAllowedOrigins });
+
   // /v1 URI prefix from the first deploy (Decision 22, ultm8-nestjs-module §2).
   app.setGlobalPrefix('v1');
 
