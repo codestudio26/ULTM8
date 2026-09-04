@@ -277,4 +277,54 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(201);
     classIds.push(res.body.id);
   });
+
+  // ---------------------------------------------------------------------------
+  // Regression coverage for the two bugs code-review's high-effort pass caught on
+  // this PR before merge (see the "Fix code-review findings" commit).
+  // ---------------------------------------------------------------------------
+
+  it('PATCHing branchId alone re-validates the Class\'s existing instructor against the new Branch', async () => {
+    // Valid at creation: instructorBranchA2 is scoped to branchA2, and the Class starts
+    // out scoped to branchA2 too.
+    const created = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Branch-only patch target', branchId: branchA2.id, instructorId: instructorBranchA2.id }));
+    expect(created.status).toBe(201);
+    classIds.push(created.body.id);
+
+    // A branch-only PATCH (no instructorId in the body) must still re-check the
+    // now-stale instructor against the new Branch, not silently carry it forward.
+    const patched = await request(app.getHttpServer())
+      .patch(`/v1/classes/${created.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ branchId: branchA1.id });
+    expect(patched.status).toBe(400);
+
+    const unchanged = await superuser.class.findUniqueOrThrow({ where: { id: created.body.id } });
+    expect(unchanged.branchId).toBe(branchA2.id); // update was rejected, not partially applied
+  });
+
+  it('rejects creating or updating a Class with endDate before startDate', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Backwards dates', startDate: '2026-10-01T11:00:00.000Z', endDate: '2026-10-01T10:00:00.000Z' }));
+    expect(createRes.status).toBe(400);
+
+    const validClass = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Valid then broken by patch' }));
+    expect(validClass.status).toBe(201);
+    classIds.push(validClass.body.id);
+
+    // Patching endDate alone to before the existing startDate must be caught too, not
+    // just the create-time case.
+    const patchRes = await request(app.getHttpServer())
+      .patch(`/v1/classes/${validClass.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ endDate: '2026-09-01T00:00:00.000Z' }); // before classBody()'s default startDate
+    expect(patchRes.status).toBe(400);
+  });
 });

@@ -31,6 +31,10 @@ export class ClassesService {
       await this.assertValidInstructor(callerId, dto.instructorId, schoolId, dto.branchId ?? null);
     }
 
+    const startDate = new Date(dto.startDate);
+    const endDate = new Date(dto.endDate);
+    this.assertValidDateRange(startDate, endDate);
+
     const classId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.class.create({
@@ -43,8 +47,8 @@ export class ClassesService {
           activities: dto.activities,
           bannerUrl: dto.bannerUrl,
           description: dto.description,
-          startDate: new Date(dto.startDate),
-          endDate: new Date(dto.endDate),
+          startDate,
+          endDate,
           capacity: dto.capacity,
           bookingEndAt: dto.bookingEndAt ? new Date(dto.bookingEndAt) : undefined,
           qrAttendanceEndAt: dto.qrAttendanceEndAt ? new Date(dto.qrAttendanceEndAt) : undefined,
@@ -91,12 +95,27 @@ export class ClassesService {
     const existing = await this.findOne(callerId, classId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
 
-    const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId ?? undefined;
+    // Resolved "as of after this patch" values — string|null throughout, no
+    // undefined round-trip needed since existing.branchId is already string|null.
+    const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId;
+    const nextInstructorId = dto.instructorId !== undefined ? dto.instructorId : existing.instructorId;
+
     if (dto.branchId) {
       await this.assertBranchBelongsToSchool(callerId, dto.branchId, existing.schoolId);
     }
-    if (dto.instructorId) {
-      await this.assertValidInstructor(callerId, dto.instructorId, existing.schoolId, nextBranchId ?? null);
+    // Revalidated whenever the Class will still have an instructor after this patch —
+    // not only when instructorId itself is part of the PATCH body. A branch-only PATCH
+    // (instructorId omitted, so the existing one carries forward) can move the Class to
+    // a Branch its existing instructor isn't authorized to teach at; without this, that
+    // went unchecked (caught by /code-review's high-effort pass — see PR history).
+    if (nextInstructorId) {
+      await this.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
+    }
+
+    const nextStartDate = dto.startDate ? new Date(dto.startDate) : existing.startDate;
+    const nextEndDate = dto.endDate ? new Date(dto.endDate) : existing.endDate;
+    if (dto.startDate || dto.endDate) {
+      this.assertValidDateRange(nextStartDate, nextEndDate);
     }
 
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -109,8 +128,8 @@ export class ClassesService {
           activities: dto.activities,
           bannerUrl: dto.bannerUrl,
           description: dto.description,
-          startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-          endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+          startDate: dto.startDate ? nextStartDate : undefined,
+          endDate: dto.endDate ? nextEndDate : undefined,
           capacity: dto.capacity,
           bookingEndAt: dto.bookingEndAt ? new Date(dto.bookingEndAt) : undefined,
           qrAttendanceEndAt: dto.qrAttendanceEndAt ? new Date(dto.qrAttendanceEndAt) : undefined,
@@ -125,6 +144,12 @@ export class ClassesService {
 
   // No delete method — general tenant offboarding is [UNRESOLVED]
   // (ultm8-domain-rules §2, ultm8-app-publishing §4), same reasoning as School/Branch.
+
+  private assertValidDateRange(startDate: Date, endDate: Date) {
+    if (endDate <= startDate) {
+      throw new BadRequestException('endDate must be after startDate');
+    }
+  }
 
   private async assertBranchBelongsToSchool(callerId: string, branchId: string, schoolId: string) {
     const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
