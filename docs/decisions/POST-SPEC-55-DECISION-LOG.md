@@ -297,3 +297,60 @@ The product owner was asked directly whether "we verify the accounts" (Decision 
 ### Recorded by
 
 Logged during ULTM8 Phase 2 scoping, 3 Sep 2026, in direct response to a follow-up question the Architect raised after reviewing Decision 80.
+
+---
+
+## Decision 82 — Class.branchId stays nullable (School-wide by default)
+
+**Date:** 4 Sep 2026
+**Status:** Approved by product owner — confirms a Developer-level inference flagged for Architect review during Phase 4
+
+### Decision
+
+`Class.branchId` is nullable. A Class may be scoped to one specific Branch, or left School-wide (no Branch) — School-wide is the common case for a School with no Branch structure, and forcing every Class to pick a Branch would break that simple case for no benefit. This mirrors the already-established shape of a School-scoped `RoleGrant` (branchId null = "sees/applies everywhere at this School").
+
+### Effect
+
+No code change — this confirms `apps/api/prisma/schema.prisma`'s `Class.branchId` field and the `class_tenant_isolation` RLS policy's three-way branch match as built in Phase 4, rather than requiring a migration to make it non-nullable.
+
+### Recorded by
+
+Logged during ULTM8 Phase 4 (ClassesModule) finalization, 4 Sep 2026, resolving a design choice flagged in `create-class.dto.ts`'s header comment for Architect review.
+
+---
+
+## Decision 83 — Class.activities must have at least one entry
+
+**Date:** 4 Sep 2026
+**Status:** Approved by product owner — confirms a Developer-level inference flagged for Architect review during Phase 4
+
+### Decision
+
+A Class must list at least one activity/discipline; an empty `activities` array is rejected at the DTO layer. A Class with no listed activity has no practical meaning — it can't be discovered by activity filtering, and it can't count toward a Student's rank progress, since that matching is driven entirely by a discipline's `eligibleClassTypes` (domain-rules §5/§9).
+
+### Effect
+
+No code change — confirms `CreateClassDto`'s existing `@ArrayMinSize(1)` on `activities`, rather than relaxing it to allow an empty array.
+
+### Recorded by
+
+Logged during ULTM8 Phase 4 (ClassesModule) finalization, 4 Sep 2026, resolving a design choice flagged in `create-class.dto.ts`'s header comment for Architect review.
+
+---
+
+## Decision 84 — Class.cancellationCharge stored as a minor-unit integer, not Decimal
+
+**Date:** 4 Sep 2026
+**Status:** Approved by product owner — confirms a Developer-level inference flagged for Architect review during Phase 4
+
+### Decision
+
+`Class.cancellationCharge` is modeled as an integer in the currency's minor unit (e.g. cents), not a `Decimal`/float. This is the standard way payment systems (Stripe included) store money specifically to avoid floating-point rounding errors, and it's consistent with domain-rules §7's existing rule that Class Pack refunds are "rounded once to the currency's minor unit."
+
+### Effect
+
+No code change — confirms the field as built in Phase 4's schema/migration/DTOs. Establishes the convention for any future money-typed field this codebase adds (e.g. `MembershipPlan.price` when MembershipsModule is built) — minor-unit integer, not Decimal, unless a specific reason argues otherwise.
+
+### Recorded by
+
+Logged during ULTM8 Phase 4 (ClassesModule) finalization, 4 Sep 2026, resolving a design choice flagged in `create-class.dto.ts`'s header comment for Architect review.

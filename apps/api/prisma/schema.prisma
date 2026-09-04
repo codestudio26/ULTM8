@@ -118,6 +118,7 @@ model User {
 
   roleGrants       RoleGrant[] @relation("RoleGrantUser")
   grantsIssued     RoleGrant[] @relation("RoleGrantGrantedBy")
+  classesTaught    Class[]     @relation("ClassInstructor")
 
   @@index([email])
   @@index([phone])
@@ -241,6 +242,7 @@ model School {
 
   branches   Branch[]
   roleGrants RoleGrant[]
+  classes    Class[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -249,7 +251,9 @@ model School {
 
 /// Branch (Decision 76 — field set mirrors School's profile fields; the RLS-enforced
 /// access-boundary role for TimetableSlot/Class/Instructor/Booking is asserted in
-/// ultm8-tenant-isolation §2, but none of those 4 entities exist in this schema pass yet).
+/// ultm8-tenant-isolation §2 — Class is the first of those 4 to actually exist in this
+/// schema, added in Phase 4; TimetableSlot/Instructor(-as-its-own-table)/Booking still
+/// don't).
 model Branch {
   id String @id @default(uuid())
 
@@ -268,7 +272,72 @@ model Branch {
   updatedAt DateTime @updatedAt
 
   roleGrants RoleGrant[]
+  classes    Class[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
+}
+
+/// Class (domain-rules §9, Spec §6.1) — Phase 4. A bookable Class row is either
+/// materialized from a recurring TimetableSlot (TimetableModule, deferred to Phase 5
+/// alongside the BullMQ/Redis infrastructure the materialization job needs) or, as
+/// built here, created directly as an independent, one-off event. Booking/waitlist are
+/// explicitly out of scope this phase (see the Phase 4 kickoff prompt) — Booking
+/// creation requires an Active Membership check (§10) and MembershipsModule/Stripe
+/// integration don't exist yet, so no Booking relation is modeled here either.
+///
+/// instructorId points at User directly, NOT a separate Instructor table — domain-rules
+/// §6.1 confirms RoleGrant (not a dedicated table) is the sole source of truth for who
+/// holds the Instructor role; "taught by an Instructor" means "instructorId references a
+/// User holding an active INSTRUCTOR RoleGrant at this Class's School", validated in
+/// ClassesService, not enforced by a DB constraint.
+///
+/// branchId is nullable — not itself part of §9's confirmed field list, but Branch's own
+/// role as "the RLS-enforced access boundary for ... Class" (Decision 76) requires SOME
+/// branch relationship; nullable mirrors RoleGrant.branchId's already-established
+/// "School-wide by default, narrowable to one Branch" shape. Inferred, not confirmed —
+/// flagged for Architect review.
+model Class {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  instructorId String?
+  instructor   User?   @relation("ClassInstructor", fields: [instructorId], references: [id])
+
+  title       String
+  // Cardinality (required, at least one) is an inferred design choice, not stated by
+  // §9 — flagged for Architect review same as branchId above.
+  activities  String[] @default([])
+  bannerUrl   String?
+  description String?
+
+  startDate DateTime
+  endDate   DateTime
+
+  capacity Int? // nullable = unlimited (confirmed)
+
+  bookingEndAt      DateTime?
+  qrAttendanceEndAt DateTime?
+  refundFeeDate     DateTime?
+
+  // Minor-unit integer (cents), not Decimal/float — no existing precedent in this schema
+  // for a money field; minor-unit integers are consistent with domain-rules §7's existing
+  // "rounded once to the currency's minor unit" rule and avoid float-rounding entirely.
+  // Flagged for Architect review, same as the other inferred choices on this model.
+  cancellationCharge Int?
+
+  termsWaiverRequired Boolean @default(false)
+  membershipInclusion Boolean @default(false) // default is opt-out (confirmed §6)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30).
+  @@index([schoolId])
+  @@index([schoolId, branchId])
 }
