@@ -354,3 +354,22 @@ No code change — confirms the field as built in Phase 4's schema/migration/DTO
 ### Recorded by
 
 Logged during ULTM8 Phase 4 (ClassesModule) finalization, 4 Sep 2026, resolving a design choice flagged in `create-class.dto.ts`'s header comment for Architect review.
+
+---
+
+## Decision 85 — `ultm8_jobs` dedicated Postgres role kept over a `SECURITY DEFINER` alternative
+
+**Date:** 7 Sep 2026
+**Status:** Approved — resolves an architectural trade-off flagged during Phase 5's code review
+
+### Decision
+
+`class-occurrence-generation` (and any future no-single-caller background job) continues to run through a dedicated `ultm8_jobs` LOGIN role with its own connection string and narrowly-scoped additive RLS policies, rather than being rewritten around this schema's existing `SECURITY DEFINER` pattern (`ultm8_rls_helper`). Both were genuine, defensible options; the deciding factors: the current design is already tested and proven correct through two full CI-verified rounds (real Postgres + Redis, timezone/idempotency regression tests), it keeps full Prisma type safety for the job's ~15-field `Class` inserts, and its actual credential scope is narrow in practice — no UPDATE/DELETE grants anywhere, read-only SELECT on two lookup tables, INSERT-only on `Class`.
+
+### Effect
+
+No code change — confirms the design as built in Phase 5's migration/`PrismaJobsService`. Establishes the convention for any future no-single-caller job: a dedicated, narrowly-scoped LOGIN role (same shape as `ultm8_auth`/`ultm8_jobs`), not `SECURITY DEFINER` functions — reserve that pattern for the narrow "does X exist" boolean checks it was originally built for.
+
+### Recorded by
+
+Logged during ULTM8 Phase 5 (TimetableModule) follow-up, 7 Sep 2026, resolving a trade-off flagged in the `20260908000000_timetable_module` migration's own header comment for Architect review.
