@@ -40,9 +40,12 @@ import {
  * instructorId is validated in TimetableSlotsService (not here) against RoleGrant
  * directly, via the same TenantAuthorizationService.assertValidInstructor Phase 4's
  * ClassesService uses — an Instructor here means a User holding an active INSTRUCTOR
- * RoleGrant at this School, not a separate Instructor table (domain-rules §6.1). Spec
- * 55 marks the TimetableSlot->Instructor relation itself as "inferred," not confirmed
- * the way the six core fields are — same caution Class's own instructorId got.
+ * RoleGrant at this School, not a separate Instructor table (domain-rules §3, "RoleGrant
+ * ... is the sole source of truth for which role(s) ... a User currently holds" — not
+ * "§6.1", which doesn't exist as a section of that skill file; corrected here after
+ * code review caught the wrong citation). Spec 55 marks the TimetableSlot->Instructor
+ * relation itself as "inferred," not confirmed the way the six core fields are — same
+ * caution Class's own instructorId got.
  *
  * startTime/endTime/breakStart/breakEnd are `HH:mm` strings at this layer (validated
  * against a 24-hour-clock pattern), converted to a `Date` for the `@db.Time(0)` column

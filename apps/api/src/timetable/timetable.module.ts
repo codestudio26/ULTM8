@@ -14,8 +14,13 @@ import { TimetableService } from './timetable.service';
  * branch/instructor validators moved here from ClassesService in this same phase) —
  * same import shape as ClassesModule.
  *
- * The class-occurrence-generation job itself (src/jobs/) imports this module for
- * TimetableService.findOneRaw() rather than duplicating slot-lookup logic.
+ * NOT imported by JobsModule/the class-occurrence-generation job — that job has no
+ * caller to scope TimetableService's RLS-backed queries to (it's a genuine
+ * cross-tenant sweep), so it queries PrismaJobsService (the ultm8_jobs role) directly
+ * instead. An earlier draft of this module claimed the job reused
+ * TimetableService.findOneRaw() to avoid duplicating slot-lookup logic; that was never
+ * actually wired up (code review caught it as dead code with a false comment) and has
+ * been removed rather than left to mislead the next reader.
  */
 @Module({
   imports: [TenantsModule],

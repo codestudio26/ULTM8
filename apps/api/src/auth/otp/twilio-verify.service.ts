@@ -18,6 +18,19 @@ import { OTP_DELIVERY_QUEUE } from '../../jobs/queue.constants';
  * called by `OtpDeliveryProcessor` (src/jobs/), not by callers of this service
  * directly. `checkOtp()` (verification) stays synchronous — only the send side has a
  * queue in Spec 55's confirmed design.
+ *
+ * `sendOtp()` still checks configuration synchronously before enqueueing (code review
+ * caught that the original version of this change lost that signal entirely — the
+ * caller previously got an immediate throw for "Twilio isn't configured at all," and
+ * after this queue was introduced would instead get a silent 200 response with the
+ * job failing invisibly in the background 3 retries later, with nothing anywhere
+ * listening for that failure). This restores the fail-fast behavior for the actually-
+ * common failure mode (misconfiguration, which will fail identically on every retry)
+ * while still queueing — and retrying — the rarer case a *configured* Twilio call
+ * itself fails transiently (a real outage worth retrying). `OtpDeliveryProcessor` also
+ * now logs loudly when a job exhausts its retries, so a transient-but-real delivery
+ * failure isn't completely invisible either, even though this codebase has no
+ * alerting/health-check infrastructure to do more than log it yet.
  */
 @Injectable()
 export class TwilioVerifyService {
@@ -47,6 +60,7 @@ export class TwilioVerifyService {
    * review same as everything else inferred in this phase, not independently
    * spec-confirmed). */
   async sendOtp(phone: string): Promise<void> {
+    this.assertConfigured();
     await this.otpDeliveryQueue.add(
       'send',
       { phone },

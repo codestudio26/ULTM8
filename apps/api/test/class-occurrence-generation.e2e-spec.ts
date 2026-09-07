@@ -38,6 +38,12 @@ describeIfDb('class-occurrence-generation job', () => {
   let branch: { id: string };
   let slot: { id: string; weekday: string };
 
+  // A branch EAST of UTC (positive offset) — code review caught that occurrenceDate
+  // was computed via a method that only ever manifested wrong for positive-offset
+  // zones; America/New_York (negative offset) above could never have caught it.
+  let branchTokyo: { id: string };
+  let slotZeroCutoff: { id: string };
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [ClassOccurrenceGenerationProcessor, PrismaJobsService],
@@ -63,12 +69,30 @@ describeIfDb('class-occurrence-generation job', () => {
         bookingCutoffMinutesBeforeStart: 60,
       },
     });
+
+    branchTokyo = await superuser.branch.create({
+      data: { id: randomUUID(), schoolId: school.id, name: 'Occurrence-Gen Fixture Branch Tokyo', timezone: 'Asia/Tokyo' },
+    });
+    slotZeroCutoff = await superuser.timetableSlot.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchTokyo.id,
+        weekday: 'MONDAY',
+        startTime: new Date(Date.UTC(1970, 0, 1, 20, 0)), // late enough local that midnight->this instant crosses a UTC day boundary
+        endTime: new Date(Date.UTC(1970, 0, 1, 21, 0)),
+        status: 'ON',
+        title: 'Fixture Zero-Cutoff Class',
+        activities: ['BJJ'],
+        bookingCutoffMinutesBeforeStart: 0, // "bookable right up to start" — must NOT be treated as unset
+      },
+    });
   });
 
   afterAll(async () => {
-    await superuser.class.deleteMany({ where: { timetableSlotId: slot.id } });
-    await superuser.timetableSlot.delete({ where: { id: slot.id } });
-    await superuser.branch.delete({ where: { id: branch.id } });
+    await superuser.class.deleteMany({ where: { timetableSlotId: { in: [slot.id, slotZeroCutoff.id] } } });
+    await superuser.timetableSlot.deleteMany({ where: { id: { in: [slot.id, slotZeroCutoff.id] } } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branch.id, branchTokyo.id] } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
   });
@@ -100,5 +124,31 @@ describeIfDb('class-occurrence-generation job', () => {
     await processor.process({ id: 'test-run-2', data: {} } as never);
     const generated = await superuser.class.findMany({ where: { timetableSlotId: slot.id } });
     expect(generated.length).toBe(4); // still 4, not 8
+  });
+
+  it('occurrenceDate matches startDate\'s local calendar day for a Branch east of UTC (regression: was off by one)', async () => {
+    await processor.process({ id: 'test-run-tokyo', data: {} } as never);
+    const generated = await superuser.class.findMany({ where: { timetableSlotId: slotZeroCutoff.id } });
+    expect(generated.length).toBe(4);
+    for (const cls of generated) {
+      const localStart = new Date(cls.startDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+      expect(cls.occurrenceDate).not.toBeNull();
+      expect(cls.occurrenceDate!.getUTCFullYear()).toBe(localStart.getFullYear());
+      expect(cls.occurrenceDate!.getUTCMonth()).toBe(localStart.getMonth());
+      expect(cls.occurrenceDate!.getUTCDate()).toBe(localStart.getDate());
+    }
+  });
+
+  it('bookingCutoffMinutesBeforeStart: 0 produces a real bookingEndAt, not null (regression: was treated as unset)', async () => {
+    await processor.process({ id: 'test-run-zero-cutoff', data: {} } as never); // idempotent — don't rely on test order
+    const generated = await superuser.class.findMany({
+      where: { timetableSlotId: slotZeroCutoff.id },
+      orderBy: { startDate: 'asc' },
+    });
+    expect(generated.length).toBeGreaterThan(0);
+    for (const cls of generated) {
+      expect(cls.bookingEndAt).not.toBeNull();
+      expect(cls.bookingEndAt!.getTime()).toBe(cls.startDate.getTime()); // 0 minutes before = exactly at start
+    }
   });
 });

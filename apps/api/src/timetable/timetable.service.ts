@@ -110,19 +110,6 @@ export class TimetableService {
     return this.toResponse(found);
   }
 
-  /** Raw (non-response-shaped) read, for internal callers like the
-   * class-occurrence-generation job that need the actual `Date` time-of-day values,
-   * not the `HH:mm` string the public response returns. */
-  async findOneRaw(callerId: string, slotId: string) {
-    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.timetableSlot.findUnique({ where: { id: slotId } }),
-    );
-    if (!found) {
-      throw new NotFoundException('TimetableSlot not found');
-    }
-    return found;
-  }
-
   /** School Owner/Manager only — resolved via the slot's own schoolId, not a route param. */
   async update(callerId: string, slotId: string, dto: UpdateTimetableSlotDto) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
