@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { ClassesModule } from './classes/classes.module';
 import { TimetableModule } from './timetable/timetable.module';
+import { InstructorsModule } from './instructors/instructors.module';
+import { UsersModule } from './users/users.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -20,6 +22,8 @@ import { JobsModule } from './jobs/jobs.module';
     TenantsModule,
     ClassesModule,
     TimetableModule,
+    InstructorsModule,
+    UsersModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
