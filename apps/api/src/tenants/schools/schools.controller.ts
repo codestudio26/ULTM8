@@ -10,7 +10,9 @@ import { UpdateSchoolDto } from './dto/update-school.dto';
 import { SchoolListResponseDto, SchoolResponseDto } from './dto/school-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
-// [UNRESOLVED], ultm8-domain-rules §2/ultm8-app-publishing §4).
+// [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
+// Franchise/School/Branch organisational structure, not offboarding; corrected here
+// after this same miscitation was found copied across four files).
 @ApiTags('schools')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)

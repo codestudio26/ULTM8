@@ -143,7 +143,8 @@ export class ClassesService {
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]
-  // (ultm8-domain-rules §2, ultm8-app-publishing §4), same reasoning as School/Branch.
+  // (ultm8-app-publishing §4 — not ultm8-domain-rules §2, which covers Franchise/
+  // School/Branch structure, not offboarding), same reasoning as School/Branch.
 
   // branchId/instructorId validation moved to TenantAuthorizationService in Phase 5 —
   // TimetableSlotsService needs the identical two checks, and copying them a third

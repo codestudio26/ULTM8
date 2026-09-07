@@ -169,7 +169,8 @@ export class TimetableService {
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]
-  // (ultm8-domain-rules §2, ultm8-app-publishing §4), same reasoning as School/Branch/Class.
+  // (ultm8-app-publishing §4 — not ultm8-domain-rules §2, which covers Franchise/
+  // School/Branch structure, not offboarding), same reasoning as School/Branch/Class.
 
   // Whether two TimetableSlots may overlap for the same Instructor (or the same
   // Branch/room) in time is not addressed anywhere in Spec 55 — no confirmed rule

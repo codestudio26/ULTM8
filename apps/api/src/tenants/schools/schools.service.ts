@@ -130,5 +130,6 @@ export class SchoolsService {
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]
-  // (ultm8-domain-rules §2, ultm8-app-publishing §4). Do not add one without a decision.
+  // (ultm8-app-publishing §4 — not ultm8-domain-rules §2, which covers Franchise/
+  // School/Branch structure, not offboarding). Do not add one without a decision.
 }
