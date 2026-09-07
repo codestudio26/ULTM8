@@ -76,6 +76,25 @@ enum FranchiseFeeSubscriptionStatus {
   CANCELED
 }
 
+/// TimetableSlot.weekday — Phase 5. Confirmed field ("Week day"), Spec 55 §6.1.
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+/// TimetableSlot.status — Phase 5. Confirmed field ("status (On/Off)"), Spec 55 §6.1 —
+/// modeled as this exact On/Off language, not a generic isActive boolean, so the schema
+/// reads the same as the spec.
+enum TimetableSlotStatus {
+  ON
+  OFF
+}
+
 // ---------------------------------------------------------------------------
 // Core identity
 // ---------------------------------------------------------------------------
@@ -84,9 +103,9 @@ enum FranchiseFeeSubscriptionStatus {
 /// Owner/Manager, Branch Staff, Instructor, Franchise Owner, Guardian). Role/scope is
 /// NEVER a column here — RoleGrant is the sole source of truth (domain-rules §3).
 model User {
-  id     String @id @default(uuid())
-  email  String @unique
-  phone  String @unique // E.164, validated at the DTO layer
+  id    String @id @default(uuid())
+  email String @unique
+  phone String @unique // E.164, validated at the DTO layer
 
   firstName String
   surname   String
@@ -104,21 +123,22 @@ model User {
   /// wrong.
   phoneVerifiedAt DateTime?
 
-  dateOfBirth DateTime @db.Date // ISO 8601 date, no time component (confirmed)
-  gender      String?
-  nationality String?
-  language    String? // one of the 4 confirmed languages; stored as free text pending
-                       // a confirmed canonical code list (not specified anywhere)
-  currency    String? // one of the 6 confirmed currencies; same caveat as above
-  address     String?
+  dateOfBirth     DateTime @db.Date // ISO 8601 date, no time component (confirmed)
+  gender          String?
+  nationality     String?
+  language        String? // one of the 4 confirmed languages; stored as free text pending
+  // a confirmed canonical code list (not specified anywhere)
+  currency        String? // one of the 6 confirmed currencies; same caveat as above
+  address         String?
   profilePhotoUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants       RoleGrant[] @relation("RoleGrantUser")
-  grantsIssued     RoleGrant[] @relation("RoleGrantGrantedBy")
-  classesTaught    Class[]     @relation("ClassInstructor")
+  roleGrants           RoleGrant[]     @relation("RoleGrantUser")
+  grantsIssued         RoleGrant[]     @relation("RoleGrantGrantedBy")
+  classesTaught        Class[]         @relation("ClassInstructor")
+  timetableSlotsTaught TimetableSlot[] @relation("TimetableSlotInstructor")
 
   @@index([email])
   @@index([phone])
@@ -128,8 +148,8 @@ model User {
 /// (ultm8-tenant-isolation §3). Authenticates via SSO against the company's own IdP
 /// (Spec §4.4); ssoSubject is the federated-identity linkage, not a local password.
 model AdminUser {
-  id      String @id @default(uuid())
-  email   String @unique
+  id      String       @id @default(uuid())
+  email   String       @unique
   name    String
   subRole AdminSubRole
 
@@ -233,16 +253,17 @@ model School {
   logoUrl         String?
   bannerUrl       String?
 
-  classCancellationPolicy       ClassCancellationPolicy        @default(MANUAL)
-  waitlistClaimWindowMinutes    Int                             @default(120)
+  classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
+  waitlistClaimWindowMinutes     Int                             @default(120)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches   Branch[]
-  roleGrants RoleGrant[]
-  classes    Class[]
+  branches       Branch[]
+  roleGrants     RoleGrant[]
+  classes        Class[]
+  timetableSlots TimetableSlot[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -260,19 +281,20 @@ model Branch {
   schoolId String
   school   School @relation(fields: [schoolId], references: [id])
 
-  name            String
-  address         String?
-  contactPhone    String?
-  timezone        String? // IANA tz name, per the glossary convention (Spec §14)
+  name             String
+  address          String?
+  contactPhone     String?
+  timezone         String? // IANA tz name, per the glossary convention (Spec §14)
   currencyOverride String?
-  logoUrl         String?
-  bannerUrl       String?
+  logoUrl          String?
+  bannerUrl        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants RoleGrant[]
-  classes    Class[]
+  roleGrants     RoleGrant[]
+  classes        Class[]
+  timetableSlots TimetableSlot[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -309,6 +331,16 @@ model Class {
   instructorId String?
   instructor   User?   @relation("ClassInstructor", fields: [instructorId], references: [id])
 
+  /// Phase 5 — set only on a Class materialized by the class-occurrence-generation job
+  /// from a recurring TimetableSlot (nullable timetableSlotId, Spec 55 §6.1); null for
+  /// an independent one-off Class. occurrenceDate is the date-only companion this pairs
+  /// with — together they back the @@unique below, which is what makes the job's
+  /// "unless one already exists for that slot+date" behavior an actual DB-level
+  /// guarantee rather than an application-level check-then-insert race.
+  timetableSlotId String?
+  timetableSlot   TimetableSlot? @relation(fields: [timetableSlotId], references: [id], onDelete: SetNull)
+  occurrenceDate  DateTime?      @db.Date
+
   title       String
   // Cardinality (required, at least one) is an inferred design choice, not stated by
   // §9 — flagged for Architect review same as branchId above.
@@ -336,6 +368,94 @@ model Class {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // The DB-level guarantee behind "the job never double-materializes the same
+  // occurrence" — see the comment on timetableSlotId/occurrenceDate above. Postgres
+  // treats NULL as distinct from NULL in a unique constraint, so this imposes no
+  // restriction on one-off Classes (timetableSlotId/occurrenceDate both null).
+  @@unique([timetableSlotId, occurrenceDate])
+  // Composite indexes leading with the tenant column (Decision 30).
+  @@index([schoolId])
+  @@index([schoolId, branchId])
+  @@index([timetableSlotId])
+}
+
+/// TimetableSlot (Phase 5, Spec 55 §6.1/§9) — a School's recurring weekly schedule.
+/// Confirmed field list (quoted, not paraphrased): "Week day, start time, end time,
+/// start break, end break, status (On/Off)." Relations: "Belongs to School (and
+/// Instructor, inferred); recurring weekly pattern, not date-specific; has many
+/// generated Class occurrences."
+///
+/// branchId is directly confirmed (not inferred the way Class's was) — Spec 55 §4.3
+/// explicitly names TimetableSlot as one of the 4 entities keyed on branch_id for RLS.
+/// Nullable for the same reason Class's is: School-wide by default, narrowable to one
+/// Branch.
+///
+/// instructorId gets the same "active INSTRUCTOR RoleGrant holder, not a separate
+/// table" treatment as Class's — but Spec 55 itself marks this relation "inferred",
+/// not confirmed the way the field list is. Same caution Class's instructorId got in
+/// Phase 4, carried forward rather than treated as more settled here.
+///
+/// Everything below `status` is a Developer-level addition beyond Spec 55's confirmed
+/// six fields, resolved directly with the product owner during Phase 5 scoping (record
+/// as a Decision, same pattern as Decisions 82-84): the confirmed six give the
+/// class-occurrence-generation job nothing it needs to actually build a Class (no
+/// title, no activities, no capacity — both of the latter two are required on Class).
+/// These are template fields, copied onto every generated Class:
+///   - title, activities, capacity, description, bannerUrl, termsWaiverRequired,
+///     membershipInclusion — same field names/types/validation constraints as Class's
+///     own; CreateTimetableSlotDto's validation MUST mirror CreateClassDto's exactly
+///     for each of these, or a TimetableSlot that passes its own looser validation can
+///     still fail deep inside the background job when the Class gets created.
+///   - bookingCutoffMinutesBeforeStart / qrAttendanceWindowMinutes /
+///     refundCutoffHoursBeforeStart — NOT copies of Class's bookingEndAt/
+///     qrAttendanceEndAt/refundFeeDate, which are absolute datetimes that don't mean
+///     anything on a recurring template. These are durations instead; the job resolves
+///     each into a real datetime relative to that specific occurrence's startDate.
+///   - cancellationCharge copies straight across unchanged (already a plain amount).
+model TimetableSlot {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  instructorId String?
+  instructor   User?   @relation("TimetableSlotInstructor", fields: [instructorId], references: [id])
+
+  weekday Weekday
+
+  startTime  DateTime  @db.Time(0)
+  endTime    DateTime  @db.Time(0)
+  breakStart DateTime? @db.Time(0)
+  breakEnd   DateTime? @db.Time(0)
+
+  status TimetableSlotStatus @default(ON)
+
+  // Template fields — copied verbatim onto every generated Class. See the model
+  // header comment above for why these exist beyond Spec 55's confirmed six.
+  title       String
+  activities  String[] @default([])
+  capacity    Int?
+  description String?
+  bannerUrl   String?
+
+  termsWaiverRequired Boolean @default(false)
+  membershipInclusion Boolean @default(false)
+
+  // Durations, not absolute dates — resolved per-occurrence by the job. See the model
+  // header comment above.
+  bookingCutoffMinutesBeforeStart Int?
+  qrAttendanceWindowMinutes       Int?
+  refundCutoffHoursBeforeStart    Int?
+  cancellationCharge              Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  generatedClasses Class[]
 
   // Composite indexes leading with the tenant column (Decision 30).
   @@index([schoolId])

@@ -25,10 +25,10 @@ export class ClassesService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     if (dto.branchId) {
-      await this.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+      await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
     }
     if (dto.instructorId) {
-      await this.assertValidInstructor(callerId, dto.instructorId, schoolId, dto.branchId ?? null);
+      await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, schoolId, dto.branchId ?? null);
     }
 
     const startDate = new Date(dto.startDate);
@@ -101,7 +101,7 @@ export class ClassesService {
     const nextInstructorId = dto.instructorId !== undefined ? dto.instructorId : existing.instructorId;
 
     if (dto.branchId) {
-      await this.assertBranchBelongsToSchool(callerId, dto.branchId, existing.schoolId);
+      await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, existing.schoolId);
     }
     // Revalidated whenever the Class will still have an instructor after this patch —
     // not only when instructorId itself is part of the PATCH body. A branch-only PATCH
@@ -109,7 +109,7 @@ export class ClassesService {
     // a Branch its existing instructor isn't authorized to teach at; without this, that
     // went unchecked (caught by /code-review's high-effort pass — see PR history).
     if (nextInstructorId) {
-      await this.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
+      await this.tenantAuth.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
     }
 
     const nextStartDate = dto.startDate ? new Date(dto.startDate) : existing.startDate;
@@ -145,55 +145,15 @@ export class ClassesService {
   // No delete method — general tenant offboarding is [UNRESOLVED]
   // (ultm8-domain-rules §2, ultm8-app-publishing §4), same reasoning as School/Branch.
 
+  // branchId/instructorId validation moved to TenantAuthorizationService in Phase 5 —
+  // TimetableSlotsService needs the identical two checks, and copying them a third
+  // time (after role-grants.service.ts's own original) was explicitly the wrong move
+  // per Phase 4's code review. See TenantAuthorizationService.assertBranchBelongsToSchool
+  // / assertValidInstructor.
+
   private assertValidDateRange(startDate: Date, endDate: Date) {
     if (endDate <= startDate) {
       throw new BadRequestException('endDate must be after startDate');
-    }
-  }
-
-  private async assertBranchBelongsToSchool(callerId: string, branchId: string, schoolId: string) {
-    const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.branch.findUnique({ where: { id: branchId }, select: { id: true, schoolId: true } }),
-    );
-    if (!branch || branch.schoolId !== schoolId) {
-      throw new BadRequestException('branchId must reference a Branch belonging to this School');
-    }
-  }
-
-  /**
-   * "Taught by an Instructor" (domain-rules §9) means instructorId references a User
-   * holding an active INSTRUCTOR RoleGrant at this Class's School — not a separate
-   * Instructor table (§6.1). The branch check mirrors class_tenant_isolation's own
-   * three-way structure rather than a flat equality: a School-scoped Instructor grant
-   * (branchId null) may teach ANY Class at the School, including a Branch-specific one; a
-   * Branch-scoped Instructor grant may teach that Branch's Classes plus School-wide ones;
-   * it may never teach a DIFFERENT Branch's Class. A flat equality would wrongly reject
-   * the first case.
-   */
-  private async assertValidInstructor(
-    callerId: string,
-    instructorId: string,
-    schoolId: string,
-    classBranchId: string | null,
-  ) {
-    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findMany({
-        where: {
-          userId: instructorId,
-          schoolId,
-          role: 'INSTRUCTOR',
-          revokedAt: null,
-        },
-        select: { branchId: true },
-      }),
-    );
-    const valid = grants.some(
-      (g) => g.branchId === null || classBranchId === null || g.branchId === classBranchId,
-    );
-    if (!valid) {
-      throw new BadRequestException(
-        'instructorId must reference a User holding an active INSTRUCTOR RoleGrant at this School (matching this Class\'s Branch, if any).',
-      );
     }
   }
 }
