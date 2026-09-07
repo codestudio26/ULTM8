@@ -6,10 +6,12 @@ import { PrismaClient } from '@prisma/client';
  * 20260908000000_timetable_module migration) — for background jobs with no single
  * caller/tenant context to run `PrismaAppService.withTenantContext(callerId, ...)`
  * under. Same shape as PrismaAuthService (own connection string, own narrowly-scoped
- * additive RLS policies): SELECT on TimetableSlot and Branch, INSERT-only on Class —
- * nothing else. Don't broaden a call site here into a general-purpose cross-tenant
- * read/write; add the specific grant a new job actually needs, in its own migration,
- * the same way this one did.
+ * additive RLS policies): SELECT on TimetableSlot and Branch, INSERT+SELECT on Class
+ * (the SELECT is for Prisma's `.create()`-implied `RETURNING`, not independent reads —
+ * see the migration's own header comment) — nothing else, no UPDATE/DELETE anywhere.
+ * Don't broaden a call site here into a general-purpose cross-tenant read/write; add
+ * the specific grant a new job actually needs, in its own migration, the same way this
+ * one did.
  *
  * Plain `console.warn`, not a `Logger` field, before `super()` — same reason
  * PrismaAppService/PrismaAuthService both do this: TypeScript doesn't allow `this` to

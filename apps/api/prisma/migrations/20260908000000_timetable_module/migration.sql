@@ -30,13 +30,19 @@
 -- timezone) — both via an additive permissive RLS policy, USING (true), TO
 -- ultm8_jobs, OR-combined with the existing tenant-scoped policies on those tables
 -- (same multi-policy pattern rolegrant_school_manager_scope already established) —
--- plus INSERT (not SELECT/UPDATE/DELETE) on Class, since the job only ever creates
--- new occurrences and relies on the Class_timetableSlotId_occurrenceDate_key unique
--- constraint (added below) to reject a duplicate rather than needing to SELECT first.
--- Deliberately NOT granted anything on School directly — the platform-SubscriptionPlan
--- skip condition that would need it is deferred (see the kickoff prompt), so there's
--- nothing for this role to read there yet; add that grant when that gap closes, not
--- preemptively.
+-- plus INSERT and SELECT (not UPDATE/DELETE) on Class: INSERT for materializing new
+-- occurrences, and SELECT because Prisma's `.create()` always does
+-- `INSERT ... RETURNING *`, which Postgres RLS requires a passing SELECT-context USING
+-- policy for, not just WITH CHECK — the exact bug this project already hit and fixed
+-- once for School's own self-service creation (commit 8bd7cd4), caught again here by
+-- CI on this migration's first real run and fixed in place. UPDATE/DELETE deliberately
+-- withheld — the job never modifies or deletes an already-materialized Class, and
+-- relies on the Class_timetableSlotId_occurrenceDate_key unique constraint (added
+-- below) to reject a duplicate on INSERT rather than needing a separate check-first
+-- SELECT. Deliberately NOT granted anything on School directly — the platform-
+-- SubscriptionPlan skip condition that would need it is deferred (see the kickoff
+-- prompt), so there's nothing for this role to read there yet; add that grant when
+-- that gap closes, not preemptively.
 
 -- ultm8_jobs: dedicated LOGIN role for background jobs with no single caller/tenant
 -- context (class-occurrence-generation, this migration; a future job could reuse it
@@ -157,15 +163,29 @@ CREATE INDEX "Class_timetableSlotId_idx" ON "Class"("timetableSlotId");
 -- only ever blocks a second materialized Class for the same slot on the same date.
 ALTER TABLE "Class" ADD CONSTRAINT "Class_timetableSlotId_occurrenceDate_key" UNIQUE ("timetableSlotId", "occurrenceDate");
 
--- ultm8_jobs may INSERT into Class (materializing occurrences) but deliberately gets
--- no SELECT/UPDATE/DELETE grant here — the job relies on the unique constraint above
--- to reject a duplicate rather than reading first, and it never modifies or deletes an
--- already-materialized Class (see the "Class rows already materialized... left
--- untouched on a TimetableSlot edit" note in TimetableService.update()). Minimum
--- privilege for what this role actually does, same discipline as ultm8_auth's
--- SELECT-only-on-User scoping.
-GRANT INSERT ON "Class" TO ultm8_jobs;
+-- CI CAUGHT A REAL BUG HERE (fixed in place — never shipped anywhere): the original
+-- version of this migration granted ultm8_jobs INSERT-only on Class, reasoning "the job
+-- never needs to read Class back". That's true in the abstract, but Prisma's `.create()`
+-- always issues `INSERT ... RETURNING *` to get the full row (including server-generated
+-- defaults like createdAt) back for the object it returns — and Postgres requires a
+-- newly-inserted row to ALSO satisfy the table's SELECT-context USING policy for
+-- RETURNING to hand it back, not just WITH CHECK. This is the exact same class of bug
+-- already hit and fixed once in this project for School's own self-service creation
+-- (see commit 8bd7cd4, "School INSERT RETURNING") — recognized immediately from CI's
+-- error rather than re-diagnosed from scratch, though the two manifest slightly
+-- differently: School's case failed as "new row violates row-level security policy"
+-- (a real USING policy existed but evaluated false); ultm8_jobs has no SELECT
+-- privilege on Class at all, so this failed one level earlier as plain
+-- "permission denied for table Class" (42501).
+GRANT INSERT, SELECT ON "Class" TO ultm8_jobs;
 CREATE POLICY "class_jobs_insert" ON "Class"
   FOR INSERT
   TO ultm8_jobs
   WITH CHECK (true);
+-- Required for RETURNING, not a genuine expansion of what this role does — it still
+-- never issues an independent SELECT query against Class outside of what INSERT's own
+-- RETURNING clause already exposes (the row it just wrote).
+CREATE POLICY "class_jobs_select_for_returning" ON "Class"
+  FOR SELECT
+  TO ultm8_jobs
+  USING (true);
