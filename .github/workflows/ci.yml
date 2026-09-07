@@ -26,12 +26,25 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      # Phase 5 — first Redis usage in this codebase (otp-delivery,
+      # class-occurrence-generation). No auth needed for CI's own throwaway instance.
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
       # Superuser connection — used for migrations and RLS-bypassing fixture setup.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ultm8?schema=public
-      # Set only after the migration creates the ultm8_app role (step below).
+      # Set only after the migration creates the ultm8_app/ultm8_jobs roles (step below).
       DATABASE_URL_APP: postgresql://ultm8_app:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_JOBS: postgresql://ultm8_jobs:changeme@localhost:5432/ultm8?schema=public
+      REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
 
     steps:

@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { Twilio } from 'twilio';
+import { OTP_DELIVERY_QUEUE } from '../../jobs/queue.constants';
 
 /**
  * Twilio Verify integration (Spec 55 §11.4 — confirmed OTP provider, "the purpose-
@@ -8,11 +11,13 @@ import { Twilio } from 'twilio';
  * boundary (OTP for registration/recovery, not routine login) is asserted by the task
  * that scoped this module, not independently re-derived here.
  *
- * Synchronous, direct API calls for this walking skeleton — Spec §9's confirmed job
- * list routes OTP delivery through a BullMQ `otp-delivery` queue in production, but
- * Redis/BullMQ aren't part of Phase 1's four scoped items. Flagged as a gap to close
- * before this handles real traffic (a slow/failed Twilio call currently blocks the
- * request instead of being queued and retried).
+ * `sendOtp()` now enqueues onto the `otp-delivery` BullMQ queue (Phase 5) instead of
+ * calling Twilio synchronously — closes the exact gap this file's own header comment
+ * flagged since Phase 1 ("a slow/failed Twilio call currently blocks the request
+ * instead of being queued and retried"). `sendOtpNow()` is the real Twilio call,
+ * called by `OtpDeliveryProcessor` (src/jobs/), not by callers of this service
+ * directly. `checkOtp()` (verification) stays synchronous — only the send side has a
+ * queue in Spec 55's confirmed design.
  */
 @Injectable()
 export class TwilioVerifyService {
@@ -20,7 +25,7 @@ export class TwilioVerifyService {
   private readonly client: Twilio | null;
   private readonly verifyServiceSid: string | undefined;
 
-  constructor() {
+  constructor(@InjectQueue(OTP_DELIVERY_QUEUE) private readonly otpDeliveryQueue: Queue) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     this.verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
@@ -35,7 +40,22 @@ export class TwilioVerifyService {
     this.client = new Twilio(accountSid, authToken);
   }
 
+  /** Enqueues delivery — does not itself call Twilio. Resolves once the job is
+   * accepted by Redis, not once the SMS actually sends; a slow/failed Twilio call no
+   * longer blocks the caller's request. Retry/backoff is configured on the job
+   * (3 attempts, exponential backoff — a reasonable default, flagged for Architect
+   * review same as everything else inferred in this phase, not independently
+   * spec-confirmed). */
   async sendOtp(phone: string): Promise<void> {
+    await this.otpDeliveryQueue.add(
+      'send',
+      { phone },
+      { attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
+  }
+
+  /** The real Twilio call — used only by OtpDeliveryProcessor. */
+  async sendOtpNow(phone: string): Promise<void> {
     this.assertConfigured();
     await this.client!.verify.v2
       .services(this.verifyServiceSid!)
