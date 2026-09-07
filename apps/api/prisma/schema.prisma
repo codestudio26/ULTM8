@@ -139,6 +139,7 @@ model User {
   grantsIssued         RoleGrant[]     @relation("RoleGrantGrantedBy")
   classesTaught        Class[]         @relation("ClassInstructor")
   timetableSlotsTaught TimetableSlot[] @relation("TimetableSlotInstructor")
+  instructorProfiles   Instructor[]
 
   @@index([email])
   @@index([phone])
@@ -264,6 +265,7 @@ model School {
   roleGrants     RoleGrant[]
   classes        Class[]
   timetableSlots TimetableSlot[]
+  instructors    Instructor[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -295,6 +297,7 @@ model Branch {
   roleGrants     RoleGrant[]
   classes        Class[]
   timetableSlots TimetableSlot[]
+  instructors    Instructor[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -460,4 +463,71 @@ model TimetableSlot {
   // Composite indexes leading with the tenant column (Decision 30).
   @@index([schoolId])
   @@index([schoolId, branchId])
+}
+
+/// Instructor (Phase 6, Spec 55 §6.1) — a profile/bio *extension* for a person who
+/// already holds the INSTRUCTOR role, NOT the source of truth for whether they hold it
+/// (that stays RoleGrant, checked via TenantAuthorizationService.assertValidInstructor
+/// — see the Phase 6 kickoff prompt). Confirmed field list (quoted, not paraphrased):
+/// "Name, photo, belt/ranking, specializations (activities), phone, years of
+/// experience, bio; linked User account for its own login."
+///
+/// This does NOT reverse the Phase 4/5 decision that Class.instructorId/
+/// TimetableSlot.instructorId stay FKs into User, not this table — "taught by an
+/// Instructor" still means "instructorId references a User holding an active
+/// INSTRUCTOR RoleGrant", per those models' own comments. Instructor here is never the
+/// FK target for instructorId anywhere, and is never itself consulted to answer
+/// "does this User hold the Instructor role" — two genuinely separate concerns, kept
+/// separate on purpose. Flagged for Architect review since this is new surface area
+/// immediately adjacent to that settled decision.
+///
+/// branchId is directly confirmed, not inferred — Spec 55 explicitly names Instructor
+/// (alongside TimetableSlot, Class, Booking) as one of the 4 entities RLS keys on
+/// branch_id. Nullable for the same "School-wide by default, narrowable to one Branch"
+/// reason Class's/TimetableSlot's own branchId is.
+///
+/// @@unique is [schoolId, userId], deliberately NOT [schoolId, branchId, userId] — one
+/// shared profile row per person per School even though their RoleGrant(s) could in
+/// principle be Branch-scoped at more than one Branch of the same School. Flagged for
+/// Architect review as an inferred simplification; the confirmed text doesn't settle
+/// whether a multi-Branch Instructor needs distinct per-Branch profiles.
+model Instructor {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  photoUrl String?
+
+  /// Plain display text, NOT a live reference into StudentRank/Rank — RanksModule
+  /// doesn't exist yet, and nothing confirms an Instructor's shown rank must be sourced
+  /// from that system rather than self-reported text.
+  beltRanking String?
+
+  specializations String[] @default([])
+
+  /// Distinct, optional School-facing contact number — Spec 55 lists `phone` on
+  /// Instructor's own entity row, separate from User.phone (the login/OTP number). Not
+  /// assumed identical to User.phone without confirmation.
+  phone String?
+
+  yearsOfExperience Int?
+  bio               String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One profile per person per School — see the model header comment above for why
+  // this is deliberately not also keyed on branchId.
+  @@unique([schoolId, userId])
+  // Composite indexes leading with the tenant column (Decision 30).
+  @@index([schoolId])
+  @@index([schoolId, branchId])
+  @@index([userId])
 }
