@@ -53,6 +53,17 @@ jobs:
       # Stripe.webhooks.generateTestHeaderString/constructEvent just need the test
       # and the app to agree on the same HMAC secret, same as JWT_ACCESS_SECRET above.
       STRIPE_WEBHOOK_SECRET: ci-test-webhook-secret-not-a-real-stripe-secret
+      # Also required — StripeClientService.assertConfigured() (called by
+      # constructWebhookEvent before it even checks the signature) throws if this is
+      # unset. Missing here caused the second real bug this gate caught after the
+      # skip above was fixed: both webhook tests got 500 instead of 400/200, because
+      # the plain Error assertConfigured() throws isn't a Stripe.errors.StripeError
+      # subclass, so HttpExceptionFilter's catch-all mapped it to 500 before signature
+      # verification ever ran (confirmed via the CI job log's actual Expected/Received
+      # diffs, not assumed). `new Stripe(key)` never makes a network call at
+      # construction (verified empirically) — a fake key is safe here, same as
+      # STRIPE_WEBHOOK_SECRET above.
+      STRIPE_SECRET_KEY: sk_test_ci_dummy_not_a_real_stripe_key
 
     steps:
       - uses: actions/checkout@v7
