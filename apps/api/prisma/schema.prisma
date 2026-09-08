@@ -95,6 +95,28 @@ enum TimetableSlotStatus {
   OFF
 }
 
+/// PaymentAccount.provider — Phase 8. Confirmed field ("Provider (Stripe/Cash/Bank
+/// Transfer per Section 1.2 decision)"), Spec 55 §6.1.
+enum PaymentAccountProvider {
+  STRIPE
+  CASH
+  BANK_TRANSFER
+}
+
+/// PaymentAccount.status — Phase 8. Confirmed field ("status (Active/De-active)"),
+/// Spec 55 §6.1 — kept as this exact spelling, not normalized to a generic INACTIVE,
+/// same "read the same as the spec" convention TimetableSlotStatus above already set.
+enum PaymentAccountStatus {
+  ACTIVE
+  DE_ACTIVE
+}
+
+/// PaymentAccount.mode — Phase 8. Confirmed field ("mode (Live/Test)"), Spec 55 §6.1.
+enum PaymentAccountMode {
+  LIVE
+  TEST
+}
+
 // ---------------------------------------------------------------------------
 // Core identity
 // ---------------------------------------------------------------------------
@@ -226,8 +248,9 @@ model Franchise {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  schools    School[]
-  roleGrants RoleGrant[]
+  schools        School[]
+  roleGrants     RoleGrant[]
+  paymentAccount PaymentAccount?
 
   @@index([name])
 }
@@ -266,6 +289,7 @@ model School {
   classes        Class[]
   timetableSlots TimetableSlot[]
   instructors    Instructor[]
+  paymentAccount PaymentAccount?
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -581,4 +605,87 @@ model LegalDocument {
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+/// PaymentAccount (Phase 8, Spec 55 §6.1) — a School's or a Franchise's own Stripe
+/// Connect Express account reference (Decision 86,
+/// docs/decisions/POST-SPEC-55-DECISION-LOG.md). No raw secret keys are ever stored
+/// (§4.5/§10.4) — only the Connected Account id.
+///
+/// Belongs to School OR Franchise, never both — mirrors the polymorphic-owner shape,
+/// not RoleGrant's three-way scope triple (RoleGrant's franchiseId/schoolId/branchId
+/// together encode ONE grant's scope; here schoolId/franchiseId are two alternate
+/// owners for two structurally separate rows — a School's own PaymentAccount and a
+/// Franchise's own PaymentAccount are different rows for different purposes,
+/// confirmed: "never a School's PaymentAccount directly" for Franchise-fee income).
+/// Enforced BOTH at the application layer (PaymentsService) AND, added on code
+/// review, a real DB CHECK constraint (num_nonnulls(schoolId, franchiseId) = 1, in
+/// the migration) — an earlier draft left this app-layer-only, reasoning no
+/// precedent in this schema covered a multi-column exclusive-OR constraint; given
+/// how financially load-bearing this table is, the migration's own comment explains
+/// why that reasoning didn't hold up for this specific table.
+///
+/// The Franchise side is schema-correct but practically unreachable this phase — no
+/// FranchisesController/FranchisesService exists anywhere in this codebase yet
+/// (Phase 2 deliberately deferred Franchise CRUD), and FRANCHISE_OWNER is
+/// deliberately excluded from GrantableRoleDto (see its own header comment) — there
+/// is no self-service way for anyone to hold a FRANCHISE_OWNER grant in this product
+/// today. See the Phase 8 kickoff prompt for the full reasoning.
+model PaymentAccount {
+  id String @id @default(uuid())
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+
+  franchiseId String?
+  franchise   Franchise? @relation(fields: [franchiseId], references: [id])
+
+  provider     PaymentAccountProvider
+  accountTitle String
+  country      String
+  status       PaymentAccountStatus @default(ACTIVE)
+  mode         PaymentAccountMode   @default(TEST)
+
+  /// Never a raw secret key (Decision, existing, §4.5/§10.4). Null until Stripe
+  /// Connect onboarding is initiated — set synchronously in
+  /// PaymentsService.initiateConnectOnboarding() from Stripe's own accounts.create()
+  /// response, NOT by a webhook handler. (Corrected from an earlier draft of this
+  /// comment, which assumed the id itself arrived via the account.updated webhook —
+  /// checked directly against Stripe's own API shape before writing the service
+  /// method: accounts.create() returns the new Connected Account's id synchronously,
+  /// no webhook needed for that specific value. See that method's own comment.)
+  stripeConnectedAccountId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One PaymentAccount per School, one per Franchise — "has one PaymentAccount set"
+  // (School's and Franchise's own confirmed entity rows, singular).
+  @@unique([schoolId])
+  @@unique([franchiseId])
+}
+
+/// ProcessedStripeEvent (Phase 8) — Stripe webhook idempotency ledger. Spec 55 §10.2's
+/// own confirmed idempotency mechanism: "idempotency is enforced by deduping on
+/// Stripe's event id before processing, since Stripe may redeliver the same webhook
+/// more than once." A Postgres row, not a BullMQ jobId-based dedup or an in-memory
+/// set — checked directly, not assumed: BullMQ's own completed-job retention is
+/// bounded (removeOnComplete-style pruning) and reset on every deploy, whereas Stripe
+/// can redeliver a webhook well after a completed job would have been pruned; this
+/// needs a durable, permanent record, the same reasoning that already put
+/// class-occurrence-generation's own idempotency guarantee at the database level
+/// (its @@unique on timetableSlotId/occurrenceDate) rather than in application memory.
+/// This is a new pattern for webhook-specific idempotency in this codebase — flagged
+/// as such, not presented as following an existing precedent that doesn't exist.
+///
+/// No RLS — not tenant-scoped data (a platform-level operational ledger, same
+/// category as AdminUser/LegalDocument, which also carry none).
+model ProcessedStripeEvent {
+  /// Stripe's own event id (e.g. "evt_...") — the de-dup key itself, not a
+  /// separately-generated UUID.
+  stripeEventId String @id
+
+  eventType String
+
+  processedAt DateTime @default(now())
 }

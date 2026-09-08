@@ -373,3 +373,31 @@ No code change — confirms the design as built in Phase 5's migration/`PrismaJo
 ### Recorded by
 
 Logged during ULTM8 Phase 5 (TimetableModule) follow-up, 7 Sep 2026, resolving a trade-off flagged in the `20260908000000_timetable_module` migration's own header comment for Architect review.
+
+---
+
+## Decision 86 — Stripe Connect account type: Express, not Standard
+
+**Date:** 8 Sep 2026
+**Status:** Approved by product owner
+**Resolves:** Spec 55 §12.2 open item, quoted verbatim: *"Stripe Connect onboarding fit — Section 10.4 commits to Stripe Connect as the primary model; still to confirm is whether Connect's own onboarding requirements (e.g. Express vs Standard accounts, per-country availability) fit every market ULTM8 plans to launch in... Higher-stakes as of 25 Aug 2026, Pass 4: this choice now also determines who controls a tenant's recurring-payment retry/dunning schedule."* Explicitly listed under the spec's own "12.2 Still open — please advise" heading, not a Developer-level inference — escalated before Phase 8 (PaymentsModule) kickoff rather than built against a guess, given the stakes Section 10.4/10.2 both describe (onboarding-flow code path, per-country business-entity verification requirements, and which party controls dunning/retry configuration).
+
+### Decision
+
+ULTM8 onboards every School's and Franchise's `PaymentAccount` via a Stripe Connect **Express** account, not Standard.
+
+### Why (reasoning offered alongside the recommendation, approved as given)
+
+- Express lets ULTM8 configure a Connected Account's recurring-payment retry/dunning schedule programmatically at onboarding (§10.2/§10.4); Standard leaves that entirely to the account holder's own Stripe Dashboard. Given ULTM8, not the tenant, owns the product experience around a failed Membership/Franchise-fee/SubscriptionPlan charge (the confirmed webhook-driven notification/degradation flows in §10.2), Express keeps that experience consistent across every tenant rather than dependent on each School/Franchise's own Stripe Dashboard configuration.
+- §12.2's own market-fit research (Pass 8, Round 3) directly verified Express accounts are available in at least one target market (UAE) for a foreign platform like ULTM8, per Stripe's own current documentation at that time — the only market checked this specifically at the time of the spec's writing.
+- Faster, simpler onboarding UX for what's expected to be a largely non-technical School Owner/Manager persona (already the framing Decision 12/§11.5's step-up-MFA reasoning uses for this same role), at the cost of less per-tenant control — an acceptable trade given ULTM8 already positions itself as configuring the payment experience on the tenant's behalf throughout §10.2 (Direct/Destination charges, automated Franchise-fee collection, webhook-driven dunning).
+
+### What this does NOT resolve
+
+- **Per-country onboarding fit beyond UAE** — §12.2's own text is explicit that only UAE was checked directly against Stripe's current documentation as of the spec's writing; other markets in the platform's currency list (GBP/EUR/USD/BRL/MYR regions) haven't been verified the same way. This decision commits to Express as the account type; it does not itself confirm Express onboarding is available/sufficient in every market ULTM8 plans to launch in — that verification still needs to happen per-market before onboarding is enabled there, flagged rather than assumed resolved by this decision.
+- **The money-transmission exemption and franchise-disclosure-law legal-review items** (§12.2, unchanged) — this decision is about Connect account type, not about whether ULTM8's use of Stripe destination charges qualifies for money-transmitter exemptions in any given jurisdiction. That legal review remains open, tracked separately.
+- **Exact dunning/grace-period timing** — §10.2 confirms *that* Express lets ULTM8 configure the retry schedule programmatically; it does not confirm what that schedule should actually be. Still open, tracked separately (see the Phase 8 kickoff prompt).
+
+### Recorded by
+
+Logged during ULTM8 Phase 8 (PaymentsModule) kickoff, 8 Sep 2026, resolving the Express-vs-Standard item Spec 55 §12.2 flagged as needing direct product-owner input before implementation starts.

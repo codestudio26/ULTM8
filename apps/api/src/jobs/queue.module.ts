@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
-import { OTP_DELIVERY_QUEUE, CLASS_OCCURRENCE_GENERATION_QUEUE } from './queue.constants';
+import { OTP_DELIVERY_QUEUE, CLASS_OCCURRENCE_GENERATION_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from './queue.constants';
 
 const logger = new Logger('QueueModule');
 
@@ -41,12 +41,16 @@ function redisConnection() {
   };
 }
 
-export { OTP_DELIVERY_QUEUE, CLASS_OCCURRENCE_GENERATION_QUEUE };
+export { OTP_DELIVERY_QUEUE, CLASS_OCCURRENCE_GENERATION_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE };
 
 @Module({
   imports: [
     BullModule.forRoot({ connection: redisConnection() }),
-    BullModule.registerQueue({ name: OTP_DELIVERY_QUEUE }, { name: CLASS_OCCURRENCE_GENERATION_QUEUE }),
+    BullModule.registerQueue(
+      { name: OTP_DELIVERY_QUEUE },
+      { name: CLASS_OCCURRENCE_GENERATION_QUEUE },
+      { name: STRIPE_WEBHOOK_PROCESSING_QUEUE },
+    ),
   ],
   exports: [BullModule],
 })
