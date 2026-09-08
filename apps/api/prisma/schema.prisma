@@ -228,6 +228,8 @@ model User {
   memberships          Membership[]    @relation("MembershipStudent")
   membershipsGifted    Membership[]    @relation("MembershipGiftedBy")
   transactionsPaid     Transaction[]   @relation("TransactionPayer")
+  studentRanks         StudentRank[]
+  promotionEventsPerformed PromotionEvent[] @relation("PromotionEventPerformedBy")
 
   @@index([email])
   @@index([phone])
@@ -358,6 +360,7 @@ model School {
   paymentAccount  PaymentAccount?
   membershipPlans MembershipPlan[]
   transactions    Transaction[]
+  disciplines     Discipline[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -993,4 +996,329 @@ model Transaction {
   @@index([schoolId])
   @@index([studentId])
   @@index([membershipPlanId])
+}
+
+/// PromotionEvent.type — Phase 10b. Confirmed field (skills/ultm8-domain-rules/
+/// SKILL.md §5, quoted): "types: Promotion / Downgrade / Bulk Promotion / Bulk
+/// Stripe Award / Stripe Award." The two BULK_* values exist in this enum even
+/// though this phase's own endpoints defer the bulk ACTIONS themselves (Phase 10b
+/// kickoff prompt §1.d) — the historical record shape should accommodate them for
+/// whenever a follow-up phase adds the bulk endpoints, not need a later migration
+/// to add enum values.
+enum PromotionEventType {
+  PROMOTION
+  DOWNGRADE
+  STRIPE_AWARD
+  BULK_PROMOTION
+  BULK_STRIPE_AWARD
+}
+
+/// StudentRank per-skill sign-off status. Confirmed field (SKILL.md §5, quoted):
+/// "per-skill sign-off status (Not Started / Learning / Signed Off)... scoped to
+/// the current checkpoint only." The exact cycle behavior a PATCH endpoint uses to
+/// step through these three values is not itself specified — the Phase 10b kickoff
+/// prompt's own §3.2 flags a 3-state wrap (NOT_STARTED -> LEARNING -> SIGNED_OFF ->
+/// NOT_STARTED) as the reading proceeded on, not asserted as settled fact.
+enum SkillSignOffStatus {
+  NOT_STARTED
+  LEARNING
+  SIGNED_OFF
+}
+
+/// Discipline (Phase 10b, Spec 55 §4/§5/§6.1) — belongs to School; owns an ordered
+/// ladder of Ranks. Confirmed field-model structure per the working, tested
+/// grading-system prototype (§2.3), not a Figma-only inference: "A discipline is
+/// formally backed by a Style/Discipline entity (name, class types offered)
+/// belonging to a School, owning an ordered ladder of Ranks."
+///
+/// RECONCILIATION NOTE, flagged not resolved (SKILL.md §4): School.activities /
+/// Instructor.specializations / Class.activities and this Discipline entity are
+/// "not formally reconciled" into one controlled list. Deliberately kept as its
+/// own new entity here, matching the working prototype's own validated shape —
+/// not unified with the other three as a guess. Flag for Architect review.
+model Discipline {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  name              String
+  classTypesOffered String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ranks        Rank[]
+  skills       Skill[]
+  studentRanks StudentRank[]
+
+  @@index([schoolId])
+}
+
+/// Rank (Phase 10b, Spec 55 §5/§6.1) — belongs to Discipline; ordered ladder
+/// position. Confirmed fields (quoted): "primary belt colour and an optional
+/// secondary colour (two-colour belts), a weekly class-count cap, a set of
+/// required Skills, and a years-in-rank flag."
+///
+/// `yearsInRankFlag` is a genuine Boolean only — Spec 55's own literal field list
+/// ("years-in-rank flag (Black Belt and above)") never names a separate numeric
+/// field for HOW MANY years are required, and no confirmed mechanism exists
+/// anywhere for the actual threshold or where it would be configured. Storing and
+/// toggling the flag is all this phase does — nothing enforces real tenure yet.
+/// Do not invent a `yearsRequired: Int` field or a default number (Phase 10b
+/// kickoff prompt §3.1) — flagged for the Architect/product owner, not guessed.
+model Rank {
+  id String @id @default(uuid())
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+
+  // Denormalized from discipline.schoolId — same reasoning every other
+  // RLS-scoped child table in this schema already uses (Membership.schoolId,
+  // Transaction.schoolId — verified against this repo's own merged Phase 9
+  // migration, not just recalled), doubly necessary here: without it, Rank's own
+  // RLS policy would need a two-hop join through Discipline just to reach
+  // RoleGrant, and RankStripeTier (Rank's own child) would need three. Decision
+  // 30's own "composite index leading with the tenant column" principle assumes
+  // a direct tenant column exists on every RLS-scoped table, not a multi-hop path
+  // to one.
+  schoolId String
+
+  order Int
+
+  primaryColour   String
+  secondaryColour String?
+
+  weeklyClassCountCap Int?
+  yearsInRankFlag     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stripeTiers RankStripeTier[]
+
+  requiredSkills RankRequiredSkill[]
+
+  studentRanksCurrent StudentRank[]    @relation("StudentRankCurrentRank")
+  promotionEventsFrom PromotionEvent[] @relation("PromotionEventFromRank")
+  promotionEventsTo   PromotionEvent[] @relation("PromotionEventToRank")
+
+  @@unique([disciplineId, order])
+  @@index([schoolId])
+  @@index([disciplineId])
+}
+
+/// RankStripeTier (Phase 10b, Spec 55 §5/§6.1) — belongs to Rank. Confirmed: "each
+/// stripe tier has its own stable id..., its own count, its own colour, its own
+/// classes-required and minimum-days-in-rank thresholds, and its own
+/// eligibleClassTypes list." The `id` (uuid, not a positional index) IS the stable
+/// id §5 requires — "so reordering tiers can't break references."
+model RankStripeTier {
+  id String @id @default(uuid())
+
+  rankId String
+  rank   Rank @relation(fields: [rankId], references: [id])
+
+  // Denormalized from rank.schoolId — see Rank's own comment for the full
+  // "avoid a multi-hop RLS join" reasoning, doubly true here (three hops from
+  // School otherwise: School -> Discipline -> Rank -> RankStripeTier).
+  schoolId String
+
+  order Int
+
+  count              Int
+  colour             String
+  classesRequired    Int?
+  minimumDaysInRank  Int?
+  eligibleClassTypes String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentRanksCurrentStripe StudentRank[]    @relation("StudentRankCurrentStripe")
+  promotionEventsFrom       PromotionEvent[] @relation("PromotionEventFromStripeTier")
+  promotionEventsTo         PromotionEvent[] @relation("PromotionEventToStripeTier")
+
+  @@unique([rankId, order])
+  @@index([schoolId])
+  @@index([rankId])
+}
+
+/// Skill (Phase 10b, Spec 55 §5/§6.1) — belongs to Discipline. Confirmed fields:
+/// "name, description." Many-to-many with Rank (required-skills gate). Also
+/// "referenced by Lesson" per Decision 58 (CurriculumModule) — that FK doesn't
+/// exist yet, deliberately: CurriculumModule is out of scope this phase, and this
+/// model isn't shaped in any way that would need a breaking change once Lesson is
+/// added (Lesson would simply gain its own skillId FK pointing here).
+model Skill {
+  id String @id @default(uuid())
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+
+  // Denormalized from discipline.schoolId — same reasoning Rank/RankStripeTier
+  // above.
+  schoolId String
+
+  name        String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requiredByRanks      RankRequiredSkill[]
+  studentSkillStatuses StudentRankSkillStatus[]
+
+  @@index([schoolId])
+  @@index([disciplineId])
+}
+
+/// RankRequiredSkill — explicit join table for Rank's many-to-many "required
+/// Skills" gate (§5). Explicit rather than an implicit Prisma many-to-many —
+/// matches this schema's own established convention (every relation elsewhere in
+/// this codebase is an explicit model, and hand-authoring Prisma's undocumented
+/// implicit-join-table SQL correctly without a live `prisma migrate dev` run to
+/// verify against would be needless risk for zero benefit over an explicit one).
+model RankRequiredSkill {
+  rankId  String
+  rank    Rank  @relation(fields: [rankId], references: [id])
+  skillId String
+  skill   Skill @relation(fields: [skillId], references: [id])
+
+  @@id([rankId, skillId])
+  @@index([skillId])
+}
+
+/// StudentRank (Phase 10b, Spec 55 §5/§6.1) — belongs to Student; one row per
+/// Discipline the Student trains in. Confirmed fields (quoted): "current Rank,
+/// currentStripe..., date of current rank, classes attended toward next
+/// stripe/rank..., per-skill sign-off status..., and a computed (not stored)
+/// readiness bucket... plus a computed progress %."
+///
+/// Readiness bucket / progress % are deliberately NOT stored or computed anywhere
+/// in this phase — Decision 75 confirms only that the formula/thresholds are
+/// School-configurable per discipline; "the configuration schema itself is still
+/// undesigned." GET /students/{id}/eligibility returns the raw fields below only.
+///
+/// RLS shape: the SAME narrow "School Owner/Manager, or the row's own Student,
+/// nobody else" shape Phase 9 uses for Membership/Transaction (verified against
+/// this repo's own merged migration) and Phase 10's WaiversModule applies the
+/// same way for WaiverSignature (PR #7 — not yet merged as of this branch, cited
+/// for the reasoning trail, not as an in-repo artifact this branch can itself
+/// verify) — resolved (not left open) as a direct product decision, recorded as
+/// Decision 88, docs/decisions/POST-SPEC-55-DECISION-LOG.md: this is one
+/// specific Student's own record (classesAttendedTowardCheckpoint, skill sign-off
+/// status), not School-wide catalog data. Staff functional access (Instructors
+/// need to check rank for class eligibility, the Grading Board) is preserved via
+/// TenantAuthorizationService.assertStaffAtSchool() + running the read under the
+/// TARGET Student's own tenant context — the exact mechanism Phase 9 already
+/// built for GET /students/{id}/membership-status — not by broadening this policy.
+model StudentRank {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+
+  schoolId String
+
+  currentRankId String
+  currentRank   Rank @relation("StudentRankCurrentRank", fields: [currentRankId], references: [id])
+
+  currentStripeId String?
+  currentStripe   RankStripeTier? @relation("StudentRankCurrentStripe", fields: [currentStripeId], references: [id])
+
+  dateOfCurrentRank DateTime @default(now())
+
+  classesAttendedTowardCheckpoint Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  skillStatuses   StudentRankSkillStatus[]
+  promotionEvents PromotionEvent[]
+
+  @@unique([studentId, disciplineId])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([disciplineId])
+}
+
+/// StudentRankSkillStatus — join table carrying StudentRank's per-skill sign-off
+/// status (see StudentRank's own header comment for the confirmed field this
+/// backs). Scoped to the CURRENT checkpoint only (§5, quoted) — a Promotion or
+/// Downgrade DELETES every row here for the affected StudentRank before setting
+/// the new currentRank/currentStripe (enforced in the service layer, not a DB
+/// trigger), since a prior checkpoint's sign-off status has no confirmed meaning
+/// once the checkpoint itself has changed.
+model StudentRankSkillStatus {
+  id String @id @default(uuid())
+
+  studentRankId String
+  studentRank   StudentRank @relation(fields: [studentRankId], references: [id])
+
+  // Denormalized from studentRank.schoolId/studentId — same "avoid a join for
+  // RLS" reasoning as Rank/RankStripeTier/Skill above; this table needs the SAME
+  // narrow School-Owner-or-self shape StudentRank itself uses (it's the same
+  // Student's own personal grading data), not a different one.
+  schoolId  String
+  studentId String
+
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id])
+
+  status SkillSignOffStatus @default(NOT_STARTED)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentRankId, skillId])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([studentRankId])
+}
+
+/// PromotionEvent (Phase 10b, Spec 55 §5/§6.1) — the auditable rank-history
+/// record. Confirmed (quoted): "A PromotionEvent... is never created by the
+/// system on its own" (always coach-initiated); "grading is permitted even when a
+/// required skill isn't yet signed off, but only behind an explicit, always-
+/// recorded written acknowledgement flag." The from-/to- field pairs below record
+/// the actual before/after state — a STRIPE_AWARD leaves fromRankId equal to
+/// toRankId (only the stripe tier changes); PROMOTION/DOWNGRADE change both.
+model PromotionEvent {
+  id String @id @default(uuid())
+
+  studentRankId String
+  studentRank   StudentRank @relation(fields: [studentRankId], references: [id])
+
+  // Denormalized from studentRank.schoolId/studentId — see
+  // StudentRankSkillStatus's own comment for the reasoning; PromotionEvent is
+  // the same class of "one specific Student's own record" (an audit trail of
+  // THEIR grading history) as StudentRank itself.
+  schoolId  String
+  studentId String
+
+  type PromotionEventType
+
+  performedById String
+  performedBy   User   @relation("PromotionEventPerformedBy", fields: [performedById], references: [id])
+
+  fromRankId String?
+  fromRank   Rank?   @relation("PromotionEventFromRank", fields: [fromRankId], references: [id])
+  toRankId   String?
+  toRank     Rank?   @relation("PromotionEventToRank", fields: [toRankId], references: [id])
+
+  fromStripeTierId String?
+  fromStripeTier   RankStripeTier? @relation("PromotionEventFromStripeTier", fields: [fromStripeTierId], references: [id])
+  toStripeTierId   String?
+  toStripeTier     RankStripeTier? @relation("PromotionEventToStripeTier", fields: [toStripeTierId], references: [id])
+
+  acknowledgedWithoutSkillSignoff Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([studentRankId])
 }

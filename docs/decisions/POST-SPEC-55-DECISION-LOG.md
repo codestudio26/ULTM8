@@ -401,3 +401,51 @@ ULTM8 onboards every School's and Franchise's `PaymentAccount` via a Stripe Conn
 ### Recorded by
 
 Logged during ULTM8 Phase 8 (PaymentsModule) kickoff, 8 Sep 2026, resolving the Express-vs-Standard item Spec 55 §12.2 flagged as needing direct product-owner input before implementation starts.
+
+---
+
+## Decision 87 — `School.ranksToggle`: a real backend write-gate, not a UI-only hint
+
+**Date:** 9 Sep 2026
+**Status:** Approved by product owner (delegated: "check what's best")
+**Resolves:** a gap Spec 55/domain-rules/this log never addressed — `ranksToggle` is a confirmed field on School's own profile row (Spec 55 §6.1: "Business name, mobile, address, business type, activities, facilities, ranks toggle, default language/currency..."), already built into this schema since an earlier phase (`ranksToggle Boolean @default(false)`), but nothing in Spec 55's text ever describes what it actually *does* — only that it exists alongside other School Portal profile settings. RanksModule (Phase 10b) is the first real consumer.
+
+### Decision
+
+`School.ranksToggle` is enforced as a real backend gate on every RanksModule endpoint that CREATES or MODIFIES rank data (Discipline/Rank/Skill CRUD, promote/downgrade/stripe-award, skill sign-off) — each checks `ranksToggle === true` first and rejects with 403 otherwise. READ endpoints (`GET .../ranks`, `.../eligibility`, `.../rank-history`) are explicitly unaffected by the toggle.
+
+### Why
+
+No Spec 55 text confirms either direction (real gate vs. UI hint) — this is a genuine product call, not a spec-grounded fact. The reasoning offered and approved: a toggle that's purely cosmetic invites a confusing state where the School Portal UI hides the Ranks nav item while the API keeps silently accepting new rank activity (e.g. a stale mobile app, or a direct API call) — that gap is harder to notice and walk back later than the reverse. Gating reads too was considered and rejected: a School that toggles ranks off shouldn't lose access to its own already-recorded grading history just because the toggle is off today.
+
+### What this does NOT resolve
+
+Whether `ranksToggle` should have any UI-visible consequence beyond hiding a nav item, or whether turning ranks back on after a period disabled should trigger any reconciliation — neither is addressed by Spec 55 and neither is decided here.
+
+### Recorded by
+
+Logged during ULTM8 Phase 10b (RanksModule) kickoff, 9 Sep 2026, resolving a gap this phase's own verification pass surfaced before build — flagged rather than silently defaulted either way, per CLAUDE.md's standing "never invent unspecified business logic" rule.
+
+---
+
+## Decision 88 — StudentRank/StudentRankSkillStatus/PromotionEvent RLS: narrow (School Owner/Manager or self), not broad (any active grant)
+
+**Date:** 9 Sep 2026
+**Status:** Approved by product owner (delegated: "what is your advice, do what's best")
+**Resolves:** a gap this log never addressed — Spec 55 states an explicit "Branch Staff gets no raw row access" rule for `Membership`/`Transaction` (§8.2), but never says the same, one way or the other, for `StudentRank` and its related grading tables.
+
+### Decision
+
+`StudentRank`, `StudentRankSkillStatus`, and `PromotionEvent` use the same narrow RLS shape Phase 9 built for `Membership`/`Transaction`: a `SCHOOL_OWNER_MANAGER` RoleGrant holder at the row's own `schoolId` gets full read/write; the row's own Student gets read/write of their own rows only; no other role (`BRANCH_STAFF`, `INSTRUCTOR` included) gets any row access at all. Staff functional access (an Instructor checking a Student's rank for class eligibility, the Grading Board) is preserved at the application layer — `TenantAuthorizationService.assertStaffAtSchool()` authorizes the caller, then the read runs under the *target* Student's own tenant context, the same mechanism Phase 9 built for `GET /students/{id}/membership-status` — not by broadening this RLS policy.
+
+### Why
+
+The reasoning offered and approved: `StudentRank`'s actual row contents (`classesAttendedTowardCheckpoint`, per-skill sign-off status) are one specific Student's own record, the same class of "not School-wide catalog data" concern Phase 9's own review already found for `Membership`/`Transaction` — not just "which belt colour," which might reasonably be considered more broadly visible. The absence of an explicit "no raw row access" sentence for `StudentRank` in Spec 55's text is not treated as confirmation that broad access is fine, given how costly the opposite assumption already proved (Phase 9's own review found and fixed a real RLS-shape gap on `Membership`/`Transaction` before merge).
+
+### What this does NOT resolve
+
+Whether `Discipline`/`Rank`/`RankStripeTier`/`Skill` (the catalog data, not `StudentRank` itself) should also be narrowed — they are not; this decision explicitly keeps those on the broader "any active RoleGrant holder at the School" shape `Class`/`TimetableSlot`/`MembershipPlan` already use, since they're School-wide reference data, not a specific Student's own record.
+
+### Recorded by
+
+Logged during ULTM8 Phase 10b (RanksModule) kickoff, 9 Sep 2026, resolving a gap this phase's own verification pass surfaced before build.
