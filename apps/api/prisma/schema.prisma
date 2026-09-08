@@ -230,6 +230,7 @@ model User {
   transactionsPaid     Transaction[]   @relation("TransactionPayer")
   studentRanks         StudentRank[]
   promotionEventsPerformed PromotionEvent[] @relation("PromotionEventPerformedBy")
+  waiverSignatures     WaiverSignature[]
 
   @@index([email])
   @@index([phone])
@@ -361,6 +362,7 @@ model School {
   membershipPlans MembershipPlan[]
   transactions    Transaction[]
   disciplines     Discipline[]
+  waivers         Waiver[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1321,4 +1323,97 @@ model PromotionEvent {
   @@index([schoolId])
   @@index([studentId])
   @@index([studentRankId])
+}
+
+enum WaiverSignatureStatus {
+  SIGNED
+  UNSIGNED
+  EXPIRED
+  PENDING
+}
+
+/// Waiver (Phase 10, Spec 55 §6.1/§13) — belongs to School; has many
+/// WaiverSignatures. Confirmed fields (quoted): "title, body text, per-school
+/// assignment."
+///
+/// "Per-school assignment" is read here as structural (this Waiver belongs to this
+/// School, via `schoolId`) rather than a distinct assignment action/entity — no
+/// separate "WaiverAssignment" concept is named anywhere in Spec 55's confirmed
+/// §6.1 field list, and WaiverSignature already belongs directly to both Waiver and
+/// Student. Flagged as the more literal reading, not asserted as definitively
+/// settled — see the Phase 10 kickoff prompt §2.1 for the full reasoning trail.
+model Waiver {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  title String
+  body  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  signatures WaiverSignature[]
+
+  // Composite index leading with the tenant column (Decision 30).
+  @@index([schoolId])
+}
+
+/// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13) — belongs to Waiver and
+/// Student. Confirmed fields (quoted): "signer full name, signature, signed date,
+/// status." `signatureText` models the CONFIRMED baseline e-signature mechanism —
+/// "a typed full name plus a signature field" (§2.2) — not Decision 74/78's later
+/// drawn-signature-capture upgrade, whose own UI and possible schema change remain
+/// explicitly undesigned ("Decision 74's own engineering follow-up... remains open
+/// on its own terms," Decision 78's own effect note). Do not add a drawn-signature
+/// blob/canvas-data column as a guess — that's a real, separate, still-open piece
+/// of engineering work, not something this phase silently ships an interim answer
+/// for.
+///
+/// RLS shape: deliberately the SAME narrow "School Owner/Manager, or the row's own
+/// Student, nobody else" shape Membership/Transaction use (Phase 9) — NOT the
+/// broader "any active RoleGrant holder at the School" shape Class/TimetableSlot/
+/// Waiver (the catalog document, above) use. A signed waiver is one specific
+/// Student's own legal record, the same class of "not School-wide catalog data"
+/// concern Phase 9's own review found the hard way for Membership/Transaction.
+/// Spec 55 doesn't state an explicit "no raw row access" rule for WaiverSignature
+/// the way it does for Membership/Transaction (§8.2) — the absence of an explicit
+/// rule isn't confirmation that broad access is fine, so this picks the safer
+/// default and flags it for Architect confirmation rather than silently choosing
+/// the broader shape. See the migration's own RLS policy comment for the concrete
+/// policy this produces.
+model WaiverSignature {
+  id String @id @default(uuid())
+
+  waiverId String
+  waiver   Waiver @relation(fields: [waiverId], references: [id])
+
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  // Denormalized from waiver.schoolId — same reasoning Membership.schoolId is
+  // denormalized from membershipPlan.schoolId (Phase 9): keeps this row's own RLS
+  // policy a direct column comparison rather than a join through Waiver.
+  schoolId String
+
+  signerFullName String
+  signatureText  String // see header comment — typed name, not a drawn-signature blob
+  signedDate     DateTime @default(now())
+  status         WaiverSignatureStatus @default(SIGNED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // "Don't silently double-sign" — a Student may not hold two non-Expired
+  // signatures for the same Waiver. Not itself a literal Spec 55 quote; flagged as
+  // a Developer-level inferred constraint (Phase 10 kickoff prompt §2.2), same
+  // class as this codebase's other inferred-but-reasonable defaults. Modeled as a
+  // partial unique index in the migration (status != 'EXPIRED'), not a plain
+  // @@unique — an Expired signature must not block re-signing.
+
+  // Composite index leading with the tenant column (Decision 30).
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([waiverId])
 }
