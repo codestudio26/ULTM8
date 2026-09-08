@@ -14,12 +14,13 @@ import Stripe from 'stripe';
  * model (§4.5/§10.4).
  *
  * A tenant-scoped client (constructed with `{ stripeAccount: connectedAccountId }` —
- * the standard Express pattern, Decision 86) is NOT built here yet — removed on code
- * review from an earlier draft that added it speculatively ("establish the shape
- * early"), unused and untested, ahead of anything in this phase's own scope actually
- * needing it (no checkout exists yet — Phase 9). Shipping unverified surface area
- * doesn't save Phase 9 real work; add it there, against a real caller, when the
- * Stripe SDK/API shape can actually be verified.
+ * the standard Express pattern, Decision 86) was deliberately NOT built in Phase 8 —
+ * removed on that phase's own code review from an earlier draft that added it
+ * speculatively ("establish the shape early"), unused and untested, ahead of
+ * anything in that phase's own scope actually needing it (no checkout existed yet).
+ * Phase 9's Membership purchase flow is the real caller that method was waiting
+ * for — see `scopedClient()` below, added and verified against the installed SDK's
+ * own type definitions this phase, not the earlier speculative draft.
  */
 @Injectable()
 export class StripeClientService {
@@ -42,6 +43,43 @@ export class StripeClientService {
   platformClient(): Stripe {
     this.assertConfigured();
     return this.client!;
+  }
+
+  /**
+   * Tenant-scoped client for moving money on a School's behalf — the real caller
+   * this class's own Phase 8 header comment said to wait for before adding this
+   * ("add it there, against a real caller, when the Stripe SDK/API shape can
+   * actually be verified"). Phase 9's Membership purchase flow is that caller.
+   *
+   * Constructed with `{ stripeAccount: connectedAccountId }` — the Stripe Connect
+   * Direct-charge pattern (Decision 86, Express accounts). Confirmed directly against
+   * Spec 55 §10.2: "the charge is a Stripe Direct/Destination charge against the
+   * [payer]'s saved payment method that settles directly into the [School]'s own
+   * connected PaymentAccount... the same Direct/Destination-charge pattern Membership
+   * billing already uses for Student→School." Every PaymentIntent/Subscription
+   * created against the returned client is created ON the connected account
+   * (verified against the installed SDK's own type definitions —
+   * node_modules/stripe/cjs/lib.d.ts confirms `stripeAccount` as a real top-level
+   * constructor option, "An account id on whose behalf you wish to make every
+   * request" — not assumed from memory) — the platform's own API key stays the one
+   * making the call, but Stripe attributes the resulting charge/subscription to the
+   * connected account, not the platform account. The same type definition flags a
+   * newer `stripeContext` option as the SDK's forward-looking replacement
+   * ("currently identical, but we will eventually discourage and (later) drop
+   * support for stripeAccount") — not switched to here since nothing else in this
+   * codebase uses it yet either; worth revisiting if/when the SDK actually starts
+   * warning on `stripeAccount`, not preemptively.
+   *
+   * A fresh Stripe instance per call, not cached — same reasoning `platformClient()`
+   * doesn't need to worry about (one fixed platform key) but this one does: a
+   * different `connectedAccountId` on every call means a different scoped client
+   * every time, and Stripe's own SDK docs treat constructing a new client per
+   * request as the normal, supported usage (no meaningful connection-pooling cost
+   * to amortize the way a raw DB client has).
+   */
+  scopedClient(connectedAccountId: string): Stripe {
+    this.assertConfigured();
+    return new Stripe(process.env.STRIPE_SECRET_KEY!, { stripeAccount: connectedAccountId });
   }
 
   /** Verifies a webhook payload's signature — throws (Stripe's own

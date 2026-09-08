@@ -117,6 +117,69 @@ enum PaymentAccountMode {
   TEST
 }
 
+/// MembershipPlan.type — Phase 9. Confirmed field (Spec 55 §6.1, quoted: "Subscription
+/// / Class Pack / Weekly Pass / Friend Pass / Trial Membership — Friend Pass added
+/// 25 Aug 2026: School-gifted, not purchased, always £0; Class Pack replaces the
+/// earlier 'Single Pass' concept, revised 25 Aug 2026"). CORRECTION (found on
+/// review): an earlier draft of this comment claimed this "supersedes a stale
+/// 3-value read" in skills/ultm8-domain-rules/SKILL.md §6 — checked directly
+/// against that file's actual on-disk content in this repo and found it ALREADY
+/// correctly documents all five values, matching Spec 55 exactly. The stale
+/// 3-value content the earlier draft was actually comparing against came from a
+/// different, cached copy the Skill-loading tool pulled from an installed-plugin
+/// directory outside this repo, not this file — a lesson in verifying against the
+/// actual repo path, not a tool's loaded content, when both exist. No correction to
+/// the skill file is needed; it was already right.
+enum MembershipPlanType {
+  SUBSCRIPTION
+  CLASS_PACK
+  WEEKLY_PASS
+  FRIEND_PASS
+  TRIAL_MEMBERSHIP
+}
+
+/// Membership.status — Phase 9. Confirmed field (Decision 6,
+/// docs/decisions/POST-SPEC-55-DECISION-LOG.md-style entry in Spec 55 itself, 26 Aug
+/// 2026 Pass 5): "Membership.Status is Active/Expired only — Pending is removed
+/// entirely... A Membership row is now created, not status-flipped, at the moment its
+/// payment settles." The on-screen "Pending" badge the designs show reflects the
+/// underlying Transaction's own Pending status against a not-yet-created Membership,
+/// never a Membership.status value — skills/ultm8-domain-rules/SKILL.md §8 already
+/// documents this exactly correctly (see MembershipPlanType's own comment above for
+/// a correction on an earlier draft's mistaken claim that this skill was stale).
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+}
+
+/// Membership.frequency — Phase 9. Confirmed field (Spec 55 §6.1, quoted: "start date,
+/// frequency (One Time / recurring)").
+enum MembershipFrequency {
+  ONE_TIME
+  RECURRING
+}
+
+/// Transaction.status — Phase 9. Confirmed field (Spec 55 §6.1, quoted:
+/// "Successful/Pending/Failed/Refunded/Disputed — Failed and Refunded added 25 Aug
+/// 2026... Disputed added Pass 8, Decision 55, only reachable for Stripe-paid
+/// Transactions since Cash/Bank Transfer rows have no Stripe charge id to match").
+/// DISPUTED is modeled for schema completeness only — no Phase 9 code path ever sets
+/// it (Decision 55's dispute handling is out of scope this phase; see the Phase 9
+/// kickoff prompt §3).
+enum TransactionStatus {
+  SUCCESSFUL
+  PENDING
+  FAILED
+  REFUNDED
+  DISPUTED
+}
+
+// Transaction.paymentMethod (Spec 55 §6.1, quoted: "payment method (Stripe/Cash/Bank
+// Transfer — GoCardless appeared in the designs but is excluded per Section 1.2"))
+// reuses PaymentAccountProvider directly, below — identical STRIPE/CASH/BANK_TRANSFER
+// membership and exclusion rationale (Decision 5); a second enum with the same three
+// values would be pure duplication.
+
 // ---------------------------------------------------------------------------
 // Core identity
 // ---------------------------------------------------------------------------
@@ -162,6 +225,9 @@ model User {
   classesTaught        Class[]         @relation("ClassInstructor")
   timetableSlotsTaught TimetableSlot[] @relation("TimetableSlotInstructor")
   instructorProfiles   Instructor[]
+  memberships          Membership[]    @relation("MembershipStudent")
+  membershipsGifted    Membership[]    @relation("MembershipGiftedBy")
+  transactionsPaid     Transaction[]   @relation("TransactionPayer")
 
   @@index([email])
   @@index([phone])
@@ -284,12 +350,14 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches       Branch[]
-  roleGrants     RoleGrant[]
-  classes        Class[]
-  timetableSlots TimetableSlot[]
-  instructors    Instructor[]
-  paymentAccount PaymentAccount?
+  branches        Branch[]
+  roleGrants      RoleGrant[]
+  classes         Class[]
+  timetableSlots  TimetableSlot[]
+  instructors     Instructor[]
+  paymentAccount  PaymentAccount?
+  membershipPlans MembershipPlan[]
+  transactions    Transaction[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -395,6 +463,14 @@ model Class {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Phase 9 — back-relations for MembershipPlan.scopedClassId / Membership.scopedClassId
+  // (Spec 55 §6.1: a Class Pack or Friend Pass may restrict itself to one specific
+  // Class, e.g. a single ticket to one workshop). Named relations since Class already
+  // carries an unrelated named relation to User (ClassInstructor) — Prisma requires
+  // an explicit name once a model has more than one relation to resolve ambiguity.
+  scopedByMembershipPlans MembershipPlan[] @relation("MembershipPlanScopedClass")
+  scopedByMemberships     Membership[]     @relation("MembershipScopedClass")
 
   // The DB-level guarantee behind "the job never double-materializes the same
   // occurrence" — see the comment on timetableSlotId/occurrenceDate above. Postgres
@@ -659,6 +735,8 @@ model PaymentAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  transactions Transaction[]
+
   // One PaymentAccount per School, one per Franchise — "has one PaymentAccount set"
   // (School's and Franchise's own confirmed entity rows, singular).
   @@unique([schoolId])
@@ -688,4 +766,231 @@ model ProcessedStripeEvent {
   eventType String
 
   processedAt DateTime @default(now())
+}
+
+/// MembershipPlan (Phase 9, Spec 55 §6.1) — School↔Student billing (never confused
+/// with the platform↔Franchise/School `SubscriptionPlan`, domain-rules §15). Belongs
+/// to School only — Spec 55 never gives this a Franchise side, unlike PaymentAccount.
+///
+/// Confirmed fields (quoted): "Title, type... price (fixed at 0 for Friend Pass),
+/// expiry... classes included... scoped Class... visibility (Public), refund-fee
+/// date, cancellation charge, terms/waiver-required flag; requires Stripe as the
+/// payment method when type=Subscription."
+///
+/// `price` is a minor-unit Int, matching Class.cancellationCharge's own established
+/// convention — no Decimal/float anywhere in this schema for money.
+///
+/// `currency` is a plain String?, matching User.currency/School.defaultCurrency's own
+/// convention (Decision 7, Spec 55 §11.2 — MembershipPlan pricing stays independent
+/// per-currency, School-set, with NO automatic conversion across the 6 supported
+/// currencies) — not a new Currency enum.
+///
+/// `expiryDurationDays` is a Developer-level inferred column, not a literally-named
+/// field from Spec 55 (which only describes behavior: "the plan's default
+/// duration/credit rule — used to compute each Membership's actual expiry date...
+/// at the moment the Membership is created"). Flagged for an explicit Decision entry
+/// in docs/decisions/POST-SPEC-55-DECISION-LOG.md before this is treated as settled —
+/// same "Developer-level addition... resolved directly with the product owner"
+/// treatment TimetableSlot's own template fields got in Phase 5. Null for
+/// WEEKLY_PASS, which Spec 55 separately says computes from "its own date window
+/// rather than credit-based."
+///
+/// `visible` models "visibility (Public)" as a boolean — Spec 55 never names a second
+/// value opposite "Public", so a toggle (matching this schema's own Boolean-flag
+/// convention elsewhere, e.g. Class.termsWaiverRequired) is the literal reading, not
+/// a guessed enum with invented values.
+///
+/// Payment-method enforcement (type=SUBSCRIPTION requires Stripe) is NOT a column on
+/// this model — School's PaymentAccount is one row with one fixed `provider`
+/// (Phase 8's own @@unique([schoolId]) — a School cannot hold both a Stripe AND a
+/// Cash/Bank PaymentAccount simultaneously), so the actual payment method for any
+/// purchase is derived from the School's single configured PaymentAccount.provider
+/// at purchase time (MembershipsService.purchase()), not chosen per-purchase by the
+/// client. A School whose PaymentAccount.provider isn't STRIPE simply cannot sell a
+/// SUBSCRIPTION-type plan — enforced in the service layer, not schema-level, since it
+/// depends on a sibling row's own field, not a static constraint.
+model MembershipPlan {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  type  MembershipPlanType
+  title String
+
+  price    Int // minor-unit; fixed at 0 for FRIEND_PASS (validated in the DTO/service layer)
+  currency String?
+
+  expiryDurationDays Int? // see header comment — inferred, needs a Decision entry
+
+  // Class Pack / Friend Pass only. Capped at 1 when scopedClassId is set (a one-off
+  // Class has only one occurrence — additional credits could never be spent,
+  // stranding prepaid credit, Spec 55 §6.1) — validated in the service layer.
+  classesIncluded Int?
+
+  scopedClassId String?
+  scopedClass   Class? @relation("MembershipPlanScopedClass", fields: [scopedClassId], references: [id])
+
+  visible Boolean @default(true)
+
+  refundFeeDate       DateTime?
+  cancellationCharge  Int?
+  termsWaiverRequired Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships  Membership[]
+  transactions Transaction[]
+
+  // Composite index leading with the tenant column (Decision 30).
+  @@index([schoolId])
+  @@index([scopedClassId])
+}
+
+/// Membership (Phase 9, Spec 55 §6.1) — a Student's purchased instance of a
+/// MembershipPlan. `status` is Active/Expired ONLY (Decision 6 — see MembershipStatus's
+/// own comment); a row is created, not status-flipped, at the moment its payment
+/// settles. See the Phase 9 kickoff prompt §2.1 for the full creation-timing state
+/// machine (Stripe payment_intent.succeeded / Cash-Bank PATCH .../confirm / £0-plan
+/// immediate).
+///
+/// `schoolId` is denormalized from `membershipPlan.schoolId` — same reasoning
+/// Booking.branch_id is denormalized from Class.branchId in Spec 55 §6.1
+/// ("enables Branch Staff row-level scoping... without a join through Class"): keeps
+/// this row's own RLS policy a direct column comparison rather than a join through
+/// MembershipPlan. Set once at creation, never updated (a Membership's School never
+/// changes after purchase).
+///
+/// `stripeSubscriptionId` correlates `customer.subscription.updated/deleted` webhook
+/// events back to this row for SUBSCRIPTION-type Memberships only — not a Spec 55-
+/// named column, but required for the webhook processor to find which Membership a
+/// subscription-lifecycle event concerns; flagged as a Developer-level addition, same
+/// class as `expiryDurationDays` above.
+model Membership {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation("MembershipStudent", fields: [studentId], references: [id])
+
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id])
+
+  // Denormalized from membershipPlan.schoolId — see header comment.
+  schoolId String
+
+  status    MembershipStatus    @default(ACTIVE)
+  startDate DateTime            @default(now())
+  frequency MembershipFrequency
+
+  // Class Pack / Friend Pass only — decremented at Booking creation (Phase 11 scope;
+  // this phase only sets the initial value from MembershipPlan.classesIncluded).
+  classesRemaining Int?
+
+  expiryDate DateTime?
+
+  // Inherited from MembershipPlan when it names one (Spec 55 §6.1) — restricts which
+  // Class this Membership can book. Set once at creation from membershipPlan.scopedClassId.
+  scopedClassId String?
+  scopedClass   Class? @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
+
+  // Friend Pass only — distinguishes a School comp from a paid purchase.
+  giftedById String?
+  giftedBy   User?   @relation("MembershipGiftedBy", fields: [giftedById], references: [id])
+
+  stripeSubscriptionId String? @unique // see header comment; SUBSCRIPTION-type only
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+
+  // Composite index leading with the tenant column (Decision 30).
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([membershipPlanId])
+}
+
+/// Transaction (Phase 9, Spec 55 §6.1) — "The per-charge ledger record for
+/// Student-to-School payments (Membership purchases)." No separate "invoice id"
+/// column — this row's own `id` serves that purpose (matching every other model's
+/// convention in this schema; nothing distinguishes an "invoice id" from the row
+/// identity itself anywhere in Spec 55's text).
+///
+/// A Transaction row is NOT created for the £0-immediate-Active purchase path
+/// (Spec 55 §6.1: "any Cash/Bank-eligible plan priced at 0... with no Transaction or
+/// wait at all"). For every other path (Stripe one-time/Subscription, Cash/Bank
+/// Transfer), a Transaction is created synchronously at purchase time with status
+/// PENDING — this reading is the Phase 9 kickoff prompt's own resolution of a real
+/// ambiguity in Spec 55's text (§7's endpoint description names the Transaction-at-
+/// purchase-time behavior only for the Cash/Bank case in its own sentence, but §6.1's
+/// TransactionStatus enum explicitly includes PENDING and FAILED as real states a
+/// Stripe-paid Transaction can reach, and confirms "the Transaction also references
+/// the resulting Membership" without qualifying that to Cash/Bank only) — see
+/// MembershipsService.purchase()'s own comment for the full reasoning trail.
+///
+/// `paymentMethod` reuses PaymentAccountProvider directly (see that enum's own
+/// comment) — copied from the School's own PaymentAccount.provider at purchase time,
+/// never chosen independently per-purchase (a School has exactly one PaymentAccount,
+/// Phase 8's own @@unique([schoolId])).
+///
+/// `stripePaymentIntentId` correlates `payment_intent.succeeded/failed` webhook
+/// events back to this row — not a Spec 55-named column, but required for the
+/// webhook processor to find which Transaction a payment event concerns; same
+/// Developer-level-addition class as Membership.stripeSubscriptionId above.
+model Transaction {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  studentId String
+  student   User   @relation("TransactionPayer", fields: [studentId], references: [id])
+
+  paymentAccountId String
+  paymentAccount   PaymentAccount @relation(fields: [paymentAccountId], references: [id])
+
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id])
+
+  // Set once payment settles and the Membership is created (Spec 55 §6.1) — null
+  // until then.
+  membershipId String?
+  membership   Membership? @relation(fields: [membershipId], references: [id])
+
+  billingDate DateTime @default(now())
+  amount      Int // minor-unit, same convention as MembershipPlan.price
+  currency    String?
+
+  status        TransactionStatus
+  paymentMethod PaymentAccountProvider
+
+  // Only ever reachable for Stripe-paid Transactions (Decision 55) — Cash/Bank rows
+  // have no Stripe charge id to match. No Phase 9 code path sets this (out of scope
+  // — see the Phase 9 kickoff prompt §3); modeled for schema completeness only.
+  disputedAmount Int?
+
+  // Cumulative across possibly-multiple partial refunds against the same Transaction
+  // (Spec 55 §6.1). No Phase 9 code path sets this (refund isn't buildable yet —
+  // needs Booking); modeled for schema completeness only, always null this phase.
+  refundedAmount Int?
+
+  stripePaymentIntentId String? @unique // see header comment; Stripe-paid only
+
+  /// Carries the Stripe Subscription id from MembershipsService.purchase() (where
+  /// it's returned synchronously by PaymentsService.subscribe()) through to the
+  /// stripe-webhook-processing job's payment_intent.succeeded handler, which copies
+  /// it onto the Membership row it creates — Membership doesn't exist yet at
+  /// purchase time (Decision 6), so this is the only place to stash it in the
+  /// interim. SUBSCRIPTION-type purchases only; not unique itself (unlike
+  /// Membership.stripeSubscriptionId) since nothing looks a Transaction up by it.
+  stripeSubscriptionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite index leading with the tenant column (Decision 30).
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([membershipPlanId])
 }

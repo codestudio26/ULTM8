@@ -84,6 +84,43 @@ export class TenantAuthorizationService {
   }
 
   /**
+   * Throws ForbiddenException unless `userId` currently holds an active
+   * SCHOOL_OWNER_MANAGER, BRANCH_STAFF, or INSTRUCTOR RoleGrant scoped to `schoolId` —
+   * i.e. any School staff role, not just Owner/Manager. Added in Phase 9 for
+   * GET /students/{id}/membership-status, whose confirmed authorization (Spec 55 §7:
+   * "Branch Staff-accessible") is new ground in this codebase — grepped before
+   * writing this: BRANCH_STAFF had never appeared as an access check on another
+   * module's endpoint, only in role-grants.service.ts's own grant-management DTOs.
+   * Reads "Branch Staff-accessible" loosely as "any School staff role" rather than
+   * literally excluding School Owner/Manager from their own School's check, since
+   * nothing in Spec 55 suggests Owner/Manager should be locked out of a narrower
+   * signal than what assertSchoolOwner already grants them. A School-scoped
+   * BRANCH_STAFF/INSTRUCTOR grant (branchId null) or a Branch-scoped one both count —
+   * this endpoint returns a computed active/expired signal only, never a raw
+   * Membership/Transaction row, so there's no Branch-level row to scope further
+   * against (see Membership/Transaction's own RLS policy comment in this phase's
+   * migration for why raw rows are denied to these two roles entirely).
+   */
+  async assertStaffAtSchool(userId: string, schoolId: string): Promise<void> {
+    const grant = await this.prismaApp.withTenantContext(userId, (tx) =>
+      tx.roleGrant.findFirst({
+        where: {
+          userId,
+          schoolId,
+          role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] },
+          revokedAt: null,
+        },
+        select: { id: true },
+      }),
+    );
+    if (!grant) {
+      throw new ForbiddenException(
+        'Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action (Spec §7).',
+      );
+    }
+  }
+
+  /**
    * Throws BadRequestException unless `branchId` references a Branch belonging to
    * `schoolId`. Shared by every module that lets a caller scope a child row (Class,
    * TimetableSlot, ...) to a specific Branch — moved here from ClassesService in

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Headers, HttpCode, Param, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiExcludeEndpoint, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -71,6 +71,15 @@ export class PaymentsController {
   @Post('payment-accounts/:id/connect/onboard')
   initiateConnectOnboarding(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.paymentsService.initiateConnectOnboarding(user.sub, id);
+  }
+
+  // ---- Cash/Bank Transfer settlement confirmation (Phase 9) ----
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('transactions/:id/confirm')
+  confirmTransaction(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.paymentsService.confirmTransaction(user.sub, id);
   }
 
   // ---- Webhook receiving — Stripe calls this directly, no ULTM8 access token ----
