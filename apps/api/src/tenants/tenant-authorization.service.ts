@@ -52,6 +52,38 @@ export class TenantAuthorizationService {
   }
 
   /**
+   * Throws ForbiddenException unless `userId` currently holds an active
+   * FRANCHISE_OWNER RoleGrant scoped to `franchiseId`. Mirrors assertSchoolOwner
+   * exactly — added in Phase 8 for PaymentAccount's Franchise side.
+   *
+   * Genuinely untestable via any real product flow as of Phase 8: no
+   * FranchisesController/FranchisesService exists yet (Phase 2 deliberately
+   * deferred Franchise CRUD), and FRANCHISE_OWNER is deliberately excluded from
+   * GrantableRoleDto (see its own header comment) — there is no self-service way
+   * for anyone to hold this grant today. Built correctly anyway and exercised via
+   * direct-seed fixtures in the e2e spec, the same convention every other
+   * cross-tenant test in this codebase already uses.
+   */
+  async assertFranchiseOwner(userId: string, franchiseId: string): Promise<void> {
+    const grant = await this.prismaApp.withTenantContext(userId, (tx) =>
+      tx.roleGrant.findFirst({
+        where: {
+          userId,
+          franchiseId,
+          role: 'FRANCHISE_OWNER',
+          revokedAt: null,
+        },
+        select: { id: true },
+      }),
+    );
+    if (!grant) {
+      throw new ForbiddenException(
+        'Only that Franchise\'s Owner may perform this action (Spec §8.2).',
+      );
+    }
+  }
+
+  /**
    * Throws BadRequestException unless `branchId` references a Branch belonging to
    * `schoolId`. Shared by every module that lets a caller scope a child row (Class,
    * TimetableSlot, ...) to a specific Branch — moved here from ClassesService in

@@ -6,7 +6,14 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true (Phase 8) — Stripe webhook signature verification
+  // (stripe.webhooks.constructEvent, Section 10.2) needs the exact, unparsed request
+  // body bytes; verification fails against a re-serialized JSON object, since
+  // whitespace/key-order can differ from what Stripe actually signed. Nest's own
+  // supported mechanism for this populates req.rawBody alongside the normal parsed
+  // body for every route — it doesn't disable JSON parsing anywhere else, only adds
+  // the raw buffer PaymentsController's webhook handler reads via @Req().
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // CORS — apps/school-portal (and any other browser client) calls this API
   // cross-origin, and without this, a real browser blocks every request starting

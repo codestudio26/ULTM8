@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { Prisma } from '@prisma/client';
+import Stripe from 'stripe';
 
 /**
  * Standardized {error:{code,message}} envelope on every non-2xx response.
@@ -95,7 +96,48 @@ export class HttpExceptionFilter implements ExceptionFilter {
       };
     }
 
-    // 3. Anything else unhandled — fixed generic message, always. Full detail logged,
+    // 3. Stripe SDK errors (Phase 8) — same "never pass exception.message through"
+    // reasoning as Prisma above: Stripe's own error messages can embed request
+    // parameter detail not meant for the caller. Centralized here rather than each
+    // PaymentsModule call site hand-rolling its own try/catch — code review caught
+    // an earlier draft doing exactly that ad hoc for signature verification only,
+    // which wouldn't have covered the next Stripe call (onboarding, and every
+    // future checkout/refund call in Phase 9+) without copy-pasting the same
+    // try/catch again. One mapping here covers all of them.
+    if (exception instanceof Stripe.errors.StripeSignatureVerificationError) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        code: 'BAD_REQUEST',
+        message: 'Invalid webhook signature.',
+        logLevel: 'warn',
+      };
+    }
+    if (exception instanceof Stripe.errors.StripeInvalidRequestError) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        code: 'BAD_REQUEST',
+        // Stripe's own `message` on this specific error class describes what was
+        // wrong with the caller's own request parameters (e.g. an unsupported
+        // country code) — safe to surface, unlike the generic exception.message
+        // fallback this filter otherwise refuses to pass through.
+        message: exception.message,
+        logLevel: 'warn',
+      };
+    }
+    if (exception instanceof Stripe.errors.StripeError) {
+      // StripeConnectionError, StripeAPIError, StripeAuthenticationError, etc. —
+      // Stripe itself unreachable/misbehaving or ULTM8's own credentials are wrong;
+      // none of these are the caller's fault, same category as
+      // PrismaClientInitializationError above.
+      return {
+        status: HttpStatus.SERVICE_UNAVAILABLE,
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'A required service is temporarily unavailable. Please try again shortly.',
+        logLevel: 'error',
+      };
+    }
+
+    // 4. Anything else unhandled — fixed generic message, always. Full detail logged,
     // never returned.
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,

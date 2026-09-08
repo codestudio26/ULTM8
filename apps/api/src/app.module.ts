@@ -10,6 +10,7 @@ import { TimetableModule } from './timetable/timetable.module';
 import { InstructorsModule } from './instructors/instructors.module';
 import { UsersModule } from './users/users.module';
 import { SettingsModule } from './settings/settings.module';
+import { PaymentsModule } from './payments/payments.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -26,6 +27,7 @@ import { JobsModule } from './jobs/jobs.module';
     InstructorsModule,
     UsersModule,
     SettingsModule,
+    PaymentsModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
