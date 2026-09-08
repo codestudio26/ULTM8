@@ -9,6 +9,7 @@ import { ClassesModule } from './classes/classes.module';
 import { TimetableModule } from './timetable/timetable.module';
 import { InstructorsModule } from './instructors/instructors.module';
 import { UsersModule } from './users/users.module';
+import { SettingsModule } from './settings/settings.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { JobsModule } from './jobs/jobs.module';
     TimetableModule,
     InstructorsModule,
     UsersModule,
+    SettingsModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

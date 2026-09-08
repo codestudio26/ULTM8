@@ -531,3 +531,54 @@ model Instructor {
   @@index([schoolId, branchId])
   @@index([userId])
 }
+
+/// LegalDocument (Phase 7, Spec 55 SettingsModule row) — storage for GET
+/// /legal/{doc}. `content` is nullable and starts null for every seeded row — Spec
+/// 55's own screen inventory never captured real Terms & Conditions/Privacy
+/// Statement text ("Content screens, no CMS fields beyond static text observed"),
+/// and that text must come from actual legal/product input, never invented here.
+/// No admin-authoring endpoint exists yet (needs Platform Admin auth, §4.4 — not
+/// built, see the Phase 7 kickoff prompt) — until then this table can only be
+/// populated by a direct DB write/seed, not through the API.
+///
+/// Why a real table here and not a TS constant like SettingsModule's own
+/// languages/currencies lists (constants/languages.ts, constants/currencies.ts)?
+/// NOT because this is "a confirmed endpoint and they aren't" — all three are
+/// equally confirmed endpoints, and this table is in exactly the same
+/// no-confirmed-write-path position they are (caught on code review: an earlier
+/// draft of this comment used that reasoning, and it doesn't actually hold up — a
+/// migration-seeded INSERT isn't meaningfully more "dynamic" than a TS constant,
+/// both need a deploy to change). The real distinguishing factor is content shape
+/// and growth direction: `content` is meant to eventually hold arbitrary long-form
+/// text authored through a future admin CMS flow — the same category Spec 55
+/// explicitly describes TranslationsModule's own content as ("CMS-backed... not
+/// static JSON") — where a language/currency list is a small, closed reference set
+/// with no comparable long-form-content future. A per-row `updatedAt` and a
+/// human-meaningful `slug` primary key are exactly the shape that content
+/// eventually wants and a closed reference list doesn't need.
+///
+/// No RLS — not tenant-scoped data (global, platform-level legal content).
+/// Precedent-checked, not just asserted: AdminUser (CREATE TABLE'd in
+/// 20260902000000_init but never gets ENABLE ROW LEVEL SECURITY) genuinely
+/// establishes that a table with no tenant column can skip RLS in this codebase —
+/// but AdminUser has never actually been queried by any service code anywhere in
+/// this repo (verified by grep), and its own migration comment says its access "is
+/// gated entirely at the application layer via the separate Platform Admin
+/// identity realm, which doesn't exist yet." So AdminUser is real precedent for
+/// "this table needs no RLS policy" — it is NOT precedent for "query the bare
+/// PrismaAppService client directly, bypassing withTenantContext," which
+/// SettingsService does here for the first time in this codebase, reasoned
+/// correctly from withTenantContext's own implementation (see its call site's own
+/// comment), not by following an already-established querying pattern that turns
+/// out not to exist.
+model LegalDocument {
+  /// URL-slug identity, not a UUID — the confirmed route is GET /legal/{doc}, a
+  /// human-meaningful key ("terms-and-conditions"), not an opaque id.
+  slug String @id
+
+  title   String
+  content String?
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
