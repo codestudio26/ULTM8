@@ -16,10 +16,17 @@ import { StripeClientService } from './stripe-client.service';
  * QueueModule directly for @InjectQueue(STRIPE_WEBHOOK_PROCESSING_QUEUE) —
  * same pattern AuthModule already established for TwilioVerifyService's own queue
  * injection, not a new convention.
+ *
+ * Exports PaymentsService (Phase 9, first time this module exports anything) — so
+ * MembershipsModule can call charge()/subscribe()/confirmTransaction() directly
+ * rather than duplicating Stripe-primitive logic, same cross-module
+ * service-injection pattern TenantsModule's own SchoolsService/
+ * TenantAuthorizationService exports already established.
  */
 @Module({
   imports: [TenantsModule, QueueModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, StripeClientService],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

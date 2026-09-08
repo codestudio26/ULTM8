@@ -11,6 +11,8 @@ import { InstructorsModule } from './instructors/instructors.module';
 import { UsersModule } from './users/users.module';
 import { SettingsModule } from './settings/settings.module';
 import { PaymentsModule } from './payments/payments.module';
+import { MembershipsModule } from './memberships/memberships.module';
+import { TransactionsModule } from './transactions/transactions.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -28,6 +30,8 @@ import { JobsModule } from './jobs/jobs.module';
     UsersModule,
     SettingsModule,
     PaymentsModule,
+    MembershipsModule,
+    TransactionsModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
