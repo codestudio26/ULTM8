@@ -361,6 +361,20 @@ export class MembershipsService {
     if (!schoolId) {
       throw new BadRequestException('schoolId query parameter is required');
     }
+    // FOUND ON REVIEW (self-check, second pass): studentId feeds directly into
+    // withTenantContext(studentId, ...) below as the RLS tenant context, not just a
+    // WHERE-clause value like every other :id param in this codebase — that
+    // method's own isUuid() guard throws a bare Error (mapped to a generic 500 by
+    // HttpExceptionFilter, not a clean 400) for a malformed id, unlike Prisma's own
+    // findUnique-returns-null-for-a-bad-id behavior every other endpoint relies on.
+    // No ParseUUIDPipe convention exists anywhere else in this codebase to reuse,
+    // so checked explicitly here instead, matching this codebase's own preference
+    // for explicit checks over silently letting a downstream throw surface as a
+    // confusing error (same reasoning PaymentsController's rawBody/signature checks
+    // already established).
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId)) {
+      throw new BadRequestException('id path parameter must be a valid UUID');
+    }
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     // BUG FOUND ON REVIEW: an earlier draft ran this query under
     // withTenantContext(callerId, ...) — the CALLER's own tenant context. Under
