@@ -29,9 +29,11 @@ export enum ClassCancellationPolicyDto {
  *
  * Deliberately excluded:
  *  - `franchiseId` — a self-service-created School is always independent (franchiseId
- *    null) in this phase. Linking a School to a Franchise has no confirmed mechanism
- *    or authorization rule of its own, and Franchise CRUD is explicitly out of scope
- *    this phase — flagged, not built.
+ *    null) at creation time. Linking a School to a Franchise is NOT a
+ *    CreateSchoolDto/UpdateSchoolDto field even now that a mechanism exists (Phase
+ *    16b-i, Decision 98) — it's a dedicated, single-purpose, auditable action,
+ *    `POST /schools/:id/join-franchise` (SchoolsService.joinFranchise), narrowly
+ *    one-way only (no leave/switch) — see that method's own header comment.
  *  - `franchiseFeeSubscriptionStatus` — system-synced from the Franchise-fee Stripe
  *    Subscription via webhook (Spec §6.1), never client-settable; only ever appears in
  *    read responses, and only meaningful once a School has a Franchise (see above).
