@@ -212,6 +212,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/franchises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_findAll"];
+        put?: never;
+        post: operations["FranchisesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["FranchisesController_update"];
+        trace?: never;
+    };
+    "/v1/franchises/{id}/schools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_findSchools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/classes": {
         parameters: {
             query?: never;
@@ -1353,6 +1401,70 @@ export interface components {
         RoleGrantListResponseDto: {
             items: components["schemas"]["RoleGrantResponseDto"][];
             nextCursor?: string | null;
+        };
+        CreateFranchiseDto: {
+            name: string;
+            mobileNumber?: string;
+            address?: string;
+            type?: string;
+            activities?: string[];
+            facilities?: string[];
+            /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
+            defaultLanguage?: string;
+            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            defaultCurrency?: string;
+            description?: string;
+            logoUrl?: string;
+            bannerUrl?: string;
+            /**
+             * @default FLAT
+             * @enum {string}
+             */
+            feeModel: "FLAT" | "PER_HEADCOUNT";
+        };
+        FranchiseResponseDto: {
+            id: string;
+            name: string;
+            mobileNumber?: string | null;
+            address?: string | null;
+            type?: string | null;
+            activities: string[];
+            facilities: string[];
+            defaultLanguage?: string | null;
+            defaultCurrency?: string | null;
+            description?: string | null;
+            logoUrl?: string | null;
+            bannerUrl?: string | null;
+            /** @enum {string} */
+            feeModel: "FLAT" | "PER_HEADCOUNT";
+            createdAt: string;
+            updatedAt: string;
+            accessToken?: string;
+        };
+        FranchiseListResponseDto: {
+            items: components["schemas"]["FranchiseResponseDto"][];
+            /** @description Cursor for the next page, or null if this is the last page. */
+            nextCursor?: string | null;
+        };
+        UpdateFranchiseDto: {
+            name?: string;
+            mobileNumber?: string;
+            address?: string;
+            type?: string;
+            activities?: string[];
+            facilities?: string[];
+            /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
+            defaultLanguage?: string;
+            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            defaultCurrency?: string;
+            description?: string;
+            logoUrl?: string;
+            bannerUrl?: string;
+            /**
+             * @default FLAT
+             * @enum {string}
+             */
+            feeModel: "FLAT" | "PER_HEADCOUNT";
         };
         CreateClassDto: {
             /** @description Branch to scope this Class to. Omit for a School-wide Class. */
@@ -2632,6 +2744,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleGrantResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_findAll: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFranchiseDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFranchiseDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_findSchools: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolListResponseDto"];
                 };
             };
         };
