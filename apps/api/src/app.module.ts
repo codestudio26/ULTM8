@@ -13,6 +13,7 @@ import { SettingsModule } from './settings/settings.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MembershipsModule } from './memberships/memberships.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { RanksModule } from './ranks/ranks.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { JobsModule } from './jobs/jobs.module';
     PaymentsModule,
     MembershipsModule,
     TransactionsModule,
+    RanksModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
