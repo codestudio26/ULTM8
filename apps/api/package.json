@@ -12,7 +12,8 @@
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json --forceExit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "export:openapi": "ts-node -r tsconfig-paths/register scripts/export-openapi.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^10.2.3",

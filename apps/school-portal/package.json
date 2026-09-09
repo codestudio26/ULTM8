@@ -2,7 +2,7 @@
   "name": "@ultm8/school-portal",
   "version": "0.1.0",
   "private": true,
-  "description": "React — School Portal (Spec §4.2). Tenant-facing web app: School/Branch management, auth, and staff invitations built in Phase 3. Classes, memberships, instructors, timetable, transactions are not built yet — those endpoints don't exist in apps/api.",
+  "description": "React — School Portal (Spec §4.2). Tenant-facing web app: School/Branch management, auth, and staff invitations built in Phase 3. As of Phase 14, apps/api has 14 more backend modules (Classes, Timetable, Instructors, Memberships, Transactions, Waivers, Ranks, Booking/Waitlist, Guardians, Attendance, Academies, Settings, Payments) with no corresponding UI here yet — the endpoints exist and are stable, the screens for them just haven't been built.",
   "type": "module",
   "scripts": {
     "dev": "vite",
