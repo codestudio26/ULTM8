@@ -4,6 +4,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
@@ -35,6 +36,7 @@ export class BookingsService {
 
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
@@ -94,7 +96,7 @@ export class BookingsService {
         // (other Classes are entirely unaffected). First use of an explicit lock in
         // this codebase; flagged here rather than silently introduced.
         await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
-        const occupied = await this.countOccupiedSeats(tx, classId);
+        const occupied = await this.countOccupiedSeats(classId);
         if (occupied + partySize > cls.capacity) {
           throw new ConflictException(
             'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
@@ -314,11 +316,24 @@ export class BookingsService {
   }
 
   /** "A Class's Full status counts every attendee across all Bookings... including
-   * Friend Pass guests on the attendee list — not raw Booking count" (SKILL.md §9). */
-  private async countOccupiedSeats(tx: TenantTx, classId: string): Promise<number> {
+   * Friend Pass guests on the attendee list — not raw Booking count" (SKILL.md §9).
+   *
+   * FOUND ON REVIEW, before this ever shipped: this MUST run via PrismaJobsService
+   * (ultm8_jobs), not the caller's own `tx` — Booking/BookingAttendee's own RLS
+   * (Decision 89) is narrow-plus-broad-STAFF-ONLY-read, so an ORDINARY STUDENT
+   * caller's own tenant context can only ever see THEIR OWN rows under RLS, never
+   * another Student's. Counting via `tx` would silently undercount every time (0,
+   * always, unless the counting Student happens to already hold the only booking),
+   * defeating the Full-Class gate entirely for exactly the caller who most needs it
+   * enforced. `ultm8_jobs` bypasses RLS for this one read the same way it already
+   * does for the background jobs' own sweeps — this is a genuine, deliberate reuse
+   * of that mechanism from an interactive request path, not a background job, since
+   * no interactive-path alternative exists that both preserves Student-to-Student
+   * row privacy AND lets a Student's own booking attempt see the true occupancy. */
+  private async countOccupiedSeats(classId: string): Promise<number> {
     const [bookingCount, attendeeCount] = await Promise.all([
-      tx.booking.count({ where: { classId, status: 'UPCOMING' } }),
-      tx.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
+      this.prismaJobs.booking.count({ where: { classId, status: 'UPCOMING' } }),
+      this.prismaJobs.bookingAttendee.count({ where: { booking: { classId, status: 'UPCOMING' } } }),
     ]);
     return bookingCount + attendeeCount;
   }

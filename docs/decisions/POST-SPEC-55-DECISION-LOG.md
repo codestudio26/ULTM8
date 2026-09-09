@@ -474,6 +474,10 @@ Whether this same asymmetric shape should retroactively apply to any of the four
 
 Logged during ULTM8 Phase 11 (ClassesModule: booking + waitlist) kickoff, 9 Sep 2026, resolving a gap this phase's own verification pass surfaced before build.
 
+### Addendum — a real gap in this decision's own coverage, found once CI actually exercised it
+
+The broad Staff-read policy above solves the Class-roster/audit read case, but a genuinely separate case surfaced only once the e2e suite ran against real Postgres and returned wrong results rather than an error: the CAPACITY CHECK itself (an ordinary STUDENT's own booking attempt asking "is this Class full?") also needs to see every OTHER Student's Booking/BookingAttendee rows for that Class — and the broad policy only admits Staff roles (`SCHOOL_OWNER_MANAGER`/`BRANCH_STAFF`/`INSTRUCTOR`), not `STUDENT`. Under the policy as originally designed, a plain Student's own tenant context could only ever see their own rows, so `countOccupiedSeats` (and the equivalent waitlist-position lookup) silently undercounted to zero every time — not a rejected query, a WRONG answer, which is why it wasn't caught by RLS itself throwing an error and instead needed the e2e suite's own assertions to surface it. Broadening the read policy further to admit `STUDENT` would have defeated the whole point of Decision 89 (any Student could then read every other Student's raw Booking rows directly). Fixed instead by running those two specific aggregate reads through `PrismaJobsService` (`ultm8_jobs`) — the same RLS-bypassing mechanism already used for the background jobs' own sweeps, reused here from an interactive request path because no policy shape could serve "an aggregate count across all Students, requested by any one of them" without either leaking row-level access or requiring a mechanism RLS itself doesn't offer (aggregate-only visibility). `BookingAttendee` needed a fresh `ultm8_jobs` SELECT grant it didn't have before, added in the same migration.
+
 ---
 
 ## Decision 90 — Rank-gate enforcement bridges `Class.activities` to `Discipline.name` by exact string match

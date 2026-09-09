@@ -237,11 +237,22 @@ CREATE POLICY "booking_attendee_write" ON "BookingAttendee"
     )
   );
 
--- No ultm8_jobs grant on BookingAttendee — neither background job this phase touches
--- guest rows (booking-no-show-processing only flips Booking.status; the waitlist
--- cascade never creates BookingAttendee rows, since a claim only ever produces a
--- single-Student Booking — see WaitlistService's own comment on why claiming from a
--- waitlist never re-adds the original attendee list a Cancellation may have had).
+-- FOUND ON REVIEW, before this ever shipped: no background job touches guest rows
+-- (booking-no-show-processing only flips Booking.status; the waitlist cascade never
+-- creates BookingAttendee rows), but the CAPACITY CHECK itself does need this —
+-- BookingsService/WaitlistService's occupancy count runs via PrismaJobsService
+-- (ultm8_jobs), NOT the caller's own tenant context, precisely because Booking/
+-- BookingAttendee's own narrow-plus-broad-Staff-only-read RLS (Decision 89) means an
+-- ORDINARY STUDENT caller can never see another Student's rows to count them at all
+-- — the broad read policy only admits Staff roles. Without ultm8_jobs bypassing RLS
+-- for this one read, a capacity check from a Student's own booking attempt would
+-- always undercount (seeing only their own rows), silently defeating the whole
+-- Full-Class gate. See BookingsService.countOccupiedSeats's own comment.
+GRANT SELECT ON "BookingAttendee" TO ultm8_jobs;
+CREATE POLICY "booking_attendee_jobs_read" ON "BookingAttendee"
+  FOR SELECT
+  TO ultm8_jobs
+  USING (true);
 
 -- ============================================================================
 -- WaitlistEntry — same asymmetric narrow-plus-broad RLS structure as Booking above,

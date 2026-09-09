@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -24,6 +25,7 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
 export class WaitlistService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
   ) {}
 
@@ -45,7 +47,15 @@ export class WaitlistService {
       // codebase's usual updateMany+count-guard pattern doesn't apply to an
       // aggregate read like this one.
       await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
-      const highest = await tx.waitlistEntry.findFirst({
+      // FOUND ON REVIEW, before this ever shipped: like BookingsService's own
+      // occupancy count, this MUST run via PrismaJobsService, not `tx` — WaitlistEntry's
+      // narrow-plus-broad-STAFF-ONLY-read RLS (Decision 89) means an ordinary Student
+      // caller can never see another Student's WaitlistEntry rows under their own
+      // tenant context, so `highest` would always be null/undefined from any Student's
+      // own perspective — every joiner would silently land on position 1, regardless
+      // of how many people are already waiting, breaking FCFS ordering entirely (not
+      // just under concurrency — this was wrong even sequentially).
+      const highest = await this.prismaJobs.waitlistEntry.findFirst({
         where: { classId },
         orderBy: { position: 'desc' },
         select: { position: true },
@@ -135,9 +145,12 @@ export class WaitlistService {
         // Same explicit-row-lock fix as BookingsService.bookClass's own capacity
         // check — see that comment for the full reasoning.
         await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${cls.id} FOR UPDATE`;
+        // Same PrismaJobsService fix as BookingsService.countOccupiedSeats — `tx`
+        // (the claiming Student's own tenant context) can never see another
+        // Student's Booking/BookingAttendee rows under Decision 89's RLS shape.
         const [bookingCount, attendeeCount] = await Promise.all([
-          tx.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } }),
-          tx.bookingAttendee.count({ where: { booking: { classId: cls.id, status: 'UPCOMING' } } }),
+          this.prismaJobs.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } }),
+          this.prismaJobs.bookingAttendee.count({ where: { booking: { classId: cls.id, status: 'UPCOMING' } } }),
         ]);
         if (bookingCount + attendeeCount + 1 > cls.capacity) {
           throw new ConflictException('This Class filled up again before the claim completed — please try the next opening.');

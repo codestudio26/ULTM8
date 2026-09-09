@@ -332,6 +332,12 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   });
 
   it('PATCH /bookings/{id}/override lets Staff amend an existing override\'s justification, but not a non-overridden Booking', async () => {
+    // studentB's own Class Pack from the earlier "spend order"/rank-gated-override
+    // tests is already fully exhausted (0 remaining) — fund this attempt with a
+    // fresh one so it actually reaches the one-active-Booking guard (via the
+    // create()-time P2002 check) rather than failing earlier on insufficient funds.
+    await mkActiveMembership(studentB.id, classPackPlanId, 1);
+
     // studentB already holds an UPCOMING, Staff-overridden Booking on
     // classRankGated from the previous test — a second create attempt for the same
     // Student/Class correctly hits the one-active-Booking guard (409) regardless of
@@ -492,6 +498,16 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   // ---------------------------------------------------------------------------
 
   it('cancelling BEFORE the refund cutoff restores the spent credit (REFUNDED)', async () => {
+    // studentB has accumulated several Class Pack Memberships from earlier tests in
+    // this suite, some still holding a positive balance — since spend-order only
+    // guarantees "prefer general-access first," among MULTIPLE simultaneously-active
+    // Class Packs the selection order is otherwise unspecified. Expiring all of
+    // studentB's prior ones first makes the fresh Membership created below the only
+    // eligible candidate, so this test's own classesRemaining assertions are
+    // deterministic rather than depending on exactly which earlier test left which
+    // balance behind.
+    await superuser.membership.updateMany({ where: { studentId: studentB.id, classesRemaining: { not: null } }, data: { status: 'EXPIRED' } });
+
     const membership = await mkActiveMembership(studentB.id, classPackPlanId, 3);
     const bookRes = await request(app.getHttpServer())
       .post(`/v1/classes/${classWaiverGated.id}/book`)
