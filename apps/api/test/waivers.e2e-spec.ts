@@ -120,6 +120,18 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
   });
 
   afterAll(async () => {
+    // Phase 15 — creating a Waiver above for real enqueues waiver-signature-
+    // requests, which (unlike its old log-only-stub self) now fans out a real
+    // Notification row per Student at this School via a live worker consuming
+    // real CI Redis, asynchronously, outside this test's own control. Found
+    // when this exact cleanup started failing on Notification's own
+    // ON DELETE RESTRICT foreign key. Queried by the same email pattern the
+    // final `user.deleteMany` below already trusts, not a hand-maintained id
+    // list — matches the same fix in bookings.e2e-spec.ts's own afterAll.
+    const createdUserIds = (
+      await superuser.user.findMany({ where: { email: { contains: 'waivers-http-' } }, select: { id: true } })
+    ).map((u) => u.id);
+    await superuser.notification.deleteMany({ where: { userId: { in: createdUserIds } } });
     await superuser.waiverSignature.deleteMany({ where: { id: { in: signatureIds } } });
     await superuser.waiver.deleteMany({ where: { id: { in: waiverIds } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });

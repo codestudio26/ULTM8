@@ -193,6 +193,20 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   });
 
   afterAll(async () => {
+    // Phase 15 — creating a Waiver above for real enqueues waiver-signature-
+    // requests, which (unlike its old log-only-stub self) now fans out a real
+    // Notification row per Student at this School via a live worker consuming
+    // real CI Redis, asynchronously, outside this test's own control. Found
+    // when this exact cleanup step started failing on Notification's own
+    // ON DELETE RESTRICT foreign key. Queried by the same email pattern the
+    // final `user.deleteMany` below already trusts (not a hand-maintained
+    // list of the two named Students) — this file also creates at least one
+    // additional Student dynamically further down, which a hardcoded
+    // [studentA.id, studentB.id] list would have missed.
+    const createdUserIds = (
+      await superuser.user.findMany({ where: { email: { contains: 'bookings-http-' } }, select: { id: true } })
+    ).map((u) => u.id);
+    await superuser.notification.deleteMany({ where: { userId: { in: createdUserIds } } });
     await superuser.bookingAttendee.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { id: { in: bookingIds } } });
     await superuser.waitlistEntry.deleteMany({ where: { id: { in: waitlistEntryIds } } });
