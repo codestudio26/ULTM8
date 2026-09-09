@@ -525,3 +525,29 @@ The alternative reading — a guest who is themselves a separately-registered St
 ### Recorded by
 
 Logged during ULTM8 Phase 11 (ClassesModule: booking + waitlist) kickoff, 9 Sep 2026 — flagged prominently rather than silently built around, per CLAUDE.md's standing "never invent unspecified business logic... mark it explicitly as unresolved and escalate" rule. Surfaced to the product owner in the Phase 11 PR description for explicit awareness.
+
+---
+
+## Decision 92 — GuardianLink/ConsentRecord: platform-scoped, self-only RLS; multiple Guardians per minor allowed; withdrawal cascade is per-Guardian, not consensus-gated
+
+**Date:** 9 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation, not a product-owner-approved decision — this whole area (Guardian/consent) touches minors' data and several sub-questions here have no confirmed answer either way
+**Resolves:** several gaps this log never addressed — SKILL.md §14 confirms `ConsentRecord`'s field list, its two-tier model, and the withdrawal-asymmetry rule, but is silent on: (a) the exact RLS shape (only that it's "platform-scoped, not School-scoped" per §16's canonical-terminology gloss), (b) whether more than one Guardian may link to the same minor, and (c) what happens when multiple Guardians hold independent consent for the same minor and one of them withdraws.
+
+### Decision
+
+`GuardianLink` and `ConsentRecord` use a narrow, self-only RLS policy — `guardianId = current_setting('app.current_user_id')`, ALL commands, no School Owner/Manager branch (there is no School to scope to) and no shared-visibility branch at all (unlike `User`'s own schoolId-less policy, which still has a shared-School OR-clause — this is narrower than that established precedent, not identical to it). A `ultm8_jobs` SELECT-only bypass is added to `ConsentRecord` (for Attendance's own interactive scan-time consent check, Phase 13) and a `ultm8_jobs` SELECT+UPDATE bypass to `RoleGrant` (previously ungranted to that role at all) so the baseline-withdrawal cascade can actually write to a linked minor's own `RoleGrant` rows, which the Guardian's own narrow tenant context cannot reach.
+
+Multiple Guardians may link to the same minor — no uniqueness constraint prevents it. Each Guardian's consent is tracked independently (`@@unique([guardianId, studentId, tier])`); withdrawing one Guardian's own baseline consent triggers the full RoleGrant-revocation cascade for that Student regardless of whether another linked Guardian's own baseline consent is still Active.
+
+### Why
+
+RLS shape: every prior narrow-RLS table in this schema (Membership, Transaction, WaiverSignature, StudentRank, Booking, WaitlistEntry) is School-scoped and has SOME broader-visibility branch (Staff-read, at minimum). ConsentRecord genuinely has none of that — no School exists to scope to, and nothing in §14 suggests anyone but the consenting Guardian should see a consent record directly (functional needs elsewhere, like Attendance's own scan-time check, are served by the `ultm8_jobs` bypass instead of broadening interactive-role visibility). Multiple Guardians: real-world co-parenting is a plausible, common case nothing in §14/§17 rules out, and rejecting a second Guardian's link attempt would be a harder mistake to walk back than permitting one. Withdrawal-cascade-is-per-Guardian: the confirmed text ("withdrawing baseline consent triggers the full cascade") is unconditional — inventing a "held back by another Guardian's still-Active consent" exception would be adding a business rule nothing in the spec states, in either direction.
+
+### What this does NOT resolve
+
+Whether a genuinely correct product answer to the multi-Guardian-consent-interaction question is "any one Guardian's withdrawal ends it" (what's built) or "requires all linked Guardians to withdraw" or something else entirely (e.g. only the Guardian who originally created the link can trigger the cascade) — none of this is addressed by Spec 55's confirmed text, and this decision should not be read as having settled it definitively; it's the most literal reading available, not asserted as the only defensible one. Also does not resolve the real data-erasure mechanics behind `account-deletion-processing` (built as a log-only stub this phase) or the age-13 limited-login interaction with consent (both explicitly out of scope, see the Phase 12 kickoff prompt §2).
+
+### Recorded by
+
+Logged during ULTM8 Phase 12 (GuardianModule) build, 9 Sep 2026 — flagged prominently rather than silently built around, per CLAUDE.md's standing "never invent unspecified business logic... mark it explicitly as unresolved and escalate" rule, doubly warranted given the subject is minors' data. Surfaced to the product owner for explicit awareness, not treated as settled.

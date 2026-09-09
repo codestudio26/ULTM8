@@ -236,6 +236,10 @@ model User {
   bookingsResolved         Booking[]         @relation("BookingResolvedBy")
   bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
   waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
+  guardianLinksAsGuardian  GuardianLink[]    @relation("GuardianLinkGuardian")
+  guardianLinksAsStudent   GuardianLink[]    @relation("GuardianLinkStudent")
+  consentRecordsAsGuardian ConsentRecord[]   @relation("ConsentRecordGuardian")
+  consentRecordsAsStudent  ConsentRecord[]   @relation("ConsentRecordStudent")
 
   @@index([email])
   @@index([phone])
@@ -1647,4 +1651,102 @@ model WaitlistEntry {
   @@index([schoolId])
   @@index([classId, position])
   @@index([studentId])
+}
+
+// =============================================================================
+// Phase 12 — GuardianModule (Guardian linking + two-tier ConsentRecord, Spec 55
+// §14). See the Phase 12 kickoff prompt for the full scoping rationale — Guardian
+// acting on behalf of a minor for payments/waivers/bookings, age-13 limited login,
+// and a consent-management UI are all deliberately out of scope this phase.
+// =============================================================================
+
+/// GuardianLink (Phase 12, SKILL.md §14/§17) — "Guardian 1—* linked Student
+/// (minor) profiles." A Developer-level model name (no schema-confirmed name
+/// given, same class of naming latitude as BookingAttendee/RankRequiredSkill).
+/// Whether the REVERSE (multiple Guardians linked to the same minor) is intended
+/// isn't confirmed either way — resolved to ALLOW it (no uniqueness constraint
+/// blocking a second Guardian from linking the same minor), the lower-risk
+/// default given real-world co-parenting is a real, plausible case nothing here
+/// confirms is disallowed. Flagged, not asserted as settled (see the Phase 12
+/// kickoff prompt §1 and Decision 92).
+model GuardianLink {
+  id String @id @default(uuid())
+
+  guardianId String
+  guardian   User   @relation("GuardianLinkGuardian", fields: [guardianId], references: [id])
+
+  studentId String
+  student   User   @relation("GuardianLinkStudent", fields: [studentId], references: [id])
+
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@unique([guardianId, studentId])
+  @@index([studentId])
+}
+
+/// ConsentRecord.tier — SKILL.md §14 (quoted): "carries two tiers, not one: a
+/// baseline tier covering the general account/attendance/grading data every
+/// Guardian-linked minor account requires, and a separate camera tier tied
+/// specifically to QR-check-in camera use and profile-photo capture."
+enum ConsentTier {
+  BASELINE
+  CAMERA
+}
+
+/// ConsentRecord.status — SKILL.md §14 (quoted): "status (Active / Withdrawn,
+/// with its own withdrawal timestamp)."
+enum ConsentStatus {
+  ACTIVE
+  WITHDRAWN
+}
+
+/// ConsentRecord (Phase 12, SKILL.md §14) — "a new, first-class, auditable,
+/// revocable consent entity — distinct from WaiverSignature." Confirmed fields
+/// (quoted): "Guardian reference, linked-minor (Student) reference, policyVersion
+/// (the specific privacy-notice/data-practice description consented to...),
+/// timestamp, and status."
+///
+/// PLATFORM-scoped, not School-scoped — §14 itself: "deliberately not COPPA-
+/// specific... built to the general shape shared by GDPR Art. 8, UK-GDPR, and
+/// LGPD" (the literal phrase "platform-scoped" is §16's own canonical-
+/// terminology gloss, cited together, not spliced as one continuous §14 quote).
+/// This is NOT the first schoolId-less table in this schema — User itself has
+/// none, and already has an established RLS shape for that
+/// (user_self_or_shared_school, joining through RoleGrant) — but it IS the first
+/// with no shared-visibility branch at all: self-only, full stop. See Decision
+/// 92 for the full RLS reasoning, including why a `ultm8_jobs` read policy is
+/// still needed here despite the narrow self-only shape (Attendance, Phase 13,
+/// needs to check a specific Student's own camera-tier status from an
+/// interactive scan request, not from the Guardian who owns the row).
+///
+/// One row per (guardian, student, tier) — a tier is its own independently
+/// revocable consent, not a boolean flag on a shared row. Multi-Guardian
+/// interaction (what happens if one Guardian withdraws baseline while another's
+/// own baseline consent for the same Student is still Active) isn't addressed
+/// anywhere in the confirmed text — resolved to the most literal reading:
+/// withdrawing ANY Guardian's own baseline consent for a Student triggers the
+/// full cascade for that Student regardless of any other Guardian's consent
+/// state, rather than inventing an "unless someone else still consents"
+/// exception nothing confirms. Flagged, not asserted as the only defensible
+/// reading (Decision 92).
+model ConsentRecord {
+  id String @id @default(uuid())
+
+  guardianId String
+  guardian   User   @relation("ConsentRecordGuardian", fields: [guardianId], references: [id])
+
+  studentId String
+  student   User   @relation("ConsentRecordStudent", fields: [studentId], references: [id])
+
+  tier          ConsentTier
+  policyVersion String
+
+  status ConsentStatus @default(ACTIVE)
+
+  consentedAt DateTime  @default(now())
+  withdrawnAt DateTime?
+
+  @@unique([guardianId, studentId, tier])
+  @@index([studentId, tier])
 }

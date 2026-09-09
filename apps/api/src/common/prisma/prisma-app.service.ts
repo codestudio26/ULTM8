@@ -56,6 +56,37 @@ export class PrismaAppService extends PrismaClient {
       return fn(tx);
     });
   }
+
+  /**
+   * FOUND ON REVIEW (Phase 12, GuardiansService.createMinor()): the rare case
+   * where ONE transaction needs to act under TWO DIFFERENT tenant identities in
+   * sequence — e.g. bootstrapping a brand-new minor's own User row (which must
+   * run under THAT row's own about-to-exist id, the same trick
+   * AuthService.register() already established), then immediately linking it
+   * under the calling Guardian's own identity. Two separate `withTenantContext`
+   * calls cannot guarantee this atomically — each opens and commits its OWN
+   * transaction, so a failure on the second call leaves the first one's write
+   * permanently committed with no rollback. `fn` receives a `setContext(userId)`
+   * callback to switch identity mid-transaction (re-validated on every call, same
+   * as `withTenantContext` itself) and the shared `tx` to run queries against.
+   */
+  async withMultiTenantContext<T>(
+    fn: (
+      tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>,
+      setContext: (userId: string) => Promise<void>,
+    ) => Promise<T>,
+  ): Promise<T> {
+    return this.$transaction(async (tx) => {
+      const setContext = async (userId: string) => {
+        if (!isUuid(userId)) {
+          this.logger.error(`Refusing to set tenant context to non-UUID value: ${userId}`);
+          throw new Error('Invalid tenant context id');
+        }
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${userId}'`);
+      };
+      return fn(tx, setContext);
+    });
+  }
 }
 
 function isUuid(value: string): boolean {
