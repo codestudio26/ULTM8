@@ -92,8 +92,34 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
     });
     userIds.push(student.id);
 
-    // Only ever granted a role at homeSchool — deliberately NO RoleGrant at
-    // otherSchool. This is the entire premise the test suite below proves.
+    // otherSchool needs a REAL owner (a different User than `student`), not zero
+    // RoleGrants — School's own tenant_isolation policy has a bootstrap-window
+    // carve-out ("OR NOT school_has_any_role_grant(id)") for a School with no
+    // RoleGrant at all yet, which would make otherSchool visible to EVERY caller
+    // via the ordinary /schools endpoints regardless of this test's own premise,
+    // defeating the REGRESSION GUARD test below (found when that test failed on
+    // CI with exactly this fixture gap — the isolation gap in the assertion, not
+    // the code). A real "discoverable" School always has an owner in production.
+    const otherSchoolOwner = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `academies-http-owner-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Other',
+        surname: 'Owner',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1990-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    userIds.push(otherSchoolOwner.id);
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: otherSchoolOwner.id, schoolId: otherSchool.id },
+    });
+
+    // `student` is only ever granted a role at homeSchool — deliberately NO
+    // RoleGrant at otherSchool. This is the entire premise the test suite below
+    // proves.
     await superuser.roleGrant.create({
       data: { id: randomUUID(), role: 'STUDENT', userId: student.id, schoolId: homeSchool.id },
     });
