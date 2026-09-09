@@ -453,9 +453,11 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const franchiseId = createFranchise.body.id;
 
     // Directly seeded (superuser), same convention every other cross-boundary
-    // fixture in this suite already uses — no confirmed API path links an existing
-    // School to a Franchise this phase (CreateSchoolDto deliberately excludes
-    // franchiseId, same as always).
+    // fixture in this suite already uses — kept as a direct seed here rather than
+    // switched to POST /schools/:id/join-franchise (Phase 16b-i, added later this
+    // session) purely for test independence from that flow; see the dedicated
+    // "School Owner can self-service-join..." tests below for that path exercised
+    // directly.
     const memberSchool = await superuser.school.create({
       data: { id: randomUUID(), name: 'Franchise Member School', franchiseId },
     });
@@ -477,6 +479,78 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(rosterAsOwnerB.status).toBe(404);
 
     await superuser.school.delete({ where: { id: memberSchool.id } });
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
+
+  // ---------------------------------------------------------------------------
+  // School -> Franchise linking (Phase 16b-i, Decision 98) — narrow, self-service,
+  // ONE-WAY-ONLY join. Fixtures created fresh via HTTP self-service per test, not
+  // coupled to the shared schoolA/schoolB fixtures other tests above depend on.
+  // ---------------------------------------------------------------------------
+
+  it('School Owner can self-service-join their School into a Franchise, one-way only', async () => {
+    const createSchoolRes = await request(app.getHttpServer())
+      .post('/v1/schools')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Join-Franchise Test School' });
+    expect(createSchoolRes.status).toBe(201);
+    const freshSchoolId = createSchoolRes.body.id;
+
+    const createFranchiseRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Join-Franchise Test Franchise' });
+    expect(createFranchiseRes.status).toBe(201);
+    const franchiseId = createFranchiseRes.body.id;
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId });
+    expect(joinRes.status).toBe(201);
+    expect(joinRes.body.franchiseId).toBe(franchiseId);
+
+    // One-way only — a second join attempt (even naming the same Franchise again)
+    // is a conflict, never a silent no-op or a re-link (Decision 98's entire point:
+    // this never has to answer the Franchise-reaffiliation question Decision 97
+    // deferred, because reaffiliation literally cannot happen through this route).
+    const secondJoinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId });
+    expect(secondJoinRes.status).toBe(409);
+
+    await superuser.school.delete({ where: { id: freshSchoolId } });
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
+
+  it('joining a Franchise that does not exist is a 404 — franchise_exists() can see every real Franchise regardless of the caller\'s own grants', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId: randomUUID() });
+    expect(res.status).toBe(404);
+  });
+
+  it('only that School\'s own Owner/Manager may join it to a Franchise', async () => {
+    const createFranchiseRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Unauthorized Join Test Franchise' });
+    expect(createFranchiseRes.status).toBe(201);
+    const franchiseId = createFranchiseRes.body.id;
+
+    // ownerB holds no grant at all on schoolA.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`)
+      .send({ franchiseId });
+    expect(res.status).toBe(403);
+    const unchanged = await superuser.school.findUniqueOrThrow({ where: { id: schoolA.id } });
+    expect(unchanged.franchiseId).toBeNull();
+
     await superuser.roleGrant.deleteMany({ where: { franchiseId } });
     await superuser.franchise.delete({ where: { id: franchiseId } });
   });

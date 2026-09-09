@@ -110,4 +110,11 @@ export class CreateFranchiseDto {
   @IsOptional()
   @IsEnum(FeeModelDto)
   feeModel?: FeeModelDto;
+
+  // No flatFeeAmount/perHeadcountRate field — deliberately deferred, not omitted by
+  // oversight. See schema.prisma's own Franchise model comment for the full account
+  // (Decision 98's "Franchise fee-rate fields" section): a first draft added these
+  // here, code review flagged that the actual rate-setting authority is real,
+  // undecided business logic, not a routine gap-fill, and it was reverted pending
+  // the user's own input at Phase 16b-ii's kickoff.
 }

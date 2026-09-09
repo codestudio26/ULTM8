@@ -325,6 +325,22 @@ model Franchise {
 
   feeModel FeeModel @default(FLAT)
 
+  // The actual franchise-fee rate/amount is deliberately NOT modeled yet — a real
+  // gap found while researching Phase 16b (feeModel/Flat-vs-Per-Headcount is
+  // confirmed, Spec 55 §6.1; the actual dollar rate never was), but unlike Phase
+  // 16b-i's School->Franchise linking mechanism, this one wasn't escalated and
+  // resolved in the same pass: a first draft added flatFeeAmount/perHeadcountRate
+  // here unilaterally, and code review correctly caught that on reflection, this
+  // carries real, undecided business-model weight (self-service Franchise-set
+  // rate vs. platform-negotiated; which currency — domain-rules §11.2's "Franchise-
+  // fee... billed in a single anchor currency (USD)" answers the currency half,
+  // but not who sets the number) — closer to Decision 98's own linking question
+  // than to a routine Developer-level inferred field. Deferred to Phase 16b-ii
+  // (FranchiseFeeCharge itself), to be raised with the user then, with the actual
+  // billing mechanics concretely in front of them rather than asked in isolation
+  // now. See Decision 98's own "Franchise fee-rate fields" section for the full
+  // account of this reversal.
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
