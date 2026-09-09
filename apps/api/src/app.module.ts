@@ -17,6 +17,7 @@ import { RanksModule } from './ranks/ranks.module';
 import { WaiversModule } from './waivers/waivers.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { GuardiansModule } from './guardians/guardians.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -40,6 +41,7 @@ import { JobsModule } from './jobs/jobs.module';
     WaiversModule,
     BookingsModule,
     GuardiansModule,
+    AttendanceModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

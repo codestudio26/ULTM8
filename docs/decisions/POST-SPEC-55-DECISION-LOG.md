@@ -551,3 +551,27 @@ Whether a genuinely correct product answer to the multi-Guardian-consent-interac
 ### Recorded by
 
 Logged during ULTM8 Phase 12 (GuardianModule) build, 9 Sep 2026 — flagged prominently rather than silently built around, per CLAUDE.md's standing "never invent unspecified business logic... mark it explicitly as unresolved and escalate" rule, doubly warranted given the subject is minors' data. Surfaced to the product owner for explicit awareness, not treated as settled.
+
+---
+
+## Decision 93 — Attendance's scan endpoint: synchronous handling, absence-of-consent treated differently from withdrawn consent, StudentRank increment reuses Decision 90's bridge
+
+**Date:** 9 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation, not a product-owner-approved decision
+**Resolves:** three gaps this log never addressed — SKILL.md §9 lists `qr-attendance-processing` among this codebase's confirmed background jobs, but doesn't say whether the triggering HTTP request should wait for it; §14 confirms withdrawing camera-tier consent blocks self-service check-in, but never addresses a Student who never had a `ConsentRecord` at all (every adult, self-registered Student); and nothing in the confirmed text says what mechanism should determine which `StudentRank` row(s) a successful scan increments.
+
+### Decision
+
+`POST /attendance/scan` performs the confirmed write behavior (mark the matching `Booking` Completed, increment `StudentRank.classesAttendedTowardCheckpoint`) directly inside its own synchronous request handler, not via an enqueued BullMQ job the client waits on. The consent check blocks ONLY on an explicit `WITHDRAWN` camera-tier `ConsentRecord` for the calling Student — the complete absence of any `ConsentRecord` (true for every non-Guardian-linked Student) is treated as "not applicable," not as "blocked." The `StudentRank` increment reuses the exact `Class.activities`-to-`Discipline.name` string-match bridge Decision 90 already established for the rank gate, applied here for a new purpose.
+
+### Why
+
+Synchronous handling: a Student scanning at the door needs immediate pass/fail feedback, which the fire-and-forget/scheduled-sweep shape every other job in this codebase uses doesn't serve well, and no prior job here is enqueued-then-synchronously-awaited from its own triggering request — introducing that pattern for one endpoint was judged riskier than implementing the (simple, fast, already-transactional) confirmed behavior directly. Notably not a lone judgment call: the Phase 12 migration's own `consent_record_jobs_read` policy comment had already anticipated this exact tension and named it explicitly, before this phase was ever built, using the same reasoning Booking's own capacity-check fix (Decision 89's addendum) established. Absence-vs-withdrawal: SKILL.md §14 only ever describes an actual *withdrawal* as the blocking trigger; treating "never granted, never applicable" the same as "withdrawn" would incorrectly lock every adult Student in the system out of self-service check-in, a much larger behavioral change than the confirmed rule describes. StudentRank bridge reuse: rather than inventing a second, potentially inconsistent Class-to-Discipline resolution mechanism, reusing Decision 90's establishes one bridging heuristic used consistently everywhere this schema needs it, with the same known limitation (a Class whose activities don't match any Discipline resolves nothing).
+
+### What this does NOT resolve
+
+Whether `qr-attendance-processing` should genuinely be a queued job in a later revision (e.g. if scan volume or downstream latency ever makes synchronous handling a real problem) — not addressed, and not urgent at current scale. Also does not resolve Decision 90's own underlying gap (`Class.activities`/`Discipline` aren't formally reconciled per SKILL.md §4) — this decision only extends that gap's existing, already-flagged workaround to a second use site, not close it.
+
+### Recorded by
+
+Logged during ULTM8 Phase 13 (AttendanceModule) build, 9 Sep 2026 — flagged prominently rather than silently built around, per CLAUDE.md's standing "never invent unspecified business logic... mark it explicitly as unresolved and escalate" rule.
