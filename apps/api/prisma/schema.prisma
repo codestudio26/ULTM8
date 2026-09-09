@@ -231,6 +231,11 @@ model User {
   studentRanks         StudentRank[]
   promotionEventsPerformed PromotionEvent[] @relation("PromotionEventPerformedBy")
   waiverSignatures     WaiverSignature[]
+  bookings                 Booking[]         @relation("BookingStudent")
+  bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
+  bookingsResolved         Booking[]         @relation("BookingResolvedBy")
+  bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
+  waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
 
   @@index([email])
   @@index([phone])
@@ -372,8 +377,8 @@ model School {
 /// Branch (Decision 76 — field set mirrors School's profile fields; the RLS-enforced
 /// access-boundary role for TimetableSlot/Class/Instructor/Booking is asserted in
 /// ultm8-tenant-isolation §2 — Class is the first of those 4 to actually exist in this
-/// schema, added in Phase 4; TimetableSlot/Instructor(-as-its-own-table)/Booking still
-/// don't).
+/// schema, added in Phase 4; Booking/WaitlistEntry are added in Phase 11 below.
+/// TimetableSlot/Instructor(-as-its-own-table) still don't exist as separate tables).
 model Branch {
   id String @id @default(uuid())
 
@@ -476,6 +481,10 @@ model Class {
   // an explicit name once a model has more than one relation to resolve ambiguity.
   scopedByMembershipPlans MembershipPlan[] @relation("MembershipPlanScopedClass")
   scopedByMemberships     Membership[]     @relation("MembershipScopedClass")
+
+  // Phase 11 — a Class now has real Bookings/WaitlistEntry rows.
+  bookings        Booking[]
+  waitlistEntries WaitlistEntry[]
 
   // The DB-level guarantee behind "the job never double-materializes the same
   // occurrence" — see the comment on timetableSlotId/occurrenceDate above. Postgres
@@ -909,6 +918,11 @@ model Membership {
   updatedAt DateTime @updatedAt
 
   transactions Transaction[]
+
+  // Phase 11 — this Membership's credit can fund the Student's own seat on a
+  // Booking (sourceMembershipId) or a guest's seat via BookingAttendee.
+  bookingsAsSource Booking[]         @relation("BookingSourceMembership")
+  bookingAttendees BookingAttendee[] @relation("BookingAttendeeMembership")
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -1416,4 +1430,221 @@ model WaiverSignature {
   @@index([schoolId])
   @@index([studentId])
   @@index([waiverId])
+}
+
+// =============================================================================
+// Phase 11 — ClassesModule: booking + waitlist (Spec 55 §9/§10, skills/
+// ultm8-domain-rules/SKILL.md §9/§10). See the Phase 11 kickoff prompt for the full
+// scoping rationale, citation-by-citation reasoning, and every Developer-level
+// inference flagged explicitly there rather than silently here.
+// =============================================================================
+
+/// Booking.status — SKILL.md §10 (quoted): "Upcoming / Completed / Cancelled /
+/// No-Show — four values; No-Show added to close a state-machine gap." No-Show is
+/// set by the booking-no-show-processing background job only (§1.e of the kickoff
+/// prompt) — never chosen directly by a caller.
+enum BookingStatus {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+/// Booking.refundResolution / BookingAttendee.refundResolution — a Developer-level
+/// addition, not a named enum anywhere in SKILL.md's text (§10 names the FIELD
+/// pair "refundResolution/resolvedBy" as confirmed, but not its value set). Null
+/// until the row is actually cancelled (nothing to resolve for an Upcoming/
+/// Completed booking); a No-Show never sets this either (§10: "a No-Show does not"
+/// refund/restore the spent credit) — REFUNDED/WITHHELD are exclusively the two
+/// outcomes of a Cancellation, chosen by comparing the cancellation time against
+/// the Class's refundFeeDate cutoff (kickoff prompt §1.c).
+enum RefundResolution {
+  REFUNDED
+  WITHHELD
+}
+
+/// WaitlistEntry.status — SKILL.md §10 (quoted): "Waiting / Notified / Claimed /
+/// Expired / Cancelled."
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  CLAIMED
+  EXPIRED
+  CANCELLED
+}
+
+/// Booking (Phase 11, Spec 55 §6.1, SKILL.md §10) — belongs to a Student and a
+/// Class. Confirmed fields (quoted): "class date/time, status..., sourceMembershipId
+/// (which Membership's credit this Booking drew against)..., attendee list
+/// (whoJoinYou)..., an overriddenBy/overrideReason pair..., and a
+/// refundResolution/resolvedBy pair."
+///
+/// "class date/time" is NOT duplicated onto this row — derived via the `classId`
+/// relation to Class.startDate/endDate instead. Flagged explicitly in the kickoff
+/// prompt (§1.a) as a Developer-level inference, not a §10-confirmed choice: §10's
+/// field list names it as its own field, which could equally mean a stored
+/// snapshot, but nothing addresses what should happen if the Class is later
+/// rescheduled (a stale snapshot vs. a derived value silently changing under an
+/// existing Booking) — deriving is the simpler reading given that gap, not the
+/// only defensible one.
+///
+/// `sourceMembershipId` funds ONLY the Student's own seat — a guest's own credit
+/// source lives on their own BookingAttendee row (§10: "each attendee-list entry
+/// carries its own membershipId... since a single Booking can draw against several
+/// different Memberships at once").
+///
+/// `refundResolution`/`resolvedById` are the Student's-own-seat resolution only
+/// (see RefundResolution's own comment for the exact semantics/timing) — each
+/// guest's own resolution lives on their own BookingAttendee row, for the same
+/// reason `sourceMembershipId` doesn't cover guests either.
+///
+/// RLS shape: narrow "School Owner/Manager, or the row's own Student, nobody
+/// else" for ALL commands (same class of personal-record data as Membership/
+/// Transaction/WaiverSignature/StudentRank — Decision 89, see the migration's own
+/// policy comment) PLUS a second, additive, SELECT-only policy admitting any
+/// active RoleGrant holder at the School (kickoff prompt §4 point 2) — a Class
+/// roster/capacity read genuinely needs to see every Student's Booking for one
+/// Class, which the narrow self-policy alone cannot serve; this follows the same
+/// School/Branch three-way structure Class's own policy already established
+/// (School-level grant sees every Branch; Branch-scoped grant sees its own Branch
+/// plus School-wide rows), not a flat School-only check.
+model Booking {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation("BookingStudent", fields: [studentId], references: [id])
+
+  classId String
+  class   Class  @relation(fields: [classId], references: [id])
+
+  // Denormalized from class.schoolId/branchId — same "composite index leading with
+  // the tenant column" reasoning (Decision 30) as every other RLS-scoped child
+  // table in this schema, avoiding a join through Class for RLS.
+  schoolId String
+  branchId String?
+
+  status BookingStatus @default(UPCOMING)
+
+  sourceMembershipId String
+  sourceMembership   Membership @relation("BookingSourceMembership", fields: [sourceMembershipId], references: [id])
+
+  // Rank-gate override (§9) — Instructor/Staff-only, always recorded together.
+  overriddenById String?
+  overriddenBy   User?   @relation("BookingOverriddenBy", fields: [overriddenById], references: [id])
+  overrideReason String?
+
+  // See RefundResolution's own comment for exactly when/how this is set.
+  refundResolution RefundResolution?
+  resolvedById     String?
+  resolvedBy       User?             @relation("BookingResolvedBy", fields: [resolvedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendees        BookingAttendee[]
+  claimedFromEntry WaitlistEntry?    @relation("WaitlistEntryClaimedBooking")
+
+  // Composite indexes leading with the tenant column (Decision 30). The "one
+  // active Booking per Student per Class" guard (status = 'UPCOMING') is a
+  // partial unique index in the migration, same technique as Membership's
+  // one-active-general-access-per-school guard (Phase 9) — a Cancelled/
+  // Completed/No-Show Booking must never block a fresh re-booking.
+  @@index([schoolId])
+  @@index([schoolId, branchId])
+  @@index([studentId])
+  @@index([classId])
+}
+
+/// BookingAttendee (Phase 11, SKILL.md §10) — the `whoJoinYou` attendee list,
+/// modeled as its own explicit relation (this schema's established convention over
+/// an implicit many-to-many or a plain array/JSON column, same reasoning
+/// RankRequiredSkill/StudentRankSkillStatus already used) rather than a literal
+/// schema-confirmed entity name — flagged for Architect confirmation on the name
+/// only, not on the underlying structure (kickoff prompt §1.a). Represents ONE
+/// guest beyond the Student themselves; the Student's own seat lives directly on
+/// Booking, never duplicated here.
+///
+/// No own `studentId` column — the guest IS a User, reachable via
+/// `membership.studentId` (a guest's Friend Pass/own Membership always belongs to
+/// a real User row; there is no "unregistered guest" concept anywhere in the
+/// confirmed data model). Kept denormalization to just `schoolId`; RLS narrows via
+/// an EXISTS subquery against this row's own Booking (see the migration) — the
+/// same "delegate through the parent's own policy" pattern RankRequiredSkill
+/// already established for its own join-table RLS.
+model BookingAttendee {
+  id String @id @default(uuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // Denormalized from booking.schoolId — RLS itself narrows via an EXISTS against
+  // Booking (see migration), but every other RLS-scoped child table in this schema
+  // still carries its own direct schoolId for index/query convenience (Decision 30).
+  schoolId String
+
+  membershipId String
+  membership   Membership @relation("BookingAttendeeMembership", fields: [membershipId], references: [id])
+
+  refundResolution RefundResolution?
+  resolvedById     String?
+  resolvedBy       User?             @relation("BookingAttendeeResolvedBy", fields: [resolvedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([bookingId])
+  @@index([membershipId])
+}
+
+/// WaitlistEntry (Phase 11, SKILL.md §10) — belongs to a Student and a Class.
+/// Confirmed fields (quoted): "FCFS position, status..., joinedAt, notifiedAt,
+/// claimByDeadline (based on the School's waitlistClaimWindow setting, default 120
+/// minutes, capped by the Class's own start time)." Costs no credit while Waiting;
+/// only becomes a real Booking — and only then draws a credit — once Claimed
+/// (`claimedBookingId` records that resulting Booking once it exists).
+///
+/// Claim-time rank/capacity re-validation: the kickoff prompt (§1.d) flags this as
+/// its own inference, not §9/§10-confirmed — resolved to RE-CHECK at claim time
+/// (state may have changed since joining), enforced in WaitlistService, not here.
+///
+/// RLS shape: same asymmetric narrow-self-plus-broad-Staff-read structure as
+/// Booking above — see that model's own comment and the migration's policy
+/// comment for the full reasoning (Decision 89 covers this table too).
+model WaitlistEntry {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation("WaitlistEntryStudent", fields: [studentId], references: [id])
+
+  classId String
+  class   Class  @relation(fields: [classId], references: [id])
+
+  // Denormalized from class.schoolId/branchId — same reasoning as Booking above.
+  schoolId String
+  branchId String?
+
+  position Int
+
+  status WaitlistStatus @default(WAITING)
+
+  joinedAt        DateTime  @default(now())
+  notifiedAt      DateTime?
+  claimByDeadline DateTime?
+
+  claimedBookingId String?  @unique
+  claimedBooking   Booking? @relation("WaitlistEntryClaimedBooking", fields: [claimedBookingId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30). "One active
+  // (Waiting/Notified) WaitlistEntry per Student per Class" is a partial unique
+  // index in the migration — a Claimed/Expired/Cancelled entry must never block
+  // rejoining the same Class's waitlist, same reasoning as Booking's own partial
+  // unique index above. `(classId, position)` supports the FCFS ordering scans
+  // the claim-cascade job runs.
+  @@index([schoolId])
+  @@index([classId, position])
+  @@index([studentId])
 }

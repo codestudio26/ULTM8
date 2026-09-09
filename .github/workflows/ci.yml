@@ -86,7 +86,18 @@ jobs:
 
       - name: Run cross-tenant isolation test suite
         working-directory: apps/api
-        run: npx jest --config ./test/jest-e2e.json --runInBand
+        # --forceExit added Phase 11: this suite's AppModule now boots 3 BullMQ
+        # repeatable-job schedulers (was 1 through Phase 10) across 15+ e2e spec
+        # files, each instantiating its own Nest app/Redis connections in the same
+        # --runInBand process. Confirmed via two reproduced CI runs (not a one-off
+        # flake) that without this flag the job hangs indefinitely after the suite's
+        # own assertions finish — a known Jest+BullMQ gotcha (lingering
+        # ioredis/repeatable-job handles keep the process's event loop alive past
+        # what Nest's own app.close() reaches per test file). --forceExit only
+        # changes the TEST RUNNER's own process-exit behavior; it has no effect on
+        # application/production code, and does not suppress a genuine assertion
+        # failure — Jest still reports pass/fail from the tests themselves first.
+        run: npx jest --config ./test/jest-e2e.json --runInBand --forceExit
 
   # Everything else that doesn't need a live database (build, unit tests).
   build-and-unit-test:

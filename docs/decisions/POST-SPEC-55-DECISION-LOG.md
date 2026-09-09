@@ -449,3 +449,79 @@ Whether `Discipline`/`Rank`/`RankStripeTier`/`Skill` (the catalog data, not `Stu
 ### Recorded by
 
 Logged during ULTM8 Phase 10b (RanksModule) kickoff, 9 Sep 2026, resolving a gap this phase's own verification pass surfaced before build.
+
+---
+
+## Decision 89 — Booking/BookingAttendee/WaitlistEntry RLS: narrow-plus-broad-Staff-read (asymmetric), not narrow alone
+
+**Date:** 9 Sep 2026
+**Status:** Approved by product owner (delegated: "do what's best")
+**Resolves:** a gap this log never addressed — whether `Booking`/`WaitlistEntry` follow the same narrow "School Owner/Manager or self" shape as `Membership`/`Transaction`/`WaiverSignature`/`StudentRank`, and if so, how Staff (Instructor/Branch Staff, not just Owner/Manager) can ever see a Class's own roster or run a capacity check — something none of those four prior tables needed, since each of their own confirmed read surfaces is scoped to one Student at a time.
+
+### Decision
+
+`Booking`, `BookingAttendee`, and `WaitlistEntry` get TWO additive RLS policies, not one: (1) the same narrow "SCHOOL_OWNER_MANAGER at the row's own schoolId, or the row's own Student" shape as the four prior tables, covering ALL commands; PLUS (2) a second, broad, SELECT-only policy admitting any active RoleGrant holder (SCHOOL_OWNER_MANAGER/BRANCH_STAFF/INSTRUCTOR) at the School, using the same School/Branch three-way structure `Class`'s own policy already established (a School-level grant sees every Branch; a Branch-scoped grant sees its own Branch plus School-wide rows). `BookingAttendee` doesn't repeat this structure itself — it delegates entirely to `Booking`'s own two policies via an `EXISTS` subquery, the same "delegate through the parent's own FORCE RLS policy" pattern `RankRequiredSkill` established in Phase 10b. A Staff WRITE to one specific Student's Booking (cancel-on-behalf-of, the override amendment) still goes through `TenantAuthorizationService.assertStaffAtSchool()` + running the write under the target Student's own tenant context, never through the broad policy.
+
+### Why
+
+Every one of the four prior narrow-RLS tables only ever needed to serve reads scoped to a single Student — a School Owner/Manager sees the ledger, a Student sees their own rows, and Staff functional access is a single-Student lookup handled by the existing target-context mechanism. Booking is different: a Class roster and a capacity/Full check are inherently multi-Student reads that mechanism cannot serve (it authorizes a caller against ONE target Student's context at a time, not "every Student's Booking for this Class"). Rather than broaden the narrow policy itself (which would let Staff also freely UPDATE/DELETE any Student's Booking directly, well past what's actually needed), a second SELECT-only policy keeps writes exactly as narrow as the established convention while unblocking the read Staff genuinely need to run a Class.
+
+### What this does NOT resolve
+
+Whether this same asymmetric shape should retroactively apply to any of the four prior narrow-RLS tables (Membership/Transaction/WaiverSignature/StudentRank) — it should not, and doesn't apply here; none of those four have a confirmed multi-Student Staff read surface the way a Class roster is, so broadening any of them would be inventing a need that hasn't been confirmed.
+
+### Recorded by
+
+Logged during ULTM8 Phase 11 (ClassesModule: booking + waitlist) kickoff, 9 Sep 2026, resolving a gap this phase's own verification pass surfaced before build.
+
+### Addendum — a real gap in this decision's own coverage, found once CI actually exercised it
+
+The broad Staff-read policy above solves the Class-roster/audit read case, but a genuinely separate case surfaced only once the e2e suite ran against real Postgres and returned wrong results rather than an error: the CAPACITY CHECK itself (an ordinary STUDENT's own booking attempt asking "is this Class full?") also needs to see every OTHER Student's Booking/BookingAttendee rows for that Class — and the broad policy only admits Staff roles (`SCHOOL_OWNER_MANAGER`/`BRANCH_STAFF`/`INSTRUCTOR`), not `STUDENT`. Under the policy as originally designed, a plain Student's own tenant context could only ever see their own rows, so `countOccupiedSeats` (and the equivalent waitlist-position lookup) silently undercounted to zero every time — not a rejected query, a WRONG answer, which is why it wasn't caught by RLS itself throwing an error and instead needed the e2e suite's own assertions to surface it. Broadening the read policy further to admit `STUDENT` would have defeated the whole point of Decision 89 (any Student could then read every other Student's raw Booking rows directly). Fixed instead by running those two specific aggregate reads through `PrismaJobsService` (`ultm8_jobs`) — the same RLS-bypassing mechanism already used for the background jobs' own sweeps, reused here from an interactive request path because no policy shape could serve "an aggregate count across all Students, requested by any one of them" without either leaking row-level access or requiring a mechanism RLS itself doesn't offer (aggregate-only visibility). `BookingAttendee` needed a fresh `ultm8_jobs` SELECT grant it didn't have before, added in the same migration.
+
+---
+
+## Decision 90 — Rank-gate enforcement bridges `Class.activities` to `Discipline.name` by exact string match
+
+**Date:** 9 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation, not a product-owner-approved decision like 87–89
+**Resolves:** nothing this log or `skills/ultm8-domain-rules/SKILL.md` treats as settled — SKILL.md §4 itself states `Class.activities`/`Instructor.specializations`/`Discipline` are "not formally reconciled into one controlled list," and SKILL.md §9's confirmed rank-gate rule ("a Rank/stripe tier's eligibleClassTypes... governs which class types a Student may book") presumes some way to know which Discipline(s) a given Class's booking should be checked against, which nothing else in the confirmed spec text actually supplies.
+
+### Decision
+
+`BookingsService`/`WaitlistService` match each of a Class's `activities` strings against `Discipline.name` at the same School to decide which Discipline(s) to rank-gate a booking attempt against. An `activities` entry with no matching `Discipline.name` has nothing to gate against and is silently allowed through — not a confirmed exemption, simply nothing this bridging heuristic can check. "Cumulative by ladder order" (SKILL.md §9) is read as: every `RankStripeTier` belonging to a lower-ordered `Rank` in the Discipline, plus every tier at or below the Student's own current stripe-tier order within their current Rank.
+
+### Why
+
+Without SOME bridge between the two unreconciled concepts, the confirmed rank-gate rule literally cannot be enforced at all this phase — silently skipping rank-gating entirely would be a bigger, less visible scope gap than a flagged, best-effort string-match heuristic that fails safe (nothing to check, not "check passed"). This is explicitly NOT presented as a resolution of SKILL.md §4's own open item — it is a narrow, local workaround scoped to make Booking's rank gate function at all pending that real reconciliation.
+
+### What this does NOT resolve
+
+SKILL.md §4's own broader question (whether `School.activities`/`Instructor.specializations`/`Class.activities`/`Discipline` should share one controlled list platform-wide) — that remains genuinely open and needs Architect/product-owner attention independent of this phase. This decision also does not make the rank gate reliable for every Class — only for ones whose `activities` values happen to name a real `Discipline` exactly.
+
+### Recorded by
+
+Logged during ULTM8 Phase 11 (ClassesModule: booking + waitlist) kickoff, 9 Sep 2026 — flagged prominently rather than silently built around, per CLAUDE.md's standing "never invent unspecified business logic... mark it explicitly as unresolved and escalate" rule. Surfaced to the product owner in the Phase 11 PR description for explicit awareness, even though it's recorded here as a Developer-level flag rather than a product-approved decision.
+
+---
+
+## Decision 91 — A guest's `whoJoinYou` seat is funded by a Membership belonging to the ORGANIZING Student, not a separately-registered guest account
+
+**Date:** 9 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation, not a product-owner-approved decision like 87–89
+**Resolves:** a gap this log never addressed — SKILL.md §10's confirmed text ("each additional attendee beyond the Student requires either their own valid Membership or a School-gifted Friend Pass for that specific guest") is ambiguous about WHOSE account a guest's funding Membership lives on.
+
+### Decision
+
+Every `BookingAttendee.membershipId` this phase must reference a Membership whose own `studentId` equals the Booking's own organizing Student — never a separate guest-registered account's Membership. A School-gifted Friend Pass is modeled as a single-use credit the ORGANIZING Student holds and redeems per guest they bring, not a credit issued to the guest's own account.
+
+### Why
+
+Two real constraints pushed this direction, not just convenience: (1) `Membership`'s own RLS policy (Decision-log-established narrow shape, Phase 9) only ever admits the row's own Student or a School Owner/Manager — since `BookingAttendee` creation runs inside the SAME transaction as the Booking, under the ORGANIZING Student's own tenant context (the established Staff-via-target-context mechanism, applied here to the Student's own booking flow), a genuinely separate guest account's Membership row would be invisible to that query entirely, making the "guest's own account" reading unimplementable within one atomic transaction without a materially bigger cross-account consent mechanism nothing in this codebase or spec confirms. (2) The canonical-terminology description of a Friend Pass elsewhere in SKILL.md ("an always-£0, School-gifted guest membership, capped at one guest/one visit") reads naturally as a credit the inviting Student redeems, consistent with real-world guest-pass systems.
+
+### What this does NOT resolve
+
+The alternative reading — a guest who is themselves a separately-registered Student at this School spending their OWN Membership to join someone else's Booking — is NOT built this phase. If that turns out to be the intended behavior, it needs its own confirmed cross-account consent/authorization design, not a guess layered onto this one.
+
+### Recorded by
+
+Logged during ULTM8 Phase 11 (ClassesModule: booking + waitlist) kickoff, 9 Sep 2026 — flagged prominently rather than silently built around, per CLAUDE.md's standing "never invent unspecified business logic... mark it explicitly as unresolved and escalate" rule. Surfaced to the product owner in the Phase 11 PR description for explicit awareness.
