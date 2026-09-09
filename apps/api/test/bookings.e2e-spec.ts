@@ -408,7 +408,11 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   });
 
   it('a full Class rejects a new Booking (409) and directs the caller to the waitlist; joining the waitlist then succeeds', async () => {
-    await mkActiveMembership(studentA.id, subscriptionPlanId, null);
+    // studentA already holds an Active general-access Membership from the earlier
+    // "CAN book — no credit spent" test (general-access is never consumed, so it's
+    // still valid here) — creating a second one would violate the one-active-
+    // general-access-per-School guard, so this reuses the existing one rather than
+    // minting another.
     const firstRes = await request(app.getHttpServer())
       .post(`/v1/classes/${classFull.id}/book`)
       .set('Authorization', `Bearer ${tokenStudentA}`)
@@ -449,6 +453,14 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   });
 
   it('claiming a Notified entry creates a real Booking and spends a credit; claiming a non-Notified entry is rejected', async () => {
+    // studentB's own Class Pack from the earlier "spend order"/rank-gated-override
+    // tests is already fully exhausted (0 remaining) by this point in the suite —
+    // fund this claim with a FRESH Class Pack, not a general-access Membership: a
+    // general-access one would also get picked (and never touched) by the LATER
+    // "cancelling BEFORE cutoff" test's own spend-order preference, silently
+    // breaking that test's own classesRemaining assertions.
+    await mkActiveMembership(studentB.id, classPackPlanId, 1);
+
     const entryId = waitlistEntryIds[waitlistEntryIds.length - 1];
 
     const tooEarly = await request(app.getHttpServer()).post(`/v1/waitlist/${entryId}/claim`).set('Authorization', `Bearer ${tokenStudentB}`);
@@ -515,6 +527,14 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   });
 
   it('cancelling AFTER the refund cutoff withholds the credit (WITHHELD)', async () => {
+    // studentA's own general-access Membership (from the very first booking test)
+    // is still Active and would otherwise always be preferred over a fresh Class
+    // Pack per the spend-order rule (general-access first) — meaning the Class Pack
+    // created below would never actually be selected/decremented, and this test
+    // would silently stop testing credit-withholding at all. Expiring it here is
+    // safe: nothing later in this suite depends on studentA still holding it.
+    await superuser.membership.updateMany({ where: { studentId: studentA.id, classesRemaining: null }, data: { status: 'EXPIRED' } });
+
     const membership = await mkActiveMembership(studentA.id, classPackPlanId, 3);
     const bookRes = await request(app.getHttpServer())
       .post(`/v1/classes/${classPastCutoff.id}/book`)
