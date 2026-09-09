@@ -6,32 +6,43 @@ import { BranchesController } from './branches/branches.controller';
 import { BranchesService } from './branches/branches.service';
 import { RoleGrantsController } from './role-grants/role-grants.controller';
 import { RoleGrantsService } from './role-grants/role-grants.service';
+import { FranchisesController } from './franchises/franchises.controller';
+import { FranchisesService } from './franchises/franchises.service';
 import { TenantAuthorizationService } from './tenant-authorization.service';
 
 /**
- * Phase 2 scope only: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
+ * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
  * assignment/revocation narrowed to the one confirmed authority case (see
- * role-grants/dto/create-role-grant.dto.ts). Franchise CRUD is deliberately excluded
- * this phase (deferred to pair with Franchise-fee billing) — per
- * ultm8-nestjs-module §5's TenantsModule row, which also covers Franchise CRUD and the
- * Franchise Owner School-roster read; neither is built here.
+ * role-grants/dto/create-role-grant.dto.ts).
+ *
+ * Phase 16 adds Franchise CRUD (no delete) + the Franchise Owner School-roster read —
+ * deliberately deferred out of Phase 2 to pair with Franchise-fee billing (see this
+ * file's own prior header comment, superseded here); ultm8-nestjs-module §5's
+ * TenantsModule row covers both. Franchise creation mirrors School's self-service
+ * pattern exactly (Decision 79, extended to Franchise directly with the product
+ * owner this phase) — creator becomes FRANCHISE_OWNER atomically, same as School's
+ * SCHOOL_OWNER_MANAGER bootstrap. RoleGrant issuance (`role-grants/`) stays
+ * unchanged — Decision 80's authority matrix ("Franchise Owner granting anything...
+ * is still genuinely unconfirmed and is rejected") is untouched by this phase;
+ * FRANCHISE_OWNER is granted only via FranchisesService.create()'s own self-grant,
+ * never through CreateRoleGrantDto.
  *
  * Imports AuthModule (which already exports AuthService — no new cross-module wiring
- * beyond this import) so SchoolsService can call AuthService.issueAccessToken() after
- * self-service School creation (ultm8-nestjs-module §7's narrow, approved exception).
- * One-directional: nothing under apps/api/src/auth imports from tenants, confirmed
- * before adding this — no circular import.
+ * beyond this import) so SchoolsService/FranchisesService can call
+ * AuthService.issueAccessToken() after self-service creation (ultm8-nestjs-module §7's
+ * narrow, approved exception). One-directional: nothing under apps/api/src/auth
+ * imports from tenants, confirmed before adding this — no circular import.
  *
- * Exports SchoolsService and TenantAuthorizationService (added in Phase 4) so
- * ClassesModule — a separate module, not folded into this one — can reuse both rather
- * than duplicating the School-existence check and the School-Owner-Manager write gate.
- * Nothing inside TenantsModule's own controllers/services needed this before, which is
- * why no `exports` array existed prior to Phase 4.
+ * Exports SchoolsService, FranchisesService, and TenantAuthorizationService so other
+ * modules can reuse them rather than duplicating existence/authorization checks —
+ * PaymentsModule now uses FranchisesService.findOne() the same way it already used
+ * SchoolsService.findOne() (Phase 16 closes the "no FranchisesService.findOne() exists
+ * yet" gap PaymentsService.createForFranchise/findForFranchise both flagged in Phase 8).
  */
 @Module({
   imports: [AuthModule],
-  controllers: [SchoolsController, BranchesController, RoleGrantsController],
-  providers: [SchoolsService, BranchesService, RoleGrantsService, TenantAuthorizationService],
-  exports: [SchoolsService, TenantAuthorizationService],
+  controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController],
+  providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService],
+  exports: [SchoolsService, FranchisesService, TenantAuthorizationService],
 })
 export class TenantsModule {}
