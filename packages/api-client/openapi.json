@@ -1,1 +1,6983 @@
-{"openapi":"3.0.0","paths":{"/v1/auth/register":{"post":{"operationId":"AuthController_register","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RegisterDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthMessageResponseDto"}}}}},"tags":["auth"]}},"/v1/auth/otp/send":{"post":{"operationId":"AuthController_sendOtp","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/SendOtpDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthMessageResponseDto"}}}}},"tags":["auth"]}},"/v1/auth/otp/verify":{"post":{"operationId":"AuthController_verifyOtp","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/VerifyOtpDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthMessageResponseDto"}}}}},"tags":["auth"]}},"/v1/auth/login":{"post":{"operationId":"AuthController_login","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/LoginDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/LoginResponseDto"}}}}},"tags":["auth"]}},"/v1/auth/forgot-password":{"post":{"operationId":"AuthController_requestPasscodeReset","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RequestPasscodeResetDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthMessageResponseDto"}}}}},"tags":["auth"]}},"/v1/auth/reset-password":{"post":{"operationId":"AuthController_confirmPasscodeReset","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ConfirmPasscodeResetDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AuthMessageResponseDto"}}}}},"tags":["auth"]}},"/v1/schools":{"post":{"operationId":"SchoolsController_create","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateSchoolDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/SchoolResponseDto"}}}}},"tags":["schools"],"security":[{"bearer":[]}]},"get":{"operationId":"SchoolsController_findAll","parameters":[{"name":"cursor","required":false,"in":"query","description":"Opaque cursor from a previous page's nextCursor.","schema":{"type":"string"}},{"name":"limit","required":false,"in":"query","schema":{"minimum":1,"maximum":100,"default":20,"type":"number"}}],"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/SchoolListResponseDto"}}}}},"tags":["schools"],"security":[{"bearer":[]}]}},"/v1/schools/{id}":{"get":{"operationId":"SchoolsController_findOne","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/SchoolResponseDto"}}}}},"tags":["schools"],"security":[{"bearer":[]}]},"patch":{"operationId":"SchoolsController_update","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateSchoolDto"}}}},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/SchoolResponseDto"}}}}},"tags":["schools"],"security":[{"bearer":[]}]}},"/v1/schools/{schoolId}/branches":{"post":{"operationId":"BranchesController_create","parameters":[{"name":"schoolId","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateBranchDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BranchResponseDto"}}}}},"tags":["branches"],"security":[{"bearer":[]}]},"get":{"operationId":"BranchesController_findAll","parameters":[{"name":"schoolId","required":true,"in":"path","schema":{"type":"string"}},{"name":"cursor","required":false,"in":"query","description":"Opaque cursor from a previous page's nextCursor.","schema":{"type":"string"}},{"name":"limit","required":false,"in":"query","schema":{"minimum":1,"maximum":100,"default":20,"type":"number"}}],"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BranchListResponseDto"}}}}},"tags":["branches"],"security":[{"bearer":[]}]}},"/v1/branches/{id}":{"get":{"operationId":"BranchesController_findOne","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BranchResponseDto"}}}}},"tags":["branches"],"security":[{"bearer":[]}]},"patch":{"operationId":"BranchesController_update","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateBranchDto"}}}},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BranchResponseDto"}}}}},"tags":["branches"],"security":[{"bearer":[]}]}},"/v1/users/{userId}/role-grants":{"post":{"operationId":"RoleGrantsController_create","parameters":[{"name":"userId","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateRoleGrantDto"}}}},"responses":{"201":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/RoleGrantResponseDto"}}}}},"tags":["role-grants"],"security":[{"bearer":[]}]},"get":{"operationId":"RoleGrantsController_findAll","parameters":[{"name":"userId","required":true,"in":"path","schema":{"type":"string"}},{"name":"cursor","required":false,"in":"query","description":"Opaque cursor from a previous page's nextCursor.","schema":{"type":"string"}},{"name":"limit","required":false,"in":"query","schema":{"minimum":1,"maximum":100,"default":20,"type":"number"}}],"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/RoleGrantListResponseDto"}}}}},"tags":["role-grants"],"security":[{"bearer":[]}]}},"/v1/users/{userId}/role-grants/{roleGrantId}":{"delete":{"operationId":"RoleGrantsController_revoke","parameters":[{"name":"userId","required":true,"in":"path","schema":{"type":"string"}},{"name":"roleGrantId","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/RoleGrantResponseDto"}}}}},"tags":["role-grants"],"security":[{"bearer":[]}]}}},"info":{"title":"ULTM8 API","description":"Modular REST API (Decision 70). Walking-skeleton build — Phase 1.","version":"0.1.0","contact":{}},"tags":[],"servers":[],"components":{"securitySchemes":{"bearer":{"scheme":"bearer","bearerFormat":"JWT","type":"http"}},"schemas":{"RegisterDto":{"type":"object","properties":{"email":{"type":"string"},"phone":{"type":"string","description":"E.164 format"},"firstName":{"type":"string"},"surname":{"type":"string"},"username":{"type":"string","description":"Mobile-only per confirmed field list"},"passcode":{"type":"string","description":"Exactly 6 digits — the account's sole login credential (Decision 72)"},"passcodeConfirm":{"type":"string"},"dateOfBirth":{"type":"string","description":"ISO 8601 date, no time component"},"gender":{"type":"string"},"nationality":{"type":"string"},"language":{"type":"string"},"currency":{"type":"string"},"address":{"type":"string"}},"required":["email","phone","firstName","surname","passcode","passcodeConfirm","dateOfBirth"]},"AuthMessageResponseDto":{"type":"object","properties":{"message":{"type":"string"}},"required":["message"]},"SendOtpDto":{"type":"object","properties":{"phone":{"type":"string","description":"E.164 format"}},"required":["phone"]},"VerifyOtpDto":{"type":"object","properties":{"phone":{"type":"string","description":"E.164 format"},"code":{"type":"string","description":"The code delivered via Twilio Verify"}},"required":["phone","code"]},"LoginDto":{"type":"object","properties":{"email":{"type":"string"},"passcode":{"type":"string"}},"required":["email","passcode"]},"LoginResponseDto":{"type":"object","properties":{"accessToken":{"type":"string"}},"required":["accessToken"]},"RequestPasscodeResetDto":{"type":"object","properties":{"phone":{"type":"string","description":"E.164 format"}},"required":["phone"]},"ConfirmPasscodeResetDto":{"type":"object","properties":{"phone":{"type":"string","description":"E.164 format"},"code":{"type":"string","description":"The code delivered via Twilio Verify"},"newPasscode":{"type":"string","description":"Exactly 6 digits"}},"required":["phone","code","newPasscode"]},"CreateSchoolDto":{"type":"object","properties":{"name":{"type":"string"},"mobileNumber":{"type":"string"},"address":{"type":"string"},"businessType":{"type":"string"},"activities":{"type":"array","items":{"type":"string"}},"facilities":{"type":"array","items":{"type":"string"}},"ranksToggle":{"type":"boolean"},"defaultLanguage":{"type":"string","description":"One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment."},"defaultCurrency":{"type":"string","description":"One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."},"description":{"type":"string"},"logoUrl":{"type":"string"},"bannerUrl":{"type":"string"},"classCancellationPolicy":{"type":"string","enum":["MANUAL","AUTO_REFUND","AUTO_CREDIT"],"default":"MANUAL"},"waitlistClaimWindowMinutes":{"type":"number","default":120,"description":"Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."}},"required":["name"]},"SchoolResponseDto":{"type":"object","properties":{"id":{"type":"string"},"franchiseId":{"type":"string","nullable":true},"name":{"type":"string"},"mobileNumber":{"type":"string","nullable":true},"address":{"type":"string","nullable":true},"businessType":{"type":"string","nullable":true},"activities":{"type":"array","items":{"type":"string"}},"facilities":{"type":"array","items":{"type":"string"}},"ranksToggle":{"type":"boolean"},"defaultLanguage":{"type":"string","nullable":true},"defaultCurrency":{"type":"string","nullable":true},"description":{"type":"string","nullable":true},"logoUrl":{"type":"string","nullable":true},"bannerUrl":{"type":"string","nullable":true},"classCancellationPolicy":{"type":"string","enum":["MANUAL","AUTO_REFUND","AUTO_CREDIT"]},"waitlistClaimWindowMinutes":{"type":"number"},"franchiseFeeSubscriptionStatus":{"type":"string","nullable":true,"enum":["ACTIVE","PAST_DUE","CANCELED"]},"createdAt":{"type":"string"},"updatedAt":{"type":"string"},"accessToken":{"type":"string"}},"required":["id","name","activities","facilities","ranksToggle","classCancellationPolicy","waitlistClaimWindowMinutes","createdAt","updatedAt"]},"SchoolListResponseDto":{"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/SchoolResponseDto"}},"nextCursor":{"type":"string","nullable":true,"description":"Cursor for the next page, or null if this is the last page."}},"required":["items"]},"UpdateSchoolDto":{"type":"object","properties":{"name":{"type":"string"},"mobileNumber":{"type":"string"},"address":{"type":"string"},"businessType":{"type":"string"},"activities":{"type":"array","items":{"type":"string"}},"facilities":{"type":"array","items":{"type":"string"}},"ranksToggle":{"type":"boolean"},"defaultLanguage":{"type":"string","description":"One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment."},"defaultCurrency":{"type":"string","description":"One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."},"description":{"type":"string"},"logoUrl":{"type":"string"},"bannerUrl":{"type":"string"},"classCancellationPolicy":{"type":"string","enum":["MANUAL","AUTO_REFUND","AUTO_CREDIT"],"default":"MANUAL"},"waitlistClaimWindowMinutes":{"type":"number","default":120,"description":"Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."}}},"CreateBranchDto":{"type":"object","properties":{"name":{"type":"string"},"address":{"type":"string"},"contactPhone":{"type":"string"},"timezone":{"type":"string","description":"IANA timezone name."},"currencyOverride":{"type":"string"},"logoUrl":{"type":"string"},"bannerUrl":{"type":"string"}},"required":["name"]},"BranchResponseDto":{"type":"object","properties":{"id":{"type":"string"},"schoolId":{"type":"string"},"name":{"type":"string"},"address":{"type":"string","nullable":true},"contactPhone":{"type":"string","nullable":true},"timezone":{"type":"string","nullable":true,"description":"IANA timezone name."},"currencyOverride":{"type":"string","nullable":true},"logoUrl":{"type":"string","nullable":true},"bannerUrl":{"type":"string","nullable":true},"createdAt":{"type":"string"},"updatedAt":{"type":"string"}},"required":["id","schoolId","name","createdAt","updatedAt"]},"BranchListResponseDto":{"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/BranchResponseDto"}},"nextCursor":{"type":"string","nullable":true}},"required":["items"]},"UpdateBranchDto":{"type":"object","properties":{"name":{"type":"string"},"address":{"type":"string"},"contactPhone":{"type":"string"},"timezone":{"type":"string","description":"IANA timezone name."},"currencyOverride":{"type":"string"},"logoUrl":{"type":"string"},"bannerUrl":{"type":"string"}}},"CreateRoleGrantDto":{"type":"object","properties":{"role":{"type":"string","enum":["INSTRUCTOR","BRANCH_STAFF"]},"schoolId":{"type":"string"},"branchId":{"type":"string","description":"Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates."}},"required":["role","schoolId"]},"RoleGrantResponseDto":{"type":"object","properties":{"id":{"type":"string"},"role":{"type":"string","enum":["STUDENT","SCHOOL_OWNER_MANAGER","BRANCH_STAFF","INSTRUCTOR","FRANCHISE_OWNER","GUARDIAN"]},"userId":{"type":"string"},"franchiseId":{"type":"string","nullable":true},"schoolId":{"type":"string","nullable":true},"branchId":{"type":"string","nullable":true},"grantedById":{"type":"string","nullable":true},"grantedAt":{"type":"string"},"revokedAt":{"type":"string","nullable":true},"createdAt":{"type":"string"},"updatedAt":{"type":"string"}},"required":["id","role","userId","grantedAt","createdAt","updatedAt"]},"RoleGrantListResponseDto":{"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/RoleGrantResponseDto"}},"nextCursor":{"type":"string","nullable":true}},"required":["items"]}}}}
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/otp/send": {
+      "post": {
+        "operationId": "AuthController_sendOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/otp/verify": {
+      "post": {
+        "operationId": "AuthController_verifyOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_requestPasscodeReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPasscodeResetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_confirmPasscodeReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasscodeResetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/schools": {
+      "post": {
+        "operationId": "SchoolsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSchoolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "SchoolsController_findAll",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}": {
+      "get": {
+        "operationId": "SchoolsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "SchoolsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSchoolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/branches": {
+      "post": {
+        "operationId": "BranchesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBranchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "BranchesController_findAll",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/branches/{id}": {
+      "get": {
+        "operationId": "BranchesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "BranchesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBranchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/{userId}/role-grants": {
+      "post": {
+        "operationId": "RoleGrantsController_create",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleGrantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleGrantResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "RoleGrantsController_findAll",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleGrantListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/{userId}/role-grants/{roleGrantId}": {
+      "delete": {
+        "operationId": "RoleGrantsController_revoke",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleGrantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleGrantResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/classes": {
+      "post": {
+        "operationId": "ClassesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "ClassesController_findAll",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}": {
+      "get": {
+        "operationId": "ClassesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ClassesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/timetable": {
+      "post": {
+        "operationId": "TimetableController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTimetableSlotDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "TimetableController_findAll",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/timetable/{id}": {
+      "get": {
+        "operationId": "TimetableController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "TimetableController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTimetableSlotDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructors": {
+      "post": {
+        "operationId": "InstructorsController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInstructorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "InstructorsController_findAll",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/{id}": {
+      "get": {
+        "operationId": "InstructorsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "InstructorsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInstructorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me": {
+      "get": {
+        "operationId": "UsersController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/settings/languages": {
+      "get": {
+        "operationId": "SettingsController_getLanguages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "code is BCP-47-shaped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CodeNameResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/v1/settings/currencies": {
+      "get": {
+        "operationId": "SettingsController_getCurrencies",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "code is ISO 4217.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CodeNameResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/v1/legal/{doc}": {
+      "get": {
+        "operationId": "SettingsController_getLegalDocument",
+        "parameters": [
+          {
+            "name": "doc",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payment-accounts": {
+      "post": {
+        "operationId": "PaymentsController_createForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payment-account": {
+      "get": {
+        "operationId": "PaymentsController_findForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/payment-accounts": {
+      "post": {
+        "operationId": "PaymentsController_createForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/payment-account": {
+      "get": {
+        "operationId": "PaymentsController_findForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/payment-accounts/{id}/connect/onboard": {
+      "post": {
+        "operationId": "PaymentsController_initiateConnectOnboarding",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectOnboardingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/transactions/{id}/confirm": {
+      "patch": {
+        "operationId": "PaymentsController_confirmTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/membership-plans": {
+      "post": {
+        "operationId": "MembershipsController_createPlan",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMembershipPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "MembershipsController_findAllPlans",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}": {
+      "get": {
+        "operationId": "MembershipsController_findOnePlan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "MembershipsController_updatePlan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMembershipPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/purchase": {
+      "post": {
+        "operationId": "MembershipsController_purchase",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseMembershipResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/memberships/me": {
+      "get": {
+        "operationId": "MembershipsController_findMyMemberships",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/membership-status": {
+      "get": {
+        "operationId": "MembershipsController_getMembershipStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/transactions": {
+      "get": {
+        "operationId": "TransactionsController_findAllForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "transactions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/disciplines": {
+      "post": {
+        "operationId": "RanksController_createDiscipline",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDisciplineDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "RanksController_findAllDisciplines",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}": {
+      "get": {
+        "operationId": "RanksController_findOneDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "RanksController_updateDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDisciplineDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{disciplineId}/ranks": {
+      "post": {
+        "operationId": "RanksController_createRank",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRankDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "RanksController_findAllRanks",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/ranks/{id}": {
+      "get": {
+        "operationId": "RanksController_findOneRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "RanksController_updateRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRankDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{disciplineId}/skills": {
+      "post": {
+        "operationId": "RanksController_createSkill",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSkillDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "RanksController_findAllSkills",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/skills/{id}": {
+      "patch": {
+        "operationId": "RanksController_updateSkill",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSkillDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks": {
+      "get": {
+        "operationId": "GradingController_findRanksForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentRankListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/eligibility": {
+      "get": {
+        "operationId": "GradingController_findEligibilityForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentRankListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/rank-history": {
+      "get": {
+        "operationId": "GradingController_findRankHistoryForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/promote": {
+      "post": {
+        "operationId": "GradingController_promote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/downgrade": {
+      "post": {
+        "operationId": "GradingController_downgrade",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/stripe-award": {
+      "post": {
+        "operationId": "GradingController_stripeAward",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/skills/{skillId}": {
+      "patch": {
+        "operationId": "GradingController_cycleSkillSignOff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skillId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/waivers": {
+      "post": {
+        "operationId": "WaiversController_createWaiver",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWaiverDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "WaiversController_findAllWaivers",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waivers/me": {
+      "get": {
+        "operationId": "WaiversController_findMySignatures",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waivers/{id}": {
+      "get": {
+        "operationId": "WaiversController_findOneWaiver",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "WaiversController_updateWaiver",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWaiverDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waivers/{id}/sign": {
+      "post": {
+        "operationId": "WaiversController_sign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignWaiverDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/book": {
+      "post": {
+        "operationId": "BookingsController_bookClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/cancel": {
+      "patch": {
+        "operationId": "BookingsController_cancelBooking",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/override": {
+      "patch": {
+        "operationId": "BookingsController_updateOverrideReason",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingOverrideDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/me": {
+      "get": {
+        "operationId": "BookingsController_findMyBookings",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/waitlist": {
+      "post": {
+        "operationId": "WaitlistController_joinWaitlist",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistEntryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waitlist/{id}": {
+      "delete": {
+        "operationId": "WaitlistController_withdraw",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waitlist/{id}/claim": {
+      "post": {
+        "operationId": "WaitlistController_claim",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors": {
+      "post": {
+        "operationId": "GuardiansController_createMinor",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMinorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "GuardiansController_findMyMinors",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/consent": {
+      "post": {
+        "operationId": "GuardiansController_grantConsent",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantConsentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/consent": {
+      "get": {
+        "operationId": "GuardiansController_findMyConsentRecords",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/consent/{id}/withdraw": {
+      "patch": {
+        "operationId": "GuardiansController_withdrawConsent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/attendance/scan": {
+      "post": {
+        "operationId": "AttendanceController_scan",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanAttendanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/academies": {
+      "get": {
+        "operationId": "AcademiesController_findAll",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademyListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "academies"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/academies/{id}": {
+      "get": {
+        "operationId": "AcademiesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademyDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "academies"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/academies/{id}/timetable": {
+      "get": {
+        "operationId": "AcademiesController_findTimetable",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademyTimetableListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "academies"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "ULTM8 API",
+    "description": "Modular REST API (Decision 70).",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "description": "E.164 format"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "description": "Mobile-only per confirmed field list"
+          },
+          "passcode": {
+            "type": "string",
+            "description": "Exactly 6 digits — the account's sole login credential (Decision 72)"
+          },
+          "passcodeConfirm": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "nationality": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "phone",
+          "firstName",
+          "surname",
+          "passcode",
+          "passcodeConfirm",
+          "dateOfBirth"
+        ]
+      },
+      "AuthMessageResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "SendOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "E.164 format"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "E.164 format"
+          },
+          "code": {
+            "type": "string",
+            "description": "The code delivered via Twilio Verify"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "passcode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "passcode"
+        ]
+      },
+      "LoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
+      },
+      "RequestPasscodeResetDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "E.164 format"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "ConfirmPasscodeResetDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "E.164 format"
+          },
+          "code": {
+            "type": "string",
+            "description": "The code delivered via Twilio Verify"
+          },
+          "newPasscode": {
+            "type": "string",
+            "description": "Exactly 6 digits"
+          }
+        },
+        "required": [
+          "phone",
+          "code",
+          "newPasscode"
+        ]
+      },
+      "CreateSchoolDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "mobileNumber": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ranksToggle": {
+            "type": "boolean"
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment."
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
+          },
+          "description": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "bannerUrl": {
+            "type": "string"
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ],
+            "default": "MANUAL"
+          },
+          "waitlistClaimWindowMinutes": {
+            "type": "number",
+            "default": 120,
+            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "SchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "mobileNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessType": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ranksToggle": {
+            "type": "boolean"
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ]
+          },
+          "waitlistClaimWindowMinutes": {
+            "type": "number"
+          },
+          "franchiseFeeSubscriptionStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "activities",
+          "facilities",
+          "ranksToggle",
+          "classCancellationPolicy",
+          "waitlistClaimWindowMinutes",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SchoolListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateSchoolDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "mobileNumber": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "businessType": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ranksToggle": {
+            "type": "boolean"
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment."
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
+          },
+          "description": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "bannerUrl": {
+            "type": "string"
+          },
+          "classCancellationPolicy": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_REFUND",
+              "AUTO_CREDIT"
+            ],
+            "default": "MANUAL"
+          },
+          "waitlistClaimWindowMinutes": {
+            "type": "number",
+            "default": 120,
+            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+          }
+        }
+      },
+      "CreateBranchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone name."
+          },
+          "currencyOverride": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "bannerUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "BranchResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "IANA timezone name."
+          },
+          "currencyOverride": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "name",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "BranchListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BranchResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateBranchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone name."
+          },
+          "currencyOverride": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string"
+          },
+          "bannerUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateRoleGrantDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ]
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates."
+          }
+        },
+        "required": [
+          "role",
+          "schoolId"
+        ]
+      },
+      "RoleGrantResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "SCHOOL_OWNER_MANAGER",
+              "BRANCH_STAFF",
+              "INSTRUCTOR",
+              "FRANCHISE_OWNER",
+              "GUARDIAN"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "userId",
+          "grantedAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "RoleGrantListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleGrantResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateClassDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this Class to. Omit for a School-wide Class."
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "description": "At least one activity/discipline this Class covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bannerUrl": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time."
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Nullable/omitted = unlimited.",
+            "minimum": 1
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "description": "ISO 8601 date-time — booking cutoff."
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "description": "ISO 8601 date-time — end of the QR check-in window."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
+          },
+          "termsWaiverRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "membershipInclusion": {
+            "type": "boolean",
+            "default": false,
+            "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          }
+        },
+        "required": [
+          "title",
+          "activities",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "ClassResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Nullable = unlimited."
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor currency unit (e.g. cents)."
+          },
+          "termsWaiverRequired": {
+            "type": "boolean"
+          },
+          "membershipInclusion": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "title",
+          "activities",
+          "startDate",
+          "endDate",
+          "termsWaiverRequired",
+          "membershipInclusion",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ClassListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateClassDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this Class to. Omit for a School-wide Class."
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "description": "At least one activity/discipline this Class covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bannerUrl": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time."
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Nullable/omitted = unlimited.",
+            "minimum": 1
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "description": "ISO 8601 date-time — booking cutoff."
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "description": "ISO 8601 date-time — end of the QR check-in window."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
+          },
+          "termsWaiverRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "membershipInclusion": {
+            "type": "boolean",
+            "default": false,
+            "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          }
+        }
+      },
+      "CreateTimetableSlotDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this slot to. Omit for a School-wide slot."
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ]
+          },
+          "startTime": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm.",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm.",
+            "example": "19:00"
+          },
+          "breakStart": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm."
+          },
+          "breakEnd": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ON",
+              "OFF"
+            ],
+            "default": "ON"
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "description": "At least one activity/discipline this slot covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Nullable/omitted = unlimited.",
+            "minimum": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "bannerUrl": {
+            "type": "string"
+          },
+          "termsWaiverRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "membershipInclusion": {
+            "type": "boolean",
+            "default": false,
+            "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "bookingCutoffMinutesBeforeStart": {
+            "type": "number",
+            "description": "Booking cutoff, in minutes before each occurrence starts."
+          },
+          "qrAttendanceWindowMinutes": {
+            "type": "number",
+            "description": "QR check-in window, in minutes, from each occurrence's start."
+          },
+          "refundCutoffHoursBeforeStart": {
+            "type": "number",
+            "description": "Refund/credit cutoff, in hours before each occurrence starts."
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
+          }
+        },
+        "required": [
+          "weekday",
+          "startTime",
+          "endTime",
+          "title",
+          "activities"
+        ]
+      },
+      "TimetableSlotResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ]
+          },
+          "startTime": {
+            "type": "string",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "example": "19:00"
+          },
+          "breakStart": {
+            "type": "string",
+            "nullable": true
+          },
+          "breakEnd": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ON",
+              "OFF"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "termsWaiverRequired": {
+            "type": "boolean"
+          },
+          "membershipInclusion": {
+            "type": "boolean"
+          },
+          "bookingCutoffMinutesBeforeStart": {
+            "type": "number",
+            "nullable": true
+          },
+          "qrAttendanceWindowMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "refundCutoffHoursBeforeStart": {
+            "type": "number",
+            "nullable": true
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "weekday",
+          "startTime",
+          "endTime",
+          "status",
+          "title",
+          "activities",
+          "termsWaiverRequired",
+          "membershipInclusion",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TimetableSlotListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimetableSlotResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateTimetableSlotDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this slot to. Omit for a School-wide slot."
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ]
+          },
+          "startTime": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm.",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm.",
+            "example": "19:00"
+          },
+          "breakStart": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm."
+          },
+          "breakEnd": {
+            "type": "string",
+            "description": "24-hour clock, HH:mm."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ON",
+              "OFF"
+            ],
+            "default": "ON"
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "description": "At least one activity/discipline this slot covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Nullable/omitted = unlimited.",
+            "minimum": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "bannerUrl": {
+            "type": "string"
+          },
+          "termsWaiverRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "membershipInclusion": {
+            "type": "boolean",
+            "default": false,
+            "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "bookingCutoffMinutesBeforeStart": {
+            "type": "number",
+            "description": "Booking cutoff, in minutes before each occurrence starts."
+          },
+          "qrAttendanceWindowMinutes": {
+            "type": "number",
+            "description": "QR check-in window, in minutes, from each occurrence's start."
+          },
+          "refundCutoffHoursBeforeStart": {
+            "type": "number",
+            "description": "Refund/credit cutoff, in hours before each occurrence starts."
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
+          }
+        }
+      },
+      "CreateInstructorDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "The User this profile belongs to. Must already hold an active INSTRUCTOR RoleGrant at this School (matching branchId, if set)."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this profile to. Omit for a School-wide profile."
+          },
+          "photoUrl": {
+            "type": "string"
+          },
+          "beltRanking": {
+            "type": "string",
+            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system."
+          },
+          "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "phone": {
+            "type": "string",
+            "description": "School-facing contact number, E.164 — distinct from this User's own login phone."
+          },
+          "yearsOfExperience": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bio": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "InstructorResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "beltRanking": {
+            "type": "string",
+            "nullable": true
+          },
+          "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "yearsOfExperience": {
+            "type": "number",
+            "nullable": true
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "schoolId",
+          "specializations",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "InstructorListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructorResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateInstructorDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this profile to. Omit for a School-wide profile."
+          },
+          "photoUrl": {
+            "type": "string"
+          },
+          "beltRanking": {
+            "type": "string",
+            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system."
+          },
+          "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "phone": {
+            "type": "string",
+            "description": "School-facing contact number, E.164 — distinct from this User's own login phone."
+          },
+          "yearsOfExperience": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bio": {
+            "type": "string"
+          }
+        }
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "phoneVerifiedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set once Twilio Verify OTP confirms this phone; null if not yet verified."
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "phone",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "description": "Mobile-only per confirmed field list"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "nationality": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1)."
+          },
+          "currency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as language."
+          },
+          "address": {
+            "type": "string"
+          },
+          "profilePhotoUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "CodeNameResponseDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "LegalDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null until real legal/product content is populated."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreatePaymentAccountDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "STRIPE",
+              "CASH",
+              "BANK_TRANSFER"
+            ]
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code — not validated against the actual list this phase, flagged for Architect review same as other inferred format choices."
+          }
+        },
+        "required": [
+          "provider",
+          "accountTitle",
+          "country"
+        ]
+      },
+      "PaymentAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string"
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "stripeConnectedAccountId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "accountTitle",
+          "country",
+          "status",
+          "mode",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ConnectOnboardingResponseDto": {
+        "type": "object",
+        "properties": {
+          "onboardingUrl": {
+            "type": "string",
+            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
+          }
+        },
+        "required": [
+          "onboardingUrl"
+        ]
+      },
+      "CreateMembershipPlanDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "SUBSCRIPTION",
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "FRIEND_PASS",
+              "TRIAL_MEMBERSHIP"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS."
+          },
+          "currency": {
+            "type": "string",
+            "description": "One of the 6 supported currencies (School's own choice, no conversion applied)."
+          },
+          "expiryDurationDays": {
+            "type": "number",
+            "description": "Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS."
+          },
+          "classesIncluded": {
+            "type": "number",
+            "description": "CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set."
+          },
+          "scopedClassId": {
+            "type": "string",
+            "description": "Restricts this plan to one specific Class."
+          },
+          "visible": {
+            "type": "boolean",
+            "default": true
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time."
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "description": "Minor currency unit."
+          },
+          "termsWaiverRequired": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "price"
+        ]
+      },
+      "MembershipPlanResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiryDurationDays": {
+            "type": "number",
+            "nullable": true
+          },
+          "classesIncluded": {
+            "type": "number",
+            "nullable": true
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true
+          },
+          "termsWaiverRequired": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "type",
+          "title",
+          "price",
+          "visible",
+          "termsWaiverRequired",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "MembershipPlanListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipPlanResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateMembershipPlanDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "SUBSCRIPTION",
+              "CLASS_PACK",
+              "WEEKLY_PASS",
+              "FRIEND_PASS",
+              "TRIAL_MEMBERSHIP"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS."
+          },
+          "currency": {
+            "type": "string",
+            "description": "One of the 6 supported currencies (School's own choice, no conversion applied)."
+          },
+          "expiryDurationDays": {
+            "type": "number",
+            "description": "Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS."
+          },
+          "classesIncluded": {
+            "type": "number",
+            "description": "CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set."
+          },
+          "scopedClassId": {
+            "type": "string",
+            "description": "Restricts this plan to one specific Class."
+          },
+          "visible": {
+            "type": "boolean",
+            "default": true
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "description": "ISO 8601 date-time."
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "description": "Minor currency unit."
+          },
+          "termsWaiverRequired": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "MembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "classesRemaining": {
+            "type": "number",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "scopedClassId": {
+            "type": "string",
+            "nullable": true
+          },
+          "giftedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "membershipPlanId",
+          "schoolId",
+          "status",
+          "startDate",
+          "frequency",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PurchaseMembershipResponseDto": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "requires_payment",
+              "pending_confirmation",
+              "active"
+            ]
+          },
+          "clientSecret": {
+            "type": "string",
+            "description": "Stripe PaymentIntent client secret — present only when outcome is requires_payment."
+          },
+          "membership": {
+            "description": "Present only when outcome is active.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MembershipResponseDto"
+              }
+            ]
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "The created Transaction id — present for requires_payment and pending_confirmation."
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "MembershipListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "MembershipStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "EXPIRED",
+              "NONE"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "TransactionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "paymentAccountId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "membershipId": {
+            "type": "string",
+            "nullable": true
+          },
+          "billingDate": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentMethod": {
+            "type": "string"
+          },
+          "disputedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "refundedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "paymentAccountId",
+          "membershipPlanId",
+          "billingDate",
+          "amount",
+          "status",
+          "paymentMethod",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TransactionListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateDisciplineDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "classTypesOffered": {
+            "description": "e.g. \"Kids Fundamentals\", \"Adult Sparring\", \"Competition Team\".",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "DisciplineResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "classTypesOffered": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "name",
+          "classTypesOffered",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "DisciplineListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DisciplineResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateDisciplineDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "classTypesOffered": {
+            "description": "e.g. \"Kids Fundamentals\", \"Adult Sparring\", \"Competition Team\".",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RankStripeTierInputDto": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "number",
+            "description": "Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5)."
+          },
+          "count": {
+            "type": "number"
+          },
+          "colour": {
+            "type": "string"
+          },
+          "classesRequired": {
+            "type": "number"
+          },
+          "minimumDaysInRank": {
+            "type": "number"
+          },
+          "eligibleClassTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "order",
+          "count",
+          "colour"
+        ]
+      },
+      "CreateRankDto": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "number",
+            "description": "Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5)."
+          },
+          "primaryColour": {
+            "type": "string"
+          },
+          "secondaryColour": {
+            "type": "string"
+          },
+          "weeklyClassCountCap": {
+            "type": "number"
+          },
+          "yearsInRankFlag": {
+            "type": "boolean",
+            "default": false,
+            "description": "Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold."
+          },
+          "stripeTiers": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankStripeTierInputDto"
+            }
+          },
+          "requiredSkillIds": {
+            "description": "Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "order",
+          "primaryColour",
+          "stripeTiers"
+        ]
+      },
+      "RankStripeTierResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "count": {
+            "type": "number"
+          },
+          "colour": {
+            "type": "string"
+          },
+          "classesRequired": {
+            "type": "number",
+            "nullable": true
+          },
+          "minimumDaysInRank": {
+            "type": "number",
+            "nullable": true
+          },
+          "eligibleClassTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "order",
+          "count",
+          "colour",
+          "eligibleClassTypes"
+        ]
+      },
+      "RankResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "primaryColour": {
+            "type": "string"
+          },
+          "secondaryColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "weeklyClassCountCap": {
+            "type": "number",
+            "nullable": true
+          },
+          "yearsInRankFlag": {
+            "type": "boolean"
+          },
+          "stripeTiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankStripeTierResponseDto"
+            }
+          },
+          "requiredSkillIds": {
+            "description": "Required Skill ids.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "disciplineId",
+          "schoolId",
+          "order",
+          "primaryColour",
+          "yearsInRankFlag",
+          "stripeTiers",
+          "requiredSkillIds",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "RankListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateRankDto": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "number",
+            "description": "Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5)."
+          },
+          "primaryColour": {
+            "type": "string"
+          },
+          "secondaryColour": {
+            "type": "string"
+          },
+          "weeklyClassCountCap": {
+            "type": "number"
+          },
+          "yearsInRankFlag": {
+            "type": "boolean",
+            "default": false,
+            "description": "Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold."
+          },
+          "stripeTiers": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankStripeTierInputDto"
+            }
+          },
+          "requiredSkillIds": {
+            "description": "Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateSkillDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "SkillResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "disciplineId",
+          "schoolId",
+          "name",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SkillListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateSkillDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "StudentRankSkillStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "skillId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "skillId",
+          "status"
+        ]
+      },
+      "StudentRankResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "currentRankId": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfCurrentRank": {
+            "type": "string"
+          },
+          "classesAttendedTowardCheckpoint": {
+            "type": "number"
+          },
+          "skillStatuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentRankSkillStatusResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "disciplineId",
+          "schoolId",
+          "currentRankId",
+          "dateOfCurrentRank",
+          "classesAttendedTowardCheckpoint",
+          "skillStatuses",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "StudentRankListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentRankResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PromotionEventResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentRankId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "performedById": {
+            "type": "string"
+          },
+          "fromRankId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toRankId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fromStripeTierId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toStripeTierId": {
+            "type": "string",
+            "nullable": true
+          },
+          "acknowledgedWithoutSkillSignoff": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentRankId",
+          "studentId",
+          "schoolId",
+          "type",
+          "performedById",
+          "acknowledgedWithoutSkillSignoff",
+          "createdAt"
+        ]
+      },
+      "PromotionEventListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromotionEventResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GradingActionDto": {
+        "type": "object",
+        "properties": {
+          "acknowledgeWithoutSkillSignoff": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "CreateWaiverDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string",
+            "description": "The waiver document body text."
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ]
+      },
+      "WaiverResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "title",
+          "body",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WaiverListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaiverResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "WaiverSignatureResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "waiverId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string"
+          },
+          "signedDate": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "waiverId",
+          "studentId",
+          "schoolId",
+          "signerFullName",
+          "signatureText",
+          "signedDate",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WaiverSignatureListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaiverSignatureResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateWaiverDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string",
+            "description": "The waiver document body text."
+          }
+        }
+      },
+      "SignWaiverDto": {
+        "type": "object",
+        "properties": {
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string",
+            "description": "Typed signature text (not a drawn/canvas signature — see WaiverSignature's own schema comment)."
+          }
+        },
+        "required": [
+          "signerFullName",
+          "signatureText"
+        ]
+      },
+      "BookClassDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Staff-only: book on behalf of this Student instead of the caller."
+          },
+          "attendeeMembershipIds": {
+            "description": "One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overrideReason": {
+            "type": "string",
+            "description": "Staff-only — bypasses the rank-eligibility gate for this Booking only, always recorded."
+          }
+        }
+      },
+      "BookingAttendeeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "membershipId": {
+            "type": "string"
+          },
+          "refundResolution": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedById": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "membershipId"
+        ]
+      },
+      "BookingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "sourceMembershipId": {
+            "type": "string"
+          },
+          "overriddenById": {
+            "type": "string",
+            "nullable": true
+          },
+          "overrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundResolution": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingAttendeeResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "classId",
+          "schoolId",
+          "status",
+          "sourceMembershipId",
+          "attendees",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UpdateBookingOverrideDto": {
+        "type": "object",
+        "properties": {
+          "overrideReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "overrideReason"
+        ]
+      },
+      "BookingListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "WaitlistEntryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "position": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "joinedAt": {
+            "type": "string"
+          },
+          "notifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimByDeadline": {
+            "type": "string",
+            "nullable": true
+          },
+          "claimedBookingId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "classId",
+          "schoolId",
+          "position",
+          "status",
+          "joinedAt"
+        ]
+      },
+      "CreateMinorDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component."
+          },
+          "gender": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "dateOfBirth"
+        ]
+      },
+      "MinorResponseDto": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "linkId",
+          "studentId",
+          "firstName",
+          "surname",
+          "dateOfBirth"
+        ]
+      },
+      "MinorListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GrantConsentDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "BASELINE",
+              "CAMERA"
+            ]
+          },
+          "policyVersion": {
+            "type": "string",
+            "description": "The specific privacy-notice/data-practice description version being consented to."
+          }
+        },
+        "required": [
+          "tier",
+          "policyVersion"
+        ]
+      },
+      "ConsentRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guardianId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "policyVersion": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "consentedAt": {
+            "type": "string"
+          },
+          "withdrawnAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "guardianId",
+          "studentId",
+          "tier",
+          "policyVersion",
+          "status",
+          "consentedAt"
+        ]
+      },
+      "ConsentRecordListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentRecordResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ScanAttendanceDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bookingId"
+        ]
+      },
+      "AcademySummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "activities",
+          "facilities"
+        ]
+      },
+      "AcademyListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcademySummaryDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcademyMembershipPlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiryDurationDays": {
+            "type": "number",
+            "nullable": true
+          },
+          "classesIncluded": {
+            "type": "number",
+            "nullable": true
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "type",
+          "title",
+          "price",
+          "visible"
+        ]
+      },
+      "AcademyClassDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Nullable = unlimited."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "title",
+          "activities",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "AcademyDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "membershipPlans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcademyMembershipPlanDto"
+            }
+          },
+          "upcomingClasses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcademyClassDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "activities",
+          "facilities",
+          "membershipPlans",
+          "upcomingClasses"
+        ]
+      },
+      "AcademyTimetableSlotDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "weekday": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ]
+          },
+          "startTime": {
+            "type": "string",
+            "example": "18:00"
+          },
+          "endTime": {
+            "type": "string",
+            "example": "19:00"
+          },
+          "breakStart": {
+            "type": "string",
+            "nullable": true
+          },
+          "breakEnd": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ON",
+              "OFF"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "weekday",
+          "startTime",
+          "endTime",
+          "status",
+          "title",
+          "activities"
+        ]
+      },
+      "AcademyTimetableListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcademyTimetableSlotDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    }
+  }
+}
