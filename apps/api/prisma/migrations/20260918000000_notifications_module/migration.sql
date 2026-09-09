@@ -47,8 +47,15 @@ CREATE POLICY "notification_self_only" ON "Notification"
 -- capacity check (Decision 89) and Guardian's consent-withdrawal cascade
 -- (Decision 92) each already hit, closed the same established way. SELECT is
 -- for Prisma's INSERT ... RETURNING, not an independent read — same reasoning
--- as class_jobs_select_for_returning.
-GRANT INSERT, SELECT ON "Notification" TO ultm8_jobs;
+-- as class_jobs_select_for_returning. UPDATE is for the idempotent `upsert`
+-- NotificationFanoutProcessor uses (a retried job's `ON CONFLICT DO UPDATE`
+-- branch) — FOUND ON CI, on this migration's own first real run: the first
+-- draft granted only INSERT+SELECT, matching the plain `.create()` an earlier
+-- version of the processor used, and was never updated when the processor
+-- itself moved to `upsert` for retry-safety — caught immediately by the new
+-- direct-invocation e2e test's own idempotency assertion failing with
+-- "permission denied for table Notification", not silently.
+GRANT INSERT, SELECT, UPDATE ON "Notification" TO ultm8_jobs;
 CREATE POLICY "notification_jobs_insert" ON "Notification"
   FOR INSERT
   TO ultm8_jobs
@@ -57,6 +64,11 @@ CREATE POLICY "notification_jobs_select_for_returning" ON "Notification"
   FOR SELECT
   TO ultm8_jobs
   USING (true);
+CREATE POLICY "notification_jobs_update" ON "Notification"
+  FOR UPDATE
+  TO ultm8_jobs
+  USING (true)
+  WITH CHECK (true);
 
 -- notification-fanout needs to resolve a target User's email for delivery —
 -- never granted to ultm8_jobs before now (grepped every prior migration to
