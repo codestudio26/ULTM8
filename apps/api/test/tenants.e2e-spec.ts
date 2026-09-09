@@ -50,7 +50,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   let branchB: { id: string };
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
-  let verifiedInvitee: { id: string };
+  let verifiedInvitee: { id: string; email: string };
   let tokenOwnerA: string;
   let tokenOwnerB: string;
 
@@ -281,5 +281,81 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     await superuser.roleGrant.deleteMany({ where: { schoolId: createRes.body.id } });
     await superuser.school.delete({ where: { id: createRes.body.id } });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Self-service Student enrollment (Decision 96) — the fix for the gap Phase
+  // 15's own review surfaced: no path anywhere previously let a real caller
+  // become a Student at a School at all.
+  // ---------------------------------------------------------------------------
+
+  it('a caller with ZERO grant anywhere CAN self-service join a School as a Student, and gets a fresh access token reflecting it', async () => {
+    // A genuinely fresh User, created here rather than reusing
+    // verifiedInvitee — found on review that verifiedInvitee already holds an
+    // active INSTRUCTOR grant at schoolB by this point in the suite (from the
+    // earlier "cannot see or revoke a RoleGrant..." test above, which
+    // deliberately never revokes it), so it would NOT actually exercise the
+    // "caller with zero relationship to the School, whose own ultm8_app
+    // context can't see it" path this test exists to prove — it would still
+    // pass even if join()'s existence check were wrongly reverted to the
+    // caller's own tenant context, since verifiedInvitee's own context CAN
+    // already see schoolB via that pre-existing grant.
+    const freshCaller = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-fresh-joiner-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Fresh',
+        surname: 'Joiner',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const tokenFreshCaller = signAccessToken(freshCaller, []);
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolB.id}/join`)
+      .set('Authorization', `Bearer ${tokenFreshCaller}`)
+      .send();
+    expect(joinRes.status).toBe(201);
+    expect(joinRes.body.role).toBe('STUDENT');
+    expect(joinRes.body.schoolId).toBe(schoolB.id);
+    expect(joinRes.body.branchId).toBeNull();
+
+    const grant = await superuser.roleGrant.findFirst({
+      where: { userId: freshCaller.id, schoolId: schoolB.id, role: 'STUDENT', revokedAt: null },
+    });
+    expect(grant).not.toBeNull();
+
+    // Same re-mint-and-return pattern as self-service School creation above —
+    // decode the returned token and confirm it actually carries the new grant,
+    // not just that a string came back.
+    expect(joinRes.body.accessToken).toEqual(expect.any(String));
+    const decoded = jwt.decode(joinRes.body.accessToken) as { sub: string; grants: Array<Record<string, unknown>> };
+    expect(decoded.sub).toBe(freshCaller.id);
+    expect(decoded.grants).toContainEqual(expect.objectContaining({ role: 'STUDENT', schoolId: schoolB.id }));
+
+    // Joining a School the caller already holds an active Student grant at is
+    // a conflict (enforced by the RoleGrant_one_active_student_per_school
+    // partial unique index, not a separate check-then-insert query), not a
+    // silent no-op or a second grant.
+    const secondJoinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolB.id}/join`)
+      .set('Authorization', `Bearer ${tokenFreshCaller}`)
+      .send();
+    expect(secondJoinRes.status).toBe(409);
+
+    await superuser.roleGrant.deleteMany({ where: { userId: freshCaller.id } });
+    await superuser.user.delete({ where: { id: freshCaller.id } });
+  });
+
+  it('joining a School that does not exist is a 404 — school_exists() can see every real School regardless of the caller\'s own grants', async () => {
+    const tokenInvitee = signAccessToken(verifiedInvitee, []);
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${randomUUID()}/join`)
+      .set('Authorization', `Bearer ${tokenInvitee}`)
+      .send();
+    expect(res.status).toBe(404);
   });
 });

@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
@@ -77,6 +78,91 @@ export class SchoolsService {
     const accessToken = await this.authService.issueAccessToken(callerId);
 
     return { ...school, accessToken };
+  }
+
+  /**
+   * Self-service Student enrollment — a caller becomes a STUDENT at an EXISTING
+   * School, discovered via AcademiesModule (Phase 14). Not spec-confirmed as a
+   * named endpoint anywhere — a genuine, previously-missing gap surfaced during
+   * Phase 15's own review: no path anywhere in this codebase ever created a
+   * STUDENT RoleGrant (grepped every call site to confirm), so no real Student
+   * could actually join a School at all. Decided directly with the product
+   * owner (see Decision 96, docs/decisions/POST-SPEC-55-DECISION-LOG.md) as
+   * self-service, the same shape `create()` above already uses for School
+   * Owner — not an invite-only flow (which would leave AcademiesModule's own
+   * discovery feature with nowhere to lead), and not gated behind a
+   * Membership purchase (a Trial Membership already exists as a first-class
+   * concept, and nothing confirms a browsing caller must pay before joining).
+   *
+   * Deliberately narrow — this phase only builds an ADULT caller joining on
+   * their OWN behalf. Whether/how a Guardian enrolls a linked minor at a
+   * School (a genuinely separate cross-user-write question, the same shape
+   * Guardian's own consent-withdrawal cascade already solved once) is
+   * explicitly OUT OF SCOPE here, not silently assumed — see Decision 96's
+   * own "what this does not resolve" section.
+   *
+   * FOUND ON REVIEW, before this ever shipped — the first draft's mechanism
+   * was a real mistake: it reused `PrismaDiscoveryService` (Phase 14,
+   * provisioned specifically and exclusively for AcademiesModule — see that
+   * service's own header comment: "ONLY AcademiesService may inject this")
+   * for its own School-existence check. Rewritten to use `school_exists()`
+   * instead — a `SECURITY DEFINER` function mirroring `school_has_any_role_
+   * grant`'s own established shape (20260906000000), owned by the existing
+   * `ultm8_rls_helper` role (no new role needed), called via a parameterized
+   * `tx.$queryRaw` from INSIDE the caller's own `ultm8_app` context — the
+   * same raw-query pattern `bookings.service.ts`/`waitlist.service.ts`
+   * already use for `SELECT ... FOR UPDATE`. Zero coupling to
+   * AcademiesModule's own policies; see the Phase student-self-enrollment
+   * migration's own header comment and Decision 96 for the full account.
+   *
+   * The existence check and the RoleGrant write both run inside ONE
+   * `withTenantContext` transaction — the write itself needs no bypass at
+   * all (`rolegrant_self_only` already admits a caller writing their OWN
+   * userId, regardless of School-level access); only the existence check
+   * needed a mechanism that could see a School the caller holds no grant at.
+   * Idempotency is enforced by `RoleGrant_one_active_student_per_school` (a
+   * real DB constraint, not a separate check-then-insert query that a
+   * concurrent request could race past) — the create is attempted directly
+   * and a unique-constraint violation (P2002) becomes the 409, the same
+   * "atomic create() + caught P2002" pattern already established elsewhere
+   * in this codebase (e.g. Waiver creation dedup).
+   */
+  async join(callerId: string, schoolId: string) {
+    const roleGrantId = randomUUID();
+
+    const roleGrant = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const [{ school_exists: schoolExists }] = await tx.$queryRaw<[{ school_exists: boolean }]>`
+        SELECT school_exists(${schoolId})
+      `;
+      if (!schoolExists) {
+        throw new NotFoundException('School not found');
+      }
+
+      try {
+        return await tx.roleGrant.create({
+          data: {
+            id: roleGrantId,
+            role: 'STUDENT',
+            userId: callerId,
+            schoolId,
+            grantedById: callerId, // self-granted — same pattern as create() above
+          },
+        });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ConflictException('You are already a Student at this School.');
+        }
+        throw err;
+      }
+    });
+
+    // Re-mint the caller's own access token now that their STUDENT grant is
+    // committed — same narrow exception create() above already uses, called
+    // after the write commits for the same reason (issueAccessToken() opens
+    // its own transaction/connection and needs to see the just-committed row).
+    const accessToken = await this.authService.issueAccessToken(callerId);
+
+    return { ...roleGrant, accessToken };
   }
 
   /** Schools visible to the caller — RLS already restricts this to Schools where the

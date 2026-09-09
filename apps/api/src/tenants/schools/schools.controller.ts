@@ -8,6 +8,7 @@ import { SchoolsService } from './schools.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { SchoolListResponseDto, SchoolResponseDto } from './dto/school-response.dto';
+import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -42,5 +43,11 @@ export class SchoolsController {
   @Patch(':id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateSchoolDto) {
     return this.schoolsService.update(user.sub, id, dto);
+  }
+
+  @ApiCreatedResponse({ type: JoinSchoolResponseDto })
+  @Post(':id/join')
+  join(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.join(user.sub, id);
   }
 }
