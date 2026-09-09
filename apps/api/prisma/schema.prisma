@@ -499,6 +499,9 @@ model Class {
   @@index([schoolId])
   @@index([schoolId, branchId])
   @@index([timetableSlotId])
+  // Phase 14 — AcademiesService.findOne's "upcoming Classes" read range-filters
+  // and orders by startDate for a given schoolId; see the Phase 14 migration.
+  @@index([schoolId, startDate])
 }
 
 /// TimetableSlot (Phase 5, Spec 55 §6.1/§9) — a School's recurring weekly schedule.
@@ -581,6 +584,9 @@ model TimetableSlot {
   // Composite indexes leading with the tenant column (Decision 30).
   @@index([schoolId])
   @@index([schoolId, branchId])
+  // Phase 14 — AcademiesService.findTimetable's "active slots only" read filters by
+  // (schoolId, status); see the Phase 14 migration.
+  @@index([schoolId, status])
 }
 
 /// Instructor (Phase 6, Spec 55 §6.1) — a profile/bio *extension* for a person who

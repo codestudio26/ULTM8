@@ -44,6 +44,10 @@ jobs:
       # Set only after the migration creates the ultm8_app/ultm8_jobs roles (step below).
       DATABASE_URL_APP: postgresql://ultm8_app:changeme@localhost:5432/ultm8?schema=public
       DATABASE_URL_JOBS: postgresql://ultm8_jobs:changeme@localhost:5432/ultm8?schema=public
+      # Phase 14 — AcademiesModule's own dedicated role (see the Phase 14 migration
+      # and Decision 94 for why this is a separate role, not a reuse of ultm8_app/
+      # ultm8_jobs above).
+      DATABASE_URL_DISCOVERY: postgresql://ultm8_discovery:changeme@localhost:5432/ultm8?schema=public
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
       # Phase 8 — payments.e2e-spec.ts gates on this being set; without it the suite

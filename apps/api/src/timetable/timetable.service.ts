@@ -11,8 +11,15 @@ import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
  * `@db.Time(0)` columns round-trip through Prisma as a `Date` whose time-of-day
  * component is meaningful and whose date component is a fixed epoch (1970-01-01 UTC,
  * per Prisma's own convention for a bare TIME column) — never meant to be read as a
- * real calendar date. `parseHHmm`/`formatHHmm` are the only place that epoch detail is
- * allowed to leak; every DTO and response stays in plain `HH:mm` strings.
+ * real calendar date. `parseHHmm`/`formatHHmm`/`shapeTimetableSlotResponse` are the
+ * only places that epoch detail is allowed to leak; every DTO and response stays in
+ * plain `HH:mm` strings.
+ *
+ * `parseHHmm` stays module-private — its only callers are `create`/`update` below,
+ * whose input already passed through CreateTimetableSlotDto/UpdateTimetableSlotDto's
+ * class-validator rules; it does no validation of its own (a malformed string silently
+ * produces an Invalid Date), so it shouldn't be reachable by anything that hasn't
+ * already validated its input the same way.
  */
 function parseHHmm(value: string): Date {
   const [hours, minutes] = value.split(':').map(Number);
@@ -23,6 +30,25 @@ function formatHHmm(value: Date): string {
   const hours = String(value.getUTCHours()).padStart(2, '0');
   const minutes = String(value.getUTCMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+/**
+ * Exported (not module-private) since Phase 14 — AcademiesService needs the exact
+ * same TimetableSlot -> HH:mm response shaping for its own read-only discovery
+ * timetable endpoint and must reuse this one function, not re-implement the same
+ * object-literal shaping a second time (a duplication the Phase 14 code review
+ * caught in an earlier draft of that service).
+ */
+export function shapeTimetableSlotResponse<
+  T extends { startTime: Date; endTime: Date; breakStart: Date | null; breakEnd: Date | null },
+>(slot: T) {
+  return {
+    ...slot,
+    startTime: formatHHmm(slot.startTime),
+    endTime: formatHHmm(slot.endTime),
+    breakStart: slot.breakStart ? formatHHmm(slot.breakStart) : null,
+    breakEnd: slot.breakEnd ? formatHHmm(slot.breakEnd) : null,
+  };
 }
 
 @Injectable()
@@ -177,15 +203,12 @@ export class TimetableService {
   // requires detecting or blocking it, so no conflict-detection is built here. A
   // deliberate gap, not a missed one.
 
+  // Delegates to the module-level, exported shapeTimetableSlotResponse (see the file
+  // header comment) — kept as a thin instance method so every existing call site
+  // above (this.toResponse(...)) needs no change.
   private toResponse<T extends { startTime: Date; endTime: Date; breakStart: Date | null; breakEnd: Date | null }>(
     slot: T,
   ) {
-    return {
-      ...slot,
-      startTime: formatHHmm(slot.startTime),
-      endTime: formatHHmm(slot.endTime),
-      breakStart: slot.breakStart ? formatHHmm(slot.breakStart) : null,
-      breakEnd: slot.breakEnd ? formatHHmm(slot.breakEnd) : null,
-    };
+    return shapeTimetableSlotResponse(slot);
   }
 }
