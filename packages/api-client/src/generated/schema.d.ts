@@ -132,6 +132,22 @@ export interface paths {
         patch: operations["SchoolsController_update"];
         trace?: never;
     };
+    "/v1/schools/{id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SchoolsController_join"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/branches": {
         parameters: {
             query?: never;
@@ -1259,6 +1275,21 @@ export interface components {
              * @default 120
              */
             waitlistClaimWindowMinutes: number;
+        };
+        JoinSchoolResponseDto: {
+            id: string;
+            /** @enum {string} */
+            role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
+            userId: string;
+            franchiseId?: string | null;
+            schoolId?: string | null;
+            branchId?: string | null;
+            grantedById?: string | null;
+            grantedAt: string;
+            revokedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            accessToken: string;
         };
         CreateBranchDto: {
             name: string;
@@ -2412,6 +2443,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_join: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinSchoolResponseDto"];
                 };
             };
         };

@@ -346,6 +346,41 @@
         ]
       }
     },
+    "/v1/schools/{id}/join": {
+      "post": {
+        "operationId": "SchoolsController_join",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/branches": {
       "post": {
         "operationId": "BranchesController_create",
@@ -4130,6 +4165,69 @@
             "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
           }
         }
+      },
+      "JoinSchoolResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "SCHOOL_OWNER_MANAGER",
+              "BRANCH_STAFF",
+              "INSTRUCTOR",
+              "FRANCHISE_OWNER",
+              "GUARDIAN"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "userId",
+          "grantedAt",
+          "createdAt",
+          "updatedAt",
+          "accessToken"
+        ]
       },
       "CreateBranchDto": {
         "type": "object",
