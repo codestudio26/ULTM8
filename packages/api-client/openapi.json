@@ -381,6 +381,51 @@
         ]
       }
     },
+    "/v1/schools/{id}/join-franchise": {
+      "post": {
+        "operationId": "SchoolsController_joinFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinFranchiseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/branches": {
       "post": {
         "operationId": "BranchesController_create",
@@ -4421,6 +4466,17 @@
           "createdAt",
           "updatedAt",
           "accessToken"
+        ]
+      },
+      "JoinFranchiseDto": {
+        "type": "object",
+        "properties": {
+          "franchiseId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "franchiseId"
         ]
       },
       "CreateBranchDto": {
