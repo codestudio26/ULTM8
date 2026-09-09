@@ -154,28 +154,38 @@ describeIfDb('AttendanceModule — HTTP-level self-service QR check-in', () => {
   });
 
   it('scanning someone else\'s Booking, or a Booking that\'s already resolved, is rejected', async () => {
+    // Uses studentB as the owner here (not studentA) — studentA already holds
+    // an Active general-access Membership from the previous test, and a second
+    // mkActiveMembership() call for the same Student would violate the
+    // one-active-general-access-per-School guard.
     const future = new Date(Date.now() + 3_600_000);
     const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Open Mat', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
-    const membershipA = await mkActiveMembership(studentA.id);
-    const bookingForA = await mkBooking(studentA.id, cls.id, membershipA.id);
+    const membershipB = await mkActiveMembership(studentB.id);
+    const bookingForB = await mkBooking(studentB.id, cls.id, membershipB.id);
 
-    const wrongCaller = await request(app.getHttpServer()).post('/v1/attendance/scan').set('Authorization', `Bearer ${tokenStudentB}`).send({ bookingId: bookingForA.id });
+    const wrongCaller = await request(app.getHttpServer()).post('/v1/attendance/scan').set('Authorization', `Bearer ${tokenStudentA}`).send({ bookingId: bookingForB.id });
     expect(wrongCaller.status).toBe(404);
 
-    const firstScan = await request(app.getHttpServer()).post('/v1/attendance/scan').set('Authorization', `Bearer ${tokenStudentA}`).send({ bookingId: bookingForA.id });
+    const firstScan = await request(app.getHttpServer()).post('/v1/attendance/scan').set('Authorization', `Bearer ${tokenStudentB}`).send({ bookingId: bookingForB.id });
     expect(firstScan.status).toBe(201);
 
-    const secondScan = await request(app.getHttpServer()).post('/v1/attendance/scan').set('Authorization', `Bearer ${tokenStudentA}`).send({ bookingId: bookingForA.id });
+    const secondScan = await request(app.getHttpServer()).post('/v1/attendance/scan').set('Authorization', `Bearer ${tokenStudentB}`).send({ bookingId: bookingForB.id });
     expect(secondScan.status).toBe(400);
   });
 
   it('scanning after the check-in window has closed is rejected — 400', async () => {
+    // Reuses studentB's EXISTING general-access Membership from the previous
+    // test (AttendanceService.scan() never actually checks Membership state —
+    // sourceMembershipId only needs to satisfy Booking's own FK constraint
+    // here, this test is purely about the window gate) rather than minting
+    // another, which would violate the one-active-general-access-per-School
+    // guard the same way the earlier fix in the previous test addressed.
+    const existingMembershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
     const past = new Date(Date.now() - 3_600_000);
     const cls = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Already Closed', startDate: past, endDate: new Date(past.getTime() + 1_800_000), qrAttendanceEndAt: new Date(past.getTime() + 1_800_000) },
     });
-    const membership = await mkActiveMembership(studentB.id);
-    const booking = await mkBooking(studentB.id, cls.id, membership.id);
+    const booking = await mkBooking(studentB.id, cls.id, existingMembershipB.id);
 
     const res = await request(app.getHttpServer()).post('/v1/attendance/scan').set('Authorization', `Bearer ${tokenStudentB}`).send({ bookingId: booking.id });
     expect(res.status).toBe(400);
