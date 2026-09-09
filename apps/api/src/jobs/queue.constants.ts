@@ -8,3 +8,4 @@
 export const OTP_DELIVERY_QUEUE = 'otp-delivery';
 export const CLASS_OCCURRENCE_GENERATION_QUEUE = 'class-occurrence-generation';
 export const STRIPE_WEBHOOK_PROCESSING_QUEUE = 'stripe-webhook-processing';
+export const WAIVER_SIGNATURE_REQUESTS_QUEUE = 'waiver-signature-requests';

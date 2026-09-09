@@ -14,6 +14,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { MembershipsModule } from './memberships/memberships.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { RanksModule } from './ranks/ranks.module';
+import { WaiversModule } from './waivers/waivers.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -34,6 +35,7 @@ import { JobsModule } from './jobs/jobs.module';
     MembershipsModule,
     TransactionsModule,
     RanksModule,
+    WaiversModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
