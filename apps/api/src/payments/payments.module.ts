@@ -11,8 +11,9 @@ import { StripeClientService } from './stripe-client.service';
  * automation, no SubscriptionPlan/white-label billing. See the Phase 8 kickoff
  * prompt for the full rationale on what's deliberately deferred and why.
  *
- * Imports TenantsModule for SchoolsService/TenantAuthorizationService (now including
- * the new assertFranchiseOwner), same shape as every other module. Imports
+ * Imports TenantsModule for SchoolsService/FranchisesService/TenantAuthorizationService
+ * (Phase 16 adds FranchisesService — see PaymentsService.createForFranchise/
+ * findForFranchise for what it's used for), same shape as every other module. Imports
  * QueueModule directly for @InjectQueue(STRIPE_WEBHOOK_PROCESSING_QUEUE) —
  * same pattern AuthModule already established for TwilioVerifyService's own queue
  * injection, not a new convention.

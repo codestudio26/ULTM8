@@ -358,4 +358,126 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .send();
     expect(res.status).toBe(404);
   });
+
+  // ---------------------------------------------------------------------------
+  // FranchisesModule (Phase 16) — self-service creation mirrors School's own
+  // Decision-79 pattern exactly; cross-tenant isolation mirrors School's own tests
+  // above, against the same franchise_tenant_isolation RLS shape.
+  // ---------------------------------------------------------------------------
+
+  it('self-service Franchise creation grants the creator FRANCHISE_OWNER atomically', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Self-Service Franchise' });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.feeModel).toBe('FLAT'); // schema default, never sent
+
+    const grant = await superuser.roleGrant.findFirst({
+      where: { userId: ownerA.id, franchiseId: createRes.body.id, role: 'FRANCHISE_OWNER', revokedAt: null },
+    });
+    expect(grant).not.toBeNull();
+
+    // Same re-mint-and-return pattern as self-service School creation — decode the
+    // returned token and confirm it actually carries the new grant.
+    expect(createRes.body.accessToken).toEqual(expect.any(String));
+    const decoded = jwt.decode(createRes.body.accessToken) as { sub: string; grants: Array<Record<string, unknown>> };
+    expect(decoded.sub).toBe(ownerA.id);
+    expect(decoded.grants).toContainEqual(
+      expect.objectContaining({ role: 'FRANCHISE_OWNER', franchiseId: createRes.body.id }),
+    );
+
+    await superuser.roleGrant.deleteMany({ where: { franchiseId: createRes.body.id } });
+    await superuser.franchise.delete({ where: { id: createRes.body.id } });
+  });
+
+  it('cannot GET or PATCH another tenant\'s Franchise, but CAN its own', async () => {
+    const createFranchiseA = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Isolation Franchise A' });
+    const createFranchiseB = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerB}`)
+      .send({ name: 'Isolation Franchise B' });
+    expect(createFranchiseA.status).toBe(201);
+    expect(createFranchiseB.status).toBe(201);
+    const franchiseAId = createFranchiseA.body.id;
+    const franchiseBId = createFranchiseB.body.id;
+
+    // Negative — owner A reaching for franchise B.
+    const getRes = await request(app.getHttpServer())
+      .get(`/v1/franchises/${franchiseBId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(getRes.status).toBe(404);
+
+    const patchRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseBId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'HACKED BY TENANT A' });
+    expect([403, 404]).toContain(patchRes.status);
+    const unchanged = await superuser.franchise.findUniqueOrThrow({ where: { id: franchiseBId } });
+    expect(unchanged.name).toBe('Isolation Franchise B');
+
+    const listRes = await request(app.getHttpServer())
+      .get('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(listRes.status).toBe(200);
+    const ids = listRes.body.items.map((f: { id: string }) => f.id);
+    expect(ids).toContain(franchiseAId);
+    expect(ids).not.toContain(franchiseBId);
+
+    // Positive control — owner A on its own franchise A.
+    const ownGetRes = await request(app.getHttpServer())
+      .get(`/v1/franchises/${franchiseAId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(ownGetRes.status).toBe(200);
+
+    const ownPatchRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseAId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ description: 'Updated by owner A' });
+    expect(ownPatchRes.status).toBe(200);
+    expect(ownPatchRes.body.description).toBe('Updated by owner A');
+
+    await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
+    await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
+  });
+
+  it('GET /franchises/:id/schools returns only that Franchise\'s own Schools, and is Owner-only', async () => {
+    const createFranchise = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Roster Franchise' });
+    expect(createFranchise.status).toBe(201);
+    const franchiseId = createFranchise.body.id;
+
+    // Directly seeded (superuser), same convention every other cross-boundary
+    // fixture in this suite already uses — no confirmed API path links an existing
+    // School to a Franchise this phase (CreateSchoolDto deliberately excludes
+    // franchiseId, same as always).
+    const memberSchool = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Franchise Member School', franchiseId },
+    });
+
+    const rosterRes = await request(app.getHttpServer())
+      .get(`/v1/franchises/${franchiseId}/schools`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(rosterRes.status).toBe(200);
+    expect(rosterRes.body.items.map((s: { id: string }) => s.id)).toEqual([memberSchool.id]);
+    expect(rosterRes.body.nextCursor).toBeNull();
+
+    // Negative — a caller with no relationship to this Franchise at all
+    // (school_tenant_isolation-style RLS blindness: schoolId-scoped RoleGrants
+    // never grant visibility into a franchiseId-scoped row) gets the same 404
+    // FranchisesService.findOne() already gives for any invisible Franchise.
+    const rosterAsOwnerB = await request(app.getHttpServer())
+      .get(`/v1/franchises/${franchiseId}/schools`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(rosterAsOwnerB.status).toBe(404);
+
+    await superuser.school.delete({ where: { id: memberSchool.id } });
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
 });

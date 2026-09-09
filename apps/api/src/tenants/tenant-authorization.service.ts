@@ -56,13 +56,16 @@ export class TenantAuthorizationService {
    * FRANCHISE_OWNER RoleGrant scoped to `franchiseId`. Mirrors assertSchoolOwner
    * exactly — added in Phase 8 for PaymentAccount's Franchise side.
    *
-   * Genuinely untestable via any real product flow as of Phase 8: no
-   * FranchisesController/FranchisesService exists yet (Phase 2 deliberately
-   * deferred Franchise CRUD), and FRANCHISE_OWNER is deliberately excluded from
-   * GrantableRoleDto (see its own header comment) — there is no self-service way
-   * for anyone to hold this grant today. Built correctly anyway and exercised via
-   * direct-seed fixtures in the e2e spec, the same convention every other
-   * cross-tenant test in this codebase already uses.
+   * Untestable via any real product flow through Phase 8-15: no
+   * FranchisesController/FranchisesService existed yet (Phase 2 deliberately
+   * deferred Franchise CRUD), and FRANCHISE_OWNER was deliberately excluded from
+   * GrantableRoleDto (see its own header comment) — there was no self-service way
+   * for anyone to hold this grant. Phase 16 closes that: FranchisesService.create()
+   * now grants FRANCHISE_OWNER self-service (mirroring SchoolsService.create()'s own
+   * SCHOOL_OWNER_MANAGER bootstrap), so this is a live, real-user-reachable
+   * authorization path now — used by FranchisesService.update() and
+   * PaymentsService.createForFranchise(), not just exercised via direct-seed e2e
+   * fixtures.
    */
   async assertFranchiseOwner(userId: string, franchiseId: string): Promise<void> {
     const grant = await this.prismaApp.withTenantContext(userId, (tx) =>

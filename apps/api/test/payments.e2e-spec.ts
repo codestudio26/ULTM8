@@ -109,10 +109,11 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
     await superuser.roleGrant.create({
       data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: schoolB.id },
     });
-    // FRANCHISE_OWNER — no self-service path exists to grant this in this product
-    // today (see PaymentsService's own header comment); direct-seed is the only way
-    // to exercise assertFranchiseOwner at all, same as every other cross-tenant test
-    // in this repo bypasses the app's own write paths for fixture setup.
+    // FRANCHISE_OWNER — direct-seeded, same convention every other cross-tenant
+    // fixture in this suite already uses for fixture setup, not because no other
+    // path exists: FranchisesService.create() (Phase 16) does now grant this
+    // self-service, the same way SCHOOL_OWNER_MANAGER above could itself be
+    // self-service-created rather than direct-seeded.
     await superuser.roleGrant.create({
       data: { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: franchiseOwner.id, franchiseId: franchise.id },
     });
@@ -196,7 +197,11 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
   });
 
   // ---------------------------------------------------------------------------
-  // Franchise side — assertFranchiseOwner, exercised only via direct-seed fixture.
+  // Franchise side — assertFranchiseOwner, exercised here via a direct-seed fixture
+  // (see that fixture's own comment above for why direct-seed rather than a
+  // self-service POST /franchises call: consistency with this suite's own
+  // convention, not a lack of a real path — see tenants.e2e-spec.ts's own
+  // self-service Franchise creation tests for that path exercised directly).
   // ---------------------------------------------------------------------------
 
   it('a FRANCHISE_OWNER CAN create and read their Franchise\'s PaymentAccount', async () => {

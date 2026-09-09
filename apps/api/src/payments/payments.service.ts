@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
+import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
@@ -17,6 +18,7 @@ export class PaymentsService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly franchisesService: FranchisesService,
     private readonly stripeClient: StripeClientService,
     @InjectQueue(STRIPE_WEBHOOK_PROCESSING_QUEUE) private readonly webhookQueue: Queue,
   ) {}
@@ -93,18 +95,42 @@ export class PaymentsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Franchise-side PaymentAccount CRUD — schema-correct, practically unreachable
-  // this phase (no FranchisesController/FranchisesService, no FRANCHISE_OWNER
-  // grantability anywhere in this codebase — see the Phase 8 kickoff prompt). Built
-  // correctly anyway; exercised only via direct-seed e2e fixtures.
+  // Franchise-side PaymentAccount CRUD — now fully reachable via FranchisesService
+  // (Phase 16) and self-service FRANCHISE_OWNER grantability (FranchisesService.
+  // create()). Previously schema-correct but practically unreachable (Phase 8) —
+  // exercised only via direct-seed e2e fixtures until now.
   // ---------------------------------------------------------------------------
 
   async createForFranchise(callerId: string, franchiseId: string, dto: CreatePaymentAccountDto) {
-    // No FranchisesService.findOne() exists yet — assertFranchiseOwner is the only
-    // check available, and it already 403s (not 404s) for a nonexistent franchiseId
-    // too, since a RoleGrant can never match one. No confirmed way to distinguish
-    // "Franchise doesn't exist" from "you're not its Owner" without Franchise CRUD to
-    // build a real existence check against — flagged, not silently assumed away.
+    // Phase 8 flagged this itself, not silently: this method had no way to
+    // distinguish "Franchise doesn't exist" from "you're not its Owner" —
+    // assertFranchiseOwner alone can only ever 403, since a RoleGrant can never
+    // match a nonexistent franchiseId. FranchisesService.findOne() now exists
+    // (Phase 16) and is called first, so a nonexistent franchiseId 404s before
+    // assertFranchiseOwner is ever reached.
+    //
+    // FOUND ON REVIEW: an earlier version of this comment claimed this "mirrors
+    // createForSchool's own schoolsService.findOne() call exactly" — checked
+    // directly and that overstates it. School's school_tenant_isolation RLS admits
+    // ANY role at that School (Student, Instructor, Staff, Owner alike), so
+    // schoolsService.findOne() succeeding does NOT imply Owner there — createForSchool
+    // genuinely needs both findOne() (existence) and assertSchoolOwner() (the
+    // narrower role gate) as two independently meaningful checks. Franchise's RLS is
+    // already Owner-only (FRANCHISE_OWNER is the only Role value ever scoped to
+    // franchiseId — franchises.service.ts's own findOne()/findAllForCaller() comments),
+    // so franchisesService.findOne() succeeding already proves Owner here; the
+    // assertFranchiseOwner() call below is mathematically redundant with it today. Kept
+    // anyway, deliberately, as the explicit business-layer check TenantAuthorizationService's
+    // own header comment argues for (RLS + an explicit layer on top, not RLS alone) —
+    // this is money/Stripe-adjacent (PaymentAccount creation), a low-frequency write,
+    // and the redundancy is one extra round-trip, not a correctness cost; removing it
+    // would make this method's safety depend entirely on Franchise's RLS shape never
+    // changing (e.g. a future franchiseId-scoped role) without anything else re-checking
+    // that assumption. `findSchoolsForFranchise()` (franchises.service.ts) made the
+    // opposite call for a different reason — see that method's own comment for why the
+    // redundant check there was replaced with a genuine second layer instead of just
+    // dropped.
+    await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
 
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -139,6 +165,17 @@ export class PaymentsService {
    * for the full "should PaymentAccount reads be Owner-only" open question, flagged
    * for Architect review rather than decided here. The e2e test was corrected to
    * match this, not the other way around.
+   *
+   * FOUND ON REVIEW (Phase 16): a draft of this method briefly added a
+   * `franchisesService.findOne()` call here too, by analogy with `createForFranchise`
+   * above — but this method never had the gap that call would close. Unlike
+   * `createForFranchise` (a write with no prior lookup to piggyback a 404 off of),
+   * this method's own `payment_account_tenant_isolation` RLS policy (Phase 8) already
+   * has its own `franchiseId`-scoped `EXISTS` clause independent of Franchise's own
+   * RLS — `tx.paymentAccount.findUnique({ where: { franchiseId } })` below already
+   * correctly returns null (→ 404) for a caller with zero grant on that Franchise,
+   * with or without a separate Franchise-existence check. Adding one would have been
+   * a pure extra DB round-trip for identical observable behavior — removed.
    */
   async findForFranchise(callerId: string, franchiseId: string) {
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
