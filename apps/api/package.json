@@ -16,6 +16,7 @@
     "export:openapi": "ts-node -r tsconfig-paths/register scripts/export-openapi.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.1128.0",
     "@nestjs/bullmq": "^10.2.3",
     "@nestjs/common": "^10.4.4",
     "@nestjs/config": "^3.3.0",
@@ -33,6 +34,7 @@
     "luxon": "^3.5.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "postmark": "^5.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "stripe": "^22.6.1",

@@ -62,10 +62,18 @@ export class WaiversService {
     // duplicate (no uniqueness constraint on schoolId+title). This job is a
     // notification side effect, not the primary outcome of this request; a
     // caller who successfully created a Waiver should get a 201 back regardless
-    // of whether the (currently log-only, Phase 12+-notification-pipeline-less)
-    // job could be enqueued. Logged loudly instead of silently swallowed.
+    // of whether the job could be enqueued. Logged loudly instead of silently
+    // swallowed.
+    //
+    // attempts/backoff added Phase 15, when this job stopped being a log-only
+    // stub incapable of failing — same shape TwilioVerifyService.sendOtp
+    // already established for otp-delivery.
     try {
-      await this.waiverSignatureRequestsQueue.add('notify', { waiverId: id, schoolId });
+      await this.waiverSignatureRequestsQueue.add(
+        'notify',
+        { waiverId: id, schoolId },
+        { attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
     } catch (err) {
       this.logger.error(
         `Waiver ${id} (School ${schoolId}) was created but enqueueing waiver-signature-requests failed — the notification job (log-only this phase) will never run for it.`,

@@ -19,6 +19,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { GuardiansModule } from './guardians/guardians.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AcademiesModule } from './academies/academies.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
 
 @Module({
@@ -44,6 +45,7 @@ import { JobsModule } from './jobs/jobs.module';
     GuardiansModule,
     AttendanceModule,
     AcademiesModule,
+    NotificationsModule,
     JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

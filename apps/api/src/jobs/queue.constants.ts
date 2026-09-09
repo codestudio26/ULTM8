@@ -11,3 +11,7 @@ export const STRIPE_WEBHOOK_PROCESSING_QUEUE = 'stripe-webhook-processing';
 export const WAIVER_SIGNATURE_REQUESTS_QUEUE = 'waiver-signature-requests';
 export const BOOKING_NO_SHOW_PROCESSING_QUEUE = 'booking-no-show-processing';
 export const WAITLIST_CASCADE_PROCESSING_QUEUE = 'waitlist-cascade-processing';
+// Phase 15 — Spec 55 §9's confirmed job: every other job's own "Notification
+// samples" text feeds this one queue ("Triggered by: Any of the above, plus
+// manual school messages").
+export const NOTIFICATION_FANOUT_QUEUE = 'notification-fanout';
