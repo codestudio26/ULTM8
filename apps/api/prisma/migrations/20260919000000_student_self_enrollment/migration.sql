@@ -25,6 +25,18 @@
 -- pattern already established in bookings.service.ts/waitlist.service.ts for
 -- SELECT ... FOR UPDATE). This needs no new Postgres role, no new grant
 -- beyond EXECUTE, and has zero coupling to AcademiesModule's own policies.
+-- FOUND ON CI, on this migration's own first real run — a table-level grant
+-- was missing, not fixed here silently: ultm8_rls_helper (created
+-- 20260904000000) was only ever granted SELECT on RoleGrant
+-- (20260905000000), for its one prior function (school_has_any_role_grant).
+-- BYPASSRLS only bypasses ROW-LEVEL policies once a role already has the
+-- base table-level GRANT — it does not substitute for one. school_exists
+-- below is ultm8_rls_helper's first function that reads School, so it needs
+-- its own explicit grant, the same "add the specific grant a new use
+-- actually needs, don't assume a broader one" discipline this codebase
+-- already applies to ultm8_jobs/ultm8_discovery.
+GRANT SELECT ON "School" TO ultm8_rls_helper;
+
 CREATE FUNCTION "school_exists"(p_school_id text)
 RETURNS boolean
 LANGUAGE sql
