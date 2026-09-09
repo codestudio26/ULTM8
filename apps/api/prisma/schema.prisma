@@ -240,6 +240,8 @@ model User {
   guardianLinksAsStudent   GuardianLink[]    @relation("GuardianLinkStudent")
   consentRecordsAsGuardian ConsentRecord[]   @relation("ConsentRecordGuardian")
   consentRecordsAsStudent  ConsentRecord[]   @relation("ConsentRecordStudent")
+  notifications            Notification[]
+  deviceTokens             DeviceToken[]
 
   @@index([email])
   @@index([phone])
@@ -1755,4 +1757,119 @@ model ConsentRecord {
 
   @@unique([guardianId, studentId, tier])
   @@index([studentId, tier])
+}
+
+/// Notification (Phase 15, Spec 55 §6.1, page 27) — confirmed field list (quoted,
+/// not paraphrased): "Title/body, read state, target user." Relationship:
+/// "Belongs to User." That is the entire confirmed entry — three fields, no
+/// channel/type/category field, no delivery-status field. `type` below is a
+/// Developer-level addition (a discriminator string other modules can filter/
+/// render by — e.g. "WAIVER_SIGNATURE_REQUEST"), flagged for Architect review,
+/// same treatment as every other reasonable-minimum addition in this codebase
+/// (User.phoneVerifiedAt is the established precedent this follows). Deliberately
+/// a free String, not an enum — Spec 55 §9's own trigger list for the
+/// notification-fanout job is explicitly open-ended ("Any of the above, plus
+/// manual school messages"), and a Postgres enum requiring a migration for every
+/// new trigger type is a worse fit for that than a free string.
+///
+/// Self-only RLS (userId = caller), same shape ConsentRecord established —
+/// nothing in the confirmed text suggests any shared-visibility branch (a School
+/// Owner has no stated reason to read another User's private notification feed).
+/// A `ultm8_jobs` INSERT+SELECT policy is additive on top — the
+/// notification-fanout job (this phase) is what actually writes rows for a
+/// target OTHER than the calling context (e.g. every Student at a School, when a
+/// Waiver is assigned) — the same cross-user-write gap Booking's capacity check
+/// and the Guardian consent-withdrawal cascade each already hit, closed the same
+/// established way. SELECT (not just INSERT) is needed for the same reason
+/// class_jobs_select_for_returning exists: Prisma's `.create()` always does
+/// `INSERT ... RETURNING *`.
+model Notification {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  title String
+  body  String
+  read  Boolean @default(false)
+
+  /// Developer-level addition — see the model's own header comment.
+  type String?
+
+  createdAt DateTime @default(now())
+
+  // Composite index matching NotificationsService.findAllForCaller's actual
+  // query shape (WHERE userId = ? AND (createdAt, id) < cursor ORDER BY
+  // createdAt DESC, id DESC) — found on review to be a genuine mismatch in an
+  // earlier draft, which indexed (userId, read) and (userId, createdAt)
+  // separately while the query itself paginates by (userId, createdAt, id)
+  // together; neither prior index actually served it, and one served nothing
+  // in this phase's own code at all (no query filters by `read` alone).
+  @@index([userId, createdAt, id])
+}
+
+/// DeviceToken (Phase 15, Spec 55 §6.1, Decision 46, page 28) — confirmed field
+/// list (quoted): "userId, platform, token, app variant reference (shared
+/// Student app or a specific School's TenantAppConfig), last-seen timestamp."
+/// Relationship: "Belongs to User; referenced by push-notification delivery to
+/// route a push to the correct credential set."
+///
+/// The "app variant reference" field is deliberately NOT built this phase —
+/// `TenantAppConfig` (white-label branding config) doesn't exist yet
+/// (MobileAppPublishingModule is blocked behind SubscriptionPlansModule, itself
+/// blocked behind PlatformAdminModule's SSO decision — see the project roadmap).
+/// Every registered token this phase is implicitly "the shared ULTM8 app" —
+/// there is no other app variant to distinguish yet. Add the field (and its
+/// FK) when MobileAppPublishingModule ships, not preemptively.
+///
+/// Actual push SEND (FCM/APNs dispatch) is also deliberately NOT built this
+/// phase — see NotificationsModule's own header comment for the full scoping
+/// reasoning (email delivery via Postmark/SES is the one real, working channel
+/// this phase; push gets its data model built and ready, not its dispatch).
+/// `platform` is scoped to the two confirmed vendors (§11.4: "FCM (Android)/APNs
+/// (iOS)") — no WEB value, since browser push was never itself confirmed
+/// anywhere in Spec 55.
+///
+/// Self-only RLS, ALL commands, TO ultm8_app — registration always happens
+/// under the owning caller's own context (unlike Notification, nothing else
+/// ever needs to write a DeviceToken row on another User's behalf), so no
+/// `ultm8_jobs` bypass is needed yet. Add SELECT for `ultm8_jobs` only once a
+/// future phase actually implements push dispatch and needs to look up a
+/// target's tokens — not preemptively (PrismaJobsService's own header comment:
+/// "add the specific grant a new job actually needs... don't broaden a call
+/// site here into a general-purpose cross-tenant read").
+///
+/// FOUND ON REVIEW — a real judgment call, not an oversight: is registering
+/// DeviceToken rows with zero server-side consumer (push dispatch) the same
+/// "speculative infrastructure ahead of a real caller" mistake
+/// StripeClientService's own header comment describes removing from an
+/// earlier Phase 8 draft? Decided NOT the same case, for reasons that
+/// draft didn't have: (1) this entity has real, passing e2e coverage
+/// (register/re-register/deregister/isolation), unlike that draft, which was
+/// "unused and untested"; (2) the field shape is narrow and comes directly
+/// from a confirmed entity (Decision 46), not invented; (3) unlike a payments
+/// client a backend module calls internally, DeviceToken registration is
+/// something a MOBILE CLIENT needs to call as soon as it builds notification-
+/// permission UI — which realistically happens well before server-side push
+/// dispatch is wired, so building the registration endpoint now avoids a
+/// client/server sequencing problem later. Recorded in Decision 95, not
+/// silently asserted.
+model DeviceToken {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  platform DevicePlatform
+  token    String         @unique
+
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
 }
