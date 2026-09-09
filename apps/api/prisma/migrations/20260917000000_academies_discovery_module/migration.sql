@@ -61,6 +61,31 @@ $$;
 
 GRANT USAGE ON SCHEMA public TO ultm8_discovery;
 
+-- ============================================================================
+-- FOUND ON CI, on this migration's own first real run (fixed here, not silently
+-- patched over) — a wrinkle the "dedicated role" design above didn't anticipate:
+-- School/Class/MembershipPlan/TimetableSlot's own PRE-EXISTING `_tenant_isolation`
+-- policies (school_tenant_isolation, class_tenant_isolation,
+-- membership_plan_tenant_isolation, timetable_slot_tenant_isolation — every one of
+-- them, back to the init migration and Phase 5/7/9) were never written with an
+-- explicit `TO ultm8_app` — Postgres's default when a CREATE POLICY omits `TO` is
+-- `PUBLIC`, meaning these policies apply to EVERY role, ultm8_discovery included,
+-- not just ultm8_app. Postgres combines multiple permissive policies for a table+
+-- command with OR — and, critically, evaluating that OR requires the connecting
+-- role to hold SELECT on every table any COMBINED policy's expression references,
+-- REGARDLESS of which policy's branch actually ends up true for a given row
+-- (privilege-checking happens at query-rewrite time, not selectively per branch).
+-- Since these four tables' own pre-existing tenant_isolation policies each do an
+-- inline `EXISTS (SELECT 1 FROM "RoleGrant" rg WHERE ...)`, ultm8_discovery needs
+-- SELECT on RoleGrant too, purely so Postgres can EVALUATE that unrelated policy's
+-- condition (which will simply be false for a caller with no RoleGrant at that
+-- School, contributing nothing extra to the OR) — not because AcademiesService
+-- itself ever reads RoleGrant. Narrowed to exactly the columns those four inline
+-- EXISTS subqueries reference (schoolId/userId/revokedAt/branchId), same
+-- column-level discipline as every other grant in this migration.
+-- ============================================================================
+GRANT SELECT ("schoolId", "userId", "revokedAt", "branchId") ON "RoleGrant" TO ultm8_discovery;
+
 -- School — same curated field list as AcademySummaryDto/AcademyDetailDto
 -- (apps/api/src/academies/dto/academy-response.dto.ts). Deliberately excludes
 -- mobileNumber (direct contact-sensitive) and every operational/internal field
