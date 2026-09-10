@@ -14,6 +14,12 @@ export function useClasses(schoolId: string | null) {
     queryKey: ['classes', schoolId],
     queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/classes', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
+    // FOUND ON REVIEW (Phase 18): MembershipPlansPage now also depends on
+    // this hook (to populate the "Scoped to Class" dropdown/label) alongside
+    // ClassesPage/TimetablePage — same reasoning as useBranches/useInstructors'
+    // own staleTime comments (Phase 17/18): don't re-fetch a rarely-changing
+    // reference list on every navigation between screens that share it.
+    staleTime: 60_000,
   });
 }
 

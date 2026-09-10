@@ -4538,15 +4538,6 @@
           "name": {
             "type": "string"
           },
-          "mobileNumber": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "businessType": {
-            "type": "string"
-          },
           "activities": {
             "type": "array",
             "items": {
@@ -4562,23 +4553,6 @@
           "ranksToggle": {
             "type": "boolean"
           },
-          "defaultLanguage": {
-            "type": "string",
-            "description": "One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment."
-          },
-          "defaultCurrency": {
-            "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
-          },
-          "description": {
-            "type": "string"
-          },
-          "logoUrl": {
-            "type": "string"
-          },
-          "bannerUrl": {
-            "type": "string"
-          },
           "classCancellationPolicy": {
             "type": "string",
             "enum": [
@@ -4592,6 +4566,40 @@
             "type": "number",
             "default": 120,
             "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+          },
+          "mobileNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessType": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment.",
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -4776,23 +4784,29 @@
             "type": "string"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "contactPhone": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "timezone": {
             "type": "string",
-            "description": "IANA timezone name."
+            "description": "IANA timezone name.",
+            "nullable": true
           },
           "currencyOverride": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "logoUrl": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "bannerUrl": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -6292,21 +6306,9 @@
             "type": "number",
             "description": "Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS."
           },
-          "currency": {
-            "type": "string",
-            "description": "One of the 6 supported currencies (School's own choice, no conversion applied)."
-          },
-          "expiryDurationDays": {
-            "type": "number",
-            "description": "Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS."
-          },
           "classesIncluded": {
             "type": "number",
             "description": "CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set."
-          },
-          "scopedClassId": {
-            "type": "string",
-            "description": "Restricts this plan to one specific Class."
           },
           "visible": {
             "type": "boolean",
@@ -6316,13 +6318,29 @@
             "type": "string",
             "description": "ISO 8601 date-time."
           },
-          "cancellationCharge": {
-            "type": "number",
-            "description": "Minor currency unit."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
+          },
+          "currency": {
+            "type": "string",
+            "description": "One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear.",
+            "nullable": true
+          },
+          "expiryDurationDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Computes each purchased Membership's expiry date at creation time. Pass null to clear."
+          },
+          "scopedClassId": {
+            "type": "string",
+            "description": "Restricts this plan to one specific Class. Pass null to clear (unrestrict).",
+            "nullable": true
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor currency unit. Pass null to clear."
           }
         }
       },

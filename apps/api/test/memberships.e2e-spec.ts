@@ -197,6 +197,70 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.class.delete({ where: { id: cls.id } });
   });
 
+  it('PATCH with explicit null clears currency/expiryDurationDays/scopedClassId/cancellationCharge; omitting a field leaves it unchanged', async () => {
+    const cls = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        title: 'Clearable-field Fixture Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({
+        type: 'CLASS_PACK',
+        title: 'Clearable Fields Pack',
+        price: 2500,
+        currency: 'gbp',
+        expiryDurationDays: 30,
+        classesIncluded: 1,
+        scopedClassId: cls.id,
+        cancellationCharge: 500,
+      });
+    expect(createRes.status).toBe(201);
+    membershipPlanIds.push(createRes.body.id);
+    expect(createRes.body.currency).toBe('gbp');
+    expect(createRes.body.expiryDurationDays).toBe(30);
+    expect(createRes.body.scopedClassId).toBe(cls.id);
+    expect(createRes.body.cancellationCharge).toBe(500);
+
+    // Omitting `title` here must leave it unchanged — proves "field absent"
+    // still means "no change" even now that these DTOs accept an explicit
+    // null on other fields (the two behaviors aren't conflated).
+    const clearRes = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ currency: null, expiryDurationDays: null, scopedClassId: null, cancellationCharge: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.currency).toBeNull();
+    expect(clearRes.body.expiryDurationDays).toBeNull();
+    expect(clearRes.body.scopedClassId).toBeNull();
+    expect(clearRes.body.cancellationCharge).toBeNull();
+    expect(clearRes.body.title).toBe('Clearable Fields Pack');
+
+    await superuser.class.delete({ where: { id: cls.id } });
+  });
+
+  it('rejects an explicit classesIncluded: null on PATCH — 400, not a silent no-op', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Reject-Null-ClassesIncluded Pack', price: 1000, classesIncluded: 5 });
+    expect(createRes.status).toBe(201);
+    membershipPlanIds.push(createRes.body.id);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ classesIncluded: null });
+    expect(res.status).toBe(400);
+  });
+
   // ---------------------------------------------------------------------------
   // Purchase — £0-immediate path (Decision 6)
   // ---------------------------------------------------------------------------

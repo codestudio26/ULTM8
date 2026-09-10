@@ -82,6 +82,25 @@ export class MembershipsService {
     const existing = await this.findOnePlan(callerId, planId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
 
+    // FOUND ON REVIEW (Phase 18): `classesIncluded` is deliberately NOT among
+    // UpdateMembershipPlanDto's null-widened fields (see that DTO's own header
+    // comment) — its value is resolved jointly with type/scopedClassId via
+    // `resolveClassesIncluded()` below, not forwarded directly, so there's no
+    // single well-defined "clear" semantics for it the way there is for
+    // currency/expiryDurationDays/scopedClassId/cancellationCharge. But
+    // `@IsOptional()` (inherited from PartialType(CreateMembershipPlanDto),
+    // which was never told to reject null here) still lets a raw
+    // `{"classesIncluded": null}` PATCH body pass validation — and
+    // `dto.classesIncluded ?? existing.classesIncluded` below would then
+    // silently resolve `null` back to the OLD value instead of erroring,
+    // exactly the "looks saved, nothing changed" bug this phase's review
+    // caught and fixed for other fields elsewhere. Rejected explicitly here
+    // instead, the same defensive pattern InstructorsService.update() already
+    // established for its own not-nullable `specializations` field.
+    if (dto.classesIncluded === null) {
+      throw new BadRequestException('classesIncluded cannot be null — omit the field to leave it unchanged.');
+    }
+
     const nextType = dto.type ?? existing.type;
     // FOUND ON REVIEW: validate against the FORCED values (0 / 1 for FRIEND_PASS),
     // not the raw incoming ones — an earlier draft validated nextPrice/
@@ -98,9 +117,16 @@ export class MembershipsService {
     );
     this.assertValidPlanShape(nextType, nextPrice, nextClassesIncluded, nextScopedClassId ?? undefined);
 
-    if (dto.scopedClassId) {
+    // FOUND ON REVIEW (Phase 18): `dto.scopedClassId` narrowed via `if
+    // (dto.scopedClassId)` doesn't stay narrowed inside the async closure
+    // below — a TS property-narrowing limitation across function boundaries,
+    // now actually surfaced now that scopedClassId's type includes `| null`
+    // (see this DTO's own header comment on why). Hoisted to a local const,
+    // which DOES stay narrowed.
+    const scopedClassIdToValidate = dto.scopedClassId;
+    if (scopedClassIdToValidate) {
       const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.class.findUnique({ where: { id: dto.scopedClassId }, select: { id: true, schoolId: true } }),
+        tx.class.findUnique({ where: { id: scopedClassIdToValidate }, select: { id: true, schoolId: true } }),
       );
       if (!scopedClass || scopedClass.schoolId !== existing.schoolId) {
         throw new BadRequestException('scopedClassId must reference a Class belonging to this School');

@@ -1380,19 +1380,9 @@ export interface components {
         };
         UpdateSchoolDto: {
             name?: string;
-            mobileNumber?: string;
-            address?: string;
-            businessType?: string;
             activities?: string[];
             facilities?: string[];
             ranksToggle?: boolean;
-            /** @description One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment. */
-            defaultLanguage?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
-            defaultCurrency?: string;
-            description?: string;
-            logoUrl?: string;
-            bannerUrl?: string;
             /**
              * @default MANUAL
              * @enum {string}
@@ -1403,6 +1393,16 @@ export interface components {
              * @default 120
              */
             waitlistClaimWindowMinutes: number;
+            mobileNumber?: string | null;
+            address?: string | null;
+            businessType?: string | null;
+            /** @description One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment. */
+            defaultLanguage?: string | null;
+            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            defaultCurrency?: string | null;
+            description?: string | null;
+            logoUrl?: string | null;
+            bannerUrl?: string | null;
         };
         JoinSchoolResponseDto: {
             id: string;
@@ -1452,13 +1452,13 @@ export interface components {
         };
         UpdateBranchDto: {
             name?: string;
-            address?: string;
-            contactPhone?: string;
+            address?: string | null;
+            contactPhone?: string | null;
             /** @description IANA timezone name. */
-            timezone?: string;
-            currencyOverride?: string;
-            logoUrl?: string;
-            bannerUrl?: string;
+            timezone?: string | null;
+            currencyOverride?: string | null;
+            logoUrl?: string | null;
+            bannerUrl?: string | null;
         };
         CreateRoleGrantDto: {
             /** @enum {string} */
@@ -1950,22 +1950,22 @@ export interface components {
             title?: string;
             /** @description Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS. */
             price?: number;
-            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). */
-            currency?: string;
-            /** @description Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS. */
-            expiryDurationDays?: number;
             /** @description CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set. */
             classesIncluded?: number;
-            /** @description Restricts this plan to one specific Class. */
-            scopedClassId?: string;
             /** @default true */
             visible: boolean;
             /** @description ISO 8601 date-time. */
             refundFeeDate?: string;
-            /** @description Minor currency unit. */
-            cancellationCharge?: number;
             /** @default false */
             termsWaiverRequired: boolean;
+            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear. */
+            currency?: string | null;
+            /** @description Computes each purchased Membership's expiry date at creation time. Pass null to clear. */
+            expiryDurationDays?: number | null;
+            /** @description Restricts this plan to one specific Class. Pass null to clear (unrestrict). */
+            scopedClassId?: string | null;
+            /** @description Minor currency unit. Pass null to clear. */
+            cancellationCharge?: number | null;
         };
         MembershipResponseDto: {
             id: string;
