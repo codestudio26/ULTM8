@@ -1620,29 +1620,19 @@ export interface components {
             nextCursor?: string | null;
         };
         UpdateClassDto: {
-            /** @description Branch to scope this Class to. Omit for a School-wide Class. */
-            branchId?: string;
-            /** @description A User holding an active INSTRUCTOR RoleGrant at this School. */
-            instructorId?: string;
             title?: string;
             /** @description At least one activity/discipline this Class covers. */
             activities?: string[];
-            bannerUrl?: string;
-            description?: string;
             /** @description ISO 8601 date-time. */
             startDate?: string;
             /** @description ISO 8601 date-time. */
             endDate?: string;
-            /** @description Nullable/omitted = unlimited. */
-            capacity?: number;
             /** @description ISO 8601 date-time — booking cutoff. */
             bookingEndAt?: string;
             /** @description ISO 8601 date-time — end of the QR check-in window. */
             qrAttendanceEndAt?: string;
             /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. */
             refundFeeDate?: string;
-            /** @description Minor currency unit (e.g. cents), in the School/Branch's own currency. */
-            cancellationCharge?: number;
             /** @default false */
             termsWaiverRequired: boolean;
             /**
@@ -1650,6 +1640,16 @@ export interface components {
              * @default false
              */
             membershipInclusion: boolean;
+            /** @description Branch to scope this Class to. Pass null to clear (make it School-wide). */
+            branchId?: string | null;
+            /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
+            instructorId?: string | null;
+            bannerUrl?: string | null;
+            description?: string | null;
+            /** @description Pass null to clear (unlimited). */
+            capacity?: number | null;
+            /** @description Minor currency unit (e.g. cents). Pass null to clear. */
+            cancellationCharge?: number | null;
         };
         CreateTimetableSlotDto: {
             /** @description Branch to scope this slot to. Omit for a School-wide slot. */
@@ -1735,10 +1735,6 @@ export interface components {
             nextCursor?: string | null;
         };
         UpdateTimetableSlotDto: {
-            /** @description Branch to scope this slot to. Omit for a School-wide slot. */
-            branchId?: string;
-            /** @description A User holding an active INSTRUCTOR RoleGrant at this School. */
-            instructorId?: string;
             /** @enum {string} */
             weekday?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
             /**
@@ -1763,10 +1759,6 @@ export interface components {
             title?: string;
             /** @description At least one activity/discipline this slot covers. */
             activities?: string[];
-            /** @description Nullable/omitted = unlimited. */
-            capacity?: number;
-            description?: string;
-            bannerUrl?: string;
             /** @default false */
             termsWaiverRequired: boolean;
             /**
@@ -1774,14 +1766,22 @@ export interface components {
              * @default false
              */
             membershipInclusion: boolean;
-            /** @description Booking cutoff, in minutes before each occurrence starts. */
-            bookingCutoffMinutesBeforeStart?: number;
-            /** @description QR check-in window, in minutes, from each occurrence's start. */
-            qrAttendanceWindowMinutes?: number;
-            /** @description Refund/credit cutoff, in hours before each occurrence starts. */
-            refundCutoffHoursBeforeStart?: number;
-            /** @description Minor currency unit (e.g. cents), in the School/Branch's own currency. */
-            cancellationCharge?: number;
+            /** @description Branch to scope this slot to. Pass null to clear (make it School-wide). */
+            branchId?: string | null;
+            /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
+            instructorId?: string | null;
+            /** @description Pass null to clear (unlimited). */
+            capacity?: number | null;
+            description?: string | null;
+            bannerUrl?: string | null;
+            /** @description Booking cutoff, in minutes before each occurrence starts. Pass null to clear. */
+            bookingCutoffMinutesBeforeStart?: number | null;
+            /** @description QR check-in window, in minutes, from each occurrence's start. Pass null to clear. */
+            qrAttendanceWindowMinutes?: number | null;
+            /** @description Refund/credit cutoff, in hours before each occurrence starts. Pass null to clear. */
+            refundCutoffHoursBeforeStart?: number | null;
+            /** @description Minor currency unit (e.g. cents). Pass null to clear. */
+            cancellationCharge?: number | null;
         };
         CreateInstructorDto: {
             /** @description The User this profile belongs to. Must already hold an active INSTRUCTOR RoleGrant at this School (matching branchId, if set). */
@@ -1817,16 +1817,16 @@ export interface components {
             nextCursor?: string | null;
         };
         UpdateInstructorDto: {
-            /** @description Branch to scope this profile to. Omit for a School-wide profile. */
-            branchId?: string;
-            photoUrl?: string;
-            /** @description Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system. */
-            beltRanking?: string;
             specializations?: string[];
-            /** @description School-facing contact number, E.164 — distinct from this User's own login phone. */
-            phone?: string;
-            yearsOfExperience?: number;
-            bio?: string;
+            /** @description Branch to scope this profile to. Pass null to clear (make it School-wide). */
+            branchId?: string | null;
+            photoUrl?: string | null;
+            /** @description Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system. */
+            beltRanking?: string | null;
+            /** @description School-facing contact number, E.164 — distinct from this User's own login phone. Pass null to clear. */
+            phone?: string | null;
+            yearsOfExperience?: number | null;
+            bio?: string | null;
         };
         UserResponseDto: {
             id: string;

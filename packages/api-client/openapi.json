@@ -5313,14 +5313,6 @@
       "UpdateClassDto": {
         "type": "object",
         "properties": {
-          "branchId": {
-            "type": "string",
-            "description": "Branch to scope this Class to. Omit for a School-wide Class."
-          },
-          "instructorId": {
-            "type": "string",
-            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
-          },
           "title": {
             "type": "string"
           },
@@ -5331,12 +5323,6 @@
               "type": "string"
             }
           },
-          "bannerUrl": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
           "startDate": {
             "type": "string",
             "description": "ISO 8601 date-time."
@@ -5344,11 +5330,6 @@
           "endDate": {
             "type": "string",
             "description": "ISO 8601 date-time."
-          },
-          "capacity": {
-            "type": "number",
-            "description": "Nullable/omitted = unlimited.",
-            "minimum": 1
           },
           "bookingEndAt": {
             "type": "string",
@@ -5362,10 +5343,6 @@
             "type": "string",
             "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
           },
-          "cancellationCharge": {
-            "type": "number",
-            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
@@ -5374,6 +5351,35 @@
             "type": "boolean",
             "default": false,
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this Class to. Pass null to clear (make it School-wide).",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign.",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Pass null to clear (unlimited).",
+            "minimum": 1
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor currency unit (e.g. cents). Pass null to clear."
           }
         }
       },
@@ -5620,14 +5626,6 @@
       "UpdateTimetableSlotDto": {
         "type": "object",
         "properties": {
-          "branchId": {
-            "type": "string",
-            "description": "Branch to scope this slot to. Omit for a School-wide slot."
-          },
-          "instructorId": {
-            "type": "string",
-            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
-          },
           "weekday": {
             "type": "string",
             "enum": [
@@ -5676,17 +5674,6 @@
               "type": "string"
             }
           },
-          "capacity": {
-            "type": "number",
-            "description": "Nullable/omitted = unlimited.",
-            "minimum": 1
-          },
-          "description": {
-            "type": "string"
-          },
-          "bannerUrl": {
-            "type": "string"
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
@@ -5696,21 +5683,49 @@
             "default": false,
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
           },
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this slot to. Pass null to clear (make it School-wide).",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign.",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Pass null to clear (unlimited).",
+            "minimum": 1
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "bookingCutoffMinutesBeforeStart": {
             "type": "number",
-            "description": "Booking cutoff, in minutes before each occurrence starts."
+            "nullable": true,
+            "description": "Booking cutoff, in minutes before each occurrence starts. Pass null to clear."
           },
           "qrAttendanceWindowMinutes": {
             "type": "number",
-            "description": "QR check-in window, in minutes, from each occurrence's start."
+            "nullable": true,
+            "description": "QR check-in window, in minutes, from each occurrence's start. Pass null to clear."
           },
           "refundCutoffHoursBeforeStart": {
             "type": "number",
-            "description": "Refund/credit cutoff, in hours before each occurrence starts."
+            "nullable": true,
+            "description": "Refund/credit cutoff, in hours before each occurrence starts. Pass null to clear."
           },
           "cancellationCharge": {
             "type": "number",
-            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
+            "nullable": true,
+            "description": "Minor currency unit (e.g. cents). Pass null to clear."
           }
         }
       },
@@ -5834,33 +5849,39 @@
       "UpdateInstructorDto": {
         "type": "object",
         "properties": {
-          "branchId": {
-            "type": "string",
-            "description": "Branch to scope this profile to. Omit for a School-wide profile."
-          },
-          "photoUrl": {
-            "type": "string"
-          },
-          "beltRanking": {
-            "type": "string",
-            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system."
-          },
           "specializations": {
             "type": "array",
             "items": {
               "type": "string"
             }
           },
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this profile to. Pass null to clear (make it School-wide).",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "beltRanking": {
+            "type": "string",
+            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system.",
+            "nullable": true
+          },
           "phone": {
             "type": "string",
-            "description": "School-facing contact number, E.164 — distinct from this User's own login phone."
+            "description": "School-facing contact number, E.164 — distinct from this User's own login phone. Pass null to clear.",
+            "nullable": true
           },
           "yearsOfExperience": {
             "type": "number",
+            "nullable": true,
             "minimum": 0
           },
           "bio": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         }
       },

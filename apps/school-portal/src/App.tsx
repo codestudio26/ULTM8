@@ -11,6 +11,10 @@ import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
 import { StaffPage } from './roleGrants/StaffPage';
+import { DisciplinesPage } from './disciplines/DisciplinesPage';
+import { InstructorsPage } from './instructors/InstructorsPage';
+import { ClassesPage } from './classes/ClassesPage';
+import { TimetablePage } from './timetable/TimetablePage';
 import { Shell } from './layout/Shell';
 
 function HomeRedirect() {
@@ -62,6 +66,46 @@ export function App() {
           <RequireAuth>
             <Shell>
               <StaffPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/disciplines"
+        element={
+          <RequireAuth>
+            <Shell>
+              <DisciplinesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/instructors"
+        element={
+          <RequireAuth>
+            <Shell>
+              <InstructorsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/classes"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ClassesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/timetable"
+        element={
+          <RequireAuth>
+            <Shell>
+              <TimetablePage />
             </Shell>
           </RequireAuth>
         }
