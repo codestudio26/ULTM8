@@ -2098,8 +2098,6 @@ export interface components {
             /** @description Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order?: number;
             primaryColour?: string;
-            secondaryColour?: string;
-            weeklyClassCountCap?: number;
             /**
              * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
              * @default false
@@ -2108,6 +2106,8 @@ export interface components {
             stripeTiers?: components["schemas"]["RankStripeTierInputDto"][];
             /** @description Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements. */
             requiredSkillIds?: string[];
+            secondaryColour?: string | null;
+            weeklyClassCountCap?: number | null;
         };
         CreateSkillDto: {
             name: string;

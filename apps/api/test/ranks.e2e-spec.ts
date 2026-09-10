@@ -191,6 +191,17 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       });
     expect(whiteBeltRes.status).toBe(201);
     whiteBeltRankId = whiteBeltRes.body.id;
+    // FOUND ON REVIEW (Phase 21): the response body itself was never
+    // asserted on here before — only the status code — which is exactly how
+    // RanksService.createRank() shipped for phases returning a bare `Rank`
+    // row with no `stripeTiers`/`requiredSkillIds` populated at all (Prisma
+    // doesn't include relations unless asked), silently violating
+    // RankResponseDto's own declared shape until school-portal's Rank
+    // management screen became the first real client to actually read these
+    // fields. Asserted directly now so a regression can't ship unnoticed a
+    // second time.
+    expect(whiteBeltRes.body.stripeTiers).toHaveLength(2);
+    expect(whiteBeltRes.body.requiredSkillIds).toEqual([requiredSkillId]);
 
     const blueBeltRes = await request(app.getHttpServer())
       .post(`/v1/styles/${disciplineId}/ranks`)
@@ -206,6 +217,89 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       .set('Authorization', `Bearer ${tokenOwner}`)
       .send({ order: 5, primaryColour: 'Purple', stripeTiers: [{ order: 0, count: 0, colour: 'Purple' }] });
     expect(res.status).toBe(400);
+  });
+
+  it('GET /styles/:disciplineId/ranks and GET /ranks/:id both return the full shape — requiredSkillIds as a flat array, not the raw requiredSkills join rows', async () => {
+    const listRes = await request(app.getHttpServer())
+      .get(`/v1/styles/${disciplineId}/ranks`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(listRes.status).toBe(200);
+    const whiteBelt = listRes.body.items.find((r: { id: string }) => r.id === whiteBeltRankId);
+    expect(whiteBelt.requiredSkillIds).toEqual([requiredSkillId]);
+    expect(whiteBelt.stripeTiers).toHaveLength(2);
+    expect(whiteBelt.requiredSkills).toBeUndefined(); // the raw Prisma relation must not leak onto the wire
+
+    const oneRes = await request(app.getHttpServer())
+      .get(`/v1/ranks/${whiteBeltRankId}`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(oneRes.status).toBe(200);
+    expect(oneRes.body.requiredSkillIds).toEqual([requiredSkillId]);
+    expect(oneRes.body.stripeTiers).toHaveLength(2);
+  });
+
+  it('PATCH clears secondaryColour/weeklyClassCountCap with explicit null; omitted fields stay unchanged', async () => {
+    const setRes = await request(app.getHttpServer())
+      .patch(`/v1/ranks/${blueBeltRankId}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ secondaryColour: 'Black', weeklyClassCountCap: 3 });
+    expect(setRes.status).toBe(200);
+    expect(setRes.body.secondaryColour).toBe('Black');
+    expect(setRes.body.weeklyClassCountCap).toBe(3);
+
+    const clearRes = await request(app.getHttpServer())
+      .patch(`/v1/ranks/${blueBeltRankId}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ secondaryColour: null, weeklyClassCountCap: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.secondaryColour).toBeNull();
+    expect(clearRes.body.weeklyClassCountCap).toBeNull();
+    expect(clearRes.body.primaryColour).toBe('Blue'); // untouched field survives
+  });
+
+  it('PATCH stripeTiers at unchanged order positions preserves each tier\'s stable id (StudentRank.currentStripeId FK safety) — only genuinely removed positions get deleted', async () => {
+    // Deliberately exercised against blueBeltRankId, not whiteBeltRankId —
+    // whiteBeltRankId's own 2 stripe tiers are still needed, unmodified, by
+    // the later "stripe-award moves to the next tier" grading test below.
+    const grow = await request(app.getHttpServer())
+      .patch(`/v1/ranks/${blueBeltRankId}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({
+        stripeTiers: [
+          { order: 0, count: 0, colour: 'Blue' },
+          { order: 1, count: 1, colour: 'Blue' },
+        ],
+      });
+    expect(grow.status).toBe(200);
+    const [tier0Before, tier1Before] = grow.body.stripeTiers;
+    expect(tier0Before.order).toBe(0);
+    expect(tier1Before.order).toBe(1);
+
+    // Same two positions (order 0 and 1), only tier 1's `count` changes —
+    // both tiers' own stable ids must survive this PATCH.
+    const patchRes = await request(app.getHttpServer())
+      .patch(`/v1/ranks/${blueBeltRankId}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({
+        stripeTiers: [
+          { order: 0, count: 0, colour: 'Blue' },
+          { order: 1, count: 5, colour: 'Blue' },
+        ],
+      });
+    expect(patchRes.status).toBe(200);
+    const [tier0After, tier1After] = patchRes.body.stripeTiers;
+    expect(tier0After.id).toBe(tier0Before.id);
+    expect(tier1After.id).toBe(tier1Before.id);
+    expect(tier1After.count).toBe(5);
+
+    // Now genuinely remove the last position (order 1) — only that tier's
+    // row should be gone; the first tier's id must still survive.
+    const shrinkRes = await request(app.getHttpServer())
+      .patch(`/v1/ranks/${blueBeltRankId}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ stripeTiers: [{ order: 0, count: 0, colour: 'Blue' }] });
+    expect(shrinkRes.status).toBe(200);
+    expect(shrinkRes.body.stripeTiers).toHaveLength(1);
+    expect(shrinkRes.body.stripeTiers[0].id).toBe(tier0Before.id);
   });
 
   // ---------------------------------------------------------------------------

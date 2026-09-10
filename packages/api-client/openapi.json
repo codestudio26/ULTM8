@@ -6837,12 +6837,6 @@
           "primaryColour": {
             "type": "string"
           },
-          "secondaryColour": {
-            "type": "string"
-          },
-          "weeklyClassCountCap": {
-            "type": "number"
-          },
           "yearsInRankFlag": {
             "type": "boolean",
             "default": false,
@@ -6861,6 +6855,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "secondaryColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "weeklyClassCountCap": {
+            "type": "number",
+            "nullable": true
           }
         }
       },

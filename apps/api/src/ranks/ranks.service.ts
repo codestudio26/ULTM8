@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -132,19 +133,29 @@ export class RanksService {
           data: dto.requiredSkillIds.map((skillId) => ({ rankId, skillId })),
         });
       }
-      return rank;
+      // FOUND ON REVIEW: `rank` here is only the bare row from the
+      // `tx.rank.create()` call above — no `stripeTiers`/`requiredSkillIds`
+      // (Prisma never includes a relation unless asked). Re-fetched with the
+      // same include shapeRankResponse() expects, so the response actually
+      // matches what RankResponseDto promises, not just the base columns.
+      const full = await tx.rank.findUniqueOrThrow({
+        where: { id: rankId },
+        include: { stripeTiers: { orderBy: { order: 'asc' } }, requiredSkills: true },
+      });
+      return this.shapeRankResponse(full);
     });
   }
 
   async findAllRanks(callerId: string, disciplineId: string) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const ranks = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.rank.findMany({
         where: { disciplineId: discipline.id },
         orderBy: { order: 'asc' },
         include: { stripeTiers: { orderBy: { order: 'asc' } }, requiredSkills: true },
       }),
     );
+    return ranks.map((r) => this.shapeRankResponse(r));
   }
 
   async findOneRank(callerId: string, rankId: string) {
@@ -157,7 +168,7 @@ export class RanksService {
     if (!found) {
       throw new NotFoundException('Rank not found');
     }
-    return found;
+    return this.shapeRankResponse(found);
   }
 
   async updateRank(callerId: string, rankId: string, dto: UpdateRankDto) {
@@ -255,7 +266,15 @@ export class RanksService {
           });
         }
       }
-      return rank;
+      // FOUND ON REVIEW: same gap as createRank() — `rank` is only the bare
+      // row from the `tx.rank.update()` call above, taken before the
+      // stripeTiers/requiredSkillIds writes even ran. Re-fetched with the
+      // full include so the response reflects what was actually persisted.
+      const full = await tx.rank.findUniqueOrThrow({
+        where: { id: rankId },
+        include: { stripeTiers: { orderBy: { order: 'asc' } }, requiredSkills: true },
+      });
+      return this.shapeRankResponse(full);
     });
   }
 
@@ -298,6 +317,37 @@ export class RanksService {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.skill.update({ where: { id: skillId }, data: { name: dto.name, description: dto.description } }),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shared response shaping
+  // ---------------------------------------------------------------------------
+
+  /**
+   * FOUND ON REVIEW (Phase 21 — school-portal's own Rank management screen was
+   * the first real client ever to call these four endpoints and read their
+   * actual response bodies): RankResponseDto promises `requiredSkillIds:
+   * string[]`, but findAllRanks()/findOneRank() returned the raw Prisma
+   * `include: { requiredSkills: true }` relation directly — `requiredSkills:
+   * {rankId, skillId}[]`, not a flat array of ids at all. Every consumer
+   * reading `.requiredSkillIds` off a real API response would hit
+   * `Cannot read properties of undefined` (there is no ClassSerializerInterceptor
+   * anywhere in this codebase to auto-transform the DTO's declared shape into
+   * reality — verified directly, not assumed). createRank()/updateRank() had
+   * the same gap in the other direction: both returned the bare `Rank` row
+   * from their own `tx.rank.create()`/`tx.rank.update()` call, with no
+   * `stripeTiers`/`requiredSkillIds` populated AT ALL (Prisma doesn't include
+   * relations unless asked). All four methods now route through this one
+   * shaping function, which both `include`s the right relations and maps
+   * `requiredSkills` to the promised flat `requiredSkillIds` — a single place
+   * the response contract is actually honored, rather than four independent,
+   * inconsistent partial ones.
+   */
+  private shapeRankResponse(
+    rank: Prisma.RankGetPayload<{ include: { stripeTiers: true; requiredSkills: true } }>,
+  ) {
+    const { requiredSkills, ...rest } = rank;
+    return { ...rest, requiredSkillIds: requiredSkills.map((s) => s.skillId) };
   }
 
   // ---------------------------------------------------------------------------
