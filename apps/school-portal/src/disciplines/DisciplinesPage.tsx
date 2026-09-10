@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -11,6 +12,7 @@ import { DisciplineFormModal } from './DisciplineFormModal';
  * concept, not formally reconciled into one shared enum) — managed here first,
  * since Instructors/Classes/Timetable have nothing to reference otherwise. */
 export function DisciplinesPage() {
+  const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useDisciplines(schoolId);
   const createDiscipline = useCreateDiscipline(schoolId ?? '');
@@ -43,9 +45,14 @@ export function DisciplinesPage() {
                 key: 'actions',
                 header: '',
                 render: (d) => (
-                  <Button variant="secondary" onClick={() => setEditing(d)}>
-                    Edit
-                  </Button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button variant="secondary" onClick={() => navigate(`/disciplines/${d.id}`)}>
+                      Manage skills
+                    </Button>
+                    <Button variant="secondary" onClick={() => setEditing(d)}>
+                      Edit
+                    </Button>
+                  </div>
                 ),
               },
             ]}

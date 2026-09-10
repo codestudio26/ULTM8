@@ -12,6 +12,7 @@ import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
 import { StaffPage } from './roleGrants/StaffPage';
 import { DisciplinesPage } from './disciplines/DisciplinesPage';
+import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { TimetablePage } from './timetable/TimetablePage';
@@ -79,6 +80,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <DisciplinesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/disciplines/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <DisciplineDetailPage />
             </Shell>
           </RequireAuth>
         }

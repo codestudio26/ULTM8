@@ -2127,7 +2127,7 @@ export interface components {
         };
         UpdateSkillDto: {
             name?: string;
-            description?: string;
+            description?: string | null;
         };
         StudentRankSkillStatusResponseDto: {
             skillId: string;
