@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsEnum, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, IsUrl, Max, Min, MaxLength } from 'class-validator';
+
+/** Postgres INTEGER's own ceiling (2^31-1) — the actual backing column type for
+ * Franchise.flatFeeAmount/perHeadcountRate (schema.prisma). A first draft of
+ * these fields (Phase 16b-i) shipped with no upper bound at all, which code
+ * review caught before those fields were reverted entirely for an unrelated
+ * reason (rate-setting authority, Decision 98/99) — carried forward now that
+ * they're back, so a client can never send a value the DB would reject with an
+ * unhandled integer-out-of-range error instead of a clean 400. */
+const POSTGRES_INTEGER_MAX = 2147483647;
 
 /**
  * Mirrors the confirmed Franchise.feeModel enum (schema.prisma `FeeModel`) — Flat or
@@ -111,10 +120,30 @@ export class CreateFranchiseDto {
   @IsEnum(FeeModelDto)
   feeModel?: FeeModelDto;
 
-  // No flatFeeAmount/perHeadcountRate field — deliberately deferred, not omitted by
-  // oversight. See schema.prisma's own Franchise model comment for the full account
-  // (Decision 98's "Franchise fee-rate fields" section): a first draft added these
-  // here, code review flagged that the actual rate-setting authority is real,
-  // undecided business logic, not a routine gap-fill, and it was reverted pending
-  // the user's own input at Phase 16b-ii's kickoff.
+  /**
+   * Self-service — resolved directly with the product owner (Decision 99): the
+   * Franchise Owner sets their own rate, same pattern MembershipPlan.price
+   * already uses for School->Student pricing. Minor-unit Int (e.g. cents), same
+   * convention as every other money field in this schema. Independently
+   * settable regardless of which feeModel is currently active — see
+   * schema.prisma's own Franchise.flatFeeAmount comment for why (a Franchise can
+   * exist, and even have Schools join it, before its billing rate is
+   * configured; the franchise-fee-usage-reporting job simply skips a Franchise
+   * that isn't fully configured yet rather than erroring).
+   */
+  @ApiPropertyOptional({ description: 'Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(POSTGRES_INTEGER_MAX)
+  flatFeeAmount?: number;
+
+  /** Same shape/reasoning as flatFeeAmount above, for the Per-Headcount case —
+   * the per-active-student minor-unit rate charged monthly. */
+  @ApiPropertyOptional({ description: 'Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(POSTGRES_INTEGER_MAX)
+  perHeadcountRate?: number;
 }

@@ -39,22 +39,35 @@ export class PrismaAppService extends PrismaClient {
    * its duration — the one and only way RLS policies see a caller identity. `userId`
    * must be the caller's own User.id; for registration, pass the freshly-generated id
    * of the row about to be inserted (see AuthService.register()).
+   *
+   * `options.timeoutMs` — Phase 16b-ii addition, found necessary on review: Prisma's
+   * own interactive-transaction default timeout is 5000ms, fine for every existing
+   * call site in this codebase (pure DB work, no external I/O inside the
+   * transaction), but too short for FranchiseFeesService.refund()'s own deliberate
+   * exception to this codebase's usual "no external I/O inside a transaction" rule
+   * (see that method's own comment for why it holds a row lock across two sequential
+   * Stripe API calls). Optional and defaults to Prisma's own default when omitted —
+   * every existing call site is unaffected.
    */
   async withTenantContext<T>(
     userId: string,
     fn: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>,
+    options?: { timeoutMs?: number },
   ): Promise<T> {
-    return this.$transaction(async (tx) => {
-      // SET LOCAL cannot take a bind parameter for the identifier position in all
-      // drivers reliably across Prisma versions — use $executeRawUnsafe with a
-      // validated, engine-generated UUID string only (never raw user input).
-      if (!isUuid(userId)) {
-        this.logger.error(`Refusing to set tenant context to non-UUID value: ${userId}`);
-        throw new Error('Invalid tenant context id');
-      }
-      await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${userId}'`);
-      return fn(tx);
-    });
+    return this.$transaction(
+      async (tx) => {
+        // SET LOCAL cannot take a bind parameter for the identifier position in all
+        // drivers reliably across Prisma versions — use $executeRawUnsafe with a
+        // validated, engine-generated UUID string only (never raw user input).
+        if (!isUuid(userId)) {
+          this.logger.error(`Refusing to set tenant context to non-UUID value: ${userId}`);
+          throw new Error('Invalid tenant context id');
+        }
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${userId}'`);
+        return fn(tx);
+      },
+      options?.timeoutMs ? { timeout: options.timeoutMs } : undefined,
+    );
   }
 
   /**

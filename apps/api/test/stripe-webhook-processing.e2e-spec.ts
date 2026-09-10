@@ -21,6 +21,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
+import { StripeClientService } from '../src/payments/stripe-client.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_JOBS = process.env.DATABASE_URL_JOBS;
@@ -50,7 +51,15 @@ describeIfDb('stripe-webhook-processing job', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [StripeWebhookProcessingProcessor, PrismaJobsService],
+      // FOUND ON REVIEW: StripeWebhookProcessingProcessor gained a StripeClientService
+      // dependency this phase (invoice.paid/invoice.payment_failed need to retrieve the
+      // Invoice via stripe.invoices.retrieve()) — this module wasn't updated at the same
+      // time, which broke Nest DI for the whole suite, not just the new test. No mock
+      // needed: none of these tests exercise a path that actually calls Stripe, same
+      // "plain provider, no live key required until a method that needs one is actually
+      // invoked" pattern franchise-fee-usage-reporting.e2e-spec.ts's own module already
+      // uses for the same service.
+      providers: [StripeWebhookProcessingProcessor, PrismaJobsService, StripeClientService],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
   });
@@ -203,6 +212,49 @@ describeIfDb('stripe-webhook-processing job', () => {
 
     const membershipAfter = await superuser.membership.findUniqueOrThrow({ where: { id: membershipBefore.id } });
     expect(membershipAfter.status).toBe('EXPIRED');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Phase 16b-ii — customer.subscription.deleted's new franchise-fee branch.
+  // Fully testable via .process() without live Stripe access (same as the
+  // existing Membership case above): it only ever matches an already-known id
+  // against a stored correlator column, never calls back into Stripe. The two
+  // NEW invoice.paid/invoice.payment_failed handlers are deliberately NOT
+  // tested here — unlike every other handler in this file, both require a
+  // live Stripe API fetch (stripe.invoices.retrieve, inside process() itself)
+  // before they ever run, which this sandbox has no real credentials for —
+  // the same accepted gap MembershipsService.purchase()'s own Stripe charge()/
+  // subscribe() calls already have zero e2e coverage for (grepped
+  // memberships.e2e-spec.ts to confirm before treating this as acceptable
+  // rather than an oversight).
+  // ---------------------------------------------------------------------------
+
+  it('customer.subscription.deleted Cancels the matching School\'s franchise-fee subscription status', async () => {
+    const franchise = await superuser.franchise.create({ data: { id: randomUUID(), name: 'Webhook Job Fixture Franchise' } });
+    const stripeSubscriptionId = `sub_franchise_fixture_${randomUUID()}`;
+    const school = await superuser.school.create({
+      data: {
+        id: randomUUID(),
+        name: 'Webhook Job Franchise-Fee School',
+        franchiseId: franchise.id,
+        stripeFranchiseFeeSubscriptionId: stripeSubscriptionId,
+        franchiseFeeSubscriptionStatus: 'ACTIVE',
+      },
+    });
+    schoolIds.push(school.id);
+
+    const cancelEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(cancelEventId);
+    await processor.process(fakeJob({ stripeEventId: cancelEventId, eventType: 'customer.subscription.deleted', objectId: stripeSubscriptionId }));
+
+    const updated = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
+    expect(updated.franchiseFeeSubscriptionStatus).toBe('CANCELED');
+    // The correlator id itself is kept, not cleared — same "never clear a
+    // Stripe id after cancellation, only flip status" convention the existing
+    // Membership.stripeSubscriptionId case above already follows.
+    expect(updated.stripeFranchiseFeeSubscriptionId).toBe(stripeSubscriptionId);
+
+    await superuser.franchise.delete({ where: { id: franchise.id } });
   });
 
   it('an unrecognized event type is deduped and logged, not thrown', async () => {
