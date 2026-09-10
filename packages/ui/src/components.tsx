@@ -127,24 +127,29 @@ export interface TableColumn<T> {
 
 export function Table<T extends { id: string }>({ columns, rows }: { columns: TableColumn<T>[]; rows: T[] }) {
   return (
-    <table className="ultm8-table">
-      <thead>
-        <tr>
-          {columns.map((col) => (
-            <th key={col.key}>{col.header}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.id}>
+    // Scrolls horizontally within itself on a narrow viewport instead of forcing the
+    // whole page (sidebar included) to scroll sideways — a table wider than the
+    // viewport previously had no containing overflow anywhere in its ancestry.
+    <div className="ultm8-table-wrap">
+      <table className="ultm8-table">
+        <thead>
+          <tr>
             {columns.map((col) => (
-              <td key={col.key}>{col.render(row)}</td>
+              <th key={col.key}>{col.header}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              {columns.map((col) => (
+                <td key={col.key}>{col.render(row)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
