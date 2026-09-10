@@ -44,4 +44,10 @@ export class BookingsController {
   findMyBookings(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
     return this.bookingsService.findMyBookings(user.sub, query.cursor, query.limit);
   }
+
+  @ApiOkResponse({ type: BookingListResponseDto })
+  @Get('classes/:id/bookings')
+  findAllForClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: PaginationQueryDto) {
+    return this.bookingsService.findAllForClass(user.sub, id, query.cursor, query.limit);
+  }
 }

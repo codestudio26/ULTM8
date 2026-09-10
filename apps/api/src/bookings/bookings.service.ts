@@ -244,6 +244,35 @@ export class BookingsService {
     );
   }
 
+  /**
+   * GET /classes/{id}/bookings — School Owner/Manager, Branch Staff, or Instructor
+   * (School Portal's own "who's booked into this Class" view). FOUND ON REVIEW
+   * (Phase 22, school-portal's own Booking admin screen): this endpoint never
+   * existed anywhere before, despite this phase's own `booking_staff_read` RLS
+   * policy (this migration's own header comment, §4 point 2) having been laid down
+   * specifically to support exactly this — a broad, SELECT-only Staff read,
+   * additive to Booking's own narrow owner-or-self policy. Completing that
+   * already-anticipated groundwork, not inventing new authorization shape.
+   */
+  async findAllForClass(callerId: string, classId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    // FOUND ON REVIEW: passes cls.branchId for defense-in-depth against a
+    // caller holding MULTIPLE RoleGrants at this School whose mismatched-Branch
+    // Staff grant would otherwise wrongly authorize them once some other grant
+    // of theirs has already let the Class row itself pass class_tenant_isolation
+    // (see assertStaffAtSchool's own comment — its header documents a case CI
+    // caught where this comment previously overstated what the check does: the
+    // common single-grant wrong-Branch case is already a 404 via RLS alone,
+    // before this line is ever reached).
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate((args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }), cursor, limit),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
