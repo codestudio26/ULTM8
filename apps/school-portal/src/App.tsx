@@ -20,6 +20,8 @@ import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
+import { FranchisesPage } from './franchises/FranchisesPage';
+import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { Shell } from './layout/Shell';
 
 function HomeRedirect() {
@@ -161,6 +163,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <WaiversPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/franchises"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchisesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/franchises/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchiseDetailPage />
             </Shell>
           </RequireAuth>
         }

@@ -1553,18 +1553,8 @@ export interface components {
         };
         UpdateFranchiseDto: {
             name?: string;
-            mobileNumber?: string;
-            address?: string;
-            type?: string;
             activities?: string[];
             facilities?: string[];
-            /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
-            defaultLanguage?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
-            defaultCurrency?: string;
-            description?: string;
-            logoUrl?: string;
-            bannerUrl?: string;
             /**
              * @default FLAT
              * @enum {string}
@@ -1574,6 +1564,16 @@ export interface components {
             flatFeeAmount?: number;
             /** @description Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless. */
             perHeadcountRate?: number;
+            mobileNumber?: string | null;
+            address?: string | null;
+            type?: string | null;
+            /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
+            defaultLanguage?: string | null;
+            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            defaultCurrency?: string | null;
+            description?: string | null;
+            logoUrl?: string | null;
+            bannerUrl?: string | null;
         };
         CreateClassDto: {
             /** @description Branch to scope this Class to. Omit for a School-wide Class. */
