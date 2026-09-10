@@ -17,6 +17,7 @@ import { ClassesPage } from './classes/ClassesPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
+import { WaiversPage } from './waivers/WaiversPage';
 import { Shell } from './layout/Shell';
 
 function HomeRedirect() {
@@ -128,6 +129,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <TransactionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/waivers"
+        element={
+          <RequireAuth>
+            <Shell>
+              <WaiversPage />
             </Shell>
           </RequireAuth>
         }
