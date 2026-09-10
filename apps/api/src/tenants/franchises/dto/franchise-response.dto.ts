@@ -47,6 +47,16 @@ export class FranchiseResponseDto {
   @ApiProperty({ enum: FeeModelDto })
   feeModel!: FeeModelDto;
 
+  /** Self-service, Franchise-Owner-set — see create-franchise.dto.ts's own
+   * comment for the full account (Decision 99). Not `stripeMeterId`/
+   * `stripeUsagePriceId` — those are internal Stripe correlator ids with no
+   * direct caller action tied to them, deliberately not exposed here. */
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  flatFeeAmount!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  perHeadcountRate!: number | null;
+
   @ApiProperty()
   createdAt!: string;
 

@@ -554,4 +554,92 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     await superuser.roleGrant.deleteMany({ where: { franchiseId } });
     await superuser.franchise.delete({ where: { id: franchiseId } });
   });
+
+  // ---------------------------------------------------------------------------
+  // Franchise fee-rate fields (Phase 16b-ii, Decision 99) — self-service,
+  // Franchise-Owner-set, round-tripped through the existing create/update
+  // endpoints (no dedicated endpoint — see create-franchise.dto.ts's own
+  // comment).
+  // ---------------------------------------------------------------------------
+
+  it('Franchise fee-rate fields round-trip through create and update', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Fee-Rate Test Franchise', feeModel: 'PER_HEADCOUNT', perHeadcountRate: 500 });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.perHeadcountRate).toBe(500);
+    expect(createRes.body.flatFeeAmount).toBeNull();
+    const franchiseId = createRes.body.id;
+
+    const updateRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ flatFeeAmount: 15000 });
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.flatFeeAmount).toBe(15000);
+    // Independently settable regardless of feeModel — updating flatFeeAmount
+    // doesn't clear perHeadcountRate or feeModel itself (see schema.prisma's
+    // own comment on why both fields stay independently addressable).
+    expect(updateRes.body.perHeadcountRate).toBe(500);
+    expect(updateRes.body.feeModel).toBe('PER_HEADCOUNT');
+
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
+
+  it('rejects a Franchise fee-rate value above the Postgres INTEGER ceiling — 400, not an unhandled DB error', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Overflow Test Franchise', flatFeeAmount: 2147483648 }); // 2^31, one past the signed 32-bit ceiling
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects changing a Franchise fee-rate once billing has started for a member School — 409, not silent Stripe/ledger divergence', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Rate-Lock Test Franchise', feeModel: 'FLAT', flatFeeAmount: 5000 });
+    expect(createRes.status).toBe(201);
+    const franchiseId = createRes.body.id;
+
+    // Direct-seeded — no code path exists to actually create a standing Stripe
+    // Subscription in this sandbox (no live Stripe credentials, same
+    // established gap every other Stripe-calling test in this repo already
+    // has); what's under test here is purely FranchisesService.update()'s own
+    // guard logic, which only needs the correlator column set, not a real
+    // Stripe object behind it.
+    const billingSchool = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Rate-Lock Test School', franchiseId, stripeFranchiseFeeSubscriptionId: `sub_fixture_${randomUUID()}` },
+    });
+
+    const blockedRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ flatFeeAmount: 9999 });
+    expect(blockedRes.status).toBe(409);
+    const unchanged = await superuser.franchise.findUniqueOrThrow({ where: { id: franchiseId } });
+    expect(unchanged.flatFeeAmount).toBe(5000);
+
+    // Re-sending the SAME value (not an actual change) is not blocked — only a
+    // genuine change to the currently-billing rate is.
+    const noopRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ flatFeeAmount: 5000 });
+    expect(noopRes.status).toBe(200);
+
+    // Non-rate fields stay freely editable even once billing has started.
+    const profileRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ description: 'Updated after billing started' });
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.description).toBe('Updated after billing started');
+
+    await superuser.school.delete({ where: { id: billingSchool.id } });
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
 });

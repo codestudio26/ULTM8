@@ -325,28 +325,53 @@ model Franchise {
 
   feeModel FeeModel @default(FLAT)
 
-  // The actual franchise-fee rate/amount is deliberately NOT modeled yet — a real
-  // gap found while researching Phase 16b (feeModel/Flat-vs-Per-Headcount is
-  // confirmed, Spec 55 §6.1; the actual dollar rate never was), but unlike Phase
-  // 16b-i's School->Franchise linking mechanism, this one wasn't escalated and
-  // resolved in the same pass: a first draft added flatFeeAmount/perHeadcountRate
-  // here unilaterally, and code review correctly caught that on reflection, this
-  // carries real, undecided business-model weight (self-service Franchise-set
-  // rate vs. platform-negotiated; which currency — domain-rules §11.2's "Franchise-
-  // fee... billed in a single anchor currency (USD)" answers the currency half,
-  // but not who sets the number) — closer to Decision 98's own linking question
-  // than to a routine Developer-level inferred field. Deferred to Phase 16b-ii
-  // (FranchiseFeeCharge itself), to be raised with the user then, with the actual
-  // billing mechanics concretely in front of them rather than asked in isolation
-  // now. See Decision 98's own "Franchise fee-rate fields" section for the full
-  // account of this reversal.
+  /// Phase 16b-ii — the actual franchise-fee rate, resolved directly with the
+  /// product owner (Decision 99): self-service, the Franchise Owner sets their own
+  /// rate, same shape MembershipPlan.price already uses for School->Student pricing
+  /// and the same self-service precedent feeModel itself already established.
+  /// Deliberately deferred out of 16b-i (see Decision 98) rather than added
+  /// unilaterally — see Decision 99 for the full account. Minor-unit Int, matching
+  /// every other money field in this schema; no upper bound at the schema level
+  /// (Postgres INTEGER's own 2^31-1 ceiling), but validated with an explicit
+  /// @Max() in CreateFranchiseDto/UpdateFranchiseDto — a first draft of these
+  /// fields (16b-i) shipped without that bound and code review caught it before
+  /// the fields were reverted entirely; carried forward now that they're back.
+  /// Currency is NOT a separate column — domain-rules §11.2/Decision 7 confirms
+  /// Franchise-fee is billed in a single anchor currency (USD) always, unlike
+  /// MembershipPlan's genuinely per-currency pricing, so there is nothing to store
+  /// per-Franchise here (FranchiseFeeCharge's own `currency` column is set to
+  /// 'USD' in code, not read from anywhere on Franchise).
+  ///
+  /// Both nullable and independently settable via the existing PATCH
+  /// /franchises/:id (no dedicated endpoint) regardless of which feeModel is
+  /// currently active — a Franchise can exist, and even have Schools join it
+  /// (Phase 16b-i), before its billing rate is configured; enforcement that the
+  /// RELEVANT rate is actually set happens in the franchise-fee-usage-reporting
+  /// job (this phase), which simply skips a School whose Franchise isn't fully
+  /// configured yet rather than erroring.
+  flatFeeAmount    Int?
+  perHeadcountRate Int?
+
+  /// Phase 16b-ii — lazily created the first time this Franchise's own
+  /// PER_HEADCOUNT metered billing is set up (franchise-fee-usage-reporting job),
+  /// never at Franchise creation/update time. A Stripe Billing Meter is scoped to
+  /// the Stripe account it's created on — here, the Franchise's own connected
+  /// account (Decision 86) — so each PER_HEADCOUNT Franchise needs its own Meter
+  /// and metered Price, not a shared platform-wide one. See
+  /// PaymentsService.ensureFranchiseFeeSubscription's own comment for the full
+  /// Stripe-mechanics account (verified directly against the installed `stripe`
+  /// SDK v22's Billing Meters API — the modern replacement for the removed legacy
+  /// usage_record API, not assumed).
+  stripeMeterId      String?
+  stripeUsagePriceId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  schools        School[]
-  roleGrants     RoleGrant[]
-  paymentAccount PaymentAccount?
+  schools             School[]
+  roleGrants          RoleGrant[]
+  paymentAccount      PaymentAccount?
+  franchiseFeeCharges FranchiseFeeCharge[]
 
   @@index([name])
 }
@@ -377,19 +402,31 @@ model School {
   waitlistClaimWindowMinutes     Int                             @default(120)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
+  /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
+  /// franchise-fee billing relationship (created lazily by the
+  /// franchise-fee-usage-reporting job the first time this School has both a
+  /// Franchise affiliation, Phase 16b-i, and that Franchise has a configured rate +
+  /// onboarded PaymentAccount). Paired with franchiseFeeSubscriptionStatus above —
+  /// that field tracks the subscription's health (synced via
+  /// customer.subscription.* webhooks), this field is the correlator id itself.
+  /// Null for an independent School, or a Franchise-affiliated one whose billing
+  /// hasn't started yet.
+  stripeFranchiseFeeSubscriptionId String? @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches        Branch[]
-  roleGrants      RoleGrant[]
-  classes         Class[]
-  timetableSlots  TimetableSlot[]
-  instructors     Instructor[]
-  paymentAccount  PaymentAccount?
-  membershipPlans MembershipPlan[]
-  transactions    Transaction[]
-  disciplines     Discipline[]
-  waivers         Waiver[]
+  branches            Branch[]
+  roleGrants          RoleGrant[]
+  classes             Class[]
+  timetableSlots      TimetableSlot[]
+  instructors         Instructor[]
+  paymentAccount      PaymentAccount?
+  membershipPlans     MembershipPlan[]
+  transactions        Transaction[]
+  disciplines         Discipline[]
+  waivers             Waiver[]
+  franchiseFeeCharges FranchiseFeeCharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -777,7 +814,8 @@ model PaymentAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
+  transactions        Transaction[]
+  franchiseFeeCharges FranchiseFeeCharge[]
 
   // One PaymentAccount per School, one per Franchise — "has one PaymentAccount set"
   // (School's and Franchise's own confirmed entity rows, singular).
@@ -1040,6 +1078,119 @@ model Transaction {
   @@index([schoolId])
   @@index([studentId])
   @@index([membershipPlanId])
+}
+
+/// FranchiseFeeCharge (Phase 16b-ii, Spec 55 §6.1/§10.2) — the per-billing-cycle
+/// ledger record for a School->Franchise franchise-fee charge, a wholly separate
+/// payment relationship from Transaction (Student->School) and PlatformCharge
+/// (School/Franchise->ULTM8) — never conflate the three (domain-rules §2).
+///
+/// Confirmed field list (quoted, not paraphrased): "Franchise, School, billing
+/// period, fee basis snapshot (Flat or Per-Headcount, copied from
+/// Franchise.feeModel at charge time so a later feeModel change never rewrites
+/// history), computed amount, currency, active-student-count snapshot
+/// (Per-Headcount only, captured at charge time), Stripe PaymentIntent/Invoice id,
+/// status (Successful/Pending/Failed/Refunded/Disputed — same enum as
+/// Transaction), refundedAmount (nullable, cumulative), disputedAmount (nullable,
+/// taken straight from the Stripe dispute event payload)."
+///
+/// `status` reuses TransactionStatus directly (spec's own words: "same enum as
+/// Transaction") rather than a second identical enum — same reuse convention
+/// PaymentAccountProvider already established for Transaction.paymentMethod.
+///
+/// `franchisePaymentAccountId` — spec says this entity "references both parties'
+/// PaymentAccount". Modeled as a single explicit FK to the Franchise's own
+/// PaymentAccount (the payee/destination) only, mirroring Transaction's own
+/// `paymentAccountId` shape exactly (that field is also only ever the payee's
+/// account — a Student has no PaymentAccount of their own either). The School
+/// (payer) side is NOT a second FK to a School PaymentAccount: the School's own
+/// PaymentAccount (if it has one) is a wholly separate Stripe Connect account
+/// used for its OWN Student->School billing, and a franchise-fee charge is paid
+/// via a Stripe Customer+PaymentMethod created ON the Franchise's connected
+/// account instead (PaymentsService.ensureFranchiseFeeSubscription) — the same
+/// "throwaway Customer scoped to the payee's own connected account" pattern
+/// MembershipsService.subscribe() already established for Student->School, here
+/// applied School->Franchise instead. Developer-level interpretation of an
+/// otherwise-ambiguous spec phrase, flagged for Architect review.
+///
+/// `currency` is always 'USD', set in code, never read from a per-Franchise
+/// field — domain-rules §11.2/Decision 7 confirms Franchise-fee is billed in a
+/// single anchor currency, unlike MembershipPlan's genuinely per-currency
+/// pricing. Stored per-row anyway (nullable String, matching Transaction's own
+/// convention) rather than omitted, since the confirmed field list names it
+/// explicitly and PlatformCharge's own sibling entity does the same.
+///
+/// `billingPeriodStart`/`billingPeriodEnd` model "billing period" as an explicit
+/// date range rather than a single label — the natural reading for a recurring
+/// monthly charge, and needed by the franchise-fee-usage-reporting job to know
+/// which month's active-student-count a given Per-Headcount row snapshots.
+///
+/// One row is created per billing cycle (NOT once per School<->Franchise
+/// relationship, unlike Membership) — a genuinely different creation-timing
+/// shape from every other billing entity in this schema so far. See
+/// PaymentsService.ensureFranchiseFeeSubscription and the
+/// franchise-fee-usage-reporting job/stripe-webhook-processing's own new
+/// invoice.paid/invoice.payment_failed handlers for the full creation-timing
+/// account: a Per-Headcount row is created PENDING by the monthly usage-report
+/// job (which knows the activeStudentCountSnapshot value at that moment); a Flat
+/// row has no snapshot to capture in advance and is instead created directly,
+/// already Successful, by the invoice.paid webhook handler.
+model FranchiseFeeCharge {
+  id String @id @default(uuid())
+
+  franchiseId String
+  franchise   Franchise @relation(fields: [franchiseId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  franchisePaymentAccountId String
+  franchisePaymentAccount   PaymentAccount @relation(fields: [franchisePaymentAccountId], references: [id])
+
+  billingPeriodStart DateTime
+  billingPeriodEnd   DateTime
+
+  feeBasisSnapshot FeeModel
+  amount           Int // minor-unit, same convention as Transaction.amount
+  currency         String? // always 'USD' in practice — see header comment
+
+  // Per-Headcount only — the active-student-count reported to Stripe for this
+  // billing period. Null for a Flat-fee row.
+  activeStudentCountSnapshot Int?
+
+  status TransactionStatus // reused directly — spec's own "same enum as Transaction"
+
+  stripeInvoiceId      String? @unique
+  stripeSubscriptionId String?
+
+  // Cumulative across possibly-multiple partial refunds against the same charge,
+  // same convention as Transaction.refundedAmount. Set by
+  // FranchiseFeeChargesService.refund() (Franchise Owner only, Spec 55 §10.2 —
+  // the Franchise's own PaymentAccount holds the money, so the Franchise, not the
+  // paying School, is the party who'd issue it back).
+  refundedAmount Int?
+
+  // Only ever reachable for a disputed charge (Decision 55's dispute handling) —
+  // no code path sets this yet, same "modeled for schema completeness only"
+  // treatment Transaction.disputedAmount got in Phase 9.
+  disputedAmount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30) — this entity
+  // has two tenant sides (Franchise the payee, School the payer), so both get one.
+  @@index([franchiseId])
+  @@index([schoolId])
+  // Matches franchise-fee-usage-reporting.processor.ts's and stripe-webhook-
+  // processing.processor.ts's own (stripeSubscriptionId, status) query shape —
+  // see the migration's own comment. The companion partial unique index
+  // enforcing "one charge row per (subscription, billing period)" is NOT
+  // representable here — Prisma's schema DSL has no partial/filtered unique
+  // index support, same established limitation as every other partial unique
+  // index in this schema (Membership_one_active_general_access_per_school and
+  // siblings) — it exists only in the migration's own hand-authored SQL.
+  @@index([stripeSubscriptionId, status])
 }
 
 /// PromotionEvent.type — Phase 10b. Confirmed field (skills/ultm8-domain-rules/

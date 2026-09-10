@@ -205,6 +205,49 @@ describeIfDb('stripe-webhook-processing job', () => {
     expect(membershipAfter.status).toBe('EXPIRED');
   });
 
+  // ---------------------------------------------------------------------------
+  // Phase 16b-ii — customer.subscription.deleted's new franchise-fee branch.
+  // Fully testable via .process() without live Stripe access (same as the
+  // existing Membership case above): it only ever matches an already-known id
+  // against a stored correlator column, never calls back into Stripe. The two
+  // NEW invoice.paid/invoice.payment_failed handlers are deliberately NOT
+  // tested here — unlike every other handler in this file, both require a
+  // live Stripe API fetch (stripe.invoices.retrieve, inside process() itself)
+  // before they ever run, which this sandbox has no real credentials for —
+  // the same accepted gap MembershipsService.purchase()'s own Stripe charge()/
+  // subscribe() calls already have zero e2e coverage for (grepped
+  // memberships.e2e-spec.ts to confirm before treating this as acceptable
+  // rather than an oversight).
+  // ---------------------------------------------------------------------------
+
+  it('customer.subscription.deleted Cancels the matching School\'s franchise-fee subscription status', async () => {
+    const franchise = await superuser.franchise.create({ data: { id: randomUUID(), name: 'Webhook Job Fixture Franchise' } });
+    const stripeSubscriptionId = `sub_franchise_fixture_${randomUUID()}`;
+    const school = await superuser.school.create({
+      data: {
+        id: randomUUID(),
+        name: 'Webhook Job Franchise-Fee School',
+        franchiseId: franchise.id,
+        stripeFranchiseFeeSubscriptionId: stripeSubscriptionId,
+        franchiseFeeSubscriptionStatus: 'ACTIVE',
+      },
+    });
+    schoolIds.push(school.id);
+
+    const cancelEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(cancelEventId);
+    await processor.process(fakeJob({ stripeEventId: cancelEventId, eventType: 'customer.subscription.deleted', objectId: stripeSubscriptionId }));
+
+    const updated = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
+    expect(updated.franchiseFeeSubscriptionStatus).toBe('CANCELED');
+    // The correlator id itself is kept, not cleared — same "never clear a
+    // Stripe id after cancellation, only flip status" convention the existing
+    // Membership.stripeSubscriptionId case above already follows.
+    expect(updated.stripeFranchiseFeeSubscriptionId).toBe(stripeSubscriptionId);
+
+    await superuser.franchise.delete({ where: { id: franchise.id } });
+  });
+
   it('an unrecognized event type is deduped and logged, not thrown', async () => {
     const stripeEventId = `evt_fixture_${randomUUID()}`;
     eventIds.push(stripeEventId);

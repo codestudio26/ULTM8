@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { FranchiseFeesModule } from '../franchise-fees/franchise-fees.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { QueueModule } from './queue.module';
 import { OtpDeliveryProcessor } from './otp-delivery.processor';
 import { ClassOccurrenceGenerationProcessor, ClassOccurrenceGenerationScheduler } from './class-occurrence-generation.processor';
@@ -9,6 +11,7 @@ import { WaiverSignatureRequestsProcessor } from './waiver-signature-requests.pr
 import { BookingNoShowProcessingProcessor, BookingNoShowProcessingScheduler } from './booking-no-show-processing.processor';
 import { WaitlistCascadeProcessingProcessor, WaitlistCascadeProcessingScheduler } from './waitlist-cascade-processing.processor';
 import { NotificationFanoutProcessor } from './notification-fanout.processor';
+import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingScheduler } from './franchise-fee-usage-reporting.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -31,9 +34,19 @@ import { NotificationFanoutProcessor } from './notification-fanout.processor';
  * BookingNoShowProcessingProcessor already established for cross-queue
  * enqueueing. Imports NotificationsModule for NotificationDeliveryService
  * (NotificationFanoutProcessor's own dependency).
+ *
+ * Phase 16b-ii adds FranchiseFeeUsageReportingProcessor/Scheduler (a scheduled
+ * sweep, same shape as ClassOccurrenceGenerationScheduler/BookingNoShowProcessingScheduler)
+ * and extends StripeWebhookProcessingProcessor with real invoice.paid/
+ * invoice.payment_failed handling — which needs StripeClientService directly
+ * for the first time in this file (every earlier handler only ever matched an
+ * id against a stored correlator column; these two must call back into Stripe
+ * to fetch the full Invoice), hence the new PaymentsModule import. Imports
+ * FranchiseFeesModule for FranchiseFeeBillingService (the new processor's own
+ * Stripe-primitives dependency).
  */
 @Module({
-  imports: [AuthModule, NotificationsModule, QueueModule],
+  imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
   providers: [
     OtpDeliveryProcessor,
     ClassOccurrenceGenerationProcessor,
@@ -45,6 +58,8 @@ import { NotificationFanoutProcessor } from './notification-fanout.processor';
     WaitlistCascadeProcessingProcessor,
     WaitlistCascadeProcessingScheduler,
     NotificationFanoutProcessor,
+    FranchiseFeeUsageReportingProcessor,
+    FranchiseFeeUsageReportingScheduler,
   ],
 })
 export class JobsModule {}

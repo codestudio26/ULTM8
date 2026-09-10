@@ -754,3 +754,27 @@ Franchise-reaffiliation/billing-continuity (Decision 97, still deferred to proje
 ### Recorded by
 
 The linking-mechanism question (and the option-1 choice) was logged during a direct, live exchange with the user, 10 Sep 2026, after this gap surfaced mid-research — options presented, a recommendation given and explained, and the user's own choice ("Yes, go ahead with option 1") followed. The `franchise_exists()` removal and the fee-rate-fields reversal were both found during this PR's own pre-merge code review, the same day.
+
+---
+
+## Decision 99 — Franchise fee-rate authority: self-service (Franchise Owner sets their own rate), resolved directly with the user
+
+**Date:** 10 Sep 2026
+**Status:** Product-owner decision, made directly with the user, immediately following Decision 98's own deferral of this exact question.
+**Resolves:** Decision 98's own "Franchise fee-rate fields" reversal explicitly deferred the rate-setting-authority question — "self-service Franchise-set rate vs. platform-negotiated" — to be raised at Phase 16b-ii's kickoff rather than decided unilaterally, since it carries real, undecided business-model weight unlike a routine Developer-level gap-fill.
+
+### Decision
+
+The Franchise Owner sets their own `flatFeeAmount`/`perHeadcountRate`, self-service, via the existing `PATCH /franchises/:id` (no dedicated endpoint) — the same shape a School already uses to set its own `MembershipPlan.price`, and consistent with `Franchise.feeModel` (Flat vs. Per-Headcount) already being confirmed as "configurable per Franchise" (Spec 55 §6.1). No platform/Platform-Admin approval step, no School-side consent or notification — a Franchise Owner may set or change their rate at any time via the ordinary Franchise-profile-edit endpoint.
+
+Presented to the user directly: self-service (matching the precedent above, and the only option not fully blocked by `PlatformAdminModule` not existing yet) vs. platform-negotiated (would require Platform Admin tooling that doesn't exist and is itself blocked on the still-open SSO vendor decision, Decision-log's own §4 open-items list). The user chose self-service directly: *"Yes, go ahead with self-service."*
+
+### What this does NOT resolve
+
+Changing the rate **after franchise-fee billing has already started** for at least one member School is a genuinely separate mechanical question this decision does not answer — Stripe Prices are immutable once created (a real technical constraint, not a business one), so a rate change after the first standing Subscription exists needs its own real mechanism (create a replacement Price, migrate every affected Subscription's line item to it) that was not designed or built in this phase. `FranchisesService.update()` (this phase) blocks a `flatFeeAmount`/`perHeadcountRate` change once any School under that Franchise already has a standing franchise-fee Subscription, rather than silently accepting a change that would leave Stripe billing at the old rate while the local ledger recorded the new one — a genuine gap this review surfaced, closed with a safe rejection rather than a guessed reconciliation mechanism. Building the real rate-migration flow is deferred, not decided against — flagged for whenever a Franchise Owner actually needs to change an active rate.
+
+Also unresolved, unchanged: whether a School should be notified when its Franchise's rate changes, and School-side consent to a rate change — neither exists in this phase, and Decision 80's still-standing "Franchise Owner granting/approving anything beyond its own resources is genuinely unconfirmed" note doesn't directly answer this either, since setting one's own rate is a Franchise acting on its own resource, not granting something to another party.
+
+### Recorded by
+
+Logged during a direct, live exchange with the user, 10 Sep 2026, immediately following Decision 98 — the question was asked plainly ("who sets a Franchise's actual fee rate/amount"), a recommendation given (self-service) and explained, and the user's own choice ("Yes, go ahead with self-service") followed. **FOUND ON REVIEW, before this ever merged:** this exact decision was cited by number throughout the Phase 16b-ii code and migration (schema.prisma, the DTOs, the migration file, a test comment) before this entry was actually written — a real process gap, not a business-logic error: the underlying decision was genuinely made with the user in this same conversation, but the append-only log entry recording it was never created until this review pass caught the dangling citation. Written now, after the fact, to close that gap — the decision itself was not invented, only its paper trail was late.
