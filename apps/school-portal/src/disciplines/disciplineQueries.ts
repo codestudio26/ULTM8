@@ -21,6 +21,17 @@ export function useDisciplines(schoolId: string | null) {
   });
 }
 
+/** Single-Discipline fetch — for the Discipline detail page (Skills/Ranks
+ * management), which needs the Discipline's own name/classTypesOffered
+ * without re-fetching the whole School's list. */
+export function useDiscipline(disciplineId: string | null) {
+  return useQuery({
+    queryKey: ['discipline', disciplineId],
+    queryFn: () => unwrap(apiClient.GET('/v1/disciplines/{id}', { params: { path: { id: disciplineId! } } })),
+    enabled: !!disciplineId,
+  });
+}
+
 export function useCreateDiscipline(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
