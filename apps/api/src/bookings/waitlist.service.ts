@@ -208,8 +208,10 @@ export class WaitlistService {
     if (!cls) {
       throw new NotFoundException('Class not found');
     }
-    // FOUND ON REVIEW: passes cls.branchId — same reasoning as
-    // BookingsService.findAllForClass()'s own identical fix.
+    // FOUND ON REVIEW: passes cls.branchId — same dual-grant defense-in-depth
+    // reasoning as BookingsService.findAllForClass()'s own identical call; see
+    // that method's own comment for the corrected account of what this
+    // actually defends against (CI caught an earlier, inaccurate version).
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.waitlistEntry.findMany({ where: { classId }, orderBy: { position: 'asc' } }),

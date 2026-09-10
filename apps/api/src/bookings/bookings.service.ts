@@ -259,10 +259,14 @@ export class BookingsService {
     if (!cls) {
       throw new NotFoundException('Class not found');
     }
-    // FOUND ON REVIEW: passes cls.branchId so a Branch-scoped Staff/Instructor
-    // caller outside this Class's own Branch gets a clear 403 instead of RLS
-    // silently returning an empty list (see assertStaffAtSchool's own comment
-    // on why this three-way check exists).
+    // FOUND ON REVIEW: passes cls.branchId for defense-in-depth against a
+    // caller holding MULTIPLE RoleGrants at this School whose mismatched-Branch
+    // Staff grant would otherwise wrongly authorize them once some other grant
+    // of theirs has already let the Class row itself pass class_tenant_isolation
+    // (see assertStaffAtSchool's own comment — its header documents a case CI
+    // caught where this comment previously overstated what the check does: the
+    // common single-grant wrong-Branch case is already a 404 via RLS alone,
+    // before this line is ever reached).
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }), cursor, limit),

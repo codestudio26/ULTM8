@@ -284,7 +284,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(outsiderRes.status).toBe(404);
   });
 
-  it('GET /classes/:id/bookings — a Branch-scoped Staff member outside this Class\'s own Branch gets 403, not a silently-empty list; a genuinely empty Class returns 200 + []', async () => {
+  it('GET /classes/:id/bookings — a single-grant Branch-scoped Staff member outside this Class\'s own Branch gets 404 (RLS hides the Class row itself, same as any cross-tenant read — ultm8-tenant-isolation §2); a genuinely empty Class returns 200 + []', async () => {
     // Self-contained fixture — mirrors the established branch-scoping pattern
     // already used in classes.e2e-spec.ts/instructors.e2e-spec.ts/
     // timetable.e2e-spec.ts for the identical three-way RLS structure, not
@@ -320,17 +320,26 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       },
     });
 
-    // Wrong Branch — RLS would silently return an empty list; the app-level
-    // assertStaffAtSchool(..., cls.branchId) check now turns that into a
-    // clear 403 instead (the specific gap this test closes).
+    // Wrong Branch, single grant — traced directly against class_tenant_isolation
+    // (20260907000000_classes_module/migration.sql): staffB's only RoleGrant
+    // (BRANCH_STAFF at branchB) does not satisfy that policy's own three-way
+    // EXISTS clause for a Class scoped to branchA, so `findAllForClass`'s own
+    // `tx.class.findUnique` already returns null under RLS, before
+    // assertStaffAtSchool's branch check is ever reached — a 404, exactly
+    // like ClassesService.findOne()'s own documented "RLS-blocked and
+    // genuinely-missing are indistinguishable by design" convention. This is
+    // NOT the scenario assertStaffAtSchool's targetBranchId param defends —
+    // see the dual-grant test directly below for the case where it does real
+    // work (RLS lets the Class row through via a non-matching-branch grant,
+    // but no Staff grant of the caller's own covers this Branch).
     const wrongBranchRes = await request(app.getHttpServer())
       .get(`/v1/classes/${classBranchA.id}/bookings`)
       .set('Authorization', `Bearer ${tokenStaffB}`);
-    expect(wrongBranchRes.status).toBe(403);
+    expect(wrongBranchRes.status).toBe(404);
 
     // A genuinely empty (but authorized) Class still returns 200 + [], not an
     // error — School Owner has no Branch restriction, so this exercises the
-    // "authorized but nothing to show" path distinctly from the 403 above.
+    // "authorized but nothing to show" path distinctly from the 404 above.
     const emptyRes = await request(app.getHttpServer())
       .get(`/v1/classes/${classBranchA.id}/bookings`)
       .set('Authorization', `Bearer ${tokenOwner}`);
@@ -339,6 +348,64 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     await superuser.class.delete({ where: { id: classBranchA.id } });
     await superuser.roleGrant.deleteMany({ where: { userId: staffB.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+  });
+
+  it('GET /classes/:id/bookings — a Staff member holding a SECOND, non-matching-branch RoleGrant that lets the Class pass RLS still gets a real 403 from assertStaffAtSchool, not a false-positive 200', async () => {
+    // This is the scenario assertStaffAtSchool's targetBranchId param actually
+    // defends against (see this file's single-grant test directly above for
+    // why the simple case is a 404, not a 403, via RLS alone). Here, staffC
+    // holds TWO RoleGrants at the same School: a STUDENT grant scoped to
+    // branchA (satisfying class_tenant_isolation's EXISTS clause, since RLS
+    // admits ANY active RoleGrant holder, not just Staff roles — that
+    // policy's own migration comment), and a BRANCH_STAFF grant scoped to
+    // branchB (the mismatched one). The Class row is therefore visible via
+    // RLS, so findAllForClass proceeds past its NotFoundException check —
+    // proving assertStaffAtSchool's own branch check is what blocks this,
+    // not RLS silently doing the job for it.
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Dual-Grant Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Dual-Grant Branch B' } });
+    const staffC = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-dual-grant-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'dual-grant-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'STUDENT', userId: staffC.id, schoolId: school.id, branchId: branchA.id },
+        { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffC.id, schoolId: school.id, branchId: branchB.id },
+      ],
+    });
+    const tokenStaffC = signAccessToken(staffC, [
+      { role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: branchA.id },
+      { role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id },
+    ]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Dual-Grant Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenStaffC}`);
+    expect(res.status).toBe(403);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffC.id } });
     await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
   });
 
@@ -572,10 +639,13 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(outsiderRes.status).toBe(404);
   });
 
-  it('GET /classes/:id/waitlist — a Branch-scoped Staff member outside this Class\'s own Branch gets 403, not a silently-empty list', async () => {
-    // Same shared assertStaffAtSchool(..., cls.branchId) fix as the Bookings
-    // version of this test above — exercised here too since both endpoints
-    // were flagged as missing this coverage independently.
+  it('GET /classes/:id/waitlist — a single-grant Branch-scoped Staff member outside this Class\'s own Branch gets 404, same RLS-driven reasoning as the Bookings version of this test above', async () => {
+    // Same class_tenant_isolation-traced reasoning as the Bookings single-
+    // grant test above: staffB's only RoleGrant is BRANCH_STAFF at branchB,
+    // which does not satisfy class_tenant_isolation's EXISTS clause for a
+    // branchA-scoped Class, so the Class row itself is invisible under RLS —
+    // findAllForClass's own NotFoundException fires before
+    // assertStaffAtSchool's branch check is ever reached. 404, not 403.
     const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Branch A' } });
     const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Branch B' } });
     const staffB = await superuser.user.create({
@@ -609,10 +679,61 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     const wrongBranchRes = await request(app.getHttpServer())
       .get(`/v1/classes/${classBranchA.id}/waitlist`)
       .set('Authorization', `Bearer ${tokenStaffB}`);
-    expect(wrongBranchRes.status).toBe(403);
+    expect(wrongBranchRes.status).toBe(404);
 
     await superuser.class.delete({ where: { id: classBranchA.id } });
     await superuser.roleGrant.deleteMany({ where: { userId: staffB.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+  });
+
+  it('GET /classes/:id/waitlist — a Staff member holding a SECOND, non-matching-branch RoleGrant that lets the Class pass RLS still gets a real 403 from assertStaffAtSchool', async () => {
+    // Same dual-grant reasoning as the Bookings version of this test above —
+    // proves assertStaffAtSchool's own branch check is the thing blocking
+    // this, since RLS itself lets the Class row through via staffC's
+    // school_tenant_isolation-satisfying STUDENT grant at branchA.
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Dual-Grant Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Dual-Grant Branch B' } });
+    const staffC = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-waitlist-dual-grant-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'waitlist-dual-grant-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'STUDENT', userId: staffC.id, schoolId: school.id, branchId: branchA.id },
+        { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffC.id, schoolId: school.id, branchId: branchB.id },
+      ],
+    });
+    const tokenStaffC = signAccessToken(staffC, [
+      { role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: branchA.id },
+      { role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id },
+    ]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Waitlist Dual-Grant Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenStaffC}`);
+    expect(res.status).toBe(403);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffC.id } });
     await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
   });
 

@@ -110,23 +110,39 @@ export class TenantAuthorizationService {
    * for every existing call site (all 10 call it with only 2 args today). When
    * the target itself is Branch-scoped (a real branch id, not null/omitted),
    * mirrors the exact three-way School/Branch structure this project's own RLS
-   * policies already use (e.g. `booking_staff_read`, `waitlist_entry_staff_read`
-   * — see that migration's own comment): a School-wide grant (branchId null)
-   * always passes; a Branch-scoped grant only passes if it matches. When the
-   * target is School-wide (`targetBranchId` explicitly `null`) OR omitted
-   * entirely, EVERY staff grant qualifies regardless of its own branch — this
-   * is deliberately the SAME no-filter behavior for both, not two different
-   * cases (a first draft of this comment/implementation treated `null` as
-   * "require a school-wide grant," which is backwards: a target with no branch
-   * of its own has nothing to mismatch against, so a Branch-scoped staff member
-   * must still be able to see it).
+   * policies already use (e.g. `class_tenant_isolation`, `booking_staff_read`,
+   * `waitlist_entry_staff_read` — see each migration's own comment): a
+   * School-wide grant (branchId null) always passes; a Branch-scoped grant
+   * only passes if it matches. When the target is School-wide (`targetBranchId`
+   * explicitly `null`) OR omitted entirely, EVERY staff grant qualifies
+   * regardless of its own branch — this is deliberately the SAME no-filter
+   * behavior for both, not two different cases (a first draft of this
+   * comment/implementation treated `null` as "require a school-wide grant,"
+   * which is backwards: a target with no branch of its own has nothing to
+   * mismatch against, so a Branch-scoped staff member must still be able to
+   * see it).
    *
-   * Without this, a Branch-A-scoped caller reading Branch-B-scoped data would
-   * still be correctly blocked by RLS at the actual row level — but as a
-   * *silent empty result*, not a clear 403, which is confusing (a genuinely
-   * empty list and a wrong-branch list look identical) and inconsistent with
-   * how ClassesService.update() already explicitly revalidates branch scope
-   * rather than leaning on RLS alone for the error itself.
+   * CORRECTED AFTER CI CAUGHT IT (Phase 22): an earlier version of this comment
+   * claimed a Branch-A-scoped caller reading Branch-B-scoped data would "still
+   * be correctly blocked by RLS — but as a silent empty result, not a clear
+   * 403." That was never actually traced against `class_tenant_isolation`'s own
+   * SQL, and CI's e2e run proved it wrong: for the common case (a caller
+   * holding exactly ONE RoleGrant at this School, at the wrong Branch),
+   * `class_tenant_isolation` already makes the target row itself invisible to
+   * that caller's `tx.class.findUnique` — the caller never gets past the
+   * `NotFoundException` upstream of this call at all, producing a 404, not an
+   * empty 200 and not a 403. That 404 is correct and intentional, consistent
+   * with `ClassesService.findOne()`'s own documented "RLS-blocked and
+   * genuinely-missing are indistinguishable by design" convention.
+   *
+   * What THIS check actually adds: a caller holding MULTIPLE RoleGrants at the
+   * School, where a grant OTHER than their Staff one (e.g. a School-wide grant,
+   * or a same-Branch grant under a non-Staff role like STUDENT) already
+   * satisfies the target row's own RLS visibility — so the caller reaches this
+   * method at all — while none of their Staff-role grants cover the target's
+   * Branch. Without this param, that caller's mismatched Staff grant alone
+   * would incorrectly authorize them. See the dual-grant e2e test in
+   * bookings.e2e-spec.ts for a concrete, proven instance of this.
    */
   async assertStaffAtSchool(userId: string, schoolId: string, targetBranchId?: string | null): Promise<void> {
     const grant = await this.prismaApp.withTenantContext(userId, (tx) =>
