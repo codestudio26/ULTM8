@@ -964,6 +964,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/classes/{id}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findAllForClass"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/waitlist": {
         parameters: {
             query?: never;
@@ -971,7 +987,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["WaitlistController_findAllForClass"];
         put?: never;
         post: operations["WaitlistController_joinWaitlist"];
         delete?: never;
@@ -2263,6 +2279,9 @@ export interface components {
             notifiedAt?: string | null;
             claimByDeadline?: string | null;
             claimedBookingId?: string | null;
+        };
+        WaitlistEntryListResponseDto: {
+            items: components["schemas"]["WaitlistEntryResponseDto"][];
         };
         CreateMinorDto: {
             firstName: string;
@@ -4378,6 +4397,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findAllForClass: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    WaitlistController_findAllForClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntryListResponseDto"];
                 };
             };
         };

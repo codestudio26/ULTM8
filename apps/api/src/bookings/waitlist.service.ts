@@ -194,6 +194,28 @@ export class WaitlistService {
     });
   }
 
+  /**
+   * GET /classes/{id}/waitlist — School Owner/Manager, Branch Staff, or Instructor.
+   * FOUND ON REVIEW (Phase 22, mirroring BookingsService.findAllForClass()'s own
+   * identical finding): never existed before, despite this phase's own
+   * `waitlist_entry_staff_read` RLS policy already anticipating exactly this read.
+   * Unpaginated, matching WaitlistEntryListResponseDto's own shape (no `nextCursor`)
+   * — a single Class's own waitlist queue is inherently small/bounded, unlike
+   * findMyBookings' own all-time cross-Class list.
+   */
+  async findAllForClass(callerId: string, classId: string) {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    // FOUND ON REVIEW: passes cls.branchId — same reasoning as
+    // BookingsService.findAllForClass()'s own identical fix.
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.waitlistEntry.findMany({ where: { classId }, orderBy: { position: 'asc' } }),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers — deliberately duplicated from BookingsService rather than
   // shared, given the two services' otherwise-different transaction shapes; see the

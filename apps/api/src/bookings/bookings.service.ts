@@ -244,6 +244,31 @@ export class BookingsService {
     );
   }
 
+  /**
+   * GET /classes/{id}/bookings — School Owner/Manager, Branch Staff, or Instructor
+   * (School Portal's own "who's booked into this Class" view). FOUND ON REVIEW
+   * (Phase 22, school-portal's own Booking admin screen): this endpoint never
+   * existed anywhere before, despite this phase's own `booking_staff_read` RLS
+   * policy (this migration's own header comment, §4 point 2) having been laid down
+   * specifically to support exactly this — a broad, SELECT-only Staff read,
+   * additive to Booking's own narrow owner-or-self policy. Completing that
+   * already-anticipated groundwork, not inventing new authorization shape.
+   */
+  async findAllForClass(callerId: string, classId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    // FOUND ON REVIEW: passes cls.branchId so a Branch-scoped Staff/Instructor
+    // caller outside this Class's own Branch gets a clear 403 instead of RLS
+    // silently returning an empty list (see assertStaffAtSchool's own comment
+    // on why this three-way check exists).
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate((args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }), cursor, limit),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------

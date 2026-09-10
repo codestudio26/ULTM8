@@ -104,7 +104,31 @@ export class TenantAuthorizationService {
    * against (see Membership/Transaction's own RLS policy comment in this phase's
    * migration for why raw rows are denied to these two roles entirely).
    */
-  async assertStaffAtSchool(userId: string, schoolId: string): Promise<void> {
+  /**
+   * `targetBranchId` — FOUND ON REVIEW (Phase 22, BookingsService/
+   * WaitlistService.findAllForClass()): optional, additive, backward-compatible
+   * for every existing call site (all 10 call it with only 2 args today). When
+   * the target itself is Branch-scoped (a real branch id, not null/omitted),
+   * mirrors the exact three-way School/Branch structure this project's own RLS
+   * policies already use (e.g. `booking_staff_read`, `waitlist_entry_staff_read`
+   * — see that migration's own comment): a School-wide grant (branchId null)
+   * always passes; a Branch-scoped grant only passes if it matches. When the
+   * target is School-wide (`targetBranchId` explicitly `null`) OR omitted
+   * entirely, EVERY staff grant qualifies regardless of its own branch — this
+   * is deliberately the SAME no-filter behavior for both, not two different
+   * cases (a first draft of this comment/implementation treated `null` as
+   * "require a school-wide grant," which is backwards: a target with no branch
+   * of its own has nothing to mismatch against, so a Branch-scoped staff member
+   * must still be able to see it).
+   *
+   * Without this, a Branch-A-scoped caller reading Branch-B-scoped data would
+   * still be correctly blocked by RLS at the actual row level — but as a
+   * *silent empty result*, not a clear 403, which is confusing (a genuinely
+   * empty list and a wrong-branch list look identical) and inconsistent with
+   * how ClassesService.update() already explicitly revalidates branch scope
+   * rather than leaning on RLS alone for the error itself.
+   */
+  async assertStaffAtSchool(userId: string, schoolId: string, targetBranchId?: string | null): Promise<void> {
     const grant = await this.prismaApp.withTenantContext(userId, (tx) =>
       tx.roleGrant.findFirst({
         where: {
@@ -112,6 +136,7 @@ export class TenantAuthorizationService {
           schoolId,
           role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] },
           revokedAt: null,
+          ...(targetBranchId ? { OR: [{ branchId: null }, { branchId: targetBranchId }] } : {}),
         },
         select: { id: true },
       }),

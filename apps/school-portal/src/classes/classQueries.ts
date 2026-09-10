@@ -23,6 +23,17 @@ export function useClasses(schoolId: string | null) {
   });
 }
 
+/** Single-Class fetch — for the Class detail page (Bookings/Waitlist admin),
+ * which needs the Class's own title/details without re-fetching the whole
+ * School's list. */
+export function useClass(classId: string | null) {
+  return useQuery({
+    queryKey: ['class', classId],
+    queryFn: () => unwrap(apiClient.GET('/v1/classes/{id}', { params: { path: { id: classId! } } })),
+    enabled: !!classId,
+  });
+}
+
 export function useCreateClass(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -256,6 +256,92 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(meRes.body.items.some((b: { id: string }) => b.id === res.body.id)).toBe(true);
   });
 
+  it('GET /classes/:id/bookings — School Owner and Branch Staff can see the roster; a Student or outsider cannot', async () => {
+    const ownerRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.items.some((b: { studentId: string }) => b.studentId === studentA.id)).toBe(true);
+
+    const staffRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenBranchStaff}`);
+    expect(staffRes.status).toBe(200);
+
+    const studentRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(studentRes.status).toBe(403);
+
+    // The outsider holds no RoleGrant anywhere at this School, so Class's own
+    // `class_tenant_isolation` RLS policy already filters the row out before
+    // assertStaffAtSchool ever runs — a 404, not a 403, matching this
+    // codebase's own established "RLS-blocked and genuinely-missing are
+    // indistinguishable by design" convention (ultm8-tenant-isolation §2).
+    const outsiderRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(outsiderRes.status).toBe(404);
+  });
+
+  it('GET /classes/:id/bookings — a Branch-scoped Staff member outside this Class\'s own Branch gets 403, not a silently-empty list; a genuinely empty Class returns 200 + []', async () => {
+    // Self-contained fixture — mirrors the established branch-scoping pattern
+    // already used in classes.e2e-spec.ts/instructors.e2e-spec.ts/
+    // timetable.e2e-spec.ts for the identical three-way RLS structure, not
+    // reused from this file's own beforeAll (which never set up a second
+    // Branch).
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Branch B' } });
+    const staffB = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-branch-b-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'branch-b-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffB.id, schoolId: school.id, branchId: branchB.id },
+    });
+    const tokenStaffB = signAccessToken(staffB, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id }]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    // Wrong Branch — RLS would silently return an empty list; the app-level
+    // assertStaffAtSchool(..., cls.branchId) check now turns that into a
+    // clear 403 instead (the specific gap this test closes).
+    const wrongBranchRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenStaffB}`);
+    expect(wrongBranchRes.status).toBe(403);
+
+    // A genuinely empty (but authorized) Class still returns 200 + [], not an
+    // error — School Owner has no Branch restriction, so this exercises the
+    // "authorized but nothing to show" path distinctly from the 403 above.
+    const emptyRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(emptyRes.status).toBe(200);
+    expect(emptyRes.body.items).toEqual([]);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffB.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+  });
+
   it('a duplicate active Booking for the same Student/Class is rejected — 409', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/classes/${classBasic.id}/book`)
@@ -458,6 +544,76 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       .post(`/v1/classes/${classFull.id}/waitlist`)
       .set('Authorization', `Bearer ${tokenStudentB}`);
     expect(duplicateJoin.status).toBe(409);
+  });
+
+  it('GET /classes/:id/waitlist — School Owner and Branch Staff can see the queue; a Student or outsider cannot', async () => {
+    const ownerRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.items.some((e: { studentId: string; status: string }) => e.studentId === studentB.id && e.status === 'WAITING')).toBe(
+      true,
+    );
+
+    const staffRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenBranchStaff}`);
+    expect(staffRes.status).toBe(200);
+
+    const studentRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenStudentB}`);
+    expect(studentRes.status).toBe(403);
+
+    // Same RLS-vs-404 reasoning as the bookings admin-read test above.
+    const outsiderRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(outsiderRes.status).toBe(404);
+  });
+
+  it('GET /classes/:id/waitlist — a Branch-scoped Staff member outside this Class\'s own Branch gets 403, not a silently-empty list', async () => {
+    // Same shared assertStaffAtSchool(..., cls.branchId) fix as the Bookings
+    // version of this test above — exercised here too since both endpoints
+    // were flagged as missing this coverage independently.
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Branch B' } });
+    const staffB = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-waitlist-branch-b-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'waitlist-branch-b-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffB.id, schoolId: school.id, branchId: branchB.id },
+    });
+    const tokenStaffB = signAccessToken(staffB, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id }]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Waitlist Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const wrongBranchRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenStaffB}`);
+    expect(wrongBranchRes.status).toBe(403);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffB.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
   });
 
   it('withdrawing frees the Student to rejoin the same Class\'s waitlist', async () => {

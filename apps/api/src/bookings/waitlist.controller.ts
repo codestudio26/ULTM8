@@ -1,10 +1,10 @@
-import { Controller, Delete, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { WaitlistService } from './waitlist.service';
-import { WaitlistEntryResponseDto } from './dto/waitlist-entry-response.dto';
+import { WaitlistEntryListResponseDto, WaitlistEntryResponseDto } from './dto/waitlist-entry-response.dto';
 import { BookingResponseDto } from './dto/booking-response.dto';
 
 @ApiTags('waitlist')
@@ -31,5 +31,11 @@ export class WaitlistController {
   @Post('waitlist/:id/claim')
   claim(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.waitlistService.claim(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: WaitlistEntryListResponseDto })
+  @Get('classes/:id/waitlist')
+  async findAllForClass(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return { items: await this.waitlistService.findAllForClass(user.sub, id) };
   }
 }
