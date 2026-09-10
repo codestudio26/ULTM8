@@ -4,7 +4,15 @@ import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from './branchQueries';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
- * apps/api/src/tenants/branches/dto/create-branch.dto.ts, re-verified before writing. */
+ * apps/api/src/tenants/branches/dto/create-branch.dto.ts, re-verified before writing.
+ *
+ * FOUND ON REVIEW (Phase 18): `null` (not `undefined`) means "the field was
+ * cleared" — UpdateBranchDto now accepts `null` on these fields to mean
+ * exactly that (this exact bug — a cleared field silently no-op'ing on save —
+ * has been live since Phase 3; see that DTO's own header comment for the full
+ * reasoning). `BranchesPage` maps `null` back to `undefined` for the CREATE
+ * path, where there's nothing to clear and CreateBranchDto doesn't accept
+ * `null` on these fields. */
 export function BranchFormModal({
   title,
   initial,
@@ -17,10 +25,10 @@ export function BranchFormModal({
   submitting: boolean;
   onSubmit: (values: {
     name: string;
-    address?: string;
-    contactPhone?: string;
-    timezone?: string;
-    currencyOverride?: string;
+    address?: string | null;
+    contactPhone?: string | null;
+    timezone?: string | null;
+    currencyOverride?: string | null;
   }) => Promise<void>;
   onClose: () => void;
 }) {
@@ -39,10 +47,10 @@ export function BranchFormModal({
     try {
       await onSubmit({
         name: form.name,
-        address: form.address || undefined,
-        contactPhone: form.contactPhone || undefined,
-        timezone: form.timezone || undefined,
-        currencyOverride: form.currencyOverride || undefined,
+        address: form.address || null,
+        contactPhone: form.contactPhone || null,
+        timezone: form.timezone || null,
+        currencyOverride: form.currencyOverride || null,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');

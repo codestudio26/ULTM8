@@ -15,6 +15,8 @@ import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { TimetablePage } from './timetable/TimetablePage';
+import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
+import { TransactionsPage } from './transactions/TransactionsPage';
 import { Shell } from './layout/Shell';
 
 function HomeRedirect() {
@@ -106,6 +108,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <TimetablePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/membership-plans"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MembershipPlansPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/transactions"
+        element={
+          <RequireAuth>
+            <Shell>
+              <TransactionsPage />
             </Shell>
           </RequireAuth>
         }

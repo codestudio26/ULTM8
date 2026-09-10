@@ -150,7 +150,7 @@ export function Table<T extends { id: string }>({ columns, rows }: { columns: Ta
 
 /* ---------------------------------------------------------------------- Feedback */
 
-export function Badge({ children, variant = 'default' }: { children: ReactNode; variant?: 'default' | 'accent' | 'success' }) {
+export function Badge({ children, variant = 'default' }: { children: ReactNode; variant?: 'default' | 'accent' | 'success' | 'danger' }) {
   const cls = variant === 'default' ? 'ultm8-badge' : `ultm8-badge ultm8-badge--${variant}`;
   return <span className={cls}>{children}</span>;
 }

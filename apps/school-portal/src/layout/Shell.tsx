@@ -15,6 +15,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
         { label: 'Instructors', to: '/instructors' },
         { label: 'Classes', to: '/classes' },
         { label: 'Timetable', to: '/timetable' },
+        { label: 'Membership Plans', to: '/membership-plans' },
+        { label: 'Transactions', to: '/transactions' },
       ]}
       footer={
         <Button variant="secondary" fullWidth onClick={logout}>

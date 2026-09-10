@@ -5,6 +5,7 @@ import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
+import { titleCase } from '../lib/text';
 import {
   useCreateTimetableSlot,
   useTimetableSlots,
@@ -66,7 +67,7 @@ export function TimetablePage() {
           daySlots.length === 0 ? null : (
             <Card key={day} className="ultm8-field">
               <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-                {day.charAt(0) + day.slice(1).toLowerCase()}
+                {titleCase(day)}
               </h2>
               <Table<TimetableSlotResponse>
                 rows={daySlots}

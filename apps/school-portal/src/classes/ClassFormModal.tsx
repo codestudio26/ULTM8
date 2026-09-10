@@ -193,21 +193,33 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
           />
         </Field>
-        <Field label="Booking cutoff" htmlFor="class-bookingEndAt">
+        <Field
+          label="Booking cutoff"
+          htmlFor="class-bookingEndAt"
+          hint={initial?.bookingEndAt ? "Can't be cleared from this form yet — set a new date instead." : undefined}
+        >
           <TextField
             type="datetime-local"
             value={form.bookingEndAt}
             onChange={(e) => setForm((f) => ({ ...f, bookingEndAt: e.target.value }))}
           />
         </Field>
-        <Field label="QR check-in window ends" htmlFor="class-qrAttendanceEndAt">
+        <Field
+          label="QR check-in window ends"
+          htmlFor="class-qrAttendanceEndAt"
+          hint={initial?.qrAttendanceEndAt ? "Can't be cleared from this form yet — set a new date instead." : undefined}
+        >
           <TextField
             type="datetime-local"
             value={form.qrAttendanceEndAt}
             onChange={(e) => setForm((f) => ({ ...f, qrAttendanceEndAt: e.target.value }))}
           />
         </Field>
-        <Field label="Refund/credit cutoff" htmlFor="class-refundFeeDate">
+        <Field
+          label="Refund/credit cutoff"
+          htmlFor="class-refundFeeDate"
+          hint={initial?.refundFeeDate ? "Can't be cleared from this form yet — set a new date instead." : undefined}
+        >
           <TextField
             type="datetime-local"
             value={form.refundFeeDate}

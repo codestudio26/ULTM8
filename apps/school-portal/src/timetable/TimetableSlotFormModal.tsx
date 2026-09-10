@@ -3,6 +3,7 @@ import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, Tex
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
+import { titleCase } from '../lib/text';
 import type { TimetableSlotResponse } from './timetableQueries';
 
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
@@ -156,7 +157,7 @@ export function TimetableSlotFormModal({
           <SelectField
             value={form.weekday}
             onChange={(e) => setForm((f) => ({ ...f, weekday: e.target.value as (typeof WEEKDAYS)[number] }))}
-            options={WEEKDAYS.map((w) => ({ value: w, label: w.charAt(0) + w.slice(1).toLowerCase() }))}
+            options={WEEKDAYS.map((w) => ({ value: w, label: titleCase(w) }))}
           />
         </Field>
         <Field label="Start time" htmlFor="slot-startTime" hint="24-hour clock, HH:mm">
@@ -175,10 +176,18 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))}
           />
         </Field>
-        <Field label="Break start" htmlFor="slot-breakStart">
+        <Field
+          label="Break start"
+          htmlFor="slot-breakStart"
+          hint={initial?.breakStart ? "Can't be cleared from this form yet — set a new time instead." : undefined}
+        >
           <TextField type="time" value={form.breakStart} onChange={(e) => setForm((f) => ({ ...f, breakStart: e.target.value }))} />
         </Field>
-        <Field label="Break end" htmlFor="slot-breakEnd">
+        <Field
+          label="Break end"
+          htmlFor="slot-breakEnd"
+          hint={initial?.breakEnd ? "Can't be cleared from this form yet — set a new time instead." : undefined}
+        >
           <TextField type="time" value={form.breakEnd} onChange={(e) => setForm((f) => ({ ...f, breakEnd: e.target.value }))} />
         </Field>
         <Field label="Status" htmlFor="slot-status">
