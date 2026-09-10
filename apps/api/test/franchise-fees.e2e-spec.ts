@@ -77,7 +77,24 @@ describeIfDb('FranchiseFeesModule — HTTP-level cross-tenant isolation and refu
     franchiseB = await superuser.franchise.create({ data: { id: randomUUID(), name: 'Franchise-Fees HTTP Franchise B' } });
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Franchise-Fees HTTP School', franchiseId: franchise.id } });
     paymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture Franchise Account', country: 'GB' },
+      // FOUND ON REVIEW: this fixture originally had no `stripeConnectedAccountId`,
+      // which meant EVERY refund attempt in this file hit
+      // FranchiseFeesService.refund()'s own "not fully onboarded with Stripe"
+      // 400 (thrown before the locked transaction's status/over-refund
+      // checks) regardless of what was actually being tested — the two
+      // status/amount-validation tests below passed for the wrong reason.
+      // Setting a fake-but-present id here lets requests reach those real
+      // guards; a separate, dedicated "not onboarded" test below exercises
+      // the omitted-id case on its own terms instead of as an accidental
+      // side effect.
+      data: {
+        id: randomUUID(),
+        franchiseId: franchise.id,
+        provider: 'STRIPE',
+        accountTitle: 'Fixture Franchise Account',
+        country: 'GB',
+        stripeConnectedAccountId: 'acct_fixture_fake_stripe_test',
+      },
     });
 
     const mkUser = (label: string) =>
@@ -221,5 +238,65 @@ describeIfDb('FranchiseFeesModule — HTTP-level cross-tenant isolation and refu
       .set('Authorization', `Bearer ${tokenFranchiseOwner}`)
       .send({ amount: 999999 });
     expect(res.status).toBe(400);
+  });
+
+  it('refunding against a PaymentAccount not yet onboarded with Stripe is rejected — 400, on its own terms (FOUND ON REVIEW, Phase 23)', async () => {
+    // A separate PaymentAccount/Franchise/Charge, deliberately WITHOUT
+    // stripeConnectedAccountId — proves FranchiseFeesService.refund()'s own
+    // "not fully onboarded" guard actually fires, rather than relying on the
+    // main fixture's PaymentAccount (which this file's own review fix above
+    // now onboards) to exercise it as a side effect.
+    const unonboardedFranchise = await superuser.franchise.create({ data: { id: randomUUID(), name: 'Franchise-Fees HTTP Unonboarded Franchise' } });
+    const unonboardedSchool = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Franchise-Fees HTTP Unonboarded School', franchiseId: unonboardedFranchise.id },
+    });
+    const unonboardedAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), franchiseId: unonboardedFranchise.id, provider: 'STRIPE', accountTitle: 'Unonboarded Account', country: 'GB' },
+    });
+    const unonboardedOwner = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `franchise-fees-http-unonboarded-owner-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'unonboarded-owner',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: unonboardedOwner.id, franchiseId: unonboardedFranchise.id },
+    });
+    const tokenUnonboardedOwner = signAccessToken(unonboardedOwner, [
+      { role: 'FRANCHISE_OWNER', franchiseId: unonboardedFranchise.id, schoolId: null, branchId: null },
+    ]);
+    const charge = await superuser.franchiseFeeCharge.create({
+      data: {
+        id: randomUUID(),
+        franchiseId: unonboardedFranchise.id,
+        schoolId: unonboardedSchool.id,
+        franchisePaymentAccountId: unonboardedAccount.id,
+        billingPeriodStart: new Date('2026-09-01'),
+        billingPeriodEnd: new Date('2026-09-30'),
+        feeBasisSnapshot: 'FLAT',
+        amount: 10000,
+        currency: 'USD',
+        status: 'SUCCESSFUL',
+        stripeInvoiceId: `in_fixture_${randomUUID()}`,
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/franchise-fee-charges/${charge.id}/refund`)
+      .set('Authorization', `Bearer ${tokenUnonboardedOwner}`)
+      .send({});
+    expect(res.status).toBe(400);
+
+    await superuser.franchiseFeeCharge.delete({ where: { id: charge.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: unonboardedOwner.id } });
+    await superuser.paymentAccount.delete({ where: { id: unonboardedAccount.id } });
+    await superuser.school.delete({ where: { id: unonboardedSchool.id } });
+    await superuser.franchise.delete({ where: { id: unonboardedFranchise.id } });
   });
 });

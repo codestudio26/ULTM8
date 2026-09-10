@@ -1,18 +1,11 @@
 import React from 'react';
-import { Badge, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useMembershipPlans } from '../membershipPlans/membershipPlanQueries';
 import { formatMoney } from '../lib/money';
-import { titleCase } from '../lib/text';
+import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { useTransactions, type TransactionResponse } from './transactionQueries';
-
-function statusBadge(status: string) {
-  if (status === 'SUCCESSFUL') return <Badge variant="success">Successful</Badge>;
-  if (status === 'DISPUTED') return <Badge variant="danger">Disputed</Badge>;
-  if (status === 'FAILED') return <Badge variant="accent">Failed</Badge>;
-  return <Badge>{titleCase(status)}</Badge>;
-}
 
 /** Read-only — see transactionQueries.ts's own header comment on why (no
  * refund/credit-restore/invoice-download endpoints exist yet this phase). */
@@ -57,7 +50,7 @@ export function TransactionsPage() {
                 render: (t) => t.studentId.slice(0, 8),
               },
               { key: 'amount', header: 'Amount', render: (t) => formatMoney(t.amount, t.currency) },
-              { key: 'status', header: 'Status', render: (t) => statusBadge(t.status) },
+              { key: 'status', header: 'Status', render: (t) => paymentStatusBadge(t.status) },
               { key: 'paymentMethod', header: 'Method', render: (t) => t.paymentMethod },
               { key: 'refunded', header: 'Refunded', render: (t) => (t.refundedAmount ? formatMoney(t.refundedAmount, t.currency) : '—') },
               { key: 'disputed', header: 'Disputed', render: (t) => (t.disputedAmount ? formatMoney(t.disputedAmount, t.currency) : '—') },

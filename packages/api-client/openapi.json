@@ -5176,15 +5176,6 @@
           "name": {
             "type": "string"
           },
-          "mobileNumber": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
           "activities": {
             "type": "array",
             "items": {
@@ -5196,23 +5187,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "defaultLanguage": {
-            "type": "string",
-            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1)."
-          },
-          "defaultCurrency": {
-            "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
-          },
-          "description": {
-            "type": "string"
-          },
-          "logoUrl": {
-            "type": "string"
-          },
-          "bannerUrl": {
-            "type": "string"
           },
           "feeModel": {
             "type": "string",
@@ -5229,6 +5203,40 @@
           "perHeadcountRate": {
             "type": "number",
             "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
+          },
+          "mobileNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).",
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

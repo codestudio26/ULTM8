@@ -444,6 +444,78 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
   });
 
+  it('PATCH /franchises/:id with explicit null clears an optional String field; omitting it leaves it unchanged (UpdateFranchiseDto, Phase 23)', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Nullable-Field Franchise', mobileNumber: '+15551234567', description: 'Original description' });
+    expect(createRes.status).toBe(201);
+    const franchiseId = createRes.body.id;
+    expect(createRes.body.mobileNumber).toBe('+15551234567');
+    expect(createRes.body.description).toBe('Original description');
+
+    // Omitting a field leaves it unchanged — proves this isn't accidentally
+    // clearing everything not present in the body.
+    const omitRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ description: 'Updated description, mobileNumber untouched' });
+    expect(omitRes.status).toBe(200);
+    expect(omitRes.body.mobileNumber).toBe('+15551234567');
+    expect(omitRes.body.description).toBe('Updated description, mobileNumber untouched');
+
+    // Explicit null clears — the specific gap UpdateFranchiseDto's own
+    // NULLABLE_ON_UPDATE widening fixes (a bare PartialType(CreateFranchiseDto)
+    // would 400 this at validation, or silently no-op it at the Prisma layer
+    // if validation let it through untyped).
+    const clearRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ mobileNumber: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.mobileNumber).toBeNull();
+    expect(clearRes.body.description).toBe('Updated description, mobileNumber untouched');
+
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
+
+  it('rejects an explicit flatFeeAmount/perHeadcountRate: null on PATCH /franchises/:id — 400, not a silent rate-clear (FOUND ON REVIEW, Phase 23)', async () => {
+    // These two fields are deliberately NOT widened to nullable in
+    // UpdateFranchiseDto (see that DTO's own header comment) — but
+    // class-validator's @IsOptional() treats an explicit null exactly like an
+    // omitted field, so nothing at the validation layer alone stopped a raw
+    // client from sending null and silently clearing a configured rate.
+    // FranchisesService.update() now rejects this explicitly — mirrors
+    // MembershipsService.updatePlan()'s identical classesIncluded precedent
+    // (see memberships.e2e-spec.ts's own 'rejects an explicit
+    // classesIncluded: null' test).
+    const createRes2 = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Reject-Null-Rate Franchise', flatFeeAmount: 5000 });
+    expect(createRes2.status).toBe(201);
+    const franchiseId2 = createRes2.body.id;
+
+    const flatRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId2}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ flatFeeAmount: null });
+    expect(flatRes.status).toBe(400);
+
+    const perHeadcountRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId2}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ perHeadcountRate: null });
+    expect(perHeadcountRes.status).toBe(400);
+
+    const unchanged = await superuser.franchise.findUniqueOrThrow({ where: { id: franchiseId2 } });
+    expect(unchanged.flatFeeAmount).toBe(5000);
+
+    await superuser.roleGrant.deleteMany({ where: { franchiseId: franchiseId2 } });
+    await superuser.franchise.delete({ where: { id: franchiseId2 } });
+  });
+
   it('GET /franchises/:id/schools returns only that Franchise\'s own Schools, and is Owner-only', async () => {
     const createFranchise = await request(app.getHttpServer())
       .post('/v1/franchises')
