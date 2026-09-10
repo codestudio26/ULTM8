@@ -1204,6 +1204,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/franchises/{id}/fee-charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchiseFeesController_findAllForFranchise"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/fee-charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchiseFeesController_findAllForSchool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchise-fee-charges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchiseFeesController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchise-fee-charges/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchiseFeesController_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1440,6 +1504,10 @@ export interface components {
              * @enum {string}
              */
             feeModel: "FLAT" | "PER_HEADCOUNT";
+            /** @description Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless. */
+            flatFeeAmount?: number;
+            /** @description Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless. */
+            perHeadcountRate?: number;
         };
         FranchiseResponseDto: {
             id: string;
@@ -1456,6 +1524,8 @@ export interface components {
             bannerUrl?: string | null;
             /** @enum {string} */
             feeModel: "FLAT" | "PER_HEADCOUNT";
+            flatFeeAmount?: number | null;
+            perHeadcountRate?: number | null;
             createdAt: string;
             updatedAt: string;
             accessToken?: string;
@@ -1484,6 +1554,10 @@ export interface components {
              * @enum {string}
              */
             feeModel: "FLAT" | "PER_HEADCOUNT";
+            /** @description Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless. */
+            flatFeeAmount?: number;
+            /** @description Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless. */
+            perHeadcountRate?: number;
         };
         CreateClassDto: {
             /** @description Branch to scope this Class to. Omit for a School-wide Class. */
@@ -2338,6 +2412,36 @@ export interface components {
             token: string;
             lastSeenAt: string;
             createdAt: string;
+        };
+        FranchiseFeeChargeResponseDto: {
+            id: string;
+            franchiseId: string;
+            schoolId: string;
+            franchisePaymentAccountId: string;
+            billingPeriodStart: string;
+            billingPeriodEnd: string;
+            /** @enum {string} */
+            feeBasisSnapshot: "FLAT" | "PER_HEADCOUNT";
+            amount: number;
+            currency?: string | null;
+            activeStudentCountSnapshot?: number | null;
+            /** @enum {string} */
+            status: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+            stripeInvoiceId?: string | null;
+            stripeSubscriptionId?: string | null;
+            refundedAmount?: number | null;
+            disputedAmount?: number | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        FranchiseFeeChargeListResponseDto: {
+            items: components["schemas"]["FranchiseFeeChargeResponseDto"][];
+            /** @description Cursor for the next page, or null if this is the last page. */
+            nextCursor?: string | null;
+        };
+        RefundFranchiseFeeChargeDto: {
+            /** @description Minor-unit (e.g. cents). Omit to refund the full remaining unrefunded balance. */
+            amount?: number;
         };
     };
     responses: never;
@@ -4621,6 +4725,102 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    FranchiseFeesController_findAllForFranchise: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseFeeChargeListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchiseFeesController_findAllForSchool: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseFeeChargeListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchiseFeesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseFeeChargeResponseDto"];
+                };
+            };
+        };
+    };
+    FranchiseFeesController_refund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundFranchiseFeeChargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseFeeChargeResponseDto"];
+                };
             };
         };
     };

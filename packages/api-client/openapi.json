@@ -3979,6 +3979,196 @@
           }
         ]
       }
+    },
+    "/v1/franchises/{id}/fee-charges": {
+      "get": {
+        "operationId": "FranchiseFeesController_findAllForFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/fee-charges": {
+      "get": {
+        "operationId": "FranchiseFeesController_findAllForSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchise-fee-charges/{id}": {
+      "get": {
+        "operationId": "FranchiseFeesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchise-fee-charges/{id}/refund": {
+      "post": {
+        "operationId": "FranchiseFeesController_refund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundFranchiseFeeChargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -4757,6 +4947,14 @@
               "PER_HEADCOUNT"
             ],
             "default": "FLAT"
+          },
+          "flatFeeAmount": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless."
+          },
+          "perHeadcountRate": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
           }
         },
         "required": [
@@ -4822,6 +5020,14 @@
               "FLAT",
               "PER_HEADCOUNT"
             ]
+          },
+          "flatFeeAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "perHeadcountRate": {
+            "type": "number",
+            "nullable": true
           },
           "createdAt": {
             "type": "string"
@@ -4913,6 +5119,14 @@
               "PER_HEADCOUNT"
             ],
             "default": "FLAT"
+          },
+          "flatFeeAmount": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless."
+          },
+          "perHeadcountRate": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
           }
         }
       },
@@ -7790,6 +8004,120 @@
           "lastSeenAt",
           "createdAt"
         ]
+      },
+      "FranchiseFeeChargeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "franchisePaymentAccountId": {
+            "type": "string"
+          },
+          "billingPeriodStart": {
+            "type": "string"
+          },
+          "billingPeriodEnd": {
+            "type": "string"
+          },
+          "feeBasisSnapshot": {
+            "type": "string",
+            "enum": [
+              "FLAT",
+              "PER_HEADCOUNT"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "activeStudentCountSnapshot": {
+            "type": "number",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUCCESSFUL",
+              "PENDING",
+              "FAILED",
+              "REFUNDED",
+              "DISPUTED"
+            ]
+          },
+          "stripeInvoiceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "stripeSubscriptionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "disputedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "franchiseId",
+          "schoolId",
+          "franchisePaymentAccountId",
+          "billingPeriodStart",
+          "billingPeriodEnd",
+          "feeBasisSnapshot",
+          "amount",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "FranchiseFeeChargeListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseFeeChargeResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RefundFranchiseFeeChargeDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents). Omit to refund the full remaining unrefunded balance."
+          }
+        }
       }
     }
   }
