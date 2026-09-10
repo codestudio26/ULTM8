@@ -21,6 +21,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
+import { StripeClientService } from '../src/payments/stripe-client.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_JOBS = process.env.DATABASE_URL_JOBS;
@@ -50,7 +51,15 @@ describeIfDb('stripe-webhook-processing job', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [StripeWebhookProcessingProcessor, PrismaJobsService],
+      // FOUND ON REVIEW: StripeWebhookProcessingProcessor gained a StripeClientService
+      // dependency this phase (invoice.paid/invoice.payment_failed need to retrieve the
+      // Invoice via stripe.invoices.retrieve()) — this module wasn't updated at the same
+      // time, which broke Nest DI for the whole suite, not just the new test. No mock
+      // needed: none of these tests exercise a path that actually calls Stripe, same
+      // "plain provider, no live key required until a method that needs one is actually
+      // invoked" pattern franchise-fee-usage-reporting.e2e-spec.ts's own module already
+      // uses for the same service.
+      providers: [StripeWebhookProcessingProcessor, PrismaJobsService, StripeClientService],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
   });
