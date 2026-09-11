@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { sessionStorageTokenStore, decodeJwtPayload } from '@ultm8/auth';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -34,6 +35,7 @@ function readClaims(): { accessToken: string | null; claims: JwtClaims | null } 
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [{ accessToken, claims }, setState] = useState(readClaims);
+  const queryClient = useQueryClient();
 
   const applyToken = useCallback((token: string) => {
     sessionStorageTokenStore.set(token);
@@ -51,7 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     sessionStorageTokenStore.clear();
     setState({ accessToken: null, claims: null });
-  }, []);
+    // FOUND ON REVIEW (Phase 24, surfaced by the new Notifications inbox —
+    // the first query in this codebase keyed with no per-caller scoping
+    // identifier at all, e.g. `['notifications']` vs. every other query's
+    // `['branches', schoolId]`-shaped key): without this, react-query's
+    // cache outlives logout, so on a shared/front-desk machine a second
+    // Staff member logging in right after (no full page reload happens on
+    // logout) would briefly see the FIRST caller's cached data before the
+    // background refetch replaces it. `clear()` drops every cached query,
+    // not just Notifications' — closes the whole class of gap, not one
+    // instance of it.
+    queryClient.clear();
+  }, [queryClient]);
 
   const value = useMemo(
     () => ({ accessToken, claims, login, logout, setAccessToken: applyToken }),
