@@ -22,6 +22,7 @@ import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
 import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
+import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
 function HomeRedirect() {
@@ -183,6 +184,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <FranchiseDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <RequireAuth>
+            <Shell>
+              <NotificationsPage />
             </Shell>
           </RequireAuth>
         }
