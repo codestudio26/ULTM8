@@ -4257,6 +4257,63 @@
           }
         ]
       }
+    },
+    "/v1/platform-admin/auth/exchange": {
+      "post": {
+        "operationId": "PlatformAdminAuthController_exchange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeCognitoTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-auth"
+        ]
+      }
+    },
+    "/v1/platform-admin/auth/me": {
+      "get": {
+        "operationId": "PlatformAdminAuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -8270,6 +8327,57 @@
             "description": "Minor-unit (e.g. cents). Omit to refund the full remaining unrefunded balance."
           }
         }
+      },
+      "ExchangeCognitoTokenDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Cognito-issued ID token (JWT) from the frontend's own Hosted-UI/PKCE token exchange."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "AdminAuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
+      },
+      "AdminMeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "subRole"
+        ]
       }
     }
   }

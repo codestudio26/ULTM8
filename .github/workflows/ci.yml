@@ -68,6 +68,22 @@ jobs:
       # construction (verified empirically) — a fake key is safe here, same as
       # STRIPE_WEBHOOK_SECRET above.
       STRIPE_SECRET_KEY: sk_test_ci_dummy_not_a_real_stripe_key
+      # Phase 25 — PlatformAdminJwtStrategy's constructor throws at boot if this is
+      # unset (same fail-loudly convention JwtStrategy already established for
+      # JWT_ACCESS_SECRET above) — and PlatformAdminModule is registered in AppModule,
+      # so EVERY e2e spec in this suite bootstraps it, not just
+      # platform-admin-auth.e2e-spec.ts. Missing here would crash the entire suite at
+      # boot, not just skip one file — caught before that happened, not after, by
+      # tracing PlatformAdminJwtStrategy's own constructor against this env block
+      # directly rather than assuming CI would just skip gracefully the way a
+      # describeIfDb-gated spec does. No real Cognito User Pool needed for this
+      # secret specifically — it signs/verifies ULTM8's OWN token, issued only after
+      # a Cognito token already passed verification (see CognitoTokenVerifierService's
+      # own header comment for why COGNITO_USER_POOL_ID/COGNITO_CLIENT_ID are handled
+      # differently — that verifier's own tests substitute a stub instead, since
+      # there's no equivalent "just agree on a shared secret" trick for verifying a
+      # token against a real AWS-hosted JWKS).
+      PLATFORM_ADMIN_JWT_SECRET: ci-test-platform-admin-secret-not-for-production-use-32-chars-min
 
     steps:
       - uses: actions/checkout@v7
