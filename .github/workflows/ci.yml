@@ -48,6 +48,10 @@ jobs:
       # and Decision 94 for why this is a separate role, not a reuse of ultm8_app/
       # ultm8_jobs above).
       DATABASE_URL_DISCOVERY: postgresql://ultm8_discovery:changeme@localhost:5432/ultm8?schema=public
+      # Phase 26 — PlatformAdminModule's own dedicated role for cross-tenant reads +
+      # AuditLogEntry writes (see the Phase 26 migration and its own header comment
+      # for why this is a separate role, not a reuse of ultm8_app/ultm8_discovery).
+      DATABASE_URL_PLATFORM_ADMIN: postgresql://ultm8_platform_admin:changeme@localhost:5432/ultm8?schema=public
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
       # Phase 8 — payments.e2e-spec.ts gates on this being set; without it the suite

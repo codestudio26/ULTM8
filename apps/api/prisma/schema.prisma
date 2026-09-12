@@ -263,6 +263,66 @@ model AdminUser {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   revokedAt DateTime? // access revoked immediately on offboarding (§4.4)
+
+  auditLogEntries AuditLogEntry[]
+}
+
+/// Every Platform Admin action that touches tenant data (ultm8-tenant-isolation
+/// SKILL.md §6, Spec §4.7): "who, when, what, on which tenant." Immutable by design —
+/// UPDATE/DELETE are revoked at the database layer for every role, including the
+/// break-glass credential (see this phase's own migration). Range-partitioned by
+/// month on createdAt from the start (§6, §11.6) — see that same migration for why
+/// this means `id` is NOT independently unique at the database level (Postgres
+/// requires a partitioned table's primary key to include the partition key), only
+/// the composite (id, createdAt) is — acceptable here since a UUID's own collision
+/// probability makes `id` unique in practice, and this table's real access pattern is
+/// filtered `findMany` (by actor/target/time-range), never `findUnique` by bare id.
+///
+/// Exact retention period is a compliance/legal input, explicitly left open by the
+/// spec (§12.2) — deliberately NOT invented here; no deletion path exists on this
+/// table at all yet, which is the correct default for "not yet decided," not a gap.
+///
+/// targetType/targetId are a deliberate polymorphic reference (School, Franchise,
+/// PaymentAccount, User — whatever the action actually touched), NOT a real foreign
+/// key — Postgres has no single-column FK that can point at different tables per row,
+/// and an audit entry must remain permanently readable even if the target row is
+/// later deleted, so no FK/cascade relationship exists to it at all (validated at the
+/// application layer only). schoolId/franchiseId are a separate, direct "on which
+/// tenant" reference — both nullable, whichever applies (mirrors RoleGrant's own
+/// nullable-scope convention) — kept distinct from targetType/targetId specifically
+/// so "which tenant" can be queried/filtered directly without joining through the
+/// polymorphic reference first.
+model AuditLogEntry {
+  id String @default(uuid())
+
+  adminUserId String
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id])
+
+  /// A short action label (e.g. "VIEW_SCHOOL") — plain string, not a DB enum: the
+  /// spec's own confirmed examples ("viewing/editing another tenant's records,
+  /// viewing/rotating a payment credential, impersonating a tenant user") are
+  /// illustrative, not an exhaustive closed set, and a DB enum would need a migration
+  /// for every future Platform Admin capability. Disciplined string constants at each
+  /// call site, not a free-for-all — see AuditLogService's own header comment.
+  action String
+
+  targetType String
+  targetId   String
+
+  schoolId    String?
+  franchiseId String?
+
+  /// Freeform structured context (e.g. what changed) — deliberately optional; a
+  /// read-only "viewed a record" action has nothing to put here.
+  details Json?
+
+  createdAt DateTime @default(now()) // the partition key
+
+  @@id([id, createdAt])
+  @@index([adminUserId, createdAt])
+  @@index([schoolId, createdAt])
+  @@index([franchiseId, createdAt])
+  @@index([targetType, targetId, createdAt])
 }
 
 /// The sole source of truth for who holds what role, where (domain-rules §3, §6.1).

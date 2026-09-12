@@ -4314,6 +4314,41 @@
           }
         ]
       }
+    },
+    "/v1/platform-admin/schools/{id}": {
+      "get": {
+        "operationId": "PlatformAdminSchoolsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
