@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { CognitoTokenVerifierService } from './cognito-token-verifier.service';
@@ -48,7 +48,24 @@ export class PlatformAdminAuthService {
    * boundary (see PlatformAdminModule's own header comment).
    */
   async exchangeCognitoToken(idToken: string): Promise<string> {
-    const { sub } = await this.cognitoVerifier.verify(idToken);
+    // FOUND ON REVIEW (CI, not a manual review pass — a real 500 the e2e suite's own
+    // "verification itself fails" test caught): CognitoTokenVerifierService's own
+    // header comment claims a verification failure "surface[s] as a generic 401
+    // rather than distinguishing failure reasons back to the caller" — but nothing
+    // here actually implemented that. `aws-jwt-verify` throws a plain Error (not an
+    // HttpException) on bad signature/expiry/wrong-pool, which NestJS's default
+    // handling maps to 500, not 401. Caught here and converted explicitly.
+    // `ServiceUnavailableException` (CognitoTokenVerifierService's own "not
+    // configured" case) is deliberately passed through unchanged, not swallowed into
+    // 401 — that's a real ops/config problem, not "this token is invalid," and
+    // should stay distinguishable in logs/monitoring.
+    let sub: string;
+    try {
+      ({ sub } = await this.cognitoVerifier.verify(idToken));
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      throw new UnauthorizedException('Could not verify the provided token.');
+    }
 
     const admin = await this.prismaApp.adminUser.findUnique({
       where: { ssoSubject: sub },
