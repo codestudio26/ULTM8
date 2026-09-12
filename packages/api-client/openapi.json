@@ -4349,6 +4349,41 @@
           }
         ]
       }
+    },
+    "/v1/platform-admin/franchises/{id}": {
+      "get": {
+        "operationId": "PlatformAdminFranchisesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
