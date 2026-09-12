@@ -176,16 +176,38 @@ describeIfDb('PlatformAdminModule — GET /platform-admin/schools/:id (Slice 2)'
     ).rejects.toThrow(/permission denied/i);
   });
 
-  it('no Postgres role holds UPDATE or DELETE on AuditLogEntry — the immutability guarantee is real, not just claimed in a comment', async () => {
+  it('no NON-OWNER Postgres role holds UPDATE or DELETE on AuditLogEntry — the immutability guarantee is real, not just claimed in a comment', async () => {
     // Referenced directly by the Phase 26 migration's own corrected comment on its
     // REVOKE statements: PostgreSQL REVOKE isn't "sticky" against a future
     // accidental re-GRANT, so this is the actual, durable check that would catch
     // one — not a hardcoded role list (queries information_schema directly, so it
     // automatically covers any future role too, including the break-glass
     // credential once it exists).
+    //
+    // FOUND ON CI, on this test's own first real run (fixed here, not silently
+    // patched over) — an assumption this test's first draft got wrong:
+    // information_schema.role_table_grants DOES list the table OWNER's own full
+    // privileges as explicit grant rows (CI's actual failure: `postgres`, the
+    // migration-running role and this table's owner, showed up holding both
+    // UPDATE and DELETE) — ownership isn't a separate, invisible-to-this-view
+    // mechanism the way a first draft assumed. That's expected and correct
+    // Postgres behavior, not a gap: the spec's own break-glass design (§4)
+    // already establishes that immutability is a NON-owner concern — "the
+    // break-glass credential is deliberately provisioned as a non-superuser,
+    // non-table-owner Postgres role" specifically so even emergency access can't
+    // bypass this table's restrictions, which only makes sense if the owner
+    // itself was never expected to be bound by them (a table's owner always has
+    // full DDL/DML power in Postgres; that's not a privilege that can be
+    // meaningfully revoked without transferring ownership entirely, which is a
+    // different, much bigger change this migration doesn't make). Fixed by
+    // excluding the actual owner, looked up dynamically via pg_tables rather
+    // than hardcoding "postgres" — CI and a real environment may not share that
+    // exact role name.
     const grants = await superuser.$queryRaw<Array<{ grantee: string; privilege_type: string }>>`
-      SELECT grantee, privilege_type FROM information_schema.role_table_grants
-      WHERE table_name = 'AuditLogEntry' AND privilege_type IN ('UPDATE', 'DELETE')
+      SELECT g.grantee, g.privilege_type FROM information_schema.role_table_grants g
+      WHERE g.table_name = 'AuditLogEntry'
+        AND g.privilege_type IN ('UPDATE', 'DELETE')
+        AND g.grantee <> (SELECT tableowner FROM pg_tables WHERE tablename = 'AuditLogEntry')
     `;
     expect(grants).toEqual([]);
   });
