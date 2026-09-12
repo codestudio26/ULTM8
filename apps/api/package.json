@@ -13,7 +13,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json --forceExit",
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "export:openapi": "ts-node -r tsconfig-paths/register scripts/export-openapi.ts"
+    "export:openapi": "ts-node -r tsconfig-paths/register scripts/export-openapi.ts",
+    "bootstrap:admin-user": "ts-node -r tsconfig-paths/register scripts/bootstrap-admin-user.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.1128.0",
@@ -27,6 +28,7 @@
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/throttler": "^6.2.1",
     "@prisma/client": "^5.20.0",
+    "aws-jwt-verify": "^5.2.1",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.34.0",
     "class-transformer": "^0.5.1",

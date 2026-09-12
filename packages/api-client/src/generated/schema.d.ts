@@ -1284,6 +1284,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform-admin/auth/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminAuthController_exchange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminAuthController_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2461,6 +2493,20 @@ export interface components {
         RefundFranchiseFeeChargeDto: {
             /** @description Minor-unit (e.g. cents). Omit to refund the full remaining unrefunded balance. */
             amount?: number;
+        };
+        ExchangeCognitoTokenDto: {
+            /** @description Cognito-issued ID token (JWT) from the frontend's own Hosted-UI/PKCE token exchange. */
+            idToken: string;
+        };
+        AdminAuthResponseDto: {
+            accessToken: string;
+        };
+        AdminMeResponseDto: {
+            id: string;
+            email: string;
+            name: string;
+            /** @enum {string} */
+            subRole: "SUPPORT" | "BILLING_PAYMENTS_OPS" | "FULL_ADMIN";
         };
     };
     responses: never;
@@ -4885,6 +4931,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseFeeChargeResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminAuthController_exchange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExchangeCognitoTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuthResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminAuthController_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMeResponseDto"];
                 };
             };
         };

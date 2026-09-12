@@ -22,6 +22,7 @@ import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FranchiseFeesModule } from './franchise-fees/franchise-fees.module';
 import { JobsModule } from './jobs/jobs.module';
+import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { JobsModule } from './jobs/jobs.module';
     NotificationsModule,
     FranchiseFeesModule,
     JobsModule,
+    PlatformAdminModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
