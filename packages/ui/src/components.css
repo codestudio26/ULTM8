@@ -1,4 +1,10 @@
-/* Component styles — see tokens.css for the values referenced throughout. */
+/* Component styles — see tokens.css for the values referenced throughout.
+ *
+ * State coverage per DESIGN.md "Components": every interactive element here defines
+ * default / hover (pointer-only) / pressed (:active, exists without hover — the
+ * primary feedback on touch) / focus-visible (global, see tokens.css) / disabled /
+ * loading / error, and a minimum 44×44px touch target regardless of visual size.
+ */
 
 /* Button */
 .ultm8-btn {
@@ -6,38 +12,46 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-height: 44px;
   font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-md);
   border: 1px solid transparent;
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-6);
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
   white-space: nowrap;
 }
 .ultm8-btn:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
+.ultm8-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
 .ultm8-btn--primary {
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--fill-accent);
+  color: var(--on-accent);
 }
 .ultm8-btn--primary:not(:disabled):hover {
-  background: var(--color-accent-hover);
+  background: var(--fill-accent-hover);
 }
 .ultm8-btn--secondary {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text);
+  background: var(--surface-0);
+  border-color: var(--border);
+  color: var(--text-primary);
 }
 .ultm8-btn--secondary:not(:disabled):hover {
-  border-color: var(--color-accent);
+  border-color: var(--fill-accent);
 }
 .ultm8-btn--danger {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
+  background: var(--bg-danger);
+  color: var(--text-danger);
 }
 .ultm8-btn--danger:not(:disabled):hover {
   opacity: 0.85;
@@ -54,49 +68,56 @@
   margin-bottom: var(--space-4);
 }
 .ultm8-field__label {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text);
+  color: var(--text-primary);
 }
 .ultm8-field__hint {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  color: var(--text-muted);
 }
 .ultm8-field__error {
-  font-size: var(--font-size-xs);
-  color: var(--color-danger);
+  font-size: var(--font-size-caption);
+  color: var(--text-danger);
 }
 .ultm8-input,
 .ultm8-select {
+  min-height: 44px;
   font-family: var(--font-sans);
-  font-size: var(--font-size-md);
-  color: var(--color-text);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  font-size: var(--font-size-input); /* never smaller — avoids iOS auto-zoom on focus */
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: var(--space-3);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--dur-fast) var(--ease-out);
   width: 100%;
 }
 .ultm8-input:focus,
 .ultm8-select:focus {
-  border-color: var(--color-accent);
+  border-color: var(--fill-accent);
 }
 .ultm8-input[aria-invalid='true'],
 .ultm8-select[aria-invalid='true'] {
-  border-color: var(--color-danger);
+  border-color: var(--text-danger);
 }
 .ultm8-checkbox {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--font-size-sm);
+  min-height: 44px;
+  font-size: var(--font-size-footnote);
+}
+.ultm8-checkbox input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--fill-accent);
 }
 
 /* Card */
 .ultm8-card {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   box-shadow: var(--shadow-sm);
@@ -112,32 +133,36 @@
   flex-wrap: wrap;
 }
 .ultm8-page-header__title {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-heading-md);
   font-weight: var(--font-weight-semibold);
   margin: 0 0 var(--space-1);
 }
 .ultm8-page-header__subtitle {
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-footnote);
 }
 
-/* Table */
+/* Table — horizontally scrollable so a wide table never overflows the page
+   (DESIGN.md "Layout & spacing": no horizontal overflow at any breakpoint). */
+.ultm8-table-scroll {
+  overflow-x: auto;
+}
 .ultm8-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-footnote);
 }
 .ultm8-table th {
   text-align: left;
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   font-weight: var(--font-weight-medium);
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
 }
 .ultm8-table td {
   padding: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
 }
 .ultm8-table tr:last-child td {
   border-bottom: none;
@@ -149,30 +174,30 @@
   align-items: center;
   padding: var(--space-1) var(--space-3);
   border-radius: 999px;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
+  background: var(--surface-0);
+  color: var(--text-secondary);
 }
 .ultm8-badge--accent {
-  background: rgba(31, 94, 255, 0.1);
-  color: var(--color-accent);
+  background: var(--bg-accent);
+  color: var(--text-accent);
 }
 .ultm8-badge--success {
-  background: var(--color-success-bg);
-  color: var(--color-success);
+  background: var(--bg-success);
+  color: var(--text-success);
 }
 .ultm8-badge--danger {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
+  background: var(--bg-danger);
+  color: var(--text-danger);
 }
 
 /* Spinner */
 .ultm8-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid var(--color-border);
-  border-top-color: var(--color-accent);
+  border: 2px solid var(--border);
+  border-top-color: var(--fill-accent);
   border-radius: 50%;
   animation: ultm8-spin 700ms linear infinite;
 }
@@ -185,27 +210,27 @@
 /* Empty / error states */
 .ultm8-state {
   text-align: center;
-  padding: var(--space-8) var(--space-5);
-  color: var(--color-text-muted);
+  padding: var(--space-16) var(--space-6);
+  color: var(--text-secondary);
 }
 .ultm8-state__title {
-  color: var(--color-text);
+  color: var(--text-primary);
   font-weight: var(--font-weight-medium);
   margin: 0 0 var(--space-2);
 }
 .ultm8-banner {
   border-radius: var(--radius-md);
   padding: var(--space-4);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-footnote);
   margin-bottom: var(--space-4);
 }
 .ultm8-banner--error {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
+  background: var(--bg-danger);
+  color: var(--text-danger);
 }
 .ultm8-banner--success {
-  background: var(--color-success-bg);
-  color: var(--color-success);
+  background: var(--bg-success);
+  color: var(--text-success);
 }
 
 /* App shell */
@@ -216,40 +241,47 @@
 .ultm8-shell__sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
-  padding: var(--space-5);
+  background: var(--surface-0);
+  border-right: 1px solid var(--border);
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 .ultm8-shell__brand {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-heading-sm);
   font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--space-5);
+  margin: 0 0 var(--space-6);
 }
 .ultm8-shell__nav-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   text-decoration: none;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-medium);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 .ultm8-shell__nav-link:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+.ultm8-shell__nav-link:active {
+  background: var(--surface-2);
 }
 .ultm8-shell__nav-link--active {
-  background: var(--color-bg);
-  color: var(--color-accent);
+  background: var(--surface-1);
+  color: var(--text-accent);
   box-shadow: var(--shadow-sm);
 }
 .ultm8-shell__main {
   flex: 1;
-  padding: var(--space-7);
+  padding: var(--space-12);
   max-width: 1040px;
 }
 .ultm8-shell__footer-action {
@@ -262,31 +294,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface);
-  padding: var(--space-5);
+  background: var(--surface-0);
+  padding: var(--space-6);
 }
 .ultm8-auth-card {
   width: 100%;
   max-width: 420px;
 }
 .ultm8-auth-card__title {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-heading-md);
   font-weight: var(--font-weight-semibold);
   margin: 0 0 var(--space-2);
 }
 .ultm8-auth-card__subtitle {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-footnote);
   margin: 0 0 var(--space-6);
 }
 .ultm8-auth-card__footer {
-  margin-top: var(--space-5);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  margin-top: var(--space-6);
+  font-size: var(--font-size-footnote);
+  color: var(--text-secondary);
   text-align: center;
 }
 .ultm8-auth-card__footer a {
-  color: var(--color-accent);
+  color: var(--text-accent);
   text-decoration: none;
 }
 
@@ -294,15 +326,15 @@
 .ultm8-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(20, 20, 26, 0.4);
+  background: rgba(21, 23, 25, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-5);
+  padding: var(--space-6);
   z-index: 100;
 }
 .ultm8-modal {
-  background: var(--color-bg);
+  background: var(--surface-1);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: var(--space-6);
@@ -310,19 +342,20 @@
   max-width: 480px;
 }
 
-/* Responsive */
-@media (max-width: 720px) {
+/* Responsive — DESIGN.md "Layout & spacing": phone (default) / tablet ≥768px /
+   desktop ≥1024px, same components at every breakpoint, not separate designs. */
+@media (max-width: 767px) {
   .ultm8-shell {
     flex-direction: column;
   }
   .ultm8-shell__sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--border);
     flex-direction: row;
     overflow-x: auto;
   }
   .ultm8-shell__main {
-    padding: var(--space-5);
+    padding: var(--space-6);
   }
 }

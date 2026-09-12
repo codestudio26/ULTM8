@@ -127,24 +127,30 @@ export interface TableColumn<T> {
 
 export function Table<T extends { id: string }>({ columns, rows }: { columns: TableColumn<T>[]; rows: T[] }) {
   return (
-    <table className="ultm8-table">
-      <thead>
-        <tr>
-          {columns.map((col) => (
-            <th key={col.key}>{col.header}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.id}>
+    // Scrolls horizontally within itself rather than letting a wide table push the
+    // page wider (DESIGN.md "Layout & spacing": no horizontal overflow at any
+    // breakpoint — this is the one place in this component set a table's natural
+    // column count can realistically exceed a phone viewport).
+    <div className="ultm8-table-scroll">
+      <table className="ultm8-table">
+        <thead>
+          <tr>
             {columns.map((col) => (
-              <td key={col.key}>{col.render(row)}</td>
+              <th key={col.key}>{col.header}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              {columns.map((col) => (
+                <td key={col.key}>{col.render(row)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

@@ -31,16 +31,14 @@ export function TimetablePage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<TimetableSlotResponse | null>(null);
 
-  if (!schoolId) return null;
-  if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load the Timetable.'} />;
-
+  // Must run on every render regardless of loading/error state — a hook can never
+  // sit after a conditional early return (Rules of Hooks). This used to come after
+  // the isLoading/error returns below, so it only ran once data existed: the moment
+  // a render's hook count differed from the previous one, React threw "Rendered
+  // more hooks than during the previous render" with no error boundary anywhere in
+  // the tree to catch it — real users saw a blank white screen instead of the
+  // loading spinner or even React's own error overlay.
   const slots = data?.items ?? [];
-  const branches = branchData?.items ?? [];
-  const instructors = instructorData?.items ?? [];
-
-  // Recomputed only when `slots` actually changes — not on every render (e.g.
-  // toggling the Add/Edit modal open/closed).
   const byWeekday = useMemo(
     () =>
       WEEKDAY_ORDER.map((day) => ({
@@ -49,6 +47,13 @@ export function TimetablePage() {
       })),
     [slots],
   );
+
+  if (!schoolId) return null;
+  if (isLoading) return <Spinner />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load the Timetable.'} />;
+
+  const branches = branchData?.items ?? [];
+  const instructors = instructorData?.items ?? [];
 
   return (
     <>
