@@ -9,6 +9,8 @@ import { CognitoTokenVerifierService } from './cognito-token-verifier.service';
 import { AuditLogService } from './audit-log.service';
 import { PlatformAdminSchoolsController } from './platform-admin-schools.controller';
 import { PlatformAdminSchoolsService } from './platform-admin-schools.service';
+import { PlatformAdminFranchisesController } from './platform-admin-franchises.controller';
+import { PlatformAdminFranchisesService } from './platform-admin-franchises.service';
 
 /**
  * PlatformAdminModule — Spec 55 §7, gated entirely on the SSO/IdP vendor decision
@@ -29,6 +31,13 @@ import { PlatformAdminSchoolsService } from './platform-admin-schools.service';
  * rather than silently carried forward: PlatformAdminJwtAuthGuard now re-checks
  * AdminUser.revokedAt on every request, not just on the TTL alone (see that guard's
  * own comment).
+ *
+ * SLICE 3 (Phase 27) — GET /platform-admin/franchises/:id, extending the same
+ * cross-tenant-read pattern to a second entity, proving Slice 2's own
+ * infrastructure (the audit-log mechanism, the ultm8_platform_admin role) actually
+ * generalizes rather than being School-specific — no new role, no new module
+ * plumbing, just the same recipe applied again (see
+ * 20260926000000_platform_admin_franchise_read).
  *
  * Still deliberately NOT built, each its own later slice:
  *  - Any WRITE-side cross-tenant admin endpoint (editing another tenant's records,
@@ -67,7 +76,7 @@ import { PlatformAdminSchoolsService } from './platform-admin-schools.service';
       signOptions: { expiresIn: process.env.PLATFORM_ADMIN_JWT_TTL ?? '5m' },
     }),
   ],
-  controllers: [PlatformAdminAuthController, PlatformAdminSchoolsController],
+  controllers: [PlatformAdminAuthController, PlatformAdminSchoolsController, PlatformAdminFranchisesController],
   providers: [
     PlatformAdminAuthService,
     PlatformAdminJwtStrategy,
@@ -75,6 +84,7 @@ import { PlatformAdminSchoolsService } from './platform-admin-schools.service';
     CognitoTokenVerifierService,
     AuditLogService,
     PlatformAdminSchoolsService,
+    PlatformAdminFranchisesService,
   ],
 })
 export class PlatformAdminModule {}
