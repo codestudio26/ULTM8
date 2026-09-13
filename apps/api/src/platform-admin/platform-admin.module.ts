@@ -11,6 +11,8 @@ import { PlatformAdminSchoolsController } from './platform-admin-schools.control
 import { PlatformAdminSchoolsService } from './platform-admin-schools.service';
 import { PlatformAdminFranchisesController } from './platform-admin-franchises.controller';
 import { PlatformAdminFranchisesService } from './platform-admin-franchises.service';
+import { PlatformAdminUsersController } from './platform-admin-users.controller';
+import { PlatformAdminUsersService } from './platform-admin-users.service';
 
 /**
  * PlatformAdminModule — Spec 55 §7, gated entirely on the SSO/IdP vendor decision
@@ -39,15 +41,29 @@ import { PlatformAdminFranchisesService } from './platform-admin-franchises.serv
  * plumbing, just the same recipe applied again (see
  * 20260926000000_platform_admin_franchise_read).
  *
+ * SLICE 4 (Phase 28) — the first WRITE-side endpoint: POST/GET
+ * /platform-admin/admin-users, a FULL_ADMIN-run successor to
+ * scripts/bootstrap-admin-user.ts for every admin after the very first one.
+ * This was never actually blocked on a product decision the way the header
+ * comment used to claim — the mechanics were already fully reasoned through
+ * during Slice 1's own kickoff (identity via Cognito and authorization via this
+ * record are two separate steps, same design the bootstrap script's own header
+ * comment documents) — deferred purely for slice-size discipline, not genuine
+ * ambiguity. Both routes are FULL_ADMIN-only, the one subRole restriction the
+ * spec actually confirms (SKILL.md §3).
+ *
  * Still deliberately NOT built, each its own later slice:
- *  - Any WRITE-side cross-tenant admin endpoint (editing another tenant's records,
- *    PaymentAccount credential rotation, impersonation) — each carries real,
- *    separate design questions (what exactly can be edited, how rotation actually
- *    works against Stripe Connect/secrets-manager custody, impersonation's own
- *    session semantics) beyond just "write an audit entry," not guessed at here.
- *  - Admin-invite / self-service admin-account management (a FULL_ADMIN adding a
- *    SUPPORT/BILLING_PAYMENTS_OPS teammate) — needs a real product decision on the
- *    invite UX, not guessed at.
+ *  - Any WRITE-side cross-tenant admin endpoint touching TENANT data (editing
+ *    another tenant's records, PaymentAccount credential rotation,
+ *    impersonation) — each carries real, separate design questions (what
+ *    exactly can be edited, how rotation actually works against Stripe
+ *    Connect/secrets-manager custody, impersonation's own session semantics)
+ *    beyond just "write an audit entry," not guessed at here. Slice 4's own
+ *    admin-user creation is NOT this category — it's Platform Admin's own
+ *    internal roster, not a tenant's data.
+ *  - Revoking/editing an existing AdminUser (offboarding, §4.4's "access
+ *    revoked immediately") — a real, separate write path from creating one,
+ *    not built in this slice.
  *  - SubscriptionPlansModule / TranslationsModule — sit behind this module's own
  *    guard chain by confirmed design, both still separate, unbuilt modules.
  *
@@ -76,7 +92,12 @@ import { PlatformAdminFranchisesService } from './platform-admin-franchises.serv
       signOptions: { expiresIn: process.env.PLATFORM_ADMIN_JWT_TTL ?? '5m' },
     }),
   ],
-  controllers: [PlatformAdminAuthController, PlatformAdminSchoolsController, PlatformAdminFranchisesController],
+  controllers: [
+    PlatformAdminAuthController,
+    PlatformAdminSchoolsController,
+    PlatformAdminFranchisesController,
+    PlatformAdminUsersController,
+  ],
   providers: [
     PlatformAdminAuthService,
     PlatformAdminJwtStrategy,
@@ -85,6 +106,7 @@ import { PlatformAdminFranchisesService } from './platform-admin-franchises.serv
     AuditLogService,
     PlatformAdminSchoolsService,
     PlatformAdminFranchisesService,
+    PlatformAdminUsersService,
   ],
 })
 export class PlatformAdminModule {}

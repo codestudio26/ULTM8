@@ -12,6 +12,8 @@ import { PrismaPlatformAdminService } from '../common/prisma/prisma-platform-adm
 export const AuditAction = {
   VIEW_SCHOOL: 'VIEW_SCHOOL',
   VIEW_FRANCHISE: 'VIEW_FRANCHISE',
+  CREATE_ADMIN_USER: 'CREATE_ADMIN_USER',
+  LIST_ADMIN_USERS: 'LIST_ADMIN_USERS',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

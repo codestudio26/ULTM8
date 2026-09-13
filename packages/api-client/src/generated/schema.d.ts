@@ -1348,6 +1348,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform-admin/admin-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminUsersController_findAll"];
+        put?: never;
+        post: operations["PlatformAdminUsersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2539,6 +2555,27 @@ export interface components {
             name: string;
             /** @enum {string} */
             subRole: "SUPPORT" | "BILLING_PAYMENTS_OPS" | "FULL_ADMIN";
+        };
+        CreateAdminUserDto: {
+            email: string;
+            name: string;
+            /** @enum {string} */
+            subRole: "SUPPORT" | "BILLING_PAYMENTS_OPS" | "FULL_ADMIN";
+            /** @description Cognito's own `sub` claim for the account being invited — see this DTO's own header comment. */
+            ssoSubject: string;
+        };
+        AdminUserResponseDto: {
+            id: string;
+            email: string;
+            name: string;
+            /** @enum {string} */
+            subRole: "SUPPORT" | "BILLING_PAYMENTS_OPS" | "FULL_ADMIN";
+            createdAt: string;
+            updatedAt: string;
+            revokedAt?: string | null;
+        };
+        AdminUserListResponseDto: {
+            items: components["schemas"]["AdminUserResponseDto"][];
         };
     };
     responses: never;
@@ -5047,6 +5084,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminUsersController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserListResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminUsersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminUserDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserResponseDto"];
                 };
             };
         };
