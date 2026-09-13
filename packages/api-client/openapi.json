@@ -4479,6 +4479,76 @@
           }
         ]
       }
+    },
+    "/v1/platform-admin/schools/{schoolId}/payment-account": {
+      "get": {
+        "operationId": "PlatformAdminPaymentAccountsController_findForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/franchises/{franchiseId}/payment-account": {
+      "get": {
+        "operationId": "PlatformAdminPaymentAccountsController_findForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -8625,6 +8695,53 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "PlatformAdminPaymentAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string"
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "accountTitle",
+          "country",
+          "status",
+          "mode",
+          "createdAt",
+          "updatedAt"
         ]
       }
     }

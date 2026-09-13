@@ -13,6 +13,8 @@ import { PlatformAdminFranchisesController } from './platform-admin-franchises.c
 import { PlatformAdminFranchisesService } from './platform-admin-franchises.service';
 import { PlatformAdminUsersController } from './platform-admin-users.controller';
 import { PlatformAdminUsersService } from './platform-admin-users.service';
+import { PlatformAdminPaymentAccountsController } from './platform-admin-payment-accounts.controller';
+import { PlatformAdminPaymentAccountsService } from './platform-admin-payment-accounts.service';
 
 /**
  * PlatformAdminModule — Spec 55 §7, gated entirely on the SSO/IdP vendor decision
@@ -61,13 +63,25 @@ import { PlatformAdminUsersService } from './platform-admin-users.service';
  * gates every write in this service including revoke itself (see
  * PlatformAdminUsersService's own header comment for the full reasoning).
  *
+ * SLICE 6 (Phase 30) — GET .../payment-account (School- and Franchise-scoped): a
+ * third cross-tenant read entity, and the FIRST read in this module restricted to
+ * a specific subRole rather than opened to all three tiers. Confirmed directly by
+ * ultm8-tenant-isolation SKILL.md §3's own split: Billing/Payments Ops "can view
+ * PaymentAccount configuration status ... but never sees a decrypted secret" —
+ * Support's own bullet explicitly excludes "a Stripe Connected Account id," and
+ * nothing confirms Support gets broader PaymentAccount visibility, so this read is
+ * BILLING_PAYMENTS_OPS + FULL_ADMIN only (see
+ * PlatformAdminPaymentAccountsService's own header comment). Response excludes
+ * `stripeConnectedAccountId` entirely, at both the DB-grant and DTO layer.
+ *
  * Still deliberately NOT built, each its own later slice:
- *  - Any WRITE-side cross-tenant admin endpoint touching TENANT data (editing
- *    another tenant's records, PaymentAccount credential rotation,
- *    impersonation) — each carries real, separate design questions (what
- *    exactly can be edited, how rotation actually works against Stripe
- *    Connect/secrets-manager custody, impersonation's own session semantics)
- *    beyond just "write an audit entry," not guessed at here. Slice 4/5's own
+ *  - Initiating a Stripe Connect credential rotation — the WRITE half of
+ *    Billing/Payments Ops's own confirmed capability (§3). How rotation actually
+ *    works against Stripe Connect/secrets-manager custody is a real, separate
+ *    design question, not guessed at here.
+ *  - Any other WRITE-side cross-tenant admin endpoint touching TENANT data (editing
+ *    another tenant's records, impersonation) — each carries its own real design
+ *    questions beyond "write an audit entry," not guessed at here. Slice 4/5's own
  *    admin-user create/revoke is NOT this category — it's Platform Admin's
  *    own internal roster, not a tenant's data.
  *  - SubscriptionPlansModule / TranslationsModule — sit behind this module's own
@@ -103,6 +117,7 @@ import { PlatformAdminUsersService } from './platform-admin-users.service';
     PlatformAdminSchoolsController,
     PlatformAdminFranchisesController,
     PlatformAdminUsersController,
+    PlatformAdminPaymentAccountsController,
   ],
   providers: [
     PlatformAdminAuthService,
@@ -113,6 +128,7 @@ import { PlatformAdminUsersService } from './platform-admin-users.service';
     PlatformAdminSchoolsService,
     PlatformAdminFranchisesService,
     PlatformAdminUsersService,
+    PlatformAdminPaymentAccountsService,
   ],
 })
 export class PlatformAdminModule {}

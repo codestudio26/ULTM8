@@ -1380,6 +1380,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform-admin/schools/{schoolId}/payment-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminPaymentAccountsController_findForSchool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/franchises/{franchiseId}/payment-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminPaymentAccountsController_findForFranchise"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2592,6 +2624,18 @@ export interface components {
         };
         AdminUserListResponseDto: {
             items: components["schemas"]["AdminUserResponseDto"][];
+        };
+        PlatformAdminPaymentAccountResponseDto: {
+            id: string;
+            schoolId?: string | null;
+            franchiseId?: string | null;
+            provider: string;
+            accountTitle: string;
+            country: string;
+            status: string;
+            mode: string;
+            createdAt: string;
+            updatedAt: string;
         };
     };
     responses: never;
@@ -5163,6 +5207,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminUserResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminPaymentAccountsController_findForSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAdminPaymentAccountResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminPaymentAccountsController_findForFranchise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                franchiseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformAdminPaymentAccountResponseDto"];
                 };
             };
         };
