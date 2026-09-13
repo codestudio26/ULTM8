@@ -14,6 +14,7 @@ export const AuditAction = {
   VIEW_FRANCHISE: 'VIEW_FRANCHISE',
   CREATE_ADMIN_USER: 'CREATE_ADMIN_USER',
   LIST_ADMIN_USERS: 'LIST_ADMIN_USERS',
+  REVOKE_ADMIN_USER: 'REVOKE_ADMIN_USER',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
