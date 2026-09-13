@@ -52,18 +52,24 @@ import { PlatformAdminUsersService } from './platform-admin-users.service';
  * ambiguity. Both routes are FULL_ADMIN-only, the one subRole restriction the
  * spec actually confirms (SKILL.md §3).
  *
+ * SLICE 5 (Phase 29) — DELETE /platform-admin/admin-users/:id: the other half
+ * of the AdminUser lifecycle Slice 4 started, confirmed by Spec §4.4 ("access
+ * revoked immediately" on offboarding). Soft-revoke via `revokedAt`, same
+ * idempotent shape RoleGrantsService.revoke() already established on the
+ * tenant side, plus one lockout safeguard with no tenant-side analogue —
+ * revoking the last active FULL_ADMIN is refused, since assertFullAdmin()
+ * gates every write in this service including revoke itself (see
+ * PlatformAdminUsersService's own header comment for the full reasoning).
+ *
  * Still deliberately NOT built, each its own later slice:
  *  - Any WRITE-side cross-tenant admin endpoint touching TENANT data (editing
  *    another tenant's records, PaymentAccount credential rotation,
  *    impersonation) — each carries real, separate design questions (what
  *    exactly can be edited, how rotation actually works against Stripe
  *    Connect/secrets-manager custody, impersonation's own session semantics)
- *    beyond just "write an audit entry," not guessed at here. Slice 4's own
- *    admin-user creation is NOT this category — it's Platform Admin's own
- *    internal roster, not a tenant's data.
- *  - Revoking/editing an existing AdminUser (offboarding, §4.4's "access
- *    revoked immediately") — a real, separate write path from creating one,
- *    not built in this slice.
+ *    beyond just "write an audit entry," not guessed at here. Slice 4/5's own
+ *    admin-user create/revoke is NOT this category — it's Platform Admin's
+ *    own internal roster, not a tenant's data.
  *  - SubscriptionPlansModule / TranslationsModule — sit behind this module's own
  *    guard chain by confirmed design, both still separate, unbuilt modules.
  *

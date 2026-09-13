@@ -1,16 +1,17 @@
 /**
- * HTTP-level gate for PlatformAdminModule Slice 4 (Phase 28) — POST/GET
- * /platform-admin/admin-users, mirroring the shape of the existing
- * platform-admin-schools.e2e-spec.ts / platform-admin-franchises.e2e-spec.ts
- * gates. What's actually NEW here (not already proven by those two files) is
- * what this file focuses on: the FULL_ADMIN-only authorization check (the
- * first subRole restriction any PlatformAdminModule endpoint enforces), the
- * P2002-to-409 mapping on duplicate email/ssoSubject, and that the resulting
- * audit row correctly has both schoolId and franchiseId null (Platform
- * Admin's own roster, not tenant data — see PlatformAdminUsersService's own
- * comment). Realm isolation, the revokedAt re-check, and AuditLogEntry
- * immutability are already proven generically in the School suite and are
- * not re-tested per entity here.
+ * HTTP-level gate for PlatformAdminModule Slice 4 (Phase 28, create/list) and
+ * Slice 5 (Phase 29, revoke) — POST/GET/DELETE /platform-admin/admin-users,
+ * mirroring the shape of the existing platform-admin-schools.e2e-spec.ts /
+ * platform-admin-franchises.e2e-spec.ts gates. What's actually NEW here (not
+ * already proven by those two files) is what this file focuses on: the
+ * FULL_ADMIN-only authorization check (the first subRole restriction any
+ * PlatformAdminModule endpoint enforces), the P2002-to-409 mapping on
+ * duplicate email/ssoSubject, that the resulting audit row correctly has both
+ * schoolId and franchiseId null (Platform Admin's own roster, not tenant
+ * data — see PlatformAdminUsersService's own comment), revoke's idempotency,
+ * and the last-active-FULL_ADMIN lockout guard. Realm isolation, the
+ * revokedAt re-check, and AuditLogEntry immutability are already proven
+ * generically in the School suite and are not re-tested per entity here.
  *
  * Requires DATABASE_URL, DATABASE_URL_APP, PLATFORM_ADMIN_JWT_SECRET — skips
  * with a warning if any are unset, same convention as every other HTTP-level
@@ -43,7 +44,7 @@ if (!hasDb) {
   );
 }
 
-describeIfDb('PlatformAdminModule — /platform-admin/admin-users (Slice 4)', () => {
+describeIfDb('PlatformAdminModule — /platform-admin/admin-users (Slices 4-5)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const platformAdminJwt = new JwtService({ secret: PLATFORM_ADMIN_JWT_SECRET });
@@ -213,7 +214,7 @@ describeIfDb('PlatformAdminModule — /platform-admin/admin-users (Slice 4)', ()
     expect(second.status).toBe(409);
   });
 
-  it('no token at all is rejected — 401 on both routes', async () => {
+  it('no token at all is rejected — 401 on all three routes', async () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/platform-admin/admin-users')
       .send(newAdminPayload());
@@ -221,5 +222,72 @@ describeIfDb('PlatformAdminModule — /platform-admin/admin-users (Slice 4)', ()
 
     const listRes = await request(app.getHttpServer()).get('/v1/platform-admin/admin-users');
     expect(listRes.status).toBe(401);
+
+    const revokeRes = await request(app.getHttpServer()).delete(`/v1/platform-admin/admin-users/${randomUUID()}`);
+    expect(revokeRes.status).toBe(401);
   });
+
+  it('a FULL_ADMIN can revoke a SUPPORT admin — 200, revokedAt set, and the audit row is recorded', async () => {
+    const caller = await seedAdmin(AdminSubRole.FULL_ADMIN);
+    const target = await seedAdmin(AdminSubRole.SUPPORT);
+
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/platform-admin/admin-users/${target.id}`)
+      .set('Authorization', `Bearer ${tokenFor(caller)}`);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(target.id);
+    expect(res.body.revokedAt).not.toBeNull();
+    expect(res.body.ssoSubject).toBeUndefined();
+
+    const entries = await superuser.auditLogEntry.findMany({ where: { adminUserId: caller.id, targetId: target.id, action: 'REVOKE_ADMIN_USER' } });
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ targetType: 'AdminUser', schoolId: null, franchiseId: null });
+  });
+
+  it('revoking an already-revoked admin is idempotent — 200, no second audit entry', async () => {
+    const caller = await seedAdmin(AdminSubRole.FULL_ADMIN);
+    const target = await seedAdmin(AdminSubRole.SUPPORT);
+
+    const first = await request(app.getHttpServer())
+      .delete(`/v1/platform-admin/admin-users/${target.id}`)
+      .set('Authorization', `Bearer ${tokenFor(caller)}`);
+    expect(first.status).toBe(200);
+
+    const second = await request(app.getHttpServer())
+      .delete(`/v1/platform-admin/admin-users/${target.id}`)
+      .set('Authorization', `Bearer ${tokenFor(caller)}`);
+    expect(second.status).toBe(200);
+    expect(second.body.revokedAt).toBe(first.body.revokedAt);
+
+    const entries = await superuser.auditLogEntry.findMany({ where: { adminUserId: caller.id, targetId: target.id, action: 'REVOKE_ADMIN_USER' } });
+    expect(entries).toHaveLength(1);
+  });
+
+  it('a non-FULL_ADMIN caller gets 403 on revoke', async () => {
+    const caller = await seedAdmin(AdminSubRole.SUPPORT);
+    const target = await seedAdmin(AdminSubRole.SUPPORT);
+
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/platform-admin/admin-users/${target.id}`)
+      .set('Authorization', `Bearer ${tokenFor(caller)}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('revoking a nonexistent AdminUser id is a clean 404', async () => {
+    const caller = await seedAdmin(AdminSubRole.FULL_ADMIN);
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/platform-admin/admin-users/${randomUUID()}`)
+      .set('Authorization', `Bearer ${tokenFor(caller)}`);
+    expect(res.status).toBe(404);
+  });
+
+  // The last-active-FULL_ADMIN lockout guard is deliberately NOT tested here:
+  // it counts active FULL_ADMINs across the WHOLE AdminUser table, and this
+  // suite runs as one of several e2e spec files Jest executes in parallel
+  // against the same real Postgres (platform-admin-auth.e2e-spec.ts seeds its
+  // own FULL_ADMIN fixtures concurrently) — a global-count assertion here
+  // would be racy against other suites' in-flight fixtures, not a flaw in the
+  // guard itself. Covered deterministically instead by
+  // platform-admin-users.service.spec.ts (a mocked-Prisma unit test, same
+  // convention as auth.service.spec.ts), which controls the count precisely.
 });

@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, AdminSubRole } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { AuditLogService, AuditAction } from './audit-log.service';
@@ -37,7 +37,7 @@ const ADMIN_USER_SELECT = {
  * "small, reviewable slice" discipline, not because anything about it was
  * actually unresolved.
  *
- * FULL_ADMIN-only for BOTH create and list, mirroring ultm8-tenant-isolation
+ * FULL_ADMIN-only for create/list/revoke, mirroring ultm8-tenant-isolation
  * SKILL.md §3's one confirmed subRole restriction ("only Full Platform Admin
  * can assign sub-roles to other staff") — "who else has Platform Admin access"
  * is itself a meaningfully sensitive fact, closer in kind to assigning access
@@ -47,6 +47,26 @@ const ADMIN_USER_SELECT = {
  * client, same as PlatformAdminAuthService — this table has no RLS policy at
  * all (Phase 1's own migration comment), so there's nothing for
  * ultm8_platform_admin's own additive policies to matter for here.
+ *
+ * revoke() — Slice 5 (Phase 29): the other half of the AdminUser lifecycle
+ * Slice 4 started. Confirmed by Spec §4.4 ("access revoked immediately" on
+ * offboarding) — soft, via `revokedAt`, same idempotent-revoke shape
+ * RoleGrantsService.revoke() already established for the tenant side (already
+ * revoked → return as-is, not an error, since AdminUser rows are never hard-
+ * deleted any more than RoleGrant rows are). One safety invariant added here
+ * that has no tenant-side analogue: revoking the LAST active FULL_ADMIN is
+ * refused outright, because assertFullAdmin() above gates every write in this
+ * service (including revoke itself) — losing the last FULL_ADMIN would
+ * permanently lock the whole admin-management surface behind the emergency
+ * bootstrap script. This is an availability/lockout safeguard, not an
+ * invented business rule about who may be revoked or by whom — the spec's own
+ * confirmed rule (revocation happens, immediately) is unaffected; only the
+ * degenerate "revoke the only person who could ever revoke again" case is
+ * blocked. Self-revocation is otherwise allowed (a FULL_ADMIN stepping down
+ * after handing off duties to another still-active FULL_ADMIN is legitimate
+ * and not guarded against). The count-then-update pair is a write-skew hazard
+ * under plain READ COMMITTED — see revoke()'s own inline comment for the
+ * Postgres advisory lock this uses to close it.
  */
 @Injectable()
 export class PlatformAdminUsersService {
@@ -118,5 +138,74 @@ export class PlatformAdminUsersService {
     });
 
     return items;
+  }
+
+  async revoke(callerId: string, targetAdminId: string) {
+    await this.assertFullAdmin(callerId);
+
+    const target = await this.prismaApp.adminUser.findUnique({
+      where: { id: targetAdminId },
+      select: { id: true, revokedAt: true, subRole: true },
+    });
+    if (!target) {
+      throw new NotFoundException('AdminUser not found');
+    }
+
+    if (target.revokedAt) {
+      // Idempotent, not an error — same convention RoleGrantsService.revoke()
+      // already established for the tenant side. Re-fetched through
+      // ADMIN_USER_SELECT (the response shape) rather than `target`, which
+      // was only ever fetched with the narrow {id, revokedAt, subRole}
+      // projection this check needs.
+      return this.prismaApp.adminUser.findUniqueOrThrow({ where: { id: targetAdminId }, select: ADMIN_USER_SELECT });
+    }
+
+    // FOUND ON REVIEW: a first draft ran the "how many OTHER active
+    // FULL_ADMINs exist" count() and the revoking update() as two separate,
+    // unserialized statements. Under Postgres's default READ COMMITTED, two
+    // concurrent revoke() calls targeting two DIFFERENT FULL_ADMINs — where
+    // those two are the only active FULL_ADMINs left — can each see "1 other
+    // active FULL_ADMIN" and both proceed, leaving zero: a genuine write-skew
+    // race, not closed by merely wrapping both statements in one transaction
+    // (READ COMMITTED doesn't re-validate an overlapping read at commit time;
+    // this specifically needs SERIALIZABLE isolation or an explicit lock).
+    // Fixed with a Postgres advisory lock scoped to this exact invariant —
+    // acquired for the transaction's lifetime, so two concurrent FULL_ADMIN
+    // revokes are forced to run one after the other, and the second one's
+    // count() genuinely reflects the first one's already-committed revoke.
+    const updated = await this.prismaApp.$transaction(async (tx) => {
+      if (target.subRole === AdminSubRole.FULL_ADMIN) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('platform_admin_full_admin_revoke'))`;
+
+        const otherActiveFullAdmins = await tx.adminUser.count({
+          where: { subRole: AdminSubRole.FULL_ADMIN, revokedAt: null, id: { not: targetAdminId } },
+        });
+        if (otherActiveFullAdmins === 0) {
+          // See this service's own header comment — an availability
+          // safeguard, not an invented business rule about who may be
+          // revoked. Thrown inside the transaction callback: Prisma rolls
+          // back and rethrows the original error unmodified, so this still
+          // reaches NestJS's exception filter as a clean 409.
+          throw new ConflictException(
+            'Cannot revoke the last active Full Platform Admin — this would permanently lock the admin-management surface.',
+          );
+        }
+      }
+
+      return tx.adminUser.update({
+        where: { id: targetAdminId },
+        data: { revokedAt: new Date() },
+        select: ADMIN_USER_SELECT,
+      });
+    });
+
+    await this.auditLog.record({
+      adminUserId: callerId,
+      action: AuditAction.REVOKE_ADMIN_USER,
+      targetType: 'AdminUser',
+      targetId: updated.id,
+    });
+
+    return updated;
   }
 }
