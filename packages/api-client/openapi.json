@@ -4384,6 +4384,66 @@
           }
         ]
       }
+    },
+    "/v1/platform-admin/admin-users": {
+      "post": {
+        "operationId": "PlatformAdminUsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PlatformAdminUsersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -8447,6 +8507,89 @@
           "email",
           "name",
           "subRole"
+        ]
+      },
+      "CreateAdminUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          },
+          "ssoSubject": {
+            "type": "string",
+            "description": "Cognito's own `sub` claim for the account being invited — see this DTO's own header comment."
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "subRole",
+          "ssoSubject"
+        ]
+      },
+      "AdminUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "subRole",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AdminUserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     }
