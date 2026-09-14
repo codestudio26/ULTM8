@@ -4,7 +4,6 @@ import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
 export type SchoolResponse = components['schemas']['SchoolResponseDto'];
-export type PlatformAdminPaymentAccountResponse = components['schemas']['PlatformAdminPaymentAccountResponseDto'];
 
 /** GET /platform-admin/schools/:id — no cross-tenant "list all Schools" endpoint
  * exists (PlatformAdminSchoolsService is deliberately findOne-by-id only, see

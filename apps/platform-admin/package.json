@@ -2,7 +2,7 @@
   "name": "@ultm8/platform-admin",
   "version": "0.1.0",
   "private": true,
-  "description": "React — Platform Admin (Spec §4). A genuinely separate app/deployment/identity realm from apps/school-portal — Slice 1 (Phase 32) shipped Cognito-backed sign-in and the AdminUser roster (invite/list/revoke); Slice 2 (Phase 33) added look-up-by-id screens for School, Franchise, and each one's PaymentAccount configuration. Not deployed anywhere yet — see README.",
+  "description": "React — Platform Admin (Spec §4). A genuinely separate app/deployment/identity realm from apps/school-portal — Slice 1 (Phase 32) shipped Cognito-backed sign-in and the AdminUser roster (invite/list/revoke); Slice 2 (Phase 33) added look-up-by-id screens for School, Franchise, and each one's PaymentAccount configuration; Slice 3 (Phase 36) added the first tenant-data write this app exposes — initiating a Stripe Connect credential rotation. Not deployed anywhere yet — see README.",
   "type": "module",
   "scripts": {
     "dev": "vite",
