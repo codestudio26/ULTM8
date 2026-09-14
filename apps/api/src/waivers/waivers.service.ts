@@ -1,7 +1,8 @@
-import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
+import { WaiverSignature } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -10,13 +11,18 @@ import { WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../jobs/queue.constants';
 import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
+import { R2ClientService } from './r2-client.service';
 
 /**
- * Phase 10 scope only: Waiver CRUD + Student self-signing (typed name, not a
- * drawn-signature) + Student's own read of their signatures. No Guardian-signing
- * (Guardian/ConsentRecord don't exist in this codebase yet), no drawn-signature
- * capture, no Booking-time enforcement (Booking doesn't exist yet — Phase 11). See
- * the Phase 10 kickoff prompt for the full scoping rationale.
+ * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read of
+ * their signatures. Phase 34 added drawn-signature capture (typed name remains
+ * the baseline — see sign()'s own header comment) on top of that same scope. No
+ * Guardian-signing (Guardian/ConsentRecord exist as of Phase 12, but signing was
+ * never revisited to add a Guardian-on-behalf-of path — a real, separate gap
+ * spotted while reading this file for Phase 34, deliberately NOT folded into
+ * this phase's own scope), no Booking-time enforcement (Booking doesn't exist
+ * yet — Phase 11). See the Phase 10 kickoff prompt for the full scoping
+ * rationale.
  *
  * sign() DOES enforce the confirmed age-of-majority gate (skills/ultm8-domain-
  * rules/SKILL.md §13 — see assertSelfAttestedAdult's own comment) — an under-18
@@ -32,6 +38,7 @@ export class WaiversService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly r2Client: R2ClientService,
     @InjectQueue(WAIVER_SIGNATURE_REQUESTS_QUEUE) private readonly waiverSignatureRequestsQueue: Queue,
   ) {}
 
@@ -112,8 +119,32 @@ export class WaiversService {
 
   // ---------------------------------------------------------------------------
   // Signing — Student-authenticated only this phase (no Guardian path — see this
-  // file's own header comment).
+  // file's own header comment). Phase 34 added the drawn-signature-capture
+  // upload flow (requestSignatureUploadUrl -> sign) on top.
   // ---------------------------------------------------------------------------
+
+  /**
+   * Step 1 of drawn-signature capture (Phase 34, Decision 74/78) — a presigned
+   * PUT URL the caller uploads a raster (PNG) signature image to directly, then
+   * passes the returned `objectKey` back as SignWaiverDto.signatureImageKey when
+   * actually calling sign() (step 2). No age-of-majority check here, unlike
+   * sign() itself — requesting an upload URL isn't the legally consequential
+   * act (signing is; see assertSelfAttestedAdult's own comment), so an under-18
+   * caller can still reach this without gaining anything, since sign() would
+   * still reject them at the actual signing step.
+   *
+   * Object key deliberately encodes schoolId/waiverId/studentId in that order
+   * (tenant-first, same "composite index leading with the tenant column"
+   * convention Decision 30 already establishes for this schema's own indexes,
+   * applied here to an object-key prefix instead) — sign() validates an
+   * incoming signatureImageKey against this exact prefix before accepting it.
+   */
+  async requestSignatureUploadUrl(callerId: string, waiverId: string) {
+    const waiver = await this.findOneWaiver(callerId, waiverId); // 404s if not visible/doesn't exist
+    const objectKey = `waiver-signatures/${waiver.schoolId}/${waiver.id}/${callerId}/${randomUUID()}.png`;
+    const uploadUrl = await this.r2Client.getPresignedUploadUrl(objectKey, 'image/png');
+    return { uploadUrl, objectKey };
+  }
 
   /**
    * FOUND ON REVIEW: skills/ultm8-domain-rules/SKILL.md §13 states, as
@@ -143,8 +174,29 @@ export class WaiversService {
   async sign(callerId: string, waiverId: string, dto: SignWaiverDto) {
     const waiver = await this.findOneWaiver(callerId, waiverId);
     await this.assertSelfAttestedAdult(callerId);
+
+    if (dto.signatureImageKey) {
+      // Same reasoning requestSignatureUploadUrl's own comment already gives
+      // for the key's shape — reject anything that doesn't match THIS specific
+      // waiver/caller's own prefix, so a caller can't reference an object
+      // uploaded for a different waiver, a different Student, or an arbitrary
+      // key that was never actually issued by this endpoint.
+      const expectedPrefix = `waiver-signatures/${waiver.schoolId}/${waiver.id}/${callerId}/`;
+      if (!dto.signatureImageKey.startsWith(expectedPrefix)) {
+        throw new BadRequestException('signatureImageKey does not match this waiver/caller.');
+      }
+      // FOUND ON REVIEW — see R2ClientService.objectExists()'s own comment: the
+      // prefix check alone only proves the key is SHAPED correctly, not that an
+      // image was ever actually uploaded there. A legal record shouldn't accept
+      // an unverified claim.
+      if (!(await this.r2Client.objectExists(dto.signatureImageKey))) {
+        throw new BadRequestException('signatureImageKey does not reference an uploaded object — upload the image first.');
+      }
+    }
+
+    let created: WaiverSignature;
     try {
-      return await this.prismaApp.withTenantContext(callerId, (tx) =>
+      created = await this.prismaApp.withTenantContext(callerId, (tx) =>
         tx.waiverSignature.create({
           data: {
             id: randomUUID(),
@@ -153,6 +205,7 @@ export class WaiversService {
             schoolId: waiver.schoolId,
             signerFullName: dto.signerFullName,
             signatureText: dto.signatureText,
+            signatureImageKey: dto.signatureImageKey,
           },
         }),
       );
@@ -162,6 +215,7 @@ export class WaiversService {
       }
       throw err;
     }
+    return this.toSignatureResponse(created);
   }
 
   private isUniqueConstraintViolation(err: unknown): boolean {
@@ -190,8 +244,53 @@ export class WaiversService {
   }
 
   async findMySignatures(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where: { studentId: callerId } }), cursor, limit),
     );
+    // Presigned-URL generation is a pure local HMAC computation (no network
+    // round-trip to R2 — see R2ClientService's own header comment), so mapping
+    // every item in a page this way costs nothing beyond CPU, even for a full
+    // page of signatures with images.
+    const items = await Promise.all(page.items.map((item) => this.toSignatureResponse(item as WaiverSignature)));
+    return { ...page, items };
+  }
+
+  /**
+   * FOUND ON REVIEW, before this ever shipped: a first draft returned the raw
+   * Prisma WaiverSignature object directly from sign()/findMySignatures() — this
+   * codebase has no global response serializer (ClassSerializerInterceptor),
+   * confirmed the same way PlatformAdminModule's own PLATFORM_ADMIN_SCHOOL_SELECT
+   * finding already established for this exact class of bug — so the new
+   * `signatureImageKey` column would have leaked the raw R2 object key straight
+   * into the HTTP response instead of the intended presigned `signatureImageUrl`.
+   * Every caller of sign()/findMySignatures() routes through this helper instead,
+   * which strips the raw key and substitutes a freshly-generated, short-lived
+   * presigned GET URL (or null, if no image was ever captured).
+   *
+   * ALSO FOUND ON REVIEW: the presign call below runs AFTER sign()'s own
+   * withTenantContext transaction has already committed the WaiverSignature row —
+   * same "the row already committed, don't let a downstream problem make the
+   * caller think the primary action failed" reasoning createWaiver()'s own
+   * queue.add() try/catch above already applies to its notification job. A
+   * transient R2 failure (or R2 simply not configured) here must not turn an
+   * already-successful signature into a client-visible 500 — logged loudly
+   * instead, same as that precedent, with `signatureImageUrl` coming back null
+   * rather than the request failing outright. The image itself isn't lost — the
+   * key is durably stored; only this one response's convenience URL is affected.
+   */
+  private async toSignatureResponse(signature: WaiverSignature) {
+    const { signatureImageKey, ...rest } = signature;
+    let signatureImageUrl: string | null = null;
+    if (signatureImageKey) {
+      try {
+        signatureImageUrl = await this.r2Client.getPresignedDownloadUrl(signatureImageKey);
+      } catch (err) {
+        this.logger.error(
+          `Could not generate a presigned view URL for WaiverSignature ${signature.id} (key ${signatureImageKey}) — the signature itself is unaffected.`,
+          err instanceof Error ? err.stack : String(err),
+        );
+      }
+    }
+    return { ...rest, signatureImageUrl };
   }
 }

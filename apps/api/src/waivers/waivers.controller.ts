@@ -10,10 +10,12 @@ import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { WaiverListResponseDto, WaiverResponseDto } from './dto/waiver-response.dto';
 import { WaiverSignatureListResponseDto, WaiverSignatureResponseDto } from './dto/waiver-signature-response.dto';
+import { SignatureUploadUrlResponseDto } from './dto/signature-upload-url-response.dto';
 
-// Waiver CRUD + Student self-signing only this phase — no Guardian-signing, no
-// drawn-signature capture, no Booking-time enforcement. See the Phase 10 kickoff
-// prompt for the full scoping rationale.
+// Waiver CRUD + Student self-signing (typed name, or typed name + drawn-signature
+// capture as of Phase 34) — no Guardian-signing, no Booking-time enforcement. See
+// the Phase 10 kickoff prompt for the full scoping rationale and WaiversService's
+// own header comment for what Phase 34 added.
 @ApiTags('waivers')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -68,5 +70,11 @@ export class WaiversController {
   @Post('waivers/:id/sign')
   sign(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: SignWaiverDto) {
     return this.waiversService.sign(user.sub, id, dto);
+  }
+
+  @ApiCreatedResponse({ type: SignatureUploadUrlResponseDto })
+  @Post('waivers/:id/signature-upload-url')
+  requestSignatureUploadUrl(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.waiversService.requestSignatureUploadUrl(user.sub, id);
   }
 }

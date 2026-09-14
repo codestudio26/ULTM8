@@ -3,10 +3,14 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { QueueModule } from '../jobs/queue.module';
 import { WaiversController } from './waivers.controller';
 import { WaiversService } from './waivers.service';
+import { R2ClientService } from './r2-client.service';
 
 /**
- * Phase 10 scope only: Waiver CRUD + Student self-signing + Student's own read.
- * See WaiversService's own header comment for what's deliberately not here.
+ * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read. Phase
+ * 34 added drawn-signature capture (R2ClientService, see its own header comment)
+ * on top of that same scope — still no Guardian-signing, no Booking-time
+ * enforcement. See WaiversService's own header comment for what's deliberately
+ * not here.
  *
  * Imports TenantsModule for SchoolsService/TenantAuthorizationService, same shape
  * as every other module. Imports QueueModule directly for
@@ -16,6 +20,6 @@ import { WaiversService } from './waivers.service';
 @Module({
   imports: [TenantsModule, QueueModule],
   controllers: [WaiversController],
-  providers: [WaiversService],
+  providers: [WaiversService, R2ClientService],
 })
 export class WaiversModule {}

@@ -1,0 +1,12 @@
+-- Phase 34: drawn-signature capture — Decision 74/78's engineering follow-up,
+-- resolved here (raster/PNG, R2 object key, see WaiverSignature's own schema
+-- comment for the full reasoning). Nullable — a signature may still be Signed
+-- via typed-name only, same "not required" treatment the baseline mechanism
+-- already has.
+--
+-- No new GRANT needed: WaiverSignature already has a table-level grant
+-- (20260913000000_waivers_module's own "GRANT SELECT, INSERT, UPDATE, DELETE ON
+-- "WaiverSignature" TO ultm8_app") — unlike PlatformAdminModule's curated
+-- column-level grants to ultm8_platform_admin, a new column on a table already
+-- granted at the table level needs no additional GRANT statement.
+ALTER TABLE "WaiverSignature" ADD COLUMN "signatureImageKey" TEXT;

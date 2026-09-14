@@ -1613,16 +1613,26 @@ model Waiver {
   @@index([schoolId])
 }
 
-/// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13) — belongs to Waiver and
-/// Student. Confirmed fields (quoted): "signer full name, signature, signed date,
-/// status." `signatureText` models the CONFIRMED baseline e-signature mechanism —
-/// "a typed full name plus a signature field" (§2.2) — not Decision 74/78's later
-/// drawn-signature-capture upgrade, whose own UI and possible schema change remain
-/// explicitly undesigned ("Decision 74's own engineering follow-up... remains open
-/// on its own terms," Decision 78's own effect note). Do not add a drawn-signature
-/// blob/canvas-data column as a guess — that's a real, separate, still-open piece
-/// of engineering work, not something this phase silently ships an interim answer
-/// for.
+/// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13; drawn-signature capture added
+/// Phase 34) — belongs to Waiver and Student. Confirmed fields (quoted): "signer
+/// full name, signature, signed date, status." `signatureText` models the
+/// CONFIRMED baseline e-signature mechanism — "a typed full name plus a signature
+/// field" (§2.2). `signatureImageKey` is Decision 74/78's drawn-signature-capture
+/// upgrade (legally confirmed sufficient by Decision 78; the engineering
+/// follow-up — raster vs. vector storage, the schema field itself — was left
+/// explicitly open by Decision 74 and resolved here, Phase 34): raster (PNG),
+/// not vector/stroke-path data — matches how virtually every production
+/// signature-pad capture works (a canvas's own toDataURL() output), directly
+/// displayable as an image with no custom renderer needed, and Spec 55 §11.3
+/// already classifies this exact asset category ("signed-waiver and invoice
+/// PDFs... served from R2 directly, no transformation needed") by the same
+/// "legal record, not a resizable gallery asset" reasoning this applies to a
+/// signature image. Nullable — a signature may still be Signed via typed-name
+/// only if the drawn-capture step was never completed, preserving the existing
+/// baseline mechanism rather than making drawn capture mandatory (not itself
+/// confirmed anywhere as required). Stores the R2 OBJECT KEY, not a public URL —
+/// see R2ClientService's own header comment for why every read of this image
+/// goes through a freshly-generated, short-lived presigned URL instead.
 ///
 /// RLS shape: deliberately the SAME narrow "School Owner/Manager, or the row's own
 /// Student, nobody else" shape Membership/Transaction use (Phase 9) — NOT the
@@ -1652,6 +1662,7 @@ model WaiverSignature {
 
   signerFullName String
   signatureText  String // see header comment — typed name, not a drawn-signature blob
+  signatureImageKey String? // see header comment — R2 object key, nullable, PNG raster
   signedDate     DateTime @default(now())
   status         WaiverSignatureStatus @default(SIGNED)
 
