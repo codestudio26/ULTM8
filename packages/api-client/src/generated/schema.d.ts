@@ -900,6 +900,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/waivers/{id}/signature-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WaiversController_requestSignatureUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/book": {
         parameters: {
             query?: never;
@@ -1406,6 +1422,22 @@ export interface paths {
         get: operations["PlatformAdminPaymentAccountsController_findForFranchise"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/payment-accounts/{id}/rotate-credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminPaymentAccountsController_initiateCredentialRotation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2339,6 +2371,8 @@ export interface components {
             schoolId: string;
             signerFullName: string;
             signatureText: string;
+            /** @description Presigned R2 GET URL, valid for 15 minutes — null if no drawn-signature image was captured. */
+            signatureImageUrl?: string | null;
             signedDate: string;
             status: string;
             createdAt: string;
@@ -2355,8 +2389,16 @@ export interface components {
         };
         SignWaiverDto: {
             signerFullName: string;
-            /** @description Typed signature text (not a drawn/canvas signature — see WaiverSignature's own schema comment). */
+            /** @description Typed signature text (the confirmed baseline mechanism — see WaiverSignature's own schema comment). */
             signatureText: string;
+            /** @description R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment. */
+            signatureImageKey?: string;
+        };
+        SignatureUploadUrlResponseDto: {
+            /** @description Presigned PUT URL, valid for 5 minutes — upload the raster (PNG) signature image directly here. */
+            uploadUrl: string;
+            /** @description Pass this back as signatureImageKey when calling POST /waivers/{id}/sign. */
+            objectKey: string;
         };
         BookClassDto: {
             /** @description Staff-only: book on behalf of this Student instead of the caller. */
@@ -2636,6 +2678,10 @@ export interface components {
             mode: string;
             createdAt: string;
             updatedAt: string;
+        };
+        RotateCredentialResponseDto: {
+            /** @description Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics. */
+            onboardingUrl: string;
         };
     };
     responses: never;
@@ -4482,6 +4528,27 @@ export interface operations {
             };
         };
     };
+    WaiversController_requestSignatureUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
     BookingsController_bookClass: {
         parameters: {
             query?: never;
@@ -5249,6 +5316,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformAdminPaymentAccountResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminPaymentAccountsController_initiateCredentialRotation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotateCredentialResponseDto"];
                 };
             };
         };
