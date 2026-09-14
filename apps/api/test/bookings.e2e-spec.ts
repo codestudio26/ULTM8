@@ -916,6 +916,12 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   // ---------------------------------------------------------------------------
 
   it('a Guardian CAN cancel a linked minor\'s own Booking', async () => {
+    // Not individually deleted at the end of this test — the resulting
+    // Booking still holds a live FK to it even once CANCELLED (a cancelled
+    // Booking is a status flip, not a delete), so cleanup relies on the
+    // suite's own bulk afterAll (bookingAttendee -> booking -> ... -> class,
+    // by schoolId), same precedent the "CONCURRENCY" test's own
+    // classConcurrency fixture above already established.
     const classForCancel = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Cancel Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
     });
@@ -936,8 +942,6 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // resolvedById is the GUARDIAN (the actual caller who cancelled it), same
     // "record the real actor" convention Phase 37's own signedById established.
     expect(cancelRes.body.resolvedById).toBe(guardian.id);
-
-    await superuser.class.delete({ where: { id: classForCancel.id } });
   });
 
   it('a caller with NO active GuardianLink to the Booking\'s real Student cannot cancel it, even naming that Student explicitly — 403', async () => {
