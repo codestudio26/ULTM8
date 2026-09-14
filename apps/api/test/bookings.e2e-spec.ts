@@ -912,6 +912,49 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   });
 
   // ---------------------------------------------------------------------------
+  // Guardian-on-behalf-of booking cancellation (Phase 41).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN cancel a linked minor\'s own Booking', async () => {
+    const classForCancel = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Cancel Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const bookRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForCancel.id}/book`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const cancelRes = await request(app.getHttpServer())
+      .patch(`/v1/bookings/${bookRes.body.id}/cancel`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.status).toBe('CANCELLED');
+    // resolvedById is the GUARDIAN (the actual caller who cancelled it), same
+    // "record the real actor" convention Phase 37's own signedById established.
+    expect(cancelRes.body.resolvedById).toBe(guardian.id);
+
+    await superuser.class.delete({ where: { id: classForCancel.id } });
+  });
+
+  it('a caller with NO active GuardianLink to the Booking\'s real Student cannot cancel it, even naming that Student explicitly — 403', async () => {
+    // studentA already holds at least one Booking from earlier tests in this
+    // suite — outsider names studentA's real id, but holds no GuardianLink to
+    // them at all.
+    const studentABooking = await withUser(studentA.id, (tx) => tx.booking.findFirst({ where: { studentId: studentA.id, status: 'UPCOMING' } }));
+    expect(studentABooking).not.toBeNull();
+
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/bookings/${studentABooking!.id}/cancel`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({ studentId: studentA.id });
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
   // RLS — Booking/WaitlistEntry's asymmetric narrow-plus-broad shape (Decision 89)
   // ---------------------------------------------------------------------------
 

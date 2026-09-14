@@ -13,14 +13,14 @@ const BCRYPT_ROUNDS = 12;
  * grant/withdraw. See the Phase 12 kickoff prompt for the full scoping rationale —
  * age-13 limited login and a consent-management UI remain explicitly out of scope.
  * Waiver-signing (Phase 37), School enrollment (Phase 38, SchoolsService.join()),
- * Membership purchase (Phase 39, MembershipsService.purchase()), and Booking
- * creation (Phase 40, BookingsService.bookClass()) were ALSO deferred here
- * originally, but each was revisited once this module existed to build against —
- * see assertGuardianOfStudent()'s own comment and each consumer's own header
- * comment for the full account. Guardian-driven Booking CANCELLATION and Waitlist
- * join/claim remain still-unbuilt, separately-flagged follow-ons (see
- * BookingsService/WaitlistService's own header comments for why each is its own
- * decision, not silently bundled into Phase 40).
+ * Membership purchase (Phase 39, MembershipsService.purchase()), and both Booking
+ * creation and cancellation (Phase 40/41, BookingsService.bookClass()/
+ * cancelBooking()) were ALSO deferred here originally, but each was revisited
+ * once this module existed to build against — see assertGuardianOfStudent()'s
+ * own comment and each consumer's own header comment for the full account.
+ * Guardian-driven Waitlist join/claim remains the one still-unbuilt,
+ * separately-flagged follow-on (see WaitlistService's own header comment for
+ * why it's its own decision, not a mechanical copy of this same pattern).
  *
  * RLS shape (Decision 92): GuardianLink/ConsentRecord are narrow, self-only
  * (`guardianId = caller`), no shared-visibility branch at all — the first tables

@@ -10,6 +10,7 @@ import { GuardiansService } from '../guardians/guardians.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { BookClassDto } from './dto/book-class.dto';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
@@ -20,12 +21,16 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
  * override amendment. Waitlist join/withdraw/claim live in WaitlistService — see that
  * file's own header comment. QR check-in/Attendance (Phase "12") and
  * NotificationsModule are both explicitly out of scope — see the Phase 11 kickoff
- * prompt §3. Phase 40 added Guardian-on-behalf-of booking CREATION only —
- * cancelBooking()/updateOverrideReason() remain Staff-only (their own initial
- * `booking.findUnique` read relies on Booking's narrow RLS shape, which a Guardian
- * caller can't satisfy any more than the broad Class-read shape bookClass() itself
- * had to work around — a real, separate follow-on, not solved here; see
- * bookClass()'s own comment for the mechanism this phase DID add).
+ * prompt §3. Phase 40 added Guardian-on-behalf-of booking CREATION; Phase 41 added
+ * Guardian-on-behalf-of CANCELLATION (see cancelBooking()'s own comment for why it
+ * needed a genuinely different mechanism — a new DTO field, not the pre-existing
+ * BookClassDto.studentId — even though both ultimately reuse the same target-
+ * tenant-context substitution). updateOverrideReason() remains Staff-only — amending
+ * a rank-gate override's justification text is Instructor/Staff-exclusive by the
+ * same SKILL.md §9 reasoning bookClass() itself already applies to the override
+ * REASON field, so there is no Guardian case to build there at all, not a deferred
+ * one. Guardian-on-behalf-of Waitlist join/claim remains its own, separately-
+ * flagged follow-on — see WaitlistService's own header comment for why.
  *
  * RLS shape for Booking/BookingAttendee: the narrow "School Owner/Manager, or the
  * row's own Student, nobody else" shape (Decision 89), PLUS a second, additive,
@@ -194,21 +199,49 @@ export class BookingsService {
     });
   }
 
-  /** PATCH /bookings/{id}/cancel. Any caller (self or Staff) may cancel; Staff writes
-   * run under the target Student's own tenant context, same established mechanism. */
-  async cancelBooking(callerId: string, bookingId: string) {
-    const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
+  /**
+   * PATCH /bookings/{id}/cancel. Any caller (self, Staff, or — as of Phase 41 — a
+   * Guardian cancelling a linked minor's own Booking) may cancel; Staff/Guardian
+   * writes run under the target Student's own tenant context, same established
+   * mechanism.
+   *
+   * The initial lookup runs under the CALLER's own context first, unchanged for
+   * self-booking and Staff (Booking's broad `booking_staff_read` policy already lets
+   * any Staff role see the row directly, so a Staff caller never needed to name the
+   * Student up front). Only when that first lookup finds nothing does a Guardian's
+   * `dto.studentId` hint (CancelBookingDto's own comment) get a retry under that
+   * Student's own context — the same fallback shape bookClass() already established
+   * for Class visibility, applied here to Booking visibility instead. The actual
+   * authorization check afterward is always keyed off the row's own REAL
+   * `studentId` (whichever context actually found it), never trusted from
+   * `dto.studentId` directly.
+   */
+  async cancelBooking(callerId: string, bookingId: string, dto?: CancelBookingDto) {
+    let existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
     );
+    let isGuardianAction = false;
+    if (!existing && dto?.studentId !== undefined && dto.studentId !== callerId) {
+      existing = await this.prismaApp.withTenantContext(dto.studentId, (tx) =>
+        tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
+      );
+      isGuardianAction = existing !== null;
+    }
     if (!existing) {
       throw new NotFoundException('Booking not found');
     }
-    if (existing.studentId !== callerId) {
-      await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    // Hoisted to a local const — same "narrowing doesn't cross a closure boundary
+    // for a `let`" fix bookClass() already applies to its own `cls`/`resolvedClass`.
+    const resolvedBooking = existing;
+
+    if (isGuardianAction) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId);
+    } else if (resolvedBooking.studentId !== callerId) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
     }
 
-    const booking = await this.prismaApp.withTenantContext(existing.studentId, async (tx) => {
-      const cls = await tx.class.findUniqueOrThrow({ where: { id: existing.classId } });
+    const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
+      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
       const now = new Date();
       // Kickoff prompt §1.c: refunds/credits back before the Class's own
       // refundFeeDate cutoff; withholds on/after it. No cutoff configured (null)
@@ -229,9 +262,9 @@ export class BookingsService {
       }
 
       if (resolution === 'REFUNDED') {
-        await this.restoreCredit(tx, existing.sourceMembershipId);
+        await this.restoreCredit(tx, resolvedBooking.sourceMembershipId);
       }
-      for (const attendee of existing.attendees) {
+      for (const attendee of resolvedBooking.attendees) {
         await tx.bookingAttendee.update({
           where: { id: attendee.id },
           data: { refundResolution: resolution, resolvedById: callerId },
