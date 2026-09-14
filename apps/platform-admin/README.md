@@ -5,9 +5,9 @@ identity realm from `apps/school-portal` (Spec 55 §4.2/§4.4, `ultm8-tenant-iso
 §3/§6). Never merged into `apps/school-portal`; must ship with its own subdomain in
 production.
 
-## Status: Phase 33, Slice 2 — School/Franchise/PaymentAccount lookup
+## Status: Phase 36, Slice 3 — credential rotation
 
-Cognito-backed sign-in, the AdminUser roster (invite / list / revoke), and now look-up-by-id screens for School, Franchise, and each one's PaymentAccount configuration.
+Cognito-backed sign-in, the AdminUser roster (invite / list / revoke), look-up-by-id screens for School/Franchise with each one's PaymentAccount configuration, and now the first tenant-data WRITE this app exposes: initiating a Stripe Connect credential rotation.
 
 **Built in Slice 1 (Phase 32):**
 - Sign-in via AWS Cognito's own Hosted UI, Authorization Code grant + PKCE — no in-app credential form, and no client secret needed (PKCE is exactly the mechanism that lets a public browser SPA use the Authorization Code flow safely; see `src/auth/pkce.ts`'s own header comment for why an earlier Implicit-grant draft was wrong and got caught on review before this shipped). `POST /platform-admin/auth/exchange` only ever needs the resulting Cognito ID token. See `.env.example` for the three `VITE_COGNITO_*` variables this needs — real AWS infrastructure this codebase cannot provision itself; the login screen degrades to a clear "not configured" message when they're unset, same convention `apps/api`'s own unconfigured-external-dependency services already use.
@@ -18,8 +18,11 @@ Cognito-backed sign-in, the AdminUser roster (invite / list / revoke), and now l
 - `GET /platform-admin/schools/:id` and `/franchises/:id` — look-up-by-id screens (`Schools`, `Franchises` in the nav). No cross-tenant "list all Schools/Franchises" endpoint exists (each is deliberately findOne-by-id only, see `PlatformAdminSchoolsService`'s own header comment), so both screens take a known id rather than browsing a list — same shape `apps/school-portal`'s own `StaffPage` already established for "look up one known user's role grants."
 - `GET /platform-admin/schools/:schoolId/payment-account` and `/franchises/:franchiseId/payment-account` — rendered as a nested section under each lookup once the School/Franchise itself resolves. `BILLING_PAYMENTS_OPS`/`FULL_ADMIN` only server-side; a `SUPPORT` caller sees this section's own 403 state, not a silently empty one. A 404 here is a normal "no payment account configured yet" state, not an error banner.
 
+**Built in Slice 3 (Phase 36):**
+- `POST /platform-admin/payment-accounts/:id/rotate-credential` — a "Rotate credential" button on each `STRIPE`-provider PaymentAccount section (`src/paymentAccounts/PaymentAccountDetails.tsx`, shared between the School and Franchise lookup screens). Success surfaces the fresh Stripe onboarding link as a plain URL to relay to the tenant — Platform Admin cannot complete the flow on the tenant's own behalf, since Stripe Connect onboarding collects the tenant's own business/banking details. No client-side pre-validation of whether onboarding already completed; the server's own error message (a `CASH`/`BANK_TRANSFER` account, or one that never started onboarding) surfaces directly.
+
 **Not built yet, each its own later slice** (mirrors `PlatformAdminModule`'s own module-header comment on the backend side):
-- Any tenant-data write UI (editing another tenant's records, Stripe Connect credential rotation, impersonation) — each blocked on the same backend design work `PlatformAdminModule`'s own header comment already flags, not built here first.
+- Any other tenant-data write UI (editing another tenant's records generally, impersonation) — each blocked on its own separate backend design work `PlatformAdminModule`'s own header comment already flags, not built here first.
 - A real "home" dashboard — still lands directly on Admin Users; there's nothing yet to summarize on a landing page.
 
 ## Local development

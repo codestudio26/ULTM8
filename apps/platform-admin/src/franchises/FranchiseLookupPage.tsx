@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { Badge, Button, Card, ErrorBanner, Field, PageHeader, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useFranchise, useFranchisePaymentAccount } from './franchiseQueries';
+import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
+import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails';
 
 /** Look-up-by-id — see franchiseQueries.ts's own header comment for why
- * there's no list here. Read-only, same scope reasoning as
- * SchoolLookupPage's own header comment. */
+ * there's no list here. Mostly read-only, same scope reasoning as
+ * SchoolLookupPage's own header comment — including the same "Rotate
+ * credential" write on the PaymentAccount section (Phase 35). */
 export function FranchiseLookupPage() {
   const [idInput, setIdInput] = useState('');
   const [lookedUpId, setLookedUpId] = useState<string | null>(null);
 
   const franchise = useFranchise(lookedUpId);
   const paymentAccount = useFranchisePaymentAccount(lookedUpId);
+  const rotateCredential = useRotateCredential();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,18 +77,7 @@ export function FranchiseLookupPage() {
               ) : paymentAccount.error ? (
                 <ErrorBanner message="Could not load the payment account." />
               ) : paymentAccount.data ? (
-                <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 16px' }}>
-                  <dt>Provider</dt>
-                  <dd>{paymentAccount.data.provider}</dd>
-                  <dt>Account title</dt>
-                  <dd>{paymentAccount.data.accountTitle}</dd>
-                  <dt>Country</dt>
-                  <dd>{paymentAccount.data.country}</dd>
-                  <dt>Status</dt>
-                  <dd><Badge variant={paymentAccount.data.status === 'ACTIVE' ? 'success' : 'default'}>{paymentAccount.data.status}</Badge></dd>
-                  <dt>Mode</dt>
-                  <dd>{paymentAccount.data.mode}</dd>
-                </dl>
+                <PaymentAccountDetails account={paymentAccount.data} rotateCredential={rotateCredential} />
               ) : null}
             </Card>
           ) : null}

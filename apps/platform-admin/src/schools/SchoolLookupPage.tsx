@@ -2,19 +2,24 @@ import React, { useState } from 'react';
 import { Badge, Button, Card, ErrorBanner, Field, PageHeader, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useSchool, useSchoolPaymentAccount } from './schoolQueries';
+import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
+import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails';
 
 /** Look-up-by-id — see schoolQueries.ts's own header comment for why there's no
- * list here. Read-only (Slice 7): no edit/create UI, since PlatformAdminModule
- * has no write endpoint for School fields themselves — only a School Owner can
- * edit their own School (apps/school-portal), and Platform Admin's own write
- * surface for tenant data (credential rotation, impersonation) is a separate,
- * not-yet-built slice (see this app's own README). */
+ * list here. Mostly read-only: School fields themselves have no Platform Admin
+ * write endpoint (only a School Owner can edit their own School, via
+ * apps/school-portal) — the one write this screen DOES expose is the
+ * PaymentAccount section's own "Rotate credential" action (Phase 35's
+ * POST .../payment-accounts/:id/rotate-credential). General tenant-data edits
+ * and impersonation are each a separate, not-yet-built slice (see this app's
+ * own README). */
 export function SchoolLookupPage() {
   const [idInput, setIdInput] = useState('');
   const [lookedUpId, setLookedUpId] = useState<string | null>(null);
 
   const school = useSchool(lookedUpId);
   const paymentAccount = useSchoolPaymentAccount(lookedUpId);
+  const rotateCredential = useRotateCredential();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,18 +89,7 @@ export function SchoolLookupPage() {
               ) : paymentAccount.error ? (
                 <ErrorBanner message="Could not load the payment account." />
               ) : paymentAccount.data ? (
-                <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 16px' }}>
-                  <dt>Provider</dt>
-                  <dd>{paymentAccount.data.provider}</dd>
-                  <dt>Account title</dt>
-                  <dd>{paymentAccount.data.accountTitle}</dd>
-                  <dt>Country</dt>
-                  <dd>{paymentAccount.data.country}</dd>
-                  <dt>Status</dt>
-                  <dd><Badge variant={paymentAccount.data.status === 'ACTIVE' ? 'success' : 'default'}>{paymentAccount.data.status}</Badge></dd>
-                  <dt>Mode</dt>
-                  <dd>{paymentAccount.data.mode}</dd>
-                </dl>
+                <PaymentAccountDetails account={paymentAccount.data} rotateCredential={rotateCredential} />
               ) : null}
             </Card>
           ) : null}
