@@ -2,7 +2,7 @@
   "name": "@ultm8/platform-admin",
   "version": "0.1.0",
   "private": true,
-  "description": "React — Platform Admin (Spec §4). A genuinely separate app/deployment/identity realm from apps/school-portal — Phase 32's own Slice 1 walking skeleton: Cognito-backed sign-in and the AdminUser roster (invite/list/revoke), the first real screen now that PlatformAdminModule has a broad enough backend surface (School/Franchise/PaymentAccount reads, full AdminUser lifecycle) to be worth a UI. Not deployed anywhere yet — see README.",
+  "description": "React — Platform Admin (Spec §4). A genuinely separate app/deployment/identity realm from apps/school-portal — Slice 1 (Phase 32) shipped Cognito-backed sign-in and the AdminUser roster (invite/list/revoke); Slice 2 (Phase 33) added look-up-by-id screens for School, Franchise, and each one's PaymentAccount configuration. Not deployed anywhere yet — see README.",
   "type": "module",
   "scripts": {
     "dev": "vite",
