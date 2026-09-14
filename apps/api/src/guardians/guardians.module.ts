@@ -5,17 +5,21 @@ import { GuardiansService } from './guardians.service';
 /**
  * Phase 12 scope: Guardian linking a minor Student + two-tier ConsentRecord
  * grant/withdraw. See GuardiansService's own header comment for what's
- * deliberately still not here (on-behalf-of payments/bookings/enrollment,
- * age-13 limited login, a consent-management UI) and what Phase 37 added
- * (waiver-signing, via the exported assertGuardianOfStudent() below).
+ * deliberately still not here (on-behalf-of payments/bookings, age-13
+ * limited login, a consent-management UI) and what Phase 37/38 each added
+ * (waiver-signing, then School enrollment — both via the exported
+ * assertGuardianOfStudent() below).
  *
  * No TenantsModule import needed — unlike every other module, GuardianLink/
  * ConsentRecord are platform-scoped, not School-scoped, so
  * TenantAuthorizationService's School/Branch-authorization helpers don't apply
- * here at all.
+ * here at all. (TenantsModule imports THIS module, as of Phase 38, for the
+ * reverse reason — SchoolsService needs assertGuardianOfStudent() — which is
+ * one-directional and not a cycle.)
  *
- * Exports GuardiansService (Phase 37) so other modules can inject it for
- * assertGuardianOfStudent() — first consumer: WaiversModule.
+ * Exports GuardiansService so other modules can inject it for
+ * assertGuardianOfStudent() — consumers: WaiversModule (Phase 37),
+ * TenantsModule/SchoolsService (Phase 38).
  */
 @Module({
   controllers: [GuardiansController],

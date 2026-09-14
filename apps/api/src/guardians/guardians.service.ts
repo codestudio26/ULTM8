@@ -13,13 +13,12 @@ const BCRYPT_ROUNDS = 12;
  * grant/withdraw. See the Phase 12 kickoff prompt for the full scoping rationale —
  * Guardian acting on behalf of a minor for payments/bookings, age-13 limited
  * login, and a consent-management UI remain explicitly out of scope. Waiver-
- * signing was ALSO deferred here originally, but Phase 37 revisited it once this
- * module existed to build against — see assertGuardianOfStudent()'s own comment
- * and WaiversService.sign()'s header comment for the full account, including a
- * real remaining gap that surfaced: there is still no Guardian-on-behalf-of
- * ENROLLMENT path (SchoolsService.join() is self-service-only), so a minor must
- * already hold a STUDENT RoleGrant by some other means before Guardian-signing
- * is actually reachable — flagged, not silently papered over.
+ * signing (Phase 37) and School enrollment (Phase 38, SchoolsService.join())
+ * were ALSO deferred here originally, but both were revisited once this module
+ * existed to build against — see assertGuardianOfStudent()'s own comment and
+ * each consumer's own header comment for the full account. Guardian-driven
+ * bookings/memberships remain the next, still-unbuilt items in that same
+ * originally-deferred list.
  *
  * RLS shape (Decision 92): GuardianLink/ConsentRecord are narrow, self-only
  * (`guardianId = caller`), no shared-visibility branch at all — the first tables
@@ -164,7 +163,8 @@ export class GuardiansService {
   /**
    * Shared authorization primitive for OTHER modules doing Guardian-on-behalf-of
    * work (first consumer: WaiversModule's sign()/requestSignatureUploadUrl(),
-   * Phase 37) — mirrors TenantAuthorizationService.assertStaffAtSchool()'s shape
+   * Phase 37; second: SchoolsService.join(), Phase 38) — mirrors
+   * TenantAuthorizationService.assertStaffAtSchool()'s shape
    * and call-then-throw convention, but can't reuse that helper directly:
    * GuardianLink has no School dimension to key off at all (Decision 92; see
    * this class's own header comment), unlike a RoleGrant.
