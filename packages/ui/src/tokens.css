@@ -54,6 +54,27 @@
   --bg-accent: color-mix(in srgb, var(--color-accent-500) 12%, white);
   --bg-success: color-mix(in srgb, var(--color-success) 12%, white);
   --text-success: var(--color-success);
+
+  /* Solid "success" button fill (.ultm8-btn--success) — distinct from --bg-success
+     above (a badge/alert tint) even though the two land in the same pale-green
+     neighborhood, because a filled button needs its own hover step and, per the
+     contrast math below, its own on-fill text color rather than reusing
+     --text-success. --text-success (--color-success, #1f7a4d) on this fill only
+     reaches ~4.4:1 — just under WCAG AA's 4.5:1 for normal-size text — so
+     --on-success uses a dark neutral instead, verified at ~14.8:1. See DESIGN.md's
+     own "Verified contrast" table for the citation.
+     --on-success is --color-neutral-900 directly, NOT --text-primary: like
+     --text-success/--bg-success above, --fill-success/--fill-success-hover have no
+     dark-mode override (same pre-existing pattern this file already uses for every
+     success/warning/danger token — none of them flip in dark mode), so pairing
+     --fill-success with the theme-relative --text-primary would break in dark mode
+     the moment --text-primary flips to a near-white value while the fill itself
+     stays a fixed pale mint. A literal ramp reference keeps both sides of the pair
+     equally fixed. */
+  --fill-success: #def2e2;
+  --fill-success-hover: color-mix(in srgb, var(--color-success) 20%, white);
+  --on-success: var(--color-neutral-900);
+
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);

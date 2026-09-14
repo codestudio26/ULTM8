@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 /* ---------------------------------------------------------------------- Button */
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success';
   fullWidth?: boolean;
   loading?: boolean;
 }

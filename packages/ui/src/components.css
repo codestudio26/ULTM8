@@ -56,6 +56,13 @@
 .ultm8-btn--danger:not(:disabled):hover {
   opacity: 0.85;
 }
+.ultm8-btn--success {
+  background: var(--fill-success);
+  color: var(--on-success);
+}
+.ultm8-btn--success:not(:disabled):hover {
+  background: var(--fill-success-hover);
+}
 .ultm8-btn--full {
   width: 100%;
 }
