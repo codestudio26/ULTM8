@@ -11,16 +11,16 @@ const BCRYPT_ROUNDS = 12;
 /**
  * Phase 12 scope: Guardian linking a minor Student + two-tier ConsentRecord
  * grant/withdraw. See the Phase 12 kickoff prompt for the full scoping rationale —
- * Guardian acting on behalf of a minor for bookings, age-13 limited login, and a
- * consent-management UI remain explicitly out of scope. Waiver-signing (Phase 37),
- * School enrollment (Phase 38, SchoolsService.join()), and Membership purchase
- * (Phase 39, MembershipsService.purchase()) were ALSO deferred here originally,
- * but each was revisited once this module existed to build against — see
- * assertGuardianOfStudent()'s own comment and each consumer's own header comment
- * for the full account. Guardian-driven Booking creation is the next, still-
- * unbuilt item in that same originally-deferred list — now genuinely unlocked by
- * Phase 39 rather than blocked on it (see MembershipsService.purchase()'s own
- * comment).
+ * age-13 limited login and a consent-management UI remain explicitly out of scope.
+ * Waiver-signing (Phase 37), School enrollment (Phase 38, SchoolsService.join()),
+ * Membership purchase (Phase 39, MembershipsService.purchase()), and Booking
+ * creation (Phase 40, BookingsService.bookClass()) were ALSO deferred here
+ * originally, but each was revisited once this module existed to build against —
+ * see assertGuardianOfStudent()'s own comment and each consumer's own header
+ * comment for the full account. Guardian-driven Booking CANCELLATION and Waitlist
+ * join/claim remain still-unbuilt, separately-flagged follow-ons (see
+ * BookingsService/WaitlistService's own header comments for why each is its own
+ * decision, not silently bundled into Phase 40).
  *
  * RLS shape (Decision 92): GuardianLink/ConsentRecord are narrow, self-only
  * (`guardianId = caller`), no shared-visibility branch at all — the first tables
@@ -165,8 +165,9 @@ export class GuardiansService {
   /**
    * Shared authorization primitive for OTHER modules doing Guardian-on-behalf-of
    * work (consumers: WaiversModule's sign()/requestSignatureUploadUrl(), Phase 37;
-   * SchoolsService.join(), Phase 38; MembershipsService.purchase(), Phase 39) —
-   * mirrors TenantAuthorizationService.assertStaffAtSchool()'s shape
+   * SchoolsService.join(), Phase 38; MembershipsService.purchase(), Phase 39;
+   * BookingsService.bookClass(), Phase 40) — mirrors
+   * TenantAuthorizationService.assertStaffAtSchool()'s shape
    * and call-then-throw convention, but can't reuse that helper directly:
    * GuardianLink has no School dimension to key off at all (Decision 92; see
    * this class's own header comment), unlike a RoleGrant.

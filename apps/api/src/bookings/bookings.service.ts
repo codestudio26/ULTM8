@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { GuardiansService } from '../guardians/guardians.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { BookClassDto } from './dto/book-class.dto';
@@ -15,11 +16,16 @@ import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 /**
- * Phase 11 scope only: single-Class booking creation/cancellation + the rank-gate
+ * Phase 11 scope: single-Class booking creation/cancellation + the rank-gate
  * override amendment. Waitlist join/withdraw/claim live in WaitlistService — see that
  * file's own header comment. QR check-in/Attendance (Phase "12") and
  * NotificationsModule are both explicitly out of scope — see the Phase 11 kickoff
- * prompt §3.
+ * prompt §3. Phase 40 added Guardian-on-behalf-of booking CREATION only —
+ * cancelBooking()/updateOverrideReason() remain Staff-only (their own initial
+ * `booking.findUnique` read relies on Booking's narrow RLS shape, which a Guardian
+ * caller can't satisfy any more than the broad Class-read shape bookClass() itself
+ * had to work around — a real, separate follow-on, not solved here; see
+ * bookClass()'s own comment for the mechanism this phase DID add).
  *
  * RLS shape for Booking/BookingAttendee: the narrow "School Owner/Manager, or the
  * row's own Student, nobody else" shape (Decision 89), PLUS a second, additive,
@@ -38,6 +44,7 @@ export class BookingsService {
     private readonly prismaApp: PrismaAppService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
+    private readonly guardiansService: GuardiansService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
@@ -46,30 +53,66 @@ export class BookingsService {
    * on-behalf-of shape. Gate order matches the Phase 11 kickoff prompt §1.b exactly:
    * waiver -> rank -> capacity, then Membership-credit selection, then the actual
    * create.
+   *
+   * Phase 40 added Guardian-on-behalf-of booking, the small follow-on Phase 37/38/39
+   * flagged as the true remaining prerequisite chain finally clears —
+   * selectAndConsumeMembership() below already keys purely off `studentId`, so it
+   * needed zero changes once a Guardian-managed minor could actually hold a
+   * Membership to spend (Phase 39).
+   *
+   * `cls` is looked up under the CALLER's own context first, same as before — this
+   * still succeeds unchanged for both ordinary self-booking and Staff-on-behalf-of,
+   * since both hold a RoleGrant at the School (Class's RLS requires one, any role).
+   * Only a Guardian caller (zero RoleGrant anywhere — Decision 92) fails that first
+   * lookup; the retry under the TARGET Student's own context is what a Staff caller
+   * already effectively relies on the target being enrolled for anyway, so this
+   * changes no existing behavior, only adds a fallback for the genuinely new case.
    */
   async bookClass(callerId: string, classId: string, dto: BookClassDto) {
-    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    const studentId = dto.studentId ?? callerId;
+    const isOnBehalfOf = dto.studentId !== undefined && dto.studentId !== callerId;
+
+    let cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    let isGuardianAction = false;
+    if (!cls && isOnBehalfOf) {
+      cls = await this.prismaApp.withTenantContext(studentId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+      isGuardianAction = cls !== null;
+    }
     if (!cls) {
       throw new NotFoundException('Class not found');
     }
+    // Hoisted to a local const — `cls` above is `let` (conditionally reassigned
+    // by the Guardian-retry branch), and TS narrowing from the guard above
+    // doesn't persist into the withTenantContext(...) closure below for a
+    // mutable binding, the same "narrowing doesn't cross a closure boundary
+    // for `let`" limitation MembershipsService.updatePlan() already found and
+    // worked around the same way (see its own comment on scopedClassIdToValidate).
+    const resolvedClass = cls;
 
-    const studentId = dto.studentId ?? callerId;
-    // FOUND ON REVIEW: `dto.studentId !== undefined` alone would wrongly flag an
-    // ordinary self-booking as a Staff action whenever a client happens to include
-    // its own caller id in the field (harmless but avoidably 403s a real Student) —
-    // only naming someone ELSE, or supplying an overrideReason, is actually a Staff
-    // action.
-    const isStaffAction = (dto.studentId !== undefined && dto.studentId !== callerId) || dto.overrideReason !== undefined;
-    if (isStaffAction) {
+    // FOUND ON REVIEW (Phase 11): `dto.studentId !== undefined` alone would wrongly
+    // flag an ordinary self-booking as a Staff action whenever a client happens to
+    // include its own caller id in the field (harmless but avoidably 403s a real
+    // Student) — only naming someone ELSE, or supplying an overrideReason, is
+    // actually a Staff action. `isGuardianAction` above already excludes the ordinary
+    // self-booking case (it's only ever set true when isOnBehalfOf is also true).
+    const isStaffAction = !isGuardianAction && (isOnBehalfOf || dto.overrideReason !== undefined);
+    if (isGuardianAction) {
+      // A Guardian may never also override — SKILL.md §9 reserves that to
+      // Instructor/Staff specifically, and Guardian is further still from Staff.
+      if (dto.overrideReason !== undefined) {
+        throw new ForbiddenException('A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.');
+      }
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    } else if (isStaffAction) {
       // A Student may never self-override or book on someone else's behalf — SKILL.md
       // §9: "An Instructor/Staff member can override", never the Student themselves.
-      await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId);
+      await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
     }
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
-      if (cls.termsWaiverRequired) {
+      if (resolvedClass.termsWaiverRequired) {
         const signed = await tx.waiverSignature.findFirst({
-          where: { studentId, schoolId: cls.schoolId, status: 'SIGNED' },
+          where: { studentId, schoolId: resolvedClass.schoolId, status: 'SIGNED' },
           select: { id: true },
         });
         if (!signed) {
@@ -78,12 +121,12 @@ export class BookingsService {
       }
 
       if (!dto.overrideReason) {
-        await this.assertRankEligible(tx, studentId, cls);
+        await this.assertRankEligible(tx, studentId, resolvedClass);
       }
 
       const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];
       const partySize = 1 + attendeeMembershipIds.length;
-      if (cls.capacity !== null) {
+      if (resolvedClass.capacity !== null) {
         // FOUND ON REVIEW: a plain count()-then-compare here is a genuine TOCTOU
         // race — two concurrent bookClass() calls for the same Class can both read
         // the same pre-booking occupancy, both pass the capacity check, and both
@@ -97,14 +140,14 @@ export class BookingsService {
         // this codebase; flagged here rather than silently introduced.
         await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
         const occupied = await this.countOccupiedSeats(classId);
-        if (occupied + partySize > cls.capacity) {
+        if (occupied + partySize > resolvedClass.capacity) {
           throw new ConflictException(
             'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
           );
         }
       }
 
-      const sourceMembership = await this.selectAndConsumeMembership(tx, studentId, cls.schoolId, classId);
+      const sourceMembership = await this.selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, classId);
 
       const bookingId = randomUUID();
       try {
@@ -113,8 +156,8 @@ export class BookingsService {
             id: bookingId,
             studentId,
             classId,
-            schoolId: cls.schoolId,
-            branchId: cls.branchId,
+            schoolId: resolvedClass.schoolId,
+            branchId: resolvedClass.branchId,
             sourceMembershipId: sourceMembership.id,
             overriddenById: dto.overrideReason ? callerId : null,
             overrideReason: dto.overrideReason ?? null,
@@ -141,9 +184,9 @@ export class BookingsService {
       // their OWN Membership) would need a real cross-account consent mechanism
       // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
       for (const membershipId of attendeeMembershipIds) {
-        const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, cls.schoolId, classId);
+        const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
         await tx.bookingAttendee.create({
-          data: { id: randomUUID(), bookingId, schoolId: cls.schoolId, membershipId: guestMembership.id },
+          data: { id: randomUUID(), bookingId, schoolId: resolvedClass.schoolId, membershipId: guestMembership.id },
         });
       }
 

@@ -58,11 +58,14 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   let studentB: { id: string; email: string };
   let branchStaff: { id: string; email: string };
   let outsider: { id: string; email: string };
+  let guardian: { id: string; email: string };
+  let minor: { id: string; email: string };
   let tokenOwner: string;
   let tokenStudentA: string;
   let tokenStudentB: string;
   let tokenBranchStaff: string;
   let tokenOutsider: string;
+  let tokenGuardian: string;
 
   let subscriptionPlanId: string;
   let classPackPlanId: string;
@@ -137,6 +140,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     studentB = await mkUser('student-b');
     branchStaff = await mkUser('branch-staff');
     outsider = await mkUser('outsider');
+    guardian = await mkUser('guardian');
+    minor = await mkUser('minor');
 
     await superuser.roleGrant.createMany({
       data: [
@@ -144,14 +149,20 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: school.id },
         { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: school.id },
         { id: randomUUID(), role: 'BRANCH_STAFF', userId: branchStaff.id, schoolId: school.id },
+        // Stands in for Phase 38's own Guardian-on-behalf-of enrollment —
+        // exercised end-to-end in that phase's own test suite, not re-proven
+        // here.
+        { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: school.id },
       ],
     });
+    await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
 
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentB = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenBranchStaff = signAccessToken(branchStaff, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenOutsider = signAccessToken(outsider, []);
+    tokenGuardian = signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
 
     const subscriptionPlan = await superuser.membershipPlan.create({
       data: { id: randomUUID(), schoolId: school.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 },
@@ -219,6 +230,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     await superuser.rank.deleteMany({ where: { schoolId: school.id } });
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
+    await superuser.guardianLink.deleteMany({ where: { guardianId: guardian.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { email: { contains: 'bookings-http-' } } });
     await superuser.school.delete({ where: { id: school.id } });
@@ -856,6 +868,47 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
     expect(after.classesRemaining).toBe(2); // still decremented, never restored
+  });
+
+  // ---------------------------------------------------------------------------
+  // Guardian-on-behalf-of booking (Phase 40).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN book a Class for a linked minor — the Booking belongs to the MINOR, not the Guardian', async () => {
+    await mkActiveMembership(minor.id, subscriptionPlanId, null);
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBasic.id}/book`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('UPCOMING');
+    expect(res.body.studentId).toBe(minor.id);
+    bookingIds.push(res.body.id);
+
+    // Direct Prisma, under the minor's own tenant context — confirms the row
+    // is genuinely readable as the minor's own (Booking RLS's "self" branch),
+    // the same style of check Phase 39's own Membership test already used.
+    const asMinor = await withUser(minor.id, (tx) => tx.booking.findMany({ where: { id: res.body.id } }));
+    expect(asMinor).toHaveLength(1);
+  });
+
+  it('a Guardian may NOT supply overrideReason — 403, only Instructor/Staff may override', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classRankGated.id}/book`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id, overrideReason: 'Guardian trying to override' });
+    expect(res.status).toBe(403);
+  });
+
+  it('a caller with NO active GuardianLink to the named Student is rejected — 403, not a silent no-op', async () => {
+    // studentA stands in for "some other real Student" — outsider holds no
+    // GuardianLink to them (or anyone) at all.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBasic.id}/book`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({ studentId: studentA.id });
+    expect(res.status).toBe(403);
   });
 
   // ---------------------------------------------------------------------------
