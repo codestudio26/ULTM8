@@ -16,6 +16,7 @@ export const AuditAction = {
   LIST_ADMIN_USERS: 'LIST_ADMIN_USERS',
   REVOKE_ADMIN_USER: 'REVOKE_ADMIN_USER',
   VIEW_PAYMENT_ACCOUNT: 'VIEW_PAYMENT_ACCOUNT',
+  ROTATE_PAYMENT_ACCOUNT_CREDENTIAL: 'ROTATE_PAYMENT_ACCOUNT_CREDENTIAL',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

@@ -3225,6 +3225,41 @@
         ]
       }
     },
+    "/v1/waivers/{id}/signature-upload-url": {
+      "post": {
+        "operationId": "WaiversController_requestSignatureUploadUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignatureUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/book": {
       "post": {
         "operationId": "BookingsController_bookClass",
@@ -4535,6 +4570,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/payment-accounts/{id}/rotate-credential": {
+      "post": {
+        "operationId": "PlatformAdminPaymentAccountsController_initiateCredentialRotation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateCredentialResponseDto"
                 }
               }
             }
@@ -7580,6 +7650,11 @@
           "signatureText": {
             "type": "string"
           },
+          "signatureImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Presigned R2 GET URL, valid for 15 minutes — null if no drawn-signature image was captured."
+          },
           "signedDate": {
             "type": "string"
           },
@@ -7644,12 +7719,33 @@
           },
           "signatureText": {
             "type": "string",
-            "description": "Typed signature text (not a drawn/canvas signature — see WaiverSignature's own schema comment)."
+            "description": "Typed signature text (the confirmed baseline mechanism — see WaiverSignature's own schema comment)."
+          },
+          "signatureImageKey": {
+            "type": "string",
+            "description": "R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment."
           }
         },
         "required": [
           "signerFullName",
           "signatureText"
+        ]
+      },
+      "SignatureUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned PUT URL, valid for 5 minutes — upload the raster (PNG) signature image directly here."
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "Pass this back as signatureImageKey when calling POST /waivers/{id}/sign."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "objectKey"
         ]
       },
       "BookClassDto": {
@@ -8742,6 +8838,18 @@
           "mode",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "RotateCredentialResponseDto": {
+        "type": "object",
+        "properties": {
+          "onboardingUrl": {
+            "type": "string",
+            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
+          }
+        },
+        "required": [
+          "onboardingUrl"
         ]
       }
     }

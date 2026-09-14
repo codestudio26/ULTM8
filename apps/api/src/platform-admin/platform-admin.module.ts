@@ -15,6 +15,7 @@ import { PlatformAdminUsersController } from './platform-admin-users.controller'
 import { PlatformAdminUsersService } from './platform-admin-users.service';
 import { PlatformAdminPaymentAccountsController } from './platform-admin-payment-accounts.controller';
 import { PlatformAdminPaymentAccountsService } from './platform-admin-payment-accounts.service';
+import { PaymentsModule } from '../payments/payments.module';
 
 /**
  * PlatformAdminModule — Spec 55 §7, gated entirely on the SSO/IdP vendor decision
@@ -74,11 +75,19 @@ import { PlatformAdminPaymentAccountsService } from './platform-admin-payment-ac
  * PlatformAdminPaymentAccountsService's own header comment). Response excludes
  * `stripeConnectedAccountId` entirely, at both the DB-grant and DTO layer.
  *
+ * SLICE 7 (Phase 35) — POST .../payment-accounts/:id/rotate-credential: the WRITE
+ * half of Billing/Payments Ops's own confirmed capability, resolved without
+ * guessing by connecting two already-confirmed pieces rather than inventing a new
+ * mechanism — Spec §3.2's own literal wording ("the engineer initiates a new
+ * Stripe Connect onboarding/rotation flow") and PaymentsService.
+ * initiateConnectOnboarding()'s own already-built, already-tested "re-request a
+ * fresh Account Link against an existing Connected Account" behavior (see
+ * PlatformAdminPaymentAccountsService.initiateCredentialRotation()'s own header
+ * comment for the full reasoning, including what's deliberately still NOT built:
+ * step-up MFA for this action, and rotation for the unbuilt AWS Secrets Manager
+ * fallback path).
+ *
  * Still deliberately NOT built, each its own later slice:
- *  - Initiating a Stripe Connect credential rotation — the WRITE half of
- *    Billing/Payments Ops's own confirmed capability (§3). How rotation actually
- *    works against Stripe Connect/secrets-manager custody is a real, separate
- *    design question, not guessed at here.
  *  - Any other WRITE-side cross-tenant admin endpoint touching TENANT data (editing
  *    another tenant's records, impersonation) — each carries its own real design
  *    questions beyond "write an audit entry," not guessed at here. Slice 4/5's own
@@ -95,6 +104,7 @@ import { PlatformAdminPaymentAccountsService } from './platform-admin-payment-ac
 @Module({
   imports: [
     PassportModule,
+    PaymentsModule, // for StripeClientService — see Slice 7's own header comment
     JwtModule.register({
       secret: process.env.PLATFORM_ADMIN_JWT_SECRET,
       // Shorter than the tenant realm's 15-minute default (JWT_ACCESS_TTL, itself
