@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -9,10 +9,17 @@ import { GrantConsentDto } from './dto/grant-consent.dto';
 const BCRYPT_ROUNDS = 12;
 
 /**
- * Phase 12 scope only: Guardian linking a minor Student + two-tier ConsentRecord
+ * Phase 12 scope: Guardian linking a minor Student + two-tier ConsentRecord
  * grant/withdraw. See the Phase 12 kickoff prompt for the full scoping rationale —
- * Guardian acting on behalf of a minor for payments/waivers/bookings, age-13
- * limited login, and a consent-management UI are all explicitly out of scope.
+ * Guardian acting on behalf of a minor for payments/bookings, age-13 limited
+ * login, and a consent-management UI remain explicitly out of scope. Waiver-
+ * signing was ALSO deferred here originally, but Phase 37 revisited it once this
+ * module existed to build against — see assertGuardianOfStudent()'s own comment
+ * and WaiversService.sign()'s header comment for the full account, including a
+ * real remaining gap that surfaced: there is still no Guardian-on-behalf-of
+ * ENROLLMENT path (SchoolsService.join() is self-service-only), so a minor must
+ * already hold a STUDENT RoleGrant by some other means before Guardian-signing
+ * is actually reachable — flagged, not silently papered over.
  *
  * RLS shape (Decision 92): GuardianLink/ConsentRecord are narrow, self-only
  * (`guardianId = caller`), no shared-visibility branch at all — the first tables
@@ -152,6 +159,30 @@ export class GuardiansService {
       gender: minors[i].gender,
     }));
     return { items };
+  }
+
+  /**
+   * Shared authorization primitive for OTHER modules doing Guardian-on-behalf-of
+   * work (first consumer: WaiversModule's sign()/requestSignatureUploadUrl(),
+   * Phase 37) — mirrors TenantAuthorizationService.assertStaffAtSchool()'s shape
+   * and call-then-throw convention, but can't reuse that helper directly:
+   * GuardianLink has no School dimension to key off at all (Decision 92; see
+   * this class's own header comment), unlike a RoleGrant.
+   *
+   * No ConsentRecord check here, deliberately: SKILL.md §14 states the GuardianLink
+   * itself (active, not revoked) is what confers "full access to... waiver-signing
+   * authority... for each linked minor" — ConsentRecord is a separate, unrelated
+   * legal concept (SKILL.md §16: "a different legal concept entirely"), not a
+   * documented prerequisite gate for this specific authority. Not invented here —
+   * applying the already-[CONFIRMED] text directly, not filling a gap with a guess.
+   */
+  async assertGuardianOfStudent(guardianId: string, studentId: string): Promise<void> {
+    const link = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.guardianLink.findUnique({ where: { guardianId_studentId: { guardianId, studentId } } }),
+    );
+    if (!link || link.revokedAt) {
+      throw new ForbiddenException('You are not an active Guardian for this Student.');
+    }
   }
 
   /** POST /guardians/me/minors/{studentId}/consent. Upserts — re-granting after a

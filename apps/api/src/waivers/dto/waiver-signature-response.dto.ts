@@ -6,7 +6,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * short-lived presigned GET URL, computed by WaiversService on every response
  * rather than a permanently public link. See R2ClientService's own header
  * comment for why. `null` when no drawn-signature image was ever captured
- * (typed-name-only signing remains valid). */
+ * (typed-name-only signing remains valid). `signedById` (Phase 37) equals
+ * `studentId` for an ordinary self-signed row — it differs only when a
+ * Guardian signed on a linked minor's behalf, so a client can tell the two
+ * cases apart without any other signal. */
 export class WaiverSignatureResponseDto {
   @ApiProperty()
   id!: string;
@@ -16,6 +19,9 @@ export class WaiverSignatureResponseDto {
 
   @ApiProperty()
   studentId!: string;
+
+  @ApiProperty({ description: 'The actual signer — equals studentId unless a Guardian signed on a linked minor\'s behalf.' })
+  signedById!: string;
 
   @ApiProperty()
   schoolId!: string;
