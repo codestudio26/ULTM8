@@ -3238,6 +3238,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestSignatureUploadUrlDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "",
@@ -3252,6 +3262,172 @@
         },
         "tags": [
           "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors": {
+      "post": {
+        "operationId": "GuardiansController_createMinor",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMinorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "GuardiansController_findMyMinors",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/consent": {
+      "post": {
+        "operationId": "GuardiansController_grantConsent",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantConsentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/consent": {
+      "get": {
+        "operationId": "GuardiansController_findMyConsentRecords",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/consent/{id}/withdraw": {
+      "patch": {
+        "operationId": "GuardiansController_withdrawConsent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
         ],
         "security": [
           {
@@ -3610,172 +3786,6 @@
         },
         "tags": [
           "waitlist"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/guardians/me/minors": {
-      "post": {
-        "operationId": "GuardiansController_createMinor",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateMinorDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MinorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "GuardiansController_findMyMinors",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MinorListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/guardians/me/minors/{studentId}/consent": {
-      "post": {
-        "operationId": "GuardiansController_grantConsent",
-        "parameters": [
-          {
-            "name": "studentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GrantConsentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/guardians/me/consent": {
-      "get": {
-        "operationId": "GuardiansController_findMyConsentRecords",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsentRecordListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/guardians/me/consent/{id}/withdraw": {
-      "patch": {
-        "operationId": "GuardiansController_withdrawConsent",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
         ],
         "security": [
           {
@@ -7641,6 +7651,10 @@
           "studentId": {
             "type": "string"
           },
+          "signedById": {
+            "type": "string",
+            "description": "The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf."
+          },
           "schoolId": {
             "type": "string"
           },
@@ -7672,6 +7686,7 @@
           "id",
           "waiverId",
           "studentId",
+          "signedById",
           "schoolId",
           "signerFullName",
           "signatureText",
@@ -7714,6 +7729,10 @@
       "SignWaiverDto": {
         "type": "object",
         "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: sign on behalf of this linked minor Student instead of the caller."
+          },
           "signerFullName": {
             "type": "string"
           },
@@ -7731,6 +7750,15 @@
           "signatureText"
         ]
       },
+      "RequestSignatureUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller."
+          }
+        }
+      },
       "SignatureUploadUrlResponseDto": {
         "type": "object",
         "properties": {
@@ -7746,6 +7774,147 @@
         "required": [
           "uploadUrl",
           "objectKey"
+        ]
+      },
+      "CreateMinorDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component."
+          },
+          "gender": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "dateOfBirth"
+        ]
+      },
+      "MinorResponseDto": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "linkId",
+          "studentId",
+          "firstName",
+          "surname",
+          "dateOfBirth"
+        ]
+      },
+      "MinorListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GrantConsentDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "BASELINE",
+              "CAMERA"
+            ]
+          },
+          "policyVersion": {
+            "type": "string",
+            "description": "The specific privacy-notice/data-practice description version being consented to."
+          }
+        },
+        "required": [
+          "tier",
+          "policyVersion"
+        ]
+      },
+      "ConsentRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guardianId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "policyVersion": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "consentedAt": {
+            "type": "string"
+          },
+          "withdrawnAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "guardianId",
+          "studentId",
+          "tier",
+          "policyVersion",
+          "status",
+          "consentedAt"
+        ]
+      },
+      "ConsentRecordListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentRecordResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "BookClassDto": {
@@ -7944,147 +8113,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/WaitlistEntryResponseDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "CreateMinorDto": {
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "description": "ISO 8601 date, no time component."
-          },
-          "gender": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "firstName",
-          "surname",
-          "dateOfBirth"
-        ]
-      },
-      "MinorResponseDto": {
-        "type": "object",
-        "properties": {
-          "linkId": {
-            "type": "string"
-          },
-          "studentId": {
-            "type": "string"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "dateOfBirth": {
-            "type": "string"
-          },
-          "gender": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "linkId",
-          "studentId",
-          "firstName",
-          "surname",
-          "dateOfBirth"
-        ]
-      },
-      "MinorListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MinorResponseDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "GrantConsentDto": {
-        "type": "object",
-        "properties": {
-          "tier": {
-            "type": "string",
-            "enum": [
-              "BASELINE",
-              "CAMERA"
-            ]
-          },
-          "policyVersion": {
-            "type": "string",
-            "description": "The specific privacy-notice/data-practice description version being consented to."
-          }
-        },
-        "required": [
-          "tier",
-          "policyVersion"
-        ]
-      },
-      "ConsentRecordResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "guardianId": {
-            "type": "string"
-          },
-          "studentId": {
-            "type": "string"
-          },
-          "tier": {
-            "type": "string"
-          },
-          "policyVersion": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "consentedAt": {
-            "type": "string"
-          },
-          "withdrawnAt": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "guardianId",
-          "studentId",
-          "tier",
-          "policyVersion",
-          "status",
-          "consentedAt"
-        ]
-      },
-      "ConsentRecordListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ConsentRecordResponseDto"
             }
           }
         },

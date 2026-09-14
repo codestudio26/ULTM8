@@ -230,7 +230,8 @@ model User {
   transactionsPaid     Transaction[]   @relation("TransactionPayer")
   studentRanks         StudentRank[]
   promotionEventsPerformed PromotionEvent[] @relation("PromotionEventPerformedBy")
-  waiverSignatures     WaiverSignature[]
+  waiverSignatures     WaiverSignature[] @relation("WaiverSignatureStudent")
+  waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
   bookings                 Booking[]         @relation("BookingStudent")
   bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
   bookingsResolved         Booking[]         @relation("BookingResolvedBy")
@@ -1646,6 +1647,20 @@ model Waiver {
 /// default and flags it for Architect confirmation rather than silently choosing
 /// the broader shape. See the migration's own RLS policy comment for the concrete
 /// policy this produces.
+///
+/// Phase 37 added `signedById` — the actual signer, which diverges from
+/// `studentId` (whose waiver this is) once Guardian-on-behalf-of signing
+/// (SKILL.md §14, [CONFIRMED]) is possible. RLS is UNCHANGED — every write
+/// still runs under `withTenantContext(studentId, ...)` (the row's own
+/// "self" branch above), the same target-tenant-context substitution
+/// Booking's own Staff-on-behalf-of write already established, so a
+/// Guardian caller never needs a new RLS branch of their own. See
+/// WaiversService.sign()'s own header comment for the authorization check
+/// (GuardianLink, not RoleGrant) and the known limitation this surfaced:
+/// there is still no Guardian-on-behalf-of ENROLLMENT path (School's own
+/// `join()` is self-service-only), so this is only exercisable once a
+/// minor already holds a STUDENT RoleGrant by some other means — a
+/// separate, not-yet-built gap, not one this phase silently papers over.
 model WaiverSignature {
   id String @id @default(uuid())
 
@@ -1653,7 +1668,20 @@ model WaiverSignature {
   waiver   Waiver @relation(fields: [waiverId], references: [id])
 
   studentId String
-  student   User   @relation(fields: [studentId], references: [id])
+  student   User   @relation("WaiverSignatureStudent", fields: [studentId], references: [id])
+
+  // Phase 37 (Guardian-on-behalf-of signing, skills/ultm8-domain-rules/SKILL.md
+  // §14 — "Guardian... full access to... waiver-signing authority... for each
+  // linked minor", [CONFIRMED]): the actual human who signed, which is NOT
+  // always studentId — a Guardian may sign on a linked minor's behalf
+  // (WaiversService.sign()'s own header comment). Always set, including for the
+  // ordinary self-signing case (signedById == studentId there) — no nullable
+  // "assume self if absent" convention, so every row states its real signer
+  // explicitly. Backfilled from studentId for every row that predates this
+  // column (this migration), since every signature before Phase 37 was
+  // necessarily self-signed (no Guardian-signing path existed yet).
+  signedById String
+  signedBy   User   @relation("WaiverSignatureSignedBy", fields: [signedById], references: [id])
 
   // Denormalized from waiver.schoolId — same reasoning Membership.schoolId is
   // denormalized from membershipPlan.schoolId (Phase 9): keeps this row's own RLS
@@ -1680,6 +1708,7 @@ model WaiverSignature {
   @@index([schoolId])
   @@index([studentId])
   @@index([waiverId])
+  @@index([signedById])
 }
 
 // =============================================================================

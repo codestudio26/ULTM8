@@ -74,11 +74,13 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
   let studentB: { id: string; email: string };
   let studentMinor: { id: string; email: string };
   let outsider: { id: string; email: string };
+  let guardian: { id: string; email: string };
   let tokenOwner: string;
   let tokenStudentA: string;
   let tokenStudentB: string;
   let tokenStudentMinor: string;
   let tokenOutsider: string;
+  let tokenGuardian: string;
 
   const waiverIds: string[] = [];
   const signatureIds: string[] = [];
@@ -143,6 +145,7 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
     tenYearsAgo.setUTCFullYear(tenYearsAgo.getUTCFullYear() - 10);
     studentMinor = await mkUser('student-minor', tenYearsAgo);
     outsider = await mkUser('outsider');
+    guardian = await mkUser('guardian');
 
     await superuser.roleGrant.createMany({
       data: [
@@ -153,14 +156,27 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
       ],
     });
 
+    // Phase 37 — Guardian-on-behalf-of signing. GuardianLink is platform-scoped
+    // (Decision 92), not School-scoped, so it's seeded directly rather than via
+    // any School-scoped fixture — same direct-Prisma-seed convention
+    // guardians.e2e-spec.ts's own "withdrawing BASELINE..." test already
+    // established for a minor's STUDENT RoleGrant (studentMinor's own RoleGrant
+    // above stands in for the still-unbuilt Guardian-on-behalf-of enrollment
+    // path — see WaiversService.sign()'s own header comment for that known gap).
+    await superuser.guardianLink.create({
+      data: { id: randomUUID(), guardianId: guardian.id, studentId: studentMinor.id },
+    });
+
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentB = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentMinor = signAccessToken(studentMinor, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenOutsider = signAccessToken(outsider, []);
+    tokenGuardian = signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
   });
 
   afterAll(async () => {
+    await superuser.guardianLink.deleteMany({ where: { guardianId: guardian.id } });
     // Phase 15 — creating a Waiver above for real enqueues waiver-signature-
     // requests, which (unlike its old log-only-stub self) now fans out a real
     // Notification row per Student at this School via a live worker consuming
@@ -234,6 +250,10 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
       .send({ signerFullName: 'Student A', signatureText: 'Student A' });
     expect(signRes.status).toBe(201);
     expect(signRes.body.status).toBe('SIGNED');
+    // Phase 37 — self-signing always records signedById === studentId (the
+    // caller signed for themselves, no Guardian involved).
+    expect(signRes.body.signedById).toBe(studentA.id);
+    expect(signRes.body.studentId).toBe(studentA.id);
     signatureIds.push(signRes.body.id);
 
     // Route-ordering check: /waivers/me must resolve to the dedicated handler, not
@@ -268,6 +288,61 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
       .post(`/v1/waivers/${waiverIds[0]}/sign`)
       .set('Authorization', `Bearer ${tokenStudentMinor}`)
       .send({ signerFullName: 'Student Minor', signatureText: 'Student Minor' });
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Guardian-on-behalf-of signing (Phase 37).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN sign a Waiver on behalf of their linked minor — signedById is the Guardian, studentId is the minor', async () => {
+    const waiverRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/waivers`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Guardian-Signed Waiver', body: 'text' });
+    waiverIds.push(waiverRes.body.id);
+
+    const signRes = await request(app.getHttpServer())
+      .post(`/v1/waivers/${waiverRes.body.id}/sign`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: studentMinor.id, signerFullName: 'Guardian Of Minor', signatureText: 'Guardian Of Minor' });
+    expect(signRes.status).toBe(201);
+    expect(signRes.body.status).toBe('SIGNED');
+    expect(signRes.body.studentId).toBe(studentMinor.id);
+    expect(signRes.body.signedById).toBe(guardian.id);
+    signatureIds.push(signRes.body.id);
+
+    // The minor's own self-attested-adult age check never ran for this
+    // Guardian-authenticated path — proven independently by the fact this
+    // succeeded at all, since studentMinor is 10 (well under 18).
+  });
+
+  it('a Guardian with NO active link to the target Student is rejected — 403, not a silent no-op', async () => {
+    const waiverRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/waivers`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Unlinked Guardian Waiver', body: 'text' });
+    waiverIds.push(waiverRes.body.id);
+
+    // `outsider` holds no GuardianLink to studentMinor at all.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/waivers/${waiverRes.body.id}/sign`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({ studentId: studentMinor.id, signerFullName: 'Not A Guardian', signatureText: 'Not A Guardian' });
+    expect(res.status).toBe(403);
+  });
+
+  it('an ordinary Student cannot sign on behalf of a different Student either — assertGuardianOfStudent blocks it the same way', async () => {
+    const waiverRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/waivers`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Student Impersonation Attempt Waiver', body: 'text' });
+    waiverIds.push(waiverRes.body.id);
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/waivers/${waiverRes.body.id}/sign`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({ studentId: studentB.id, signerFullName: 'Student A', signatureText: 'Student A' });
     expect(res.status).toBe(403);
   });
 
@@ -395,6 +470,39 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
       } finally {
         stubObjectExists = true; // don't leak into any test that runs after this one
       }
+    });
+
+    it('a Guardian requesting an upload URL on behalf of a linked minor gets a key prefixed with the MINOR\'s id, not the Guardian\'s', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/signature-upload-url`)
+        .set('Authorization', `Bearer ${tokenGuardian}`)
+        .send({ studentId: studentMinor.id });
+      expect(res.status).toBe(201);
+      expect(res.body.objectKey).toMatch(
+        new RegExp(`^waiver-signatures/${school.id}/${imageWaiverId}/${studentMinor.id}/.+\\.png$`),
+      );
+    });
+
+    it('a Guardian CAN complete drawn-signature-capture end-to-end on behalf of a linked minor', async () => {
+      const uploadUrlRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/signature-upload-url`)
+        .set('Authorization', `Bearer ${tokenGuardian}`)
+        .send({ studentId: studentMinor.id });
+
+      const signRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenGuardian}`)
+        .send({
+          studentId: studentMinor.id,
+          signerFullName: 'Guardian Of Minor',
+          signatureText: 'Guardian Of Minor',
+          signatureImageKey: uploadUrlRes.body.objectKey,
+        });
+      expect(signRes.status).toBe(201);
+      expect(signRes.body.studentId).toBe(studentMinor.id);
+      expect(signRes.body.signedById).toBe(guardian.id);
+      expect(signRes.body.signatureImageUrl).toMatch(/^https:\/\/.+X-Amz-Signature=/);
+      signatureIds.push(signRes.body.id);
     });
   });
 

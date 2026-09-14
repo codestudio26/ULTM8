@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
 
 /**
  * POST /waivers/{id}/sign body. Confirmed e-signature mechanism (skills/
@@ -19,8 +19,20 @@ import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-valid
  * {studentId}/...` prefix for THIS specific waiver/caller before accepting it —
  * a caller cannot reference an object uploaded for a different waiver, a
  * different Student, or an arbitrary external key.
+ *
+ * `studentId` (Phase 37) is the same on-behalf-of shape BookClassDto already
+ * established: omitted (or equal to the caller) means an ordinary self-signing
+ * Student; naming a DIFFERENT id means a Guardian signing for a linked minor —
+ * WaiversService.sign() asserts an active GuardianLink before honoring it, the
+ * same way bookClass() asserts assertStaffAtSchool() for its own Staff-on-
+ * behalf-of case.
  */
 export class SignWaiverDto {
+  @ApiPropertyOptional({ description: 'Guardian-only: sign on behalf of this linked minor Student instead of the caller.' })
+  @IsOptional()
+  @IsUUID()
+  studentId?: string;
+
   @ApiProperty()
   @IsString()
   @MinLength(1)
