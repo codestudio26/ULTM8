@@ -88,6 +88,20 @@ jobs:
       # there's no equivalent "just agree on a shared secret" trick for verifying a
       # token against a real AWS-hosted JWKS).
       PLATFORM_ADMIN_JWT_SECRET: ci-test-platform-admin-secret-not-for-production-use-32-chars-min
+      # Phase 34 — drawn-signature-capture (WaiversModule's new
+      # signature-upload-url/sign flow). Unlike COGNITO_USER_POOL_ID/CLIENT_ID above,
+      # fake values here are safe and give REAL test coverage rather than a skip:
+      # generating a presigned URL (S3Client construction + getSignedUrl) never makes
+      # a network call — it's a pure local HMAC computation over these very values —
+      # same "verified empirically, no live network call at construction" reasoning
+      # STRIPE_SECRET_KEY's own comment above already establishes for `new Stripe(key)`.
+      # This lets the e2e suite genuinely exercise the security-sensitive part (the
+      # signatureImageKey prefix-validation logic) rather than skipping the whole flow
+      # the way a real-infra-requiring gate would have to.
+      R2_ACCOUNT_ID: ci-test-r2-account
+      R2_ACCESS_KEY_ID: ci-test-r2-access-key
+      R2_SECRET_ACCESS_KEY: ci-test-r2-secret-key-not-a-real-credential
+      R2_BUCKET_NAME: ci-test-waiver-signatures
 
     steps:
       - uses: actions/checkout@v7

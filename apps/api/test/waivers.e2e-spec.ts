@@ -10,7 +10,19 @@
  * migration's own comment), not Waiver's broad catalog-read shape; this proves
  * that holds against real Postgres.
  *
- * Requires DATABASE_URL, DATABASE_URL_APP, JWT_ACCESS_SECRET.
+ * Requires DATABASE_URL, DATABASE_URL_APP, JWT_ACCESS_SECRET. The drawn-signature-
+ * capture tests (Phase 34) additionally require R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/
+ * R2_SECRET_ACCESS_KEY/R2_BUCKET_NAME — gated separately (describeIfR2 below), not
+ * folded into the main hasDb gate, so this file's existing CRUD/signing/RLS
+ * coverage keeps running locally even without R2 configured. Fake-but-valid-shaped
+ * R2 credentials are safe in CI for presigned-URL generation (never makes a network
+ * call — see ci.yml's own comment). R2ClientService.objectExists() is the one
+ * exception — a genuine network round-trip — so it's stubbed via NestJS's
+ * overrideProvider (see `stubR2Client` below), the same pattern
+ * platform-admin-auth.e2e-spec.ts already established for
+ * CognitoTokenVerifierService.verify(); everything else on the stub delegates to a
+ * real R2ClientService instance so the presigned-URL assertions below are still
+ * exercising real code, not a mock.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -20,6 +32,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { R2ClientService } from '../src/waivers/r2-client.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -33,6 +46,19 @@ if (!hasDb) {
   console.warn(
     '[waivers.e2e-spec] Skipped — DATABASE_URL / DATABASE_URL_APP / JWT_ACCESS_SECRET not set. ' +
       'This gate MUST run against a real Postgres in CI; a local skip is not a substitute.',
+  );
+}
+
+const hasR2 = Boolean(
+  process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_BUCKET_NAME,
+);
+const describeIfR2 = hasR2 ? describe : describe.skip;
+if (hasDb && !hasR2) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[waivers.e2e-spec] Drawn-signature-capture tests skipped — R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / ' +
+      'R2_SECRET_ACCESS_KEY / R2_BUCKET_NAME not set. CI sets fake-but-valid-shaped values for exactly ' +
+      'this reason (see ci.yml\'s own comment) — a local skip here is not a substitute for that.',
   );
 }
 
@@ -68,8 +94,23 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
     });
   }
 
+  // Mutable so a single test can control whether objectExists() reports an
+  // upload as present without a real R2 round-trip — see this file's own
+  // header comment. Defaults to true so every OTHER test (which never cares
+  // about this branch) doesn't have to remember to reset it.
+  let stubObjectExists = true;
+  const realR2Client = new R2ClientService(); // reads real (CI: fake-but-valid-shaped) env vars
+  const stubR2Client: Pick<R2ClientService, 'getPresignedUploadUrl' | 'getPresignedDownloadUrl' | 'objectExists'> = {
+    getPresignedUploadUrl: (key, contentType) => realR2Client.getPresignedUploadUrl(key, contentType),
+    getPresignedDownloadUrl: (key) => realR2Client.getPresignedDownloadUrl(key),
+    objectExists: async () => stubObjectExists,
+  };
+
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(R2ClientService)
+      .useValue(stubR2Client)
+      .compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
@@ -228,6 +269,133 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
       .set('Authorization', `Bearer ${tokenStudentMinor}`)
       .send({ signerFullName: 'Student Minor', signatureText: 'Student Minor' });
     expect(res.status).toBe(403);
+  });
+
+  it('signing with no signatureImageKey still works and returns signatureImageUrl: null (typed-name-only remains valid)', async () => {
+    // A fresh Waiver — waiverIds[0] is already signed by studentA/studentB above,
+    // and re-signing would 409 regardless of what this test is actually checking.
+    const waiverRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/waivers`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'No-Image Waiver', body: 'text' });
+    waiverIds.push(waiverRes.body.id);
+
+    const signRes = await request(app.getHttpServer())
+      .post(`/v1/waivers/${waiverRes.body.id}/sign`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({ signerFullName: 'Student A', signatureText: 'Student A' });
+    expect(signRes.status).toBe(201);
+    expect(signRes.body.signatureImageUrl).toBeNull();
+    signatureIds.push(signRes.body.id);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Drawn-signature capture (Phase 34) — gated separately on R2 config, see this
+  // file's own header comment.
+  // ---------------------------------------------------------------------------
+
+  describeIfR2('drawn-signature capture', () => {
+    let imageWaiverId: string;
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/waivers`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ title: 'Image Waiver', body: 'text' });
+      imageWaiverId = res.body.id;
+      waiverIds.push(imageWaiverId);
+    });
+
+    it('POST /waivers/:id/signature-upload-url returns a presigned PUT URL and a correctly-prefixed objectKey', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/signature-upload-url`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(201);
+      // Exact prefix WaiversService.sign() will validate against — proven here
+      // independently of that validation logic, not assumed to match it.
+      expect(res.body.objectKey).toMatch(new RegExp(`^waiver-signatures/${school.id}/${imageWaiverId}/${studentA.id}/.+\\.png$`));
+      expect(res.body.uploadUrl).toMatch(/^https:\/\/.+X-Amz-Signature=/);
+    });
+
+    it('sign() with a matching signatureImageKey succeeds and returns a well-formed presigned GET URL', async () => {
+      const uploadUrlRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/signature-upload-url`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+
+      const signRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ signerFullName: 'Student A', signatureText: 'Student A', signatureImageKey: uploadUrlRes.body.objectKey });
+      expect(signRes.status).toBe(201);
+      signatureIds.push(signRes.body.id);
+      // No raw signatureImageKey should ever reach the response — only the
+      // computed, presigned signatureImageUrl (see WaiversService's own
+      // toSignatureResponse() comment for why this was worth a dedicated test).
+      expect(signRes.body.signatureImageKey).toBeUndefined();
+      expect(signRes.body.signatureImageUrl).toMatch(/^https:\/\/.+X-Amz-Signature=/);
+
+      const meRes = await request(app.getHttpServer()).get('/v1/waivers/me').set('Authorization', `Bearer ${tokenStudentA}`);
+      const listed = meRes.body.items.find((s: { id: string }) => s.id === signRes.body.id);
+      expect(listed.signatureImageUrl).toMatch(/^https:\/\/.+X-Amz-Signature=/);
+    });
+
+    it('sign() rejects a signatureImageKey that does not match this waiver/caller — 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenStudentB}`)
+        .send({
+          signerFullName: 'Student B',
+          signatureText: 'Student B',
+          // A syntactically plausible key, but for a DIFFERENT student — not one
+          // this caller was ever actually issued.
+          signatureImageKey: `waiver-signatures/${school.id}/${imageWaiverId}/${studentA.id}/not-mine.png`,
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('sign() rejects a signatureImageKey with the right school/student but the WRONG waiverId — 400', async () => {
+      // A second Waiver studentB has never touched — proves the prefix check
+      // genuinely binds to THIS waiverId, not just schoolId+studentId (a gap the
+      // "not-mine" test above, which only varies studentId, doesn't cover).
+      const otherWaiverRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/waivers`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ title: 'Other Waiver', body: 'text' });
+      waiverIds.push(otherWaiverRes.body.id);
+
+      const res = await request(app.getHttpServer())
+        .post(`/v1/waivers/${otherWaiverRes.body.id}/sign`)
+        .set('Authorization', `Bearer ${tokenStudentB}`)
+        .send({
+          signerFullName: 'Student B',
+          signatureText: 'Student B',
+          // Correct schoolId/studentId, but issued for imageWaiverId, not this
+          // (otherWaiverRes) waiver.
+          signatureImageKey: `waiver-signatures/${school.id}/${imageWaiverId}/${studentB.id}/wrong-waiver.png`,
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('sign() rejects a correctly-prefixed signatureImageKey that was never actually uploaded — 400', async () => {
+      const uploadUrlRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${imageWaiverId}/signature-upload-url`)
+        .set('Authorization', `Bearer ${tokenStudentB}`);
+
+      // Stubbed false, not a real R2 check — see this file's own header comment
+      // on why objectExists() specifically can't run against fake CI credentials.
+      // Proves sign() actually calls and honors objectExists(), not just the
+      // prefix check (which this key would otherwise pass).
+      stubObjectExists = false;
+      try {
+        const res = await request(app.getHttpServer())
+          .post(`/v1/waivers/${imageWaiverId}/sign`)
+          .set('Authorization', `Bearer ${tokenStudentB}`)
+          .send({ signerFullName: 'Student B', signatureText: 'Student B', signatureImageKey: uploadUrlRes.body.objectKey });
+        expect(res.status).toBe(400);
+      } finally {
+        stubObjectExists = true; // don't leak into any test that runs after this one
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------

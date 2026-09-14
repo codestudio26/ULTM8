@@ -17,7 +17,9 @@
     "bootstrap:admin-user": "ts-node -r tsconfig-paths/register scripts/bootstrap-admin-user.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1128.0",
     "@aws-sdk/client-sesv2": "^3.1128.0",
+    "@aws-sdk/s3-request-presigner": "^3.1128.0",
     "@nestjs/bullmq": "^10.2.3",
     "@nestjs/common": "^10.4.4",
     "@nestjs/config": "^3.3.0",
