@@ -276,6 +276,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/guardians/me/minors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardiansController_findMyMinors"];
+        put?: never;
+        post: operations["GuardiansController_createMinor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuardiansController_grantConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardiansController_findMyConsentRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/consent/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GuardiansController_withdrawConsent"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/classes": {
         parameters: {
             query?: never;
@@ -916,70 +980,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/guardians/me/minors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["GuardiansController_findMyMinors"];
-        put?: never;
-        post: operations["GuardiansController_createMinor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/guardians/me/minors/{studentId}/consent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["GuardiansController_grantConsent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/guardians/me/consent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["GuardiansController_findMyConsentRecords"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/guardians/me/consent/{id}/withdraw": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["GuardiansController_withdrawConsent"];
-        trace?: never;
-    };
     "/v1/classes/{id}/book": {
         parameters: {
             query?: never;
@@ -1580,6 +1580,10 @@ export interface components {
             logoUrl?: string | null;
             bannerUrl?: string | null;
         };
+        JoinSchoolDto: {
+            /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
+            studentId?: string;
+        };
         JoinSchoolResponseDto: {
             id: string;
             /** @enum {string} */
@@ -1593,7 +1597,8 @@ export interface components {
             revokedAt?: string | null;
             createdAt: string;
             updatedAt: string;
-            accessToken: string;
+            /** @description Present for an ordinary self-service join; absent for a Guardian enrolling a linked minor (see this DTO's own header comment). */
+            accessToken?: string;
         };
         JoinFranchiseDto: {
             franchiseId: string;
@@ -1734,6 +1739,43 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+        };
+        CreateMinorDto: {
+            firstName: string;
+            surname: string;
+            /** @description ISO 8601 date, no time component. */
+            dateOfBirth: string;
+            gender?: string;
+        };
+        MinorResponseDto: {
+            linkId: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            dateOfBirth: string;
+            gender?: string | null;
+        };
+        MinorListResponseDto: {
+            items: components["schemas"]["MinorResponseDto"][];
+        };
+        GrantConsentDto: {
+            /** @enum {string} */
+            tier: "BASELINE" | "CAMERA";
+            /** @description The specific privacy-notice/data-practice description version being consented to. */
+            policyVersion: string;
+        };
+        ConsentRecordResponseDto: {
+            id: string;
+            guardianId: string;
+            studentId: string;
+            tier: string;
+            policyVersion: string;
+            status: string;
+            consentedAt: string;
+            withdrawnAt?: string | null;
+        };
+        ConsentRecordListResponseDto: {
+            items: components["schemas"]["ConsentRecordResponseDto"][];
         };
         CreateClassDto: {
             /** @description Branch to scope this Class to. Omit for a School-wide Class. */
@@ -2143,6 +2185,10 @@ export interface components {
             /** @description Minor currency unit. Pass null to clear. */
             cancellationCharge?: number | null;
         };
+        PurchaseMembershipDto: {
+            /** @description Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller. */
+            studentId?: string;
+        };
         MembershipResponseDto: {
             id: string;
             studentId: string;
@@ -2408,45 +2454,8 @@ export interface components {
             /** @description Pass this back as signatureImageKey when calling POST /waivers/{id}/sign. */
             objectKey: string;
         };
-        CreateMinorDto: {
-            firstName: string;
-            surname: string;
-            /** @description ISO 8601 date, no time component. */
-            dateOfBirth: string;
-            gender?: string;
-        };
-        MinorResponseDto: {
-            linkId: string;
-            studentId: string;
-            firstName: string;
-            surname: string;
-            dateOfBirth: string;
-            gender?: string | null;
-        };
-        MinorListResponseDto: {
-            items: components["schemas"]["MinorResponseDto"][];
-        };
-        GrantConsentDto: {
-            /** @enum {string} */
-            tier: "BASELINE" | "CAMERA";
-            /** @description The specific privacy-notice/data-practice description version being consented to. */
-            policyVersion: string;
-        };
-        ConsentRecordResponseDto: {
-            id: string;
-            guardianId: string;
-            studentId: string;
-            tier: string;
-            policyVersion: string;
-            status: string;
-            consentedAt: string;
-            withdrawnAt?: string | null;
-        };
-        ConsentRecordListResponseDto: {
-            items: components["schemas"]["ConsentRecordResponseDto"][];
-        };
         BookClassDto: {
-            /** @description Staff-only: book on behalf of this Student instead of the caller. */
+            /** @description Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor. */
             studentId?: string;
             /** @description One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass. */
             attendeeMembershipIds?: string[];
@@ -2474,6 +2483,10 @@ export interface components {
             attendees: components["schemas"]["BookingAttendeeResponseDto"][];
             createdAt: string;
             updatedAt: string;
+        };
+        CancelBookingDto: {
+            /** @description Guardian-only: if the caller has no direct visibility into this Booking, retry the lookup under this linked minor Student's own context. */
+            studentId?: string;
         };
         UpdateBookingOverrideDto: {
             overrideReason: string;
@@ -2939,7 +2952,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinSchoolDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -3253,6 +3270,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_findMyMinors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinorListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_createMinor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMinorDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinorResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_grantConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantConsentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentRecordResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_findMyConsentRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentRecordListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_withdrawConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentRecordResponseDto"];
                 };
             };
         };
@@ -3885,7 +4009,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseMembershipDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4561,113 +4689,6 @@ export interface operations {
             };
         };
     };
-    GuardiansController_findMyMinors: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MinorListResponseDto"];
-                };
-            };
-        };
-    };
-    GuardiansController_createMinor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateMinorDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MinorResponseDto"];
-                };
-            };
-        };
-    };
-    GuardiansController_grantConsent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GrantConsentDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConsentRecordResponseDto"];
-                };
-            };
-        };
-    };
-    GuardiansController_findMyConsentRecords: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConsentRecordListResponseDto"];
-                };
-            };
-        };
-    };
-    GuardiansController_withdrawConsent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConsentRecordResponseDto"];
-                };
-            };
-        };
-    };
     BookingsController_bookClass: {
         parameters: {
             query?: never;
@@ -4702,7 +4723,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
