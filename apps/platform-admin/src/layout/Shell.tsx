@@ -7,7 +7,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <AppShell
       brand="ULTM8 Platform Admin"
-      navItems={[{ label: 'Admin Users', to: '/admin-users' }]}
+      navItems={[
+        { label: 'Admin Users', to: '/admin-users' },
+        { label: 'Schools', to: '/schools' },
+        { label: 'Franchises', to: '/franchises' },
+      ]}
       footer={
         <Button variant="secondary" fullWidth onClick={logout}>
           Log out

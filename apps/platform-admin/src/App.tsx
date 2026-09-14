@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './auth/RequireAuth';
 import { LoginPage } from './auth/LoginPage';
 import { AdminUsersPage } from './adminUsers/AdminUsersPage';
+import { SchoolLookupPage } from './schools/SchoolLookupPage';
+import { FranchiseLookupPage } from './franchises/FranchiseLookupPage';
 import { Shell } from './layout/Shell';
 
 export function App() {
@@ -10,9 +12,8 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Admin Users is Slice 1's only real screen (see this app's own README) —
-          the default landing page once signed in, not a School/Franchise-style
-          home dashboard that doesn't exist yet. */}
+      {/* Admin Users is still the default landing page (see this app's own
+          README) — not a home dashboard, which doesn't exist yet. */}
       <Route path="/" element={<Navigate to="/admin-users" replace />} />
       <Route
         path="/admin-users"
@@ -20,6 +21,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <AdminUsersPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/schools"
+        element={
+          <RequireAuth>
+            <Shell>
+              <SchoolLookupPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/franchises"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchiseLookupPage />
             </Shell>
           </RequireAuth>
         }
