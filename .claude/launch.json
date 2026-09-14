@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev", "--prefix", "apps/school-portal"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "platform-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "apps/platform-admin"],
+      "port": 5174,
+      "autoPort": true
     }
   ]
 }
