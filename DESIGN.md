@@ -84,6 +84,15 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
 
   --bg-success: color-mix(in srgb, var(--color-success) 12%, white);
   --text-success: var(--color-success);
+
+  /* Solid "success" button fill — a distinct pair from bg-success/text-success
+     above (badge/alert tint), because a filled button needs its own hover step
+     and its own on-fill text color: text-success on this fill only reaches
+     ~4.4:1, just under AA for normal-size text — see the contrast table below. */
+  --fill-success: #def2e2;
+  --fill-success-hover: color-mix(in srgb, var(--color-success) 20%, white);
+  --on-success: var(--color-neutral-900); /* literal ramp ref, not --text-primary — see tokens.css comment for why */
+
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
@@ -127,6 +136,7 @@ Dark mode ships at launch, derived from the same ramps above — never hand-auth
 | white on `--color-danger` | 6.5:1 |
 | white on `--color-success` | 5.3:1 |
 | dark ink on `--color-warning` | 4.9:1 (use dark text here, not white — white only reaches 3.6:1) |
+| `on-success` on `fill-success` #def2e2 | 14.8:1 (dark neutral text — `text-success` on this same fill only reaches ~4.4:1, just under the 4.5:1 AA floor for normal-size text, so the solid button variant deliberately does not reuse it) |
 
 ## Layout & spacing
 
