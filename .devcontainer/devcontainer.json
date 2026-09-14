@@ -1,0 +1,40 @@
+{
+  "name": "ULTM8 Dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Stop (not delete) the compose stack when the codespace stops — this is what
+  // keeps the Postgres/Redis named volumes, and the data in them, alive between
+  // sessions for whoever opens the codespace next, hours or days later.
+  "shutdownAction": "stopCompose",
+
+  "forwardPorts": [3000, 5173, 5432, 6379],
+  "portsAttributes": {
+    "3000": { "label": "API (apps/api)", "onAutoForward": "notify" },
+    "5173": { "label": "School Portal (Vite)", "onAutoForward": "openPreview" },
+    "5432": { "label": "Postgres", "onAutoForward": "silent" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" }
+  },
+
+  // Runs once, when the codespace container is first created — full install +
+  // Prisma client generation so the workspace is immediately usable.
+  "postCreateCommand": "npm ci && npm run prisma:generate --workspace=@ultm8/api",
+
+  // Runs every time the codespace starts (including resuming an existing one).
+  // `prisma migrate deploy` only applies pending migrations — safe to re-run, and
+  // exactly what keeps a persisted DB current after new migrations land in git.
+  "postStartCommand": "npm run prisma:migrate:deploy --workspace=@ultm8/api",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma"
+      ]
+    }
+  },
+
+  "remoteUser": "node"
+}
