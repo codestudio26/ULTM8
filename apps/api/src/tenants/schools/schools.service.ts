@@ -5,8 +5,10 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
+import { GuardiansService } from '../../guardians/guardians.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
+import { JoinSchoolDto } from './dto/join-school.dto';
 
 @Injectable()
 export class SchoolsService {
@@ -14,6 +16,7 @@ export class SchoolsService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
+    private readonly guardiansService: GuardiansService,
   ) {}
 
   /**
@@ -94,12 +97,26 @@ export class SchoolsService {
    * Membership purchase (a Trial Membership already exists as a first-class
    * concept, and nothing confirms a browsing caller must pay before joining).
    *
-   * Deliberately narrow — this phase only builds an ADULT caller joining on
-   * their OWN behalf. Whether/how a Guardian enrolls a linked minor at a
-   * School (a genuinely separate cross-user-write question, the same shape
-   * Guardian's own consent-withdrawal cascade already solved once) is
-   * explicitly OUT OF SCOPE here, not silently assumed — see Decision 96's
-   * own "what this does not resolve" section.
+   * Originally built (Decision 96) for only an ADULT caller joining on their
+   * OWN behalf — Guardian-on-behalf-of enrollment was explicitly named as
+   * OUT OF SCOPE in that decision's own "what this does not resolve"
+   * section. Phase 38 closed that gap: `dto.studentId` is the same
+   * on-behalf-of shape `SignWaiverDto` (Phase 37) already established.
+   * `isGuardianAction` asserts an active GuardianLink instead of relying on
+   * the caller's own tenant context, then runs the existence check AND the
+   * RoleGrant write under the TARGET Student's own tenant context — for an
+   * ordinary self-join that's a no-op (studentId === callerId already), but
+   * for a Guardian it's load-bearing for the exact same reason
+   * WaiversService.sign()'s own comment gives: `rolegrant_self_only` admits
+   * a caller writing a row under their own userId, and a Guardian has no
+   * userId-equals-target row to write under their OWN context. Decision 96's
+   * own text pointed at the `ultm8_jobs` cascade `withdrawConsent()` uses as
+   * the closest precedent for "a Guardian writing into a minor's own rows" —
+   * this uses the simpler, more directly analogous target-tenant-context
+   * substitution instead (Booking's own Staff-on-behalf-of write, and this
+   * exact codebase's own `createMinor()` `withMultiTenantContext` bootstrap),
+   * since a single RoleGrant INSERT needs no second context switch the way
+   * withdrawConsent()'s multi-row cascade did.
    *
    * FOUND ON REVIEW, before this ever shipped — the first draft's mechanism
    * was a real mistake: it reused `PrismaDiscoveryService` (Phase 14,
@@ -127,10 +144,16 @@ export class SchoolsService {
    * "atomic create() + caught P2002" pattern already established elsewhere
    * in this codebase (e.g. Waiver creation dedup).
    */
-  async join(callerId: string, schoolId: string) {
+  async join(callerId: string, schoolId: string, dto?: JoinSchoolDto) {
+    const studentId = dto?.studentId ?? callerId;
+    const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
+    if (isGuardianAction) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    }
+
     const roleGrantId = randomUUID();
 
-    const roleGrant = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    const roleGrant = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const [{ school_exists: schoolExists }] = await tx.$queryRaw<[{ school_exists: boolean }]>`
         SELECT school_exists(${schoolId})
       `;
@@ -143,18 +166,27 @@ export class SchoolsService {
           data: {
             id: roleGrantId,
             role: 'STUDENT',
-            userId: callerId,
+            userId: studentId,
             schoolId,
-            grantedById: callerId, // self-granted — same pattern as create() above
+            grantedById: callerId, // self-granted for an ordinary join; the Guardian for an on-behalf-of join
           },
         });
       } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-          throw new ConflictException('You are already a Student at this School.');
+          throw new ConflictException(
+            isGuardianAction ? 'This Student is already enrolled at this School.' : 'You are already a Student at this School.',
+          );
         }
         throw err;
       }
     });
+
+    if (isGuardianAction) {
+      // No access token to mint — see JoinSchoolResponseDto's own comment: a
+      // Guardian-managed minor's account is permanently blocked from
+      // independent login, so there is nothing a token would ever be used for.
+      return roleGrant;
+    }
 
     // Re-mint the caller's own access token now that their STUDENT grant is
     // committed — same narrow exception create() above already uses, called

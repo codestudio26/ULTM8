@@ -9,6 +9,7 @@ import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { SchoolListResponseDto, SchoolResponseDto } from './dto/school-response.dto';
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
+import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
@@ -48,8 +49,8 @@ export class SchoolsController {
 
   @ApiCreatedResponse({ type: JoinSchoolResponseDto })
   @Post(':id/join')
-  join(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.schoolsService.join(user.sub, id);
+  join(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinSchoolDto) {
+    return this.schoolsService.join(user.sub, id, dto);
   }
 
   /** School Owner/Manager only — see SchoolsService.joinFranchise's own header
