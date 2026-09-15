@@ -1,0 +1,46 @@
+{
+  "name": "ULTM8 Dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Stop (not delete) the compose stack when the codespace stops — this is what
+  // keeps the Postgres/Redis named volumes, and the data in them, alive between
+  // sessions for whoever opens the codespace next, hours or days later.
+  "shutdownAction": "stopCompose",
+
+  "forwardPorts": [3000, 5173, 5432, 6379],
+  "portsAttributes": {
+    "3000": { "label": "API (apps/api)", "onAutoForward": "notify" },
+    "5173": { "label": "School Portal (Vite)", "onAutoForward": "openPreview" },
+    "5432": { "label": "Postgres", "onAutoForward": "silent" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" }
+  },
+
+  // Runs once, when the codespace container is first created — full install +
+  // Prisma client generation so the workspace is immediately usable.
+  "postCreateCommand": "npm ci && npm run prisma:generate --workspace=@ultm8/api",
+
+  // Runs every time the codespace starts (including resuming an existing one).
+  // `git pull --ff-only` auto-syncs whoever opens this codespace with whatever the
+  // other person last pushed — safe by construction: fast-forward-only can never
+  // overwrite local work or create a surprise merge commit, it just no-ops if
+  // there's anything to be careful about. `|| true` keeps that no-op from failing
+  // the rest of startup. See HANDOFF.md for the manual half of this (pushing before
+  // you stop) that deliberately stays a human decision, not automated.
+  // `prisma migrate deploy` only applies pending migrations — safe to re-run, and
+  // exactly what keeps the persisted DB current after new migrations land in git.
+  "postStartCommand": "git pull --ff-only || true; npm run prisma:migrate:deploy --workspace=@ultm8/api",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma"
+      ]
+    }
+  },
+
+  "remoteUser": "node"
+}
