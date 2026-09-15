@@ -800,3 +800,67 @@ Only Slice 1 — the auth spine (`POST /platform-admin/auth/exchange`, `GET /pla
 ### Recorded by
 
 Reached across several direct exchanges with the user spanning 11-12 Sep 2026: the user asked for the underlying decisions/questions to be restated, then for a "deep dive" on the SSO recommendation specifically — taken through multiple passes, each correcting or sharpening the previous one against live-verified sources rather than resting on the first answer — followed by the user's own explicit direction, "go ahead with Cognito." **FOUND ON REVIEW, before this ever merged:** this decision was referenced by number in `platform-admin.module.ts`'s own header comment before this log entry existed — the same process gap Decision 99's own "Recorded by" section already named once; written now, at this review's own prompting, to close it the same way.
+
+---
+
+## Decision 101 — Video-hosting/live-streaming vendor: Cloudflare Stream (hosting) + AWS Transcribe (captioning/STT), resolved directly with the user
+
+**Date:** 15 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the one remaining open vendor decision blocking `CurriculumModule` — its data-model precondition (Discipline → Rank → Skill) has been satisfied since Phase 10b, and Decision 58 already confirms both Prerecorded and Live Lesson formats are in scope with ULTM8-built captioning (WCAG 1.2.2, not a third-party transcript vendor) for both — but no video-hosting/streaming vendor had ever been chosen.
+
+### Decision
+
+**Cloudflare Stream** for video hosting/delivery — the same read-heavy, egress-heavy public-media access pattern that already justified choosing R2 over S3 for images/PDFs (Spec 55 §11.3), applied here to video specifically. **AWS Transcribe** for captioning/speech-to-text — a backend service call, consistent with this project's already-confirmed AWS-native ops stack (Secrets Manager, and now Cognito per Decision 100), unlike the public video bytes themselves, which have no reason to route through AWS.
+
+Presented to the user as a recommendation (not a forced single option) alongside the roadmap's own open-decisions list; the user asked for Claude's own best judgment rather than picking between alternatives, and the recommendation above was given and followed — the same "recommendation given, user's own choice followed" shape as Decision 94/96's own resolution pattern.
+
+### What this does NOT resolve
+
+Neither vendor's actual infrastructure is provisioned by this decision — no Cloudflare Stream account/API token, no AWS Transcribe access, exist in this working environment (matching every other external-service precedent already established here: Stripe, Cognito, R2, Twilio, Postmark/SES all required the user's own account/credential provisioning before the already-written application code became reachable end-to-end). `CurriculumModule` itself — the actual schema, upload flow, captioning pipeline, and Live Lesson mechanics — is not built by this decision alone; this closes only the vendor-choice blocker, the same way Decision 100 closed only the SSO-vendor blocker for `PlatformAdminModule` without itself building any business-logic endpoint. Audio description (WCAG 1.2.5) remains a separate, still-unresourced item per Decision 58's own original scoping, untouched here.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 15 Sep 2026 — presented alongside two other open decisions (Decisions 102/103 below) surfaced by that same session's own research pass into `PlatformAdminModule`'s and `WaitlistService`'s remaining scope; the user asked for Claude's own best recommendation across all three rather than choosing between presented options, and this decision (and the two below) record the recommendation given and the user's explicit direction to proceed with it.
+
+---
+
+## Decision 102 — PlatformAdminModule Support-tier impersonation: read-only session, resolved directly with the user
+
+**Date:** 15 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `ultm8-tenant-isolation` SKILL.md §3's own [CONFIRMED] grant that Support gets "a time-boxed, audited, tenant-scoped impersonation session" names a real capability but never specifies its mechanics — what a Platform-Admin-issued impersonation session actually lets the tenant-side app do once inside it, or how the tenant's own `AuthGuard`/`TenantAuthorizationService` should recognize and scope such a token. Researched directly against Spec 55, `ultm8-tenant-isolation`, and the full decision log before this was raised with the user — confirmed as a genuine gap, not a guessable one: no existing session mechanism (`act-as`/`assumeRole`/`sudo`-style token) exists anywhere in this codebase to graft onto, unlike every Guardian-on-behalf-of slice (Phase 37-41) which each reused an already-built mechanism with a different caller identity substituted in.
+
+### Decision
+
+**Read-only.** While an active impersonation session is open, Support sees exactly what the tenant user themselves would see — the tenant user's own screens/data, read access only — with no write action of any kind permitted through the impersonated identity. Reasoning: `ultm8-tenant-isolation` §3 labels the Support tier itself "(read-only)" as a whole-tier descriptor before ever mentioning impersonation — a session that could then turn around and write on the tenant's behalf would directly contradict that framing, not merely extend it. This is also the standard shape for support/troubleshooting impersonation industry-wide: view-as-user for diagnosis, not act-as-user for changes.
+
+Mechanically (left open for the implementing phase to design, not itself decided here): a short-TTL, audited, explicitly-scoped-to-one-tenant-User token is the anchor point implied by "time-boxed, audited, tenant-scoped" — the exact claim shape, issuance endpoint, and how the tenant-side `AuthGuard` distinguishes "a real tenant session" from "a Support-issued read-only impersonation of one" remain genuine engineering design work for whichever phase actually builds this, not pre-decided by this entry.
+
+### What this does NOT resolve
+
+This decision answers only the scope question (read-only vs. write-parity) — it does not itself build the impersonation session mechanism, choose the JWT claim shape, or specify which tenant-side screens/endpoints a read-only impersonation session is routed through. `Billing/Payments Ops` and `Full Platform Admin`'s own relationship to impersonation (whether either tier gets it at all, beyond Support) is not addressed — `ultm8-tenant-isolation` §3 names the impersonation grant only under the Support bullet, and this decision does not extend or restrict that. "General tenant-data edits" (the other half of the item this session's research covered) remains entirely unscoped — no field, entity, or sub-role tier is named anywhere in Spec 55 or this log for it, and this decision does not touch it at all.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 15 Sep 2026, immediately following a dedicated research pass into `PlatformAdminModule`'s actual remaining scope (triggered by the roadmap's own "general tenant-data edits, or impersonation — needs its own design pass" item) — the user asked for Claude's own best recommendation, and the read-only framing above was given and explained, then followed with the user's own direction to proceed.
+
+---
+
+## Decision 103 — Staff/Guardian-on-behalf-of Waitlist join and claim: extended to both, resolved directly with the user
+
+**Date:** 15 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `WaitlistService`'s own header comment (Phase 11) had deliberately left join/claim self-service-only, reasoning that — unlike Booking creation, where SKILL.md §9 explicitly confirms Staff override authority — nothing in SKILL.md §10 names an equivalent Staff (or Guardian) on-behalf-of shape for the waitlist specifically, and claiming spends a Membership credit immediately with no textual anchor to build against. This was the one remaining item in the otherwise-complete Guardian-on-behalf-of chain Phase 37-41 shipped (signing → enrollment → membership purchase → booking creation → booking cancellation).
+
+### Decision
+
+Extend the same on-behalf-of shape already established for booking creation/cancellation to `WaitlistService.joinWaitlist()`/`claim()`, for **both** Staff and Guardian callers. Reasoning given to the user and accepted: `withdraw()` already supports Staff-on-behalf-of today (a pure status change, no credit implication) — `join` carries the identical risk profile (queues without consuming any credit; reversible via withdraw) — so extending `join` to Guardian, and to a symmetric Staff shape, closes an inconsistency rather than opening a new risk. `claim()` is the one step that spends a Membership credit immediately, which is exactly the same risk profile Guardian-on-behalf-of Booking creation (Phase 40) already carries and already ships in production code — the original caution in `WaitlistService`'s own header comment predates that precedent; now that it exists, reviewed and working, `claim()`'s risk is no longer materially different from `bookClass()`'s own, and the same target-tenant-context substitution mechanism already used four times this session (Phase 37-41) applies here without any new pattern being invented.
+
+### What this does NOT resolve
+
+The actual implementation — `assertGuardianOfStudent()`/`assertStaffAtSchool()` branches on `joinWaitlist()`/`claim()`, any new DTO fields needed, and full e2e coverage — is not built by this decision alone; it authorizes the next phase to build it the same way Decision 96 authorized (but did not itself build) self-service Student enrollment. Whether a Guardian should also be able to withdraw a linked minor's own waitlist entry is not newly addressed here (Staff-on-behalf-of withdraw already exists; extending it to Guardian as well is a natural, low-risk companion to this decision but is left for the implementing phase to include or flag, not pre-decided).
+
+### Recorded by
+
+Logged during a direct exchange with the user, 15 Sep 2026, alongside Decisions 101/102 above, presented together after the same session's research pass surfaced all three as the project's remaining open decisions — the user asked for Claude's own best recommendation across all three, and this reasoning was given and followed.
