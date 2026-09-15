@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -228,6 +229,66 @@ export class AuthService {
 
     const payload: JwtPayload = { sub: userId, email: user.email, grants: claims };
     return this.jwt.sign(payload);
+  }
+
+  /**
+   * Phase 43 (Decision 102 — PlatformAdminModule Support-tier impersonation is
+   * read-only, resolved directly with the user). Mints a genuine tenant-realm
+   * JwtPayload for `targetUserId` — same shape, same JWT_ACCESS_SECRET, same
+   * JwtStrategy that verifies every ordinary tenant login token — so every
+   * existing tenant endpoint (GET /bookings/me, GET /waivers/me, ...) "just
+   * works" unmodified for a Support staffer impersonating that user, seeing the
+   * SAME RoleGrant claims the real user's own token would carry (a genuine
+   * mirror of what they see, not a stripped-down admin view). The one addition,
+   * `impersonation`, is what JwtStrategy.validate() checks to reject any
+   * non-read request on this token — see that file's own comment.
+   *
+   * Deliberately mirrors issueAccessToken()'s own load-email-and-grants shape
+   * rather than calling it directly — this one always takes a caller-supplied
+   * short `ttlSeconds` (Platform Admin's own "time-boxed" requirement,
+   * ultm8-tenant-isolation §3), never the ordinary 15-minute JWT_ACCESS_TTL
+   * default issueAccessToken() relies on, and needs the extra `impersonation`
+   * claim issueAccessToken() must never set.
+   *
+   * `targetUserId` not existing is a genuine 404, not the "shouldn't happen"
+   * internal-error case issueAccessToken() assumes for its own always-already-
+   * authenticated caller — a Platform Admin can supply any id here, including a
+   * typo or a since-deleted account, so this checks and reports it as a normal
+   * client error rather than throwing a bare Error.
+   */
+  async issueImpersonationToken(
+    targetUserId: string,
+    adminUserId: string,
+    ttlSeconds: number,
+  ): Promise<{ accessToken: string; expiresAt: Date }> {
+    const { user, grants } = await this.prismaApp.withTenantContext(targetUserId, async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: targetUserId }, select: { email: true } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const grants = await tx.roleGrant.findMany({
+        where: { userId: targetUserId, revokedAt: null },
+        select: { role: true, franchiseId: true, schoolId: true, branchId: true },
+      });
+      return { user, grants };
+    });
+
+    const claims: RoleGrantClaim[] = grants.map((g) => ({
+      role: g.role,
+      franchiseId: g.franchiseId,
+      schoolId: g.schoolId,
+      branchId: g.branchId,
+    }));
+
+    const payload: JwtPayload = {
+      sub: targetUserId,
+      email: user.email,
+      grants: claims,
+      impersonation: { adminUserId, startedAt: new Date().toISOString() },
+    };
+    const accessToken = this.jwt.sign(payload, { expiresIn: ttlSeconds });
+    const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+    return { accessToken, expiresAt };
   }
 
   /**

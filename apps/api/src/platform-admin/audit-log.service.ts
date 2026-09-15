@@ -17,6 +17,11 @@ export const AuditAction = {
   REVOKE_ADMIN_USER: 'REVOKE_ADMIN_USER',
   VIEW_PAYMENT_ACCOUNT: 'VIEW_PAYMENT_ACCOUNT',
   ROTATE_PAYMENT_ACCOUNT_CREDENTIAL: 'ROTATE_PAYMENT_ACCOUNT_CREDENTIAL',
+  // Phase 43 (Decision 102) — the session-START event only. Every individual
+  // read taken DURING an active session is not separately audit-logged here —
+  // see PlatformAdminImpersonationService's own header comment for why that's a
+  // deliberate, flagged scope boundary, not an oversight.
+  START_IMPERSONATION_SESSION: 'START_IMPERSONATION_SESSION',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
