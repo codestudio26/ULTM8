@@ -797,6 +797,119 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   });
 
   // ---------------------------------------------------------------------------
+  // Guardian/Staff-on-behalf-of Waitlist join/withdraw/claim (Phase 42, Decision 103).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN join a Class\'s waitlist for a linked minor — the entry belongs to the MINOR, not the Guardian', async () => {
+    // Not individually deleted — both WaitlistEntry rows created below stay
+    // WAITING and still hold a live FK to this Class, same reasoning the
+    // Phase 41 cancellation fixture's own comment already documents; cleanup
+    // relies on the suite's own bulk afterAll.
+    const classForGuardianWaitlist = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Waitlist Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianWaitlist.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(joinRes.status).toBe(201);
+    expect(joinRes.body.studentId).toBe(minor.id);
+    waitlistEntryIds.push(joinRes.body.id);
+
+    const asMinor = await withUser(minor.id, (tx) => tx.waitlistEntry.findMany({ where: { id: joinRes.body.id } }));
+    expect(asMinor).toHaveLength(1);
+
+    // Staff-on-behalf-of also works, same shape, for a different Student —
+    // Decision 103 extended join to BOTH, not just Guardian.
+    const staffJoinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianWaitlist.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ studentId: studentA.id });
+    expect(staffJoinRes.status).toBe(201);
+    expect(staffJoinRes.body.studentId).toBe(studentA.id);
+    waitlistEntryIds.push(staffJoinRes.body.id);
+  });
+
+  it('a caller with NO active GuardianLink to the named Student cannot join a waitlist on their behalf — 403', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBasic.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({ studentId: studentA.id });
+    expect(res.status).toBe(403);
+  });
+
+  it('a Guardian CAN claim a Notified entry on behalf of a linked minor — creates a real Booking for the MINOR', async () => {
+    const classForGuardianClaim = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Claim Fixture', capacity: 1, startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianClaim.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(joinRes.status).toBe(201);
+    waitlistEntryIds.push(joinRes.body.id);
+
+    await superuser.waitlistEntry.update({
+      where: { id: joinRes.body.id },
+      data: { status: 'NOTIFIED', notifiedAt: new Date(), claimByDeadline: new Date(Date.now() + 3_600_000) },
+    });
+
+    // minor already holds an Active general-access Membership from the earlier
+    // Phase 40 booking test — general-access is never consumed, so it's still
+    // valid here and funds this claim without minting a second one.
+    const claimRes = await request(app.getHttpServer())
+      .post(`/v1/waitlist/${joinRes.body.id}/claim`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(claimRes.status).toBe(201);
+    expect(claimRes.body.studentId).toBe(minor.id);
+    bookingIds.push(claimRes.body.id);
+
+    const claimedEntry = await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: joinRes.body.id } });
+    expect(claimedEntry.status).toBe('CLAIMED');
+  });
+
+  it('a Guardian CAN withdraw a linked minor\'s own Waitlist entry via the studentId query hint', async () => {
+    // Not individually deleted — a withdrawn (CANCELLED) entry is a status
+    // flip, not a row delete, so it still holds a live FK to this Class; same
+    // reasoning as every other throwaway-Class fixture in this section.
+    const classForGuardianWithdraw = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Withdraw Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianWithdraw.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(joinRes.status).toBe(201);
+    waitlistEntryIds.push(joinRes.body.id);
+
+    const withdrawRes = await request(app.getHttpServer())
+      .delete(`/v1/waitlist/${joinRes.body.id}`)
+      .query({ studentId: minor.id })
+      .set('Authorization', `Bearer ${tokenGuardian}`);
+    expect(withdrawRes.status).toBe(204);
+
+    const afterWithdraw = await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: joinRes.body.id } });
+    expect(afterWithdraw.status).toBe('CANCELLED');
+  });
+
+  it('a caller with NO active GuardianLink to the entry\'s real Student cannot withdraw it, even naming that Student explicitly — 403', async () => {
+    const studentAWaitlistEntry = await withUser(studentA.id, (tx) =>
+      tx.waitlistEntry.findFirst({ where: { studentId: studentA.id, status: { in: ['WAITING', 'NOTIFIED'] } } }),
+    );
+    expect(studentAWaitlistEntry).not.toBeNull();
+
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/waitlist/${studentAWaitlistEntry!.id}`)
+      .query({ studentId: studentA.id })
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
   // Cancellation — refund vs withhold
   // ---------------------------------------------------------------------------
 

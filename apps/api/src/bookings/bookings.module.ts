@@ -11,16 +11,16 @@ import { WaitlistService } from './waitlist.service';
  * Phase 11 scope: ClassesModule's booking + waitlist half. See
  * BookingsService/WaitlistService's own header comments for what's deliberately not
  * here (QR check-in/Attendance, NotificationsModule, the late-cancellation-fee CHARGE
- * mechanism, and — as of Phase 40 — Guardian-on-behalf-of booking CANCELLATION,
- * still Staff-only).
+ * mechanism) and for the Guardian-on-behalf-of chain each gained across Phase 40
+ * (booking creation), Phase 41 (booking cancellation), and Phase 42 (Decision 103 —
+ * waitlist join/withdraw/claim, closing the last item in that chain).
  *
  * Imports TenantsModule for TenantAuthorizationService (same shape as every other
  * module) and QueueModule directly for
  * @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) in BookingsService — same pattern
  * WaiversModule already established for its own queue injection. Imports
  * GuardiansModule (Phase 40) for GuardiansService.assertGuardianOfStudent(), used by
- * BookingsService.bookClass() only — WaitlistService has no Guardian path yet (see
- * its own header comment for why that's a bigger, separately-flagged inference).
+ * both BookingsService and (as of Phase 42) WaitlistService.
  */
 @Module({
   imports: [TenantsModule, QueueModule, GuardiansModule],
