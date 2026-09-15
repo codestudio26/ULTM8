@@ -15,7 +15,10 @@ import { PlatformAdminUsersController } from './platform-admin-users.controller'
 import { PlatformAdminUsersService } from './platform-admin-users.service';
 import { PlatformAdminPaymentAccountsController } from './platform-admin-payment-accounts.controller';
 import { PlatformAdminPaymentAccountsService } from './platform-admin-payment-accounts.service';
+import { PlatformAdminImpersonationController } from './platform-admin-impersonation.controller';
+import { PlatformAdminImpersonationService } from './platform-admin-impersonation.service';
 import { PaymentsModule } from '../payments/payments.module';
+import { AuthModule } from '../auth/auth.module';
 
 /**
  * PlatformAdminModule — Spec 55 §7, gated entirely on the SSO/IdP vendor decision
@@ -87,24 +90,42 @@ import { PaymentsModule } from '../payments/payments.module';
  * step-up MFA for this action, and rotation for the unbuilt AWS Secrets Manager
  * fallback path).
  *
+ * SLICE 8 (Phase 43) — POST .../impersonation-sessions: Support-tier
+ * impersonation, resolved read-only by Decision 102 (docs/decisions/POST-SPEC-55-
+ * DECISION-LOG.md, resolved directly with the user) — the one remaining piece
+ * Decision 100's own "not built in this phase" list named. See
+ * PlatformAdminImpersonationService's own header comment for the mechanism (a
+ * genuine tenant-realm JWT, verified by AuthModule's own JwtStrategy, which
+ * enforces read-only globally) and its known, flagged limitation (only the
+ * session START is audit-logged, not every read taken during it).
+ *
  * Still deliberately NOT built, each its own later slice:
- *  - Any other WRITE-side cross-tenant admin endpoint touching TENANT data (editing
- *    another tenant's records, impersonation) — each carries its own real design
- *    questions beyond "write an audit entry," not guessed at here. Slice 4/5's own
- *    admin-user create/revoke is NOT this category — it's Platform Admin's
- *    own internal roster, not a tenant's data.
+ *  - General tenant-data EDITS (as opposed to the impersonation Slice 8 just
+ *    shipped) — still genuinely unscoped, not just unbuilt: no field, entity, or
+ *    sub-role tier is named anywhere in Spec 55 or the decision log for it,
+ *    confirmed by direct research (see the ULTM8 Roadmap artifact's own §04 for
+ *    the exact open question). Slice 4/5's own admin-user create/revoke is NOT
+ *    this category — it's Platform Admin's own internal roster, not a tenant's
+ *    data.
  *  - SubscriptionPlansModule / TranslationsModule — sit behind this module's own
  *    guard chain by confirmed design, both still separate, unbuilt modules.
  *
  * JwtModule.register() here is deliberately separate from AuthModule's own — neither
  * is registered `isGlobal`, so each module's `JwtService` is independently configured
  * (AuthModule's against JWT_ACCESS_SECRET, this one against
- * PLATFORM_ADMIN_JWT_SECRET) with no risk of one overriding the other.
+ * PLATFORM_ADMIN_JWT_SECRET) with no risk of one overriding the other. Slice 8
+ * (Phase 43) imports AuthModule directly (already exports AuthService — see that
+ * module's own `exports`) specifically so PlatformAdminImpersonationService can
+ * call AuthService.issueImpersonationToken(), which signs against
+ * JWT_ACCESS_SECRET via AuthModule's own JwtService instance, not this module's —
+ * the minted token is a TENANT-realm token, deliberately not a
+ * PLATFORM_ADMIN_JWT_SECRET one.
  */
 @Module({
   imports: [
     PassportModule,
     PaymentsModule, // for StripeClientService — see Slice 7's own header comment
+    AuthModule, // for AuthService.issueImpersonationToken() — see Slice 8's own header comment
     JwtModule.register({
       secret: process.env.PLATFORM_ADMIN_JWT_SECRET,
       // Shorter than the tenant realm's 15-minute default (JWT_ACCESS_TTL, itself
@@ -128,6 +149,7 @@ import { PaymentsModule } from '../payments/payments.module';
     PlatformAdminFranchisesController,
     PlatformAdminUsersController,
     PlatformAdminPaymentAccountsController,
+    PlatformAdminImpersonationController,
   ],
   providers: [
     PlatformAdminAuthService,
@@ -139,6 +161,7 @@ import { PaymentsModule } from '../payments/payments.module';
     PlatformAdminFranchisesService,
     PlatformAdminUsersService,
     PlatformAdminPaymentAccountsService,
+    PlatformAdminImpersonationService,
   ],
 })
 export class PlatformAdminModule {}
