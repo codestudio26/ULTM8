@@ -884,3 +884,25 @@ This decision answers only scoping and authorship — it does not build the vide
 ### Recorded by
 
 Logged during a direct exchange with the user, 16 Sep 2026, immediately after a dedicated research pass (docx text extraction of Spec 55 §12.1/§6.1/§7) surfaced the scoping contradiction above as a genuine spec-internal gap, not a guessable one — the user was given both readings plus a recommendation and chose the recommended one.
+
+---
+
+## Decision 105 — PlatformAdminModule general tenant-data edits: not built, pending a named use case
+
+**Date:** 16 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the one item the project's own roadmap tracking had flagged as genuinely irreducible to an engineering question — "which specific tenant fields/entities, if any, should a Platform Admin be able to edit directly, and which sub-role tier(s) may do it?" — the sibling question Decision 102 (Support-tier impersonation) deliberately left untouched.
+
+### Decision
+
+**Do not build a general tenant-data-edit capability.** Verified directly against `ULTM8_Technical_Specification_55.docx` (not just `ultm8-tenant-isolation` SKILL.md's own paraphrase) before this was raised with the user: §4.4 names Platform Admin's exact three sub-role capabilities in full — Support (read-only account metadata + time-boxed impersonation), Billing/Payments Ops (view `PaymentAccount` status + initiate Stripe Connect credential rotation, never a decrypted secret), Full Platform Admin (assign sub-roles + break-glass) — and none of the three includes editing a tenant's records. §7's own endpoint table lists only `GET /admin/tenants` and `GET /admin/tenants/{id}` for `PlatformAdminModule`'s tenant surface, no `PATCH`/`PUT`/`DELETE`. The phrase "viewing or editing another tenant's records" occurs exactly once in the entire document, in §4.7 (Audit trail), as one example of an action type that *would* be logged if it existed — never granted to any role, field, or entity anywhere else in the spec. This is a confirmed, total absence, not an oversight in a paraphrase.
+
+Reasoning given to the user and accepted: every concrete Platform Admin need the spec actually names is already built — Support's read+impersonation (Phase 43) covers diagnosis and hands-on troubleshooting without a write capability; Billing/Payments Ops's credential rotation (Phase 35) covers the one payments-adjacent write the spec confirms. A general tenant-record-edit surface with no named fields, entities, or scenario would mean inventing both the capability's shape and its authorization boundary from nothing — exactly the class of guess `ultm8-domain-rules`/`ultm8-tenant-isolation`'s own standing rules prohibit, and a meaningfully larger audit/security surface (every tenant field becomes admin-writable) to carry indefinitely for a need nobody has actually named yet.
+
+### What this does NOT resolve
+
+If a real, specific scenario emerges later (e.g., Support needing to correct a locked-out user's contact info, or Full Admin needing to fix a stuck Membership/subscription state), that is a fresh, narrowly-scoped decision — naming the exact fields/entities and sub-role — not an unlocking of broad edit access under this same entry. Nothing here revokes or narrows any tenant-data capability already built (impersonation, credential rotation); it only declines to add a new, unscoped one. `MobileAppPublishingModule`'s own confirmed `PATCH /admin/tenants/{id}/app-config` (Section 5, `TenantAppConfig` — branding/build config) is a separate, already-spec-confirmed, already-scoped write surface and is unaffected by this decision either way.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 16 Sep 2026 — the user was presented with three options (don't build it, a narrow named capability, or a broader CRUD-style capability) plus Claude's own recommendation (don't build it, for the reasoning above) via a direct question, and asked for Claude's own best judgment rather than picking between the options; the recommendation was given and followed, the same "recommendation given, user's own choice followed" shape as Decisions 101–104.
