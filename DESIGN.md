@@ -177,6 +177,29 @@ Every component defines these states. Hover is a progressive enhancement for mou
 
 Minimum set requiring all of the above: buttons, inputs/selects, cards that are tappable, list rows, tabs/nav items, checkboxes/toggles.
 
+## Patterns
+
+Recurring structures built from the tokens and component states above. Adapted from screen patterns observed in the ULTM8 Figma file — per the source-of-truth hierarchy, a Figma screen is illustrative only, so the specific copy, icon choice, and exact proportions below are a starting point, not a pixel-for-pixel copy; the token usage is what's binding. Neither pattern implies new business logic — see the domain-rules skill before wiring either one to real behavior.
+
+### Success confirmation panel
+
+Confirms a completed action (a save, an update, a login) with a self-contained panel rather than a silent redirect — this shape recurs across dozens of flows in the Figma file (login, profile updates, timetable changes):
+
+- `--color-success` filled circle (44–64px) with a check mark, centered
+- Bold title (`--font-size-heading-sm`, `--font-weight-semibold`) stating what succeeded
+- One line of body text (`--font-size-footnote`, `--text-secondary`) with the specific detail
+- A dismiss control (`×`) in the corner — whether a given flow also auto-advances after a delay is a per-flow decision, not something this pattern decides on its own
+- Card surface (`--surface-1`, `--radius-lg`, `--shadow-md`), same as any other card
+
+### Segmented code input
+
+For a flow that collects a short numeric code (OTP, PIN-style passcode):
+
+- One `--radius-sm`-bordered box per digit, fixed square aspect ratio, `--font-mono` + `font-variant-numeric: tabular-nums` so digits don't shift width as they fill
+- Minimum 44×44px touch target per box (same rule as any other interactive element)
+- A live countdown/expiry line below, in `--text-muted` — the actual expiry duration is a backend/business value, never hardcoded in the UI layer
+- Primary action stays disabled until every box is filled
+
 ## Motion
 
 ```css
