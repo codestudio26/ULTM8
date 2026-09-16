@@ -1444,6 +1444,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform-admin/impersonation-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminImpersonationController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2495,6 +2511,10 @@ export interface components {
             items: components["schemas"]["BookingResponseDto"][];
             nextCursor?: string | null;
         };
+        JoinWaitlistDto: {
+            /** @description Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
+            studentId?: string;
+        };
         WaitlistEntryResponseDto: {
             id: string;
             studentId: string;
@@ -2507,6 +2527,10 @@ export interface components {
             notifiedAt?: string | null;
             claimByDeadline?: string | null;
             claimedBookingId?: string | null;
+        };
+        ClaimWaitlistDto: {
+            /** @description Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
+            studentId?: string;
         };
         WaitlistEntryListResponseDto: {
             items: components["schemas"]["WaitlistEntryResponseDto"][];
@@ -2703,6 +2727,16 @@ export interface components {
         RotateCredentialResponseDto: {
             /** @description Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics. */
             onboardingUrl: string;
+        };
+        StartImpersonationSessionDto: {
+            /** @description The tenant User id to impersonate. */
+            userId: string;
+        };
+        ImpersonationSessionResponseDto: {
+            accessToken: string;
+            /** @description ISO datetime this session (and the token itself) expires. */
+            expiresAt: string;
+            impersonatedUserId: string;
         };
     };
     responses: never;
@@ -4842,7 +4876,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinWaitlistDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -4856,7 +4894,10 @@ export interface operations {
     };
     WaitlistController_withdraw: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Guardian-only: if the caller has no direct visibility into this Waitlist entry, retry the lookup under this linked minor Student's own context. */
+                studentId?: string;
+            };
             header?: never;
             path: {
                 id: string;
@@ -4882,7 +4923,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimWaitlistDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5374,6 +5419,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RotateCredentialResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminImpersonationController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartImpersonationSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImpersonationSessionResponseDto"];
                 };
             };
         };

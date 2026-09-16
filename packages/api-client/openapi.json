@@ -3706,6 +3706,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinWaitlistDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "",
@@ -3772,6 +3782,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "Guardian-only: if the caller has no direct visibility into this Waitlist entry, retry the lookup under this linked minor Student's own context.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -3802,6 +3821,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimWaitlistDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -4652,6 +4681,42 @@
         },
         "tags": [
           "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/impersonation-sessions": {
+      "post": {
+        "operationId": "PlatformAdminImpersonationController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartImpersonationSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpersonationSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-impersonation"
         ],
         "security": [
           {
@@ -8112,6 +8177,15 @@
           "items"
         ]
       },
+      "JoinWaitlistDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
+          }
+        }
+      },
       "WaitlistEntryResponseDto": {
         "type": "object",
         "properties": {
@@ -8162,6 +8236,15 @@
           "status",
           "joinedAt"
         ]
+      },
+      "ClaimWaitlistDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
+          }
+        }
       },
       "WaitlistEntryListResponseDto": {
         "type": "object",
@@ -8935,6 +9018,38 @@
         },
         "required": [
           "onboardingUrl"
+        ]
+      },
+      "StartImpersonationSessionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "The tenant User id to impersonate."
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "ImpersonationSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO datetime this session (and the token itself) expires."
+          },
+          "impersonatedUserId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresAt",
+          "impersonatedUserId"
         ]
       }
     }
