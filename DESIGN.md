@@ -34,16 +34,16 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
 ```css
 :root {
   /* accent — slate blue */
-  --color-accent-50:  #f5f7fa;
-  --color-accent-100: #e4ebf1;
-  --color-accent-200: #c7d4e1;
-  --color-accent-300: #9fb6cb;
-  --color-accent-400: #7495b4;
-  --color-accent-500: #4a6b8a; /* brand reference value */
-  --color-accent-600: #3d5871;
-  --color-accent-700: #30465a;
-  --color-accent-800: #243442;
-  --color-accent-900: #17212b;
+  --color-accent-50:  #fcfdfd;
+  --color-accent-100: #edf0f2;
+  --color-accent-200: #d3d9df;
+  --color-accent-300: #afbbc5;
+  --color-accent-400: #889aaa;
+  --color-accent-500: #5d7081; /* brand reference value */
+  --color-accent-600: #4d5d6b;
+  --color-accent-700: #3e4b56;
+  --color-accent-800: #2f3941;
+  --color-accent-900: #20262c;
 
   /* neutral */
   --color-neutral-50:  #f9fafa;
@@ -129,8 +129,8 @@ Dark mode ships at launch, derived from the same ramps above — never hand-auth
 |---|---|
 | `text-primary` on `surface-0` (light) | 17.2:1 |
 | `text-secondary` on `surface-0` (light) | 7.0:1 |
-| `on-accent` (white) on `fill-accent` #4a6b8a | 5.6:1 |
-| `text-accent` #30465a on white | 9.3:1 |
+| `on-accent` (white) on `fill-accent` #5d7081 | 5.1:1 |
+| `text-accent` #3e4b56 on white | 8.6:1 |
 | `text-primary` (dark) on `surface-0` (dark) | 16.0:1 |
 | `text-secondary` (dark) on `surface-0` (dark) | 6.6:1 |
 | white on `--color-danger` | 6.5:1 |
