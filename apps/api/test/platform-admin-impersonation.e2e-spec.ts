@@ -2,7 +2,12 @@
  * HTTP-level gate for PlatformAdminModule Slice 8 (Phase 43) — POST
  * /platform-admin/impersonation-sessions, per Decision 102 (resolved directly
  * with the user, docs/decisions/POST-SPEC-55-DECISION-LOG.md): Support-tier
- * impersonation is read-only.
+ * impersonation is read-only. Also covers the Phase 46 fix for Spec 55 §12.1
+ * Decision 39 — the token's own `grants` claim is now scoped to the one School
+ * named on the request, not the target's full grant set (see the dedicated
+ * "Decision 39" tests near the bottom of this file, and
+ * AuthService.issueImpersonationToken()'s own header comment for the KNOWN,
+ * still-open RLS-level gap this claims-scoping fix does NOT close).
  *
  * Deliberately proves the mechanism end-to-end across BOTH realms, not just the
  * issuance endpoint in isolation — the returned `accessToken` is a genuine
@@ -116,6 +121,34 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     return { school, student };
   }
 
+  /** A single User holding an active RoleGrant at TWO separate Schools —
+   * exactly Decision 39's own "multi-School Instructor" example. */
+  async function seedMultiSchoolInstructor() {
+    const schoolA = await superuser.school.create({ data: { id: randomUUID(), name: 'Impersonation Gate School A' } });
+    const schoolB = await superuser.school.create({ data: { id: randomUUID(), name: 'Impersonation Gate School B' } });
+    schoolIds.push(schoolA.id, schoolB.id);
+    const instructor = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `impersonation-http-instructor-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'MultiSchool',
+        surname: 'Instructor',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1990-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    userIds.push(instructor.id);
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'INSTRUCTOR', userId: instructor.id, schoolId: schoolA.id },
+        { id: randomUUID(), role: 'INSTRUCTOR', userId: instructor.id, schoolId: schoolB.id },
+      ],
+    });
+    return { schoolA, schoolB, instructor };
+  }
+
   it('a SUPPORT admin CAN start an impersonation session — a genuine tenant-realm token carrying the target\'s own grants', async () => {
     const { school, student } = await seedTenantStudent();
     const admin = await seedAdmin(AdminSubRole.SUPPORT);
@@ -123,7 +156,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     const res = await request(app.getHttpServer())
       .post('/v1/platform-admin/impersonation-sessions')
       .set('Authorization', `Bearer ${tokenFor(admin)}`)
-      .send({ userId: student.id });
+      .send({ userId: student.id, schoolId: school.id });
     expect(res.status).toBe(201);
     expect(res.body.impersonatedUserId).toBe(student.id);
     expect(typeof res.body.accessToken).toBe('string');
@@ -142,6 +175,10 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     expect(decoded.sub).toBe(student.id);
     expect(decoded.grants).toContainEqual(expect.objectContaining({ role: 'STUDENT', schoolId: school.id }));
     expect(decoded.impersonation?.adminUserId).toBe(admin.id);
+    // Decision 39 — scoped to the ONE School named on the request, not just
+    // "contains at least this grant"; this student only has the one grant, but
+    // the multi-School case below is what actually proves the scoping.
+    expect(decoded.grants).toHaveLength(1);
 
     const entries = await superuser.auditLogEntry.findMany({ where: { adminUserId: admin.id, targetId: student.id } });
     expect(entries).toHaveLength(1);
@@ -149,13 +186,13 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
   });
 
   it('the impersonation token CAN read tenant data as the impersonated user, but a WRITE with the same token is rejected — 403', async () => {
-    const { student } = await seedTenantStudent();
+    const { school, student } = await seedTenantStudent();
     const admin = await seedAdmin(AdminSubRole.SUPPORT);
 
     const startRes = await request(app.getHttpServer())
       .post('/v1/platform-admin/impersonation-sessions')
       .set('Authorization', `Bearer ${tokenFor(admin)}`)
-      .send({ userId: student.id });
+      .send({ userId: student.id, schoolId: school.id });
     expect(startRes.status).toBe(201);
     const impersonationToken = startRes.body.accessToken;
 
@@ -184,24 +221,24 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
   });
 
   it('a FULL_ADMIN can also start a session — not restricted to SUPPORT alone', async () => {
-    const { student } = await seedTenantStudent();
+    const { school, student } = await seedTenantStudent();
     const admin = await seedAdmin(AdminSubRole.FULL_ADMIN);
 
     const res = await request(app.getHttpServer())
       .post('/v1/platform-admin/impersonation-sessions')
       .set('Authorization', `Bearer ${tokenFor(admin)}`)
-      .send({ userId: student.id });
+      .send({ userId: student.id, schoolId: school.id });
     expect(res.status).toBe(201);
   });
 
   it('a BILLING_PAYMENTS_OPS admin gets 403 — impersonation is confirmed for Support (and Full Admin), not this tier', async () => {
-    const { student } = await seedTenantStudent();
+    const { school, student } = await seedTenantStudent();
     const admin = await seedAdmin(AdminSubRole.BILLING_PAYMENTS_OPS);
 
     const res = await request(app.getHttpServer())
       .post('/v1/platform-admin/impersonation-sessions')
       .set('Authorization', `Bearer ${tokenFor(admin)}`)
-      .send({ userId: student.id });
+      .send({ userId: student.id, schoolId: school.id });
     expect(res.status).toBe(403);
   });
 
@@ -210,14 +247,68 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     const res = await request(app.getHttpServer())
       .post('/v1/platform-admin/impersonation-sessions')
       .set('Authorization', `Bearer ${tokenFor(admin)}`)
-      .send({ userId: randomUUID() });
+      .send({ userId: randomUUID(), schoolId: randomUUID() });
     expect(res.status).toBe(404);
   });
 
   it('no token at all is rejected — 401', async () => {
     const res = await request(app.getHttpServer())
       .post('/v1/platform-admin/impersonation-sessions')
-      .send({ userId: randomUUID() });
+      .send({ userId: randomUUID(), schoolId: randomUUID() });
     expect(res.status).toBe(401);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Decision 39 (Spec 55 §12.1) — the actual fix: scoped to ONE School, not the
+  // target's full grant set. FOUND ON REVIEW (Phase 46): the original Phase 43
+  // implementation pulled every active RoleGrant with no tenant filter at all —
+  // these are the tests that would have caught it.
+  // ---------------------------------------------------------------------------
+
+  it('Decision 39: impersonating a multi-School Instructor scoped to School A carries ONLY School A\'s grant in the token\'s own claims (RLS-level enforcement is a separate, still-open gap — see the comment below)', async () => {
+    const { schoolA, schoolB, instructor } = await seedMultiSchoolInstructor();
+    const admin = await seedAdmin(AdminSubRole.SUPPORT);
+
+    const res = await request(app.getHttpServer())
+      .post('/v1/platform-admin/impersonation-sessions')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+      .send({ userId: instructor.id, schoolId: schoolA.id });
+    expect(res.status).toBe(201);
+
+    const decoded = tenantJwt.decode(res.body.accessToken) as { grants: Array<Record<string, unknown>> };
+    expect(decoded.grants).toHaveLength(1);
+    expect(decoded.grants[0]).toMatchObject({ role: 'INSTRUCTOR', schoolId: schoolA.id });
+    // School B's grant must not be present at all — not just "not the first
+    // one" — this is the exact exposure Decision 39 closes.
+    expect(decoded.grants.some((g) => g.schoolId === schoolB.id)).toBe(false);
+
+    // KNOWN OPEN GAP, not yet closed — flagged for the user, not silently
+    // asserted as fixed: RLS enforcement (school_tenant_isolation and every
+    // other tenant-scoped policy) keys purely on app.current_user_id, set to
+    // the REAL instructor.id regardless of what this token's own `grants`
+    // claim says — and nothing server-side reads payload.grants for
+    // authorization at all (confirmed: zero consumers repo-wide). So although
+    // the token's own claims are now honestly scoped to School A (above), a
+    // read against the ordinary tenant API surface with this exact token
+    // still reaches School B too, because the instructor's real RoleGrant
+    // row at School B still exists and still satisfies RLS. Empirically
+    // confirmed via GET /v1/schools returning both schoolA.id AND schoolB.id
+    // with this token. Closing this for real needs an RLS-level change
+    // (an additional impersonation-scope session variable, amending every
+    // tenant-scoped policy to AND against it) — out of scope for this change,
+    // escalated instead of silently building it.
+  });
+
+  it('Decision 39: starting a session scoped to a School the target holds no grant at is a clean 404', async () => {
+    const { student } = await seedTenantStudent();
+    const otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Impersonation Gate Unrelated School' } });
+    schoolIds.push(otherSchool.id);
+    const admin = await seedAdmin(AdminSubRole.SUPPORT);
+
+    const res = await request(app.getHttpServer())
+      .post('/v1/platform-admin/impersonation-sessions')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+      .send({ userId: student.id, schoolId: otherSchool.id });
+    expect(res.status).toBe(404);
   });
 });
