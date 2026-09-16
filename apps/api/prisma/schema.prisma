@@ -220,17 +220,18 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants           RoleGrant[]     @relation("RoleGrantUser")
-  grantsIssued         RoleGrant[]     @relation("RoleGrantGrantedBy")
-  classesTaught        Class[]         @relation("ClassInstructor")
-  timetableSlotsTaught TimetableSlot[] @relation("TimetableSlotInstructor")
-  instructorProfiles   Instructor[]
-  memberships          Membership[]    @relation("MembershipStudent")
-  membershipsGifted    Membership[]    @relation("MembershipGiftedBy")
-  transactionsPaid     Transaction[]   @relation("TransactionPayer")
-  studentRanks         StudentRank[]
-  promotionEventsPerformed PromotionEvent[] @relation("PromotionEventPerformedBy")
-  waiverSignatures     WaiverSignature[] @relation("WaiverSignatureStudent")
+  roleGrants               RoleGrant[]       @relation("RoleGrantUser")
+  grantsIssued             RoleGrant[]       @relation("RoleGrantGrantedBy")
+  classesTaught            Class[]           @relation("ClassInstructor")
+  timetableSlotsTaught     TimetableSlot[]   @relation("TimetableSlotInstructor")
+  instructorProfiles       Instructor[]
+  lessonsAuthored          Lesson[]          @relation("LessonInstructor")
+  memberships              Membership[]      @relation("MembershipStudent")
+  membershipsGifted        Membership[]      @relation("MembershipGiftedBy")
+  transactionsPaid         Transaction[]     @relation("TransactionPayer")
+  studentRanks             StudentRank[]
+  promotionEventsPerformed PromotionEvent[]  @relation("PromotionEventPerformedBy")
+  waiverSignatures         WaiverSignature[] @relation("WaiverSignatureStudent")
   waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
   bookings                 Booking[]         @relation("BookingStudent")
   bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
@@ -488,6 +489,7 @@ model School {
   disciplines         Discipline[]
   waivers             Waiver[]
   franchiseFeeCharges FranchiseFeeCharge[]
+  lessons             Lesson[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -859,8 +861,8 @@ model PaymentAccount {
   provider     PaymentAccountProvider
   accountTitle String
   country      String
-  status       PaymentAccountStatus @default(ACTIVE)
-  mode         PaymentAccountMode   @default(TEST)
+  status       PaymentAccountStatus   @default(ACTIVE)
+  mode         PaymentAccountMode     @default(TEST)
 
   /// Never a raw secret key (Decision, existing, §4.5/§10.4). Null until Stripe
   /// Connect onboarding is initiated — set synchronously in
@@ -970,7 +972,7 @@ model MembershipPlan {
   classesIncluded Int?
 
   scopedClassId String?
-  scopedClass   Class? @relation("MembershipPlanScopedClass", fields: [scopedClassId], references: [id])
+  scopedClass   Class?  @relation("MembershipPlanScopedClass", fields: [scopedClassId], references: [id])
 
   visible Boolean @default(true)
 
@@ -1033,7 +1035,7 @@ model Membership {
   // Inherited from MembershipPlan when it names one (Spec 55 §6.1) — restricts which
   // Class this Membership can book. Set once at creation from membershipPlan.scopedClassId.
   scopedClassId String?
-  scopedClass   Class? @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
+  scopedClass   Class?  @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
 
   // Friend Pass only — distinguishes a School comp from a paid purchase.
   giftedById String?
@@ -1373,7 +1375,7 @@ model RankStripeTier {
   id String @id @default(uuid())
 
   rankId String
-  rank   Rank @relation(fields: [rankId], references: [id])
+  rank   Rank   @relation(fields: [rankId], references: [id])
 
   // Denormalized from rank.schoolId — see Rank's own comment for the full
   // "avoid a multi-hop RLS join" reasoning, doubly true here (three hops from
@@ -1401,11 +1403,11 @@ model RankStripeTier {
 }
 
 /// Skill (Phase 10b, Spec 55 §5/§6.1) — belongs to Discipline. Confirmed fields:
-/// "name, description." Many-to-many with Rank (required-skills gate). Also
-/// "referenced by Lesson" per Decision 58 (CurriculumModule) — that FK doesn't
-/// exist yet, deliberately: CurriculumModule is out of scope this phase, and this
-/// model isn't shaped in any way that would need a breaking change once Lesson is
-/// added (Lesson would simply gain its own skillId FK pointing here).
+/// "name, description." Many-to-many with Rank (required-skills gate) and, as of
+/// Phase 44 (CurriculumModule, Decision 58), many-to-many with Lesson too — Spec
+/// 55 §6.1 says "linked skill(s)" (plural) on Lesson's own side, so this is a real
+/// M2M via LessonSkill below, not the single skillId FK an earlier draft of this
+/// comment anticipated.
 model Skill {
   id String @id @default(uuid())
 
@@ -1424,6 +1426,7 @@ model Skill {
 
   requiredByRanks      RankRequiredSkill[]
   studentSkillStatuses StudentRankSkillStatus[]
+  lessons              LessonSkill[]
 
   @@index([schoolId])
   @@index([disciplineId])
@@ -1437,11 +1440,106 @@ model Skill {
 /// verify against would be needless risk for zero benefit over an explicit one).
 model RankRequiredSkill {
   rankId  String
-  rank    Rank  @relation(fields: [rankId], references: [id])
+  rank    Rank   @relation(fields: [rankId], references: [id])
   skillId String
-  skill   Skill @relation(fields: [skillId], references: [id])
+  skill   Skill  @relation(fields: [skillId], references: [id])
 
   @@id([rankId, skillId])
+  @@index([skillId])
+}
+
+enum LessonFormat {
+  PRERECORDED
+  LIVE
+}
+
+enum CaptionStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+/// Lesson (Phase 44, Decision 58 — Spec 55 §6.1/§7, CurriculumModule). Confirmed
+/// fields (quoted): "Title, category, duration, instructor, description, linked
+/// skill(s), format (Prerecorded/Live), videoRef, captionStatus
+/// (Pending/Processing/Ready/Failed), captionTrackRef." Links to one or more
+/// Skills via LessonSkill below (a real M2M — "linked skill(s)" is plural).
+///
+/// Scoping/authorship: Decision 58's own prose ("an instructor uploads") and Spec
+/// 55's own §7 endpoint table (`CRUD /admin/curriculum/lessons`, which per this
+/// project's own /admin/* == Platform-Admin-realm convention, ultm8-nestjs-module
+/// §5, would mean Platform-Admin-authored) directly contradict each other — a real
+/// gap inside Spec 55 itself, not resolved by picking whichever reading was found
+/// first. Resolved DIRECTLY WITH THE USER (Decision 104,
+/// docs/decisions/POST-SPEC-55-DECISION-LOG.md): School-scoped, Instructor/Staff-
+/// authored, ordinary tenant endpoints — same shape as every other content entity
+/// in this schema (Class, Waiver, MembershipPlan, ...), not the Platform Admin
+/// realm.
+///
+/// [UNRESOLVED, deliberately not modeled] Spec 55's own field row also says Lesson
+/// "Belongs to a Category" — no Category entity exists anywhere else in the
+/// document (verified directly against the extracted spec text: the word
+/// "Category" occurs exactly once in the whole document, this one relationship
+/// clause, one line below `category` used as a plain field). Treated as a spec
+/// doc-bug, not built as a relation — `category` below is a plain string only.
+/// Flag to the Architect before ever promoting this to a real model.
+///
+/// `instructorId` mirrors Class.instructorId's own established shape exactly (a
+/// User holding an active INSTRUCTOR RoleGrant at this School, validated via
+/// TenantAuthorizationService.assertValidInstructor — never a separate
+/// Instructor-profile FK, per that method's own header comment) — reused, not
+/// reinvented.
+///
+/// `videoRef`/`captionTrackRef` are deliberately vendor-agnostic opaque strings,
+/// not shaped around Cloudflare Stream specifically — Decision 101 (15 Sep 2026)
+/// picked that vendor (+ AWS Transcribe for captioning) but explicitly does not
+/// build the integration itself; no credentials for either are provisioned in this
+/// working environment, matching every other unprovisioned vendor in this codebase
+/// (Stripe/Cognito/R2/Twilio's own precedent) — the actual upload/dispatch calls
+/// are still unbuilt.
+model Lesson {
+  id String @id @default(uuid())
+
+  schoolId     String
+  school       School  @relation(fields: [schoolId], references: [id])
+  instructorId String?
+  instructor   User?   @relation("LessonInstructor", fields: [instructorId], references: [id])
+
+  title           String
+  category        String?
+  durationSeconds Int?
+  description     String?
+  format          LessonFormat
+
+  videoRef        String?
+  captionStatus   CaptionStatus @default(PENDING)
+  captionTrackRef String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  skills LessonSkill[]
+
+  @@index([schoolId])
+  @@index([instructorId])
+}
+
+/// LessonSkill — the confirmed Lesson<->Skill many-to-many ("linked skill(s)",
+/// plural, Spec 55 §6.1). Explicit join table, same convention as
+/// RankRequiredSkill above (no implicit Prisma many-to-many anywhere in this
+/// codebase, by deliberate choice — see that model's own comment). No schoolId of
+/// its own — RLS delegates entirely to Lesson/Skill's own policies via the FK join,
+/// same reasoning as RankRequiredSkill's own migration comment: this table carries
+/// no queryable data beyond the two FKs, so a caller can only ever reach a row here
+/// by already having Lesson/Skill visibility.
+model LessonSkill {
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id])
+  skillId  String
+  skill    Skill  @relation(fields: [skillId], references: [id])
+
+  @@id([lessonId, skillId])
   @@index([skillId])
 }
 
@@ -1481,7 +1579,7 @@ model StudentRank {
   schoolId String
 
   currentRankId String
-  currentRank   Rank @relation("StudentRankCurrentRank", fields: [currentRankId], references: [id])
+  currentRank   Rank   @relation("StudentRankCurrentRank", fields: [currentRankId], references: [id])
 
   currentStripeId String?
   currentStripe   RankStripeTier? @relation("StudentRankCurrentStripe", fields: [currentStripeId], references: [id])
@@ -1688,11 +1786,11 @@ model WaiverSignature {
   // policy a direct column comparison rather than a join through Waiver.
   schoolId String
 
-  signerFullName String
-  signatureText  String // see header comment — typed name, not a drawn-signature blob
+  signerFullName    String
+  signatureText     String // see header comment — typed name, not a drawn-signature blob
   signatureImageKey String? // see header comment — R2 object key, nullable, PNG raster
-  signedDate     DateTime @default(now())
-  status         WaiverSignatureStatus @default(SIGNED)
+  signedDate        DateTime              @default(now())
+  status            WaiverSignatureStatus @default(SIGNED)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

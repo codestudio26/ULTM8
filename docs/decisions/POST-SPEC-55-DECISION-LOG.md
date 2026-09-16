@@ -864,3 +864,23 @@ The actual implementation — `assertGuardianOfStudent()`/`assertStaffAtSchool()
 ### Recorded by
 
 Logged during a direct exchange with the user, 15 Sep 2026, alongside Decisions 101/102 above, presented together after the same session's research pass surfaced all three as the project's remaining open decisions — the user asked for Claude's own best recommendation across all three, and this reasoning was given and followed.
+
+---
+
+## Decision 104 — Lesson scoping and authorship: School-scoped, Instructor/Staff-authored, resolved directly with the user
+
+**Date:** 16 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** a genuine contradiction inside Spec 55 itself, found while starting Phase 44 (`CurriculumModule`, Decision 101's video vendor having just unblocked it). Decision 58's own prose (§12.1) describes Prerecorded Lessons as "videos an instructor uploads ahead of time" — tenant-side, Instructor-authored. But Spec 55's own §7 endpoint table lists Lesson authoring as `CRUD /admin/curriculum/lessons`, and this project's own confirmed `/admin/*` convention (`ultm8-nestjs-module` §5 — `TranslationsModule` is the direct structural precedent, tenant-facing reads but Platform-Admin-only authoring) means that endpoint prefix should mean the Platform Admin realm, never a tenant JWT. Nothing in Spec 55 reconciles these two statements, and no Section 8 screen-to-role mapping mentions Lesson/Curriculum at all. This was escalated rather than resolved by picking whichever reading was found first, per this project's own standing rule.
+
+### Decision
+
+**School-scoped, Instructor/Staff-authored, ordinary tenant endpoints** — not the Platform Admin realm. `Lesson` carries a denormalized `schoolId` (same convention as `Skill`/`Rank` above it), and writes go through the existing `TenantAuthorizationService.assertStaffAtSchool` check (Owner/Manager, Branch Staff, or Instructor — the same three roles every other tenant-content entity in this schema already uses), reached via ordinary `/schools/{id}/curriculum/lessons` routes, not `/admin/*`. Reasoning given to the user and accepted: Decision 58's own prose is the more specific, more recently-reasoned statement about *this* feature specifically, while the `/admin/curriculum/lessons` table entry reads as a copy-paste/categorization slip against the `TranslationsModule` pattern immediately above it in the same table — and a shared, Platform-Admin-curated lesson library sits awkwardly against today's schema regardless, since `Skill` (what every Lesson links to) is already per-School, not platform-wide reference data. This also keeps Lesson consistent with every other confirmed piece of Decision 58 itself: Lessons "surfacing automatically... a student's profile, the grading flow itself" only makes sense as School-scoped content a Student at that School can already see through ordinary RLS, the same "any active RoleGrant holder at the School may read, business-layer narrows writes" split already established for Discipline/Rank/Skill (Phase 10b) and reused unchanged.
+
+### What this does NOT resolve
+
+This decision answers only scoping and authorship — it does not build the video-upload or captioning-pipeline integration itself (Decision 101 picked the vendors; no Cloudflare Stream/AWS Transcribe credentials are provisioned in this environment, so `videoRef`/`captionStatus`/`captionTrackRef` exist on the model but nothing writes them beyond their schema defaults yet). It also does not resolve two things flagged during the same research pass, both left for the Architect: what Spec 55's own "Belongs to a Category" clause on Lesson actually refers to (no `Category` entity exists anywhere else in the document — treated as a doc inconsistency, not modeled), and Live-Lesson real-time captioning mechanics (explicitly gated on the video-hosting vendor's own capabilities in Spec 55, unresolved there and not addressed here). Full e2e isolation-suite coverage for the new `Lesson`/`LessonSkill` RLS policies is not run by this decision either — this working environment has no reachable Postgres; the schema, hand-authored migration, and NestJS module are typechecked (`tsc --noEmit`) but not yet verified against a live database or the cross-tenant isolation CI gate.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 16 Sep 2026, immediately after a dedicated research pass (docx text extraction of Spec 55 §12.1/§6.1/§7) surfaced the scoping contradiction above as a genuine spec-internal gap, not a guessable one — the user was given both readings plus a recommendation and chose the recommended one.
