@@ -14,6 +14,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         { label: 'Disciplines', to: '/disciplines' },
         { label: 'Instructors', to: '/instructors' },
         { label: 'Classes', to: '/classes' },
+        { label: 'Curriculum', to: '/curriculum' },
         { label: 'Timetable', to: '/timetable' },
         { label: 'Membership Plans', to: '/membership-plans' },
         { label: 'Transactions', to: '/transactions' },

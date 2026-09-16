@@ -1460,6 +1460,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/curriculum/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findLessonsForSchool"];
+        put?: never;
+        post: operations["CurriculumController_createLesson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/skills/{id}/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findLessonsForSkill"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/lessons/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findOneLesson"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CurriculumController_updateLesson"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2737,6 +2785,51 @@ export interface components {
             /** @description ISO datetime this session (and the token itself) expires. */
             expiresAt: string;
             impersonatedUserId: string;
+        };
+        CreateLessonDto: {
+            title: string;
+            /** @description Plain field only — Spec 55's own "Belongs to a Category" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation. */
+            category?: string;
+            durationSeconds?: number;
+            description?: string;
+            /** @enum {string} */
+            format: "PRERECORDED" | "LIVE";
+            /** @description A User holding an active INSTRUCTOR RoleGrant at this School — validated the same way Class.instructorId is (TenantAuthorizationService.assertValidInstructor), not a separate Instructor-profile FK. */
+            instructorId?: string;
+            /** @description Skill ids this Lesson teaches — must all belong to this School. */
+            skillIds: string[];
+        };
+        LessonResponseDto: {
+            id: string;
+            schoolId: string;
+            instructorId?: string | null;
+            title: string;
+            category?: string | null;
+            durationSeconds?: number | null;
+            description?: string | null;
+            /** @enum {string} */
+            format: "PRERECORDED" | "LIVE";
+            /** @description Vendor-agnostic pointer (Decision 101: Cloudflare Stream) — null until the video-hosting pipeline exists. */
+            videoRef?: string | null;
+            /** @enum {string} */
+            captionStatus: "PENDING" | "PROCESSING" | "READY" | "FAILED";
+            captionTrackRef?: string | null;
+            skillIds: string[];
+            createdAt: string;
+            updatedAt: string;
+        };
+        LessonListResponseDto: {
+            items: components["schemas"]["LessonResponseDto"][];
+        };
+        UpdateLessonDto: {
+            title?: string;
+            category?: string;
+            durationSeconds?: number;
+            description?: string;
+            /** @enum {string} */
+            format?: "PRERECORDED" | "LIVE";
+            instructorId?: string;
+            skillIds?: string[];
         };
     };
     responses: never;
@@ -5442,6 +5535,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpersonationSessionResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findLessonsForSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_createLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLessonDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findLessonsForSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findOneLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_updateLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLessonDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonResponseDto"];
                 };
             };
         };
