@@ -4724,6 +4724,197 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/curriculum/lessons": {
+      "post": {
+        "operationId": "CurriculumController_createLesson",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLessonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CurriculumController_findLessonsForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/skills/{id}/lessons": {
+      "get": {
+        "operationId": "CurriculumController_findLessonsForSkill",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/lessons/{id}": {
+      "get": {
+        "operationId": "CurriculumController_findOneLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "CurriculumController_updateLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLessonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -9051,6 +9242,173 @@
           "expiresAt",
           "impersonatedUserId"
         ]
+      },
+      "CreateLessonDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "description": "Plain field only — Spec 55's own \"Belongs to a Category\" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation."
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "PRERECORDED",
+              "LIVE"
+            ]
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School — validated the same way Class.instructorId is (TenantAuthorizationService.assertValidInstructor), not a separate Instructor-profile FK."
+          },
+          "skillIds": {
+            "minItems": 1,
+            "description": "Skill ids this Lesson teaches — must all belong to this School.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "format",
+          "skillIds"
+        ]
+      },
+      "LessonResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "instructorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationSeconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "PRERECORDED",
+              "LIVE"
+            ]
+          },
+          "videoRef": {
+            "type": "string",
+            "nullable": true,
+            "description": "Vendor-agnostic pointer (Decision 101: Cloudflare Stream) — null until the video-hosting pipeline exists."
+          },
+          "captionStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "captionTrackRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "skillIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "title",
+          "format",
+          "captionStatus",
+          "skillIds",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "LessonListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LessonResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateLessonDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "PRERECORDED",
+              "LIVE"
+            ]
+          },
+          "instructorId": {
+            "type": "string"
+          },
+          "skillIds": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   }
