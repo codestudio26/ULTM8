@@ -81,6 +81,19 @@ export type ApiClient = ReturnType<typeof createApiClient>;
  * call's return value directly (a Promise), not an already-awaited result — so call
  * sites read as `await unwrap(client.POST('/v1/schools', { body: dto }))`, one await,
  * not two.
+ *
+ * Branches on `response.ok` (real HTTP status), not on whether openapi-fetch happened
+ * to populate `error` — found on review (apps/student's Track B work, Slice 2):
+ * openapi-fetch's own fetch wrapper returns `{ error: undefined, response }` for BOTH
+ * a genuine success with an empty body (e.g. `204 No Content`) AND a non-2xx response
+ * whose body happens to be empty or has `Content-Length: 0` (a proxy/gateway error, a
+ * dropped connection) — `error !== undefined` alone can't tell those apart, so the
+ * previous version of this function would have silently reported the latter as a
+ * success. `apps/api` already has at least one real `204` endpoint merged
+ * (`DELETE /notifications/device-tokens/:id`) and this codebase's own decision log
+ * (Decision 94) treats "only one real consumer so far" as insufficient reason to leave
+ * a shared-infrastructure bug in place once a second one exists — so this is fixed
+ * here, not worked around per call site.
  */
 export async function unwrap<T>(
   resultPromise: Promise<{
@@ -90,16 +103,18 @@ export async function unwrap<T>(
   }>,
 ): Promise<T> {
   const result = await resultPromise;
-  if (result.error !== undefined) {
-    const body = result.error as { error?: { code?: string; message?: string } };
+  if (!result.response.ok) {
+    const body = result.error as { error?: { code?: string; message?: string } } | undefined;
     throw new ApiError(
       result.response.status,
       body?.error?.code ?? 'UNKNOWN_ERROR',
       body?.error?.message ?? `Request failed with status ${result.response.status}`,
     );
   }
-  if (result.data === undefined) {
+  // A real success with nothing to return (204) has no `data` — only flag a missing
+  // body as a problem when the status implied one should have been there.
+  if (result.data === undefined && result.response.status !== 204) {
     throw new ApiError(result.response.status, 'EMPTY_RESPONSE', 'Request succeeded but returned no data');
   }
-  return result.data;
+  return result.data as T;
 }
