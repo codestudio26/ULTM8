@@ -51,6 +51,58 @@ yet implemented in `LoginPage.tsx`)
   not-configured) — no fields, no providers invented
 - Artifact: https://claude.ai/artifact/JXPbsswMs3jJhJExXo85VU
 
+## school-portal — Register flow
+
+**Status:** mockup
+
+- Figma nodes: `2301:1431` (registerScreen) → `2301:1670` (success) / `2301:1693` (error)
+- Real source: `apps/school-portal/src/auth/RegisterPage.tsx` (fields match `RegisterDto` exactly per its own header comment)
+- **Excluded:** Remember Me, social signup buttons, "Agree to Martial App's Terms of Use" checkbox — same reasoning as Login
+- **Added despite Figma omitting it:** Date of birth — required on `RegisterDto`, Figma's form is just missing it, not treating it as skippable
+- **Kept:** the real "Optional details" collapsed section (username/gender/nationality/language/currency/address) — not in Figma at all, but real working code
+- **Not used:** Figma's generic "Unable to Register Account" error panel — real code shows the actual `ApiError.message` inline instead, which carries more information
+- **Open question, not assumed:** Figma shows a success interstitial before continuing; real code today navigates straight to `/verify-otp` with no pause. Shown as a proposed addition using the new DESIGN.md success-panel pattern, not treated as decided.
+- Artifact: https://claude.ai/artifact/28pd49EhjuZLW986cevJ9u
+
+## school-portal — Instructors & Branches
+
+**Status:** mockup
+
+- Instructors — Figma: `" instructorList"` (`2380:640`); Real: `InstructorResponseDto`
+  - **Excluded:** progress-bar "Ranking" (real `beltRanking` is plain text, not a progress metric), "Active" status badge (no such field), date-range picker (endpoint takes no date params), a Name column (DTO has no name field — real code doesn't render one either, confirmed real gap)
+  - **Excluded:** numbered pagination — hook's own comment says "No pagination in this UI yet," and the API is cursor-based anyway
+  - **Proposed, not assumed:** a `photoUrl` avatar — field exists on the DTO, just isn't wired into the UI today
+- Branches — no matching Figma list screen exists (only branch-detail frames); built from `BranchResponseDto` + current real table
+- Artifact: https://claude.ai/artifact/6hBes7L1F7DSt9G525ywwy
+
+## school-portal — Verify OTP (register's second step) & Forgot/Reset passcode
+
+**Status:** mockup
+
+- **Flow-structure correction, not just a style one:** Figma implies a 3-step
+  reset (forgot → separate OTP screen → new-password-only screen), but real
+  code combines code + new passcode into **one** screen —
+  `ResetPasscodePage.tsx` posts `{phone, code, newPasscode}` in a single
+  call. Kept the real 2-step structure rather than adding a screen to match
+  Figma's drawn flow.
+- The Figma OTP-only screen (`2301:1596`, "veriﬁcationPin") actually matches
+  a *different* real page — `VerifyOtpPage.tsx`, which belongs to the
+  **register** flow (phone verification), not reset. Reattributed correctly.
+- **Excluded:** country-flag phone picker, generic "OTP Expired" panel (real
+  code shows the actual `ApiError` message instead)
+- **Kept:** real "Resend code" button + "Code resent." success banner (not
+  in Figma at all); phone field left editable in the OTP-verify screen
+  (Figma shows it as static text)
+- **Flagged, not assumed:** the real `code` field has no length constraint
+  in code — Figma shows 4 digit boxes, but that count isn't confirmed
+  anywhere. Shown as a labeled alternative, not the default.
+- **Open question, not assumed:** same success-panel-vs-immediate-redirect
+  question as Login/Register — real code navigates straight to `/login`
+  today with no pause.
+- Artifact: https://claude.ai/artifact/CTTu5AcXMdb7tZ7ETPVV4Y
+
+**Auth flow is now fully covered** (Login, Register, Verify OTP, Forgot/Reset passcode) across the three artifacts above.
+
 ## DESIGN.md — Patterns section
 
 **Status:** implemented (committed `83f6d41`)
