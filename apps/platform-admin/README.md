@@ -21,11 +21,8 @@ Cognito-backed sign-in, the AdminUser roster (invite / list / revoke), look-up-b
 **Built in Slice 3 (Phase 36):**
 - `POST /platform-admin/payment-accounts/:id/rotate-credential` — a "Rotate credential" button on each `STRIPE`-provider PaymentAccount section (`src/paymentAccounts/PaymentAccountDetails.tsx`, shared between the School and Franchise lookup screens). Success surfaces the fresh Stripe onboarding link as a plain URL to relay to the tenant — Platform Admin cannot complete the flow on the tenant's own behalf, since Stripe Connect onboarding collects the tenant's own business/banking details. No client-side pre-validation of whether onboarding already completed; the server's own error message (a `CASH`/`BANK_TRANSFER` account, or one that never started onboarding) surfaces directly.
 
-**Built in Slice 4 (Phase 48):**
-- `POST /platform-admin/impersonation-sessions` (`src/impersonation/ImpersonationPage.tsx`) — a `userId`/`schoolId` form (look-up-by-known-id only, same as the Schools/Franchises screens; the endpoint itself has no way to search by email/name) that starts a Support-tier, read-only, School-scoped impersonation session (Phase 43/46/47, Decision 102 + Spec 55 Decision 39) and surfaces the resulting access token, expiry, and impersonated User id directly. Does **not** hand the token to `apps/school-portal` automatically — no cross-app hand-off mechanism exists anywhere in this monorepo, and building one is new scope beyond what Decision 102 confirmed; flagged for Architect/product review, same as `PaymentAccountDetails`' own precedent for surfacing a sensitive artifact rather than acting on it.
-
 **Not built yet, each its own later slice** (mirrors `PlatformAdminModule`'s own module-header comment on the backend side):
-- Any other tenant-data write UI (editing another tenant's records generally) — blocked on its own separate backend design work (Decision 105: not built, pending a named use case).
+- Any other tenant-data write UI (editing another tenant's records generally, impersonation) — each blocked on its own separate backend design work `PlatformAdminModule`'s own header comment already flags, not built here first.
 - A real "home" dashboard — still lands directly on Admin Users; there's nothing yet to summarize on a landing page.
 
 ## Local development

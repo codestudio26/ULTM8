@@ -11,9 +11,8 @@ import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails'
  * apps/school-portal) — the one write this screen DOES expose is the
  * PaymentAccount section's own "Rotate credential" action (Phase 35's
  * POST .../payment-accounts/:id/rotate-credential). General tenant-data edits
- * are a separate, not-yet-built slice (see this app's own README) — starting an
- * impersonation session is its own screen (`../impersonation/ImpersonationPage`,
- * Phase 48), not part of this lookup. */
+ * and impersonation are each a separate, not-yet-built slice (see this app's
+ * own README). */
 export function SchoolLookupPage() {
   const [idInput, setIdInput] = useState('');
   const [lookedUpId, setLookedUpId] = useState<string | null>(null);
