@@ -103,6 +103,109 @@ yet implemented in `LoginPage.tsx`)
 
 **Auth flow is now fully covered** (Login, Register, Verify OTP, Forgot/Reset passcode) across the three artifacts above.
 
+## school-portal — Timetable
+
+**Status:** mockup
+
+- Figma: "timeTableList" (`2389:3922`); Real: `TimetableSlotResponseDto`, `TimetablePage.tsx`
+- **Figma's list screen doesn't match this resource at all** — it's the same unadapted generic-list template as Instructors (same dummy row, date-range picker, numbered pagination), with "Start Date"/"End Date" columns that describe *Classes*, not Timetable. Real code's own comment is explicit that Timetable (recurring `weekday` + `startTime`/`endTime`) and Classes (dated `startDate`/`endDate`) are deliberately separate resources — using Figma's columns here would blur that distinction.
+- Built from the real weekday-grouped layout instead (one card per day), which is what's actually implemented today.
+- Artifact: https://claude.ai/artifact/KJxAg5YpVMWuAbZjdM2EGo
+
+## school-portal — Staff
+
+**Status:** mockup
+
+- No Figma screen exists for this page at all (checked the whole file)
+- **Hard constraint from the code itself:** no "list all staff at my School" endpoint exists — `roleGrantQueries.ts`'s own comment confirms it. Only real capabilities: invite a known User ID as Instructor/Branch Staff, and look up/revoke one known user's grants at a time. A staff directory/roster view would need new backend work, not a UI change.
+- Invite form is deliberately narrow (Instructor/Branch Staff only) per Decision 80/81 — not expanded here.
+- Pure styling pass otherwise — both cards shown populated for review; real default state has the lookup table empty until searched.
+- Artifact: https://claude.ai/artifact/SnY3N4MVPgDhsUyZ7kVZpx
+
+## school-portal — Disciplines, Skills & Ranks
+
+**Status:** mockup
+
+- No Figma screen exists for this page either — "Ranks"/"Belt" only appear as small nested labels inside unrelated screens (e.g. the Instructor list's progress-bar column, already flagged as not matching real data)
+- Built entirely from `DisciplineResponseDto`, `SkillResponseDto`, `RankResponseDto`
+- **Rank colors are rendered as real swatches** — unlike Instructors' `beltRanking` (plain text, flagged earlier), `RankResponseDto.primaryColour`/`secondaryColour` genuinely are structured color fields, so a swatch reflects real data here, not an invented one
+- Kept the real, persistent "Ranks can only be added at the end of the ladder" hint (append-only, no reorder)
+- Pure styling pass — no fields added/removed/reinterpreted
+- Artifact: https://claude.ai/artifact/3bdYgVFW327Wd8qFwL13a3
+
+## school-portal — Classes & Class detail
+
+**Status:** mockup
+
+- Figma: "classesList" (`2389:4491`); Real: `ClassResponseDto`, `BookingResponseDto`, `WaitlistEntryResponseDto`
+- **"Fees: $300.00" column → removed.** `ClassResponseDto` has no price field at all — a Class isn't sold directly, access comes through Membership Plans. This is the opposite direction of the Timetable finding: here Figma invents a field the DTO doesn't have.
+- **"Status: Active" → removed** (no status field on the DTO)
+- Real Start/End dates *were* kept — unlike Timetable, Classes genuinely has `startDate`/`endDate`, so those Figma columns are the right shape here
+- **Flagged, not assumed:** an Instructor column would be a reasonable addition (data's already fetched for the form dropdown), but isn't in the real table today, so shown as a suggestion, not included
+- Class detail is read-only by design (real code's own comment: "visibility only" this phase, matches Transactions) — no cancel/override actions added; Student rows show truncated IDs since no name-lookup endpoint exists
+- Artifact: https://claude.ai/artifact/NAEVAWWQrNh8XnVbuikK6E
+
+## school-portal — Membership Plans
+
+**Status:** mockup
+
+- Figma: "membershipList" (`2406:5604`); Real: `MembershipPlanResponseDto`, `MembershipPlansPage.tsx`
+- **Type labels kept exact** to the 5 real enum values — Figma's "Subscriptions"/"Single Passes"/"Trial Memberships" don't map cleanly onto them
+- **"Expires: [fixed date]" column → removed.** Conflates the Plan template's `expiryDurationDays` (a duration, e.g. "30 days after purchase") with an individual purchased membership's actual expiry date, which only exists per-purchase
+- **"Status: Active" → removed** — redundant with the real Visibility (Visible/Hidden) column
+- Date-range picker, numbered pagination → removed (consistent with every other list page)
+- Artifact: https://claude.ai/artifact/DStQyxjW2cbQP2n6ZJagmq
+
+## school-portal — Transactions
+
+**Status:** mockup
+
+- Figma: "transactionsHistory"; Real: `TransactionResponseDto`, `TransactionsPage.tsx`
+- **Note:** Figma's MCP tool call limit was hit partway through this page — built from the structural text already cached locally (column labels) plus the real code, not a fresh screenshot. Remaining pages below have the same limitation until it resets.
+- **Stripe/GoCardless/Cash balance-widget cards → removed entirely.** That's payment-account administration (closer to platform-admin's `PaymentAccountResponseDto`), not this School-level read-only transaction ledger — not folding two different pages together.
+- **"Download" (invoice) action → removed.** Real code's own comment: "no refund/credit-restore/invoice-download endpoints exist yet this phase."
+- Date-range picker, numbered pagination → removed (consistent pattern)
+- Artifact: https://claude.ai/artifact/ThDY6cRhHrVAS9Y34pgyzH
+
+## school-portal — Waivers
+
+**Status:** mockup
+
+- No Figma screen exists for Waiver management — "Liability waivers" only appears as a small checkbox label elsewhere, and a "Severability and Waiver" legal clause on an unrelated Terms page (naming coincidence, not the same concept)
+- Built entirely from `WaiverResponseDto` — pure styling pass, 80-char body preview matches the real code's own `bodyPreview()` convention
+- Artifact: https://claude.ai/artifact/BJu16F9LeGy11Qvp27mmSt
+
+## school-portal — Franchises & Franchise detail
+
+**Status:** mockup
+
+- Figma: "franchiseList" (`2337:9161`); Real: `FranchiseResponseDto`, `FranchiseDetailPage.tsx`
+- **"Status: Active" → removed** (no status field on the DTO)
+- **Phone number flagged, not included** — DTO has a real `mobileNumber` field not currently rendered (same category as Instructors' unused `photoUrl`)
+- Detail page (member Schools + fee charges + refund) has no Figma match at all — built entirely from real code, which is explicit that School roster/fee-charge rows are written only by billing jobs and Stripe webhooks; refund is the one real write action
+- Artifact: https://claude.ai/artifact/UCyBq5oRddpVLKDrgToNqJ
+
+## school-portal — Notifications
+
+**Status:** mockup
+
+- No Figma screen matches an in-app notification inbox — the only nearby match is an unrelated "Email notifications" settings/preferences screen (toggles, not a message list), not used
+- Built entirely from `NotificationResponseDto` — pure styling pass, list + mark-read only (no device-token registration UI, out of scope per the real code's own comment)
+- Artifact: https://claude.ai/artifact/UNKSBCCrc56mKSTCtbJiQJ
+
+## platform-admin — Admin Users, School lookup, Franchise lookup
+
+**Status:** mockup
+
+- **Confirmed zero Figma coverage for this app.** The whole Figma file has exactly one top-level page, literally named "School Portal" — there is no platform-admin content in it at all.
+- Built entirely from real code: `AdminUsersPage.tsx` (populated by default, Full-Admin-only), `SchoolLookupPage.tsx` / `FranchiseLookupPage.tsx` (lookup-gated, empty by default, shown here post-search)
+- Kept the real "Rotate credential" gating exactly — STRIPE-provider payment accounts only, shown both with (School) and without (Franchise, BANK_TRANSFER) in the mockup
+- Artifact: https://claude.ai/artifact/Sb2k58B66vCfLs9hFWYAGt
+
+---
+
+**All 14 queued pages are now done** (Login flow, Instructors, Branches, Register, Verify OTP/Forgot/Reset, Timetable, Staff, Disciplines/Skills/Ranks, Classes, Membership Plans, Transactions, Waivers, Franchises, Notifications, platform-admin's Admin Users/School lookup/Franchise lookup). Figma's MCP rate limit was hit partway through Transactions — everything from Transactions onward was built from real code plus previously-cached Figma structural text, not fresh screenshots.
+
 ## DESIGN.md — Patterns section
 
 **Status:** implemented (committed `83f6d41`)
