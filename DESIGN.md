@@ -6,10 +6,10 @@ This file is written for coding agents to read before generating UI — referenc
 
 ## Typography
 
-Keep it system-native for speed: no webfont request on first paint.
+Figtree, self-hosted as a single variable font (`@fontsource-variable/figtree`, SIL Open Font License), is the product's typeface — a deliberate trade-off against the previous system-native-only stance, chosen for brand consistency across the app rather than for its performance profile. The mitigations that make this acceptable: it's self-hosted (no third-party CDN round trip), it's one variable file per script subset rather than separate files per weight, and `font-display: swap` means the system fallback stack renders immediately and text is never blocked on the webfont — Figtree swaps in once loaded, it doesn't delay first paint.
 
 ```css
---font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--font-sans: "Figtree Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
 ```
 
@@ -219,7 +219,7 @@ Prefer CSS transitions over JS animation. Keep everything in the 120–280ms ran
 
 ## Performance
 
-- System font stack (above) — zero webfont requests on first paint. If a custom display font is ever added, it must be a single self-hosted variable font, not multiple weight files.
+- Figtree (above) is self-hosted as a single variable font per script subset, not separate files per weight, with `font-display: swap` so the system fallback stack renders immediately and first paint is never blocked on the webfont.
 - No layout-shifting images: always set explicit `width`/`height` or `aspect-ratio`.
 - Lazy-load everything below the fold.
 - Keep first-load JS/CSS minimal — many users worldwide are on slower mobile connections, not just small screens; this is a network-speed constraint as much as a screen-size one.

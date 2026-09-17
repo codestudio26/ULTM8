@@ -81,7 +81,7 @@
   --text-danger: var(--color-danger);
 
   /* ---- Typography (DESIGN.md "Typography") ---- */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Figtree Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
   --font-size-caption: 13px;
   --font-size-footnote: 14px;

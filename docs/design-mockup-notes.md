@@ -206,6 +206,16 @@ yet implemented in `LoginPage.tsx`)
 
 **All 14 queued pages are now done** (Login flow, Instructors, Branches, Register, Verify OTP/Forgot/Reset, Timetable, Staff, Disciplines/Skills/Ranks, Classes, Membership Plans, Transactions, Waivers, Franchises, Notifications, platform-admin's Admin Users/School lookup/Franchise lookup). Figma's MCP rate limit was hit partway through Transactions — everything from Transactions onward was built from real code plus previously-cached Figma structural text, not fresh screenshots.
 
+## Typography — Figtree
+
+**Status:** implemented (not yet committed)
+
+- User uploaded Uber Move (`UberMove-*.ttf`) and later a re-zipped "EnnVisions" set as the desired typeface — both rejected: every file's embedded metadata literally reads "This custom font has been licensed exclusively to Uber," including the renamed set (glyph names still contained "Uber"). Neither was added to the repo.
+- Verified 5 open-license alternatives (Inter, Plus Jakarta Sans, Manrope, Figtree, Lato — all SIL OFL 1.1) with a real comparison artifact, no Uber Move glyphs rendered anywhere (even privately), described in words instead.
+- User picked **Figtree**. Installed `@fontsource-variable/figtree` (self-hosted variable font, SIL OFL) into `packages/ui`, imported in `index.ts`, set as `--font-sans` in `tokens.css`. DESIGN.md's Typography + Performance sections rewritten to honestly reflect the trade-off (one self-hosted webfont request now, mitigated by `font-display: swap` + system fallback).
+- Single token change point — cascades to every already-built page automatically, no per-page edits.
+- Demo artifact: https://claude.ai/artifact/RwzDugp8VcNqy7nmdPgFsp
+
 ## DESIGN.md — Patterns section
 
 **Status:** implemented (committed `83f6d41`)
