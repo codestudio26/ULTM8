@@ -1508,6 +1508,54 @@ export interface paths {
         patch: operations["CurriculumController_updateLesson"];
         trace?: never;
     };
+    "/v1/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TranslationsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminTranslationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/translations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["PlatformAdminTranslationsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["PlatformAdminTranslationsController_update"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2832,6 +2880,39 @@ export interface components {
             format?: "PRERECORDED" | "LIVE";
             instructorId?: string;
             skillIds?: string[];
+        };
+        TranslationResponseDto: {
+            id: string;
+            screen: string;
+            labelKey: string;
+            locale: string;
+            content: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+        TranslationListResponseDto: {
+            items: components["schemas"]["TranslationResponseDto"][];
+            nextCursor?: string | null;
+        };
+        CreateTranslationDto: {
+            /** @description The app screen this label belongs to (e.g. "login", "academyDetail"). */
+            screen: string;
+            /** @description The label key within that screen (e.g. "welcomeMessage"). */
+            labelKey: string;
+            /** @description Free text — no canonical language code list is confirmed yet (domain-rules §1). */
+            locale: string;
+            /** @description The translated text for this screen/labelKey/locale. */
+            content: string;
+        };
+        UpdateTranslationDto: {
+            /** @description The app screen this label belongs to (e.g. "login", "academyDetail"). */
+            screen?: string;
+            /** @description The label key within that screen (e.g. "welcomeMessage"). */
+            labelKey?: string;
+            /** @description Free text — no canonical language code list is confirmed yet (domain-rules §1). */
+            locale?: string;
+            /** @description The translated text for this screen/labelKey/locale. */
+            content?: string;
         };
     };
     responses: never;
@@ -5650,6 +5731,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LessonResponseDto"];
+                };
+            };
+        };
+    };
+    TranslationsController_findAll: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+                screen?: string;
+                locale?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationListResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminTranslationsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTranslationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminTranslationsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminTranslationsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTranslationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationResponseDto"];
                 };
             };
         };

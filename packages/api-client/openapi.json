@@ -4915,6 +4915,178 @@
           }
         ]
       }
+    },
+    "/v1/translations": {
+      "get": {
+        "operationId": "TranslationsController_findAll",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "screen",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "translations"
+        ]
+      }
+    },
+    "/v1/platform-admin/translations": {
+      "post": {
+        "operationId": "PlatformAdminTranslationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTranslationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-translations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/translations/{id}": {
+      "patch": {
+        "operationId": "PlatformAdminTranslationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTranslationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-translations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PlatformAdminTranslationsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-translations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -9412,6 +9584,107 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "TranslationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "labelKey": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "screen",
+          "labelKey",
+          "locale",
+          "content",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TranslationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranslationResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateTranslationDto": {
+        "type": "object",
+        "properties": {
+          "screen": {
+            "type": "string",
+            "description": "The app screen this label belongs to (e.g. \"login\", \"academyDetail\")."
+          },
+          "labelKey": {
+            "type": "string",
+            "description": "The label key within that screen (e.g. \"welcomeMessage\")."
+          },
+          "locale": {
+            "type": "string",
+            "description": "Free text — no canonical language code list is confirmed yet (domain-rules §1)."
+          },
+          "content": {
+            "type": "string",
+            "description": "The translated text for this screen/labelKey/locale."
+          }
+        },
+        "required": [
+          "screen",
+          "labelKey",
+          "locale",
+          "content"
+        ]
+      },
+      "UpdateTranslationDto": {
+        "type": "object",
+        "properties": {
+          "screen": {
+            "type": "string",
+            "description": "The app screen this label belongs to (e.g. \"login\", \"academyDetail\")."
+          },
+          "labelKey": {
+            "type": "string",
+            "description": "The label key within that screen (e.g. \"welcomeMessage\")."
+          },
+          "locale": {
+            "type": "string",
+            "description": "Free text — no canonical language code list is confirmed yet (domain-rules §1)."
+          },
+          "content": {
+            "type": "string",
+            "description": "The translated text for this screen/labelKey/locale."
           }
         }
       }

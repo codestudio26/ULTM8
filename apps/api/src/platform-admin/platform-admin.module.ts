@@ -99,6 +99,15 @@ import { AuthModule } from '../auth/auth.module';
  * enforces read-only globally) and its known, flagged limitation (only the
  * session START is audit-logged, not every read taken during it).
  *
+ * PHASE 49 — TranslationsModule now built as the separate module this comment
+ * already called for: `apps/api/src/translations/`, importing this module for
+ * exactly two things (see this module's own `exports` line below) —
+ * `PlatformAdminJwtAuthGuard` for `platform-admin/translations`'s own guard chain,
+ * and `AuditLogService` for the same "every Platform Admin write is audited"
+ * discipline Slice 4/5's own AdminUser create/revoke already established. This is
+ * the first time anything outside this module has needed to reuse a piece of it —
+ * `exports` was empty before this phase.
+ *
  * Still deliberately NOT built, each its own later slice:
  *  - General tenant-data EDITS (as opposed to the impersonation Slice 8 just
  *    shipped) — still genuinely unscoped, not just unbuilt: no field, entity, or
@@ -107,8 +116,14 @@ import { AuthModule } from '../auth/auth.module';
  *    the exact open question). Slice 4/5's own admin-user create/revoke is NOT
  *    this category — it's Platform Admin's own internal roster, not a tenant's
  *    data.
- *  - SubscriptionPlansModule / TranslationsModule — sit behind this module's own
- *    guard chain by confirmed design, both still separate, unbuilt modules.
+ *  - SubscriptionPlansModule — sits behind this module's own guard chain by
+ *    confirmed design, same shape TranslationsModule (Phase 49) now uses; still a
+ *    separate, unbuilt module, additionally blocked on the `[UNRESOLVED]`
+ *    Franchise-Subscription-Plan billing-direction question (domain-rules §2) —
+ *    unlike Translations, not just "never picked up."
+ *  - `apps/platform-admin`'s own authoring UI for Translations — Phase 49 is
+ *    backend only, matching this codebase's established backend-then-UI split
+ *    (e.g. CurriculumModule was Phase 44 backend / Phase 45 UI).
  *
  * JwtModule.register() here is deliberately separate from AuthModule's own — neither
  * is registered `isGlobal`, so each module's `JwtService` is independently configured
@@ -163,5 +178,18 @@ import { AuthModule } from '../auth/auth.module';
     PlatformAdminPaymentAccountsService,
     PlatformAdminImpersonationService,
   ],
+  // Phase 49 — first-ever export from this module. PlatformAdminJwtAuthGuard is
+  // used via @UseGuards() in TranslationsModule's own PlatformAdminTranslationsController,
+  // which requires ALSO exporting PlatformAdminAuthService (the guard's own
+  // constructor dependency) — a guard consumed this way gets a fresh,
+  // importing-module-scoped instance, not the singleton already living in this
+  // module, so its own dependency must be independently resolvable from the
+  // importing module's DI graph too. See TranslationsModule's own header comment
+  // for the full account, verified against the installed @nestjs/core source
+  // before relying on it. AuditLogService has no such issue (plain constructor
+  // injection only) — exported for TranslationsService to reuse the same "every
+  // Platform Admin write is audited" mechanism this module's own AdminUser
+  // create/revoke already uses.
+  exports: [PlatformAdminJwtAuthGuard, PlatformAdminAuthService, AuditLogService],
 })
 export class PlatformAdminModule {}
