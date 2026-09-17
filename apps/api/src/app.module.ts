@@ -25,6 +25,7 @@ import { FranchiseFeesModule } from './franchise-fees/franchise-fees.module';
 import { JobsModule } from './jobs/jobs.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
+import { TranslationsModule } from './translations/translations.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { CurriculumModule } from './curriculum/curriculum.module';
     JobsModule,
     PlatformAdminModule,
     CurriculumModule,
+    TranslationsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

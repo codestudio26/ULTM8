@@ -825,6 +825,48 @@ model LegalDocument {
   createdAt DateTime @default(now())
 }
 
+/// Translation (Phase 49, ultm8-nestjs-module §5) — the CMS-backed i18n content this
+/// codebase's own LegalDocument comment (above) already forward-referenced.
+/// Confirmed shape: `docs/ultm8-blueprint.html`'s own term glossary states
+/// "Translation: Screen · label key · locale · content" — corroborating
+/// ultm8-nestjs-module §5's confirmed query params (`GET /translations?locale=&screen=`)
+/// and supplying the remaining two fields those params imply.
+///
+/// No RLS — same precedent as LegalDocument (see that model's own comment for the
+/// full AdminUser-precedent reasoning): global, platform-level content, not
+/// tenant-scoped data, queried via the plain PrismaAppService/ultm8_app role, no
+/// PrismaPlatformAdminService bypass needed for the row itself.
+///
+/// `id` is a Prisma-client-generated UUID (`@default(uuid())`), not a human-meaningful
+/// key like LegalDocument's `slug` — there's no natural single-field identity here the
+/// way a legal document's own url slug is one; the real natural key is the
+/// (screen, labelKey, locale) triple below, enforced as a unique index rather than as
+/// the primary key so callers still address a row by a stable opaque id (matching
+/// every other CRUD resource in this codebase).
+///
+/// `locale` is free text, not an enum against `settings/constants/languages.ts`'s
+/// `LANGUAGES` list — same reasoning `UpdateFranchiseDto.defaultLanguage`'s own
+/// comment already gives: no canonical language code list is confirmed anywhere yet
+/// (domain-rules §1), so this doesn't invent a stricter constraint than the spec
+/// itself confirms.
+model Translation {
+  id String @id @default(uuid())
+
+  screen   String
+  labelKey String
+  locale   String
+  content  String
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  /// The natural key implied by the confirmed Translation shape — `content` is the
+  /// value, these three are the address. Enforced here, not just at the app layer,
+  /// so a raw client can't create a duplicate slot even if TranslationsService's own
+  /// check were ever bypassed.
+  @@unique([screen, labelKey, locale])
+}
+
 /// PaymentAccount (Phase 8, Spec 55 §6.1) — a School's or a Franchise's own Stripe
 /// Connect Express account reference (Decision 86,
 /// docs/decisions/POST-SPEC-55-DECISION-LOG.md). No raw secret keys are ever stored
