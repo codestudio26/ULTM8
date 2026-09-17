@@ -281,13 +281,60 @@ support is handled (a real product decision, not a coin flip). Do not start this
 copying assumptions from `apps/school-portal`'s payment code without checking whether
 it exists there yet at all.
 
-## Slice 5 — Notifications (client-side groundwork)
+## Slice 5 — Notifications — DONE, with a scope change from the original plan below
 
 `POST /notifications/device-tokens` (device token registration) and
 `GET /notifications/me` both exist and are real, safe reads/writes — but actual
-FCM/APNs *dispatch* is deferred server-side (Decision 95). This slice is registering
-the token and showing an in-app notification list/badge; it explicitly does NOT imply
-push notifications will arrive on-device, and the UI should not suggest they will.
+FCM/APNs *dispatch* is deferred server-side (Decision 95). This slice was originally
+planned as registering the token and showing an in-app notification list/badge; it
+explicitly does NOT imply push notifications will arrive on-device, and the UI should
+not suggest they will.
+
+### Scope change, found during implementation — flagged here per CLAUDE.md, not just in code
+
+**Device-token registration was NOT built.** The plan above treated it as "real, safe"
+and didn't account for what registering one actually costs client-side: a real
+push-capable token needs `expo-notifications` (a new native module), OS permission
+prompts, and — for Expo's own push service — an EAS project actually configured for
+it. None of that exists in this app yet, and pulling it in now would be new
+infrastructure serving a capability whose other half (server-side FCM/APNs dispatch)
+is explicitly deferred (Decision 95) — the same "defer anything pulling in new
+infrastructure to its own phase" discipline this track has used since Slice 1.
+Registering a placeholder/fake token instead (to exercise the API without the real
+native work) was considered and rejected — that would be building something that
+*looks* functional but can never actually receive anything, which is its own kind of
+dishonesty about what's built. **Revisit once server-side push dispatch is real.**
+
+**No unread-count badge was built either**, for a related but distinct reason: no
+`GET /notifications/unread-count`-style endpoint exists, so a Home-screen badge would
+mean fetching the *entire* notification list just to count unread ones — a redundant
+network call on every Home-screen render for a "first cut" nice-to-have. Deferred
+until either a dedicated count endpoint exists or the cost is judged worth it.
+
+### What was built
+
+`NotificationsScreen` (`src/notifications/`): a cursor-paginated list (`GET
+/notifications/me`, same infinite-query convention as Academies/My Bookings) with a
+"Mark as read" action per unread row (`PATCH /notifications/{id}/read`). The `type`
+field on `NotificationResponseDto` is explicitly "not spec-confirmed" (per the
+generated type's own comment) — deliberately not used for any icon/categorization UI.
+
+### Found on review, fixed before this shipped
+
+- **Mark-read invalidated the entire notification list** instead of patching the one
+  changed item — the first cursor-paginated list in this app a single-item mutation
+  targets, so a full invalidate would refetch every already-loaded page for a
+  one-field change. Fixed with a targeted `queryClient.setQueryData` patch.
+- **A duplicated local error state** shadowed the mutation's own `isError`/`error` —
+  removed in favor of reading the mutation's own state directly, dropping the
+  redundant try/catch wrapper too.
+- **Raw ISO timestamps** (`notification.createdAt`, and — found to be a pre-existing,
+  second occurrence — `ClassBookingRow`'s `startDate`/`endDate` from Slice 2) had no
+  shared formatter anywhere in the app. Added `src/lib/formatDate.ts` and used it in
+  both places rather than let a third screen copy the raw-string pattern as "the
+  convention."
+- **Missing accessibility labels** on the unread indicator (a bare colored `View`
+  with no way for a screen reader to convey read/unread state) — added.
 
 ---
 

@@ -4,6 +4,7 @@ import { HomeScreen } from './HomeScreen';
 import { AcademiesListScreen } from '../academies/AcademiesListScreen';
 import { AcademyDetailScreen } from '../academies/AcademyDetailScreen';
 import { MyBookingsScreen } from '../bookings/MyBookingsScreen';
+import { NotificationsScreen } from '../notifications/NotificationsScreen';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -19,6 +20,7 @@ export function AppNavigator() {
         options={({ route }) => ({ title: route.params.name })}
       />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
     </Stack.Navigator>
   );
 }

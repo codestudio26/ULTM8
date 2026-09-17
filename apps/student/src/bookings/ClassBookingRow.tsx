@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { formatDate } from '../lib/formatDate';
 import { useBookClass } from './bookingQueries';
 import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 
@@ -85,7 +86,7 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
     <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontWeight: '600' }}>{classItem.title}</Text>
       <Text style={{ color: '#5F6368', fontSize: 12 }}>
-        {classItem.startDate} – {classItem.endDate}
+        {formatDate(classItem.startDate)} – {formatDate(classItem.endDate)}
       </Text>
 
       {actionError ? <InlineError message={actionError} /> : null}

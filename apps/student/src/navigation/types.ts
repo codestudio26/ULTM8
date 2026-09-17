@@ -11,4 +11,5 @@ export type AppStackParamList = {
   Academies: undefined;
   AcademyDetail: { academyId: string; name: string };
   MyBookings: undefined;
+  Notifications: undefined;
 };
