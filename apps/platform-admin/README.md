@@ -5,9 +5,9 @@ identity realm from `apps/school-portal` (Spec 55 §4.2/§4.4, `ultm8-tenant-iso
 §3/§6). Never merged into `apps/school-portal`; must ship with its own subdomain in
 production.
 
-## Status: Phase 36, Slice 3 — credential rotation
+## Status: Phase 50 — Translations authoring
 
-Cognito-backed sign-in, the AdminUser roster (invite / list / revoke), look-up-by-id screens for School/Franchise with each one's PaymentAccount configuration, and now the first tenant-data WRITE this app exposes: initiating a Stripe Connect credential rotation.
+Cognito-backed sign-in, the AdminUser roster (invite / list / revoke), look-up-by-id screens for School/Franchise with each one's PaymentAccount configuration, Support-tier impersonation, and now the Translation i18n CMS (list / filter / add / edit / remove).
 
 **Built in Slice 1 (Phase 32):**
 - Sign-in via AWS Cognito's own Hosted UI, Authorization Code grant + PKCE — no in-app credential form, and no client secret needed (PKCE is exactly the mechanism that lets a public browser SPA use the Authorization Code flow safely; see `src/auth/pkce.ts`'s own header comment for why an earlier Implicit-grant draft was wrong and got caught on review before this shipped). `POST /platform-admin/auth/exchange` only ever needs the resulting Cognito ID token. See `.env.example` for the three `VITE_COGNITO_*` variables this needs — real AWS infrastructure this codebase cannot provision itself; the login screen degrades to a clear "not configured" message when they're unset, same convention `apps/api`'s own unconfigured-external-dependency services already use.
@@ -23,6 +23,10 @@ Cognito-backed sign-in, the AdminUser roster (invite / list / revoke), look-up-b
 
 **Built in Slice 4 (Phase 48):**
 - `POST /platform-admin/impersonation-sessions` (`src/impersonation/ImpersonationPage.tsx`) — a `userId`/`schoolId` form (look-up-by-known-id only, same as the Schools/Franchises screens; the endpoint itself has no way to search by email/name) that starts a Support-tier, read-only, School-scoped impersonation session (Phase 43/46/47, Decision 102 + Spec 55 Decision 39) and surfaces the resulting access token, expiry, and impersonated User id directly. Does **not** hand the token to `apps/school-portal` automatically — no cross-app hand-off mechanism exists anywhere in this monorepo, and building one is new scope beyond what Decision 102 confirmed; flagged for Architect/product review, same as `PaymentAccountDetails`' own precedent for surfacing a sensitive artifact rather than acting on it.
+
+**Built in Phase 50:**
+- `GET /translations`, `POST/PATCH/DELETE /platform-admin/translations` (`src/translations/TranslationsPage.tsx`) — the authoring UI for Phase 49's `Translation` i18n CMS (screen · label key · locale · content). Lists via the public, unauthenticated `GET` (no separate admin-only list endpoint exists — see `PlatformAdminTranslationsController`'s own header comment), filterable by screen/locale independently. Add/Edit share one modal form; Delete is a per-row action with the same "track the in-flight row id locally, not off the shared mutation's own `variables`" fix `AdminUsersPage`'s revoke button already established. FULL_ADMIN-only server-side for every write, same as every other write screen in this app.
+- Cursor pagination (`nextCursor`) is accumulated into one flat list behind a "Load more" button — this component set has no shared Pagination control yet, so the screen resets to page one after every create/update/delete rather than trying to keep already-fetched pages reactively in sync with a background cache invalidation. Flagged as a reasonable-minimum scope call in the component's own header comment, not treated as a final pagination UX decision.
 
 **Not built yet, each its own later slice** (mirrors `PlatformAdminModule`'s own module-header comment on the backend side):
 - Any other tenant-data write UI (editing another tenant's records generally) — blocked on its own separate backend design work (Decision 105: not built, pending a named use case).
