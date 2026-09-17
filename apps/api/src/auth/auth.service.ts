@@ -237,11 +237,53 @@ export class AuthService {
    * JwtPayload for `targetUserId` — same shape, same JWT_ACCESS_SECRET, same
    * JwtStrategy that verifies every ordinary tenant login token — so every
    * existing tenant endpoint (GET /bookings/me, GET /waivers/me, ...) "just
-   * works" unmodified for a Support staffer impersonating that user, seeing the
-   * SAME RoleGrant claims the real user's own token would carry (a genuine
-   * mirror of what they see, not a stripped-down admin view). The one addition,
-   * `impersonation`, is what JwtStrategy.validate() checks to reject any
-   * non-read request on this token — see that file's own comment.
+   * works" unmodified for a Support staffer impersonating that user. The one
+   * addition, `impersonation`, is what JwtStrategy.validate() checks to reject
+   * any non-read request on this token — see that file's own comment.
+   *
+   * `schoolId` scopes the grants claim to ONE tenant, per Spec 55 §12.1 Decision
+   * 39 ("Platform Admin impersonation scope narrowed"): "the impersonation token
+   * is minted scoped to the single RoleGrant matching the specific tenant
+   * identified when impersonation was initiated, not the target user's full
+   * grant set, so impersonating a multi-School Instructor or Franchise Owner to
+   * help with one School never exposes the others." FOUND ON REVIEW (Phase 46):
+   * this method originally pulled every one of the target's active RoleGrant
+   * rows with no tenant filter at all — a real cross-tenant exposure Decision 39
+   * exists specifically to close, not a hypothetical. Matches on `schoolId`
+   * alone, never a Franchise-level grant (`schoolId` null) even when its
+   * `franchiseId` covers the target School: `school_tenant_isolation`'s own RLS
+   * policy (20260902000000_init) only ever admits a RoleGrant whose `schoolId`
+   * equals the School's own id — a Franchise-level grant already can't reach
+   * ordinary School-scoped data through that policy, and the one place it DOES
+   * grant something (the Franchise School-roster read, `GET /franchises/{id}/
+   * schools`) is exactly the "expose the others" breadth Decision 39 says an
+   * impersonation session must not carry.
+   *
+   * KNOWN LIMITATION, flagged not silently shipped as complete: this scopes the
+   * token's own CLAIMS, which is real progress (the token no longer lies about
+   * its own scope, and a nonexistent grant at `schoolId` is now a clean 404
+   * instead of silent overreach) — but it does NOT yet close the underlying
+   * data-access gap. Confirmed by grep (zero server-side consumers of
+   * `payload.grants` anywhere in this codebase) and empirically over real HTTP
+   * (platform-admin-impersonation.e2e-spec.ts's own "Decision 39" test): every
+   * actual authorization decision runs through Postgres RLS keyed on
+   * `app.current_user_id` (`withTenantContext`, `PrismaAppService`), which reads
+   * the REAL `RoleGrant` table for `targetUserId` fresh on every query — the
+   * JWT's claims are never consulted. So a School-A-scoped impersonation token
+   * for a multi-School Instructor still reaches School B's data over the
+   * ordinary tenant API today, because the instructor's real RoleGrant row at
+   * School B still exists and still satisfies RLS. Closing this for real needs
+   * an RLS-level change (an `app.impersonation_school_id` session variable,
+   * threaded through every controller path that can be reached with an
+   * impersonation token, ANDed into RoleGrant's own `rolegrant_self_only` /
+   * `rolegrant_school_manager_scope` policies so every downstream tenant-scoped
+   * policy's own EXISTS-against-RoleGrant subquery inherits the narrower view)
+   * — a cross-cutting, security-critical schema change reaching most of this
+   * codebase's tenant-scoped tables, deliberately not attempted unreviewed in
+   * the same pass as this claims-scoping fix. Escalated to the product owner
+   * rather than rushed, given this exact class of change (RLS policy
+   * correctness) has already shipped wrong twice before on a first attempt in
+   * this codebase (see `ultm8-tenant-isolation` SKILL.md §2).
    *
    * Deliberately mirrors issueAccessToken()'s own load-email-and-grants shape
    * rather than calling it directly — this one always takes a caller-supplied
@@ -250,14 +292,16 @@ export class AuthService {
    * default issueAccessToken() relies on, and needs the extra `impersonation`
    * claim issueAccessToken() must never set.
    *
-   * `targetUserId` not existing is a genuine 404, not the "shouldn't happen"
-   * internal-error case issueAccessToken() assumes for its own always-already-
-   * authenticated caller — a Platform Admin can supply any id here, including a
-   * typo or a since-deleted account, so this checks and reports it as a normal
+   * `targetUserId` not existing, or existing but holding no active RoleGrant at
+   * `schoolId`, is a genuine 404, not the "shouldn't happen" internal-error case
+   * issueAccessToken() assumes for its own always-already-authenticated caller —
+   * a Platform Admin can supply any id/School combination here, including a
+   * typo or a since-revoked grant, so both are checked and reported as a normal
    * client error rather than throwing a bare Error.
    */
   async issueImpersonationToken(
     targetUserId: string,
+    schoolId: string,
     adminUserId: string,
     ttlSeconds: number,
   ): Promise<{ accessToken: string; expiresAt: Date }> {
@@ -267,9 +311,12 @@ export class AuthService {
         throw new NotFoundException('User not found');
       }
       const grants = await tx.roleGrant.findMany({
-        where: { userId: targetUserId, revokedAt: null },
+        where: { userId: targetUserId, schoolId, revokedAt: null },
         select: { role: true, franchiseId: true, schoolId: true, branchId: true },
       });
+      if (grants.length === 0) {
+        throw new NotFoundException('User has no active RoleGrant at this School');
+      }
       return { user, grants };
     });
 

@@ -60,6 +60,7 @@ export class PlatformAdminImpersonationService {
 
     const { accessToken, expiresAt } = await this.authService.issueImpersonationToken(
       dto.userId,
+      dto.schoolId,
       callerId,
       IMPERSONATION_SESSION_TTL_SECONDS,
     );

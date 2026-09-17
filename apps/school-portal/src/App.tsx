@@ -16,6 +16,7 @@ import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
+import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
@@ -124,6 +125,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <ClassDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/curriculum"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CurriculumPage />
             </Shell>
           </RequireAuth>
         }
