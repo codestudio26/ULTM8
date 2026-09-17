@@ -2779,6 +2779,8 @@ export interface components {
         StartImpersonationSessionDto: {
             /** @description The tenant User id to impersonate. */
             userId: string;
+            /** @description The one School this impersonation session is scoped to (Decision 39) — not the target user's other Schools/Franchises, if any. */
+            schoolId: string;
         };
         ImpersonationSessionResponseDto: {
             accessToken: string;
