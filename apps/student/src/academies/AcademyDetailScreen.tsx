@@ -3,7 +3,10 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useAuth } from '../auth/AuthContext';
 import { ClassBookingRow } from '../bookings/ClassBookingRow';
+import { MyRankSection } from '../ranks/MyRankSection';
+import { useDisciplines, useStudentRanks } from '../ranks/rankQueries';
 import { useAcademy, useAcademyTimetable } from './academyQueries';
 import type { AppStackParamList } from '../navigation/types';
 
@@ -21,8 +24,16 @@ const WEEKDAY_LABEL: Record<string, string> = {
 
 export function AcademyDetailScreen({ route }: Props) {
   const { academyId } = route.params;
+  const { claims } = useAuth();
   const { data: academy, isLoading, isError, error } = useAcademy(academyId);
   const { data: timetable } = useAcademyTimetable(academyId);
+  // Fetched here, in parallel with academy/timetable above, rather than inside
+  // MyRankSection itself — found on review: firing them only once MyRankSection
+  // mounts (i.e. after the isLoading early-return below) meant they never started
+  // until `useAcademy` had already resolved, even though this data needs nothing
+  // from `academy` (only academyId/studentId, both available synchronously here).
+  const studentRanks = useStudentRanks(claims?.sub ?? null, academyId);
+  const disciplines = useDisciplines(academyId);
   const slots = timetable?.pages.flatMap((p) => p.items) ?? [];
 
   if (isLoading) {
@@ -54,6 +65,8 @@ export function AcademyDetailScreen({ route }: Props) {
             <Text style={{ color: '#5F6368' }}>{academy.activities.join(' · ')}</Text>
           </View>
         ) : null}
+
+        <MyRankSection studentRanks={studentRanks} disciplines={disciplines} />
 
         {academy.upcomingClasses.length ? (
           <View style={{ marginTop: 16 }}>

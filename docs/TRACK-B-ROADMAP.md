@@ -147,7 +147,7 @@ by temporarily bypassing just the dialog against a local mock server: the mutati
 
 ---
 
-## Slice 3 — Rank & Grading (read-only) — design verified, ready to build
+## Slice 3 — Rank & Grading (read-only) — DONE
 
 Explicitly named in Slice 1's kickoff doc as "add in a follow-up once Auth+nav is
 proven" — Auth+nav is now proven. A deep-dive pass against the real code (not the
@@ -210,6 +210,65 @@ resolution path exists here, but it's less obvious than "just fetch a name":
   `GET /ranks/{currentRankId}` or `GET /styles/{disciplineId}/ranks`) — resolve stripe
   count/colour from that match.
 
+### What was built
+
+A "My Rank" section on `AcademyDetailScreen` (`src/ranks/MyRankSection.tsx`,
+`src/ranks/rankQueries.ts`) exactly per the design above: a colour swatch (primary +
+secondary border) with `Rank {order}` and, if awarded, `· N stripes`, one row per
+Discipline the Student has a `StudentRank` row for at this School. Renders nothing at
+all when there's nothing to show — deliberately, since this screen is reached by
+browsing *any* Academy (Slice 1's discovery feature), not just ones the Student is
+enrolled at, so "empty" is the common case for a browsing-not-enrolled Student, not a
+broken state.
+
+### Found on review, fixed before this shipped
+
+An 8-agent review (matching Slices 1/2's own discipline) found real issues, applied
+before commit:
+- **An accidental fetch waterfall**: the ranks/disciplines queries were originally
+  called inside `MyRankSection` itself, which only mounts after
+  `AcademyDetailScreen`'s own `useAcademy` resolves — even though this data needs
+  nothing from `academy`. Fixed by hoisting `useStudentRanks`/`useDisciplines` to
+  `AcademyDetailScreen`'s top level (firing in parallel with every other query the
+  screen makes) and passing the query results down as props.
+- **A silently swallowed discipline-fetch error**: only the ranks query's `isError`
+  was checked; a failed `GET /schools/{schoolId}/disciplines` degraded silently into
+  `'Unknown discipline'` on every row, indistinguishable from real, expected data.
+  Fixed by surfacing it via its own `InlineError`.
+- **A discipline-name race**: the section's loading gate only reflected the ranks
+  query, so rows could briefly render `'Unknown discipline'` before the (separately
+  fetched) real names arrived. Fixed by gating on both queries settling before
+  rendering anything — verified directly: a mock server with an artificial 1.5s delay
+  on the disciplines endpoint confirmed zero `'Unknown discipline'` flash once fixed.
+- **The section's own dedicated loading spinner** was inconsistent with every sibling
+  section on the same screen (Activities/Upcoming-classes/Timetable), none of which
+  have their own loading UI — removed, now renders nothing until ready like its
+  siblings.
+- A candidate finding claimed Academy.id might not equal School.id (risking querying
+  the wrong tenant's data) — **refuted with a direct quote chain**:
+  `AcademiesController.findOne(@Param('id') id)` passes the URL param unchanged into
+  `academiesService.findOne(id)`, whose parameter (named `schoolId`) is used directly
+  as `tx.school.findUnique({ where: { id: schoolId } })`
+  (`academies.service.ts:125-127`). Confirmed via the exact call chain, not inferred
+  from the DTO shape the way the candidate finding was.
+
+**Flagged as a backend follow-up, not fixed here** (separate task spawned): resolving
+each row's Rank display info costs one `GET /ranks/{id}` call per Discipline the
+Student trains, since `StudentRankResponseDto` only carries the raw `currentRankId`/
+`currentStripeId` and no batch-lookup endpoint exists. Confirmed as the correct/only
+client-side approach given the current API — worth a backend review of denormalizing
+the resolved Rank fields onto the list response instead.
+
+### Verified
+
+`npx tsc --noEmit`, `npx turbo run lint build`, and `npx expo export --platform
+android` all pass. Interactively tested via `expo start --web` against a local mock
+server (same pattern as Slices 1/2) with two Disciplines, confirming: correct belt
+colours/borders (checked via computed style, not just visual), correct stripe count
+resolution, the discipline-error path surfacing the real backend message while ranks
+still render (`'Unknown discipline'` fallback, not a full-section failure), and zero
+console errors beyond the deliberately-triggered network failures.
+
 ---
 
 ## Slice 4 — Membership & Payments
@@ -259,8 +318,11 @@ push notifications will arrive on-device, and the UI should not suggest they wil
 
 ## Recommendation
 
-Slice 2 (Class Booking & Waitlist) is done — see above for what shipped, what was
-corrected during implementation (no My Waitlist screen, no claim UI — a real backend
-gap, not a frontend choice), and what was found while interactively testing. Build
-**Slice 3 (Rank & Grading, read-only)** next — same shape as Slice 1's existing read
-screens, low risk, quick, and fully unblocked.
+Slices 2 and 3 are both done — see their own sections above for what shipped, what was
+corrected during/after implementation, and what was found on review and while
+interactively testing. Build **Slice 5 (Notifications, client-side)** next — device
+token registration + an in-app list, no pending product decision. **Slice 4
+(Membership & Payments)** needs a real decision (which RN Stripe integration, Apple/
+Google Pay scope) before it can be scoped in detail — see its own section for a
+recommendation, held for the user's call rather than an autonomous guess on a payment
+flow.
