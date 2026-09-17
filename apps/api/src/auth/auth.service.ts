@@ -259,31 +259,31 @@ export class AuthService {
    * schools`) is exactly the "expose the others" breadth Decision 39 says an
    * impersonation session must not carry.
    *
-   * KNOWN LIMITATION, flagged not silently shipped as complete: this scopes the
-   * token's own CLAIMS, which is real progress (the token no longer lies about
-   * its own scope, and a nonexistent grant at `schoolId` is now a clean 404
-   * instead of silent overreach) — but it does NOT yet close the underlying
-   * data-access gap. Confirmed by grep (zero server-side consumers of
-   * `payload.grants` anywhere in this codebase) and empirically over real HTTP
-   * (platform-admin-impersonation.e2e-spec.ts's own "Decision 39" test): every
-   * actual authorization decision runs through Postgres RLS keyed on
-   * `app.current_user_id` (`withTenantContext`, `PrismaAppService`), which reads
-   * the REAL `RoleGrant` table for `targetUserId` fresh on every query — the
-   * JWT's claims are never consulted. So a School-A-scoped impersonation token
-   * for a multi-School Instructor still reaches School B's data over the
-   * ordinary tenant API today, because the instructor's real RoleGrant row at
-   * School B still exists and still satisfies RLS. Closing this for real needs
-   * an RLS-level change (an `app.impersonation_school_id` session variable,
-   * threaded through every controller path that can be reached with an
-   * impersonation token, ANDed into RoleGrant's own `rolegrant_self_only` /
-   * `rolegrant_school_manager_scope` policies so every downstream tenant-scoped
-   * policy's own EXISTS-against-RoleGrant subquery inherits the narrower view)
-   * — a cross-cutting, security-critical schema change reaching most of this
-   * codebase's tenant-scoped tables, deliberately not attempted unreviewed in
-   * the same pass as this claims-scoping fix. Escalated to the product owner
-   * rather than rushed, given this exact class of change (RLS policy
-   * correctness) has already shipped wrong twice before on a first attempt in
-   * this codebase (see `ultm8-tenant-isolation` SKILL.md §2).
+   * RLS-LEVEL ENFORCEMENT (Phase 47): Phase 46 (the paragraph above) scoped only
+   * the token's own CLAIMS — real progress, but proved (by grep: zero
+   * server-side consumers of `payload.grants`; and empirically: `GET /v1/schools`
+   * returning both Schools for a School-A-scoped token) that RLS itself never
+   * consulted those claims, so the underlying data-access gap survived that phase
+   * untouched. This phase closes it for real: `schoolId` is now also threaded
+   * (via `RequestContext`, populated by `JwtStrategy.validate()` from this
+   * token's own `impersonation.schoolId` claim) into
+   * `PrismaAppService.withTenantContext`, which sets a second session variable,
+   * `app.impersonation_school_id`, alongside `app.current_user_id`. Migration
+   * `20261002000000_impersonation_scope_rls_fix` ANDs that variable into
+   * `RoleGrant`'s own `rolegrant_self_only` policy and its
+   * `is_active_school_owner_manager()` helper — see that migration's own header
+   * comment for the full account of why narrowing just those two things is
+   * sufficient to narrow every downstream tenant-scoped policy's own
+   * EXISTS-against-RoleGrant subquery too, and for the one purpose-built endpoint
+   * (`GET /franchises/{id}/schools`) that needed its own, separate fix instead.
+   *
+   * This RLS-level change was deliberately NOT attempted in the same pass as
+   * Phase 46's claims-scoping fix — escalated to the product owner first, given
+   * this exact class of change (RLS policy correctness) has already shipped
+   * wrong twice before on a first attempt in this codebase (see
+   * `ultm8-tenant-isolation` SKILL.md §2) — and built here only once explicitly
+   * greenlit, verified against the full 278-test cross-tenant isolation gate
+   * before merging, not assumed correct from code review alone.
    *
    * Deliberately mirrors issueAccessToken()'s own load-email-and-grants shape
    * rather than calling it directly — this one always takes a caller-supplied
@@ -331,7 +331,7 @@ export class AuthService {
       sub: targetUserId,
       email: user.email,
       grants: claims,
-      impersonation: { adminUserId, startedAt: new Date().toISOString() },
+      impersonation: { adminUserId, startedAt: new Date().toISOString(), schoolId },
     };
     const accessToken = this.jwt.sign(payload, { expiresIn: ttlSeconds });
     const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
