@@ -884,3 +884,27 @@ This decision answers only scoping and authorship — it does not build the vide
 ### Recorded by
 
 Logged during a direct exchange with the user, 16 Sep 2026, immediately after a dedicated research pass (docx text extraction of Spec 55 §12.1/§6.1/§7) surfaced the scoping contradiction above as a genuine spec-internal gap, not a guessable one — the user was given both readings plus a recommendation and chose the recommended one.
+
+---
+
+## Decision 105 — Instructor rank: V1 is a manual belt dropdown on the Instructor's own profile settings page; linking it to the real grading system is deferred to V2
+
+**Date:** 17 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** a gap this file never addressed. `InstructorResponseDto.beltRanking` (`packages/api-client/src/generated/schema.d.ts`) already exists as plain display text, with its own doc comment stating it is *"not a live reference into the grading system"* — but nothing confirmed how that value gets set, or whether it should ever connect to the real `StudentRank`/`Rank` grading model (domain-rules §5/§6.1), which today has no Instructor-side relation at all.
+
+### Decision
+
+**V1:** an Instructor sets their own displayed rank manually, via a belt dropdown on their own profile settings page — not auto-derived, not staff-entered, not linked to `Rank`/`StudentRank` in any way. This is consistent with `beltRanking` staying the plain-text field it already is.
+
+**V2 (future, not scheduled):** link Instructor rank to the real grading system. Recorded as direction only — not designed.
+
+### What this does NOT resolve
+
+V1 specifics still open, not to be guessed at when this is built: the dropdown's actual option set (freeform per-School text vs. a fixed generic belt list vs. pulling from the caller's own Discipline/Rank ladders, which are School-configurable per domain-rules §5); whether an Instructor can hold one rank total or one per discipline (mirroring `StudentRank`'s one-per-discipline shape, domain-rules §5, is a plausible but unconfirmed default); and which profile settings screen this lives on, since no Instructor-facing "my profile settings" page has been designed yet (only the School-staff-facing Instructor list/detail views this session's mockup work has covered).
+
+V2 specifics are entirely open: whether it reuses `StudentRank`/`Rank` directly or a parallel structure, whether promotion stays coach-initiated the same way `StudentRank` promotion does (domain-rules §5), and how/whether an Instructor who is also independently a Student (with their own real `StudentRank`) reconciles the two. None of this should be built from inference when V2 is scheduled — needs its own decision.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 17 Sep 2026, while reviewing the Instructors page mockup (`docs/design-mockup-notes.md`) and confirming why `beltRanking` is plain text rather than a grading-system reference.

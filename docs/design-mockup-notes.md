@@ -216,6 +216,64 @@ yet implemented in `LoginPage.tsx`)
 - Single token change point — cascades to every already-built page automatically, no per-page edits.
 - Demo artifact: https://claude.ai/artifact/RwzDugp8VcNqy7nmdPgFsp
 
+## school-portal — Instructors (full-page "look replica")
+
+**Status:** mockup
+
+- Source: PDF export of the same Figma "instructorList" screen already reviewed — no new information, same analysis applied
+- User asked for a 100%-look replica (full shell, header bar, pagination component, etc.), with the explicit constraint: don't fabricate data that doesn't apply
+- **Header bar (search/bell/avatar/language) kept as pure visual chrome** — not in the real `AppShell` today, but doesn't assert any Instructor-specific fact, so replicating its look isn't inventing data. Flagged as a real `AppShell` feature proposal if it's ever wanted for real, not a page-level change.
+- **Sidebar nav → real `Shell.tsx` list**, not the PDF's (page names are information, not decoration)
+- **"Ranking" progress bar → dropped, not just restyled.** The widget itself needs a percentage that doesn't exist for `beltRanking` (plain text) — faking the number the bar shows would be exactly the invented data being avoided. Kept the column, shows real belt text.
+- **"Status: Active" → dropped** (no field to back it)
+- **Date-range picker → dropped**, distinguished from the header bar: its whole purpose is date-filtering this list, and no such capability exists for Instructors at all — this one promises a feature, not just furniture.
+- **Pagination → look kept, data honest.** Real Prev/1/Next component style, correctly shown as a single disabled page for 5 real rows, not the PDF's fake "10 pages."
+- **"Id" → added back** (real field); **"Name" → still omitted** (no field exists at all)
+
+**Revision — dummy avatar, "Ranking" column restored, Instructor grading-link question raised:**
+
+- User asked for a dummy profile image, the Ranking field back, and font sizes matched to Figma
+- **Avatar → generic silhouette icon**, not colored initials and not a fabricated "realistic" photo — `photoUrl` is a real nullable field on `InstructorResponseDto`, so an icon placeholder for "no photo set" is honest; a stock photo standing in for a specific instructor would not be
+- **Column relabeled "Ranking"** (was "Belt / ranking") to match Figma's own wording — still shows real `beltRanking` text only, no progress bar/percentage (see prior entry — that finding didn't change)
+- Checked a second, previously-unreviewed Figma frame the user's phrasing pointed at — **"Instructor Information" profile screen, node `2639:2120`** — confirms the profile-page concept exists in Figma, but its own "Ranking" field literally renders the placeholder value **"Yes"** (unbound, not a real percentage) — reinforces rather than overturns the no-fabricated-number finding
+- Font sizes: left at the previously-confirmed type scale (table 14px, badges 13px, page title `--font-size-heading-md`) — inferred from DESIGN.md tokens and one successfully-fetched Figma frame (the login form), not this exact list screen, due to the ongoing Figma MCP rate limit; not re-verified pixel-for-pixel against this screen
+- **New question raised by user, not yet resolved:** should Instructor have a *real* rank/grading-system link (like `StudentRank`), rather than the current free-text `beltRanking`? Researched, not decided — see `[UNRESOLVED]` note below.
+- Artifact: https://claude.ai/artifact/KYv6romDvrQYMHFzebeNt6 (Version 2)
+
+**`[CONFIRMED]` — Instructor rank: V1 manual dropdown, V2 grading-system link deferred (Decision 105):**
+
+- `InstructorResponseDto.beltRanking` (`packages/api-client/src/generated/schema.d.ts`) is explicitly documented in its own DTO comment as *"Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system"* — this is a deliberate existing design choice, not an oversight
+- Domain-rules skill's entity-relations model has exactly one rank-tracking entity, `StudentRank` ("Student(User) 1—\* StudentRank, one per discipline") — Instructor has no rank/progress relation anywhere in the confirmed model; `Rank` (discipline ladder, reference data) is "referenced by StudentRank, not owned per-student"
+- Resolved directly with the user, 17 Sep 2026 — recorded as **Decision 105** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`): V1 is a manual belt dropdown on the Instructor's own profile settings page (no link to the grading system, `beltRanking` stays plain text); V2, linking it to the real grading system, is deferred and not designed
+- Still open per Decision 105, not to be guessed at: the V1 dropdown's option set, whether Instructor rank is discipline-scoped like `StudentRank`, and which profile settings screen it lives on (not yet mocked up — only the Staff-facing list/detail views are covered so far)
+- Doesn't change this page's mockup: it already shows `beltRanking` as plain text with no progress bar, which is exactly what V1 confirms — a future Instructor-facing "my profile settings" page is where the dropdown itself would appear
+
+**Correction — Instructor name was wrongly dropped, restored:**
+
+- User caught this by comparing the rendered page against the Figma/PDF reference: the earlier revision had no Name column at all, identifying rows only by truncated UUID
+- Original reasoning was too narrow: `InstructorResponseDto` (`packages/api-client/src/generated/schema.d.ts`) only carries `userId`, not a name, so I'd called it "no field exists." But `userId` references a real `User` row, and `User.firstName`/`User.surname` are already-confirmed fields — the name genuinely exists in the data model, it's just not joined into this list endpoint's response today. That's a real API completeness gap worth flagging (the Instructors list endpoint should resolve/include the linked User's name), not a case of inventing data
+- Fixed: added an "Instructor" column (avatar + name together, matching how the reference shows it) with dummy names standing in for the join, same convention as every other dummy value already on the page (phone numbers, branch names, IDs)
+- Rendered the page to JPG via local headless Chromium (Playwright, `/opt/pw-browsers/chromium`) and sent it directly, since the user wanted a static image rather than the live artifact link
+- Artifact: https://claude.ai/artifact/KYv6romDvrQYMHFzebeNt6 (Version 3)
+
+**Rebuild — abandoned the "100% shell replica" approach, back to "Figma as reference" (the originally agreed pattern):**
+
+- User called it: the full-shell-replica attempt (fake topbar with search/bell/avatar/language, fake browser chrome around the real sidebar) wasn't working — it diverged from both the real app and the Figma reference at once, on top of the Name-column mistake above
+- Figma MCP was still rate-limited (Starter plan), so re-derived the real column order from the cached `figma-metadata.xml` dump instead of a fresh fetch: instructorList's (node 2380:640) actual `<text>` header labels are, in order, **Id · Image · Name · Ranking · Specializations · Experience · Phone Number · Status · Actions**
+- Rebuilt the page on the same simple pattern already used successfully for every other page this session (`PageHeader` + `Card` + `Table`, no fake shell/topbar) — the pattern from the original `instructors-branches.html`, not the one-off "full replica" experiment
+- Column order now follows Figma's real order for every shared field; `Status` stays dropped (no such field on `InstructorResponseDto`); `Branch` stays as an addition beyond Figma (real, confirmed field, central to ULTM8's multi-branch model) — not a contradiction of "reference not copy," since Figma showing fewer real fields isn't a reason to hide one that exists
+- Name column now included (same dummy-names-as-join-placeholder treatment as the correction above), instead of being dropped a second time
+- Artifact: https://claude.ai/artifact/KYv6romDvrQYMHFzebeNt6 (Version 4) — JPG re-rendered and re-sent
+
+**Audit — same "no name field" mistake found and fixed on two other pages:**
+
+- Since the Instructors Name-column error was a reasoning mistake (not page-specific), spot-checked the rest of the loop's own changelog notes for the same pattern ("no name-lookup endpoint," "truncated ID," "same gap as...") rather than re-deriving every page from scratch
+- Found it twice, confirmed against `schema.d.ts` both times before fixing (same standard as the Instructors correction):
+  - **`transactions.html`** — `TransactionResponseDto.studentId` only carries an ID; Student was shown as a truncated UUID. Fixed: shown as a name (dummy placeholder), changelog corrected. Artifact: https://claude.ai/artifact/ThDY6cRhHrVAS9Y34pgyzH (Version 2)
+  - **`classes.html`** — two separate instances: (1) Class Detail's Bookings table, `BookingResponseDto.studentId`, same fix; (2) Class Detail's Waitlist table, `WaitlistEntryResponseDto.studentId`, same fix, not called out in the original changelog text at all — caught only by checking the actual rows. Also resolved the Classes list's already-flagged-but-not-added Instructor name column, since it was the same low-risk join reasoning. Artifact: https://claude.ai/artifact/NAEVAWWQrNh8XnVbuikK6E (Version 2)
+- Checked but found **no instance** of this pattern in: `waivers.html`, `notifications.html`, `staff.html`, `membership-plans.html`, `timetable.html`, `franchises.html`, `disciplines.html` — none of these reference a bare `studentId`/`userId` without either already resolving it or not needing to
+- Underlying, still-open real gap (not a mockup issue): `InstructorResponseDto`, `TransactionResponseDto`, `BookingResponseDto`, and `WaitlistEntryResponseDto` all expose a bare `userId`/`studentId` with no name resolution — every one of them should get a real join/expanded-DTO fix, not just this mockup's dummy-name workaround
+
 ## DESIGN.md — Patterns section
 
 **Status:** implemented (committed `83f6d41`)
