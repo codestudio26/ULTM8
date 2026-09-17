@@ -5,6 +5,7 @@ import { LoginPage } from './auth/LoginPage';
 import { AdminUsersPage } from './adminUsers/AdminUsersPage';
 import { SchoolLookupPage } from './schools/SchoolLookupPage';
 import { FranchiseLookupPage } from './franchises/FranchiseLookupPage';
+import { ImpersonationPage } from './impersonation/ImpersonationPage';
 import { Shell } from './layout/Shell';
 
 export function App() {
@@ -41,6 +42,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <FranchiseLookupPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/impersonation"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ImpersonationPage />
             </Shell>
           </RequireAuth>
         }
