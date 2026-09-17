@@ -10,6 +10,35 @@ directly against `apps/api/src/**`, not the `ultm8-nestjs-module` skill's own
 "representative" endpoint table (already known to be stale in places, per Slice 1's
 kickoff doc).
 
+## Phase overview
+
+A "Slice" is one concrete, shippable build unit (matches the git commit history — each
+one is its own commit). A "Phase" groups Slices by theme, for planning at a glance.
+Detail for each Slice is in its own section below; this table is the map.
+
+| Phase | Theme | Slices | Status |
+|---|---|---|---|
+| 1 | **Foundation** | 1 (walking skeleton), 2 (booking/waitlist), 3 (rank/grading) | ✅ DONE |
+| 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
+| 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
+| 4 | **Compliance & Guardian** | 6 (waiver signing), 7 (Guardian-facing screens) | Blocked — needs a design pass; partially unblockable by syncing with `master` (see below) |
+| 5 | **Attendance** | 8 (QR check-in) | Blocked — genuinely unresolved even on `master`, needs a backend/product decision on the QR mechanism itself |
+| 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
+| 7 | **Resilience** | 10 (offline behavior/caching) | Not scoped — nothing in the spec, any skill, or the decision log addresses this; don't start until someone asks with real requirements |
+
+**Cross-cutting prerequisite, not a phase of its own: syncing `track-b-student-app`
+with `master`.** As of this doc, the branch is 60+ commits / 27+ backend phases behind
+`master`, which has since shipped (backend-only — no client UI anywhere yet, verified):
+Waiver drawn-signature capture (`master`'s Phase 34) and Guardian-on-behalf-of flows
+across Schools/Waivers/Memberships/Bookings/Waitlist (Phases 37–42). Syncing wouldn't
+fully unblock Phase 4 (Compliance & Guardian) on its own — the *client* UI (a
+drawn-signature capture screen, Guardian consent screens) still needs designing and
+building either way — but it would remove the *backend* half of that blocker, leaving
+only the design-pass gap. Checked and confirmed **not** resolved on `master` either:
+QR check-in's payload/generation mechanism (Phase 5) and the white-label build
+pipeline (Phase 6) — syncing doesn't change those. This sync is deliberately not
+decided or actioned here — same reasoning as the earlier decision to hold it.
+
 ---
 
 ## Slice 1 — Walking skeleton (DONE)
@@ -271,7 +300,114 @@ console errors beyond the deliberately-triggered network failures.
 
 ---
 
-## Slice 4 — Membership & Payments — researched, recommendation below, NOT built
+## Slice 4a — Membership purchase, Cash/Bank + free-plan path (buildable now, no Stripe)
+
+Split out from the original Slice 4 once `MembershipsService.purchase()` was read in
+full: the `requires_payment` (Stripe) branch is only reached when the School's
+`PaymentAccount.provider === 'STRIPE'`. On a Cash/Bank-only School, or for a £0-priced
+plan on any School, `purchase()` returns `active` or `pending_confirmation` — neither
+needs a Stripe SDK, a native module, or the dev-client workflow change Slice 4b
+requires. This is real, valuable, and fully testable in the same web-preview workflow
+every other slice has used.
+
+**Confirmed real API surface**:
+- `academy.membershipPlans` (`AcademyMembershipPlanDto[]`) is already fetched by
+  Slice 1's `useAcademy` — unused until now.
+- `POST /membership-plans/{id}/purchase` — empty body. Response is the discriminated
+  union above: `active` (immediate — confirmed only reachable for `FRIEND_PASS` is
+  blocked entirely from self-purchase, so effectively £0-priced
+  `CLASS_PACK`/`WEEKLY_PASS`/`TRIAL_MEMBERSHIP`/`SUBSCRIPTION`-that-happens-to-be-free
+  — though `SUBSCRIPTION` always requires Stripe per its own check, so in practice
+  this is a non-Subscription £0 plan), `pending_confirmation` (Cash/Bank, non-zero
+  price — a `Transaction` is created `PENDING`; a Staff member confirms it later via
+  `PATCH /transactions/{id}/confirm`, out of scope for the Student app), or
+  `requires_payment` (Stripe — out of scope for this slice, show an honest "online
+  payment isn't available in the app yet" message rather than a dead end with no
+  explanation).
+- `MembershipPlanType` (`CLASS_PACK`/`WEEKLY_PASS`/`FRIEND_PASS`/`TRIAL_MEMBERSHIP`/
+  `SUBSCRIPTION`, `apps/api/prisma/schema.prisma`) — `FRIEND_PASS` is School-gifted
+  only; `purchase()` throws a 400 if a Student attempts to self-purchase one. Don't
+  show a working "Buy" button for it — the real error would just confuse a Student
+  who never should have seen the option.
+- `GET /memberships/me` — a Student's own current Memberships
+  (`MembershipListResponseDto`, cursor-paginated, same convention as My Bookings).
+  `MembershipStatus` is `ACTIVE`/`EXPIRED` (`schema.prisma`).
+
+**Planned build**: a "Membership Plans" section on `AcademyDetailScreen` (same
+extend-don't-replace pattern as every prior slice) listing `academy.membershipPlans`,
+each with a "Purchase" action reflecting the real outcome; and a new "My Memberships"
+screen (`GET /memberships/me`) off the Home screen, matching My Bookings' shape.
+
+### What was built
+
+A "Membership Plans" section on `AcademyDetailScreen` (`src/memberships/
+MembershipPlanRow.tsx`) rendering each of `academy.membershipPlans` with its price,
+class count, and expiry window, plus a "Purchase" action wired to
+`usePurchaseMembership()` (`src/memberships/membershipQueries.ts`) that renders the
+correct outcome message for all three real outcomes (`active`,
+`pending_confirmation`, `requires_payment`) directly from the mutation's own state. A
+new "My Memberships" screen (`src/memberships/MyMembershipsScreen.tsx`, off Home) lists
+`GET /memberships/me` via `useMyMemberships()`, resolving each membership's plan title
+through a small in-memory `planNameCache` (`src/memberships/planNameCache.ts`)
+populated whenever `AcademyDetailScreen` fetches a School's plans, falling back to the
+raw plan id for a plan the Student never browsed that way.
+
+### Found on review, fixed before this shipped
+
+An 8-agent review found real issues, applied before commit:
+- **A 100x money-display bug**: prices were rendered as raw `plan.price` (e.g. `2500`)
+  instead of converted from minor units — cross-checked against the Prisma schema's own
+  comment confirming `price` is stored in cents. Fixed with a new `formatMoney()`
+  helper (`src/lib/formatMoney.ts`) using `Intl.NumberFormat` currency formatting.
+- **Duplicated, unmirrored purchase state**: the original row kept its own `RowState`/
+  `actionError` local state set via `mutateAsync` + try/catch, risking a
+  setState-after-unmount if the Student navigated away mid-purchase, and letting
+  `actionError` drift from `purchase.error`. Fixed by reading `purchase.isSuccess`/
+  `purchase.data.outcome`/`purchase.isError` directly from the mutation, with
+  `purchase.mutate()` instead of the async form.
+- **`plan.type === 'FRIEND_PASS'` checked twice** (once to hide the Purchase button,
+  again to show the "ask School staff" message) — deduplicated into one `isFriendPass`
+  constant.
+- **Falsy-zero bugs**: `classesIncluded`/`expiryDurationDays` were gated with a plain
+  truthy `?` check, which would silently hide a real `0` value. Fixed with explicit
+  `!= null` checks.
+- A minor `paddingVertical` inconsistency (`10` vs. the `8` every sibling row in this
+  slice uses) — fixed to match.
+
+**Flagged as backend follow-ups, not fixed here** (separate tasks spawned):
+- `MembershipsService.findAllPlans()`/`purchase()` appear to have no tenant/enrollment
+  authorization check beyond a valid Student JWT — worth a dedicated backend security
+  review, not something the client can compensate for.
+- Neither `AcademyMembershipPlanDto` nor `AcademyDetailDto` exposes any signal for
+  whether a plan's School uses Stripe, so a tap on a Stripe-backed plan still runs the
+  real server-side `purchase()` branch — creating an actual `Transaction` row and a live
+  Stripe PaymentIntent — before the client can show its "not available yet" message.
+  A `requiresOnlinePayment` field on the plan DTO would let the client pre-filter
+  instead of discovering this after the fact.
+
+**Deliberately deferred, not started**: `MembershipPlanRow` is now the 4th list-item
+component in this app following the same "row component + paginated-list screen"
+shape (after `ClassBookingRow`, `NotificationRow`, `MembershipRow` itself for the
+list-item half). A shared extraction is due, but scoped as its own follow-up task
+rather than folded into this slice.
+
+### Verified
+
+`npx tsc --noEmit`, `npx turbo run lint build`, and `npx expo export --platform
+android` all pass. Interactively tested via `expo start --web` against a local mock
+server, confirming: all plan prices display correctly after the `formatMoney` fix,
+`FRIEND_PASS` shows no Purchase button, all three purchase outcomes render their
+correct message after clicking Purchase, and the `planNameCache` cross-screen
+behaviour is correct — a previously-browsed plan (`plan-classpack`) resolves to its
+real title ("10-Class Pack") on the My Memberships screen via cache-hit, while a
+membership referencing a plan never browsed that way (`plan-never-seen`) falls back
+to the raw-id display ("Plan plan-never-seen"), confirmed using only in-app
+navigation (not a full page reload) to keep the in-memory cache alive across screens
+during the test.
+
+---
+
+## Slice 4b — Stripe/PaymentSheet path — researched, recommendation below, NOT built
 
 Real money, real Stripe integration, a genuinely new "real decision" — not built this
 session per the user's own explicit instruction to set aside anything needing their
@@ -432,17 +568,27 @@ generated type's own comment) — deliberately not used for any icon/categorizat
 
 ## Recommendation
 
-Slices 2, 3, and 5 are all done — see their own sections above for what shipped, every
-scope change (each recorded here, not just in code comments), and what was found on
-review and while interactively testing.
+Slices 2, 3, 4a, and 5 are all done — see their own sections above for what shipped,
+every scope change (each recorded here, not just in code comments), and what was found
+on review and while interactively testing.
 
-**Slice 4 (Membership & Payments)** is the only remaining item from the original
+**Slice 4b (Stripe/PaymentSheet)** is the only remaining item from the original
 Slices 1-5 roadmap, and it's genuinely blocked on the user's own decision, not on
 further research — the API shape is fully confirmed (see its section above), and the
-open question isn't "which library" (that's close to settled by what the backend
-already returns) but whether to take on the custom-dev-client workflow change (losing
-this track's web-preview verification method) right now, versus shipping the
-non-Stripe `pending_confirmation` path first as a smaller, unblocking slice. Two
-separate follow-ups are already spawned and tracked outside this doc: the waitlist
-notification-dispatch backend gap (Slice 2) and the StudentRank-detail-denormalization
-question (Slice 3).
+open question isn't "which library" (already settled: `@stripe/stripe-react-native`'s
+PaymentSheet) but whether to take on the custom-dev-client workflow change (losing this
+track's web-preview verification method) right now. Since Slice 4a shipped the
+non-Stripe `pending_confirmation`/`active` paths as the smaller, unblocking slice,
+Slice 4b is purely additive whenever that decision is made.
+
+With Phase 3 (Commerce) now effectively as far along as it can go without that
+decision, the next genuinely unblocked candidate is the shared paginated-list
+component extraction flagged in Slice 4a's section above (4th occurrence of the same
+row-component/list-screen shape). Phases 4-7 (Guardian/Waiver, QR check-in,
+white-label, offline) all remain blocked on design passes, backend decisions, or the
+`master`-sync question described in the Phase overview table.
+
+Several follow-ups are already spawned and tracked outside this doc: the waitlist
+notification-dispatch backend gap (Slice 2), the StudentRank-detail-denormalization
+question (Slice 3), and the Membership authorization-check / Stripe-provider-signal
+gaps (Slice 4a).

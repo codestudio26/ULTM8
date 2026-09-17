@@ -4,6 +4,7 @@ import { HomeScreen } from './HomeScreen';
 import { AcademiesListScreen } from '../academies/AcademiesListScreen';
 import { AcademyDetailScreen } from '../academies/AcademyDetailScreen';
 import { MyBookingsScreen } from '../bookings/MyBookingsScreen';
+import { MyMembershipsScreen } from '../memberships/MyMembershipsScreen';
 import { NotificationsScreen } from '../notifications/NotificationsScreen';
 import type { AppStackParamList } from './types';
 
@@ -21,6 +22,7 @@ export function AppNavigator() {
       />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+      <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: 'My Memberships' }} />
     </Stack.Navigator>
   );
 }
