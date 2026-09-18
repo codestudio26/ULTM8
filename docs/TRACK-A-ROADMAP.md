@@ -20,15 +20,22 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ## Where things stand right now
 
-- **50 phases shipped or in flight** (Phase 0 walking skeleton through Phase 50),
+- **51 phases shipped or in flight** (Phase 0 walking skeleton through Phase 51),
   covering every backend module in `ultm8-nestjs-module` §5's confirmed table except
   the two named below, plus `apps/school-portal` UI for essentially all of it, plus
   `apps/platform-admin` through Translations authoring.
-- **PR #64 (Phase 47), PR #65 (Phase 48), and PR #66 (this doc's own first version)
-  are merged.** PR #67 (Phase 49 — `TranslationsModule` backend) is also merged.
-- **One phase sitting in an open, unmerged PR right now**:
+- **PR #64 (Phase 47), PR #65 (Phase 48), PR #66 (this doc's own first version), and
+  PR #69 (the master roadmap doc) are merged.** PR #67 (Phase 49 —
+  `TranslationsModule` backend) is also merged.
+- **Two phases sitting in an open, unmerged PR right now**:
   - **PR #68 — Phase 50**, the `apps/platform-admin` Translations authoring UI that
     calls Phase 49's backend. Green, clean, no reviews yet, end-to-end browser-verified.
+  - **Phase 51** — QR check-in redesign (Decision 107: two independently-keyed
+    rotating tokens replacing Phase 13's static `bookingId` check-in) + the
+    Instructor roll-call scan (`POST /classes/{id}/attendance-scan`, closing
+    Decision 71's own long-undesigned mechanics gap). Backend only — full e2e suite
+    green, `turbo build`/`turbo test` clean, OpenAPI client regenerated, manually
+    smoke-tested over live HTTP. PR not yet opened as of this doc's own last edit.
 - **Two backend modules from the original confirmed module table are still fully
   unbuilt** — not partially done, not scaffolded, nothing — detailed in their own
   sections below. `TranslationsModule` (the third module this doc used to list here)
@@ -72,11 +79,11 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | Cross-tenant impersonation-scope security fix | ✅ DONE — Phase 47 (merged PR #64) |
 | `CurriculumModule` (Lesson content) | ✅ DONE — Phase 44–45 |
 | `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend (merged), Phase 50 UI (PR #68) |
+| QR check-in redesign + Attendance roll-call scan (Decisions 66, 71, 107) | ✅ DONE (backend only) — Phase 51, PR not yet opened |
 | `SubscriptionPlansModule` (platform-level plans) | ⛔ NOT BUILT — citation of its `[UNRESOLVED]` blocker needs reconciliation (see above); may just be unscheduled |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
 | General tenant/content offboarding (no DELETE anywhere) | ⛔ NOT BUILT — unspecified in Spec 55, systemic gap across ~15 files |
-| Attendance roll-call scan (`POST /classes/{id}/attendance-scan`) | ⛔ NOT BUILT — Decision 71 confirms purpose only, mechanics undesigned |
-| QR code display/generation screen | ⛔ NOT BUILT — no Figma screen ever designed; binding rotating-code constraint set (Decision 66), nothing built against it |
+| QR code display screen (`apps/school-portal`, Staff-facing) | ⛔ NOT BUILT — Phase 51 shipped the backend token-mint endpoint it would call; the screen itself is a natural follow-up phase |
 | Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
 | Branch field-level settings UI | ⛔ NOT BUILT — Decision 76 resolved the field list only, not the screen |
 | `apps/platform-admin` general tenant-data edit UI | 🅿️ Parked — Decision 105, pending a named use case |
@@ -107,8 +114,10 @@ doc), so they're named here without a number rather than guessed at.
 
 - **Phase 12** — `GuardiansModule`: minor linking + two-tier `ConsentRecord`.
 - **Phase 13** — `AttendanceModule`: self-service QR check-in (`POST /attendance/scan`,
-  takes a `bookingId` directly — the QR code's own generation/rotation mechanism is
-  still `[UNRESOLVED]` per `ultm8-domain-rules` §12, deliberately not built).
+  originally took a `bookingId` directly — the QR code's own generation/rotation
+  mechanism was `[UNRESOLVED]` per `ultm8-domain-rules` §12, deliberately not built
+  at the time). **Superseded by Phase 51** (Decision 107), which replaced the static
+  `bookingId` with a genuine rotating-token mechanism.
 - **Phase 14** — `AcademiesModule`: mobile-facing, read-optimized discovery
   (`GET /academies`, `/academies/:id`, `/academies/:id/timetable`) — the exact surface
   Track B's Student app builds its own discovery screens against.
@@ -133,6 +142,20 @@ doc), so they're named here without a number rather than guessed at.
 - **Phase 50** — `apps/platform-admin` Translations authoring UI (list/filter/add/
   edit/delete), end-to-end browser-verified against a live backend. **PR #68, not yet
   merged.**
+- **Phase 51** — `AttendanceModule` QR check-in redesign (Decision 107): replaced
+  Phase 13's static-`bookingId` self-service scan with two independently-keyed,
+  short-lived rotating JWTs (`GET /classes/:id/qr-token` Staff-minted Class token,
+  `GET /attendance/my-qr-token` self-minted Student token), closing the
+  "time-boxed, rotating, never static" constraint Decision 66 had set with nothing
+  built against it. Also shipped the Instructor roll-call scan
+  (`POST /classes/:id/attendance-scan`) Decision 71 had confirmed the purpose of but
+  never designed — per-Student, two modes (`INSTRUCTOR_SCAN` camera-based,
+  `INSTRUCTOR_MANUAL` camera-free fallback) discriminated by whether the request
+  carries a `studentToken`. `Booking` gained `checkInMethod`/`checkedInById` columns.
+  Backend only — full e2e suite green (306 tests), `turbo build`/`turbo test` clean,
+  `packages/api-client` regenerated, all four flows (mint, self-service scan,
+  Instructor scan, Instructor manual) manually verified over live HTTP. **Not yet
+  committed/pushed/opened as a PR as of this doc's own last edit.**
 
 ## `apps/platform-admin` — DONE through Slice 4, Slice 4 unmerged
 
@@ -206,19 +229,19 @@ data-erasure flow — a genuine, systemic gap rather than a per-module oversight
 a product/legal decision on what "offboarding" actually means per entity (hard delete?
 soft-archive? retention period?) before any of those ~15 files gets a real `DELETE`.
 
-### 4. Attendance roll-call scan + QR code display — mechanics undesigned
+### 4. QR code display screen — the one remaining piece after Phase 51
 
-Two related but distinct gaps, both already-confirmed-in-scope but with no design to
-build against:
-- `POST /classes/{id}/attendance-scan` (Instructor-run roll-call, distinct from the
-  self-service `POST /attendance/scan` that already ships) — Decision 71 confirms only
-  the *purpose*; what's actually scanned, per-Student vs. batched, and anti-fraud
-  deterrence are all still undesigned. Needs an Architect engineering-design pass.
-- The QR code itself — no Figma screen was ever designed for the School Portal's own
-  "QR Code" nav item, despite a binding constraint now set (Decision 66: must be a
-  time-boxed, rotating code, never a static per-Class one). Without this, self-service
-  check-in (`POST /attendance/scan`, Phase 13, already built) has no code for a Student
-  to actually scan — the harness exists, the thing it consumes doesn't.
+Phase 51 (Decision 107) closed both mechanics gaps this section used to describe:
+`POST /classes/{id}/attendance-scan` (Instructor-run roll-call) is built and
+e2e-tested, and the self-service Class QR token now genuinely rotates
+(`GET /classes/:id/qr-token`, Decision 66's "time-boxed, rotating, never static"
+constraint). What's left is purely a UI gap, not a design gap: no Figma screen was
+ever designed for the School Portal's own "QR Code" nav item, and no
+`apps/school-portal` screen yet calls the new `GET /classes/:id/qr-token` endpoint to
+actually display a rotating code Students can scan. This would be the first
+interval-polling UI pattern in `apps/school-portal` (no existing screen polls on a
+timer today) — a natural, scoped follow-up phase, not a design gap needing an
+Architect pass.
 
 ### 5. Guardian consent-management UI — no screen anywhere
 
