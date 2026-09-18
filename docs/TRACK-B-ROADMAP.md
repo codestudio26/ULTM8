@@ -41,6 +41,65 @@ decided or actioned here — same reasoning as the earlier decision to hold it.
 
 ---
 
+## Version 1 Plan (decided with the user, 2026-09-18)
+
+This section is the authoritative scope for "Version 1" — the release the user will
+review and approve before it's considered launch-ready. Anything not listed here as
+in-scope is deliberately deferred, not forgotten.
+
+**In scope for V1:**
+- Slices 1, 2, 3, 4a, 5 — already shipped (see their sections below).
+- Fix the Membership authorization gap flagged in Slice 4a's review
+  (`MembershipsService.findAllPlans()`/`purchase()` appear to have no tenant/enrollment
+  check beyond a valid Student JWT) — a real security risk, must close before V1 ships.
+- Extract the shared paginated-list component (now duplicated 4x across
+  `ClassBookingRow`/`NotificationRow`/`MembershipRow`/the underlying list-screen shape).
+- A real staging deployment of `apps/api` + Postgres (+ Redis) on Railway, so V1 is
+  verified against the genuine backend, not indefinitely against throwaway mocks.
+  Pending: the user creating a Railway account and connecting the GitHub repo — this
+  can't be done on their behalf (account creation / payment details are always the
+  user's own action).
+- QR check-in (Phase 5) — direction decided: **Student displays a rotating, signed QR
+  code; a Staff member scans it to check them into a specific class session** (not
+  School-displays/Student-scans). Chosen because a Staff-verified scan can't be faked
+  by sharing a photo of a static code, and it ties cleanly to real attendance for
+  rank/stripe progression — both matter more here than in a typical gym app given the
+  youth-safety context already central to this spec. Still needs real scoping before
+  build: a token-minting endpoint, and a Staff-facing scanner surface (likely
+  `apps/school-portal`, not `apps/student`) — treat as its own small sub-project, not
+  a same-day add.
+- Offline (Phase 7) — scoped narrowly to **light read-only caching**: previously-loaded
+  screens (bookings, timetable, ranks) stay viewable with no connection. No offline
+  writes, no sync, no conflict resolution — chosen specifically because it needs zero
+  new business-logic decisions and carries no correctness risk, unlike full offline-first.
+
+**Deferred past V1 (fast-follow candidates, not abandoned):**
+- Slice 4b (Stripe/PaymentSheet) — deferred to avoid shipping the highest-risk,
+  money-touching code in the very first release. Ship Cash/Bank first, validate with
+  real usage, add Stripe once the rest of the app is proven stable in production.
+- White-label per-School branding (Phase 6) — `packages/build-pipeline` is an empty
+  placeholder even on `master`. This is a standalone business/infrastructure decision
+  (one app with dynamic theming vs. a separate app-store listing per School) deserving
+  its own dedicated conversation, not a quick unblock alongside the student app.
+- Full offline-first with write-sync — needs real conflict-resolution design first;
+  only the light read-only caching above is in V1.
+
+**Still genuinely blocked, path forward identified:**
+- Guardian/Waiver (Phase 4) — confirmed via direct research: no Figma design, no
+  screen inventory, no mockup exists anywhere for either the Guardian consent screen
+  or the Waiver drawn-signature capture screen — nothing beyond the backend data
+  model. `skills/ultm8-domain-rules/SKILL.md` tags the Guardian consent screen
+  `[UNRESOLVED]` outright; the decision log's Decision 74 flags the drawn-signature UI
+  as "still undesigned... for the Architect / design work before this can be built."
+  Building either without a real design would mean inventing unconfirmed business
+  logic — the thing this doc's own source-of-truth rules exist to prevent. **Path
+  forward**: a candidate screen (typed name + drawn-signature pad + explicit consent
+  checkboxes) will be drafted and shown to the user for approval before any wiring to
+  real backend logic — that approval stands in for the missing design pass, rather
+  than leaving this blocked indefinitely with no way to move.
+
+---
+
 ## Slice 1 — Walking skeleton (DONE)
 
 Expo/RN init, Auth flow (Register → OTP → Login → Forgot/Reset passcode), read-only
