@@ -1,0 +1,96 @@
+# Render Blueprint — provisions the apps/api staging backend (Postgres + Key
+# Value/Redis + the NestJS API) in one deploy, on Render's free tier (no card
+# required). Deploy via Render's dashboard: New + -> Blueprint -> select this
+# repo/branch -> Render reads this file and provisions everything below.
+#
+# No commands here run from apps/api's own directory (no `rootDir`) —
+# deliberately anchored at the repo root instead, since this is an npm
+# workspaces monorepo and `npm install` needs the root package.json/lockfile
+# to resolve correctly, even though apps/api itself has no @ultm8/* workspace
+# dependency of its own (checked: apps/api/package.json).
+#
+# Four env vars below are `sync: false` (DATABASE_URL_APP/_AUTH/_JOBS/
+# _DISCOVERY) rather than generated or hardcoded here — they need real
+# passwords for the scoped Postgres roles the app's own init migration
+# creates (ultm8_app/ultm8_auth/ultm8_jobs/ultm8_discovery), which are NOT
+# derivable from Render's own `fromDatabase` (Render only knows the superuser
+# connection it provisions, not roles the app's migrations create afterward).
+# Committing real passwords into this file would defeat the point of using
+# strong ones — Render prompts for `sync: false` values during Blueprint
+# creation instead, so they're entered once, in Render's own UI, never in git.
+
+databases:
+  - name: ultm8-postgres
+    plan: free
+    databaseName: ultm8
+    user: ultm8
+
+services:
+  - name: ultm8-redis
+    type: keyvalue
+    plan: free
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: allow all (Render Key Value requires an explicit allow list; the API service reaches it over Render's private network regardless)
+
+  - name: ultm8-api
+    type: web
+    runtime: node
+    plan: free
+    buildCommand: npm install && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
+    startCommand: node apps/api/dist/main.js
+    envVars:
+      # Superuser connection — used for `prisma migrate deploy` (run manually
+      # after first deploy, see the accompanying setup instructions) and by
+      # PrismaJobsService's own cross-role writes.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ultm8-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromDatabase:
+          name: ultm8-redis
+          property: connectionString
+
+      # RLS-subject app roles — see this file's own header comment for why
+      # these can't be auto-derived. Fill in with the actual Postgres host
+      # Render shows you, plus the rotated passwords already generated for
+      # this deploy (not "changeme" — the migration's own dev-only default).
+      - key: DATABASE_URL_APP
+        sync: false
+      - key: DATABASE_URL_AUTH
+        sync: false
+      - key: DATABASE_URL_JOBS
+        sync: false
+      - key: DATABASE_URL_DISCOVERY
+        sync: false
+
+      # Auth secrets — generated fresh per deploy, never reused across
+      # environments (matches this repo's own devcontainer convention of
+      # dev-only dummy values, just real ones here instead).
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: PLATFORM_ADMIN_JWT_SECRET
+        generateValue: true
+      - key: PLATFORM_ADMIN_JWT_TTL
+        value: 5m
+
+      # Stripe — dummy values, matching CI's own convention (Stripe/Slice 4b
+      # is deferred past V1; nothing here actually calls Stripe yet).
+      - key: STRIPE_SECRET_KEY
+        value: sk_test_ci_dummy_not_a_real_stripe_key
+      - key: STRIPE_WEBHOOK_SECRET
+        value: ci-test-webhook-secret-not-a-real-stripe-secret
+      - key: STRIPE_CONNECT_RETURN_URL
+        value: https://example.com/payments/connect/return
+      - key: STRIPE_CONNECT_REFRESH_URL
+        value: https://example.com/payments/connect/refresh
+
+      - key: PORT
+        value: "3000"
+      # Update once the Student app's actual dev/staging origin is known —
+      # left as `sync: false` rather than a guessed value.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
