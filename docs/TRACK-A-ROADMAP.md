@@ -157,12 +157,18 @@ doc), so they're named here without a number rather than guessed at.
   `packages/api-client` regenerated, all four flows (mint, self-service scan,
   Instructor scan, Instructor manual) manually verified over live HTTP. Merged via
   PR #72.
-- **Phase 52** — `apps/school-portal` QR-display screen (`ClassQrCodePage`) calling
-  Phase 51's Class-token mint endpoint, with an interval-polling hook that re-mints
-  ~2s before the token's own `expiresAt`. Built stacked on Phase 51's branch; **PR
-  #73, not yet merged** as of this doc's own last edit — see that PR's own
-  description for full detail, not restated here to avoid two copies of the same
-  account drifting out of sync.
+- **Phase 52** — `apps/school-portal` QR-display screen: `ClassQrCodePage`, reached
+  via a new "Show QR" action on `ClassesPage` (the same per-Class-action pattern
+  `ClassDetailPage`'s own "View bookings" link already established, not a new
+  top-level nav item), rendering Phase 51's rotating Class token as a QR code
+  (`qrcode.react`, new dependency) for Students to scan from their own device. The
+  first interval-polling screen in this app — `useClassQrToken`'s own
+  `refetchInterval` is computed from the fetched token's own `expiresAt` rather than
+  a hardcoded interval, so it stays correct even if `QR_ATTENDANCE_TOKEN_TTL_SECONDS`
+  (an explicit Developer-level placeholder on the backend) ever changes. Built
+  stacked on Phase 51's branch; end-to-end Playwright-verified against a live
+  backend, including proving the auto-refresh re-polls for a fresh token before the
+  old one expires. **PR #73, not yet merged** as of this doc's own last edit.
 - **Phase 53** — Branch field-level settings UI. Turned out to be almost entirely
   already shipped: `BranchesPage`/`BranchFormModal` (name/address/contactPhone/
   timezone/currencyOverride) have existed since Phase 3, and the backend
