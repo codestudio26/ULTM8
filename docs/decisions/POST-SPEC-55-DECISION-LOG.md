@@ -909,6 +909,35 @@ Logged during a direct exchange with the user, 16 Sep 2026 — the user was pres
 
 ---
 
+## Decision 106 — SubscriptionPlansModule billing-direction "blocker": stale citation, not a live question
+
+**Date:** 18 Sep 2026
+**Status:** Documentation reconciliation — verified directly against source; not a new product/business decision
+**Resolves:** `docs/TRACK-A-ROADMAP.md` and two code comments (`apps/api/src/platform-admin/platform-admin.module.ts`, `apps/api/src/payments/payments.controller.ts`) cited `ultm8-domain-rules` §2 as `[UNRESOLVED]` on whether the platform-level `SubscriptionPlan` a Franchise/School "subscribes to" is ULTM8 billing that Franchise/School directly, or a plan resold onward to member Schools — and said not to implement billing logic until it was resolved. A master-roadmap synthesis (18 Sep 2026) found the skill file's *current* text says the opposite: `[CONFIRMED]` since "Pass 4."
+
+### What was actually verified
+
+Not assumed from the skill file alone — traced to source:
+1. **`skills/ultm8-domain-rules/SKILL.md`** itself is internally consistent and unambiguous: §2's own confirmed-items list, the platform-wide "confirmed" bullet roundup, the white-label-entitlement line, the explicit `MembershipPlan`-vs-`SubscriptionPlan` distinction warning, and the canonical-terminology table all independently state the same resolved direction — six separate locations, not one throwaway line.
+2. **`git show 80de2d4`** (`Update domain rules and add Spec 55 handover`, authored by the project owner, 31 Aug 2026 — before Phase 0 of implementation even started) shows the actual edit: the line changed from `[UNRESOLVED] ... Do not implement Franchise Subscription Plan billing logic until this is resolved` to `[CONFIRMED] ... is ULTM8's own platform revenue ... not a plan the Franchise resells onward ... resolved Pass 4`. This is a deliberate, dated, pre-implementation resolution, not later drift or an accidental edit.
+3. **`deep-review/ULTM8-Dev-Handover-v55/review-history-tracker.html`** (the spec's own review audit trail, independent of the skill file) corroborates it a third way, listing "SubscriptionPlan direction" as the first of five decisions locked in Pass 4 (§10.1/§10.2 status rows).
+
+Three independent primary sources agree. The roadmap doc and code comments were simply never updated after the skill file's Pass 4 edit — a documentation-currency bug, not a genuine open business question.
+
+### Decision
+
+**Not a decision — a correction.** `SubscriptionPlansModule` is not blocked by this question. Its status is the same as `TranslationsModule`'s was before Phase 49: confirmed scope, never picked up. `docs/TRACK-A-ROADMAP.md`, `docs/ULTM8-MASTER-ROADMAP.md`, and the two stale code comments are updated in the same change that adds this entry.
+
+### What this does NOT resolve
+
+This does not scaffold or build `SubscriptionPlansModule` — it only clears the specific citation blocking it from being scheduled like any other unbuilt-but-unblocked module. Building it is unaffected, ordinary future work.
+
+### Recorded by
+
+Investigated and recorded by Claude at the user's direct request ("pick up item B.2: SubscriptionPlansModule citation reconciliation" — the item the same session's own master-roadmap synthesis had flagged as needing an Architect pass), 18 Sep 2026. No new business judgment call was made — this verifies which existing source is current and corrects citations to match, per `CLAUDE.md`'s own source-of-truth hierarchy (the skill file outranks a roadmap doc or a code comment). If this reasoning turns out to be wrong — if the skill file's Pass 4 resolution was itself made in error — that would be a genuine reversal needing the product owner directly, not something to silently re-flip here.
+
+---
+
 ## Decision 107 — QR check-in mechanics: two independently-keyed rotating tokens (Class-scoped + Student-scoped), per-Student Instructor roll-call scan with a camera-free manual fallback
 
 **Date:** 18 Sep 2026

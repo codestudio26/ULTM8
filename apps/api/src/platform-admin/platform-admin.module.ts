@@ -118,9 +118,13 @@ import { AuthModule } from '../auth/auth.module';
  *    data.
  *  - SubscriptionPlansModule — sits behind this module's own guard chain by
  *    confirmed design, same shape TranslationsModule (Phase 49) now uses; still a
- *    separate, unbuilt module, additionally blocked on the `[UNRESOLVED]`
- *    Franchise-Subscription-Plan billing-direction question (domain-rules §2) —
- *    unlike Translations, not just "never picked up."
+ *    separate, unbuilt module. NOT blocked on the billing-direction question this
+ *    comment used to cite as `[UNRESOLVED]` — verified directly against
+ *    domain-rules §2's *current* text (Decision 106,
+ *    docs/decisions/POST-SPEC-55-DECISION-LOG.md): that question was resolved in
+ *    Spec 55's own Pass 4 review, before Phase 0 even started, and this comment had
+ *    simply gone stale. Same as Translations before Phase 49 — never picked up,
+ *    not stuck on anything.
  *  - `apps/platform-admin`'s own authoring UI for Translations — Phase 49 is
  *    backend only, matching this codebase's established backend-then-UI split
  *    (e.g. CurriculumModule was Phase 44 backend / Phase 45 UI).

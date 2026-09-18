@@ -26,13 +26,12 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   `apps/platform-admin` through Translations authoring.
 - **PR #64 (Phase 47), PR #65 (Phase 48), PR #66 (this doc's own first version), PR
   #67 (Phase 49 — `TranslationsModule` backend), PR #68 (Phase 50 — Translations
-  authoring UI), PR #69 (the master roadmap doc), PR #72 (Phase 51 — this PR), and
-  PR #74 (Phase 53 — Branch branding-field UI) are merged.**
+  authoring UI), PR #69 (the master roadmap doc), PR #71 (Decision 106 — this PR),
+  PR #72 (Phase 51), and PR #74 (Phase 53 — Branch branding-field UI) are merged.**
 - **Remaining phases sitting in open, unmerged PRs right now**:
-  - **PR #71 — Decision 106**, the `SubscriptionPlansModule` citation reconciliation.
   - **PR #73 — Phase 52**, the `apps/school-portal` QR-display screen. Was stacked on
-    Phase 51 (this PR); once this merges, its base moves to `master` and its diff
-    shrinks to just the QR-display screen itself.
+    Phase 51; its base has since moved to `master` and its diff shrunk to just the
+    QR-display screen itself.
   - **PR #75 — Phase 54**, `SubscriptionPlansModule` (backend core) — Plan CRUD,
     Franchise/School subscribe/cancel against ULTM8's own platform Stripe account,
     the `PlatformCharge` ledger, and the read-only degraded-portal gate. Branched
@@ -40,15 +39,15 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 - **One backend module from the original confirmed module table is still fully
   unbuilt** — `MobileAppPublishingModule` (`TranslationsModule` shipped in Phase
   49–50; `SubscriptionPlansModule`'s backend core is now built too — see below).
-- **`SubscriptionPlansModule`'s "blocked" status was a stale citation, not a live
-  question** — Decision 106 (**PR #71, unmerged**) traced it to source: three
-  independent primary sources (the skill file's own internal consistency, the
-  commit that made the Pass-4 edit, and Spec 55's own review-history tracker) agree
-  the billing-direction question was resolved *before* Phase 0 started. This doc and
-  two code comments (`platform-admin.module.ts`, `payments.controller.ts`) simply
-  never caught up with the skill file's own already-`[CONFIRMED]` text. Phase 54
-  (**PR #75, unmerged**) already built the module's backend core on the strength of
-  that reconciliation — it was never actually blocked, just unscheduled.
+- **`SubscriptionPlansModule`'s "blocked" status was a stale citation, now fixed
+  (Decision 106, this PR)** — traced to source: three independent primary sources
+  (the skill file's own internal consistency, the commit that made the Pass-4 edit,
+  and Spec 55's own review-history tracker) agree the billing-direction question was
+  resolved *before* Phase 0 started. This doc and two code comments
+  (`platform-admin.module.ts`, `payments.controller.ts`) simply never caught up with
+  the skill file's own already-`[CONFIRMED]` text. Phase 54 (**PR #75, unmerged**)
+  already built the module's backend core on the strength of that reconciliation —
+  it was never actually blocked, just unscheduled.
 - **Everything Guardian/minor-facing that exists is backend-only.** `GuardiansModule`
   (Phase 12) and every Guardian-on-behalf-of flow (Phases 37–42: Waivers, Schools,
   Memberships, Bookings, Waitlist) has real API surface and is exercised by e2e tests —
@@ -81,7 +80,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | `CurriculumModule` (Lesson content) | ✅ DONE — Phase 44–45 |
 | `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend + Phase 50 UI, both merged |
 | QR check-in redesign + Attendance roll-call scan (Decisions 66, 71, 107) | ✅ DONE (backend) — Phase 51, merged via PR #72 |
-| `SubscriptionPlansModule` (platform-level plans) | 🟡 Backend core built — Phase 54, **PR #75, unmerged**. Blocker citation reconciled — Decision 106, **PR #71, unmerged** |
+| `SubscriptionPlansModule` (platform-level plans) | 🟡 Backend core built — Phase 54, **PR #75, unmerged**. Blocker citation reconciled — Decision 106, merged via PR #71 |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
 | General tenant/content offboarding (no DELETE anywhere) | ⛔ NOT BUILT — unspecified in Spec 55, systemic gap across ~15 files |
 | QR code display screen (`apps/school-portal`, Staff-facing) | 🟡 Built — Phase 52, **PR #73, unmerged** (was stacked on Phase 51; base moves to `master` now that Phase 51 has merged) |
@@ -220,25 +219,32 @@ doc), so they're named here without a number rather than guessed at.
 Full cross-track detail (Track B, infra/deployment, and every open decision) now lives
 in `docs/ULTM8-MASTER-ROADMAP.md`. This section keeps only the Track A-specific items.
 
-### 1. `SubscriptionPlansModule` — blocker citation needs reconciliation first
+### 1. `SubscriptionPlansModule` — not blocked; simply unscheduled (Decision 106)
 
 Confirmed scope (`ultm8-nestjs-module` §5): `GET /plans`, `POST /plans/{id}/subscribe`,
-Platform-Admin-authoring only. Nothing built — `apps/api/src/payments/payments.controller.ts`'s
+Platform-Admin-authoring only. Nothing built yet — `apps/api/src/payments/payments.controller.ts`'s
 own header comment still says "no SubscriptionPlan/white-label billing... deferred to
-whenever Phase 9" and that phase never came.
+whenever Phase 9" and that phase never came under that name.
 
 **This doc previously said** `ultm8-domain-rules` §2 flags the billing-direction
 question (does the platform-level `SubscriptionPlan` bill the Franchise/School
-directly, or does the Franchise resell it onward?) as `[UNRESOLVED]`. **A fresh read of
-the skill file's current text says the opposite** — §2 now states this is `[CONFIRMED]`
-("ULTM8's own platform revenue... not a plan the Franchise resells onward," resolved
-Pass 4), and §18's consolidated list marks it resolved too. No decision-log entry ever
-formally reconciled this — the skill was updated in place, and that update never
-propagated to this doc or to the `platform-admin.module.ts`/`payments.controller.ts`
-comments that still cite the old wording. Per `CLAUDE.md`'s own source-of-truth
-hierarchy, the skill file outranks this doc and code comments, so the honest reading is
-**this module may just be unscheduled, not blocked** — but that needs an Architect
-confirmation and a doc/comment cleanup pass before treating it as settled either way.
+directly, or does the Franchise resell it onward?) as `[UNRESOLVED]`. **That citation
+was stale.** Reconciled directly against source (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`
+Decision 106): the skill file's current text is unambiguous and internally consistent
+across six separate locations (§2, the platform-wide confirmed-items roundup, the
+white-label-entitlement line, the explicit `MembershipPlan`-vs-`SubscriptionPlan`
+distinction warning, and the canonical-terminology table) — `[CONFIRMED]`, "ULTM8's own
+platform revenue... not a plan the Franchise resells onward," resolved Pass 4. The
+`git show` diff of the commit that made that edit (`80de2d4`, dated 31 Aug 2026 — before
+Phase 0 of implementation even started) confirms it was a deliberate resolution, not
+drift, and the spec's own `review-history-tracker.html` independently corroborates it a
+third way ("SubscriptionPlan direction" listed as the first of five decisions locked in
+Pass 4). This doc's own prior wording and the `platform-admin.module.ts`/
+`payments.controller.ts` comments citing `[UNRESOLVED]` had simply gone stale after
+the skill file was updated in place. **`SubscriptionPlansModule` is not blocked — it's
+unscheduled, the same status `TranslationsModule` had before Phase 49.** Ready to
+scaffold and build whenever prioritized, same shape as every other admin-authored
+resource already built.
 
 ### 2. `MobileAppPublishingModule` + `packages/build-pipeline` — blocked on a product/legal decision
 
@@ -307,9 +313,8 @@ landing page until more of the admin surface exists.
 
 1. Get **PR #68** reviewed and merged — green, clean, no reviews yet, nothing blocking
    on the engineering side.
-2. Resolve the `SubscriptionPlansModule` citation question (item 1) — a quick Architect
-   confirmation, then either scaffold it (if genuinely unblocked) or record a proper
-   decision-log entry (if genuinely still open).
+2. `SubscriptionPlansModule` (item 1) is now ready to scaffold and build whenever
+   prioritized — no decision needed, the citation blocking it was stale (Decision 106).
 3. Everything else in "What's actually left" needs a decision, design pass, or both
    before code should be written against it — see `docs/ULTM8-MASTER-ROADMAP.md` for
    the full prioritized path, including where Track A's open items overlap Track B's
