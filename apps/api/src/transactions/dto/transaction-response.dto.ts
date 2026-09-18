@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/** Field-for-field match of the Transaction Prisma model. */
+/**
+ * Field-for-field match of the Transaction Prisma model, plus two joined
+ * fields: studentFirstName/studentSurname come from Transaction.student
+ * (a User relation), not a Transaction column — see
+ * TransactionsService.findAllForSchool for the join.
+ */
 export class TransactionResponseDto {
   @ApiProperty()
   id!: string;
@@ -10,6 +15,12 @@ export class TransactionResponseDto {
 
   @ApiProperty()
   studentId!: string;
+
+  @ApiProperty()
+  studentFirstName!: string;
+
+  @ApiProperty()
+  studentSurname!: string;
 
   @ApiProperty()
   paymentAccountId!: string;

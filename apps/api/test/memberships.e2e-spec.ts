@@ -477,12 +477,20 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   // Transactions ledger — School Owner/Manager only.
   // ---------------------------------------------------------------------------
 
-  it('GET /schools/{id}/transactions is School Owner/Manager only', async () => {
+  it('GET /schools/{id}/transactions is School Owner/Manager only, and resolves the paying Student\'s name', async () => {
     const ownerRes = await request(app.getHttpServer())
       .get(`/v1/schools/${school.id}/transactions`)
       .set('Authorization', `Bearer ${tokenOwner}`);
     expect(ownerRes.status).toBe(200);
     expect(ownerRes.body.items.length).toBeGreaterThan(0);
+
+    // Transaction.student is joined server-side — confirms the row for the
+    // minor (created via the Guardian Cash/Bank test above) carries a real
+    // name, not just studentId.
+    const minorItem = ownerRes.body.items.find((t: { studentId: string }) => t.studentId === minor.id);
+    expect(minorItem).toBeDefined();
+    expect(minorItem.studentFirstName).toBe('minor');
+    expect(minorItem.studentSurname).toBe('Tenant');
 
     const studentRes = await request(app.getHttpServer())
       .get(`/v1/schools/${school.id}/transactions`)
