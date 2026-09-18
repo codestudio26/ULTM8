@@ -13,4 +13,5 @@ export type AppStackParamList = {
   MyBookings: undefined;
   Notifications: undefined;
   MyMemberships: undefined;
+  Waivers: undefined;
 };

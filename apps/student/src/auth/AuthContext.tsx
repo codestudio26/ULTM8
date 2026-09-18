@@ -85,3 +85,18 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+
+/** Mirrors apps/school-portal/src/auth/AuthContext.tsx's own `useOwnedSchoolId` —
+ * same shape, STUDENT role instead of SCHOOL_OWNER_MANAGER. Resolves to exactly
+ * ONE School, sorted deterministically (not "first in the array") since a person
+ * can hold the same role at more than one School (skills/ultm8-domain-rules/
+ * SKILL.md §6.1/§8.3, [CONFIRMED]) and the JWT's `grants` array has no guaranteed
+ * order (AuthService's token issuance has no `orderBy` on the RoleGrants it
+ * signs in). A known, deliberate scope limit for a multi-School Student, not a
+ * silent shortcut — proper multi-School support is a separate follow-up. */
+export function useEnrolledSchoolId(): string | null {
+  const { claims } = useAuth();
+  if (!claims) return null;
+  const schoolIds = claims.grants.filter((g) => g.role === 'STUDENT' && g.schoolId).map((g) => g.schoolId as string);
+  return schoolIds.sort()[0] ?? null;
+}

@@ -21,7 +21,7 @@ Detail for each Slice is in its own section below; this table is the map.
 | 1 | **Foundation** | 1 (walking skeleton), 2 (booking/waitlist), 3 (rank/grading) | ✅ DONE |
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
 | 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
-| 4 | **Compliance & Guardian** | 6 (waiver signing), 7 (Guardian-facing screens) | Blocked — needs a design pass; partially unblockable by syncing with `master` (see below) |
+| 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a unblocked (in V1); 6b/7 blocked — need a design pass; partially unblockable by syncing with `master` (see below) |
 | 5 | **Attendance** | 8 (QR check-in) | Blocked — genuinely unresolved even on `master`, needs a backend/product decision on the QR mechanism itself |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
 | 7 | **Resilience** | 10 (offline behavior/caching) | Not scoped — nothing in the spec, any skill, or the decision log addresses this; don't start until someone asks with real requirements |
@@ -84,19 +84,82 @@ in-scope is deliberately deferred, not forgotten.
 - Full offline-first with write-sync — needs real conflict-resolution design first;
   only the light read-only caching above is in V1.
 
+**Correction (2026-09-18): Waiver signing is NOT blocked — only the drawn-signature
+enhancement is.** Verifying `apps/api/src/waivers/dto/sign-waiver.dto.ts` directly
+(not just the roadmap's earlier summary of the decision log) shows the CURRENT,
+CONFIRMED `POST /waivers/{id}/sign` contract is two typed-text fields —
+`signerFullName` and `signatureText` — with the DTO's own comment stating plainly
+"Neither field accepts drawn/canvas signature data this phase." This is a fully
+buildable, zero-schema-change feature today, not a design-blocked one. Moved to
+**in scope for V1** as **Slice 6a — Waiver Signing (typed name)**:
+- `GET /schools/{schoolId}/waivers` (all Waivers for the Student's enrolled School,
+  resolved from their own JWT `grants` — no new endpoint needed) cross-referenced
+  against `GET /waivers/me` (their own signatures) to show signed vs. pending.
+- `POST /waivers/{id}/sign` with a typed full-name + typed-signature-text form.
+- The confirmed self-attested-adult (18+) gate (`WaiversService.assertSelfAttestedAdult`)
+  rejects an under-18 caller outright — shown honestly via the real backend message
+  (which already names the real reason: no Guardian-linked path exists yet), not
+  hidden or worked around.
+- Explicitly NOT wiring this into the booking flow's unsigned-waiver gate this
+  slice — `WaiversController`'s own header comment confirms "no Booking-time
+  enforcement" exists yet either, so `ClassBookingRow`'s existing honest-error-message
+  behavior is left as is (a small, purely client-side deep-link is a real gap this
+  slice's own review noticed — spawned as a separate follow-up, not built here).
+
+**Slice 6a shipped (2026-09-18).** Built: `WaiversScreen` (off Home), `WaiverRow`
+(typed name + typed signature, deriving its "Signed" state directly from the
+mutation's own returned data, not a round-tripped prop), and `useEnrolledSchoolId`
+(`AuthContext.tsx`, mirroring `apps/school-portal`'s own `useOwnedSchoolId`).
+
+An 8-agent review found real issues, fixed before commit:
+- **Unstable school selection**: `AuthService`'s token issuance has no `orderBy` on
+  the RoleGrants it signs into the JWT, so picking "the first STUDENT grant" could
+  resolve to a different School on different logins for a multi-School Student.
+  Fixed with a deterministic sort — still only resolves one School (a real,
+  separate follow-up is spawned for proper multi-School support), but at least a
+  stable one.
+- **A signed-status race**: the screen's loading gate only reflected the Waivers
+  query, not the separate signatures query — if Waivers resolved first, every
+  already-signed Waiver would briefly show an active "Sign" button, and tapping it
+  hit the backend's 409. Fixed by gating on both queries settling, the same
+  discipline Slice 3's `MyRankSection` already established.
+- **A post-signature double-submit window**: the row only left its sign-form once
+  the parent's `signature` prop updated (a full refetch round-trip), not the
+  instant the mutation itself succeeded. Fixed by deriving the signed state
+  directly from the mutation's own returned data, matching `MembershipPlanRow`'s
+  already-fixed pattern.
+- **Two silent-truncation gaps**: `signature.status` was never checked (latent —
+  only matters once a non-SIGNED status is ever written), and the signatures list
+  was fetched with no page-size override, silently missing anything past the
+  default 20. Fixed with a status filter and a `limit: 100` request.
+
+**Flagged as follow-ups, not fixed here** (separate tasks spawned): proper
+multi-School support (querying and merging every enrolled School's Waivers, not
+just one), and a deep-link from `ClassBookingRow`'s unsigned-waiver error to this
+new Waivers screen.
+
+**Verified**: `npx tsc --noEmit`, `npx turbo run lint build`, and `npx expo export
+--platform android` all pass. Interactively tested via `expo start --web` against a
+local mock server: correct signed/unsigned status per Waiver, a real sign
+submission (`POST /waivers/{id}/sign`) returning 201 and the row flipping to
+"Signed ✓" immediately with no error, and no console errors beyond expected ones.
+
 **Still genuinely blocked, path forward identified:**
-- Guardian/Waiver (Phase 4) — confirmed via direct research: no Figma design, no
-  screen inventory, no mockup exists anywhere for either the Guardian consent screen
-  or the Waiver drawn-signature capture screen — nothing beyond the backend data
-  model. `skills/ultm8-domain-rules/SKILL.md` tags the Guardian consent screen
-  `[UNRESOLVED]` outright; the decision log's Decision 74 flags the drawn-signature UI
-  as "still undesigned... for the Architect / design work before this can be built."
+- Guardian consent screen (Phase 4) — confirmed via direct research: no Figma design,
+  no screen inventory, no mockup exists anywhere for it — nothing beyond the backend
+  `ConsentRecord`/`GuardianLink` data model. `skills/ultm8-domain-rules/SKILL.md` tags
+  it `[UNRESOLVED]` outright: "No consent-management interface... exists anywhere in
+  the confirmed designs." The drawn-signature capture enhancement for Waivers (on top
+  of the typed-name version now in V1 above) is the other half of this same gap —
+  Decision 74 flags it as "still undesigned... for the Architect / design work before
+  this can be built," and would need a `WaiverSignature` schema change besides.
   Building either without a real design would mean inventing unconfirmed business
   logic — the thing this doc's own source-of-truth rules exist to prevent. **Path
-  forward**: a candidate screen (typed name + drawn-signature pad + explicit consent
-  checkboxes) will be drafted and shown to the user for approval before any wiring to
-  real backend logic — that approval stands in for the missing design pass, rather
-  than leaving this blocked indefinitely with no way to move.
+  forward**: a candidate Guardian consent screen will be drafted and shown to the user
+  for approval before any wiring to real backend logic — that approval stands in for
+  the missing design pass, rather than leaving this blocked indefinitely with no way
+  to move. The drawn-signature enhancement stays parked behind that same design pass
+  plus the separate schema-change decision.
 
 ---
 

@@ -16,6 +16,7 @@ export function HomeScreen({ navigation }: Props) {
       <Button title="Browse academies" onPress={() => navigation.navigate('Academies')} />
       <Button title="My bookings" onPress={() => navigation.navigate('MyBookings')} />
       <Button title="My memberships" onPress={() => navigation.navigate('MyMemberships')} />
+      <Button title="Waivers" onPress={() => navigation.navigate('Waivers')} />
       <Button title="Notifications" onPress={() => navigation.navigate('Notifications')} />
       <Button title="Log out" variant="secondary" onPress={() => logout()} />
     </Screen>

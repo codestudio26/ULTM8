@@ -6,6 +6,7 @@ import { AcademyDetailScreen } from '../academies/AcademyDetailScreen';
 import { MyBookingsScreen } from '../bookings/MyBookingsScreen';
 import { MyMembershipsScreen } from '../memberships/MyMembershipsScreen';
 import { NotificationsScreen } from '../notifications/NotificationsScreen';
+import { WaiversScreen } from '../waivers/WaiversScreen';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -23,6 +24,7 @@ export function AppNavigator() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: 'My Memberships' }} />
+      <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
     </Stack.Navigator>
   );
 }
