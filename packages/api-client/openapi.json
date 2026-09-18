@@ -1289,6 +1289,876 @@
         ]
       }
     },
+    "/v1/plans": {
+      "get": {
+        "operationId": "SubscriptionPlansController_findAll",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlanListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/subscription-plans/{planId}/subscribe": {
+      "post": {
+        "operationId": "SubscriptionPlansController_subscribeSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "planId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscribeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/subscription-plans/{planId}/subscribe": {
+      "post": {
+        "operationId": "SubscriptionPlansController_subscribeFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "planId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscribeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/subscription/cancel": {
+      "post": {
+        "operationId": "SubscriptionPlansController_cancelSchoolSubscription",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelSubscriptionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/subscription/cancel": {
+      "post": {
+        "operationId": "SubscriptionPlansController_cancelFranchiseSubscription",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelSubscriptionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/subscription-plans": {
+      "post": {
+        "operationId": "PlatformAdminSubscriptionPlansController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubscriptionPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/subscription-plans/{id}": {
+      "patch": {
+        "operationId": "PlatformAdminSubscriptionPlansController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSubscriptionPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/auth/exchange": {
+      "post": {
+        "operationId": "PlatformAdminAuthController_exchange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeCognitoTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-auth"
+        ]
+      }
+    },
+    "/v1/platform-admin/auth/me": {
+      "get": {
+        "operationId": "PlatformAdminAuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}": {
+      "get": {
+        "operationId": "PlatformAdminSchoolsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/franchises/{id}": {
+      "get": {
+        "operationId": "PlatformAdminFranchisesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/admin-users": {
+      "post": {
+        "operationId": "PlatformAdminUsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PlatformAdminUsersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/admin-users/{id}": {
+      "delete": {
+        "operationId": "PlatformAdminUsersController_revoke",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{schoolId}/payment-account": {
+      "get": {
+        "operationId": "PlatformAdminPaymentAccountsController_findForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/franchises/{franchiseId}/payment-account": {
+      "get": {
+        "operationId": "PlatformAdminPaymentAccountsController_findForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/payment-accounts/{id}/rotate-credential": {
+      "post": {
+        "operationId": "PlatformAdminPaymentAccountsController_initiateCredentialRotation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateCredentialResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/impersonation-sessions": {
+      "post": {
+        "operationId": "PlatformAdminImpersonationController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartImpersonationSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpersonationSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-impersonation"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payment-accounts": {
+      "post": {
+        "operationId": "PaymentsController_createForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payment-account": {
+      "get": {
+        "operationId": "PaymentsController_findForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/payment-accounts": {
+      "post": {
+        "operationId": "PaymentsController_createForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/payment-account": {
+      "get": {
+        "operationId": "PaymentsController_findForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/payment-accounts/{id}/connect/onboard": {
+      "post": {
+        "operationId": "PaymentsController_initiateConnectOnboarding",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectOnboardingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/transactions/{id}/confirm": {
+      "patch": {
+        "operationId": "PaymentsController_confirmTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/timetable": {
       "post": {
         "operationId": "TimetableController_create",
@@ -1776,229 +2646,6 @@
         },
         "tags": [
           "settings"
-        ]
-      }
-    },
-    "/v1/schools/{schoolId}/payment-accounts": {
-      "post": {
-        "operationId": "PaymentsController_createForSchool",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePaymentAccountDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/schools/{schoolId}/payment-account": {
-      "get": {
-        "operationId": "PaymentsController_findForSchool",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/franchises/{franchiseId}/payment-accounts": {
-      "post": {
-        "operationId": "PaymentsController_createForFranchise",
-        "parameters": [
-          {
-            "name": "franchiseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePaymentAccountDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/franchises/{franchiseId}/payment-account": {
-      "get": {
-        "operationId": "PaymentsController_findForFranchise",
-        "parameters": [
-          {
-            "name": "franchiseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/payment-accounts/{id}/connect/onboard": {
-      "post": {
-        "operationId": "PaymentsController_initiateConnectOnboarding",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConnectOnboardingResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/transactions/{id}/confirm": {
-      "patch": {
-        "operationId": "PaymentsController_confirmTransaction",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
         ]
       }
     },
@@ -4362,369 +5009,6 @@
         ]
       }
     },
-    "/v1/platform-admin/auth/exchange": {
-      "post": {
-        "operationId": "PlatformAdminAuthController_exchange",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExchangeCognitoTokenDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminAuthResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-auth"
-        ]
-      }
-    },
-    "/v1/platform-admin/auth/me": {
-      "get": {
-        "operationId": "PlatformAdminAuthController_me",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminMeResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-auth"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/schools/{id}": {
-      "get": {
-        "operationId": "PlatformAdminSchoolsController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchoolResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-schools"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/franchises/{id}": {
-      "get": {
-        "operationId": "PlatformAdminFranchisesController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FranchiseResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-franchises"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/admin-users": {
-      "post": {
-        "operationId": "PlatformAdminUsersController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAdminUserDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminUserResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-users"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "PlatformAdminUsersController_findAll",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminUserListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-users"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/admin-users/{id}": {
-      "delete": {
-        "operationId": "PlatformAdminUsersController_revoke",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminUserResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-users"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/schools/{schoolId}/payment-account": {
-      "get": {
-        "operationId": "PlatformAdminPaymentAccountsController_findForSchool",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-payment-accounts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/franchises/{franchiseId}/payment-account": {
-      "get": {
-        "operationId": "PlatformAdminPaymentAccountsController_findForFranchise",
-        "parameters": [
-          {
-            "name": "franchiseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-payment-accounts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/payment-accounts/{id}/rotate-credential": {
-      "post": {
-        "operationId": "PlatformAdminPaymentAccountsController_initiateCredentialRotation",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RotateCredentialResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-payment-accounts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/platform-admin/impersonation-sessions": {
-      "post": {
-        "operationId": "PlatformAdminImpersonationController_start",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StartImpersonationSessionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImpersonationSessionResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "platform-admin-impersonation"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/v1/schools/{schoolId}/curriculum/lessons": {
       "post": {
         "operationId": "CurriculumController_createLesson",
@@ -6473,6 +6757,460 @@
           }
         }
       },
+      "SubscriptionPlanResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor-unit, single USD anchor currency."
+          },
+          "featureList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "featureList",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SubscriptionPlanListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionPlanResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SubscribeResponseDto": {
+        "type": "object",
+        "properties": {
+          "subscriptionId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string",
+            "description": "Stripe PaymentIntent client secret — complete payment client-side via Stripe Elements."
+          }
+        },
+        "required": [
+          "subscriptionId",
+          "clientSecret"
+        ]
+      },
+      "CancelSubscriptionResponseDto": {
+        "type": "object",
+        "properties": {
+          "cancelsAt": {
+            "type": "string",
+            "description": "ISO timestamp of when the current paid period ends and access actually degrades."
+          }
+        },
+        "required": [
+          "cancelsAt"
+        ]
+      },
+      "CreateSubscriptionPlanDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Plan name, e.g. \"Growth\"."
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents), single USD anchor currency (Decision 7) — e.g. \"£30.00 Per Month\" in Spec 55's own example is 3000."
+          },
+          "featureList": {
+            "description": "Marketing feature-list bullets shown alongside the plan.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "price"
+        ]
+      },
+      "UpdateSubscriptionPlanDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Plan name, e.g. \"Growth\"."
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents), single USD anchor currency (Decision 7) — e.g. \"£30.00 Per Month\" in Spec 55's own example is 3000."
+          },
+          "featureList": {
+            "description": "Marketing feature-list bullets shown alongside the plan.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ExchangeCognitoTokenDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Cognito-issued ID token (JWT) from the frontend's own Hosted-UI/PKCE token exchange."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "AdminAuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
+      },
+      "AdminMeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "subRole"
+        ]
+      },
+      "CreateAdminUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          },
+          "ssoSubject": {
+            "type": "string",
+            "description": "Cognito's own `sub` claim for the account being invited — see this DTO's own header comment."
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "subRole",
+          "ssoSubject"
+        ]
+      },
+      "AdminUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "subRole",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AdminUserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PlatformAdminPaymentAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string"
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "accountTitle",
+          "country",
+          "status",
+          "mode",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "RotateCredentialResponseDto": {
+        "type": "object",
+        "properties": {
+          "onboardingUrl": {
+            "type": "string",
+            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
+          }
+        },
+        "required": [
+          "onboardingUrl"
+        ]
+      },
+      "StartImpersonationSessionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "The tenant User id to impersonate."
+          },
+          "schoolId": {
+            "type": "string",
+            "description": "The one School this impersonation session is scoped to (Decision 39) — not the target user's other Schools/Franchises, if any."
+          }
+        },
+        "required": [
+          "userId",
+          "schoolId"
+        ]
+      },
+      "ImpersonationSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO datetime this session (and the token itself) expires."
+          },
+          "impersonatedUserId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresAt",
+          "impersonatedUserId"
+        ]
+      },
+      "CreatePaymentAccountDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "STRIPE",
+              "CASH",
+              "BANK_TRANSFER"
+            ]
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code — not validated against the actual list this phase, flagged for Architect review same as other inferred format choices."
+          }
+        },
+        "required": [
+          "provider",
+          "accountTitle",
+          "country"
+        ]
+      },
+      "PaymentAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string"
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "stripeConnectedAccountId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "accountTitle",
+          "country",
+          "status",
+          "mode",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ConnectOnboardingResponseDto": {
+        "type": "object",
+        "properties": {
+          "onboardingUrl": {
+            "type": "string",
+            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
+          }
+        },
+        "required": [
+          "onboardingUrl"
+        ]
+      },
       "CreateTimetableSlotDto": {
         "type": "object",
         "properties": {
@@ -7127,95 +7865,6 @@
           "title",
           "createdAt",
           "updatedAt"
-        ]
-      },
-      "CreatePaymentAccountDto": {
-        "type": "object",
-        "properties": {
-          "provider": {
-            "type": "string",
-            "enum": [
-              "STRIPE",
-              "CASH",
-              "BANK_TRANSFER"
-            ]
-          },
-          "accountTitle": {
-            "type": "string"
-          },
-          "country": {
-            "type": "string",
-            "description": "ISO 3166-1 alpha-2 country code — not validated against the actual list this phase, flagged for Architect review same as other inferred format choices."
-          }
-        },
-        "required": [
-          "provider",
-          "accountTitle",
-          "country"
-        ]
-      },
-      "PaymentAccountResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "schoolId": {
-            "type": "string",
-            "nullable": true
-          },
-          "franchiseId": {
-            "type": "string",
-            "nullable": true
-          },
-          "provider": {
-            "type": "string"
-          },
-          "accountTitle": {
-            "type": "string"
-          },
-          "country": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "mode": {
-            "type": "string"
-          },
-          "stripeConnectedAccountId": {
-            "type": "string",
-            "nullable": true,
-            "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "provider",
-          "accountTitle",
-          "country",
-          "status",
-          "mode",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "ConnectOnboardingResponseDto": {
-        "type": "object",
-        "properties": {
-          "onboardingUrl": {
-            "type": "string",
-            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
-          }
-        },
-        "required": [
-          "onboardingUrl"
         ]
       },
       "CreateMembershipPlanDto": {
@@ -9189,236 +9838,6 @@
             "description": "Minor-unit (e.g. cents). Omit to refund the full remaining unrefunded balance."
           }
         }
-      },
-      "ExchangeCognitoTokenDto": {
-        "type": "object",
-        "properties": {
-          "idToken": {
-            "type": "string",
-            "description": "Cognito-issued ID token (JWT) from the frontend's own Hosted-UI/PKCE token exchange."
-          }
-        },
-        "required": [
-          "idToken"
-        ]
-      },
-      "AdminAuthResponseDto": {
-        "type": "object",
-        "properties": {
-          "accessToken": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "accessToken"
-        ]
-      },
-      "AdminMeResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "subRole": {
-            "type": "string",
-            "enum": [
-              "SUPPORT",
-              "BILLING_PAYMENTS_OPS",
-              "FULL_ADMIN"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "name",
-          "subRole"
-        ]
-      },
-      "CreateAdminUserDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "subRole": {
-            "type": "string",
-            "enum": [
-              "SUPPORT",
-              "BILLING_PAYMENTS_OPS",
-              "FULL_ADMIN"
-            ]
-          },
-          "ssoSubject": {
-            "type": "string",
-            "description": "Cognito's own `sub` claim for the account being invited — see this DTO's own header comment."
-          }
-        },
-        "required": [
-          "email",
-          "name",
-          "subRole",
-          "ssoSubject"
-        ]
-      },
-      "AdminUserResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "subRole": {
-            "type": "string",
-            "enum": [
-              "SUPPORT",
-              "BILLING_PAYMENTS_OPS",
-              "FULL_ADMIN"
-            ]
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          },
-          "revokedAt": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "name",
-          "subRole",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "AdminUserListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminUserResponseDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "PlatformAdminPaymentAccountResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "schoolId": {
-            "type": "string",
-            "nullable": true
-          },
-          "franchiseId": {
-            "type": "string",
-            "nullable": true
-          },
-          "provider": {
-            "type": "string"
-          },
-          "accountTitle": {
-            "type": "string"
-          },
-          "country": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "mode": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "provider",
-          "accountTitle",
-          "country",
-          "status",
-          "mode",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "RotateCredentialResponseDto": {
-        "type": "object",
-        "properties": {
-          "onboardingUrl": {
-            "type": "string",
-            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
-          }
-        },
-        "required": [
-          "onboardingUrl"
-        ]
-      },
-      "StartImpersonationSessionDto": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "The tenant User id to impersonate."
-          },
-          "schoolId": {
-            "type": "string",
-            "description": "The one School this impersonation session is scoped to (Decision 39) — not the target user's other Schools/Franchises, if any."
-          }
-        },
-        "required": [
-          "userId",
-          "schoolId"
-        ]
-      },
-      "ImpersonationSessionResponseDto": {
-        "type": "object",
-        "properties": {
-          "accessToken": {
-            "type": "string"
-          },
-          "expiresAt": {
-            "type": "string",
-            "description": "ISO datetime this session (and the token itself) expires."
-          },
-          "impersonatedUserId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "accessToken",
-          "expiresAt",
-          "impersonatedUserId"
-        ]
       },
       "CreateLessonDto": {
         "type": "object",

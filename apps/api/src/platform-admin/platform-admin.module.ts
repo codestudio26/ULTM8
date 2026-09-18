@@ -108,6 +108,16 @@ import { AuthModule } from '../auth/auth.module';
  * the first time anything outside this module has needed to reuse a piece of it —
  * `exports` was empty before this phase.
  *
+ * PHASE 54 — SubscriptionPlansModule now built the same way, reusing the identical
+ * two-thing DI pattern Phase 49 established (no new `exports` needed here). This
+ * comment previously said the module was blocked on an `[UNRESOLVED]` Franchise-
+ * Subscription-Plan billing-direction question — that citation was itself stale
+ * (Decision 106, docs/decisions/POST-SPEC-55-DECISION-LOG.md): the question was
+ * genuinely resolved in Spec 55's own Pass 4 review, before Phase 0 even started,
+ * and this comment simply never got updated after the skill file's own Pass 4
+ * edit. It was never blocked — same "confirmed scope, never picked up" status
+ * Translations had before Phase 49.
+ *
  * Still deliberately NOT built, each its own later slice:
  *  - General tenant-data EDITS (as opposed to the impersonation Slice 8 just
  *    shipped) — still genuinely unscoped, not just unbuilt: no field, entity, or
@@ -116,14 +126,15 @@ import { AuthModule } from '../auth/auth.module';
  *    the exact open question). Slice 4/5's own admin-user create/revoke is NOT
  *    this category — it's Platform Admin's own internal roster, not a tenant's
  *    data.
- *  - SubscriptionPlansModule — sits behind this module's own guard chain by
- *    confirmed design, same shape TranslationsModule (Phase 49) now uses; still a
- *    separate, unbuilt module, additionally blocked on the `[UNRESOLVED]`
- *    Franchise-Subscription-Plan billing-direction question (domain-rules §2) —
- *    unlike Translations, not just "never picked up."
- *  - `apps/platform-admin`'s own authoring UI for Translations — Phase 49 is
- *    backend only, matching this codebase's established backend-then-UI split
- *    (e.g. CurriculumModule was Phase 44 backend / Phase 45 UI).
+ *  - `apps/platform-admin`'s own authoring UI for Translations and
+ *    SubscriptionPlans — both backend only so far, matching this codebase's
+ *    established backend-then-UI split (e.g. CurriculumModule was Phase 44
+ *    backend / Phase 45 UI).
+ *  - SubscriptionPlan's `whiteLabelApp` entitlement/metered billing — deliberately
+ *    out of Phase 54's own scope (its metered rate is itself unresolved, Spec 55
+ *    §12.2, and it's meaningless before MobileAppPublishingModule exists, itself
+ *    still blocked on the separate Apple 4.2.6 compliance decision) — see
+ *    SubscriptionPlan's own schema.prisma comment.
  *
  * JwtModule.register() here is deliberately separate from AuthModule's own — neither
  * is registered `isGlobal`, so each module's `JwtService` is independently configured

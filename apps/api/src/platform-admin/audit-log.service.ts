@@ -28,6 +28,11 @@ export const AuditAction = {
   CREATE_TRANSLATION: 'CREATE_TRANSLATION',
   UPDATE_TRANSLATION: 'UPDATE_TRANSLATION',
   DELETE_TRANSLATION: 'DELETE_TRANSLATION',
+  // Phase 54 — SubscriptionPlansModule. Non-tenant, Platform-Admin-authored content,
+  // same category as CREATE_TRANSLATION above. No DELETE_SUBSCRIPTION_PLAN — this
+  // module builds no delete path (see SubscriptionPlan's own schema.prisma comment).
+  CREATE_SUBSCRIPTION_PLAN: 'CREATE_SUBSCRIPTION_PLAN',
+  UPDATE_SUBSCRIPTION_PLAN: 'UPDATE_SUBSCRIPTION_PLAN',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

@@ -26,6 +26,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
 import { TranslationsModule } from './translations/translations.module';
+import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { TranslationsModule } from './translations/translations.module';
     PlatformAdminModule,
     CurriculumModule,
     TranslationsModule,
+    SubscriptionPlansModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
