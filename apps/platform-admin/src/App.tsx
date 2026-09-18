@@ -6,6 +6,7 @@ import { AdminUsersPage } from './adminUsers/AdminUsersPage';
 import { SchoolLookupPage } from './schools/SchoolLookupPage';
 import { FranchiseLookupPage } from './franchises/FranchiseLookupPage';
 import { ImpersonationPage } from './impersonation/ImpersonationPage';
+import { TranslationsPage } from './translations/TranslationsPage';
 import { Shell } from './layout/Shell';
 
 export function App() {
@@ -52,6 +53,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <ImpersonationPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/translations"
+        element={
+          <RequireAuth>
+            <Shell>
+              <TranslationsPage />
             </Shell>
           </RequireAuth>
         }
