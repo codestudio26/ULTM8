@@ -1,19 +1,20 @@
 import { Module } from '@nestjs/common';
+import { TenantsModule } from '../tenants/tenants.module';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
+import { QrTokenService } from './qr-token.service';
 
 /**
- * Phase 13 scope only: self-service QR check-in (`POST /attendance/scan`). See
- * AttendanceService's own header comment for what's deliberately not here (the
- * QR code's own generation/rotation mechanism, the Instructor roll-call scan,
- * a Staff/accessibility check-in override).
- *
- * No TenantsModule import needed — this module never performs a School-Owner-
- * gated write, only a self-service action under the caller's own tenant context
- * (matching Booking's own established RLS shape).
+ * Phase 13 built self-service-only, no TenantsModule import needed (a pure
+ * self-service action under the caller's own tenant context, nothing
+ * School-Owner-gated). Phase 51 (Decision 107) adds Staff-gated routes — the
+ * Class QR-token mint and the Instructor roll-call scan both need
+ * TenantAuthorizationService — so this module imports TenantsModule for the
+ * first time, same shape ClassesModule/InstructorsModule already use.
  */
 @Module({
+  imports: [TenantsModule],
   controllers: [AttendanceController],
-  providers: [AttendanceService],
+  providers: [AttendanceService, QrTokenService],
 })
 export class AttendanceModule {}

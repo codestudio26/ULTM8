@@ -906,3 +906,58 @@ If a real, specific scenario emerges later (e.g., Support needing to correct a l
 ### Recorded by
 
 Logged during a direct exchange with the user, 16 Sep 2026 — the user was presented with three options (don't build it, a narrow named capability, or a broader CRUD-style capability) plus Claude's own recommendation (don't build it, for the reasoning above) via a direct question, and asked for Claude's own best judgment rather than picking between the options; the recommendation was given and followed, the same "recommendation given, user's own choice followed" shape as Decisions 101–104.
+
+---
+
+## Decision 106 — SubscriptionPlansModule billing-direction "blocker": stale citation, not a live question
+
+**Date:** 18 Sep 2026
+**Status:** Documentation reconciliation — verified directly against source; not a new product/business decision
+**Resolves:** `docs/TRACK-A-ROADMAP.md` and two code comments (`apps/api/src/platform-admin/platform-admin.module.ts`, `apps/api/src/payments/payments.controller.ts`) cited `ultm8-domain-rules` §2 as `[UNRESOLVED]` on whether the platform-level `SubscriptionPlan` a Franchise/School "subscribes to" is ULTM8 billing that Franchise/School directly, or a plan resold onward to member Schools — and said not to implement billing logic until it was resolved. A master-roadmap synthesis (18 Sep 2026) found the skill file's *current* text says the opposite: `[CONFIRMED]` since "Pass 4."
+
+### What was actually verified
+
+Not assumed from the skill file alone — traced to source:
+1. **`skills/ultm8-domain-rules/SKILL.md`** itself is internally consistent and unambiguous: §2's own confirmed-items list, the platform-wide "confirmed" bullet roundup, the white-label-entitlement line, the explicit `MembershipPlan`-vs-`SubscriptionPlan` distinction warning, and the canonical-terminology table all independently state the same resolved direction — six separate locations, not one throwaway line.
+2. **`git show 80de2d4`** (`Update domain rules and add Spec 55 handover`, authored by the project owner, 31 Aug 2026 — before Phase 0 of implementation even started) shows the actual edit: the line changed from `[UNRESOLVED] ... Do not implement Franchise Subscription Plan billing logic until this is resolved` to `[CONFIRMED] ... is ULTM8's own platform revenue ... not a plan the Franchise resells onward ... resolved Pass 4`. This is a deliberate, dated, pre-implementation resolution, not later drift or an accidental edit.
+3. **`deep-review/ULTM8-Dev-Handover-v55/review-history-tracker.html`** (the spec's own review audit trail, independent of the skill file) corroborates it a third way, listing "SubscriptionPlan direction" as the first of five decisions locked in Pass 4 (§10.1/§10.2 status rows).
+
+Three independent primary sources agree. The roadmap doc and code comments were simply never updated after the skill file's Pass 4 edit — a documentation-currency bug, not a genuine open business question.
+
+### Decision
+
+**Not a decision — a correction.** `SubscriptionPlansModule` is not blocked by this question. Its status is the same as `TranslationsModule`'s was before Phase 49: confirmed scope, never picked up. `docs/TRACK-A-ROADMAP.md`, `docs/ULTM8-MASTER-ROADMAP.md`, and the two stale code comments are updated in the same change that adds this entry.
+
+### What this does NOT resolve
+
+This does not scaffold or build `SubscriptionPlansModule` — it only clears the specific citation blocking it from being scheduled like any other unbuilt-but-unblocked module. Building it is unaffected, ordinary future work.
+
+### Recorded by
+
+Investigated and recorded by Claude at the user's direct request ("pick up item B.2: SubscriptionPlansModule citation reconciliation" — the item the same session's own master-roadmap synthesis had flagged as needing an Architect pass), 18 Sep 2026. No new business judgment call was made — this verifies which existing source is current and corrects citations to match, per `CLAUDE.md`'s own source-of-truth hierarchy (the skill file outranks a roadmap doc or a code comment). If this reasoning turns out to be wrong — if the skill file's Pass 4 resolution was itself made in error — that would be a genuine reversal needing the product owner directly, not something to silently re-flip here.
+
+---
+
+## Decision 107 — QR check-in mechanics: two independently-keyed rotating tokens (Class-scoped + Student-scoped), per-Student Instructor roll-call scan with a camera-free manual fallback
+
+**Date:** 18 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation, not a product-owner-approved decision like 101–105 — approved by the user as a design proposal before implementation, but the underlying mechanics were never specified anywhere in Spec 55 or SKILL.md and were designed, not confirmed
+**Resolves:** two gaps this log never closed. First, Phase 13's own `POST /attendance/scan` shipped against a bare `bookingId` with no rotation at all — a static QR code a Student could screenshot and reuse indefinitely, directly contradicting Decision 66's own confirmed constraint that Class QR codes must be "time-boxed, rotating, never static." Second, Decision 71 confirmed that Instructors need a roll-call scanning capability distinct from Student self-service check-in, but never designed its mechanics (per-Student vs. batched, camera-based vs. name-confirmation, how consent withdrawal interacts with it) — left as a named-but-undesigned item ever since.
+
+### Decision
+
+Two independently-keyed, short-lived signed JWTs, each verified against its own dedicated secret (`QR_CLASS_TOKEN_SECRET`, `QR_STUDENT_TOKEN_SECRET`) so a captured token of one kind can never be replayed as the other even under a payload-shape-check bug: a **Class-scoped token** (`GET /classes/:id/qr-token`, Staff-minted, displayed on a shared screen, any Student at the School scans it via `POST /attendance/scan`) and a **Student-scoped personal token** (`GET /attendance/my-qr-token`, self-minted by any authenticated caller, displayed on the Student's own device, an Instructor scans it via `POST /classes/:id/attendance-scan`). Both expire after `QR_ATTENDANCE_TOKEN_TTL_SECONDS` (default 20s).
+
+Instructor roll-call is per-Student, not batched or checklist-style, discriminated purely by whether the request body carries a `studentToken`: `INSTRUCTOR_SCAN` (Instructor scans the Student's own personal token, camera-based) or `INSTRUCTOR_MANUAL` (Staff confirms by name alone, zero camera involvement, for a Student whose device is dead/absent/a young minor with none). `Booking` gains `checkInMethod`/`checkedInById` columns (nullable, mirroring the existing `overriddenById`/`overrideReason` pairing) recording which of the three methods (`SELF_SERVICE`, `INSTRUCTOR_SCAN`, `INSTRUCTOR_MANUAL`) completed the check-in and by whom. The existing check-in-window cutoff (`Class.qrAttendanceEndAt ?? Class.endDate`) applies identically to all three methods — exempting manual mode would let "just say manual" bypass the whole system's anti-fraud/no-show boundary. Camera-tier `ConsentRecord` withdrawal blocks `SELF_SERVICE` and `INSTRUCTOR_SCAN` but NOT `INSTRUCTOR_MANUAL`, which exists specifically as the camera-free fallback.
+
+### Why
+
+Per-Student over batched/checklist: Decision 71's own text says "scan" — only a per-Student camera interaction is genuinely a scan; a checklist is a different, simpler feature nothing in the spec actually names. Two separate secrets over one shared secret with a type field in the payload: a single shared secret means a bug in the type-check (or a deliberately crafted payload matching the other type's shape) lets a captured Class token be replayed as a Student token or vice versa; two independent secrets make that class of bug structurally impossible rather than merely checked-for. Manual mode bypassing consent-withdrawal while scan mode doesn't: this is the one genuinely unresolved judgment call in this design, explicit in the code's own comments — not confident the camera-tier consent's intent hinges on literally whose device does the scanning (Instructor's vs. Student's) rather than on avoiding any camera image of the Student at all, which would argue for blocking `INSTRUCTOR_SCAN` too (already done) but arguably not `INSTRUCTOR_MANUAL` (no camera involved at all, which is exactly why it's exempted here) — the conservative reading was taken for `INSTRUCTOR_SCAN` and manual was deliberately kept open as the always-available fallback regardless of how that ambiguity resolves, since removing the one camera-free path entirely would leave no way to check in a Student whose Guardian withdrew camera consent at all. TTL default (20s): an explicit Developer-level placeholder, the same tier of judgment call as `PLATFORM_ADMIN_IMPERSONATION_TTL_SECONDS`'s own default — long enough for a phone-to-screen or screen-to-phone scan under normal conditions, short enough to make a screenshotted/shared token useless within one class period, not derived from any named requirement.
+
+### What this does NOT resolve
+
+Whether the consent-withdrawal/manual-mode-bypass asymmetry above is actually correct — flagged explicitly for Architect review rather than silently decided either way. The `QR_ATTENDANCE_TOKEN_TTL_SECONDS` default is a placeholder, not a reviewed number. The School Portal QR-display screen (Staff-facing UI to show the rotating Class token on a shared screen, polling `GET /classes/:id/qr-token` on an interval) was NOT built this phase — this phase is backend-only, following this codebase's own established backend-then-UI phase-splitting convention (e.g. `CurriculumModule` Phase 44 backend / Phase 45 UI); the UI is a natural follow-up phase, not silently dropped.
+
+### Recorded by
+
+Designed as a research-grounded proposal (a dedicated background research pass over the existing codebase's own established conventions — route grouping, Staff-gate reuse, JWT-signing precedent, additive-migration-with-RLS-reasoning) and presented to the user for approval before any code was written; the user approved it as proposed ("Go ahead and build it as proposed"), 18 Sep 2026. Logged here, not as Decisions 101–106 are (a product-owner decision made directly with the user on a named open question), because the mechanics themselves — the two-secret design, per-Student vs. batched, the consent asymmetry — were never put to the user as discrete alternatives to choose between; they were designed by Claude and approved as a package, the same "flagged prominently rather than silently built around" treatment Decisions 90–94 already establish for this class of Developer-level inference.

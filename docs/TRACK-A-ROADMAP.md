@@ -24,37 +24,35 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   covering every backend module in `ultm8-nestjs-module` §5's confirmed table except
   the one named below, plus `apps/school-portal` UI for essentially all of it, plus
   `apps/platform-admin` through Translations authoring.
-- **PR #64 (Phase 47), PR #65 (Phase 48), and PR #66 (this doc's own first version)
-  are merged.** PR #67 (Phase 49 — `TranslationsModule` backend) is also merged.
-- **Several phases sitting in open, unmerged PRs right now** (each independent of
-  this one — this Phase 54 work branched fresh off `master`):
-  - **PR #68 — Phase 50**, the `apps/platform-admin` Translations authoring UI that
-    calls Phase 49's backend. Green, clean, no reviews yet, end-to-end browser-verified.
-  - **PR #71 — Decision 106**, the `SubscriptionPlansModule` citation reconciliation
-    this doc's own previous version needed (see below — already folded into this
-    version directly, since Phase 54 needed the accurate status anyway).
-  - **PR #72 — Phase 51**, QR check-in redesign + Instructor roll-call scan.
-  - **PR #73 — Phase 52**, the `apps/school-portal` QR-display screen (stacked on #72).
-  - **PR #74 — Phase 53**, Branch field-level settings UI (the branding-fields gap).
+- **PR #64 (Phase 47), PR #65 (Phase 48), PR #66 (this doc's own first version), PR
+  #67 (Phase 49 — `TranslationsModule` backend), PR #68 (Phase 50 — Translations
+  authoring UI), PR #69 (the master roadmap doc), PR #71 (Decision 106), PR #72
+  (Phase 51), PR #74 (Phase 53 — Branch branding-field UI), and PR #75 (Phase 54 —
+  this PR) are merged.**
+- **One phase sitting in an open, unmerged PR right now**:
+  - **PR #73 — Phase 52**, the `apps/school-portal` QR-display screen. Was stacked on
+    Phase 51; its base has since moved to `master` and its diff shrunk to just the
+    QR-display screen itself.
 - **One backend module from the original confirmed module table is still fully
   unbuilt** — not partially done, not scaffolded, nothing — detailed in its own
   section below (`MobileAppPublishingModule`). `TranslationsModule` shipped in Phase
   49–50; `SubscriptionPlansModule` (backend) shipped in Phase 54 — see below.
 - **`SubscriptionPlansModule`'s "blocked" status was a stale citation, now fixed
-  (Decision 106) — and the module itself now shipped (Phase 54).** This doc used to
-  say the billing-direction question was `[UNRESOLVED]` per `ultm8-domain-rules` §2;
-  that citation was out of date — the question was genuinely resolved in Spec 55's
-  own Pass 4 review, before Phase 0 even started (three independent primary sources
-  verified this: the skill file's own current text, the `git show` diff of the
-  commit that resolved it, and the spec's own `review-history-tracker.html`). With
-  the citation cleared, Phase 54 built the confirmed core scope directly: Plan CRUD
-  (Platform Admin authoring), Franchise/School subscribe/cancel against ULTM8's own
-  platform Stripe account, the `PlatformCharge` ledger, and the read-only
-  degraded-portal gate (Spec 55 §10.2) on new Class/Booking/payment creation.
-  Deliberately deferred: the `whiteLabelApp` metered entitlement (its own rate is
-  still unresolved, Spec 55 §12.2, and it's gated on `MobileAppPublishingModule`
-  anyway) and the `apps/platform-admin` authoring UI (backend-then-UI split, same as
-  every other module in this codebase).
+  (Decision 106) — and the module itself now shipped (Phase 54, this PR).** This doc
+  used to say the billing-direction question was `[UNRESOLVED]` per
+  `ultm8-domain-rules` §2; that citation was out of date — the question was
+  genuinely resolved in Spec 55's own Pass 4 review, before Phase 0 even started
+  (three independent primary sources verified this: the skill file's own current
+  text, the `git show` diff of the commit that resolved it, and the spec's own
+  `review-history-tracker.html`). With the citation cleared, Phase 54 built the
+  confirmed core scope directly: Plan CRUD (Platform Admin authoring),
+  Franchise/School subscribe/cancel against ULTM8's own platform Stripe account, the
+  `PlatformCharge` ledger, and the read-only degraded-portal gate (Spec 55 §10.2) on
+  new Class/Booking/payment creation. Deliberately deferred: the `whiteLabelApp`
+  metered entitlement (its own rate is still unresolved, Spec 55 §12.2, and it's
+  gated on `MobileAppPublishingModule` anyway) and the `apps/platform-admin`
+  authoring UI (backend-then-UI split, same as every other module in this
+  codebase).
 - **Everything Guardian/minor-facing that exists is backend-only.** `GuardiansModule`
   (Phase 12) and every Guardian-on-behalf-of flow (Phases 37–42: Waivers, Schools,
   Memberships, Bookings, Waitlist) has real API surface and is exercised by e2e tests —
@@ -82,19 +80,17 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | Guardian/minor-account backend (linking, consent, on-behalf-of flows) | ✅ DONE (backend only — Phase 12, 37–42) |
 | Mobile-facing discovery, self-service attendance, notifications | ✅ DONE — Phase 13–15 |
 | `apps/school-portal` full admin surface | ✅ DONE — Phase 3, 17–24, 45 |
-| `apps/platform-admin` through Translations authoring | ✅ DONE through Phase 49 (backend); Phase 50 (UI) **in PR #68, unmerged** |
+| `apps/platform-admin` through Translations authoring | ✅ DONE — Phase 49 backend + Phase 50 UI, both merged |
 | Cross-tenant impersonation-scope security fix | ✅ DONE — Phase 47 (merged PR #64) |
 | `CurriculumModule` (Lesson content) | ✅ DONE — Phase 44–45 |
-| `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend (merged), Phase 50 UI (PR #68) |
-| QR check-in redesign + Instructor roll-call scan | ✅ DONE (backend) — Phase 51, **PR #72, unmerged** |
-| `apps/school-portal` QR-display screen | ✅ DONE — Phase 52, **PR #73, unmerged, stacked on #72** |
-| Branch field-level settings UI | ✅ DONE — Phase 53, **PR #74, unmerged** (turned out ~80% already shipped; only Decision 76's branding fields were missing) |
-| `SubscriptionPlansModule` (platform-level plans, core) | ✅ DONE (backend) — Phase 54: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate. `whiteLabelApp` entitlement + `apps/platform-admin` UI deliberately deferred |
+| `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend + Phase 50 UI, both merged |
+| QR check-in redesign + Attendance roll-call scan (Decisions 66, 71, 107) | ✅ DONE (backend) — Phase 51, merged via PR #72 |
+| `SubscriptionPlansModule` (platform-level plans, core) | ✅ DONE (backend) — Phase 54: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75. `whiteLabelApp` entitlement + `apps/platform-admin` UI deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
 | General tenant/content offboarding (no DELETE anywhere) | ⛔ NOT BUILT — unspecified in Spec 55, systemic gap across ~15 files |
-| Attendance roll-call scan (`POST /classes/{id}/attendance-scan`) | ✅ DONE — shipped as part of Phase 51 (Decision 71's mechanics resolved directly with the user, see Decision 107) |
-| QR code display/generation screen | ✅ DONE — Phase 51 (backend token mint) + Phase 52 (School Portal display screen) |
+| QR code display screen (`apps/school-portal`, Staff-facing) | 🟡 Built — Phase 52, **PR #73, unmerged** (was stacked on Phase 51; base moves to `master` now that Phase 51 has merged) |
 | Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
+| Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
 | `apps/platform-admin` general tenant-data edit UI | 🅿️ Parked — Decision 105, pending a named use case |
 | `apps/platform-admin` home dashboard | 🅿️ Parked — cosmetic, nothing to summarize yet |
 
@@ -123,8 +119,10 @@ doc), so they're named here without a number rather than guessed at.
 
 - **Phase 12** — `GuardiansModule`: minor linking + two-tier `ConsentRecord`.
 - **Phase 13** — `AttendanceModule`: self-service QR check-in (`POST /attendance/scan`,
-  takes a `bookingId` directly — the QR code's own generation/rotation mechanism is
-  still `[UNRESOLVED]` per `ultm8-domain-rules` §12, deliberately not built).
+  originally took a `bookingId` directly — the QR code's own generation/rotation
+  mechanism was `[UNRESOLVED]` per `ultm8-domain-rules` §12, deliberately not built
+  at the time). **Superseded by Phase 51** (Decision 107), which replaced the static
+  `bookingId` with a genuine rotating-token mechanism.
 - **Phase 14** — `AcademiesModule`: mobile-facing, read-optimized discovery
   (`GET /academies`, `/academies/:id`, `/academies/:id/timetable`) — the exact surface
   Track B's Student app builds its own discovery screens against.
@@ -149,6 +147,57 @@ doc), so they're named here without a number rather than guessed at.
 - **Phase 50** — `apps/platform-admin` Translations authoring UI (list/filter/add/
   edit/delete), end-to-end browser-verified against a live backend. **PR #68, not yet
   merged.**
+- **Phase 51** — `AttendanceModule` QR check-in redesign (Decision 107): replaced
+  Phase 13's static-`bookingId` self-service scan with two independently-keyed,
+  short-lived rotating JWTs (`GET /classes/:id/qr-token` Staff-minted Class token,
+  `GET /attendance/my-qr-token` self-minted Student token), closing the
+  "time-boxed, rotating, never static" constraint Decision 66 had set with nothing
+  built against it. Also shipped the Instructor roll-call scan
+  (`POST /classes/:id/attendance-scan`) Decision 71 had confirmed the purpose of but
+  never designed — per-Student, two modes (`INSTRUCTOR_SCAN` camera-based,
+  `INSTRUCTOR_MANUAL` camera-free fallback) discriminated by whether the request
+  carries a `studentToken`. `Booking` gained `checkInMethod`/`checkedInById` columns.
+  Backend only — full e2e suite green (306 tests), `turbo build`/`turbo test` clean,
+  `packages/api-client` regenerated, all four flows (mint, self-service scan,
+  Instructor scan, Instructor manual) manually verified over live HTTP. Merged via
+  PR #72.
+- **Phase 52** — `apps/school-portal` QR-display screen: `ClassQrCodePage`, reached
+  via a new "Show QR" action on `ClassesPage` (the same per-Class-action pattern
+  `ClassDetailPage`'s own "View bookings" link already established, not a new
+  top-level nav item), rendering Phase 51's rotating Class token as a QR code
+  (`qrcode.react`, new dependency) for Students to scan from their own device. The
+  first interval-polling screen in this app — `useClassQrToken`'s own
+  `refetchInterval` is computed from the fetched token's own `expiresAt` rather than
+  a hardcoded interval, so it stays correct even if `QR_ATTENDANCE_TOKEN_TTL_SECONDS`
+  (an explicit Developer-level placeholder on the backend) ever changes. Built
+  stacked on Phase 51's branch; end-to-end Playwright-verified against a live
+  backend, including proving the auto-refresh re-polls for a fresh token before the
+  old one expires. **PR #73, not yet merged** as of this doc's own last edit.
+- **Phase 53** — Branch field-level settings UI. Turned out to be almost entirely
+  already shipped: `BranchesPage`/`BranchFormModal` (name/address/contactPhone/
+  timezone/currencyOverride) have existed since Phase 3, and the backend
+  (`CreateBranchDto`/`UpdateBranchDto`/`BranchResponseDto`/Prisma model) has carried
+  `logoUrl`/`bannerUrl` the whole time too — only the form itself had never been
+  updated to expose Decision 76's own explicitly-named "branding" fields. This
+  doc's own prior claim that "no UI screen was ever designed" for Branch was
+  **incorrect** — verified directly against the running code and corrected here,
+  not carried forward from an unverified prior draft. Fixed by adding the two
+  missing fields to `BranchFormModal.tsx`, mirroring the established plain-text-URL
+  treatment `FranchiseFormModal`/`ClassFormModal`/`TimetableSlotFormModal` already
+  give `logoUrl`/`bannerUrl` elsewhere in this app. Browser-verified end to end
+  (Playwright): create with both fields → edit round-trip confirms persistence →
+  clearing both fields actually clears them (not a silent no-op). **Correction to
+  this doc's own prior claim**: re-checked directly against the repo's actual
+  `skills/ultm8-domain-rules/SKILL.md` (not a cached/synced copy) before writing
+  this entry — its Branch field-list line is already `[CONFIRMED]`, citing Decision
+  76 directly; no skill/decision-log drift exists there (a first draft of this
+  phase's own writeup wrongly claimed one, based on reading a stale snapshot
+  instead of the repo's real file — caught and fixed before committing). The
+  skill's very next line, `[UNRESOLVED]` on "no Branch-specific field screen was
+  ever designed... needs a design pass," is genuinely now outdated by this phase
+  and worth an Architect update to `[CONFIRMED]`/resolved — flagged, not patched
+  directly, per the skill's own "only the Architect may edit this file" rule.
+  Merged via PR #74.
 
 ## `apps/platform-admin` — DONE through Slice 4, Slice 4 unmerged
 
@@ -240,7 +289,18 @@ data-erasure flow — a genuine, systemic gap rather than a per-module oversight
 a product/legal decision on what "offboarding" actually means per entity (hard delete?
 soft-archive? retention period?) before any of those ~15 files gets a real `DELETE`.
 
-### 4. Guardian consent-management UI — no screen anywhere
+### 4. QR code display screen — already built, just unmerged (Phase 52, PR #73)
+
+Phase 51 (Decision 107) closed both mechanics gaps this section used to describe:
+`POST /classes/{id}/attendance-scan` (Instructor-run roll-call) is built and
+e2e-tested, and the self-service Class QR token now genuinely rotates
+(`GET /classes/:id/qr-token`, Decision 66's "time-boxed, rotating, never static"
+constraint). Phase 52 then built the `apps/school-portal` display screen itself —
+the first interval-polling UI pattern in this app — browser-verified end to end.
+**PR #73, not yet merged** as of this doc's own last edit; nothing left to design or
+build here, just to merge.
+
+### 5. Guardian consent-management UI — no screen anywhere
 
 No interface exists for a Guardian to view current consent status or withdraw either
 tier of `ConsentRecord` consent — `ultm8-domain-rules` §14 flags this as blocking any
@@ -248,14 +308,14 @@ market with children's-data-protection law. This is Track A surface (Platform
 Admin/School Portal don't obviously own it either — needs a decision on which app it
 belongs to) as much as it's Track B's already-known "Guardian-facing screens" gap.
 
-### 5. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
+### 6. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
 
 Decision 105 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) already resolved this:
 **not built, pending a named use case.** Nothing to do here until a real support/ops
 scenario names what "editing another tenant's records generally" actually needs to
 cover — building it speculatively is exactly what Decision 105 says not to do.
 
-### 6. `apps/platform-admin` home dashboard — parked, cosmetic
+### 7. `apps/platform-admin` home dashboard — parked, cosmetic
 
 Still lands directly on Admin Users. Low priority; nothing yet to summarize on a
 landing page until more of the admin surface exists.
@@ -271,8 +331,8 @@ scan mechanics + QR code display (Phase 51/52), and Branch field-level settings 
 
 ## Immediate next actions (not phases — just what's actually queued)
 
-1. Get **PR #68, #71, #72, #73, #74** reviewed and merged — all green, clean, no
-   reviews yet, nothing blocking on the engineering side.
+1. Get **PR #73** reviewed and merged — green, clean, no reviews yet, nothing
+   blocking on the engineering side.
 2. `SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI (item 1) —
    the natural next phase, same backend-then-UI split as Translations/Curriculum.
 3. Everything else in "What's actually left" needs a decision, design pass, or both

@@ -314,6 +314,7 @@ model User {
   bookings                 Booking[]         @relation("BookingStudent")
   bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
   bookingsResolved         Booking[]         @relation("BookingResolvedBy")
+  bookingsCheckedIn        Booking[]         @relation("BookingCheckedInBy")
   bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
   waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian  GuardianLink[]    @relation("GuardianLinkGuardian")
@@ -2060,6 +2061,22 @@ enum BookingStatus {
   NO_SHOW
 }
 
+/// Booking.checkInMethod (Phase 51, Decision 107 — a flagged engineering design,
+/// not a SKILL.md-confirmed enum) — which of the three check-in paths a COMPLETED
+/// Booking actually went through. SELF_SERVICE is the Student's own rotating
+/// Class-QR scan (Phase 13, now token-verified — see AttendanceService); the other
+/// two are the Instructor roll-call scan this phase adds (SKILL.md §12, Decision
+/// 71): INSTRUCTOR_SCAN when the Instructor scanned the Student's own personal
+/// rotating token, INSTRUCTOR_MANUAL when Staff confirmed presence by name with no
+/// token at all (Decision 107's own camera-free fallback for a Student whose
+/// camera-tier consent is withdrawn, or an accessibility need). Null until a
+/// Booking is actually checked in (Upcoming/Cancelled/No-Show all leave it null).
+enum CheckInMethod {
+  SELF_SERVICE
+  INSTRUCTOR_SCAN
+  INSTRUCTOR_MANUAL
+}
+
 /// Booking.refundResolution / BookingAttendee.refundResolution — a Developer-level
 /// addition, not a named enum anywhere in SKILL.md's text (§10 names the FIELD
 /// pair "refundResolution/resolvedBy" as confirmed, but not its value set). Null
@@ -2142,6 +2159,18 @@ model Booking {
   overriddenById String?
   overriddenBy   User?   @relation("BookingOverriddenBy", fields: [overriddenById], references: [id])
   overrideReason String?
+
+  // Check-in method (Phase 51, Decision 107) — same "always recorded together"
+  // pairing as overriddenById/overrideReason above. checkedInById is the
+  // Instructor for INSTRUCTOR_SCAN/INSTRUCTOR_MANUAL, always null for
+  // SELF_SERVICE (the Student's own action, already identified by studentId —
+  // recording it again here would be redundant). No separate checkedInAt column:
+  // updatedAt already captures it, same as every other status transition on this
+  // model (cancel, no-show) already relies on updatedAt rather than a dedicated
+  // timestamp per transition.
+  checkInMethod CheckInMethod?
+  checkedInById String?
+  checkedInBy   User?          @relation("BookingCheckedInBy", fields: [checkedInById], references: [id])
 
   // See RefundResolution's own comment for exactly when/how this is set.
   refundResolution RefundResolution?

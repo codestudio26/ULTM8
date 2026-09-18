@@ -37,10 +37,10 @@ same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Dec
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. Five PRs open (#68, #71, #72, #73, #74 — all green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Attendance roll-call/QR display (Phase 51/52) and Branch settings UI (Phase 53) also shipped, unmerged. Guardian consent UI remains the one designed-but-unscreened gap. |
+| **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
-| **Open decisions** | 38 post-spec decisions logged, most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges, 107's own withdrawn-camera-consent-vs-roll-call judgment call). One stale blocker citation found and reconciled (`SubscriptionPlansModule` — Decision 106). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
+| **Open decisions** | 38 post-spec decisions logged (Decision 107 added, closing Decision 71's attendance-mechanics gap), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
 and infra/deployment are the two biggest remaining bodies of work, and they're
@@ -59,36 +59,54 @@ core domain (Payments/Memberships/Transactions/Ranks/Waivers), Guardian backend
 (linking, consent, on-behalf-of flows for Waivers/Schools/Memberships/Bookings/
 Waitlist — backend + e2e only, no UI anywhere), mobile-facing discovery/attendance/
 notifications, `CurriculumModule`, `TranslationsModule` (Phase 49 backend merged,
-Phase 50 UI in PR #68), `apps/school-portal` full admin surface, `apps/platform-admin`
-through Translations authoring including Cognito auth, audit logging, cross-tenant
-read/write for Schools/Franchises/PaymentAccounts/AdminUsers, Stripe credential
-rotation, and read-only Support impersonation (with its RLS-scope hardening).
-Also done, each on its own unmerged PR: QR check-in redesign + Instructor roll-call
-scan (Phase 51, PR #72), the School Portal QR-display screen (Phase 52, PR #73),
-Branch field-level settings UI (Phase 53, PR #74), and `SubscriptionPlansModule`'s
-core backend — Plan CRUD, subscribe/cancel, `PlatformCharge`, the degraded-portal
-gate (Phase 54).
+Phase 50 UI in PR #68), the QR check-in redesign + Instructor roll-call scan (Phase
+51, Decision 107 — merged via PR #72) plus its `apps/school-portal` QR-display
+screen (Phase 52, PR #73, still open — was stacked on Phase 51; base moves to
+`master` now that Phase 51 has merged), Branch field-level settings UI (Phase 53,
+merged via PR #74 — turned out to be a small gap: the screen has existed since
+Phase 3, only Decision 76's branding fields were missing), `SubscriptionPlansModule`'s
+core backend (Phase 54, merged via PR #75) — Plan CRUD, subscribe/cancel,
+`PlatformCharge`, the degraded-portal gate, `apps/school-portal` full admin surface,
+`apps/platform-admin` through Translations authoring including Cognito auth, audit
+logging, cross-tenant read/write for Schools/Franchises/PaymentAccounts/AdminUsers,
+Stripe credential rotation, and read-only Support impersonation (with its RLS-scope
+hardening).
 
 **Left, in priority order:**
 
-1. **Merge PR #68, #71, #72, #73, #74** — all green, clean, no reviews yet.
-2. **General tenant/content offboarding** — no `DELETE` endpoint exists anywhere
+1. **Merge PR #73** (Phase 52) — not blocked, green.
+2. ~~`SubscriptionPlansModule` blocker citation~~ — done (Decision 106, merged via
+   PR #71): traced the question to source across three independent primary sources
+   and found it was resolved before Phase 0 started; this doc, the old Track A
+   roadmap, and two code comments had simply never caught up with the skill file's
+   own already-`[CONFIRMED]` text. Phase 54 (merged via PR #75) built the module's
+   backend core on the strength of that reconciliation.
+   **Update, Phase 53**: checked whether this same drift recurred for Branch
+   (Decision 76) — it hadn't. The repo's actual `ultm8-domain-rules` SKILL.md
+   already carries Branch's field list as `[CONFIRMED]`, citing Decision 76
+   directly (a first pass at this checked a stale cached copy instead of the
+   real file and wrongly concluded otherwise — caught before committing). The
+   skill's neighboring `[UNRESOLVED]` line on the Branch *screen* specifically
+   is genuinely now outdated by Phase 53 shipping it, and worth a small Architect
+   update to match — a much narrower finding than first thought.
+3. **General tenant/content offboarding** — no `DELETE` endpoint exists anywhere
    (School, Branch, Class, Timetable, Instructor, Membership, Rank, Waiver, Franchise,
    Curriculum). Unspecified in Spec 55; the same flagged comment recurs across ~15
    files. Needs a product/legal decision on what "offboarding" means per entity before
    any of it gets built. This is the single largest *specified-gap-shaped* hole in the
    platform — nothing about account closure or GDPR/LGPD erasure works today.
-3. **Guardian consent-management UI** — no screen exists for a Guardian to view or
+4. **Guardian consent-management UI** — no screen exists for a Guardian to view or
    withdraw consent (`ultm8-domain-rules` §14). Blocks launch in any market with
    children's-data-protection law. Needs a decision on which app owns it (School
    Portal? A future Guardian-facing surface in Track B?) plus a design pass.
-4. **`MobileAppPublishingModule` + `packages/build-pipeline`** — blocked on the Apple
+5. **`MobileAppPublishingModule` + `packages/build-pipeline`** — blocked on the Apple
    4.2.6/4.3 template-farm compliance question (see §4 below — shared blocker with
    Track B's own Phase 6). Its white-label metered-billing rate is also unfinalized —
    this now also gates `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
    entitlement (Phase 54), not just Track B/Track A's own publishing pipeline.
-5. **`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI** — backend-
-   then-UI split, same convention Translations/Curriculum already used.
+   (`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI is separate,
+   ordinary build work — backend-then-UI split, same convention Translations/
+   Curriculum already used — not blocked on anything.)
 6. Parked, not blocking anything: `apps/platform-admin` general tenant-data edit UI
    (Decision 105 — deliberately not built pending a named use case) and its home
    dashboard (cosmetic).
@@ -134,12 +152,17 @@ Cash/Bank and free plans (not Stripe).
   master's Phase 34 (drawn-signature capture) and Phases 37–42 (Guardian-on-behalf-of
   flows) shipped after Track B's fork point — but that's backend-only; the client UI
   and design work are still the actual blocker.
-- **QR check-in scanning UI** — the root cause that used to block this (no QR
-  generation/display mechanism anywhere) is resolved on the Track A side (Phase
-  51/52, unmerged PRs #72/#73) — Track B's own mobile scanning UI is now ordinary,
-  unblocked build work, not a design gap.
+- **QR check-in scanning UI** — the backend root cause named when this doc was first
+  written (no rotating-token mechanism existed anywhere) is now resolved: Track A
+  Phase 51 (Decision 107, merged via PR #72) shipped `GET /attendance/my-qr-token`
+  for a Student to mint their own rotating personal token, and
+  `POST /classes/{id}/attendance-scan` for an Instructor to scan it; Phase 52 (PR
+  #73, unmerged) shipped the School Portal's own display screen. What blocks Track
+  B now is purely client-side — no screen in
+  `apps/student` yet displays or scans a QR code — the same "buildable today, not yet
+  built" shape as the rest of this list.
 - **Per-School white-label branding** — blocked on the same Apple compliance question
-  and `packages/build-pipeline` placeholder as Track A item 4.
+  and `packages/build-pipeline` placeholder as Track A item 5.
 - **Offline behavior/caching** — not even scoped; no requirements exist yet.
 
 **Gaps the doc does NOT disclose, found on direct audit:**
@@ -239,7 +262,7 @@ Terraform/CDK, live account, or credentials exist anywhere in this environment**
   target, GDPR/LGPD data-residency program) — see the dedicated finding below.
 - **`packages/build-pipeline`** — confirmed, explicit placeholder (its own `build`
   script literally echoes "placeholder"). Not a disguised gap — it's honestly labeled
-  and blocked on the same Apple compliance decision as Track A item 4 / Track B's
+  and blocked on the same Apple compliance decision as Track A item 5 / Track B's
   Phase 6.
 
 ### What CAN start now, without waiting on AWS provisioning
@@ -264,14 +287,16 @@ load-bearing for planning.
 ### Blocks a whole module or UI surface
 | Item | Blocks | Owner needed |
 |---|---|---|
-| Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 4, Track B Phase 6, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement (Phase 54) — the entire branded-app tier | Product/legal |
+| Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 5, Track B Phase 6, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement (Phase 54) — the entire branded-app tier | Product/legal |
 | Guardian consent-management UI (no screen anywhere) | Any market with children's-data-protection law; Track B's "Guardian-facing screens" slice | Design + a decision on which app owns it |
 | General tenant/content offboarding (unspecified in spec) | Any account-closure or GDPR/LGPD erasure flow, ~15 files' worth of missing `DELETE` endpoints | Product/legal |
 
-`SubscriptionPlansModule`'s billing-direction citation and the QR code generation/
-display mechanism + Attendance roll-call scan mechanics **no longer belong on this
-table** — reconciled by Decision 106 (module shipped, Phase 54) and resolved directly
-with the user (Decision 107, shipped as Phase 51/52) respectively.
+`SubscriptionPlansModule`'s billing-direction citation conflict and the QR
+mechanism/roll-call-mechanics rows this table used to carry are resolved — Decision
+106 (merged via PR #71) and Decision 107 (Phase 51, merged via PR #72) respectively;
+see Track A item 2 and the "Done" summary in §1 above. Branch's field-level settings
+screen (Decision 76) is resolved too, shipped in Phase 53 (merged via PR #74).
+`SubscriptionPlansModule` itself shipped too (Phase 54, merged via PR #75).
 
 ### Real but narrower — worth a decision, doesn't block a whole feature
 - Late-cancellation fee **collection** mechanism unanswered (distinct from the
@@ -313,57 +338,50 @@ Grouped into workstreams, roughly ordered by what unblocks the most other work p
 unit of effort. Not a committed schedule — a structure to work through.
 
 **A. Finish what's already in flight (near-zero net-new work)**
-1. Merge PR #68, #71, #72, #73, #74 (Track A Phases 50/51/52/53, Decision 106).
+1. Merge PR #73 (Track A Phase 52) — not blocked, green.
 
 **B. Decision/reconciliation pass (no code — needs a person's answer, unblocks real work once done)**
-2. ~~`SubscriptionPlansModule` citation reconciliation~~ — **done (Decision 106).**
-   Its own core backend also now shipped (Phase 54, item 9 below updated).
+2. ~~`SubscriptionPlansModule` citation reconciliation~~ — done (Decision 106, merged
+   via PR #71; Track A item 2).
 3. Tenant/content offboarding policy — what does "delete" mean per entity?
 4. Apple 4.2.6/4.3 compliance question — unblocks `MobileAppPublishingModule` across
    both tracks AND `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
    entitlement (Phase 54) — 3 things now, not 2.
-5. ~~QR code mechanics + attendance roll-call scan mechanics (Decision 71)~~ — **done.**
-   Resolved directly with the user (Decision 107) and shipped as Phase 51 (backend,
-   PR #72) + Phase 52 (School Portal display screen, PR #73).
-6. Guardian consent UI — needs both a design pass and an "which app owns this" call.
+5. Guardian consent UI — needs both a design pass and an "which app owns this" call.
 
 **C. Track B integration (buildable today, growing more expensive to defer)**
-7. Sync onto master, resolve the Decision 98 conflict, fix CI env drift, open a PR.
-8. Add test coverage.
+6. Sync onto master, resolve the Decision 98 conflict, fix CI env drift, open a PR.
+7. Add test coverage.
 
 **D. Unblocked build work once B lands**
-9. `SubscriptionPlansModule` — **core done (Phase 54)**: Plan CRUD, subscribe/cancel,
-   `PlatformCharge`, degraded-portal gate. Left: its own `apps/platform-admin`
-   authoring UI (unblocked, ordinary next phase) and the `whiteLabelApp` entitlement
-   (still gated on item 4's Apple compliance decision).
-10. Tenant/content offboarding endpoints (once policy is decided).
-11. Track B's own QR-scanning UI (the Track A generation/display half is done,
-    Phase 51/52) + attendance roll-call scan mechanics are resolved server-side
-    (Decision 107) — any client-side roll-call UI work is ordinary build work now,
-    not blocked on a design pass.
-12. Guardian consent UI (once designed) — likely spans both a School Portal or new
+8. ~~`SubscriptionPlansModule`~~ — **core done (Phase 54, merged via PR #75)**: Plan
+   CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate. Left: its own
+   `apps/platform-admin` authoring UI (unblocked, ordinary next phase) and the
+   `whiteLabelApp` entitlement (still gated on item 4's Apple compliance decision).
+9. Tenant/content offboarding endpoints (once policy is decided).
+10. Guardian consent UI (once designed) — likely spans both a School Portal or new
     surface AND Track B.
-13. Track B Waiver signing + Guardian screens (backend already mostly there).
-14. Track B Slice 4b (Stripe payment UI) — needs its own product decision on approach
+11. Track B Waiver signing + Guardian screens (backend already mostly there).
+12. Track B Slice 4b (Stripe payment UI) — needs its own product decision on approach
     first, independent of the items above.
 
 **E. Infrastructure & deployment buildout** (can start in parallel with B–D; only the
 final provisioning step needs the product owner directly)
-15. Dockerfile for `apps/api`.
-16. IaC for the confirmed AWS stack (RDS, ElastiCache, Fargate, Cognito, Secrets
+13. Dockerfile for `apps/api`.
+14. IaC for the confirmed AWS stack (RDS, ElastiCache, Fargate, Cognito, Secrets
     Manager, RDS Proxy) — codeable now, applying it needs real AWS credentials.
-17. A real CD pipeline once a deploy target exists to point it at.
-18. Backup/DR strategy, error-tracking/APM, numeric NFR targets — none of these are
+15. A real CD pipeline once a deploy target exists to point it at.
+16. Backup/DR strategy, error-tracking/APM, numeric NFR targets — none of these are
     blocked on anything; they're simply not started.
 
 **F. White-label tier** (fully blocked on B.4 — do not start before)
-19. `MobileAppPublishingModule` + `packages/build-pipeline` real implementation.
-20. Track A/B branding UI.
-21. `SubscriptionPlansModule`'s own deferred `whiteLabelApp` metered entitlement
-    (Phase 54's own scope explicitly excluded this — see item 9).
+17. `MobileAppPublishingModule` + `packages/build-pipeline` real implementation.
+18. Track A/B branding UI.
+19. `SubscriptionPlansModule`'s own deferred `whiteLabelApp` metered entitlement
+    (Phase 54's own scope explicitly excluded this — see item 8).
 
 **G. Compliance program**
-22. Formalize the GDPR/LGPD data-residency tracking gap into a real decision-log entry
+20. Formalize the GDPR/LGPD data-residency tracking gap into a real decision-log entry
     and, eventually, an actual program — currently has no owner anywhere.
 
 ---
