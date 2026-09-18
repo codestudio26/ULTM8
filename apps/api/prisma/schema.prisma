@@ -76,6 +76,84 @@ enum FranchiseFeeSubscriptionStatus {
   CANCELED
 }
 
+/// Franchise.platformSubscriptionStatus / School.platformSubscriptionStatus (Phase 54,
+/// domain-rules §2/§15) — synced from the platform SubscriptionPlan's own Stripe
+/// Subscription, the same three-value shape FranchiseFeeSubscriptionStatus already
+/// uses for the unrelated School<->Franchise fee relationship. Kept as its own,
+/// separately-named enum rather than reusing FranchiseFeeSubscriptionStatus — the two
+/// billing relationships must "never be conflated" (domain-rules §2's own confirmed
+/// warning), and a shared DB type would make that conflation easy to do by accident in
+/// a future migration/query even though the three literal values happen to match today.
+enum PlatformSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+/// PlatformCharge.chargeType (Phase 54, Spec 55 §6.1: "charge type (SubscriptionPlan
+/// tier fee or whiteLabelApp entitlement fee)"). Both values modeled now for schema
+/// completeness even though WHITE_LABEL_APP_FEE has no code path creating it yet —
+/// whiteLabelApp billing is deferred out of this phase (gated on both the still-unset
+/// metered rate, Spec 55 §12.2, and MobileAppPublishingModule, itself blocked on the
+/// separate Apple 4.2.6 compliance decision) — same "model the confirmed enum now,
+/// wire the second case later" precedent PromotionEventType's own BULK_* values
+/// already established in this schema.
+enum PlatformChargeType {
+  SUBSCRIPTION_PLAN_FEE
+  WHITE_LABEL_APP_FEE
+}
+
+/// SubscriptionPlan (platform) — Phase 54, Spec 55 §6.1/§7 (SubscriptionPlansModule).
+/// ULTM8's own platform revenue — a Franchise/School subscribes to this directly;
+/// never a plan the Franchise resells onward to its member Schools (Decision 106,
+/// domain-rules §2 — reconciled, not still open). NOT the same entity as
+/// MembershipPlan (School<->Student billing, domain-rules §15's own explicit
+/// "must never be merged or used interchangeably" warning).
+///
+/// Confirmed fields quoted from Spec 55 §6.1: "Plan name, price (e.g. '£30.00 Per
+/// Month'), description, feature list, payment type (Auto Renew), payment schedule".
+/// `price` is a minor-unit Int (Decision 84's established convention for every money
+/// field in this schema), billed in the single USD anchor currency ULTM8's own
+/// revenue always uses (domain-rules §7/§11.2, Decision 7) — no per-Plan currency
+/// column, same reasoning FranchiseFeeCharge.currency already documents. "Payment
+/// type (Auto Renew)" and "payment schedule" are NOT modeled as their own columns —
+/// every Stripe Subscription this codebase creates (Membership, franchise-fee Flat,
+/// and this one) is already hardcoded to a monthly recurring interval with no
+/// per-row schedule choice anywhere else in this schema (PaymentsService.subscribe(),
+/// FranchiseFeeBillingService.ensureSubscription()); a SubscriptionPlan is
+/// structurally always-recurring by what it IS, so a literal "type=Auto Renew" flag
+/// would carry no information a `SubscriptionPlan` row doesn't already imply. Flagged
+/// as a Developer-level scope call, same class as Decision 84's own "no code change,
+/// confirms convention" entries — not silently assumed, open for Architect review.
+///
+/// `whiteLabelApp` entitlement flag (Spec 55 §5.3/§6.1) is deliberately NOT modeled
+/// yet — this phase's own scope is the core platform-subscription flow only; the
+/// entitlement is meaningless before MobileAppPublishingModule exists (still blocked
+/// on the Apple 4.2.6 compliance decision) and its own metered rate is itself
+/// unresolved (Spec 55 §12.2: "$0.99-$1.99/active-student/month... exact rate still
+/// to be set"). Add the column when that module is unblocked, not preemptively.
+///
+/// No RLS — global, Platform-Admin-authored content with no tenant column, the exact
+/// same shape Translation/LegalDocument already established in this schema (see
+/// Translation's own migration comment for the full "no per-caller row subset to
+/// restrict" reasoning). Read via the plain `ultm8_app` role from both the public
+/// tenant-facing GET and the FULL_ADMIN-gated authoring CRUD — one service, not two,
+/// same deliberate deviation from "one service per realm" TranslationsService's own
+/// header comment already documents and justifies for the identical no-RLS case.
+model SubscriptionPlan {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Int // minor-unit USD (Decision 7/84) — "£30.00 Per Month" example, Spec 55 §6.1
+  featureList String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  franchises Franchise[]
+  schools    School[]
+}
+
 /// TimetableSlot.weekday — Phase 5. Confirmed field ("Week day"), Spec 55 §6.1.
 enum Weekday {
   MONDAY
@@ -428,6 +506,25 @@ model Franchise {
   stripeMeterId      String?
   stripeUsagePriceId String?
 
+  /// Phase 54 — this Franchise's own platform SubscriptionPlan billing relationship
+  /// (ULTM8 <-> Franchise, distinct from and never conflated with the School<->
+  /// Franchise franchise-fee fields above — domain-rules §2/§15). `subscriptionPlanId`
+  /// is nullable: a Franchise can exist, and even own Schools, without ever
+  /// subscribing to a platform plan (this billing surface is new, optional
+  /// monetization added on top of an already-functioning platform, not a
+  /// precondition to operate it — see SubscriptionGateService's own header comment
+  /// for why the degraded-portal gate this phase builds never fires for a Franchise/
+  /// School that simply never subscribed). `stripePlatformSubscriptionId` is the
+  /// correlator id stripe-webhook-processing matches against;
+  /// `platformSubscriptionStatus` is its synced health, same three-field shape
+  /// School's own franchiseFeeSubscriptionStatus/stripeFranchiseFeeSubscriptionId
+  /// pair already established for the sibling billing relationship.
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
+  stripePlatformSubscriptionId String?                     @unique
+  platformSubscriptionStatus   PlatformSubscriptionStatus?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -435,8 +532,10 @@ model Franchise {
   roleGrants          RoleGrant[]
   paymentAccount      PaymentAccount?
   franchiseFeeCharges FranchiseFeeCharge[]
+  platformCharges     PlatformCharge[]
 
   @@index([name])
+  @@index([subscriptionPlanId])
 }
 
 /// School (domain-rules §2, Spec §6.1). franchiseId is nullable — an independent,
@@ -476,6 +575,17 @@ model School {
   /// hasn't started yet.
   stripeFranchiseFeeSubscriptionId String? @unique
 
+  /// Phase 54 — this School's own platform SubscriptionPlan billing relationship.
+  /// Same shape/reasoning as Franchise's own identical trio above — see that
+  /// model's own comment for the full account, including why `subscriptionPlanId`
+  /// being null is the ordinary, unaffected state for a School that never opted
+  /// into platform billing, not an error case.
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
+  stripePlatformSubscriptionId String?                     @unique
+  platformSubscriptionStatus   PlatformSubscriptionStatus?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -491,10 +601,12 @@ model School {
   waivers             Waiver[]
   franchiseFeeCharges FranchiseFeeCharge[]
   lessons             Lesson[]
+  platformCharges     PlatformCharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
   @@index([franchiseId])
+  @@index([subscriptionPlanId])
 }
 
 /// Branch (Decision 76 — field set mirrors School's profile fields; the RLS-enforced
@@ -1296,6 +1408,85 @@ model FranchiseFeeCharge {
   // index support, same established limitation as every other partial unique
   // index in this schema (Membership_one_active_general_access_per_school and
   // siblings) — it exists only in the migration's own hand-authored SQL.
+  @@index([stripeSubscriptionId, status])
+}
+
+/// PlatformCharge (Phase 54, Spec 55 §6.1/§10.2, Decision 42) — ULTM8's own
+/// platform-level billing ledger, quoted: "School/Franchise reference, charge type
+/// (SubscriptionPlan tier fee or whiteLabelApp entitlement fee), amount, currency,
+/// Stripe charge/invoice reference, status... disputedAmount." Mirrors
+/// FranchiseFeeCharge's own shape directly (same confirmed spec line: "mirrors
+/// FranchiseFeeCharge's shape but bills ULTM8's own platform-level fees... rather
+/// than School<->Franchise fees") but bills the opposite direction — ULTM8 IS the
+/// payee here, never a School or Franchise's own connected PaymentAccount, so
+/// (unlike FranchiseFeeCharge) there is no `xPaymentAccountId` FK on this table at
+/// all; the money settles into ULTM8's own platform Stripe balance
+/// (StripeClientService.platformClient()), not a tenant's Connected Account.
+///
+/// "Belongs to whichever School or Franchise the platform-level charge is against"
+/// — exactly one of `schoolId`/`franchiseId` is set per row, never both, never
+/// neither (enforced by the migration's own hand-authored CHECK constraint, the
+/// same "Prisma's schema DSL can't express this, only the migration SQL can"
+/// limitation every other cross-field invariant in this schema already lives with).
+///
+/// This phase only ever creates SUBSCRIPTION_PLAN_FEE rows (see PlatformChargeType's
+/// own comment) — created by stripe-webhook-processing's invoice.paid handler,
+/// directly, already Successful, the same "nothing was snapshotted in advance"
+/// shape FranchiseFeeCharge's own Flat-fee branch already uses (there is no
+/// Per-Headcount-style usage-reporting job for platform SubscriptionPlan billing —
+/// it's a flat plan price, not metered, this phase).
+///
+/// Deliberately NOT exposed via any tenant-facing read endpoint this phase — Spec
+/// 55's own §7 representative endpoint table names no `GET .../platform-charges`
+/// anywhere (unlike FranchiseFeeCharge/Transaction, which do have confirmed read
+/// endpoints), so building one now would be inventing UI/API surface the spec
+/// doesn't ask for — same "don't build unrequested surface" discipline
+/// TranslationsService's own header comment already applies to its own no-separate-
+/// admin-list decision. Only `ultm8_jobs` (stripe-webhook-processing) can read/write
+/// this table today; add tenant-facing `ultm8_app` access + RLS policies + an
+/// endpoint together, in one later phase, if/when a real screen needs to show this
+/// history — not preemptively.
+model PlatformCharge {
+  id String @id @default(uuid())
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+
+  franchiseId String?
+  franchise   Franchise? @relation(fields: [franchiseId], references: [id])
+
+  chargeType PlatformChargeType
+  amount     Int // minor-unit, same convention as Transaction.amount/FranchiseFeeCharge.amount
+  currency   String? // always 'USD' in practice — see SubscriptionPlan's own header comment
+
+  status TransactionStatus // reused directly, same "same enum as Transaction" precedent FranchiseFeeCharge.status already follows
+
+  stripeInvoiceId      String? @unique
+  stripeSubscriptionId String?
+
+  // Cumulative across possibly-multiple partial refunds, same convention as
+  // Transaction.refundedAmount/FranchiseFeeCharge.refundedAmount. No refund code
+  // path exists yet this phase (no refund endpoint for platform billing is
+  // confirmed anywhere) — modeled for schema completeness only, same treatment
+  // FranchiseFeeCharge.refundedAmount got before its own refund() existed.
+  refundedAmount Int?
+
+  // Only ever reachable for a disputed charge (Decision 55's dispute handling) — no
+  // code path sets this yet, same "modeled for schema completeness only" treatment
+  // Transaction.disputedAmount/FranchiseFeeCharge.disputedAmount both already got.
+  disputedAmount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30) — two possible
+  // tenant sides on this entity (exactly one set per row), so both get one, same
+  // shape FranchiseFeeCharge's own two indexes already use.
+  @@index([schoolId])
+  @@index([franchiseId])
+  // Matches stripe-webhook-processing's own "find the most recent row for this
+  // subscription" lookup shape — same "index the actual query, not a guess"
+  // discipline FranchiseFeeCharge's own identical index already follows.
   @@index([stripeSubscriptionId, status])
 }
 

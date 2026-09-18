@@ -5,6 +5,7 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
@@ -34,6 +35,7 @@ export class WaitlistService {
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly guardiansService: GuardiansService,
+    private readonly subscriptionGate: SubscriptionGateService,
   ) {}
 
   /**
@@ -194,6 +196,14 @@ export class WaitlistService {
     if (resolvedEntry.claimByDeadline && resolvedEntry.claimByDeadline < new Date()) {
       throw new ConflictException('This Waitlist entry\'s claim window has passed.');
     }
+    // Spec 55 §10.2's confirmed read-only degraded-portal state ("no new Classes/
+    // Bookings/payments") — a claim creates a real Booking below
+    // (`tx.booking.create`), not through BookingsService, so it needs this same
+    // check BookingsService.bookClass() makes rather than inheriting it. Checked
+    // under the entry's own `studentId`, not `callerId` — same "a Guardian caller
+    // holds zero RoleGrant anywhere, Decision 92" reasoning
+    // BookingsService.bookClass()'s own identical check already documents.
+    await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
 
     return this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });

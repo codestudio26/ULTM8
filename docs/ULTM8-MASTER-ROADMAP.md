@@ -11,7 +11,7 @@ blocking it" across the whole platform. Companion to, not a replacement for:
   commit `b34bb97` (2026-09-17), audited directly against the real code, not assumed
   from the doc alone.
 - `docs/decisions/POST-SPEC-55-DECISION-LOG.md` — the append-only decision record
-  (Decisions 70–106 as of this writing). This doc cites decisions by number; it does
+  (Decisions 70–107 as of this writing). This doc cites decisions by number; it does
   not restate their reasoning.
 - `skills/ultm8-domain-rules/SKILL.md` — the canonical, tagged distillation of Spec
   55's business rules (`[CONFIRMED]` / `[UNRESOLVED]` / etc.). Where this doc and that
@@ -28,9 +28,8 @@ unspecified business logic.
 Last synthesized: 2026-09-18, from a full audit of Track A (this session's own direct
 knowledge), Track B (`origin/track-b-student-app` HEAD `b34bb97`), infrastructure/CI/CD
 (`master` HEAD `bbf0198`), and every `[UNRESOLVED]` item + decision-log entry. Updated
-same day: the `SubscriptionPlansModule` citation flagged below as needing
-reconciliation was reconciled (Decision 106) — it was a stale doc/comment, not a real
-open question; see §1 item 2 and §4.
+same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Decision
+106) and its core backend shipped (Phase 54) — see §1 and §4.
 
 ---
 
@@ -38,10 +37,10 @@ open question; see §1 item 2 and §4.
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. PR #73 (Phase 52 QR-display screen) open, green; PR #75 (Phase 54, `SubscriptionPlansModule` backend core) also open and green. `MobileAppPublishingModule` is now the only confirmed-scope module still fully unbuilt. Remaining designed-but-unscreened UI gap: Guardian consent. |
+| **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
-| **Open decisions** | 38 post-spec decisions logged (Decision 107 added, closing Decision 71's attendance-mechanics gap), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core already built on that strength (Phase 54, PR #75, unmerged). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
+| **Open decisions** | 38 post-spec decisions logged (Decision 107 added, closing Decision 71's attendance-mechanics gap), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
 and infra/deployment are the two biggest remaining bodies of work, and they're
@@ -65,23 +64,23 @@ Phase 50 UI in PR #68), the QR check-in redesign + Instructor roll-call scan (Ph
 screen (Phase 52, PR #73, still open — was stacked on Phase 51; base moves to
 `master` now that Phase 51 has merged), Branch field-level settings UI (Phase 53,
 merged via PR #74 — turned out to be a small gap: the screen has existed since
-Phase 3, only Decision 76's branding fields were missing), `apps/school-portal`
-full admin surface, `apps/platform-admin` through Translations authoring including
-Cognito auth, audit logging, cross-tenant read/write for Schools/Franchises/
-PaymentAccounts/AdminUsers, Stripe credential rotation, and read-only Support
-impersonation (with its RLS-scope hardening).
+Phase 3, only Decision 76's branding fields were missing), `SubscriptionPlansModule`'s
+core backend (Phase 54, merged via PR #75) — Plan CRUD, subscribe/cancel,
+`PlatformCharge`, the degraded-portal gate, `apps/school-portal` full admin surface,
+`apps/platform-admin` through Translations authoring including Cognito auth, audit
+logging, cross-tenant read/write for Schools/Franchises/PaymentAccounts/AdminUsers,
+Stripe credential rotation, and read-only Support impersonation (with its RLS-scope
+hardening).
 
 **Left, in priority order:**
 
-1. **Merge PR #73** (Phase 52) — not blocked, green. **PR #75** (Phase 54,
-   `SubscriptionPlansModule` backend core) is also open and green, independent of
-   the others.
+1. **Merge PR #73** (Phase 52) — not blocked, green.
 2. ~~`SubscriptionPlansModule` blocker citation~~ — done (Decision 106, merged via
    PR #71): traced the question to source across three independent primary sources
    and found it was resolved before Phase 0 started; this doc, the old Track A
    roadmap, and two code comments had simply never caught up with the skill file's
-   own already-`[CONFIRMED]` text. Phase 54 (**PR #75, unmerged**) already scaffolded
-   the module's backend core on the strength of that reconciliation.
+   own already-`[CONFIRMED]` text. Phase 54 (merged via PR #75) built the module's
+   backend core on the strength of that reconciliation.
    **Update, Phase 53**: checked whether this same drift recurred for Branch
    (Decision 76) — it hadn't. The repo's actual `ultm8-domain-rules` SKILL.md
    already carries Branch's field list as `[CONFIRMED]`, citing Decision 76
@@ -102,7 +101,12 @@ impersonation (with its RLS-scope hardening).
    Portal? A future Guardian-facing surface in Track B?) plus a design pass.
 5. **`MobileAppPublishingModule` + `packages/build-pipeline`** — blocked on the Apple
    4.2.6/4.3 template-farm compliance question (see §4 below — shared blocker with
-   Track B's own Phase 6). Its white-label metered-billing rate is also unfinalized.
+   Track B's own Phase 6). Its white-label metered-billing rate is also unfinalized —
+   this now also gates `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
+   entitlement (Phase 54), not just Track B/Track A's own publishing pipeline.
+   (`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI is separate,
+   ordinary build work — backend-then-UI split, same convention Translations/
+   Curriculum already used — not blocked on anything.)
 6. Parked, not blocking anything: `apps/platform-admin` general tenant-data edit UI
    (Decision 105 — deliberately not built pending a named use case) and its home
    dashboard (cosmetic).
@@ -276,14 +280,14 @@ account handed over."
 
 This is a consolidated view of `skills/ultm8-domain-rules/SKILL.md`'s `[UNRESOLVED]`
 tags and `docs/decisions/POST-SPEC-55-DECISION-LOG.md`'s open follow-ups, organized by
-what they actually block. Full detail (all 36 decisions, all `[UNRESOLVED]` citations)
+what they actually block. Full detail (all 38 decisions, all `[UNRESOLVED]` citations)
 is preserved in this synthesis's source audit; this section keeps only what's
 load-bearing for planning.
 
 ### Blocks a whole module or UI surface
 | Item | Blocks | Owner needed |
 |---|---|---|
-| Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 5, Track B Phase 6 — the entire branded-app tier | Product/legal |
+| Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 5, Track B Phase 6, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement (Phase 54) — the entire branded-app tier | Product/legal |
 | Guardian consent-management UI (no screen anywhere) | Any market with children's-data-protection law; Track B's "Guardian-facing screens" slice | Design + a decision on which app owns it |
 | General tenant/content offboarding (unspecified in spec) | Any account-closure or GDPR/LGPD erasure flow, ~15 files' worth of missing `DELETE` endpoints | Product/legal |
 
@@ -292,6 +296,7 @@ mechanism/roll-call-mechanics rows this table used to carry are resolved — Dec
 106 (merged via PR #71) and Decision 107 (Phase 51, merged via PR #72) respectively;
 see Track A item 2 and the "Done" summary in §1 above. Branch's field-level settings
 screen (Decision 76) is resolved too, shipped in Phase 53 (merged via PR #74).
+`SubscriptionPlansModule` itself shipped too (Phase 54, merged via PR #75).
 
 ### Real but narrower — worth a decision, doesn't block a whole feature
 - Late-cancellation fee **collection** mechanism unanswered (distinct from the
@@ -333,14 +338,15 @@ Grouped into workstreams, roughly ordered by what unblocks the most other work p
 unit of effort. Not a committed schedule — a structure to work through.
 
 **A. Finish what's already in flight (near-zero net-new work)**
-1. Merge PR #73 (Track A Phase 52) and PR #75 (Track A Phase 54 —
-   `SubscriptionPlansModule` backend core) — neither blocked, both green.
+1. Merge PR #73 (Track A Phase 52) — not blocked, green.
 
 **B. Decision/reconciliation pass (no code — needs a person's answer, unblocks real work once done)**
 2. ~~`SubscriptionPlansModule` citation reconciliation~~ — done (Decision 106, merged
    via PR #71; Track A item 2).
 3. Tenant/content offboarding policy — what does "delete" mean per entity?
-4. Apple 4.2.6/4.3 compliance question — unblocks 2 modules across both tracks at once.
+4. Apple 4.2.6/4.3 compliance question — unblocks `MobileAppPublishingModule` across
+   both tracks AND `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
+   entitlement (Phase 54) — 3 things now, not 2.
 5. Guardian consent UI — needs both a design pass and an "which app owns this" call.
 
 **C. Track B integration (buildable today, growing more expensive to defer)**
@@ -348,7 +354,10 @@ unit of effort. Not a committed schedule — a structure to work through.
 7. Add test coverage.
 
 **D. Unblocked build work once B lands**
-8. ~~`SubscriptionPlansModule`~~ — done (backend core, Phase 54, PR #75, unmerged).
+8. ~~`SubscriptionPlansModule`~~ — **core done (Phase 54, merged via PR #75)**: Plan
+   CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate. Left: its own
+   `apps/platform-admin` authoring UI (unblocked, ordinary next phase) and the
+   `whiteLabelApp` entitlement (still gated on item 4's Apple compliance decision).
 9. Tenant/content offboarding endpoints (once policy is decided).
 10. Guardian consent UI (once designed) — likely spans both a School Portal or new
     surface AND Track B.
@@ -368,9 +377,11 @@ final provisioning step needs the product owner directly)
 **F. White-label tier** (fully blocked on B.4 — do not start before)
 17. `MobileAppPublishingModule` + `packages/build-pipeline` real implementation.
 18. Track A/B branding UI.
+19. `SubscriptionPlansModule`'s own deferred `whiteLabelApp` metered entitlement
+    (Phase 54's own scope explicitly excluded this — see item 8).
 
 **G. Compliance program**
-19. Formalize the GDPR/LGPD data-residency tracking gap into a real decision-log entry
+20. Formalize the GDPR/LGPD data-residency tracking gap into a real decision-log entry
     and, eventually, an actual program — currently has no owner anywhere.
 
 ---
@@ -378,7 +389,7 @@ final provisioning step needs the product owner directly)
 ## 6. Keeping this tracked going forward
 
 This repo already has a working, low-overhead tracking convention — a living markdown
-roadmap per track plus an append-only decision log — proven across 50 Track A phases.
+roadmap per track plus an append-only decision log — proven across 54 Track A phases.
 The recommendation is to extend that pattern rather than introduce a heavier one
 (e.g. a GitHub Projects board) unless the team specifically wants that overhead:
 
@@ -391,7 +402,7 @@ The recommendation is to extend that pattern rather than introduce a heavier one
 - **`docs/decisions/POST-SPEC-55-DECISION-LOG.md`** stays the one place a real
   product/Architect decision gets recorded — never inferred or assumed elsewhere. Any
   item in §4 above that gets resolved should get a numbered entry here, continuing the
-  sequence from 106.
+  sequence from 108.
 - **Before starting work matching any `[UNRESOLVED]` item**, load
   `skills/ultm8-domain-rules/SKILL.md` fresh rather than trusting a roadmap doc's
   characterization of it — this synthesis itself found and fixed one real case

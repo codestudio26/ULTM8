@@ -7,6 +7,7 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { BookClassDto } from './dto/book-class.dto';
@@ -50,6 +51,7 @@ export class BookingsService {
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly guardiansService: GuardiansService,
+    private readonly subscriptionGate: SubscriptionGateService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
@@ -113,6 +115,15 @@ export class BookingsService {
       // §9: "An Instructor/Staff member can override", never the Student themselves.
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
     }
+    // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
+    // Bookings" is one of the three actions it explicitly names (Phase 54).
+    // Checked under `studentId`'s own RLS context, NOT `callerId`'s — a Guardian
+    // caller holds zero RoleGrant anywhere (Decision 92), so `callerId`'s own
+    // context would see nothing and silently no-op the check for exactly the
+    // on-behalf-of path that most needs it; `studentId` is guaranteed
+    // RLS-visible into this School the same way the actual Booking create()
+    // below already relies on (it also runs under `studentId`'s context).
+    await this.subscriptionGate.assertNotDegraded(studentId, resolvedClass.schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       if (resolvedClass.termsWaiverRequired) {

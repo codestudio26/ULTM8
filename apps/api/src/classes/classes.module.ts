@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
+import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
 import { ClassesController } from './classes.controller';
 import { ClassesService } from './classes.service';
 
@@ -12,9 +13,14 @@ import { ClassesService } from './classes.service';
  * call makes) and TenantAuthorizationService (the School-Owner-Manager write gate) —
  * both now exported from TenantsModule (see its own header comment for why that export
  * didn't exist before this module needed it).
+ *
+ * Imports SubscriptionPlansModule (Phase 54) for SubscriptionGateService —
+ * ClassesService.create() is one of the three confirmed write actions Spec 55
+ * §10.2's read-only degraded-portal state blocks (see that service's own updated
+ * header comment).
  */
 @Module({
-  imports: [TenantsModule],
+  imports: [TenantsModule, SubscriptionPlansModule],
   controllers: [ClassesController],
   providers: [ClassesService],
 })
