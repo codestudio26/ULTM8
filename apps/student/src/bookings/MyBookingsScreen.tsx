@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { type components } from '@ultm8/api-client';
-import { Button, ErrorBanner, InlineError, Screen } from '../components/ui';
+import { Button, InlineError } from '../components/ui';
+import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
 
@@ -48,38 +49,14 @@ function BookingRow({ booking }: { booking: Booking }) {
 }
 
 export function MyBookingsScreen() {
-  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyBookings();
-  const bookings: Booking[] = data?.pages.flatMap((p) => p.items) ?? [];
-
-  if (isLoading) {
-    return (
-      <Screen>
-        <ActivityIndicator />
-      </Screen>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Failed to load bookings — please try again.')} />
-      </Screen>
-    );
-  }
+  const query = useMyBookings();
 
   return (
-    <Screen>
-      <FlatList
-        data={bookings}
-        keyExtractor={(item) => item.id}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.4}
-        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator /> : null}
-        ListEmptyComponent={<Text style={{ color: '#5F6368' }}>No bookings yet.</Text>}
-        renderItem={({ item }) => <BookingRow booking={item} />}
-      />
-    </Screen>
+    <PaginatedListScreen
+      query={query}
+      renderItem={(item: Booking) => <BookingRow booking={item} />}
+      emptyMessage="No bookings yet."
+      errorFallbackMessage="Failed to load bookings — please try again."
+    />
   );
 }

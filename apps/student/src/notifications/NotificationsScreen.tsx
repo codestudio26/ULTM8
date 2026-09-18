@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
-import { Button, ErrorBanner, InlineError, Screen } from '../components/ui';
+import { Button, InlineError } from '../components/ui';
+import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateTime } from '../lib/formatDate';
 import { useMarkNotificationRead, useNotifications } from './notificationQueries';
@@ -52,38 +53,14 @@ function NotificationRow({ notification }: { notification: Notification }) {
 }
 
 export function NotificationsScreen() {
-  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useNotifications();
-  const notifications: Notification[] = data?.pages.flatMap((p) => p.items) ?? [];
-
-  if (isLoading) {
-    return (
-      <Screen>
-        <ActivityIndicator />
-      </Screen>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Failed to load notifications — please try again.')} />
-      </Screen>
-    );
-  }
+  const query = useNotifications();
 
   return (
-    <Screen>
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.4}
-        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator /> : null}
-        ListEmptyComponent={<Text style={{ color: '#5F6368' }}>No notifications yet.</Text>}
-        renderItem={({ item }) => <NotificationRow notification={item} />}
-      />
-    </Screen>
+    <PaginatedListScreen
+      query={query}
+      renderItem={(item: Notification) => <NotificationRow notification={item} />}
+      emptyMessage="No notifications yet."
+      errorFallbackMessage="Failed to load notifications — please try again."
+    />
   );
 }

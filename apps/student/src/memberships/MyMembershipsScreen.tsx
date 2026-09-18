@@ -1,8 +1,7 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
-import { ErrorBanner, Screen } from '../components/ui';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { formatDate } from '../lib/formatDate';
 import { useMyMemberships } from './membershipQueries';
 import { getRememberedPlanName } from './planNameCache';
@@ -31,38 +30,14 @@ function MembershipRow({ membership }: { membership: Membership }) {
 }
 
 export function MyMembershipsScreen() {
-  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyMemberships();
-  const memberships: Membership[] = data?.pages.flatMap((p) => p.items) ?? [];
-
-  if (isLoading) {
-    return (
-      <Screen>
-        <ActivityIndicator />
-      </Screen>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Failed to load memberships — please try again.')} />
-      </Screen>
-    );
-  }
+  const query = useMyMemberships();
 
   return (
-    <Screen>
-      <FlatList
-        data={memberships}
-        keyExtractor={(item) => item.id}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        onEndReachedThreshold={0.4}
-        ListFooterComponent={isFetchingNextPage ? <ActivityIndicator /> : null}
-        ListEmptyComponent={<Text style={{ color: '#5F6368' }}>No memberships yet.</Text>}
-        renderItem={({ item }) => <MembershipRow membership={item} />}
-      />
-    </Screen>
+    <PaginatedListScreen
+      query={query}
+      renderItem={(item: Membership) => <MembershipRow membership={item} />}
+      emptyMessage="No memberships yet."
+      errorFallbackMessage="Failed to load memberships — please try again."
+    />
   );
 }
