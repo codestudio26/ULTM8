@@ -1124,6 +1124,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/classes/{id}/qr-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AttendanceController_issueClassQrToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/my-qr-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AttendanceController_issueMyQrToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/attendance-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_instructorScan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -2590,6 +2638,8 @@ export interface components {
             sourceMembershipId: string;
             overriddenById?: string | null;
             overrideReason?: string | null;
+            checkInMethod?: string | null;
+            checkedInById?: string | null;
             refundResolution?: string | null;
             resolvedById?: string | null;
             attendees: components["schemas"]["BookingAttendeeResponseDto"][];
@@ -2632,7 +2682,18 @@ export interface components {
             items: components["schemas"]["WaitlistEntryResponseDto"][];
         };
         ScanAttendanceDto: {
-            bookingId: string;
+            classId: string;
+            /** @description The rotating token from GET /classes/{id}/qr-token. */
+            qrToken: string;
+        };
+        QrTokenResponseDto: {
+            token: string;
+            expiresAt: string;
+        };
+        InstructorScanDto: {
+            studentId: string;
+            /** @description The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation. */
+            studentToken?: string;
         };
         AcademySummaryDto: {
             id: string;
@@ -5125,6 +5186,71 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ScanAttendanceDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_issueClassQrToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrTokenResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_issueMyQrToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrTokenResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_instructorScan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstructorScanDto"];
             };
         };
         responses: {
