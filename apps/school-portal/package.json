@@ -15,6 +15,7 @@
     "@ultm8/api-client": "*",
     "@ultm8/auth": "*",
     "@ultm8/ui": "*",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.3"
