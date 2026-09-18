@@ -20,15 +20,24 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ## Where things stand right now
 
-- **50 phases shipped or in flight** (Phase 0 walking skeleton through Phase 50),
+- **53 phases shipped or in flight** (Phase 0 walking skeleton through Phase 53),
   covering every backend module in `ultm8-nestjs-module` §5's confirmed table except
   the two named below, plus `apps/school-portal` UI for essentially all of it, plus
   `apps/platform-admin` through Translations authoring.
 - **PR #64 (Phase 47), PR #65 (Phase 48), and PR #66 (this doc's own first version)
   are merged.** PR #67 (Phase 49 — `TranslationsModule` backend) is also merged.
-- **One phase sitting in an open, unmerged PR right now**:
+- **Several phases sitting in open, unmerged PRs right now** (this branch — Phase 53
+  — is independent of the others and branched fresh off master, not stacked on any
+  of them):
   - **PR #68 — Phase 50**, the `apps/platform-admin` Translations authoring UI that
     calls Phase 49's backend. Green, clean, no reviews yet, end-to-end browser-verified.
+  - **PR #71 — Decision 106**, the `SubscriptionPlansModule` citation reconciliation.
+  - **PR #72 — Phase 51**, the QR check-in redesign + Instructor roll-call scan.
+  - **PR #73 — Phase 52**, the `apps/school-portal` QR-display screen (stacked on #72).
+  - **Phase 53** (this branch) — Branch field-level settings UI, closing the actual
+    remaining gap (branding fields only — see the Phase 53 entry below for why this
+    turned out much smaller than previously tracked). PR not yet opened as of this
+    doc's own last edit.
 - **Two backend modules from the original confirmed module table are still fully
   unbuilt** — not partially done, not scaffolded, nothing — detailed in their own
   sections below. `TranslationsModule` (the third module this doc used to list here)
@@ -78,7 +87,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | Attendance roll-call scan (`POST /classes/{id}/attendance-scan`) | ⛔ NOT BUILT — Decision 71 confirms purpose only, mechanics undesigned |
 | QR code display/generation screen | ⛔ NOT BUILT — no Figma screen ever designed; binding rotating-code constraint set (Decision 66), nothing built against it |
 | Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
-| Branch field-level settings UI | ⛔ NOT BUILT — Decision 76 resolved the field list only, not the screen |
+| Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
 | `apps/platform-admin` general tenant-data edit UI | 🅿️ Parked — Decision 105, pending a named use case |
 | `apps/platform-admin` home dashboard | 🅿️ Parked — cosmetic, nothing to summarize yet |
 
@@ -133,6 +142,35 @@ doc), so they're named here without a number rather than guessed at.
 - **Phase 50** — `apps/platform-admin` Translations authoring UI (list/filter/add/
   edit/delete), end-to-end browser-verified against a live backend. **PR #68, not yet
   merged.**
+- **Phase 51–52** — QR check-in redesign + Instructor roll-call scan (Decision 107)
+  and the `apps/school-portal` QR-display screen that calls it. Built on their own
+  branches, not yet merged to master as of this doc's own last edit on this branch —
+  see those PRs' own descriptions for full detail; not restated here to avoid two
+  copies of the same account drifting out of sync.
+- **Phase 53** — Branch field-level settings UI. Turned out to be almost entirely
+  already shipped: `BranchesPage`/`BranchFormModal` (name/address/contactPhone/
+  timezone/currencyOverride) have existed since Phase 3, and the backend
+  (`CreateBranchDto`/`UpdateBranchDto`/`BranchResponseDto`/Prisma model) has carried
+  `logoUrl`/`bannerUrl` the whole time too — only the form itself had never been
+  updated to expose Decision 76's own explicitly-named "branding" fields. This
+  doc's own prior claim that "no UI screen was ever designed" for Branch was
+  **incorrect** — verified directly against the running code and corrected here,
+  not carried forward from an unverified prior draft. Fixed by adding the two
+  missing fields to `BranchFormModal.tsx`, mirroring the established plain-text-URL
+  treatment `FranchiseFormModal`/`ClassFormModal`/`TimetableSlotFormModal` already
+  give `logoUrl`/`bannerUrl` elsewhere in this app. Browser-verified end to end
+  (Playwright): create with both fields → edit round-trip confirms persistence →
+  clearing both fields actually clears them (not a silent no-op). **Correction to
+  this doc's own prior claim**: re-checked directly against the repo's actual
+  `skills/ultm8-domain-rules/SKILL.md` (not a cached/synced copy) before writing
+  this entry — its Branch field-list line is already `[CONFIRMED]`, citing Decision
+  76 directly; no skill/decision-log drift exists there (a first draft of this
+  phase's own writeup wrongly claimed one, based on reading a stale snapshot
+  instead of the repo's real file — caught and fixed before committing). The
+  skill's very next line, `[UNRESOLVED]` on "no Branch-specific field screen was
+  ever designed... needs a design pass," is genuinely now outdated by this phase
+  and worth an Architect update to `[CONFIRMED]`/resolved — flagged, not patched
+  directly, per the skill's own "only the Architect may edit this file" rule.
 
 ## `apps/platform-admin` — DONE through Slice 4, Slice 4 unmerged
 
@@ -228,19 +266,14 @@ market with children's-data-protection law. This is Track A surface (Platform
 Admin/School Portal don't obviously own it either — needs a decision on which app it
 belongs to) as much as it's Track B's already-known "Guardian-facing screens" gap.
 
-### 6. Branch field-level settings UI — field list confirmed, screen not designed
-
-Decision 76 confirmed the field list mirrors School's own, but no UI screen was ever
-designed for it (only the sidebar item and empty frame ids exist in Figma).
-
-### 7. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
+### 6. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
 
 Decision 105 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) already resolved this:
 **not built, pending a named use case.** Nothing to do here until a real support/ops
 scenario names what "editing another tenant's records generally" actually needs to
 cover — building it speculatively is exactly what Decision 105 says not to do.
 
-### 8. `apps/platform-admin` home dashboard — parked, cosmetic
+### 7. `apps/platform-admin` home dashboard — parked, cosmetic
 
 Still lands directly on Admin Users. Low priority; nothing yet to summarize on a
 landing page until more of the admin surface exists.
