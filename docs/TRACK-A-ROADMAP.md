@@ -20,19 +20,27 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ## Where things stand right now
 
-- **48 phases shipped** (Phase 0 walking skeleton through Phase 48), covering every
-  backend module in `ultm8-nestjs-module` §5's confirmed table except the three named
-  below, plus `apps/school-portal` UI for essentially all of it, plus `apps/platform-admin`
-  through its own Slice 4 (impersonation).
-- **Two phases sitting in open, unmerged PRs right now** — not yet part of "done" until
-  reviewed/merged:
-  - **PR #64 — Phase 47**, closing the RLS-level impersonation-scope gap (Spec 55
-    Decision 39). Green, `mergeable_state: clean`, no reviews yet.
-  - **PR #65 — Phase 48**, the `apps/platform-admin` Impersonation UI (Slice 4) that
-    actually calls Phase 43/46/47's backend. Green, clean, no reviews yet.
-- **Three backend modules from the original confirmed module table are still fully
+- **50 phases shipped or in flight** (Phase 0 walking skeleton through Phase 50),
+  covering every backend module in `ultm8-nestjs-module` §5's confirmed table except
+  the two named below, plus `apps/school-portal` UI for essentially all of it, plus
+  `apps/platform-admin` through Translations authoring.
+- **PR #64 (Phase 47), PR #65 (Phase 48), and PR #66 (this doc's own first version)
+  are merged.** PR #67 (Phase 49 — `TranslationsModule` backend) is also merged.
+- **One phase sitting in an open, unmerged PR right now**:
+  - **PR #68 — Phase 50**, the `apps/platform-admin` Translations authoring UI that
+    calls Phase 49's backend. Green, clean, no reviews yet, end-to-end browser-verified.
+- **Two backend modules from the original confirmed module table are still fully
   unbuilt** — not partially done, not scaffolded, nothing — detailed in their own
-  sections below. Each is blocked on something other than raw build time.
+  sections below. `TranslationsModule` (the third module this doc used to list here)
+  shipped in Phase 49–50.
+- **`SubscriptionPlansModule`'s "blocked" status is itself now in question** — see
+  item 1 below. This doc and two code comments (`platform-admin.module.ts`,
+  `payments.controller.ts`) still cite `ultm8-domain-rules` §2 as `[UNRESOLVED]` on
+  the billing-direction question, but the skill file's *current* text marks that same
+  question `[CONFIRMED]`/resolved (Pass 4), with no decision-log entry ever recorded
+  for the reconciliation. Needs an Architect pass to confirm which is right before this
+  doc (or those comments) can be trusted on this one item — flagged, not silently
+  resolved either way.
 - **Everything Guardian/minor-facing that exists is backend-only.** `GuardiansModule`
   (Phase 12) and every Guardian-on-behalf-of flow (Phases 37–42: Waivers, Schools,
   Memberships, Bookings, Waitlist) has real API surface and is exercised by e2e tests —
@@ -40,6 +48,14 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   is a Student/parent-facing concept, and Track B's own roadmap already names this as
   its own blocked item ("Slice 7 — Guardian-facing screens," blocked on a design pass
   that's never happened). Track A doesn't need to build it; Track B does, later.
+- **A systemic gap not previously called out in this doc**: no tenant/content
+  offboarding exists anywhere in the platform. There is no `DELETE` endpoint for
+  School, Branch, Class, Timetable, Instructor, Membership, Rank, Waiver, Franchise, or
+  Curriculum — `ultm8-app-publishing` §4/§5.5 flags this as its own unspecified item,
+  and the same "`[UNRESOLVED]`, general tenant/content offboarding" comment recurs
+  verbatim across ~15 files. This blocks any real account-closure or data-erasure flow
+  and is worth its own decision + phase, not just a footnote — see
+  `docs/ULTM8-MASTER-ROADMAP.md` for the full cross-track picture.
 
 ---
 
@@ -52,12 +68,17 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | Guardian/minor-account backend (linking, consent, on-behalf-of flows) | ✅ DONE (backend only — Phase 12, 37–42) |
 | Mobile-facing discovery, self-service attendance, notifications | ✅ DONE — Phase 13–15 |
 | `apps/school-portal` full admin surface | ✅ DONE — Phase 3, 17–24, 45 |
-| `apps/platform-admin` through Impersonation | ✅ DONE through Slice 3 (Phase 36); Slice 4 (Phase 48) **in PR #65, unmerged** |
-| Cross-tenant impersonation-scope security fix | **In PR #64, unmerged** (Phase 47) |
+| `apps/platform-admin` through Translations authoring | ✅ DONE through Phase 49 (backend); Phase 50 (UI) **in PR #68, unmerged** |
+| Cross-tenant impersonation-scope security fix | ✅ DONE — Phase 47 (merged PR #64) |
 | `CurriculumModule` (Lesson content) | ✅ DONE — Phase 44–45 |
-| `SubscriptionPlansModule` (platform-level plans) | ⛔ NOT BUILT — blocked on an `[UNRESOLVED]` domain question |
-| `TranslationsModule` (i18n CMS) | ⛔ NOT BUILT — not blocked, just never started |
+| `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend (merged), Phase 50 UI (PR #68) |
+| `SubscriptionPlansModule` (platform-level plans) | ⛔ NOT BUILT — citation of its `[UNRESOLVED]` blocker needs reconciliation (see above); may just be unscheduled |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
+| General tenant/content offboarding (no DELETE anywhere) | ⛔ NOT BUILT — unspecified in Spec 55, systemic gap across ~15 files |
+| Attendance roll-call scan (`POST /classes/{id}/attendance-scan`) | ⛔ NOT BUILT — Decision 71 confirms purpose only, mechanics undesigned |
+| QR code display/generation screen | ⛔ NOT BUILT — no Figma screen ever designed; binding rotating-code constraint set (Decision 66), nothing built against it |
+| Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
+| Branch field-level settings UI | ⛔ NOT BUILT — Decision 76 resolved the field list only, not the screen |
 | `apps/platform-admin` general tenant-data edit UI | 🅿️ Parked — Decision 105, pending a named use case |
 | `apps/platform-admin` home dashboard | 🅿️ Parked — cosmetic, nothing to summarize yet |
 
@@ -106,6 +127,12 @@ doc), so they're named here without a number rather than guessed at.
   Backend + e2e-tested only — see "Where things stand right now" above.
 - **Phase 44–45** — `CurriculumModule` (Lesson/LessonSkill, Decision 104) + its
   `apps/school-portal` Lesson CRUD UI.
+- **Phase 49** — `TranslationsModule` backend: `Translation` model (no RLS, global
+  content, same precedent as `LegalDocument`/`AdminUser`), public `GET /translations`,
+  FULL_ADMIN-only `platform-admin/translations` CRUD. Merged via PR #67.
+- **Phase 50** — `apps/platform-admin` Translations authoring UI (list/filter/add/
+  edit/delete), end-to-end browser-verified against a live backend. **PR #68, not yet
+  merged.**
 
 ## `apps/platform-admin` — DONE through Slice 4, Slice 4 unmerged
 
@@ -118,44 +145,41 @@ doc), so they're named here without a number rather than guessed at.
   end to end.
 - **Phase 43 (Slice 8)** — Support-tier impersonation, read-only (Decision 102).
 - **Phase 46–47** — impersonation-scope hardening (Spec 55 Decision 39): Phase 46
-  narrowed the JWT claim; Phase 47 closed the RLS-level gap Phase 46 left open.
-  **Phase 47 is PR #64, not yet merged.**
+  narrowed the JWT claim; Phase 47 closed the RLS-level gap Phase 46 left open. Merged
+  via PR #64.
 - **Phase 48 (Slice 4)** — the `apps/platform-admin` screen that actually calls the
-  impersonation endpoint. **Phase 48 is PR #65, not yet merged.**
+  impersonation endpoint. Merged via PR #65.
+- **Phase 49–50** — `TranslationsModule` backend + `apps/platform-admin` authoring UI.
+  See "Core domain..." above and "What's actually left" below.
 
 ---
 
 ## What's actually left
 
-### 1. `SubscriptionPlansModule` — blocked on an unresolved domain question
+Full cross-track detail (Track B, infra/deployment, and every open decision) now lives
+in `docs/ULTM8-MASTER-ROADMAP.md`. This section keeps only the Track A-specific items.
+
+### 1. `SubscriptionPlansModule` — blocker citation needs reconciliation first
 
 Confirmed scope (`ultm8-nestjs-module` §5): `GET /plans`, `POST /plans/{id}/subscribe`,
 Platform-Admin-authoring only. Nothing built — `apps/api/src/payments/payments.controller.ts`'s
 own header comment still says "no SubscriptionPlan/white-label billing... deferred to
 whenever Phase 9" and that phase never came.
 
-**Why it's stuck, not just unscheduled:** `ultm8-domain-rules` §2 flags, as
-`[UNRESOLVED]`, whether the platform-level `SubscriptionPlan` a Franchise/School
-"subscribes to" represents ULTM8 billing that Franchise/School directly, or a plan the
-Franchise resells onward to its own member Schools — and says explicitly: **"Do not
-implement Franchise Subscription Plan billing logic until this is resolved."** The
-entity/CRUD shell could plausibly be scaffolded without answering that (Platform Admin
-authoring a plan doesn't obviously require knowing the billing direction), but the
-`subscribe` action and any billing wiring cannot start until it is. Needs an Architect/
-product-owner decision, recorded in `docs/decisions/POST-SPEC-55-DECISION-LOG.md`,
-before real work here.
+**This doc previously said** `ultm8-domain-rules` §2 flags the billing-direction
+question (does the platform-level `SubscriptionPlan` bill the Franchise/School
+directly, or does the Franchise resell it onward?) as `[UNRESOLVED]`. **A fresh read of
+the skill file's current text says the opposite** — §2 now states this is `[CONFIRMED]`
+("ULTM8's own platform revenue... not a plan the Franchise resells onward," resolved
+Pass 4), and §18's consolidated list marks it resolved too. No decision-log entry ever
+formally reconciled this — the skill was updated in place, and that update never
+propagated to this doc or to the `platform-admin.module.ts`/`payments.controller.ts`
+comments that still cite the old wording. Per `CLAUDE.md`'s own source-of-truth
+hierarchy, the skill file outranks this doc and code comments, so the honest reading is
+**this module may just be unscheduled, not blocked** — but that needs an Architect
+confirmation and a doc/comment cleanup pass before treating it as settled either way.
 
-### 2. `TranslationsModule` — not blocked, just never started
-
-Confirmed scope: `CRUD /translations`, `GET /translations?locale=&screen=`,
-Platform-Admin-authoring only (`ultm8-nestjs-module` §5). The 5-language/RTL-Arabic
-experience this feeds is `[CONFIRMED]` core scope (`ultm8-domain-rules` §1) — not a
-nice-to-have. No `[UNRESOLVED]` flag blocks this one; it's simply never been picked up.
-Straightforward next-phase candidate whenever prioritized: CMS-style CRUD backend +
-a `apps/platform-admin` authoring screen, same shape as every other admin-authored
-resource already built.
-
-### 3. `MobileAppPublishingModule` + `packages/build-pipeline` — blocked on a product/legal decision
+### 2. `MobileAppPublishingModule` + `packages/build-pipeline` — blocked on a product/legal decision
 
 Confirmed scope: `TenantAppConfig` CRUD, the per-School white-label build/submit
 pipeline, credential status-read (`ultm8-app-publishing` §5). `packages/build-pipeline`
@@ -167,16 +191,56 @@ If that risk can't be resolved before launch, the branded-app tier drops from v1
 entirely." This is also exactly the gate Track B's own roadmap cites for why its own
 Phase 6 (per-School white-label branding) is blocked — the same real-world constraint
 blocks both tracks' halves of this feature. Not something to start building around;
-needs the Apple compliance question actually resolved first.
+needs the Apple compliance question actually resolved first. The white-label add-on's
+own metered billing rate ($0.99–$1.99/active-student/month range) is also never
+finalized — a second, independent open item under this same module.
 
-### 4. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
+### 3. General tenant/content offboarding — unspecified in the spec, never scoped
+
+No `DELETE` endpoint exists anywhere in the platform for School, Branch, Class,
+Timetable, Instructor, Membership, Rank, Waiver, Franchise, or Curriculum.
+`ultm8-app-publishing` §4/§5.5 names this as its own new open item, not covered
+anywhere else in Spec 55. The same flagged comment recurs verbatim across roughly 15
+service/controller files. This blocks any real account-closure or GDPR/LGPD-style
+data-erasure flow — a genuine, systemic gap rather than a per-module oversight. Needs
+a product/legal decision on what "offboarding" actually means per entity (hard delete?
+soft-archive? retention period?) before any of those ~15 files gets a real `DELETE`.
+
+### 4. Attendance roll-call scan + QR code display — mechanics undesigned
+
+Two related but distinct gaps, both already-confirmed-in-scope but with no design to
+build against:
+- `POST /classes/{id}/attendance-scan` (Instructor-run roll-call, distinct from the
+  self-service `POST /attendance/scan` that already ships) — Decision 71 confirms only
+  the *purpose*; what's actually scanned, per-Student vs. batched, and anti-fraud
+  deterrence are all still undesigned. Needs an Architect engineering-design pass.
+- The QR code itself — no Figma screen was ever designed for the School Portal's own
+  "QR Code" nav item, despite a binding constraint now set (Decision 66: must be a
+  time-boxed, rotating code, never a static per-Class one). Without this, self-service
+  check-in (`POST /attendance/scan`, Phase 13, already built) has no code for a Student
+  to actually scan — the harness exists, the thing it consumes doesn't.
+
+### 5. Guardian consent-management UI — no screen anywhere
+
+No interface exists for a Guardian to view current consent status or withdraw either
+tier of `ConsentRecord` consent — `ultm8-domain-rules` §14 flags this as blocking any
+market with children's-data-protection law. This is Track A surface (Platform
+Admin/School Portal don't obviously own it either — needs a decision on which app it
+belongs to) as much as it's Track B's already-known "Guardian-facing screens" gap.
+
+### 6. Branch field-level settings UI — field list confirmed, screen not designed
+
+Decision 76 confirmed the field list mirrors School's own, but no UI screen was ever
+designed for it (only the sidebar item and empty frame ids exist in Figma).
+
+### 7. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
 
 Decision 105 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) already resolved this:
 **not built, pending a named use case.** Nothing to do here until a real support/ops
 scenario names what "editing another tenant's records generally" actually needs to
 cover — building it speculatively is exactly what Decision 105 says not to do.
 
-### 5. `apps/platform-admin` home dashboard — parked, cosmetic
+### 8. `apps/platform-admin` home dashboard — parked, cosmetic
 
 Still lands directly on Admin Users. Low priority; nothing yet to summarize on a
 landing page until more of the admin surface exists.
@@ -185,10 +249,12 @@ landing page until more of the admin surface exists.
 
 ## Immediate next actions (not phases — just what's actually queued)
 
-1. Get **PR #64** and **PR #65** reviewed and merged — both green, both waiting on
-   human review, nothing blocking on the engineering side.
-2. Pick one of items 1–3 above once you want to unblock it: #2 (Translations) is the
-   only one of the three with no external blocker — it's ready to scope and build
-   whenever it's prioritized. #1 and #3 both need a decision from you (or the Architect/
-   product owner) recorded in the decision log before any code should be written
-   against them.
+1. Get **PR #68** reviewed and merged — green, clean, no reviews yet, nothing blocking
+   on the engineering side.
+2. Resolve the `SubscriptionPlansModule` citation question (item 1) — a quick Architect
+   confirmation, then either scaffold it (if genuinely unblocked) or record a proper
+   decision-log entry (if genuinely still open).
+3. Everything else in "What's actually left" needs a decision, design pass, or both
+   before code should be written against it — see `docs/ULTM8-MASTER-ROADMAP.md` for
+   the full prioritized path, including where Track A's open items overlap Track B's
+   and infra's.
