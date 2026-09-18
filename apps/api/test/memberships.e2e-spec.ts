@@ -170,6 +170,27 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     expect(res.body.visible).toBe(true);
   });
 
+  // FOUND ON REVIEW (Track B Slice 4a): findAllPlans had no role gate at all,
+  // unlike create/update right above — any enrolled Student or Staff could list
+  // every plan, including visible=false ones. Proves the fix over real HTTP.
+  it('School Owner CAN list MembershipPlans; a Student/Branch Staff cannot — 403', async () => {
+    const asOwner = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(asOwner.status).toBe(200);
+    expect(asOwner.body.items.some((p: { id: string }) => p.id === membershipPlanIds[0])).toBe(true);
+
+    const asStudent = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(asStudent.status).toBe(403);
+
+    const asStaff = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenBranchStaff}`);
+    expect(asStaff.status).toBe(403);
+  });
+
   it('rejects a FRIEND_PASS with a non-zero price — 400', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
