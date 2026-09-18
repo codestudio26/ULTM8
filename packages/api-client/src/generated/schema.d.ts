@@ -2290,6 +2290,8 @@ export interface components {
             id: string;
             schoolId: string;
             studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
             paymentAccountId: string;
             membershipPlanId: string;
             membershipId?: string | null;

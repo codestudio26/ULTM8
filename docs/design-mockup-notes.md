@@ -158,7 +158,7 @@ yet implemented in `LoginPage.tsx`)
 
 ## school-portal — Transactions
 
-**Status:** mockup
+**Status:** partially implemented — Student-name fix is real, rest is still mockup-only
 
 - Figma: "transactionsHistory"; Real: `TransactionResponseDto`, `TransactionsPage.tsx`
 - **Note:** Figma's MCP tool call limit was hit partway through this page — built from the structural text already cached locally (column labels) plus the real code, not a fresh screenshot. Remaining pages below have the same limitation until it resets.
@@ -166,6 +166,13 @@ yet implemented in `LoginPage.tsx`)
 - **"Download" (invoice) action → removed.** Real code's own comment: "no refund/credit-restore/invoice-download endpoints exist yet this phase."
 - Date-range picker, numbered pagination → removed (consistent pattern)
 - Artifact: https://claude.ai/artifact/ThDY6cRhHrVAS9Y34pgyzH
+
+**Implemented for real, 18 Sep 2026 — Student column now shows a real name:**
+
+- The mockup's Student-name correction (see the "Audit — same 'no name field' mistake" entry above) has been built into the actual app, not just the preview. `TransactionsService.findAllForSchool` now joins `Transaction.student` and `TransactionResponseDto` carries `studentFirstName`/`studentSurname`; `TransactionsPage.tsx` renders the resolved name, falling back to the truncated id only if both are empty. See **Decision 107** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) for the full reasoning, RLS trace, and what's explicitly still out of scope (the identical gap in `ClassDetailPage.tsx`/`InstructorFormModal.tsx`/`StaffPage.tsx`).
+- Regenerated `packages/api-client/openapi.json`/`schema.d.ts` from the live Swagger output to pick up the new fields — diffed to confirm only the two expected fields changed.
+- Added an assertion to `apps/api/test/memberships.e2e-spec.ts`'s existing Transactions-list test, extending rather than duplicating it. **Not run in this environment** — no reachable Postgres (confirmed: no `DATABASE_URL*` set, `pg_isready` unreachable) — verified instead via `tsc --noEmit` across `apps/api`, `packages/api-client`, and `apps/school-portal` (all clean). Needs `npm run test:e2e -- memberships.e2e-spec` against a real database before this is fully proven, not just compiled.
+- Everything else on this page (balance-widget cards, Download action, date/pagination) is still mockup-only — not implemented.
 
 ## school-portal — Waivers
 

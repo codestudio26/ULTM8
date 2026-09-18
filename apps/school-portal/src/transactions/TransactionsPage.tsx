@@ -44,10 +44,11 @@ export function TransactionsPage() {
               {
                 key: 'student',
                 header: 'Student',
-                // No "look up a User's name by id" endpoint exists yet (same
-                // gap InstructorFormModal's own header comment already flags
-                // for the identical problem) — shows the raw id, truncated.
-                render: (t) => t.studentId.slice(0, 8),
+                // studentFirstName/studentSurname are joined server-side
+                // (TransactionsService.findAllForSchool). The identical
+                // "no name resolution" gap still exists in ClassDetailPage,
+                // InstructorFormModal, and StaffPage — not fixed here.
+                render: (t) => (t.studentFirstName || t.studentSurname ? `${t.studentFirstName} ${t.studentSurname}`.trim() : t.studentId.slice(0, 8)),
               },
               { key: 'amount', header: 'Amount', render: (t) => formatMoney(t.amount, t.currency) },
               { key: 'status', header: 'Status', render: (t) => paymentStatusBadge(t.status) },

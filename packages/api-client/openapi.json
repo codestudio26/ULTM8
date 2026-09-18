@@ -7394,6 +7394,12 @@
           "studentId": {
             "type": "string"
           },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
           "paymentAccountId": {
             "type": "string"
           },
@@ -7439,6 +7445,8 @@
           "id",
           "schoolId",
           "studentId",
+          "studentFirstName",
+          "studentSurname",
           "paymentAccountId",
           "membershipPlanId",
           "billingDate",
