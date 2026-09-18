@@ -63,8 +63,17 @@ export class MembershipsService {
     );
   }
 
+  // FOUND ON REVIEW (Track B Slice 4a): this read had no role gate at all, unlike
+  // createPlan/updatePlan right above it. School's own RLS already blocks a total
+  // stranger with no RoleGrant here at all, but any enrolled Student or Staff/
+  // Instructor — anyone holding ANY RoleGrant at this School — could still list every
+  // plan including ones with visible=false, when only School Owner/Manager should
+  // (same gate its CRUD siblings already enforce). The Discovery-facing read
+  // (AcademiesService.findOne, prismaDiscovery) is the correct visible-only path for
+  // Students browsing; this endpoint is the Owner/Manager management surface.
   async findAllPlans(callerId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.membershipPlan.findMany({ ...args, where: { schoolId } }), cursor, limit),
     );
