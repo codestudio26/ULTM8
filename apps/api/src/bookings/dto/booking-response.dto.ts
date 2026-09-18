@@ -43,6 +43,12 @@ export class BookingResponseDto {
   overrideReason!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
+  checkInMethod!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  checkedInById!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
   refundResolution!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })

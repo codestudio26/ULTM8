@@ -3889,6 +3889,112 @@
         ]
       }
     },
+    "/v1/classes/{id}/qr-token": {
+      "get": {
+        "operationId": "AttendanceController_issueClassQrToken",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrTokenResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/attendance/my-qr-token": {
+      "get": {
+        "operationId": "AttendanceController_issueMyQrToken",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrTokenResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/attendance-scan": {
+      "post": {
+        "operationId": "AttendanceController_instructorScan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstructorScanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -8469,6 +8575,14 @@
             "type": "string",
             "nullable": true
           },
+          "checkInMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkedInById": {
+            "type": "string",
+            "nullable": true
+          },
           "refundResolution": {
             "type": "string",
             "nullable": true
@@ -8626,12 +8740,47 @@
       "ScanAttendanceDto": {
         "type": "object",
         "properties": {
-          "bookingId": {
+          "classId": {
+            "type": "string"
+          },
+          "qrToken": {
+            "type": "string",
+            "description": "The rotating token from GET /classes/{id}/qr-token."
+          }
+        },
+        "required": [
+          "classId",
+          "qrToken"
+        ]
+      },
+      "QrTokenResponseDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
             "type": "string"
           }
         },
         "required": [
-          "bookingId"
+          "token",
+          "expiresAt"
+        ]
+      },
+      "InstructorScanDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "studentToken": {
+            "type": "string",
+            "description": "The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation."
+          }
+        },
+        "required": [
+          "studentId"
         ]
       },
       "AcademySummaryDto": {
