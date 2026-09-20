@@ -11,7 +11,7 @@ blocking it" across the whole platform. Companion to, not a replacement for:
   commit `b34bb97` (2026-09-17), audited directly against the real code, not assumed
   from the doc alone.
 - `docs/decisions/POST-SPEC-55-DECISION-LOG.md` — the append-only decision record
-  (Decisions 70–107 as of this writing). This doc cites decisions by number; it does
+  (Decisions 70–109 as of this writing). This doc cites decisions by number; it does
   not restate their reasoning.
 - `skills/ultm8-domain-rules/SKILL.md` — the canonical, tagged distillation of Spec
   55's business rules (`[CONFIRMED]` / `[UNRESOLVED]` / etc.). Where this doc and that
@@ -29,7 +29,14 @@ Last synthesized: 2026-09-18, from a full audit of Track A (this session's own d
 knowledge), Track B (`origin/track-b-student-app` HEAD `b34bb97`), infrastructure/CI/CD
 (`master` HEAD `bbf0198`), and every `[UNRESOLVED]` item + decision-log entry. Updated
 same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Decision
-106) and its core backend shipped (Phase 54) — see §1 and §4.
+106) and its core backend shipped (Phase 54) — see §1 and §4. **Updated again
+2026-09-20**: PR #73 (Phase 52, QR-display screen) merged — Track A now has zero open
+PRs. PR #61 merged: a design-system refresh (accent color rebase, Figtree typeface)
+bundled with a real Transaction Student-name resolution fix, recorded as Decision 108
+(Instructor rank V1/V2) and Decision 109 (Transaction Student-name resolution,
+Developer-level inference, flagged for Architect confirmation). PR #31 merged: two
+shared `packages/ui` responsive bugs (mobile-nav collapse, table horizontal-overflow)
+fixed for every `apps/school-portal` page at once.
 
 ---
 
@@ -37,10 +44,10 @@ same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Dec
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
+| **Track A** — backend + school-portal + platform-admin | 54 phases shipped, all merged. **Zero PRs open.** 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109) and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
-| **Open decisions** | 38 post-spec decisions logged (Decision 107 added, closing Decision 71's attendance-mechanics gap), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
+| **Open decisions** | 40 post-spec decisions logged (Decisions 108/109 added: Instructor rank V1/V2 dropdown, Transaction Student-name resolution), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges, 109 itself awaiting Architect confirmation). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
 and infra/deployment are the two biggest remaining bodies of work, and they're
@@ -58,11 +65,10 @@ Full detail: `docs/TRACK-A-ROADMAP.md`. Summary:
 core domain (Payments/Memberships/Transactions/Ranks/Waivers), Guardian backend
 (linking, consent, on-behalf-of flows for Waivers/Schools/Memberships/Bookings/
 Waitlist — backend + e2e only, no UI anywhere), mobile-facing discovery/attendance/
-notifications, `CurriculumModule`, `TranslationsModule` (Phase 49 backend merged,
-Phase 50 UI in PR #68), the QR check-in redesign + Instructor roll-call scan (Phase
-51, Decision 107 — merged via PR #72) plus its `apps/school-portal` QR-display
-screen (Phase 52, PR #73, still open — was stacked on Phase 51; base moves to
-`master` now that Phase 51 has merged), Branch field-level settings UI (Phase 53,
+notifications, `CurriculumModule`, `TranslationsModule` (Phase 49 backend + Phase 50
+UI, both merged via PR #67/#68), the QR check-in redesign + Instructor roll-call scan
+(Phase 51, Decision 107 — merged via PR #72) plus its `apps/school-portal` QR-display
+screen (Phase 52, merged via PR #73), Branch field-level settings UI (Phase 53,
 merged via PR #74 — turned out to be a small gap: the screen has existed since
 Phase 3, only Decision 76's branding fields were missing), `SubscriptionPlansModule`'s
 core backend (Phase 54, merged via PR #75) — Plan CRUD, subscribe/cancel,
@@ -70,12 +76,15 @@ core backend (Phase 54, merged via PR #75) — Plan CRUD, subscribe/cancel,
 `apps/platform-admin` through Translations authoring including Cognito auth, audit
 logging, cross-tenant read/write for Schools/Franchises/PaymentAccounts/AdminUsers,
 Stripe credential rotation, and read-only Support impersonation (with its RLS-scope
-hardening).
+hardening). Also merged, outside the Phase-N sequence: a design-system refresh
+(accent color rebase, Figtree typeface) bundled with a real Transaction Student-name
+resolution fix (PR #61, Decisions 108/109), and a shared `packages/ui` fix for
+mobile-nav collapse + table horizontal-overflow affecting every `apps/school-portal`
+page (PR #31). **Track A now has zero open PRs.**
 
 **Left, in priority order:**
 
-1. **Merge PR #73** (Phase 52) — not blocked, green.
-2. ~~`SubscriptionPlansModule` blocker citation~~ — done (Decision 106, merged via
+1. ~~`SubscriptionPlansModule` blocker citation~~ — done (Decision 106, merged via
    PR #71): traced the question to source across three independent primary sources
    and found it was resolved before Phase 0 started; this doc, the old Track A
    roadmap, and two code comments had simply never caught up with the skill file's
@@ -89,17 +98,17 @@ hardening).
    skill's neighboring `[UNRESOLVED]` line on the Branch *screen* specifically
    is genuinely now outdated by Phase 53 shipping it, and worth a small Architect
    update to match — a much narrower finding than first thought.
-3. **General tenant/content offboarding** — no `DELETE` endpoint exists anywhere
+2. **General tenant/content offboarding** — no `DELETE` endpoint exists anywhere
    (School, Branch, Class, Timetable, Instructor, Membership, Rank, Waiver, Franchise,
    Curriculum). Unspecified in Spec 55; the same flagged comment recurs across ~15
    files. Needs a product/legal decision on what "offboarding" means per entity before
    any of it gets built. This is the single largest *specified-gap-shaped* hole in the
    platform — nothing about account closure or GDPR/LGPD erasure works today.
-4. **Guardian consent-management UI** — no screen exists for a Guardian to view or
+3. **Guardian consent-management UI** — no screen exists for a Guardian to view or
    withdraw consent (`ultm8-domain-rules` §14). Blocks launch in any market with
    children's-data-protection law. Needs a decision on which app owns it (School
    Portal? A future Guardian-facing surface in Track B?) plus a design pass.
-5. **`MobileAppPublishingModule` + `packages/build-pipeline`** — blocked on the Apple
+4. **`MobileAppPublishingModule` + `packages/build-pipeline`** — blocked on the Apple
    4.2.6/4.3 template-farm compliance question (see §4 below — shared blocker with
    Track B's own Phase 6). Its white-label metered-billing rate is also unfinalized —
    this now also gates `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
@@ -107,9 +116,12 @@ hardening).
    (`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI is separate,
    ordinary build work — backend-then-UI split, same convention Translations/
    Curriculum already used — not blocked on anything.)
-6. Parked, not blocking anything: `apps/platform-admin` general tenant-data edit UI
+5. Parked, not blocking anything: `apps/platform-admin` general tenant-data edit UI
    (Decision 105 — deliberately not built pending a named use case) and its home
    dashboard (cosmetic).
+6. **Decision 109 confirmation** — Transaction Student-name resolution (PR #61) was
+   recorded as a Developer-level inference, flagged for Architect confirmation, not
+   yet given one. Nothing is blocked on it; worth a short pass.
 
 **Smaller, individually-flagged items worth a decision at some point** (none currently
 block a module, but each is a real, live gap): `grading.service.ts`'s
@@ -156,13 +168,13 @@ Cash/Bank and free plans (not Stripe).
   written (no rotating-token mechanism existed anywhere) is now resolved: Track A
   Phase 51 (Decision 107, merged via PR #72) shipped `GET /attendance/my-qr-token`
   for a Student to mint their own rotating personal token, and
-  `POST /classes/{id}/attendance-scan` for an Instructor to scan it; Phase 52 (PR
-  #73, unmerged) shipped the School Portal's own display screen. What blocks Track
-  B now is purely client-side — no screen in
+  `POST /classes/{id}/attendance-scan` for an Instructor to scan it; Phase 52
+  (merged via PR #73) shipped the School Portal's own display screen. What blocks
+  Track B now is purely client-side — no screen in
   `apps/student` yet displays or scans a QR code — the same "buildable today, not yet
   built" shape as the rest of this list.
 - **Per-School white-label branding** — blocked on the same Apple compliance question
-  and `packages/build-pipeline` placeholder as Track A item 5.
+  and `packages/build-pipeline` placeholder as Track A item 4.
 - **Offline behavior/caching** — not even scoped; no requirements exist yet.
 
 **Gaps the doc does NOT disclose, found on direct audit:**
@@ -262,7 +274,7 @@ Terraform/CDK, live account, or credentials exist anywhere in this environment**
   target, GDPR/LGPD data-residency program) — see the dedicated finding below.
 - **`packages/build-pipeline`** — confirmed, explicit placeholder (its own `build`
   script literally echoes "placeholder"). Not a disguised gap — it's honestly labeled
-  and blocked on the same Apple compliance decision as Track A item 5 / Track B's
+  and blocked on the same Apple compliance decision as Track A item 4 / Track B's
   Phase 6.
 
 ### What CAN start now, without waiting on AWS provisioning
@@ -280,23 +292,26 @@ account handed over."
 
 This is a consolidated view of `skills/ultm8-domain-rules/SKILL.md`'s `[UNRESOLVED]`
 tags and `docs/decisions/POST-SPEC-55-DECISION-LOG.md`'s open follow-ups, organized by
-what they actually block. Full detail (all 38 decisions, all `[UNRESOLVED]` citations)
+what they actually block. Full detail (all 40 decisions, all `[UNRESOLVED]` citations)
 is preserved in this synthesis's source audit; this section keeps only what's
 load-bearing for planning.
 
 ### Blocks a whole module or UI surface
 | Item | Blocks | Owner needed |
 |---|---|---|
-| Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 5, Track B Phase 6, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement (Phase 54) — the entire branded-app tier | Product/legal |
+| Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 4, Track B Phase 6, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement (Phase 54) — the entire branded-app tier | Product/legal |
 | Guardian consent-management UI (no screen anywhere) | Any market with children's-data-protection law; Track B's "Guardian-facing screens" slice | Design + a decision on which app owns it |
 | General tenant/content offboarding (unspecified in spec) | Any account-closure or GDPR/LGPD erasure flow, ~15 files' worth of missing `DELETE` endpoints | Product/legal |
 
 `SubscriptionPlansModule`'s billing-direction citation conflict and the QR
 mechanism/roll-call-mechanics rows this table used to carry are resolved — Decision
 106 (merged via PR #71) and Decision 107 (Phase 51, merged via PR #72) respectively;
-see Track A item 2 and the "Done" summary in §1 above. Branch's field-level settings
+see Track A item 1 and the "Done" summary in §1 above. Branch's field-level settings
 screen (Decision 76) is resolved too, shipped in Phase 53 (merged via PR #74).
 `SubscriptionPlansModule` itself shipped too (Phase 54, merged via PR #75).
+Decisions 108 (Instructor rank V1/V2, PR #61) and 109 (Transaction Student-name
+resolution, PR #61 — still awaiting Architect confirmation) are also recorded; see
+Track A item 6.
 
 ### Real but narrower — worth a decision, doesn't block a whole feature
 - Late-cancellation fee **collection** mechanism unanswered (distinct from the
@@ -338,11 +353,11 @@ Grouped into workstreams, roughly ordered by what unblocks the most other work p
 unit of effort. Not a committed schedule — a structure to work through.
 
 **A. Finish what's already in flight (near-zero net-new work)**
-1. Merge PR #73 (Track A Phase 52) — not blocked, green.
+1. ~~Merge PR #73 (Track A Phase 52)~~ — done, merged.
 
 **B. Decision/reconciliation pass (no code — needs a person's answer, unblocks real work once done)**
 2. ~~`SubscriptionPlansModule` citation reconciliation~~ — done (Decision 106, merged
-   via PR #71; Track A item 2).
+   via PR #71; Track A item 1).
 3. Tenant/content offboarding policy — what does "delete" mean per entity?
 4. Apple 4.2.6/4.3 compliance question — unblocks `MobileAppPublishingModule` across
    both tracks AND `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
@@ -402,7 +417,7 @@ The recommendation is to extend that pattern rather than introduce a heavier one
 - **`docs/decisions/POST-SPEC-55-DECISION-LOG.md`** stays the one place a real
   product/Architect decision gets recorded — never inferred or assumed elsewhere. Any
   item in §4 above that gets resolved should get a numbered entry here, continuing the
-  sequence from 108.
+  sequence from 110.
 - **Before starting work matching any `[UNRESOLVED]` item**, load
   `skills/ultm8-domain-rules/SKILL.md` fresh rather than trusting a roadmap doc's
   characterization of it — this synthesis itself found and fixed one real case
