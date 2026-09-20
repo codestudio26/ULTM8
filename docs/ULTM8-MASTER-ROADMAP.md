@@ -36,7 +36,10 @@ bundled with a real Transaction Student-name resolution fix, recorded as Decisio
 (Instructor rank V1/V2) and Decision 109 (Transaction Student-name resolution,
 Developer-level inference, flagged for Architect confirmation). PR #31 merged: two
 shared `packages/ui` responsive bugs (mobile-nav collapse, table horizontal-overflow)
-fixed for every `apps/school-portal` page at once.
+fixed for every `apps/school-portal` page at once. **Updated a third time, same
+day**: Phase 55 shipped `SubscriptionPlansModule`'s own `apps/platform-admin`
+authoring UI — the module is now fully shipped except the still-deferred
+`whiteLabelApp` entitlement (blocked on Apple compliance, unrelated to this phase).
 
 ---
 
@@ -44,7 +47,7 @@ fixed for every `apps/school-portal` page at once.
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 54 phases shipped, all merged. **Zero PRs open.** 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109) and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
+| **Track A** — backend + school-portal + platform-admin | 55 phases shipped. **Zero PRs open** except this doc's own update PR. 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` fully shipped (Phase 54 backend + Phase 55 admin UI); only its `whiteLabelApp` entitlement remains, blocked on Apple compliance. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109) and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
 | **Open decisions** | 40 post-spec decisions logged (Decisions 108/109 added: Instructor rank V1/V2 dropdown, Transaction Student-name resolution), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges, 109 itself awaiting Architect confirmation). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
@@ -70,9 +73,10 @@ UI, both merged via PR #67/#68), the QR check-in redesign + Instructor roll-call
 (Phase 51, Decision 107 — merged via PR #72) plus its `apps/school-portal` QR-display
 screen (Phase 52, merged via PR #73), Branch field-level settings UI (Phase 53,
 merged via PR #74 — turned out to be a small gap: the screen has existed since
-Phase 3, only Decision 76's branding fields were missing), `SubscriptionPlansModule`'s
-core backend (Phase 54, merged via PR #75) — Plan CRUD, subscribe/cancel,
-`PlatformCharge`, the degraded-portal gate, `apps/school-portal` full admin surface,
+Phase 3, only Decision 76's branding fields were missing), `SubscriptionPlansModule`
+end to end (Phase 54 backend, merged via PR #75 — Plan CRUD, subscribe/cancel,
+`PlatformCharge`, the degraded-portal gate; Phase 55 `apps/platform-admin`
+authoring UI, this PR), `apps/school-portal` full admin surface,
 `apps/platform-admin` through Translations authoring including Cognito auth, audit
 logging, cross-tenant read/write for Schools/Franchises/PaymentAccounts/AdminUsers,
 Stripe credential rotation, and read-only Support impersonation (with its RLS-scope
@@ -113,9 +117,9 @@ page (PR #31). **Track A now has zero open PRs.**
    Track B's own Phase 6). Its white-label metered-billing rate is also unfinalized —
    this now also gates `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
    entitlement (Phase 54), not just Track B/Track A's own publishing pipeline.
-   (`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI is separate,
-   ordinary build work — backend-then-UI split, same convention Translations/
-   Curriculum already used — not blocked on anything.)
+   (`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI shipped in
+   Phase 55 — backend-then-UI split, same convention Translations/Curriculum already
+   used. `whiteLabelApp` is the only piece of this module still blocked.)
 5. Parked, not blocking anything: `apps/platform-admin` general tenant-data edit UI
    (Decision 105 — deliberately not built pending a named use case) and its home
    dashboard (cosmetic).
@@ -308,7 +312,9 @@ mechanism/roll-call-mechanics rows this table used to carry are resolved — Dec
 106 (merged via PR #71) and Decision 107 (Phase 51, merged via PR #72) respectively;
 see Track A item 1 and the "Done" summary in §1 above. Branch's field-level settings
 screen (Decision 76) is resolved too, shipped in Phase 53 (merged via PR #74).
-`SubscriptionPlansModule` itself shipped too (Phase 54, merged via PR #75).
+`SubscriptionPlansModule` itself shipped too, end to end (Phase 54 backend, merged
+via PR #75; Phase 55 `apps/platform-admin` authoring UI, this PR) — only its
+`whiteLabelApp` entitlement remains, still genuinely blocked by the Apple row above.
 Decisions 108 (Instructor rank V1/V2, PR #61) and 109 (Transaction Student-name
 resolution, PR #61 — still awaiting Architect confirmation) are also recorded; see
 Track A item 6.
@@ -369,10 +375,11 @@ unit of effort. Not a committed schedule — a structure to work through.
 7. Add test coverage.
 
 **D. Unblocked build work once B lands**
-8. ~~`SubscriptionPlansModule`~~ — **core done (Phase 54, merged via PR #75)**: Plan
-   CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate. Left: its own
-   `apps/platform-admin` authoring UI (unblocked, ordinary next phase) and the
-   `whiteLabelApp` entitlement (still gated on item 4's Apple compliance decision).
+8. ~~`SubscriptionPlansModule`~~ — **fully shipped (Phase 54 backend, merged via
+   PR #75; Phase 55 `apps/platform-admin` authoring UI, this PR)**: Plan CRUD,
+   subscribe/cancel, `PlatformCharge`, degraded-portal gate, and the admin authoring
+   screen. Left: only the `whiteLabelApp` entitlement (still gated on item 4's Apple
+   compliance decision).
 9. Tenant/content offboarding endpoints (once policy is decided).
 10. Guardian consent UI (once designed) — likely spans both a School Portal or new
     surface AND Track B.
@@ -404,7 +411,7 @@ final provisioning step needs the product owner directly)
 ## 6. Keeping this tracked going forward
 
 This repo already has a working, low-overhead tracking convention — a living markdown
-roadmap per track plus an append-only decision log — proven across 54 Track A phases.
+roadmap per track plus an append-only decision log — proven across 55 Track A phases.
 The recommendation is to extend that pattern rather than introduce a heavier one
 (e.g. a GitHub Projects board) unless the team specifically wants that overhead:
 

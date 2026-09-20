@@ -459,7 +459,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["PlatformAdminSubscriptionPlansController_findAll"];
         put?: never;
         post: operations["PlatformAdminSubscriptionPlansController_create"];
         delete?: never;
@@ -4008,6 +4008,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CancelSubscriptionResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSubscriptionPlansController_findAll: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPlanListResponseDto"];
                 };
             };
         };

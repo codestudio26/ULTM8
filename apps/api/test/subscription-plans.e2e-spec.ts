@@ -235,6 +235,29 @@ describeIfDb('SubscriptionPlansModule — HTTP-level CRUD, subscribe/cancel gate
   });
 
   // ---------------------------------------------------------------------------
+  // GET /platform-admin/subscription-plans — Phase 55: the admin-authoring list
+  // endpoint the apps/platform-admin authoring UI actually holds a token for (see
+  // PlatformAdminSubscriptionPlansController's own header comment for why
+  // GET /plans, tenant-JWT-gated, isn't reusable here the way GET /translations is).
+  // Authentication-only, no assertFullAdmin — any admin subRole may list.
+  // ---------------------------------------------------------------------------
+
+  it('GET platform-admin/subscription-plans requires an admin token — 401 with none', async () => {
+    const res = await request(app.getHttpServer()).get('/v1/platform-admin/subscription-plans');
+    expect(res.status).toBe(401);
+  });
+
+  it('GET platform-admin/subscription-plans lists a seeded plan for any admin subRole, including non-FULL_ADMIN', async () => {
+    const seeded = await seedPlan();
+    const caller = await seedAdmin(AdminSubRole.SUPPORT);
+    const res = await request(app.getHttpServer())
+      .get('/v1/platform-admin/subscription-plans')
+      .set('Authorization', `Bearer ${adminToken(caller)}`);
+    expect(res.status).toBe(200);
+    expect(res.body.items.some((item: { id: string }) => item.id === seeded.id)).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------------
   // GET /plans — tenant-JWT-gated (not public, unlike GET /translations)
   // ---------------------------------------------------------------------------
 

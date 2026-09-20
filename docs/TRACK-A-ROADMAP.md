@@ -20,17 +20,19 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ## Where things stand right now
 
-- **54 phases shipped**, all merged (Phase 0 walking skeleton through Phase 54),
-  covering every backend module in `ultm8-nestjs-module` §5's confirmed table except
-  the one named below, plus `apps/school-portal` UI for essentially all of it, plus
-  `apps/platform-admin` through Translations authoring.
+- **55 phases shipped** (Phase 0 walking skeleton through Phase 55; Phase 55 is
+  this PR), covering every backend module in `ultm8-nestjs-module` §5's confirmed
+  table except the one named below, plus `apps/school-portal` UI for essentially
+  all of it, plus `apps/platform-admin` through Translations authoring and now
+  SubscriptionPlansModule authoring.
 - **PR #64 (Phase 47), PR #65 (Phase 48), PR #66 (this doc's own first version), PR
   #67 (Phase 49 — `TranslationsModule` backend), PR #68 (Phase 50 — Translations
   authoring UI), PR #69 (the master roadmap doc), PR #71 (Decision 106), PR #72
   (Phase 51), PR #73 (Phase 52 — QR-display screen), PR #74 (Phase 53 — Branch
   branding-field UI), PR #75 (Phase 54), PR #61 (Decisions 108/109 + a design-system
   refresh — see below), and PR #31 (shared `@ultm8/ui` mobile-nav/table-overflow
-  fix — see below) are all merged.**
+  fix — see below) are all merged. Phase 55 (`SubscriptionPlansModule`'s
+  `apps/platform-admin` authoring UI) is this PR.**
 - **Zero open PRs, repo-wide** — every phase and every standalone fix described in
   this doc has landed on `master`.
 - **Two items shipped outside the Phase-N sequence**, not tied to a specific phase
@@ -62,8 +64,9 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   section below (`MobileAppPublishingModule`). `TranslationsModule` shipped in Phase
   49–50; `SubscriptionPlansModule` (backend) shipped in Phase 54 — see below.
 - **`SubscriptionPlansModule`'s "blocked" status was a stale citation, now fixed
-  (Decision 106) — and the module itself now shipped (Phase 54, this PR).** This doc
-  used to say the billing-direction question was `[UNRESOLVED]` per
+  (Decision 106) — and the module itself now shipped end to end (Phase 54 backend,
+  merged via PR #75; Phase 55 `apps/platform-admin` authoring UI, this PR).** This
+  doc used to say the billing-direction question was `[UNRESOLVED]` per
   `ultm8-domain-rules` §2; that citation was out of date — the question was
   genuinely resolved in Spec 55's own Pass 4 review, before Phase 0 even started
   (three independent primary sources verified this: the skill file's own current
@@ -72,11 +75,12 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   confirmed core scope directly: Plan CRUD (Platform Admin authoring),
   Franchise/School subscribe/cancel against ULTM8's own platform Stripe account, the
   `PlatformCharge` ledger, and the read-only degraded-portal gate (Spec 55 §10.2) on
-  new Class/Booking/payment creation. Deliberately deferred: the `whiteLabelApp`
-  metered entitlement (its own rate is still unresolved, Spec 55 §12.2, and it's
-  gated on `MobileAppPublishingModule` anyway) and the `apps/platform-admin`
-  authoring UI (backend-then-UI split, same as every other module in this
-  codebase).
+  new Class/Booking/payment creation. Phase 55 then built the `apps/platform-admin`
+  authoring screen itself (list/add/edit, no delete — see below) — same
+  backend-then-UI split every other module in this codebase already followed
+  (Translations, Curriculum). Only one piece remains deliberately deferred: the
+  `whiteLabelApp` metered entitlement (its own rate is still unresolved, Spec 55
+  §12.2, and it's gated on `MobileAppPublishingModule` anyway).
 - **Everything Guardian/minor-facing that exists is backend-only.** `GuardiansModule`
   (Phase 12) and every Guardian-on-behalf-of flow (Phases 37–42: Waivers, Schools,
   Memberships, Bookings, Waitlist) has real API surface and is exercised by e2e tests —
@@ -109,7 +113,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | `CurriculumModule` (Lesson content) | ✅ DONE — Phase 44–45 |
 | `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend + Phase 50 UI, both merged |
 | QR check-in redesign + Attendance roll-call scan (Decisions 66, 71, 107) | ✅ DONE (backend) — Phase 51, merged via PR #72 |
-| `SubscriptionPlansModule` (platform-level plans, core) | ✅ DONE (backend) — Phase 54: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75. `whiteLabelApp` entitlement + `apps/platform-admin` UI deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
+| `SubscriptionPlansModule` (platform-level plans) | ✅ DONE — Phase 54 (backend: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75) + Phase 55 (`apps/platform-admin` authoring UI, this PR). Only the `whiteLabelApp` entitlement remains deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
 | General tenant/content offboarding (no DELETE anywhere) | ⛔ NOT BUILT — unspecified in Spec 55, systemic gap across ~15 files |
 | QR code display screen (`apps/school-portal`, Staff-facing) | ✅ DONE — Phase 52, merged via PR #73 |
@@ -244,9 +248,21 @@ doc), so they're named here without a number rather than guessed at.
 - **Phase 49–50** — `TranslationsModule` backend + `apps/platform-admin` authoring UI.
   See "Core domain..." above and "What's actually left" below.
 - **Phase 54** — `SubscriptionPlansModule` (core: Plan CRUD, subscribe/cancel,
-  `PlatformCharge`, degraded-portal gate) — see "What's actually left" below for
-  what remains (the `whiteLabelApp` entitlement and this module's own
-  `apps/platform-admin` authoring UI).
+  `PlatformCharge`, degraded-portal gate).
+- **Phase 55** — `SubscriptionPlansModule`'s `apps/platform-admin` authoring UI
+  (this PR): `SubscriptionPlansPage` — list/add/edit, no delete action (the backend
+  has no `DELETE` route — an already-subscribed Franchise/School has no confirmed
+  safe orphaning behavior, see the Prisma model's own comment). Required one small
+  backend addition alongside the UI: `GET /platform-admin/subscription-plans`, a
+  new list route on `PlatformAdminSubscriptionPlansController` — unlike
+  `TranslationsModule`, whose public `GET /translations` the Translations authoring
+  UI reuses directly, `GET /plans` is tenant-JWT-gated (Platform Admin has no tenant
+  token to call it with), so there was no existing route this screen could browse
+  through. Authentication-only (no `assertFullAdmin`), same "nothing here is
+  sensitive" reasoning `SubscriptionPlanResponseDto`'s own comment already gives.
+  Full e2e suite green (328 tests, 2 new), `turbo build` clean, `packages/api-client`
+  regenerated, browser-verified end to end (Playwright against a live backend:
+  list → create → edit, zero console errors).
 
 Also shipped, each on its own separate PR (not folded into this doc's own narrative
 sections above in detail — see each PR's own description), all now merged:
@@ -262,7 +278,7 @@ merged via PR #74).
 Full cross-track detail (Track B, infra/deployment, and every open decision) now lives
 in `docs/ULTM8-MASTER-ROADMAP.md`. This section keeps only the Track A-specific items.
 
-### 1. `SubscriptionPlansModule` — core shipped (Phase 54); two pieces remain
+### 1. `SubscriptionPlansModule` — fully shipped except one blocked entitlement
 
 Confirmed scope (`ultm8-nestjs-module` §5): `GET /plans`, `POST /plans/{id}/subscribe`,
 Platform-Admin-authoring only. This doc previously said the module was blocked on an
@@ -278,16 +294,16 @@ other Stripe integration in this codebase), the `PlatformCharge` ledger, and the
 read-only degraded-portal gate Spec 55 §10.2 confirms (new Class/Booking/payment
 creation blocked once a School's platform Subscription is genuinely Canceled — never
 on `PAST_DUE` or on a School that simply never subscribed, the ordinary state of
-every School in this codebase before this phase).
+every School in this codebase before this phase). Phase 55 (this PR) then built
+`apps/platform-admin`'s own authoring UI for Plan CRUD — backend-then-UI split, same
+convention `TranslationsModule` (Phase 49/50) and `CurriculumModule` (Phase 44/45)
+already established.
 
-Two pieces deliberately deferred, not silently dropped:
-- The `whiteLabelApp` metered entitlement — its own rate is itself unresolved
-  ($0.99–$1.99/active-student/month, Spec 55 §12.2: "exact rate still to be set"),
-  and the entitlement is meaningless before `MobileAppPublishingModule` exists
-  (item 2 below, itself blocked on the Apple compliance decision).
-- `apps/platform-admin`'s own authoring UI for Plan CRUD — backend-then-UI split,
-  same convention `TranslationsModule` (Phase 49/50) and `CurriculumModule` (Phase
-  44/45) already established.
+One piece deliberately deferred, not silently dropped: the `whiteLabelApp` metered
+entitlement — its own rate is itself unresolved ($0.99–$1.99/active-student/month,
+Spec 55 §12.2: "exact rate still to be set"), and the entitlement is meaningless
+before `MobileAppPublishingModule` exists (item 2 below, itself blocked on the Apple
+compliance decision). Nothing left to build here until that decision lands.
 
 ### 2. `MobileAppPublishingModule` + `packages/build-pipeline` — blocked on a product/legal decision
 
@@ -349,8 +365,8 @@ responsive bugs — mobile-nav collapse and table horizontal-overflow (PR #31).
 
 ## Immediate next actions (not phases — just what's actually queued)
 
-1. `SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI (item 1) —
-   the natural next phase, same backend-then-UI split as Translations/Curriculum.
+1. ~~`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI~~ — done
+   (Phase 55, this PR).
 2. Decision 109 (Transaction Student-name resolution, PR #61) is still a
    Developer-level inference, flagged in the decision log but not yet given an
    Architect confirmation — worth a short pass, though nothing is blocked on it.
