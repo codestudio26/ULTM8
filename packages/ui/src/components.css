@@ -151,7 +151,10 @@
 }
 
 /* Table — horizontally scrollable so a wide table never overflows the page
-   (DESIGN.md "Layout & spacing": no horizontal overflow at any breakpoint). */
+   (DESIGN.md "Layout & spacing": no horizontal overflow at any breakpoint). Without
+   this, a table wider than the viewport bubbles up through .ultm8-card/
+   .ultm8-shell__main, neither of which constrain overflow either, and the entire
+   page (sidebar included) scrolls sideways instead of just the table. */
 .ultm8-table-scroll {
   overflow-x: auto;
 }
@@ -355,12 +358,36 @@
   .ultm8-shell {
     flex-direction: column;
   }
+  /* Sidebar itself stays a column (brand row, then nav row, then footer row) — the
+     previous flex-direction:row here only reflowed the sidebar's three direct children
+     (the brand <p>, the whole <nav>, and the footer <div>) into one cramped row, since
+     flex-direction doesn't cascade into non-flex descendants. Each of those three block-
+     level children kept stacking its own content vertically inside that squeezed row,
+     wrapping the brand text and never producing the intended horizontal nav strip. */
   .ultm8-shell__sidebar {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+  /* The <nav> element is what actually needs to become the horizontal, scrollable
+     strip — its children (.ultm8-shell__nav-link, display:block) otherwise stay
+     block-stacked regardless of the parent's own flex-direction. */
+  .ultm8-shell__sidebar nav {
+    display: flex;
     flex-direction: row;
+    gap: var(--space-2);
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ultm8-shell__nav-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .ultm8-shell__footer-action {
+    margin-top: 0;
   }
   .ultm8-shell__main {
     padding: var(--space-6);
