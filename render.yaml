@@ -47,9 +47,15 @@ services:
         fromDatabase:
           name: ultm8-postgres
           property: connectionString
+      # FIXED: Render's own Blueprint validator rejected `fromDatabase` here
+      # ("depends on non-existent DB: ultm8-redis") — `fromDatabase` only
+      # resolves against the top-level `databases:` list (Postgres). A
+      # `type: keyvalue` entry lives under `services:` instead, so it's
+      # referenced with `fromService`.
       - key: REDIS_URL
-        fromDatabase:
+        fromService:
           name: ultm8-redis
+          type: keyvalue
           property: connectionString
 
       # RLS-subject app roles — see this file's own header comment for why
