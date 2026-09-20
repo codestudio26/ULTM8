@@ -48,6 +48,10 @@ jobs:
       # and Decision 94 for why this is a separate role, not a reuse of ultm8_app/
       # ultm8_jobs above).
       DATABASE_URL_DISCOVERY: postgresql://ultm8_discovery:changeme@localhost:5432/ultm8?schema=public
+      # Phase 26 — PlatformAdminModule's own dedicated role for cross-tenant reads +
+      # AuditLogEntry writes (see the Phase 26 migration and its own header comment
+      # for why this is a separate role, not a reuse of ultm8_app/ultm8_discovery).
+      DATABASE_URL_PLATFORM_ADMIN: postgresql://ultm8_platform_admin:changeme@localhost:5432/ultm8?schema=public
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
       # Phase 8 — payments.e2e-spec.ts gates on this being set; without it the suite
@@ -68,6 +72,47 @@ jobs:
       # construction (verified empirically) — a fake key is safe here, same as
       # STRIPE_WEBHOOK_SECRET above.
       STRIPE_SECRET_KEY: sk_test_ci_dummy_not_a_real_stripe_key
+      # Phase 25 — PlatformAdminJwtStrategy's constructor throws at boot if this is
+      # unset (same fail-loudly convention JwtStrategy already established for
+      # JWT_ACCESS_SECRET above) — and PlatformAdminModule is registered in AppModule,
+      # so EVERY e2e spec in this suite bootstraps it, not just
+      # platform-admin-auth.e2e-spec.ts. Missing here would crash the entire suite at
+      # boot, not just skip one file — caught before that happened, not after, by
+      # tracing PlatformAdminJwtStrategy's own constructor against this env block
+      # directly rather than assuming CI would just skip gracefully the way a
+      # describeIfDb-gated spec does. No real Cognito User Pool needed for this
+      # secret specifically — it signs/verifies ULTM8's OWN token, issued only after
+      # a Cognito token already passed verification (see CognitoTokenVerifierService's
+      # own header comment for why COGNITO_USER_POOL_ID/COGNITO_CLIENT_ID are handled
+      # differently — that verifier's own tests substitute a stub instead, since
+      # there's no equivalent "just agree on a shared secret" trick for verifying a
+      # token against a real AWS-hosted JWKS).
+      PLATFORM_ADMIN_JWT_SECRET: ci-test-platform-admin-secret-not-for-production-use-32-chars-min
+      # Phase 34 — drawn-signature-capture (WaiversModule's new
+      # signature-upload-url/sign flow). Unlike COGNITO_USER_POOL_ID/CLIENT_ID above,
+      # fake values here are safe and give REAL test coverage rather than a skip:
+      # generating a presigned URL (S3Client construction + getSignedUrl) never makes
+      # a network call — it's a pure local HMAC computation over these very values —
+      # same "verified empirically, no live network call at construction" reasoning
+      # STRIPE_SECRET_KEY's own comment above already establishes for `new Stripe(key)`.
+      # This lets the e2e suite genuinely exercise the security-sensitive part (the
+      # signatureImageKey prefix-validation logic) rather than skipping the whole flow
+      # the way a real-infra-requiring gate would have to.
+      R2_ACCOUNT_ID: ci-test-r2-account
+      R2_ACCESS_KEY_ID: ci-test-r2-access-key
+      R2_SECRET_ACCESS_KEY: ci-test-r2-secret-key-not-a-real-credential
+      R2_BUCKET_NAME: ci-test-waiver-signatures
+      # Phase 51 — QrTokenService's two rotating-QR signing secrets (Decision 107).
+      # Unlike PLATFORM_ADMIN_JWT_SECRET above, QrTokenService doesn't throw at boot
+      # if these are unset (same "unconfigured dependency" convention as Stripe/R2
+      # above) — but sign()/verify() DO throw a plain Error the moment they're
+      # actually called, which HttpExceptionFilter maps to a bare 500 rather than a
+      # proper 4xx (the exact STRIPE_SECRET_KEY-missing bug class this same file's
+      # own comment above already documents catching once). Set here so the new
+      # attendance.e2e-spec.ts cases genuinely exercise sign+verify, not just skip.
+      QR_CLASS_TOKEN_SECRET: ci-test-qr-class-token-secret-not-for-production-use-32-chars
+      QR_STUDENT_TOKEN_SECRET: ci-test-qr-student-token-secret-not-for-production-32-chars
+      QR_ATTENDANCE_TOKEN_TTL_SECONDS: '20'
 
     steps:
       - uses: actions/checkout@v7

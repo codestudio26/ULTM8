@@ -20,11 +20,29 @@ export class TransactionsService {
     private readonly schoolsService: SchoolsService,
   ) {}
 
+  // Return type is a structural narrowing of the real row shape below, not the
+  // literal shape — the DTO layer (TransactionResponseDto) is authoritative
+  // for callers, this signature just satisfies cursorPaginate's generic.
   async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.transaction.findMany({ ...args, where: { schoolId } }), cursor, limit),
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) =>
+          tx.transaction.findMany({
+            ...args,
+            where: { schoolId },
+            include: { student: { select: { firstName: true, surname: true } } },
+          }),
+        cursor,
+        limit,
+      ),
     );
+    // Flatten the joined User fields onto the row — matches
+    // TransactionResponseDto's flat convention rather than nesting `student`.
+    return {
+      ...page,
+      items: page.items.map(({ student, ...t }) => ({ ...t, studentFirstName: student.firstName, studentSurname: student.surname })),
+    };
   }
 }

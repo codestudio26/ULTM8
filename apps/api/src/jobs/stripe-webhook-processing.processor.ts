@@ -20,6 +20,12 @@ type WebhookJobData = { stripeEventId: string; eventType: string; objectId: stri
  * Transaction specifically for this job (unrestricted `USING/WITH CHECK (true)`,
  * matching class-occurrence-generation's own established shape for a no-single-
  * caller background job triggered by a global event, not a School-scoped request).
+ * Phase 16b-ii's own migration additively granted the equivalent for
+ * FranchiseFeeCharge + a narrow School/Franchise column set; Phase 54's migration
+ * does the same for PlatformCharge + Franchise/School's own
+ * platformSubscriptionStatus column specifically (School's own grant was already
+ * unrestricted from Phase 16b-ii; Franchise's needed one new column added to its
+ * existing narrow grant).
  *
  * **Phase 9 is the first real handler** — Phase 8 shipped this as a deliberate no-op
  * logger with no per-event-type branching at all. Structured as specific-case-plus-
@@ -299,10 +305,29 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // cleared — kept as the historical correlator, same "never clear a Stripe
     // id after cancellation, only flip status" convention
     // Membership.stripeSubscriptionId's own handling above already follows.
-    const school = await tx.school.findUnique({ where: { stripeFranchiseFeeSubscriptionId: subscriptionId } });
-    if (school) {
-      await tx.school.updateMany({ where: { id: school.id }, data: { franchiseFeeSubscriptionStatus: 'CANCELED' } });
-      this.logger.log(`School ${school.id}'s franchise-fee Subscription (${subscriptionId}) Canceled.`);
+    const franchiseFeeSchool = await tx.school.findUnique({ where: { stripeFranchiseFeeSubscriptionId: subscriptionId } });
+    if (franchiseFeeSchool) {
+      await tx.school.updateMany({ where: { id: franchiseFeeSchool.id }, data: { franchiseFeeSubscriptionStatus: 'CANCELED' } });
+      this.logger.log(`School ${franchiseFeeSchool.id}'s franchise-fee Subscription (${subscriptionId}) Canceled.`);
+      return;
+    }
+
+    // Phase 54 — a third, genuinely different Subscription kind can reach
+    // customer.subscription.deleted identically: a platform SubscriptionPlan
+    // Subscription, School- or Franchise-side (either may subscribe
+    // independently, Spec 55 §6.1). Same either/or correlator-column reasoning
+    // as the franchise-fee branch above — stripePlatformSubscriptionId can never
+    // also match a Membership or franchise-fee Subscription id.
+    const platformSchool = await tx.school.findUnique({ where: { stripePlatformSubscriptionId: subscriptionId } });
+    if (platformSchool) {
+      await tx.school.updateMany({ where: { id: platformSchool.id }, data: { platformSubscriptionStatus: 'CANCELED' } });
+      this.logger.log(`School ${platformSchool.id}'s platform SubscriptionPlan Subscription (${subscriptionId}) Canceled — portal access now read-only.`);
+      return;
+    }
+    const platformFranchise = await tx.franchise.findUnique({ where: { stripePlatformSubscriptionId: subscriptionId } });
+    if (platformFranchise) {
+      await tx.franchise.updateMany({ where: { id: platformFranchise.id }, data: { platformSubscriptionStatus: 'CANCELED' } });
+      this.logger.log(`Franchise ${platformFranchise.id}'s platform SubscriptionPlan Subscription (${subscriptionId}) Canceled.`);
     }
   }
 
@@ -316,15 +341,23 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * has ever needed to call back into Stripe before now, only match ids
    * against stored correlator columns).
    *
-   * Two distinct paths, matching FranchiseFeeCharge's own schema.prisma
-   * comment exactly:
-   *  - Per-Headcount: the franchise-fee-usage-reporting job already created a
-   *    PENDING row (with the activeStudentCountSnapshot captured at
+   * Three distinct correlator paths tried in turn, matching FranchiseFeeCharge/
+   * PlatformCharge's own schema.prisma comments exactly:
+   *  - Per-Headcount franchise-fee: the franchise-fee-usage-reporting job already
+   *    created a PENDING row (with the activeStudentCountSnapshot captured at
    *    report-time — not recoverable from this webhook's own payload) — find
    *    the most recent one for this subscription and flip it to Successful.
-   *  - Flat (or a defensive fallback if no Pending row exists for some other
-   *    reason): nothing was snapshotted in advance — create the row directly,
-   *    already Successful, using the Invoice's own period/amount/currency.
+   *  - Flat franchise-fee (or a defensive fallback if no Pending row exists for
+   *    some other reason): nothing was snapshotted in advance — create the row
+   *    directly, already Successful, using the Invoice's own period/amount/
+   *    currency.
+   *  - Platform SubscriptionPlan (Phase 54, tried last, once neither
+   *    franchise-fee path matches): same "nothing snapshotted in advance,
+   *    create directly" shape as the Flat case — creates a PlatformCharge row
+   *    instead of a FranchiseFeeCharge one, correlated against School OR
+   *    Franchise's own stripePlatformSubscriptionId rather than School's
+   *    stripeFranchiseFeeSubscriptionId. See SubscriptionPlan/PlatformCharge's
+   *    own schema.prisma comments for the full field-by-field account.
    */
   private async handleInvoicePaid(tx: Prisma.TransactionClient, invoice: Stripe.Invoice): Promise<void> {
     const subRef = invoice.parent?.subscription_details?.subscription;
@@ -363,23 +396,26 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         where: { id: pending.id },
         data: { status: 'SUCCESSFUL', stripeInvoiceId: invoice.id },
       });
-    } else {
-      const school = await tx.school.findUnique({ where: { stripeFranchiseFeeSubscriptionId: subscriptionId } });
-      if (!school || !school.franchiseId) {
-        this.logger.warn(`invoice.paid for subscription ${subscriptionId} (invoice ${invoice.id}) — no matching School found. Ignoring (not a franchise-fee Subscription this platform created).`);
-        return;
-      }
-      const franchise = await tx.franchise.findUniqueOrThrow({ where: { id: school.franchiseId } });
+      await tx.school.updateMany({
+        where: { stripeFranchiseFeeSubscriptionId: subscriptionId, franchiseFeeSubscriptionStatus: { not: 'ACTIVE' } },
+        data: { franchiseFeeSubscriptionStatus: 'ACTIVE' },
+      });
+      return;
+    }
+
+    const franchiseFeeSchool = await tx.school.findUnique({ where: { stripeFranchiseFeeSubscriptionId: subscriptionId } });
+    if (franchiseFeeSchool && franchiseFeeSchool.franchiseId) {
+      const franchise = await tx.franchise.findUniqueOrThrow({ where: { id: franchiseFeeSchool.franchiseId } });
       const paymentAccount = await tx.paymentAccount.findUnique({ where: { franchiseId: franchise.id } });
       if (!paymentAccount) {
-        this.logger.error(`invoice.paid for School ${school.id}'s Franchise ${franchise.id} — no PaymentAccount found, cannot record a FranchiseFeeCharge.`);
+        this.logger.error(`invoice.paid for School ${franchiseFeeSchool.id}'s Franchise ${franchise.id} — no PaymentAccount found, cannot record a FranchiseFeeCharge.`);
         return;
       }
       await tx.franchiseFeeCharge.create({
         data: {
           id: randomUUID(),
           franchiseId: franchise.id,
-          schoolId: school.id,
+          schoolId: franchiseFeeSchool.id,
           franchisePaymentAccountId: paymentAccount.id,
           billingPeriodStart: new Date(invoice.period_start * 1000),
           billingPeriodEnd: new Date(invoice.period_end * 1000),
@@ -391,12 +427,52 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           stripeSubscriptionId: subscriptionId,
         },
       });
+      await tx.school.updateMany({
+        where: { stripeFranchiseFeeSubscriptionId: subscriptionId, franchiseFeeSubscriptionStatus: { not: 'ACTIVE' } },
+        data: { franchiseFeeSubscriptionStatus: 'ACTIVE' },
+      });
+      return;
     }
 
-    await tx.school.updateMany({
-      where: { stripeFranchiseFeeSubscriptionId: subscriptionId, franchiseFeeSubscriptionStatus: { not: 'ACTIVE' } },
-      data: { franchiseFeeSubscriptionStatus: 'ACTIVE' },
+    // Phase 54 — PlatformCharge's own confirmed creation trigger, the exact same
+    // shape the franchise-fee Flat branch above already uses: nothing was
+    // snapshotted in advance (no usage-reporting job exists for platform
+    // SubscriptionPlan billing — it's a flat plan price, not metered), so the
+    // row is created directly, already Successful, from the Invoice's own
+    // amount/currency. Either the School side or the Franchise side matches,
+    // never both (their stripePlatformSubscriptionId values can never collide).
+    const platformSchool = await tx.school.findUnique({ where: { stripePlatformSubscriptionId: subscriptionId } });
+    const platformFranchise = platformSchool ? null : await tx.franchise.findUnique({ where: { stripePlatformSubscriptionId: subscriptionId } });
+    if (!platformSchool && !platformFranchise) {
+      this.logger.warn(`invoice.paid for subscription ${subscriptionId} (invoice ${invoice.id}) — no matching School, Franchise, or franchise-fee relationship found. Ignoring (not a Subscription this platform created).`);
+      return;
+    }
+
+    await tx.platformCharge.create({
+      data: {
+        id: randomUUID(),
+        schoolId: platformSchool?.id,
+        franchiseId: platformFranchise?.id,
+        chargeType: 'SUBSCRIPTION_PLAN_FEE',
+        amount: invoice.amount_paid,
+        currency: invoice.currency?.toUpperCase() ?? 'USD',
+        status: 'SUCCESSFUL',
+        stripeInvoiceId: invoice.id,
+        stripeSubscriptionId: subscriptionId,
+      },
     });
+
+    if (platformSchool) {
+      await tx.school.updateMany({
+        where: { id: platformSchool.id, platformSubscriptionStatus: { not: 'ACTIVE' } },
+        data: { platformSubscriptionStatus: 'ACTIVE' },
+      });
+    } else if (platformFranchise) {
+      await tx.franchise.updateMany({
+        where: { id: platformFranchise.id, platformSubscriptionStatus: { not: 'ACTIVE' } },
+        data: { platformSubscriptionStatus: 'ACTIVE' },
+      });
+    }
   }
 
   /** Flips an existing PENDING FranchiseFeeCharge (Per-Headcount case only —
@@ -421,6 +497,12 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * practice (the next real invoice.paid/customer.subscription.updated
    * eventually re-syncs it), but a real, open gap — flagged for whenever this
    * needs to be closed properly, not silently accepted as correct.
+   *
+   * Phase 54's own platformSubscriptionStatus write below (School/Franchise,
+   * tried only once the franchise-fee correlator above doesn't match at all —
+   * `franchiseFeeResult.count === 0`) carries the identical unconditional-write
+   * caveat this comment already describes, for the identical reason — not a new,
+   * separate gap.
    */
   private async handleInvoicePaymentFailed(tx: Prisma.TransactionClient, invoice: Stripe.Invoice): Promise<void> {
     const subRef = invoice.parent?.subscription_details?.subscription;
@@ -437,10 +519,29 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       await tx.franchiseFeeCharge.update({ where: { id: pending.id }, data: { status: 'FAILED' } });
     }
 
-    await tx.school.updateMany({
+    const franchiseFeeResult = await tx.school.updateMany({
       where: { stripeFranchiseFeeSubscriptionId: subscriptionId },
       data: { franchiseFeeSubscriptionStatus: 'PAST_DUE' },
     });
+    if (franchiseFeeResult.count > 0) {
+      return;
+    }
+
+    // Phase 54 — same either/or correlator reasoning as handleInvoicePaid above.
+    // No PlatformCharge row to flip — this phase's platform SubscriptionPlan
+    // billing has no PENDING-row-in-advance case (see handleInvoicePaid's own
+    // comment), so there's nothing here analogous to the franchiseFeeCharge
+    // PENDING-flip above; only the status sync matters.
+    const platformSchoolResult = await tx.school.updateMany({
+      where: { stripePlatformSubscriptionId: subscriptionId },
+      data: { platformSubscriptionStatus: 'PAST_DUE' },
+    });
+    if (platformSchoolResult.count === 0) {
+      await tx.franchise.updateMany({
+        where: { stripePlatformSubscriptionId: subscriptionId },
+        data: { platformSubscriptionStatus: 'PAST_DUE' },
+      });
+    }
   }
 
   @OnWorkerEvent('failed')

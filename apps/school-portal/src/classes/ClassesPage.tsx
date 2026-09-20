@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -9,6 +10,7 @@ import { useClasses, useCreateClass, useUpdateClass, type ClassResponse } from '
 import { ClassFormModal } from './ClassFormModal';
 
 export function ClassesPage() {
+  const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useClasses(schoolId);
   const { data: branchData } = useBranches(schoolId);
@@ -60,9 +62,17 @@ export function ClassesPage() {
                 key: 'actions',
                 header: '',
                 render: (c) => (
-                  <Button variant="secondary" onClick={() => setEditing(c)}>
-                    Edit
-                  </Button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}`)}>
+                      View bookings
+                    </Button>
+                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/qr-code`)}>
+                      Show QR
+                    </Button>
+                    <Button variant="secondary" onClick={() => setEditing(c)}>
+                      Edit
+                    </Button>
+                  </div>
                 ),
               },
             ]}

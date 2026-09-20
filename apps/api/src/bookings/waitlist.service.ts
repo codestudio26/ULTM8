@@ -4,22 +4,29 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { GuardiansService } from '../guardians/guardians.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
+import { JoinWaitlistDto } from './dto/join-waitlist.dto';
+import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
+import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 /**
- * Phase 11 scope only: join/withdraw/claim. See BookingsService's own header comment
+ * Phase 11 scope: join/withdraw/claim. See BookingsService's own header comment
  * for the module-wide scope boundary and RLS shape (Decision 89) — WaitlistEntry
  * uses the identical asymmetric narrow-plus-broad structure.
  *
- * Deliberately self-only for join/claim — unlike BookClassDto, there is no
- * Staff-books-on-behalf-of shape here (not confirmed anywhere in SKILL.md §10 for the
- * waitlist specifically, and a Staff member joining/claiming a waitlist slot on a
- * Student's behalf would immediately spend that Student's own credit at claim time,
- * a materially bigger inference than booking creation's override already is — not
- * built without confirmation). Withdraw does support Staff-on-behalf-of, matching
- * Booking's own cancel shape, since withdrawing is purely a status change, no credit
- * implication either way.
+ * Originally self-only for join/claim — unlike BookClassDto, nothing in SKILL.md
+ * §10 confirmed a Staff-on-behalf-of shape for the waitlist specifically, and
+ * claiming immediately spends a Membership credit, a materially bigger inference
+ * than booking creation's override already was at the time. Phase 42 (Decision
+ * 103, resolved directly with the user) extended join/claim to BOTH Staff and
+ * Guardian on-behalf-of — join carries no credit-consumption risk (same as
+ * withdraw, already Staff-enabled before this phase), and claim's risk is the
+ * identical profile Guardian-on-behalf-of Booking creation (Phase 40) already
+ * ships. Every write below follows the same target-tenant-context substitution
+ * used four times already this session (Phase 37-41) — no new mechanism.
  */
 @Injectable()
 export class WaitlistService {
@@ -27,16 +34,42 @@ export class WaitlistService {
     private readonly prismaApp: PrismaAppService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
+    private readonly guardiansService: GuardiansService,
+    private readonly subscriptionGate: SubscriptionGateService,
   ) {}
 
-  /** POST /classes/{id}/waitlist. */
-  async joinWaitlist(callerId: string, classId: string) {
-    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+  /**
+   * POST /classes/{id}/waitlist. Phase 42 (Decision 103) on-behalf-of shape — same
+   * caller-context-first-then-target-context-retry pattern BookingsService.
+   * bookClass() (Phase 40) already established for Class visibility: a Guardian
+   * caller holds zero RoleGrant anywhere (Decision 92), so their own context
+   * never sees the Class directly; only the retry under the target Student's own
+   * context does.
+   */
+  async joinWaitlist(callerId: string, classId: string, dto?: JoinWaitlistDto) {
+    const studentId = dto?.studentId ?? callerId;
+    const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
+
+    let cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    let isGuardianAction = false;
+    if (!cls && isOnBehalfOf) {
+      cls = await this.prismaApp.withTenantContext(studentId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+      isGuardianAction = cls !== null;
+    }
     if (!cls) {
       throw new NotFoundException('Class not found');
     }
+    // Hoisted to a local const — same closure-narrowing fix bookClass()'s own
+    // resolvedClass already applies.
+    const resolvedClass = cls;
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    if (isGuardianAction) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    } else if (isOnBehalfOf) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
+    }
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
       // FOUND ON REVIEW: reading the current max position then computing +1 is a
       // TOCTOU race — two Students joining the same Class's waitlist concurrently
       // can both read the same highest position and collide, breaking the FCFS
@@ -66,10 +99,10 @@ export class WaitlistService {
         return await tx.waitlistEntry.create({
           data: {
             id: randomUUID(),
-            studentId: callerId,
+            studentId,
             classId,
-            schoolId: cls.schoolId,
-            branchId: cls.branchId,
+            schoolId: resolvedClass.schoolId,
+            branchId: resolvedClass.branchId,
             position,
           },
         });
@@ -82,18 +115,37 @@ export class WaitlistService {
     });
   }
 
-  /** DELETE /waitlist/{id} — the Student withdrawing themselves, or Staff on their
-   * behalf. */
-  async withdraw(callerId: string, entryId: string): Promise<void> {
-    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.waitlistEntry.findUnique({ where: { id: entryId } }));
+  /**
+   * DELETE /waitlist/{id} — the Student withdrawing themselves, Staff on their
+   * behalf (unchanged since Phase 11 — a pure status change, no credit
+   * implication), or — as of Phase 42 (Decision 103) — a Guardian withdrawing a
+   * linked minor's own entry. The initial lookup runs under the caller's own
+   * context first, unchanged for self/Staff (both already have RLS visibility
+   * via WaitlistEntry's narrow self-branch or its broad Staff-read policy). Only
+   * when that finds nothing does `query.studentId` (a Guardian retry hint, same
+   * shape CancelBookingDto already established) trigger a retry under that
+   * Student's own context — see WithdrawWaitlistQueryDto's own comment for why
+   * this is a query param, not a body, unlike every other on-behalf-of consumer.
+   */
+  async withdraw(callerId: string, entryId: string, query?: WithdrawWaitlistQueryDto): Promise<void> {
+    let existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.waitlistEntry.findUnique({ where: { id: entryId } }));
+    let isGuardianAction = false;
+    if (!existing && query?.studentId !== undefined && query.studentId !== callerId) {
+      existing = await this.prismaApp.withTenantContext(query.studentId, (tx) => tx.waitlistEntry.findUnique({ where: { id: entryId } }));
+      isGuardianAction = existing !== null;
+    }
     if (!existing) {
       throw new NotFoundException('Waitlist entry not found');
     }
-    if (existing.studentId !== callerId) {
-      await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    const resolvedEntry = existing;
+
+    if (isGuardianAction) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId);
+    } else if (resolvedEntry.studentId !== callerId) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, resolvedEntry.schoolId);
     }
 
-    await this.prismaApp.withTenantContext(existing.studentId, async (tx) => {
+    await this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const result = await tx.waitlistEntry.updateMany({
         where: { id: entryId, status: { in: ['WAITING', 'NOTIFIED'] } },
         data: { status: 'CANCELLED' },
@@ -105,33 +157,61 @@ export class WaitlistService {
   }
 
   /**
-   * POST /waitlist/{id}/claim — self-only (see class header comment). Only a
-   * NOTIFIED entry, still within its own claimByDeadline, may be claimed. Kickoff
-   * prompt §1.d's own resolved inference: RE-CHECKS rank-eligibility and remaining
-   * capacity at claim time (state may have changed since joining), not a
-   * carried-over decision from join time.
+   * POST /waitlist/{id}/claim. Only a NOTIFIED entry, still within its own
+   * claimByDeadline, may be claimed. Kickoff prompt §1.d's own resolved
+   * inference: RE-CHECKS rank-eligibility and remaining capacity at claim time
+   * (state may have changed since joining), not a carried-over decision from
+   * join time.
+   *
+   * Originally hard self-only — Phase 42 (Decision 103) extended this to Staff
+   * and Guardian on-behalf-of, the exact same shape and reasoning as
+   * BookingsService.cancelBooking() (Phase 41): the initial lookup runs under
+   * the caller's own context first (unchanged for self and any Staff role, both
+   * already covered by WaitlistEntry's own RLS), and only a Guardian's
+   * `dto.studentId` hint (ClaimWaitlistDto) triggers a retry under the target
+   * Student's own context when that first lookup finds nothing. The
+   * authorization check afterward always keys off the entry's own REAL
+   * studentId once found, never the client-supplied hint directly.
    */
-  async claim(callerId: string, entryId: string) {
-    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.waitlistEntry.findUnique({ where: { id: entryId } }));
+  async claim(callerId: string, entryId: string, dto?: ClaimWaitlistDto) {
+    let existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.waitlistEntry.findUnique({ where: { id: entryId } }));
+    let isGuardianAction = false;
+    if (!existing && dto?.studentId !== undefined && dto.studentId !== callerId) {
+      existing = await this.prismaApp.withTenantContext(dto.studentId, (tx) => tx.waitlistEntry.findUnique({ where: { id: entryId } }));
+      isGuardianAction = existing !== null;
+    }
     if (!existing) {
       throw new NotFoundException('Waitlist entry not found');
     }
-    if (existing.studentId !== callerId) {
-      throw new ForbiddenException('Only the Student who joined this Waitlist entry may claim it.');
+    const resolvedEntry = existing;
+
+    if (isGuardianAction) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId);
+    } else if (resolvedEntry.studentId !== callerId) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, resolvedEntry.schoolId);
     }
-    if (existing.status !== 'NOTIFIED') {
+    if (resolvedEntry.status !== 'NOTIFIED') {
       throw new BadRequestException('This Waitlist entry is not currently Notified — nothing to claim.');
     }
-    if (existing.claimByDeadline && existing.claimByDeadline < new Date()) {
+    if (resolvedEntry.claimByDeadline && resolvedEntry.claimByDeadline < new Date()) {
       throw new ConflictException('This Waitlist entry\'s claim window has passed.');
     }
+    // Spec 55 §10.2's confirmed read-only degraded-portal state ("no new Classes/
+    // Bookings/payments") — a claim creates a real Booking below
+    // (`tx.booking.create`), not through BookingsService, so it needs this same
+    // check BookingsService.bookClass() makes rather than inheriting it. Checked
+    // under the entry's own `studentId`, not `callerId` — same "a Guardian caller
+    // holds zero RoleGrant anywhere, Decision 92" reasoning
+    // BookingsService.bookClass()'s own identical check already documents.
+    await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const cls = await tx.class.findUniqueOrThrow({ where: { id: existing.classId } });
+    return this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
+      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
+      const studentId = resolvedEntry.studentId;
 
       if (cls.termsWaiverRequired) {
         const signed = await tx.waiverSignature.findFirst({
-          where: { studentId: callerId, schoolId: cls.schoolId, status: 'SIGNED' },
+          where: { studentId, schoolId: cls.schoolId, status: 'SIGNED' },
           select: { id: true },
         });
         if (!signed) {
@@ -139,7 +219,7 @@ export class WaitlistService {
         }
       }
 
-      await this.assertRankEligible(tx, callerId, cls);
+      await this.assertRankEligible(tx, studentId, cls);
 
       if (cls.capacity !== null) {
         // Same explicit-row-lock fix as BookingsService.bookClass's own capacity
@@ -157,14 +237,14 @@ export class WaitlistService {
         }
       }
 
-      const sourceMembership = await this.selectAndConsumeMembership(tx, callerId, cls.schoolId, cls.id);
+      const sourceMembership = await this.selectAndConsumeMembership(tx, studentId, cls.schoolId, cls.id);
 
       const bookingId = randomUUID();
       try {
         await tx.booking.create({
           data: {
             id: bookingId,
-            studentId: callerId,
+            studentId,
             classId: cls.id,
             schoolId: cls.schoolId,
             branchId: cls.branchId,
@@ -192,6 +272,30 @@ export class WaitlistService {
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
     });
+  }
+
+  /**
+   * GET /classes/{id}/waitlist — School Owner/Manager, Branch Staff, or Instructor.
+   * FOUND ON REVIEW (Phase 22, mirroring BookingsService.findAllForClass()'s own
+   * identical finding): never existed before, despite this phase's own
+   * `waitlist_entry_staff_read` RLS policy already anticipating exactly this read.
+   * Unpaginated, matching WaitlistEntryListResponseDto's own shape (no `nextCursor`)
+   * — a single Class's own waitlist queue is inherently small/bounded, unlike
+   * findMyBookings' own all-time cross-Class list.
+   */
+  async findAllForClass(callerId: string, classId: string) {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    // FOUND ON REVIEW: passes cls.branchId — same dual-grant defense-in-depth
+    // reasoning as BookingsService.findAllForClass()'s own identical call; see
+    // that method's own comment for the corrected account of what this
+    // actually defends against (CI caught an earlier, inaccurate version).
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.waitlistEntry.findMany({ where: { classId }, orderBy: { position: 'asc' } }),
+    );
   }
 
   // ---------------------------------------------------------------------------

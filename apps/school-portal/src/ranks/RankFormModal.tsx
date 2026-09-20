@@ -167,7 +167,7 @@ export function RankFormModal({
             // guard below and "Add tier"'s append-only setTiers call) — every
             // existing row's index is therefore stable across edits, which is
             // what index keys require to be safe at all.
-            <div key={i} style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, marginBottom: 8 }}>
+            <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 12, marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <strong style={{ fontSize: 13 }}>Tier {i + 1}</strong>
                 {tiers.length > 1 && i === tiers.length - 1 ? (

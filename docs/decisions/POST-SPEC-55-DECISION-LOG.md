@@ -778,3 +778,230 @@ Also unresolved, unchanged: whether a School should be notified when its Franchi
 ### Recorded by
 
 Logged during a direct, live exchange with the user, 10 Sep 2026, immediately following Decision 98 — the question was asked plainly ("who sets a Franchise's actual fee rate/amount"), a recommendation given (self-service) and explained, and the user's own choice ("Yes, go ahead with self-service") followed. **FOUND ON REVIEW, before this ever merged:** this exact decision was cited by number throughout the Phase 16b-ii code and migration (schema.prisma, the DTOs, the migration file, a test comment) before this entry was actually written — a real process gap, not a business-logic error: the underlying decision was genuinely made with the user in this same conversation, but the append-only log entry recording it was never created until this review pass caught the dangling citation. Written now, after the fact, to close that gap — the decision itself was not invented, only its paper trail was late.
+
+---
+
+## Decision 100 — SSO/identity-provider for Platform Admin: AWS Cognito, resolved directly with the user
+
+**Date:** 11-12 Sep 2026
+**Status:** Product-owner decision, made directly with the user, resolving the one vendor decision this decision-log's own §4-equivalent open-items list (the ULTM8 Roadmap artifact) had been carrying since Franchise-fee billing shipped (Decision 99's own "still-open SSO vendor decision" reference).
+**Resolves:** `PlatformAdminModule`, and transitively `SubscriptionPlansModule`/`TranslationsModule` (both sit behind Platform Admin's own guard chain by confirmed design), were blocked purely on which identity provider Platform Admin staff authenticate against — ultm8-tenant-isolation SKILL.md §3's confirmed requirement ("SSO against the company's own identity provider plus mandatory 2FA... a distinct Auth0/Keycloak/Cognito pool, or at minimum a separate JWT issuer and audience") names three candidate vendors without picking one, and no amount of engineering work substitutes for an actual vendor choice.
+
+### Decision
+
+**AWS Cognito.** Presented to the user across several passes, not a single-shot recommendation: an initial pass favored Auth0 (better developer experience, larger ecosystem); a deeper pass — live-verified against current vendor pricing and incident-history sources rather than assumed — corrected two things that pass had gotten wrong (Auth0's B2B/Organizations pricing tier doesn't actually apply to a single-internal-team use case; genuine audit-log streaming and anomaly detection are gated behind Auth0's paid tiers, not included free) and surfaced a real, dated reliability data point (a major Okta/Auth0-parent MFA outage, October 2025) that the first pass hadn't weighed at all; a further pass checked Cognito's own outage history for fairness (also real — a Feb 2025 7h50m incident, a Mar 2026 UAE-datacenter-strike-driven outage, a Jul 2026 Kinesis cascading failure) and confirmed its own known DX/setup-complexity cost (~1-2 engineer-days for a properly configured pool, per current third-party review sources) rather than presenting Cognito as risk-free. Final reasoning, weighed directly against Auth0/WorkOS rather than in isolation: Cognito adds no new external vendor to a stack already carrying Stripe/Twilio/Postmark-SES/Cloudflare (this project's own Postmark-instability flag, §11.4, is the concrete precedent for why "one more vendor relationship" is a real, not hypothetical, cost here); its own outage risk is *correlated* with AWS dependency this backend already fully trusts for Secrets Manager (holding live Stripe credentials) and CI/CD, not *additive* to it; and CloudTrail gives real audit logging on every Cognito API call for free, where Auth0 gates the equivalent behind a paid tier for the one identity in the system whose entire justification is auditability. WorkOS was ruled out on inspection, not by comparison shopping: its flagship product (Enterprise SSO/SCIM for external customers bringing their own IdP) doesn't match this problem's actual shape — a small number of ULTM8's own internal staff, not multiple outside organizations each needing federation.
+
+A related, narrower finding from the same discussion, not yet acted on: if ULTM8 already operates Google Workspace or Microsoft 365 for staff email, letting staff sign in with that existing corporate identity (domain-restricted, explicitly allowlisted against `AdminUser.ssoSubject` — never by domain-membership alone) would be strictly better than either Cognito or Auth0 — zero new vendor, zero cost, reuses identity governance the company already operates. This was left open rather than decided, pending confirmation of whether such a Workspace/365 tenant already exists; Slice 1 (this phase) is built against Cognito specifically so it isn't blocked on that separate, slower-moving company decision, and the module is structured (`AdminUser.ssoSubject` as the actual access-control gate, ULTM8's own JWT as what the rest of the app depends on, never the upstream IdP's token directly) so switching later is a bounded, contained change — a new token-verification implementation behind the same interface, not a redesign.
+
+### What this does NOT resolve
+
+Only Slice 1 — the auth spine (`POST /platform-admin/auth/exchange`, `GET /platform-admin/auth/me`, the separate JWT realm/guard/strategy) — is built against this decision. Not built in this phase, each its own later slice: any actual cross-tenant admin business-logic endpoint (all of which need the immutable audit-log write ultm8-tenant-isolation SKILL.md §3 requires, which doesn't exist yet); admin-invite/self-service admin-account management (a `FULL_ADMIN` adding a `SUPPORT`/`BILLING_PAYMENTS_OPS` teammate — the bootstrap-only path in `scripts/bootstrap-admin-user.ts` is explicitly not that); the actual AWS Cognito User Pool itself, which is real infrastructure outside this codebase's own provisioning capability (no AWS credentials exist in the environment this was built in) — the application code is written against `COGNITO_USER_POOL_ID`/`COGNITO_CLIENT_ID` as configuration, matching every other external-service convention already established here (Stripe, Secrets Manager, R2), and the User Pool itself (MFA set to Required, per §4.4) is the user's own infrastructure step to complete before this flow is reachable end-to-end. The 5-minute `PLATFORM_ADMIN_JWT_TTL` default is a Developer-level engineering parameter, not a spec-confirmed or product-owner-approved number the way the tenant realm's 15-minute TTL is (Spec §8.3) — chosen deliberately narrower than the tenant default given this realm's heightened sensitivity, but open to explicit revision rather than treated as settled.
+
+### Recorded by
+
+Reached across several direct exchanges with the user spanning 11-12 Sep 2026: the user asked for the underlying decisions/questions to be restated, then for a "deep dive" on the SSO recommendation specifically — taken through multiple passes, each correcting or sharpening the previous one against live-verified sources rather than resting on the first answer — followed by the user's own explicit direction, "go ahead with Cognito." **FOUND ON REVIEW, before this ever merged:** this decision was referenced by number in `platform-admin.module.ts`'s own header comment before this log entry existed — the same process gap Decision 99's own "Recorded by" section already named once; written now, at this review's own prompting, to close it the same way.
+
+---
+
+## Decision 101 — Video-hosting/live-streaming vendor: Cloudflare Stream (hosting) + AWS Transcribe (captioning/STT), resolved directly with the user
+
+**Date:** 15 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the one remaining open vendor decision blocking `CurriculumModule` — its data-model precondition (Discipline → Rank → Skill) has been satisfied since Phase 10b, and Decision 58 already confirms both Prerecorded and Live Lesson formats are in scope with ULTM8-built captioning (WCAG 1.2.2, not a third-party transcript vendor) for both — but no video-hosting/streaming vendor had ever been chosen.
+
+### Decision
+
+**Cloudflare Stream** for video hosting/delivery — the same read-heavy, egress-heavy public-media access pattern that already justified choosing R2 over S3 for images/PDFs (Spec 55 §11.3), applied here to video specifically. **AWS Transcribe** for captioning/speech-to-text — a backend service call, consistent with this project's already-confirmed AWS-native ops stack (Secrets Manager, and now Cognito per Decision 100), unlike the public video bytes themselves, which have no reason to route through AWS.
+
+Presented to the user as a recommendation (not a forced single option) alongside the roadmap's own open-decisions list; the user asked for Claude's own best judgment rather than picking between alternatives, and the recommendation above was given and followed — the same "recommendation given, user's own choice followed" shape as Decision 94/96's own resolution pattern.
+
+### What this does NOT resolve
+
+Neither vendor's actual infrastructure is provisioned by this decision — no Cloudflare Stream account/API token, no AWS Transcribe access, exist in this working environment (matching every other external-service precedent already established here: Stripe, Cognito, R2, Twilio, Postmark/SES all required the user's own account/credential provisioning before the already-written application code became reachable end-to-end). `CurriculumModule` itself — the actual schema, upload flow, captioning pipeline, and Live Lesson mechanics — is not built by this decision alone; this closes only the vendor-choice blocker, the same way Decision 100 closed only the SSO-vendor blocker for `PlatformAdminModule` without itself building any business-logic endpoint. Audio description (WCAG 1.2.5) remains a separate, still-unresourced item per Decision 58's own original scoping, untouched here.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 15 Sep 2026 — presented alongside two other open decisions (Decisions 102/103 below) surfaced by that same session's own research pass into `PlatformAdminModule`'s and `WaitlistService`'s remaining scope; the user asked for Claude's own best recommendation across all three rather than choosing between presented options, and this decision (and the two below) record the recommendation given and the user's explicit direction to proceed with it.
+
+---
+
+## Decision 102 — PlatformAdminModule Support-tier impersonation: read-only session, resolved directly with the user
+
+**Date:** 15 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `ultm8-tenant-isolation` SKILL.md §3's own [CONFIRMED] grant that Support gets "a time-boxed, audited, tenant-scoped impersonation session" names a real capability but never specifies its mechanics — what a Platform-Admin-issued impersonation session actually lets the tenant-side app do once inside it, or how the tenant's own `AuthGuard`/`TenantAuthorizationService` should recognize and scope such a token. Researched directly against Spec 55, `ultm8-tenant-isolation`, and the full decision log before this was raised with the user — confirmed as a genuine gap, not a guessable one: no existing session mechanism (`act-as`/`assumeRole`/`sudo`-style token) exists anywhere in this codebase to graft onto, unlike every Guardian-on-behalf-of slice (Phase 37-41) which each reused an already-built mechanism with a different caller identity substituted in.
+
+### Decision
+
+**Read-only.** While an active impersonation session is open, Support sees exactly what the tenant user themselves would see — the tenant user's own screens/data, read access only — with no write action of any kind permitted through the impersonated identity. Reasoning: `ultm8-tenant-isolation` §3 labels the Support tier itself "(read-only)" as a whole-tier descriptor before ever mentioning impersonation — a session that could then turn around and write on the tenant's behalf would directly contradict that framing, not merely extend it. This is also the standard shape for support/troubleshooting impersonation industry-wide: view-as-user for diagnosis, not act-as-user for changes.
+
+Mechanically (left open for the implementing phase to design, not itself decided here): a short-TTL, audited, explicitly-scoped-to-one-tenant-User token is the anchor point implied by "time-boxed, audited, tenant-scoped" — the exact claim shape, issuance endpoint, and how the tenant-side `AuthGuard` distinguishes "a real tenant session" from "a Support-issued read-only impersonation of one" remain genuine engineering design work for whichever phase actually builds this, not pre-decided by this entry.
+
+### What this does NOT resolve
+
+This decision answers only the scope question (read-only vs. write-parity) — it does not itself build the impersonation session mechanism, choose the JWT claim shape, or specify which tenant-side screens/endpoints a read-only impersonation session is routed through. `Billing/Payments Ops` and `Full Platform Admin`'s own relationship to impersonation (whether either tier gets it at all, beyond Support) is not addressed — `ultm8-tenant-isolation` §3 names the impersonation grant only under the Support bullet, and this decision does not extend or restrict that. "General tenant-data edits" (the other half of the item this session's research covered) remains entirely unscoped — no field, entity, or sub-role tier is named anywhere in Spec 55 or this log for it, and this decision does not touch it at all.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 15 Sep 2026, immediately following a dedicated research pass into `PlatformAdminModule`'s actual remaining scope (triggered by the roadmap's own "general tenant-data edits, or impersonation — needs its own design pass" item) — the user asked for Claude's own best recommendation, and the read-only framing above was given and explained, then followed with the user's own direction to proceed.
+
+---
+
+## Decision 103 — Staff/Guardian-on-behalf-of Waitlist join and claim: extended to both, resolved directly with the user
+
+**Date:** 15 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `WaitlistService`'s own header comment (Phase 11) had deliberately left join/claim self-service-only, reasoning that — unlike Booking creation, where SKILL.md §9 explicitly confirms Staff override authority — nothing in SKILL.md §10 names an equivalent Staff (or Guardian) on-behalf-of shape for the waitlist specifically, and claiming spends a Membership credit immediately with no textual anchor to build against. This was the one remaining item in the otherwise-complete Guardian-on-behalf-of chain Phase 37-41 shipped (signing → enrollment → membership purchase → booking creation → booking cancellation).
+
+### Decision
+
+Extend the same on-behalf-of shape already established for booking creation/cancellation to `WaitlistService.joinWaitlist()`/`claim()`, for **both** Staff and Guardian callers. Reasoning given to the user and accepted: `withdraw()` already supports Staff-on-behalf-of today (a pure status change, no credit implication) — `join` carries the identical risk profile (queues without consuming any credit; reversible via withdraw) — so extending `join` to Guardian, and to a symmetric Staff shape, closes an inconsistency rather than opening a new risk. `claim()` is the one step that spends a Membership credit immediately, which is exactly the same risk profile Guardian-on-behalf-of Booking creation (Phase 40) already carries and already ships in production code — the original caution in `WaitlistService`'s own header comment predates that precedent; now that it exists, reviewed and working, `claim()`'s risk is no longer materially different from `bookClass()`'s own, and the same target-tenant-context substitution mechanism already used four times this session (Phase 37-41) applies here without any new pattern being invented.
+
+### What this does NOT resolve
+
+The actual implementation — `assertGuardianOfStudent()`/`assertStaffAtSchool()` branches on `joinWaitlist()`/`claim()`, any new DTO fields needed, and full e2e coverage — is not built by this decision alone; it authorizes the next phase to build it the same way Decision 96 authorized (but did not itself build) self-service Student enrollment. Whether a Guardian should also be able to withdraw a linked minor's own waitlist entry is not newly addressed here (Staff-on-behalf-of withdraw already exists; extending it to Guardian as well is a natural, low-risk companion to this decision but is left for the implementing phase to include or flag, not pre-decided).
+
+### Recorded by
+
+Logged during a direct exchange with the user, 15 Sep 2026, alongside Decisions 101/102 above, presented together after the same session's research pass surfaced all three as the project's remaining open decisions — the user asked for Claude's own best recommendation across all three, and this reasoning was given and followed.
+
+---
+
+## Decision 104 — Lesson scoping and authorship: School-scoped, Instructor/Staff-authored, resolved directly with the user
+
+**Date:** 16 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** a genuine contradiction inside Spec 55 itself, found while starting Phase 44 (`CurriculumModule`, Decision 101's video vendor having just unblocked it). Decision 58's own prose (§12.1) describes Prerecorded Lessons as "videos an instructor uploads ahead of time" — tenant-side, Instructor-authored. But Spec 55's own §7 endpoint table lists Lesson authoring as `CRUD /admin/curriculum/lessons`, and this project's own confirmed `/admin/*` convention (`ultm8-nestjs-module` §5 — `TranslationsModule` is the direct structural precedent, tenant-facing reads but Platform-Admin-only authoring) means that endpoint prefix should mean the Platform Admin realm, never a tenant JWT. Nothing in Spec 55 reconciles these two statements, and no Section 8 screen-to-role mapping mentions Lesson/Curriculum at all. This was escalated rather than resolved by picking whichever reading was found first, per this project's own standing rule.
+
+### Decision
+
+**School-scoped, Instructor/Staff-authored, ordinary tenant endpoints** — not the Platform Admin realm. `Lesson` carries a denormalized `schoolId` (same convention as `Skill`/`Rank` above it), and writes go through the existing `TenantAuthorizationService.assertStaffAtSchool` check (Owner/Manager, Branch Staff, or Instructor — the same three roles every other tenant-content entity in this schema already uses), reached via ordinary `/schools/{id}/curriculum/lessons` routes, not `/admin/*`. Reasoning given to the user and accepted: Decision 58's own prose is the more specific, more recently-reasoned statement about *this* feature specifically, while the `/admin/curriculum/lessons` table entry reads as a copy-paste/categorization slip against the `TranslationsModule` pattern immediately above it in the same table — and a shared, Platform-Admin-curated lesson library sits awkwardly against today's schema regardless, since `Skill` (what every Lesson links to) is already per-School, not platform-wide reference data. This also keeps Lesson consistent with every other confirmed piece of Decision 58 itself: Lessons "surfacing automatically... a student's profile, the grading flow itself" only makes sense as School-scoped content a Student at that School can already see through ordinary RLS, the same "any active RoleGrant holder at the School may read, business-layer narrows writes" split already established for Discipline/Rank/Skill (Phase 10b) and reused unchanged.
+
+### What this does NOT resolve
+
+This decision answers only scoping and authorship — it does not build the video-upload or captioning-pipeline integration itself (Decision 101 picked the vendors; no Cloudflare Stream/AWS Transcribe credentials are provisioned in this environment, so `videoRef`/`captionStatus`/`captionTrackRef` exist on the model but nothing writes them beyond their schema defaults yet). It also does not resolve two things flagged during the same research pass, both left for the Architect: what Spec 55's own "Belongs to a Category" clause on Lesson actually refers to (no `Category` entity exists anywhere else in the document — treated as a doc inconsistency, not modeled), and Live-Lesson real-time captioning mechanics (explicitly gated on the video-hosting vendor's own capabilities in Spec 55, unresolved there and not addressed here). Full e2e isolation-suite coverage for the new `Lesson`/`LessonSkill` RLS policies is not run by this decision either — this working environment has no reachable Postgres; the schema, hand-authored migration, and NestJS module are typechecked (`tsc --noEmit`) but not yet verified against a live database or the cross-tenant isolation CI gate.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 16 Sep 2026, immediately after a dedicated research pass (docx text extraction of Spec 55 §12.1/§6.1/§7) surfaced the scoping contradiction above as a genuine spec-internal gap, not a guessable one — the user was given both readings plus a recommendation and chose the recommended one.
+
+---
+
+## Decision 105 — PlatformAdminModule general tenant-data edits: not built, pending a named use case
+
+**Date:** 16 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the one item the project's own roadmap tracking had flagged as genuinely irreducible to an engineering question — "which specific tenant fields/entities, if any, should a Platform Admin be able to edit directly, and which sub-role tier(s) may do it?" — the sibling question Decision 102 (Support-tier impersonation) deliberately left untouched.
+
+### Decision
+
+**Do not build a general tenant-data-edit capability.** Verified directly against `ULTM8_Technical_Specification_55.docx` (not just `ultm8-tenant-isolation` SKILL.md's own paraphrase) before this was raised with the user: §4.4 names Platform Admin's exact three sub-role capabilities in full — Support (read-only account metadata + time-boxed impersonation), Billing/Payments Ops (view `PaymentAccount` status + initiate Stripe Connect credential rotation, never a decrypted secret), Full Platform Admin (assign sub-roles + break-glass) — and none of the three includes editing a tenant's records. §7's own endpoint table lists only `GET /admin/tenants` and `GET /admin/tenants/{id}` for `PlatformAdminModule`'s tenant surface, no `PATCH`/`PUT`/`DELETE`. The phrase "viewing or editing another tenant's records" occurs exactly once in the entire document, in §4.7 (Audit trail), as one example of an action type that *would* be logged if it existed — never granted to any role, field, or entity anywhere else in the spec. This is a confirmed, total absence, not an oversight in a paraphrase.
+
+Reasoning given to the user and accepted: every concrete Platform Admin need the spec actually names is already built — Support's read+impersonation (Phase 43) covers diagnosis and hands-on troubleshooting without a write capability; Billing/Payments Ops's credential rotation (Phase 35) covers the one payments-adjacent write the spec confirms. A general tenant-record-edit surface with no named fields, entities, or scenario would mean inventing both the capability's shape and its authorization boundary from nothing — exactly the class of guess `ultm8-domain-rules`/`ultm8-tenant-isolation`'s own standing rules prohibit, and a meaningfully larger audit/security surface (every tenant field becomes admin-writable) to carry indefinitely for a need nobody has actually named yet.
+
+### What this does NOT resolve
+
+If a real, specific scenario emerges later (e.g., Support needing to correct a locked-out user's contact info, or Full Admin needing to fix a stuck Membership/subscription state), that is a fresh, narrowly-scoped decision — naming the exact fields/entities and sub-role — not an unlocking of broad edit access under this same entry. Nothing here revokes or narrows any tenant-data capability already built (impersonation, credential rotation); it only declines to add a new, unscoped one. `MobileAppPublishingModule`'s own confirmed `PATCH /admin/tenants/{id}/app-config` (Section 5, `TenantAppConfig` — branding/build config) is a separate, already-spec-confirmed, already-scoped write surface and is unaffected by this decision either way.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 16 Sep 2026 — the user was presented with three options (don't build it, a narrow named capability, or a broader CRUD-style capability) plus Claude's own recommendation (don't build it, for the reasoning above) via a direct question, and asked for Claude's own best judgment rather than picking between the options; the recommendation was given and followed, the same "recommendation given, user's own choice followed" shape as Decisions 101–104.
+
+---
+
+## Decision 106 — SubscriptionPlansModule billing-direction "blocker": stale citation, not a live question
+
+**Date:** 18 Sep 2026
+**Status:** Documentation reconciliation — verified directly against source; not a new product/business decision
+**Resolves:** `docs/TRACK-A-ROADMAP.md` and two code comments (`apps/api/src/platform-admin/platform-admin.module.ts`, `apps/api/src/payments/payments.controller.ts`) cited `ultm8-domain-rules` §2 as `[UNRESOLVED]` on whether the platform-level `SubscriptionPlan` a Franchise/School "subscribes to" is ULTM8 billing that Franchise/School directly, or a plan resold onward to member Schools — and said not to implement billing logic until it was resolved. A master-roadmap synthesis (18 Sep 2026) found the skill file's *current* text says the opposite: `[CONFIRMED]` since "Pass 4."
+
+### What was actually verified
+
+Not assumed from the skill file alone — traced to source:
+1. **`skills/ultm8-domain-rules/SKILL.md`** itself is internally consistent and unambiguous: §2's own confirmed-items list, the platform-wide "confirmed" bullet roundup, the white-label-entitlement line, the explicit `MembershipPlan`-vs-`SubscriptionPlan` distinction warning, and the canonical-terminology table all independently state the same resolved direction — six separate locations, not one throwaway line.
+2. **`git show 80de2d4`** (`Update domain rules and add Spec 55 handover`, authored by the project owner, 31 Aug 2026 — before Phase 0 of implementation even started) shows the actual edit: the line changed from `[UNRESOLVED] ... Do not implement Franchise Subscription Plan billing logic until this is resolved` to `[CONFIRMED] ... is ULTM8's own platform revenue ... not a plan the Franchise resells onward ... resolved Pass 4`. This is a deliberate, dated, pre-implementation resolution, not later drift or an accidental edit.
+3. **`deep-review/ULTM8-Dev-Handover-v55/review-history-tracker.html`** (the spec's own review audit trail, independent of the skill file) corroborates it a third way, listing "SubscriptionPlan direction" as the first of five decisions locked in Pass 4 (§10.1/§10.2 status rows).
+
+Three independent primary sources agree. The roadmap doc and code comments were simply never updated after the skill file's Pass 4 edit — a documentation-currency bug, not a genuine open business question.
+
+### Decision
+
+**Not a decision — a correction.** `SubscriptionPlansModule` is not blocked by this question. Its status is the same as `TranslationsModule`'s was before Phase 49: confirmed scope, never picked up. `docs/TRACK-A-ROADMAP.md`, `docs/ULTM8-MASTER-ROADMAP.md`, and the two stale code comments are updated in the same change that adds this entry.
+
+### What this does NOT resolve
+
+This does not scaffold or build `SubscriptionPlansModule` — it only clears the specific citation blocking it from being scheduled like any other unbuilt-but-unblocked module. Building it is unaffected, ordinary future work.
+
+### Recorded by
+
+Investigated and recorded by Claude at the user's direct request ("pick up item B.2: SubscriptionPlansModule citation reconciliation" — the item the same session's own master-roadmap synthesis had flagged as needing an Architect pass), 18 Sep 2026. No new business judgment call was made — this verifies which existing source is current and corrects citations to match, per `CLAUDE.md`'s own source-of-truth hierarchy (the skill file outranks a roadmap doc or a code comment). If this reasoning turns out to be wrong — if the skill file's Pass 4 resolution was itself made in error — that would be a genuine reversal needing the product owner directly, not something to silently re-flip here.
+
+---
+
+## Decision 107 — QR check-in mechanics: two independently-keyed rotating tokens (Class-scoped + Student-scoped), per-Student Instructor roll-call scan with a camera-free manual fallback
+
+**Date:** 18 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation, not a product-owner-approved decision like 101–105 — approved by the user as a design proposal before implementation, but the underlying mechanics were never specified anywhere in Spec 55 or SKILL.md and were designed, not confirmed
+**Resolves:** two gaps this log never closed. First, Phase 13's own `POST /attendance/scan` shipped against a bare `bookingId` with no rotation at all — a static QR code a Student could screenshot and reuse indefinitely, directly contradicting Decision 66's own confirmed constraint that Class QR codes must be "time-boxed, rotating, never static." Second, Decision 71 confirmed that Instructors need a roll-call scanning capability distinct from Student self-service check-in, but never designed its mechanics (per-Student vs. batched, camera-based vs. name-confirmation, how consent withdrawal interacts with it) — left as a named-but-undesigned item ever since.
+
+### Decision
+
+Two independently-keyed, short-lived signed JWTs, each verified against its own dedicated secret (`QR_CLASS_TOKEN_SECRET`, `QR_STUDENT_TOKEN_SECRET`) so a captured token of one kind can never be replayed as the other even under a payload-shape-check bug: a **Class-scoped token** (`GET /classes/:id/qr-token`, Staff-minted, displayed on a shared screen, any Student at the School scans it via `POST /attendance/scan`) and a **Student-scoped personal token** (`GET /attendance/my-qr-token`, self-minted by any authenticated caller, displayed on the Student's own device, an Instructor scans it via `POST /classes/:id/attendance-scan`). Both expire after `QR_ATTENDANCE_TOKEN_TTL_SECONDS` (default 20s).
+
+Instructor roll-call is per-Student, not batched or checklist-style, discriminated purely by whether the request body carries a `studentToken`: `INSTRUCTOR_SCAN` (Instructor scans the Student's own personal token, camera-based) or `INSTRUCTOR_MANUAL` (Staff confirms by name alone, zero camera involvement, for a Student whose device is dead/absent/a young minor with none). `Booking` gains `checkInMethod`/`checkedInById` columns (nullable, mirroring the existing `overriddenById`/`overrideReason` pairing) recording which of the three methods (`SELF_SERVICE`, `INSTRUCTOR_SCAN`, `INSTRUCTOR_MANUAL`) completed the check-in and by whom. The existing check-in-window cutoff (`Class.qrAttendanceEndAt ?? Class.endDate`) applies identically to all three methods — exempting manual mode would let "just say manual" bypass the whole system's anti-fraud/no-show boundary. Camera-tier `ConsentRecord` withdrawal blocks `SELF_SERVICE` and `INSTRUCTOR_SCAN` but NOT `INSTRUCTOR_MANUAL`, which exists specifically as the camera-free fallback.
+
+### Why
+
+Per-Student over batched/checklist: Decision 71's own text says "scan" — only a per-Student camera interaction is genuinely a scan; a checklist is a different, simpler feature nothing in the spec actually names. Two separate secrets over one shared secret with a type field in the payload: a single shared secret means a bug in the type-check (or a deliberately crafted payload matching the other type's shape) lets a captured Class token be replayed as a Student token or vice versa; two independent secrets make that class of bug structurally impossible rather than merely checked-for. Manual mode bypassing consent-withdrawal while scan mode doesn't: this is the one genuinely unresolved judgment call in this design, explicit in the code's own comments — not confident the camera-tier consent's intent hinges on literally whose device does the scanning (Instructor's vs. Student's) rather than on avoiding any camera image of the Student at all, which would argue for blocking `INSTRUCTOR_SCAN` too (already done) but arguably not `INSTRUCTOR_MANUAL` (no camera involved at all, which is exactly why it's exempted here) — the conservative reading was taken for `INSTRUCTOR_SCAN` and manual was deliberately kept open as the always-available fallback regardless of how that ambiguity resolves, since removing the one camera-free path entirely would leave no way to check in a Student whose Guardian withdrew camera consent at all. TTL default (20s): an explicit Developer-level placeholder, the same tier of judgment call as `PLATFORM_ADMIN_IMPERSONATION_TTL_SECONDS`'s own default — long enough for a phone-to-screen or screen-to-phone scan under normal conditions, short enough to make a screenshotted/shared token useless within one class period, not derived from any named requirement.
+
+### What this does NOT resolve
+
+Whether the consent-withdrawal/manual-mode-bypass asymmetry above is actually correct — flagged explicitly for Architect review rather than silently decided either way. The `QR_ATTENDANCE_TOKEN_TTL_SECONDS` default is a placeholder, not a reviewed number. The School Portal QR-display screen (Staff-facing UI to show the rotating Class token on a shared screen, polling `GET /classes/:id/qr-token` on an interval) was NOT built this phase — this phase is backend-only, following this codebase's own established backend-then-UI phase-splitting convention (e.g. `CurriculumModule` Phase 44 backend / Phase 45 UI); the UI is a natural follow-up phase, not silently dropped.
+
+### Recorded by
+
+Designed as a research-grounded proposal (a dedicated background research pass over the existing codebase's own established conventions — route grouping, Staff-gate reuse, JWT-signing precedent, additive-migration-with-RLS-reasoning) and presented to the user for approval before any code was written; the user approved it as proposed ("Go ahead and build it as proposed"), 18 Sep 2026. Logged here, not as Decisions 101–106 are (a product-owner decision made directly with the user on a named open question), because the mechanics themselves — the two-secret design, per-Student vs. batched, the consent asymmetry — were never put to the user as discrete alternatives to choose between; they were designed by Claude and approved as a package, the same "flagged prominently rather than silently built around" treatment Decisions 90–94 already establish for this class of Developer-level inference.
+
+---
+
+## Decision 108 — Instructor rank: V1 is a manual belt dropdown on the Instructor's own profile settings page; linking it to the real grading system is deferred to V2
+
+**Date:** 17 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** a gap this file never addressed. `InstructorResponseDto.beltRanking` (`packages/api-client/src/generated/schema.d.ts`) already exists as plain display text, with its own doc comment stating it is *"not a live reference into the grading system"* — but nothing confirmed how that value gets set, or whether it should ever connect to the real `StudentRank`/`Rank` grading model (domain-rules §5/§6.1), which today has no Instructor-side relation at all.
+
+### Decision
+
+**V1:** an Instructor sets their own displayed rank manually, via a belt dropdown on their own profile settings page — not auto-derived, not staff-entered, not linked to `Rank`/`StudentRank` in any way. This is consistent with `beltRanking` staying the plain-text field it already is.
+
+**V2 (future, not scheduled):** link Instructor rank to the real grading system. Recorded as direction only — not designed.
+
+### What this does NOT resolve
+
+V1 specifics still open, not to be guessed at when this is built: the dropdown's actual option set (freeform per-School text vs. a fixed generic belt list vs. pulling from the caller's own Discipline/Rank ladders, which are School-configurable per domain-rules §5); whether an Instructor can hold one rank total or one per discipline (mirroring `StudentRank`'s one-per-discipline shape, domain-rules §5, is a plausible but unconfirmed default); and which profile settings screen this lives on, since no Instructor-facing "my profile settings" page has been designed yet (only the School-staff-facing Instructor list/detail views this session's mockup work has covered).
+
+V2 specifics are entirely open: whether it reuses `StudentRank`/`Rank` directly or a parallel structure, whether promotion stays coach-initiated the same way `StudentRank` promotion does (domain-rules §5), and how/whether an Instructor who is also independently a Student (with their own real `StudentRank`) reconciles the two. None of this should be built from inference when V2 is scheduled — needs its own decision.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 17 Sep 2026, while reviewing the Instructors page mockup (`docs/design-mockup-notes.md`) and confirming why `beltRanking` is plain text rather than a grading-system reference.
+
+---
+
+## Decision 109 — Transactions Student-name resolution: embed `studentFirstName`/`studentSurname` on `TransactionResponseDto`, not a new lookup endpoint
+
+**Date:** 18 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** a real, previously-flagged gap in `TransactionsPage.tsx` (own comment: *"No 'look up a User's name by id' endpoint exists yet"*) — the Transactions page showed a truncated `studentId` instead of the paying Student's name because no endpoint anywhere resolved a `userId`/`studentId` to a name.
+
+### Decision
+
+`TransactionsService.findAllForSchool` now joins `Transaction.student` (`User.firstName`/`surname`) directly via a Prisma `include`, flattened onto two new flat fields on `TransactionResponseDto` — `studentFirstName`, `studentSurname`. No new endpoint, no RLS/migration change: the existing `user_self_or_shared_school` policy on `User` (`apps/api/prisma/migrations/20260902000000_init/migration.sql`) already permits a School Owner/Manager to read a same-School Student's `User` row, since `RoleGrant`'s own `rolegrant_school_manager_scope` policy grants them visibility into every `RoleGrant` at their School, including the target Student's — traced through the actual policy chain, not assumed. `TransactionsPage.tsx` now renders the resolved name, falling back to the truncated id only if both fields are empty.
+
+### What this does NOT resolve
+
+The identical "id only, no name" gap independently exists in three other real screens — `ClassDetailPage.tsx` (Bookings/Waitlist), `InstructorFormModal.tsx`, and `StaffPage.tsx` — each with its own code comment flagging it, none touched by this change. Whether those should each get the same embedded-field treatment repeated per-DTO, or a shared batch lookup endpoint (e.g. `GET /schools/{id}/users?ids=...`) built once and reused, is a real open architectural question this decision deliberately does not answer — flagged for the Architect if/when those three sites are scoped for a real fix.
+
+### Recorded by
+
+Logged while implementing the Transactions page mockup fix for real, 18 Sep 2026, as part of a direct request to move one of this session's page mockups into working code.

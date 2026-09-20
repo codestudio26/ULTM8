@@ -6,6 +6,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { BookingsService } from './bookings.service';
 import { BookClassDto } from './dto/book-class.dto';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
 
@@ -29,8 +30,8 @@ export class BookingsController {
 
   @ApiOkResponse({ type: BookingResponseDto })
   @Patch('bookings/:id/cancel')
-  cancelBooking(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.bookingsService.cancelBooking(user.sub, id);
+  cancelBooking(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: CancelBookingDto) {
+    return this.bookingsService.cancelBooking(user.sub, id, dto);
   }
 
   @ApiOkResponse({ type: BookingResponseDto })
@@ -43,5 +44,11 @@ export class BookingsController {
   @Get('bookings/me')
   findMyBookings(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
     return this.bookingsService.findMyBookings(user.sub, query.cursor, query.limit);
+  }
+
+  @ApiOkResponse({ type: BookingListResponseDto })
+  @Get('classes/:id/bookings')
+  findAllForClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: PaginationQueryDto) {
+    return this.bookingsService.findAllForClass(user.sub, id, query.cursor, query.limit);
   }
 }

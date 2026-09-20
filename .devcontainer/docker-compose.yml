@@ -1,0 +1,98 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:20
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    environment:
+      # --- Database (Postgres 16, matches .github/workflows/ci.yml) ---
+      # Superuser connection — migrations + role creation, mirrors ci.yml exactly.
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/ultm8?schema=public"
+      # RLS-subject app roles — created by the init migration itself
+      # (apps/api/prisma/migrations/20260902000000_init). Password "changeme" matches
+      # apps/api/.env.example's own placeholder, kept identical here on purpose so a
+      # dev who's compared the two files isn't left wondering if they should differ.
+      DATABASE_URL_APP: "postgresql://ultm8_app:changeme@db:5432/ultm8?schema=public"
+      DATABASE_URL_AUTH: "postgresql://ultm8_auth:changeme@db:5432/ultm8?schema=public"
+      DATABASE_URL_JOBS: "postgresql://ultm8_jobs:changeme@db:5432/ultm8?schema=public"
+      DATABASE_URL_DISCOVERY: "postgresql://ultm8_discovery:changeme@db:5432/ultm8?schema=public"
+      DATABASE_URL_PLATFORM_ADMIN: "postgresql://ultm8_platform_admin:changeme@db:5432/ultm8?schema=public"
+
+      # --- Redis / BullMQ ---
+      REDIS_URL: "redis://redis:6379"
+
+      # --- Auth secrets — dev-only dummy values, same convention ci.yml already uses
+      # for its own committed test secrets. Fine for local/Codespaces dev; never reuse
+      # these anywhere real. ---
+      JWT_ACCESS_SECRET: "dev-only-secret-not-for-production-use-min-32-chars"
+      JWT_ACCESS_TTL: "15m"
+      PLATFORM_ADMIN_JWT_SECRET: "dev-only-different-secret-not-for-production-32ch"
+      PLATFORM_ADMIN_JWT_TTL: "5m"
+
+      # --- Stripe — CI's dummy test values (real webhook signature checks pass
+      # against these without a live Stripe account; see ci.yml's own comment). Set a
+      # real STRIPE_SECRET_KEY as a Codespaces secret instead if you need to actually
+      # exercise Stripe Connect for real. ---
+      STRIPE_SECRET_KEY: "sk_test_ci_dummy_not_a_real_stripe_key"
+      STRIPE_WEBHOOK_SECRET: "ci-test-webhook-secret-not-a-real-stripe-secret"
+      STRIPE_CONNECT_RETURN_URL: "http://localhost:5173/payments/connect/return"
+      STRIPE_CONNECT_REFRESH_URL: "http://localhost:5173/payments/connect/refresh"
+
+      # --- Left unset on purpose — the app boots fine without these (same
+      # "unconfigured dependency" convention as apps/api/.env.example), and none of
+      # them have a safe dummy value the way Stripe/JWT do above. Add real values as
+      # Codespaces secrets (Settings → Codespaces → Secrets) only if you're actually
+      # testing that specific integration. ---
+      TWILIO_ACCOUNT_SID: ""
+      TWILIO_AUTH_TOKEN: ""
+      TWILIO_VERIFY_SERVICE_SID: ""
+      NOTIFICATIONS_FROM_EMAIL: ""
+      POSTMARK_SERVER_TOKEN: ""
+      AWS_SES_REGION: ""
+      COGNITO_USER_POOL_ID: ""
+      COGNITO_CLIENT_ID: ""
+
+      PORT: "3000"
+      # NOTE: Codespaces forwards ports behind a *.app.github.dev HTTPS URL, not
+      # literally http://localhost:5173 — if you forward apps/school-portal and hit a
+      # CORS rejection calling the API from that forwarded URL, update this to the
+      # forwarded origin shown in the Ports tab. Left as the plain local default here
+      # since apps/school-portal is what's implemented; apps/platform-admin and
+      # apps/student are still placeholders (see their package.json descriptions).
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ultm8
+    volumes:
+      # Named volume, NOT the throwaway CI pattern — this is what makes data survive
+      # a codespace stop/restart, per the persistent-setup decision above.
+      - ultm8-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - ultm8-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ultm8-postgres-data:
+  ultm8-redis-data:

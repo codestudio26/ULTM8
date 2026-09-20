@@ -1,162 +1,230 @@
-# ULTM8 Design Guidelines
+# ULTM8 Design System
 
-## Purpose
+Design tokens and UI rules for ULTM8, a worldwide martial-arts school management platform (franchises, schools, students, instructors, belt/rank grading, class bookings, QR check-in). ~99.9% of usage is on phones and tablets, so every rule here is mobile-first by default, not scaled down from desktop.
 
-This document provides the design and UI/UX implementation guidelines for ULTM8. It complements `CLAUDE.md`, the technical specification, and the canonical domain rules (`skills/ultm8-domain-rules/SKILL.md`) — it does not replace or override any of them. Where this document is silent or in conflict, those sources govern.
+This file is written for coding agents to read before generating UI — reference the tokens and tables directly rather than re-deriving values.
 
-## Design Direction
+## Typography
 
-ULTM8's intended design direction is:
+Figtree, self-hosted as a single variable font (`@fontsource-variable/figtree`, SIL Open Font License), is the product's typeface — a deliberate trade-off against the previous system-native-only stance, chosen for brand consistency across the app rather than for its performance profile. The mitigations that make this acceptable: it's self-hosted (no third-party CDN round trip), it's one variable file per script subset rather than separate files per weight, and `font-display: swap` means the system fallback stack renders immediately and text is never blocked on the webfont — Figtree swaps in once loaded, it doesn't delay first paint.
 
-- premium
-- minimal
-- modern
-- technology-forward
-- confident
-- visually immersive
-- highly polished
-- simple and intuitive
-- conversion-focused where appropriate
+```css
+--font-sans: "Figtree Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--font-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+```
 
-This direction is inspired by the clarity, restraint, hierarchy, simplicity, and polished product experience associated with brands such as Apple and Tesla.
+| Token | Size | Use |
+|---|---|---|
+| `--font-size-caption` | 13px | Metadata, timestamps, helper text |
+| `--font-size-footnote` | 14px | Secondary labels |
+| `--font-size-body` | 16px | Default body copy — never go smaller than this for body text |
+| `--font-size-input` | 16px | Any `<input>`/`<select>`/`<textarea>` — below 16px triggers iOS auto-zoom on focus |
+| `--font-size-heading-sm` | `clamp(1.125rem, 1rem + 0.5vw, 1.25rem)` | Card/section titles |
+| `--font-size-heading-md` | `clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem)` | Screen titles |
+| `--font-size-heading-lg` | `clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem)` | Marketing/onboarding headers |
 
-ULTM8 must **not** copy Apple's or Tesla's proprietary visual identity, layouts, branding, assets, or interfaces. The goal is to learn from high-level design principles while creating an original ULTM8 identity.
+Weights: 400 (body), 500 (emphasis, buttons, labels), 600 (headings only). Body line-height 1.5, headings 1.2.
 
-The ULTM8 design should combine:
+## Color
 
-- **Apple-inspired**: clarity, simplicity, whitespace, typography hierarchy, consistency, and attention to detail.
-- **Tesla-inspired**: bold visual hierarchy, immersive imagery, focused user journeys, strong calls to action, and reduced interface friction.
-- **A distinctive ULTM8 martial-arts identity**, expressed through appropriate imagery, motion, energy, progression, training, and performance-oriented visual language.
+Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears only where it carries meaning — primary actions, active/selected states, links, focus rings. It is never decorative.
 
-## Design Source of Truth
+**Base ramps** — literal hex, mode-stable:
 
-When design intent is unclear or sources disagree, resolve in this order, highest first:
+```css
+:root {
+  /* accent — slate blue */
+  --color-accent-50:  #fcfdfd;
+  --color-accent-100: #edf0f2;
+  --color-accent-200: #d3d9df;
+  --color-accent-300: #afbbc5;
+  --color-accent-400: #889aaa;
+  --color-accent-500: #5d7081; /* brand reference value */
+  --color-accent-600: #4d5d6b;
+  --color-accent-700: #3e4b56;
+  --color-accent-800: #2f3941;
+  --color-accent-900: #20262c;
 
-1. Approved technical/product requirements in the current Spec 55.
-2. Explicitly approved product and UX decisions.
-3. Approved Figma/design-system decisions.
-4. Existing implemented UI, where intentionally retained.
-5. Design observations that have not yet been formally approved.
+  /* neutral */
+  --color-neutral-50:  #f9fafa;
+  --color-neutral-100: #f1f2f3;
+  --color-neutral-200: #e1e3e5;
+  --color-neutral-300: #c2c7cb;
+  --color-neutral-400: #969ea6;
+  --color-neutral-500: #6c767f;
+  --color-neutral-600: #50575e;
+  --color-neutral-700: #383d42;
+  --color-neutral-800: #26292c;
+  --color-neutral-900: #151719;
 
-Figma is a design reference and must not be treated as an authoritative source for undefined business logic.
+  /* semantic — interface convention colors, distinct from the brand accent */
+  --color-success: #1f7a4d;
+  --color-warning: #b7791f; /* pair with dark text, not white — see contrast note below */
+  --color-danger:  #b91c1c;
+}
+```
 
-## Design Principles
+**Purpose tokens** — what components actually consume. Light mode on `:root`, dark mode flips under `prefers-color-scheme: dark` or `[data-theme="dark"]`:
 
-- Simplicity over unnecessary complexity.
-- Strong visual hierarchy.
-- Generous and intentional whitespace.
-- Clear typography hierarchy.
-- Premium visual polish.
-- Consistent components and interactions.
-- Intuitive navigation.
-- Minimal user friction.
-- Clear calls to action.
-- Purposeful animation and motion.
-- Accessibility.
-- Responsive behaviour.
-- Maintainability.
-- Reusable components.
+```css
+:root {
+  --surface-0: var(--color-neutral-50);   /* page background */
+  --surface-1: #ffffff;                   /* card */
+  --surface-2: #ffffff;                   /* panel / popover */
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-600);
+  --text-muted: var(--color-neutral-400);
+  --border: var(--color-neutral-200);
+  --border-strong: var(--color-neutral-300);
 
-Every visual element should have a purpose; unnecessary decoration should be avoided.
+  --fill-accent: var(--color-accent-500);
+  --fill-accent-hover: var(--color-accent-600);
+  --on-accent: #ffffff;
+  --text-accent: var(--color-accent-700);  /* links, accent text on light surfaces */
 
-## Visual Identity
+  --bg-success: color-mix(in srgb, var(--color-success) 12%, white);
+  --text-success: var(--color-success);
 
-ULTM8 should develop its own visual identity rather than reproducing Apple or Tesla.
+  /* Solid "success" button fill — a distinct pair from bg-success/text-success
+     above (badge/alert tint), because a filled button needs its own hover step
+     and its own on-fill text color: text-success on this fill only reaches
+     ~4.4:1, just under AA for normal-size text — see the contrast table below. */
+  --fill-success: #def2e2;
+  --fill-success-hover: color-mix(in srgb, var(--color-success) 20%, white);
+  --on-success: var(--color-neutral-900); /* literal ramp ref, not --text-primary — see tokens.css comment for why */
 
-The visual system should eventually define, based on approved design work:
+  --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
+  --text-warning: #6b4a10;
+  --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
+  --text-danger: var(--color-danger);
+}
 
-- colour palette
-- typography
-- spacing
-- border radius
-- shadows
-- iconography
-- imagery
-- buttons
-- forms
-- cards
-- navigation
-- dashboards
-- data visualisation
-- motion and transitions
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface-0: var(--color-neutral-900);
+    --surface-1: var(--color-neutral-800);
+    --surface-2: #2e3236;
+    --text-primary: var(--color-neutral-100);
+    --text-secondary: var(--color-neutral-400);
+    --text-muted: var(--color-neutral-500);
+    --border: var(--color-neutral-700);
+    --border-strong: var(--color-neutral-600);
 
-Actual values for these items are not defined in this initial document.
+    --fill-accent: var(--color-accent-400);
+    --fill-accent-hover: var(--color-accent-300);
+    --on-accent: var(--color-neutral-900);
+    --text-accent: var(--color-accent-300);
+  }
+}
+[data-theme="dark"] {
+  /* same block as above, repeated so an explicit toggle wins over system preference */
+}
+```
 
-## Figma Interpretation Rules
+Dark mode ships at launch, derived from the same ramps above — never hand-authored separately.
 
-- Figma should be inspected before implementing a UI that has an approved design.
-- Intentional visual details should be preserved where compatible with the specification.
-- A Figma-only behaviour must not automatically become a business rule.
-- If Figma conflicts with Spec 55, the specification takes precedence and the conflict must be flagged.
-- If a design is ambiguous, mark it as `[UNRESOLVED]` rather than guessing.
+**Verified contrast** (WCAG AA, 4.5:1 normal text / 3:1 large text & UI):
 
-## Responsive Design
+| Pairing | Ratio |
+|---|---|
+| `text-primary` on `surface-0` (light) | 17.2:1 |
+| `text-secondary` on `surface-0` (light) | 7.0:1 |
+| `on-accent` (white) on `fill-accent` #5d7081 | 5.1:1 |
+| `text-accent` #3e4b56 on white | 8.6:1 |
+| `text-primary` (dark) on `surface-0` (dark) | 16.0:1 |
+| `text-secondary` (dark) on `surface-0` (dark) | 6.6:1 |
+| white on `--color-danger` | 6.5:1 |
+| white on `--color-success` | 5.3:1 |
+| dark ink on `--color-warning` | 4.9:1 (use dark text here, not white — white only reaches 3.6:1) |
+| `on-success` on `fill-success` #def2e2 | 14.8:1 (dark neutral text — `text-success` on this same fill only reaches ~4.4:1, just under the 4.5:1 AA floor for normal-size text, so the solid button variant deliberately does not reuse it) |
 
-General expectations apply for:
+## Layout & spacing
 
-- mobile
-- tablet
-- desktop
-- responsive layouts
-- touch interactions
-- readable content
-- avoiding horizontal overflow
+Design up from a ~360px viewport; treat phone as the primary target, tablet and desktop as expansions of the same layout, not separate designs.
 
-Exact breakpoints are not defined here and should not be invented until formally approved.
+```css
+--space-1: 0.25rem;  /* 4px */
+--space-2: 0.5rem;   /* 8px */
+--space-3: 0.75rem;  /* 12px */
+--space-4: 1rem;     /* 16px */
+--space-6: 1.5rem;   /* 24px */
+--space-8: 2rem;     /* 32px */
+```
 
-## Accessibility
+| Breakpoint | Width | Notes |
+|---|---|---|
+| Phone (default) | ≥360px | Primary target — build this first |
+| Tablet | ≥768px | Expand columns/spacing, not a redesign |
+| Desktop | ≥1024px | Same components, more breathing room |
 
-General expectations apply for:
+- Every interactive element: minimum **44×44px** touch target, regardless of visual size.
+- No horizontal overflow at any breakpoint.
+- Use `--space-*` tokens and `rem`, never hardcoded pixel margins.
 
-- keyboard accessibility
-- semantic HTML
-- appropriate labels
-- visible focus states
-- sufficient contrast
-- accessible forms
-- meaningful error and success feedback
-- screen-reader compatibility where applicable
+## Components
 
-## Components and UI Patterns
+Every component defines these states. Hover is a progressive enhancement for mouse/trackpad only — it must never be the only way to reveal information, since most sessions are touch.
 
-- Reusable components are preferred over duplicated UI.
-- Components should have predictable states.
-- Loading, empty, error, success, disabled, and validation states should be considered where applicable.
-- Components should maintain visual consistency across the platform.
-- Component behaviour must follow the technical specification and approved UX decisions.
-- Developers must not invent product behaviour merely to complete a visual design.
+| State | Applies to | Rule |
+|---|---|---|
+| Default | all | Uses purpose tokens above |
+| Hover | pointer input only | Subtle `--fill-accent-hover` / `--surface-1`→`--surface-2` shift |
+| Pressed / active | touch and pointer | Must exist even without hover — this is the primary feedback on mobile |
+| Focus-visible | keyboard | Ring in `--fill-accent`, never suppressed |
+| Disabled | all | Avoid where possible; if used, still legible, not just low-opacity |
+| Loading | async actions | Inline spinner or skeleton, never a blank state |
+| Error | forms, async | `--text-danger` / `--bg-danger`, message states what happened and what to do |
 
-## Design vs Business Logic
+Minimum set requiring all of the above: buttons, inputs/selects, cards that are tappable, list rows, tabs/nav items, checkboxes/toggles.
 
-Design defines how something should look and behave visually.
+## Patterns
 
-The technical specification and canonical domain rules define what the product is allowed or required to do.
+Recurring structures built from the tokens and component states above. Adapted from screen patterns observed in the ULTM8 Figma file — per the source-of-truth hierarchy, a Figma screen is illustrative only, so the specific copy, icon choice, and exact proportions below are a starting point, not a pixel-for-pixel copy; the token usage is what's binding. Neither pattern implies new business logic — see the domain-rules skill before wiring either one to real behavior.
 
-When a design implies business logic that is not confirmed by the specification, it must be treated as `[UNRESOLVED]` and escalated rather than implemented by assumption.
+### Success confirmation panel
 
-## Motion and Interaction
+Confirms a completed action (a save, an update, a login) with a self-contained panel rather than a silent redirect — this shape recurs across dozens of flows in the Figma file (login, profile updates, timetable changes):
 
-Motion should be:
+- `--color-success` filled circle (44–64px) with a check mark, centered
+- Bold title (`--font-size-heading-sm`, `--font-weight-semibold`) stating what succeeded
+- One line of body text (`--font-size-footnote`, `--text-secondary`) with the specific detail
+- A dismiss control (`×`) in the corner — whether a given flow also auto-advances after a delay is a per-flow decision, not something this pattern decides on its own
+- Card surface (`--surface-1`, `--radius-lg`, `--shadow-md`), same as any other card
 
-- purposeful
-- subtle where appropriate
-- responsive
-- consistent
-- used to communicate state, hierarchy, or transitions
-- never used at the expense of usability or performance
+### Segmented code input
 
-The goal is a premium, polished experience rather than excessive animation.
+For a flow that collects a short numeric code (OTP, PIN-style passcode):
 
-## Change and Review Rules
+- One `--radius-sm`-bordered box per digit, fixed square aspect ratio, `--font-mono` + `font-variant-numeric: tabular-nums` so digits don't shift width as they fill
+- Minimum 44×44px touch target per box (same rule as any other interactive element)
+- A live countdown/expiry line below, in `--text-muted` — the actual expiry duration is a backend/business value, never hardcoded in the UI layer
+- Primary action stays disabled until every box is filled
 
-- Approved design changes should be reflected consistently.
-- Significant design changes should be reviewed against Spec 55 and domain rules.
-- Design decisions should not silently contradict established product requirements.
-- Unresolved design questions should be documented before implementation.
-- This document is a living guideline and should evolve as the ULTM8 design system is formally approved.
+## Motion
 
-## Current Status
+```css
+--dur-fast: 120ms;
+--dur-base: 200ms;
+--dur-slow: 280ms;
+--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+```
 
-This is an initial design-governance document created during development preparation.
+Prefer CSS transitions over JS animation. Keep everything in the 120–280ms range so the UI feels immediate on lower-end phones. Wrap all motion in `prefers-reduced-motion`:
 
-Detailed design-system values, component specifications, screen-level rules, and the final ULTM8 visual identity will be refined from the approved Figma/design materials before or during implementation.
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+```
+
+## Performance
+
+- Figtree (above) is self-hosted as a single variable font per script subset, not separate files per weight, with `font-display: swap` so the system fallback stack renders immediately and first paint is never blocked on the webfont.
+- No layout-shifting images: always set explicit `width`/`height` or `aspect-ratio`.
+- Lazy-load everything below the fold.
+- Keep first-load JS/CSS minimal — many users worldwide are on slower mobile connections, not just small screens; this is a network-speed constraint as much as a screen-size one.
+
+## Internationalization
+
+- No fixed-width text containers — translated strings run 30–40% longer or shorter than English.
+- Spacing/alignment tokens (`--space-*`, flex/grid gaps) must be logical-property-safe so layouts can mirror for RTL languages later without a rewrite.

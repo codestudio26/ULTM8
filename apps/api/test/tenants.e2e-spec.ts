@@ -360,6 +360,101 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Guardian-on-behalf-of enrollment (Phase 38) — closes the exact gap
+  // Decision 96's own "What this does NOT resolve" section named.
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN enroll a linked minor at a School — no access token comes back, and the grant is issued by the Guardian', async () => {
+    const guardian = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-guardian-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Fresh',
+        surname: 'Guardian',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1985-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const minor = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-minor-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Fresh',
+        surname: 'Minor',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2015-01-01'),
+        // Deliberately no phoneVerifiedAt — same permanently-blocked-login
+        // state GuardiansService.createMinor() itself sets, since that's the
+        // whole reason this endpoint's response has no accessToken to give.
+      },
+    });
+    await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
+    const tokenGuardian = signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
+
+    try {
+      const joinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenGuardian}`)
+        .send({ studentId: minor.id });
+      expect(joinRes.status).toBe(201);
+      expect(joinRes.body.role).toBe('STUDENT');
+      expect(joinRes.body.userId).toBe(minor.id);
+      expect(joinRes.body.schoolId).toBe(schoolB.id);
+      expect(joinRes.body.accessToken).toBeUndefined();
+
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: minor.id, schoolId: schoolB.id, role: 'STUDENT', revokedAt: null },
+      });
+      expect(grant).not.toBeNull();
+      expect(grant!.grantedById).toBe(guardian.id);
+
+      // Same idempotency guarantee as the ordinary self-join path, against the
+      // same partial unique index — proven independently for the Guardian
+      // path, not assumed to carry over.
+      const secondJoinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenGuardian}`)
+        .send({ studentId: minor.id });
+      expect(secondJoinRes.status).toBe(409);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { userId: minor.id } });
+      await superuser.guardianLink.deleteMany({ where: { guardianId: guardian.id } });
+      await superuser.user.deleteMany({ where: { id: { in: [guardian.id, minor.id] } } });
+    }
+  });
+
+  it('a caller with NO active GuardianLink to the named Student is rejected — 403, not a silent no-op', async () => {
+    const notAGuardian = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-not-a-guardian-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Not',
+        surname: 'AGuardian',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1990-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const tokenNotAGuardian = signAccessToken(notAGuardian, []);
+
+    try {
+      // verifiedInvitee stands in for "some other real User" — notAGuardian
+      // holds no GuardianLink to them at all.
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenNotAGuardian}`)
+        .send({ studentId: verifiedInvitee.id });
+      expect(res.status).toBe(403);
+    } finally {
+      await superuser.user.delete({ where: { id: notAGuardian.id } });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // FranchisesModule (Phase 16) — self-service creation mirrors School's own
   // Decision-79 pattern exactly; cross-tenant isolation mirrors School's own tests
   // above, against the same franchise_tenant_isolation RLS shape.
@@ -442,6 +537,78 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
     await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
+  });
+
+  it('PATCH /franchises/:id with explicit null clears an optional String field; omitting it leaves it unchanged (UpdateFranchiseDto, Phase 23)', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Nullable-Field Franchise', mobileNumber: '+15551234567', description: 'Original description' });
+    expect(createRes.status).toBe(201);
+    const franchiseId = createRes.body.id;
+    expect(createRes.body.mobileNumber).toBe('+15551234567');
+    expect(createRes.body.description).toBe('Original description');
+
+    // Omitting a field leaves it unchanged — proves this isn't accidentally
+    // clearing everything not present in the body.
+    const omitRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ description: 'Updated description, mobileNumber untouched' });
+    expect(omitRes.status).toBe(200);
+    expect(omitRes.body.mobileNumber).toBe('+15551234567');
+    expect(omitRes.body.description).toBe('Updated description, mobileNumber untouched');
+
+    // Explicit null clears — the specific gap UpdateFranchiseDto's own
+    // NULLABLE_ON_UPDATE widening fixes (a bare PartialType(CreateFranchiseDto)
+    // would 400 this at validation, or silently no-op it at the Prisma layer
+    // if validation let it through untyped).
+    const clearRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ mobileNumber: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.mobileNumber).toBeNull();
+    expect(clearRes.body.description).toBe('Updated description, mobileNumber untouched');
+
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
+
+  it('rejects an explicit flatFeeAmount/perHeadcountRate: null on PATCH /franchises/:id — 400, not a silent rate-clear (FOUND ON REVIEW, Phase 23)', async () => {
+    // These two fields are deliberately NOT widened to nullable in
+    // UpdateFranchiseDto (see that DTO's own header comment) — but
+    // class-validator's @IsOptional() treats an explicit null exactly like an
+    // omitted field, so nothing at the validation layer alone stopped a raw
+    // client from sending null and silently clearing a configured rate.
+    // FranchisesService.update() now rejects this explicitly — mirrors
+    // MembershipsService.updatePlan()'s identical classesIncluded precedent
+    // (see memberships.e2e-spec.ts's own 'rejects an explicit
+    // classesIncluded: null' test).
+    const createRes2 = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Reject-Null-Rate Franchise', flatFeeAmount: 5000 });
+    expect(createRes2.status).toBe(201);
+    const franchiseId2 = createRes2.body.id;
+
+    const flatRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId2}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ flatFeeAmount: null });
+    expect(flatRes.status).toBe(400);
+
+    const perHeadcountRes = await request(app.getHttpServer())
+      .patch(`/v1/franchises/${franchiseId2}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ perHeadcountRate: null });
+    expect(perHeadcountRes.status).toBe(400);
+
+    const unchanged = await superuser.franchise.findUniqueOrThrow({ where: { id: franchiseId2 } });
+    expect(unchanged.flatFeeAmount).toBe(5000);
+
+    await superuser.roleGrant.deleteMany({ where: { franchiseId: franchiseId2 } });
+    await superuser.franchise.delete({ where: { id: franchiseId2 } });
   });
 
   it('GET /franchises/:id/schools returns only that Franchise\'s own Schools, and is Owner-only', async () => {

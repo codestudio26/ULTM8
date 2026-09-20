@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { School } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
@@ -173,6 +173,24 @@ export class FranchisesService {
    */
   async update(callerId: string, franchiseId: string, dto: UpdateFranchiseDto) {
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+
+    // FOUND ON REVIEW: `flatFeeAmount`/`perHeadcountRate` are deliberately NOT
+    // widened to nullable in UpdateFranchiseDto (see that DTO's own header
+    // comment) — but `@IsOptional()` treats an explicit JSON `null` exactly
+    // like an omitted field and skips `@IsInt()`/`@Min()`/`@Max()` entirely,
+    // so `null` still reaches this method (`dto.flatFeeAmount` typed as
+    // `number | undefined`, but nothing at the validation layer actually
+    // stops a raw `null` at runtime). Without this explicit rejection, that
+    // `null` would pass `!== undefined` below, skip the schoolsAlreadyBilling
+    // guard as a "no-op" change when nothing is currently configured, and
+    // silently clear a configured rate via `tx.franchise.update()` — exactly
+    // the un-designed "clear a configured rate" transition that DTO's own
+    // comment says is out of scope. Same defensive pattern
+    // MembershipsService.updatePlan() already established for its own
+    // not-nullable `classesIncluded` field.
+    if (dto.flatFeeAmount === null || dto.perHeadcountRate === null) {
+      throw new BadRequestException('flatFeeAmount/perHeadcountRate cannot be null — omit the field to leave it unchanged.');
+    }
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       if (dto.flatFeeAmount !== undefined || dto.perHeadcountRate !== undefined) {

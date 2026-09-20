@@ -15,10 +15,16 @@ import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { ClassesPage } from './classes/ClassesPage';
+import { ClassDetailPage } from './classes/ClassDetailPage';
+import { ClassQrCodePage } from './attendance/ClassQrCodePage';
+import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
+import { FranchisesPage } from './franchises/FranchisesPage';
+import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
+import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
 function HomeRedirect() {
@@ -115,6 +121,36 @@ export function App() {
         }
       />
       <Route
+        path="/classes/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ClassDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/classes/:id/qr-code"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ClassQrCodePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/curriculum"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CurriculumPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/timetable"
         element={
           <RequireAuth>
@@ -150,6 +186,36 @@ export function App() {
           <RequireAuth>
             <Shell>
               <WaiversPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/franchises"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchisesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/franchises/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchiseDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <RequireAuth>
+            <Shell>
+              <NotificationsPage />
             </Shell>
           </RequireAuth>
         }

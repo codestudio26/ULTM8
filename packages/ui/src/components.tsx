@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 /* ---------------------------------------------------------------------- Button */
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success';
   fullWidth?: boolean;
   loading?: boolean;
 }
@@ -127,10 +127,11 @@ export interface TableColumn<T> {
 
 export function Table<T extends { id: string }>({ columns, rows }: { columns: TableColumn<T>[]; rows: T[] }) {
   return (
-    // Scrolls horizontally within itself on a narrow viewport instead of forcing the
-    // whole page (sidebar included) to scroll sideways — a table wider than the
-    // viewport previously had no containing overflow anywhere in its ancestry.
-    <div className="ultm8-table-wrap">
+    // Scrolls horizontally within itself rather than letting a wide table push the
+    // page wider (DESIGN.md "Layout & spacing": no horizontal overflow at any
+    // breakpoint — this is the one place in this component set a table's natural
+    // column count can realistically exceed a phone viewport).
+    <div className="ultm8-table-scroll">
       <table className="ultm8-table">
         <thead>
           <tr>

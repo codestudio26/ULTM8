@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { GuardiansModule } from '../guardians/guardians.module';
 import { SchoolsController } from './schools/schools.controller';
 import { SchoolsService } from './schools/schools.service';
 import { BranchesController } from './branches/branches.controller';
@@ -33,6 +34,11 @@ import { TenantAuthorizationService } from './tenant-authorization.service';
  * narrow, approved exception). One-directional: nothing under apps/api/src/auth
  * imports from tenants, confirmed before adding this — no circular import.
  *
+ * Imports GuardiansModule (Phase 38) so SchoolsService can call
+ * GuardiansService.assertGuardianOfStudent() for Guardian-on-behalf-of School
+ * enrollment (join()'s own header comment) — also one-directional, confirmed
+ * the same way: GuardiansModule imports nothing from tenants.
+ *
  * Exports SchoolsService, FranchisesService, and TenantAuthorizationService so other
  * modules can reuse them rather than duplicating existence/authorization checks —
  * PaymentsModule now uses FranchisesService.findOne() the same way it already used
@@ -40,7 +46,7 @@ import { TenantAuthorizationService } from './tenant-authorization.service';
  * yet" gap PaymentsService.createForFranchise/findForFranchise both flagged in Phase 8).
  */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, GuardiansModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController],
   providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService],
