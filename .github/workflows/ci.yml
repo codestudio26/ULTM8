@@ -102,6 +102,17 @@ jobs:
       R2_ACCESS_KEY_ID: ci-test-r2-access-key
       R2_SECRET_ACCESS_KEY: ci-test-r2-secret-key-not-a-real-credential
       R2_BUCKET_NAME: ci-test-waiver-signatures
+      # Phase 51 — QrTokenService's two rotating-QR signing secrets (Decision 107).
+      # Unlike PLATFORM_ADMIN_JWT_SECRET above, QrTokenService doesn't throw at boot
+      # if these are unset (same "unconfigured dependency" convention as Stripe/R2
+      # above) — but sign()/verify() DO throw a plain Error the moment they're
+      # actually called, which HttpExceptionFilter maps to a bare 500 rather than a
+      # proper 4xx (the exact STRIPE_SECRET_KEY-missing bug class this same file's
+      # own comment above already documents catching once). Set here so the new
+      # attendance.e2e-spec.ts cases genuinely exercise sign+verify, not just skip.
+      QR_CLASS_TOKEN_SECRET: ci-test-qr-class-token-secret-not-for-production-use-32-chars
+      QR_STUDENT_TOKEN_SECRET: ci-test-qr-student-token-secret-not-for-production-32-chars
+      QR_ATTENDANCE_TOKEN_TTL_SECONDS: '20'
 
     steps:
       - uses: actions/checkout@v7

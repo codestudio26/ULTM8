@@ -24,6 +24,12 @@ export interface RoleGrantClaim {
 export interface ImpersonationClaim {
   adminUserId: string; // AdminUser.id
   startedAt: string; // ISO datetime
+  /** Phase 47 — the one School this session is scoped to (Spec 55 §12.1
+   * Decision 39). JwtStrategy.validate() reads this to populate
+   * RequestContext, which PrismaAppService.withTenantContext consumes to set
+   * app.impersonation_school_id — see that migration's own header comment
+   * (20261002000000_impersonation_scope_rls_fix) for the full mechanism. */
+  schoolId: string;
 }
 
 export interface JwtPayload {

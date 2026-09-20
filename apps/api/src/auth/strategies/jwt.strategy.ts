@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request } from 'express';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { RequestContext } from '../../common/request-context';
 
 const READ_ONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -21,6 +22,15 @@ const READ_ONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * (see JwtPayload's own comment — only AuthService.issueImpersonationToken() ever
  * sets it) making a non-GET/HEAD/OPTIONS request is rejected outright, before the
  * request ever reaches a controller.
+ *
+ * Phase 47 — this same choke point is also where `RequestContext` learns an active
+ * impersonation session's own `schoolId`, for `PrismaAppService.withTenantContext`
+ * to pick up later in the request (see `RequestContext`'s own header comment for
+ * the full mechanism and why it's a plain `AsyncLocalStorage`, not DI). Populating
+ * it here — once, centrally — rather than requiring every controller/service that
+ * calls `withTenantContext` to separately extract and forward it is the same
+ * "one central choke point, not ~20 retrofits" reasoning the read-only check above
+ * already established.
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -44,6 +54,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new ForbiddenException(
         'This is a read-only impersonation session — write actions are not permitted (Decision 102).',
       );
+    }
+    if (payload.impersonation) {
+      RequestContext.setImpersonationSchoolId(payload.impersonation.schoolId);
     }
     return payload;
   }

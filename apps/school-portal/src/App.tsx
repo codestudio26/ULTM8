@@ -16,6 +16,7 @@ import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
+import { ClassQrCodePage } from './attendance/ClassQrCodePage';
 import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
@@ -125,6 +126,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <ClassDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/classes/:id/qr-code"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ClassQrCodePage />
             </Shell>
           </RequireAuth>
         }

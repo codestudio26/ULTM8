@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { AuthModule } from './auth/auth.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { ClassesModule } from './classes/classes.module';
@@ -24,6 +25,8 @@ import { FranchiseFeesModule } from './franchise-fees/franchise-fees.module';
 import { JobsModule } from './jobs/jobs.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
+import { TranslationsModule } from './translations/translations.module';
+import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
 
 @Module({
   imports: [
@@ -53,7 +56,18 @@ import { CurriculumModule } from './curriculum/curriculum.module';
     JobsModule,
     PlatformAdminModule,
     CurriculumModule,
+    TranslationsModule,
+    SubscriptionPlansModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  // Phase 47 — establishes the per-request AsyncLocalStorage store the
+  // impersonation-scope RLS fix depends on (RequestContext's own header
+  // comment), before Passport/JwtStrategy runs. See
+  // RequestContextMiddleware's own comment for why this lives here rather
+  // than in main.ts.
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
+  }
+}

@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
@@ -13,6 +14,7 @@ export class ClassesService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly subscriptionGate: SubscriptionGateService,
   ) {}
 
   /**
@@ -23,6 +25,9 @@ export class ClassesService {
   async create(callerId: string, schoolId: string, dto: CreateClassDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new Classes"
+    // is one of the three actions it explicitly names (Phase 54).
+    await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
 
     if (dto.branchId) {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);

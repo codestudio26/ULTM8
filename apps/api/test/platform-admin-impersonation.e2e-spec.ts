@@ -2,12 +2,15 @@
  * HTTP-level gate for PlatformAdminModule Slice 8 (Phase 43) — POST
  * /platform-admin/impersonation-sessions, per Decision 102 (resolved directly
  * with the user, docs/decisions/POST-SPEC-55-DECISION-LOG.md): Support-tier
- * impersonation is read-only. Also covers the Phase 46 fix for Spec 55 §12.1
- * Decision 39 — the token's own `grants` claim is now scoped to the one School
- * named on the request, not the target's full grant set (see the dedicated
+ * impersonation is read-only. Also covers Spec 55 §12.1 Decision 39 ("Platform
+ * Admin impersonation scope narrowed") in two parts — Phase 46 scoped the
+ * token's own `grants` claim to the one School named on the request, and Phase
+ * 47 closed the RLS-level gap that left open (a School-A-scoped token could
+ * still read School B's data over the ordinary tenant API; the JWT's claims
+ * were never actually consulted for authorization). See the dedicated
  * "Decision 39" tests near the bottom of this file, and
- * AuthService.issueImpersonationToken()'s own header comment for the KNOWN,
- * still-open RLS-level gap this claims-scoping fix does NOT close).
+ * AuthService.issueImpersonationToken()'s own header comment for the full
+ * mechanism.
  *
  * Deliberately proves the mechanism end-to-end across BOTH realms, not just the
  * issuance endpoint in isolation — the returned `accessToken` is a genuine
@@ -63,6 +66,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
   const adminIds: string[] = [];
   const userIds: string[] = [];
   const schoolIds: string[] = [];
+  const franchiseIds: string[] = [];
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -79,6 +83,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     await superuser.adminUser.deleteMany({ where: { id: { in: adminIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
+    await superuser.franchise.deleteMany({ where: { id: { in: franchiseIds } } });
     await superuser.$disconnect();
     await app.close();
   });
@@ -265,7 +270,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
   // these are the tests that would have caught it.
   // ---------------------------------------------------------------------------
 
-  it('Decision 39: impersonating a multi-School Instructor scoped to School A carries ONLY School A\'s grant in the token\'s own claims (RLS-level enforcement is a separate, still-open gap — see the comment below)', async () => {
+  it('Decision 39: impersonating a multi-School Instructor scoped to School A carries ONLY School A\'s grant, and genuinely CANNOT read School B (RLS itself, not just the token\'s own claims — Phase 47)', async () => {
     const { schoolA, schoolB, instructor } = await seedMultiSchoolInstructor();
     const admin = await seedAdmin(AdminSubRole.SUPPORT);
 
@@ -282,21 +287,31 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     // one" — this is the exact exposure Decision 39 closes.
     expect(decoded.grants.some((g) => g.schoolId === schoolB.id)).toBe(false);
 
-    // KNOWN OPEN GAP, not yet closed — flagged for the user, not silently
-    // asserted as fixed: RLS enforcement (school_tenant_isolation and every
-    // other tenant-scoped policy) keys purely on app.current_user_id, set to
-    // the REAL instructor.id regardless of what this token's own `grants`
-    // claim says — and nothing server-side reads payload.grants for
-    // authorization at all (confirmed: zero consumers repo-wide). So although
-    // the token's own claims are now honestly scoped to School A (above), a
-    // read against the ordinary tenant API surface with this exact token
-    // still reaches School B too, because the instructor's real RoleGrant
-    // row at School B still exists and still satisfies RLS. Empirically
-    // confirmed via GET /v1/schools returning both schoolA.id AND schoolB.id
-    // with this token. Closing this for real needs an RLS-level change
-    // (an additional impersonation-scope session variable, amending every
-    // tenant-scoped policy to AND against it) — out of scope for this change,
-    // escalated instead of silently building it.
+    // THE ACTUAL PROOF — not just the token's own claims (Phase 46 alone left
+    // this reachable; see Phase 46's own commit/PR history). Phase 47's RLS-level
+    // fix (migration 20261002000000_impersonation_scope_rls_fix) means this exact
+    // token genuinely cannot read School B through the ordinary tenant API: RLS
+    // itself, not the JWT's claims, is what enforces this.
+    const readRes = await request(app.getHttpServer()).get('/v1/schools').set('Authorization', `Bearer ${res.body.accessToken}`);
+    expect(readRes.status).toBe(200);
+    const visibleSchoolIds = readRes.body.items.map((s: { id: string }) => s.id);
+    expect(visibleSchoolIds).toContain(schoolA.id);
+    expect(visibleSchoolIds).not.toContain(schoolB.id);
+
+    // Direct-Prisma confirmation of the mechanism itself, not just the one HTTP
+    // route above — RoleGrant's own (fixed) RLS now returns only the School A
+    // row for this impersonated context, even though the instructor's REAL
+    // RoleGrant row at School B still exists untouched (confirmed via superuser
+    // below) — this is scoping via RLS, not a side effect of deleting anything.
+    const asImpersonated = await new PrismaClient({ datasourceUrl: DATABASE_URL_APP }).$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${instructor.id}'`);
+      await tx.$executeRawUnsafe(`SET LOCAL app.impersonation_school_id = '${schoolA.id}'`);
+      return tx.roleGrant.findMany({ where: { userId: instructor.id } });
+    });
+    expect(asImpersonated.map((g) => g.schoolId)).toEqual([schoolA.id]);
+
+    const realGrants = await superuser.roleGrant.findMany({ where: { userId: instructor.id } });
+    expect(realGrants.map((g) => g.schoolId).sort()).toEqual([schoolA.id, schoolB.id].sort());
   });
 
   it('Decision 39: starting a session scoped to a School the target holds no grant at is a clean 404', async () => {
@@ -310,5 +325,112 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
       .set('Authorization', `Bearer ${tokenFor(admin)}`)
       .send({ userId: student.id, schoolId: otherSchool.id });
     expect(res.status).toBe(404);
+  });
+
+  it('Decision 39: impersonating a multi-School Owner/Manager scoped to School A cannot read OTHER staff\'s RoleGrant rows at School B (rolegrant_school_manager_scope / is_active_school_owner_manager)', async () => {
+    const schoolA = await superuser.school.create({ data: { id: randomUUID(), name: 'Impersonation Gate Manager School A' } });
+    const schoolB = await superuser.school.create({ data: { id: randomUUID(), name: 'Impersonation Gate Manager School B' } });
+    schoolIds.push(schoolA.id, schoolB.id);
+
+    const mkUser = (label: string) =>
+      superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `impersonation-http-${label}-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          firstName: label,
+          surname: 'Manager',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('1985-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+    const manager = await mkUser('multi-manager');
+    const staffAtSchoolB = await mkUser('staff-b');
+    userIds.push(manager.id, staffAtSchoolB.id);
+
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: manager.id, schoolId: schoolA.id },
+        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: manager.id, schoolId: schoolB.id },
+        { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffAtSchoolB.id, schoolId: schoolB.id },
+      ],
+    });
+
+    const admin = await seedAdmin(AdminSubRole.SUPPORT);
+    const startRes = await request(app.getHttpServer())
+      .post('/v1/platform-admin/impersonation-sessions')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+      .send({ userId: manager.id, schoolId: schoolA.id });
+    expect(startRes.status).toBe(201);
+    const impersonationToken = startRes.body.accessToken;
+
+    // Blocked: the manager's REAL SCHOOL_OWNER_MANAGER grant at School B would
+    // ordinarily let them read this — impersonation, scoped to School A only,
+    // must not inherit it.
+    const blockedRes = await request(app.getHttpServer())
+      .get(`/v1/users/${staffAtSchoolB.id}/role-grants`)
+      .set('Authorization', `Bearer ${impersonationToken}`);
+    expect(blockedRes.status).toBe(200);
+    expect(blockedRes.body.items).toHaveLength(0);
+
+    // Sanity check the block is specific to impersonation scope, not that this
+    // route is broken generally — the REAL manager (ordinary token, same user)
+    // can see it, proving School B's grant really is reachable through this
+    // exact mechanism absent impersonation.
+    const ordinaryToken = tenantJwt.sign({ sub: manager.id, email: manager.email, grants: [] });
+    const ordinaryRes = await request(app.getHttpServer())
+      .get(`/v1/users/${staffAtSchoolB.id}/role-grants`)
+      .set('Authorization', `Bearer ${ordinaryToken}`);
+    expect(ordinaryRes.status).toBe(200);
+    expect(ordinaryRes.body.items.length).toBeGreaterThan(0);
+  });
+
+  it('Decision 39: GET /franchises/{id}/schools is rejected outright during an active impersonation session', async () => {
+    const franchise = await superuser.franchise.create({ data: { id: randomUUID(), name: 'Impersonation Gate Franchise' } });
+    franchiseIds.push(franchise.id);
+    const school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Impersonation Gate Franchise School', franchiseId: franchise.id },
+    });
+    schoolIds.push(school.id);
+    const owner = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `impersonation-http-franchise-owner-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Franchise',
+        surname: 'Owner',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1980-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    userIds.push(owner.id);
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: owner.id, franchiseId: franchise.id },
+        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id },
+      ],
+    });
+
+    const admin = await seedAdmin(AdminSubRole.SUPPORT);
+    const startRes = await request(app.getHttpServer())
+      .post('/v1/platform-admin/impersonation-sessions')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+      .send({ userId: owner.id, schoolId: school.id });
+    expect(startRes.status).toBe(201);
+
+    const rosterRes = await request(app.getHttpServer())
+      .get(`/v1/franchises/${franchise.id}/schools`)
+      .set('Authorization', `Bearer ${startRes.body.accessToken}`);
+    expect(rosterRes.status).toBe(403);
+
+    // Sanity check: the REAL owner (ordinary token) can still use this route —
+    // it's impersonation specifically being rejected, not the route being broken.
+    const ordinaryToken = tenantJwt.sign({ sub: owner.id, email: owner.email, grants: [] });
+    const ordinaryRosterRes = await request(app.getHttpServer())
+      .get(`/v1/franchises/${franchise.id}/schools`)
+      .set('Authorization', `Bearer ${ordinaryToken}`);
+    expect(ordinaryRosterRes.status).toBe(200);
   });
 });

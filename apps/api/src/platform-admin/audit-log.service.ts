@@ -22,6 +22,17 @@ export const AuditAction = {
   // see PlatformAdminImpersonationService's own header comment for why that's a
   // deliberate, flagged scope boundary, not an oversight.
   START_IMPERSONATION_SESSION: 'START_IMPERSONATION_SESSION',
+  // Phase 49 — TranslationsModule. Non-tenant, Platform-Admin-authored content
+  // (same category as CREATE_ADMIN_USER above) — schoolId/franchiseId both
+  // correctly omitted on every call site, not guessed at.
+  CREATE_TRANSLATION: 'CREATE_TRANSLATION',
+  UPDATE_TRANSLATION: 'UPDATE_TRANSLATION',
+  DELETE_TRANSLATION: 'DELETE_TRANSLATION',
+  // Phase 54 — SubscriptionPlansModule. Non-tenant, Platform-Admin-authored content,
+  // same category as CREATE_TRANSLATION above. No DELETE_SUBSCRIPTION_PLAN — this
+  // module builds no delete path (see SubscriptionPlan's own schema.prisma comment).
+  CREATE_SUBSCRIPTION_PLAN: 'CREATE_SUBSCRIPTION_PLAN',
+  UPDATE_SUBSCRIPTION_PLAN: 'UPDATE_SUBSCRIPTION_PLAN',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

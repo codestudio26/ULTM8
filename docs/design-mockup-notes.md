@@ -169,7 +169,7 @@ yet implemented in `LoginPage.tsx`)
 
 **Implemented for real, 18 Sep 2026 — Student column now shows a real name:**
 
-- The mockup's Student-name correction (see the "Audit — same 'no name field' mistake" entry above) has been built into the actual app, not just the preview. `TransactionsService.findAllForSchool` now joins `Transaction.student` and `TransactionResponseDto` carries `studentFirstName`/`studentSurname`; `TransactionsPage.tsx` renders the resolved name, falling back to the truncated id only if both are empty. See **Decision 107** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) for the full reasoning, RLS trace, and what's explicitly still out of scope (the identical gap in `ClassDetailPage.tsx`/`InstructorFormModal.tsx`/`StaffPage.tsx`).
+- The mockup's Student-name correction (see the "Audit — same 'no name field' mistake" entry above) has been built into the actual app, not just the preview. `TransactionsService.findAllForSchool` now joins `Transaction.student` and `TransactionResponseDto` carries `studentFirstName`/`studentSurname`; `TransactionsPage.tsx` renders the resolved name, falling back to the truncated id only if both are empty. See **Decision 109** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) for the full reasoning, RLS trace, and what's explicitly still out of scope (the identical gap in `ClassDetailPage.tsx`/`InstructorFormModal.tsx`/`StaffPage.tsx`).
 - Regenerated `packages/api-client/openapi.json`/`schema.d.ts` from the live Swagger output to pick up the new fields — diffed to confirm only the two expected fields changed.
 - Added an assertion to `apps/api/test/memberships.e2e-spec.ts`'s existing Transactions-list test, extending rather than duplicating it. **Not run in this environment** — no reachable Postgres (confirmed: no `DATABASE_URL*` set, `pg_isready` unreachable) — verified instead via `tsc --noEmit` across `apps/api`, `packages/api-client`, and `apps/school-portal` (all clean). Needs `npm run test:e2e -- memberships.e2e-spec` against a real database before this is fully proven, not just compiled.
 - Everything else on this page (balance-widget cards, Download action, date/pagination) is still mockup-only — not implemented.
@@ -247,12 +247,12 @@ yet implemented in `LoginPage.tsx`)
 - **New question raised by user, not yet resolved:** should Instructor have a *real* rank/grading-system link (like `StudentRank`), rather than the current free-text `beltRanking`? Researched, not decided — see `[UNRESOLVED]` note below.
 - Artifact: https://claude.ai/artifact/KYv6romDvrQYMHFzebeNt6 (Version 2)
 
-**`[CONFIRMED]` — Instructor rank: V1 manual dropdown, V2 grading-system link deferred (Decision 106):**
+**`[CONFIRMED]` — Instructor rank: V1 manual dropdown, V2 grading-system link deferred (Decision 108):**
 
 - `InstructorResponseDto.beltRanking` (`packages/api-client/src/generated/schema.d.ts`) is explicitly documented in its own DTO comment as *"Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system"* — this is a deliberate existing design choice, not an oversight
 - Domain-rules skill's entity-relations model has exactly one rank-tracking entity, `StudentRank` ("Student(User) 1—\* StudentRank, one per discipline") — Instructor has no rank/progress relation anywhere in the confirmed model; `Rank` (discipline ladder, reference data) is "referenced by StudentRank, not owned per-student"
-- Resolved directly with the user, 17 Sep 2026 — recorded as **Decision 106** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`): V1 is a manual belt dropdown on the Instructor's own profile settings page (no link to the grading system, `beltRanking` stays plain text); V2, linking it to the real grading system, is deferred and not designed
-- Still open per Decision 106, not to be guessed at: the V1 dropdown's option set, whether Instructor rank is discipline-scoped like `StudentRank`, and which profile settings screen it lives on (not yet mocked up — only the Staff-facing list/detail views are covered so far)
+- Resolved directly with the user, 17 Sep 2026 — recorded as **Decision 108** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`): V1 is a manual belt dropdown on the Instructor's own profile settings page (no link to the grading system, `beltRanking` stays plain text); V2, linking it to the real grading system, is deferred and not designed
+- Still open per Decision 108, not to be guessed at: the V1 dropdown's option set, whether Instructor rank is discipline-scoped like `StudentRank`, and which profile settings screen it lives on (not yet mocked up — only the Staff-facing list/detail views are covered so far)
 - Doesn't change this page's mockup: it already shows `beltRanking` as plain text with no progress bar, which is exactly what V1 confirms — a future Instructor-facing "my profile settings" page is where the dropdown itself would appear
 
 **Correction — Instructor name was wrongly dropped, restored:**

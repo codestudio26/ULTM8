@@ -99,6 +99,25 @@ import { AuthModule } from '../auth/auth.module';
  * enforces read-only globally) and its known, flagged limitation (only the
  * session START is audit-logged, not every read taken during it).
  *
+ * PHASE 49 — TranslationsModule now built as the separate module this comment
+ * already called for: `apps/api/src/translations/`, importing this module for
+ * exactly two things (see this module's own `exports` line below) —
+ * `PlatformAdminJwtAuthGuard` for `platform-admin/translations`'s own guard chain,
+ * and `AuditLogService` for the same "every Platform Admin write is audited"
+ * discipline Slice 4/5's own AdminUser create/revoke already established. This is
+ * the first time anything outside this module has needed to reuse a piece of it —
+ * `exports` was empty before this phase.
+ *
+ * PHASE 54 — SubscriptionPlansModule now built the same way, reusing the identical
+ * two-thing DI pattern Phase 49 established (no new `exports` needed here). This
+ * comment previously said the module was blocked on an `[UNRESOLVED]` Franchise-
+ * Subscription-Plan billing-direction question — that citation was itself stale
+ * (Decision 106, docs/decisions/POST-SPEC-55-DECISION-LOG.md): the question was
+ * genuinely resolved in Spec 55's own Pass 4 review, before Phase 0 even started,
+ * and this comment simply never got updated after the skill file's own Pass 4
+ * edit. It was never blocked — same "confirmed scope, never picked up" status
+ * Translations had before Phase 49.
+ *
  * Still deliberately NOT built, each its own later slice:
  *  - General tenant-data EDITS (as opposed to the impersonation Slice 8 just
  *    shipped) — still genuinely unscoped, not just unbuilt: no field, entity, or
@@ -107,8 +126,15 @@ import { AuthModule } from '../auth/auth.module';
  *    the exact open question). Slice 4/5's own admin-user create/revoke is NOT
  *    this category — it's Platform Admin's own internal roster, not a tenant's
  *    data.
- *  - SubscriptionPlansModule / TranslationsModule — sit behind this module's own
- *    guard chain by confirmed design, both still separate, unbuilt modules.
+ *  - `apps/platform-admin`'s own authoring UI for Translations and
+ *    SubscriptionPlans — both backend only so far, matching this codebase's
+ *    established backend-then-UI split (e.g. CurriculumModule was Phase 44
+ *    backend / Phase 45 UI).
+ *  - SubscriptionPlan's `whiteLabelApp` entitlement/metered billing — deliberately
+ *    out of Phase 54's own scope (its metered rate is itself unresolved, Spec 55
+ *    §12.2, and it's meaningless before MobileAppPublishingModule exists, itself
+ *    still blocked on the separate Apple 4.2.6 compliance decision) — see
+ *    SubscriptionPlan's own schema.prisma comment.
  *
  * JwtModule.register() here is deliberately separate from AuthModule's own — neither
  * is registered `isGlobal`, so each module's `JwtService` is independently configured
@@ -163,5 +189,18 @@ import { AuthModule } from '../auth/auth.module';
     PlatformAdminPaymentAccountsService,
     PlatformAdminImpersonationService,
   ],
+  // Phase 49 — first-ever export from this module. PlatformAdminJwtAuthGuard is
+  // used via @UseGuards() in TranslationsModule's own PlatformAdminTranslationsController,
+  // which requires ALSO exporting PlatformAdminAuthService (the guard's own
+  // constructor dependency) — a guard consumed this way gets a fresh,
+  // importing-module-scoped instance, not the singleton already living in this
+  // module, so its own dependency must be independently resolvable from the
+  // importing module's DI graph too. See TranslationsModule's own header comment
+  // for the full account, verified against the installed @nestjs/core source
+  // before relying on it. AuditLogService has no such issue (plain constructor
+  // injection only) — exported for TranslationsService to reuse the same "every
+  // Platform Admin write is audited" mechanism this module's own AdminUser
+  // create/revoke already uses.
+  exports: [PlatformAdminJwtAuthGuard, PlatformAdminAuthService, AuditLogService],
 })
 export class PlatformAdminModule {}

@@ -5,6 +5,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { PaymentsService } from '../payments/payments.service';
 import { GuardiansService } from '../guardians/guardians.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
@@ -23,6 +24,7 @@ export class MembershipsService {
     private readonly schoolsService: SchoolsService,
     private readonly paymentsService: PaymentsService,
     private readonly guardiansService: GuardiansService,
+    private readonly subscriptionGate: SubscriptionGateService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -237,6 +239,12 @@ export class MembershipsService {
     }
 
     const plan = await this.findOnePlan(studentId, planId);
+    // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
+    // payments" is one of the three actions it explicitly names (Phase 54).
+    // Checked under `studentId`'s own RLS context, not `callerId`'s — same
+    // "a Guardian caller holds zero RoleGrant anywhere, Decision 92" reasoning
+    // BookingsService.bookClass()'s own identical check already documents.
+    await this.subscriptionGate.assertNotDegraded(studentId, plan.schoolId);
     // FOUND ON REVIEW: skills/ultm8-domain-rules/SKILL.md §6/§15 confirms Friend
     // Pass is "School-gifted, not purchased" — always staff-attributed
     // (Membership.giftedById), never a Student self-service purchase. Routing it

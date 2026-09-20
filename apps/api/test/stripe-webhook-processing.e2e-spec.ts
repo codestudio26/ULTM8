@@ -43,11 +43,15 @@ describeIfDb('stripe-webhook-processing job', () => {
 
   const eventIds: string[] = [];
   const schoolIds: string[] = [];
+  const franchiseIds: string[] = [];
   const userIds: string[] = [];
   const paymentAccountIds: string[] = [];
   const membershipPlanIds: string[] = [];
   const membershipIds: string[] = [];
   const transactionIds: string[] = [];
+  // Phase 54 — deleted in afterAll, AFTER School/Franchise (both FK-reference
+  // SubscriptionPlan.id with ON DELETE RESTRICT).
+  const subscriptionPlanIds: string[] = [];
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -73,6 +77,9 @@ describeIfDb('stripe-webhook-processing job', () => {
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
+    await superuser.franchise.deleteMany({ where: { id: { in: franchiseIds } } });
+    // Phase 54 — after School/Franchise, both FK-reference this with ON DELETE RESTRICT.
+    await superuser.subscriptionPlan.deleteMany({ where: { id: { in: subscriptionPlanIds } } });
     await superuser.$disconnect();
   });
 
@@ -255,6 +262,64 @@ describeIfDb('stripe-webhook-processing job', () => {
     expect(updated.stripeFranchiseFeeSubscriptionId).toBe(stripeSubscriptionId);
 
     await superuser.franchise.delete({ where: { id: franchise.id } });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Phase 54 — customer.subscription.deleted's new platform SubscriptionPlan
+  // branch (School- and Franchise-side, tried after the franchise-fee branch
+  // above doesn't match). Same "no live Stripe API access needed" reasoning as
+  // every case in this file — a correlator-column match only. invoice.paid/
+  // invoice.payment_failed's own new platform-subscription branches are
+  // deliberately NOT tested here either, for the identical accepted-gap reason
+  // already documented above this file's franchise-fee section.
+  // ---------------------------------------------------------------------------
+
+  it('customer.subscription.deleted Cancels the matching School\'s platform SubscriptionPlan status, portal access now read-only', async () => {
+    const plan = await superuser.subscriptionPlan.create({ data: { id: randomUUID(), name: 'Webhook Job Fixture Plan', price: 3000 } });
+    subscriptionPlanIds.push(plan.id);
+    const stripeSubscriptionId = `sub_platform_fixture_${randomUUID()}`;
+    const school = await superuser.school.create({
+      data: {
+        id: randomUUID(),
+        name: 'Webhook Job Platform-Subscription School',
+        subscriptionPlanId: plan.id,
+        stripePlatformSubscriptionId: stripeSubscriptionId,
+        platformSubscriptionStatus: 'ACTIVE',
+      },
+    });
+    schoolIds.push(school.id);
+
+    const cancelEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(cancelEventId);
+    await processor.process(fakeJob({ stripeEventId: cancelEventId, eventType: 'customer.subscription.deleted', objectId: stripeSubscriptionId }));
+
+    const updated = await superuser.school.findUniqueOrThrow({ where: { id: school.id } });
+    expect(updated.platformSubscriptionStatus).toBe('CANCELED');
+    expect(updated.stripePlatformSubscriptionId).toBe(stripeSubscriptionId);
+  });
+
+  it('customer.subscription.deleted Cancels the matching Franchise\'s platform SubscriptionPlan status', async () => {
+    const plan = await superuser.subscriptionPlan.create({ data: { id: randomUUID(), name: 'Webhook Job Fixture Plan (Franchise)', price: 5000 } });
+    subscriptionPlanIds.push(plan.id);
+    const stripeSubscriptionId = `sub_platform_franchise_fixture_${randomUUID()}`;
+    const franchise = await superuser.franchise.create({
+      data: {
+        id: randomUUID(),
+        name: 'Webhook Job Platform-Subscription Franchise',
+        subscriptionPlanId: plan.id,
+        stripePlatformSubscriptionId: stripeSubscriptionId,
+        platformSubscriptionStatus: 'ACTIVE',
+      },
+    });
+    franchiseIds.push(franchise.id);
+
+    const cancelEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(cancelEventId);
+    await processor.process(fakeJob({ stripeEventId: cancelEventId, eventType: 'customer.subscription.deleted', objectId: stripeSubscriptionId }));
+
+    const updated = await superuser.franchise.findUniqueOrThrow({ where: { id: franchise.id } });
+    expect(updated.platformSubscriptionStatus).toBe('CANCELED');
+    expect(updated.stripePlatformSubscriptionId).toBe(stripeSubscriptionId);
   });
 
   it('an unrecognized event type is deduped and logged, not thrown', async () => {
