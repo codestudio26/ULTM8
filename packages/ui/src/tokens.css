@@ -10,16 +10,16 @@
  */
 :root {
   /* ---- Base ramps (DESIGN.md "Color") ---- */
-  --color-accent-50: #f5f7fa;
-  --color-accent-100: #e4ebf1;
-  --color-accent-200: #c7d4e1;
-  --color-accent-300: #9fb6cb;
-  --color-accent-400: #7495b4;
-  --color-accent-500: #4a6b8a;
-  --color-accent-600: #3d5871;
-  --color-accent-700: #30465a;
-  --color-accent-800: #243442;
-  --color-accent-900: #17212b;
+  --color-accent-50: #fcfdfd;
+  --color-accent-100: #edf0f2;
+  --color-accent-200: #d3d9df;
+  --color-accent-300: #afbbc5;
+  --color-accent-400: #889aaa;
+  --color-accent-500: #5d7081;
+  --color-accent-600: #4d5d6b;
+  --color-accent-700: #3e4b56;
+  --color-accent-800: #2f3941;
+  --color-accent-900: #20262c;
 
   --color-neutral-50: #f9fafa;
   --color-neutral-100: #f1f2f3;
@@ -81,7 +81,7 @@
   --text-danger: var(--color-danger);
 
   /* ---- Typography (DESIGN.md "Typography") ---- */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Figtree Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
   --font-size-caption: 13px;
   --font-size-footnote: 14px;

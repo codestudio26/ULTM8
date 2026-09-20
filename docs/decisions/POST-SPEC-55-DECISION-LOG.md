@@ -961,3 +961,47 @@ Whether the consent-withdrawal/manual-mode-bypass asymmetry above is actually co
 ### Recorded by
 
 Designed as a research-grounded proposal (a dedicated background research pass over the existing codebase's own established conventions — route grouping, Staff-gate reuse, JWT-signing precedent, additive-migration-with-RLS-reasoning) and presented to the user for approval before any code was written; the user approved it as proposed ("Go ahead and build it as proposed"), 18 Sep 2026. Logged here, not as Decisions 101–106 are (a product-owner decision made directly with the user on a named open question), because the mechanics themselves — the two-secret design, per-Student vs. batched, the consent asymmetry — were never put to the user as discrete alternatives to choose between; they were designed by Claude and approved as a package, the same "flagged prominently rather than silently built around" treatment Decisions 90–94 already establish for this class of Developer-level inference.
+
+---
+
+## Decision 108 — Instructor rank: V1 is a manual belt dropdown on the Instructor's own profile settings page; linking it to the real grading system is deferred to V2
+
+**Date:** 17 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** a gap this file never addressed. `InstructorResponseDto.beltRanking` (`packages/api-client/src/generated/schema.d.ts`) already exists as plain display text, with its own doc comment stating it is *"not a live reference into the grading system"* — but nothing confirmed how that value gets set, or whether it should ever connect to the real `StudentRank`/`Rank` grading model (domain-rules §5/§6.1), which today has no Instructor-side relation at all.
+
+### Decision
+
+**V1:** an Instructor sets their own displayed rank manually, via a belt dropdown on their own profile settings page — not auto-derived, not staff-entered, not linked to `Rank`/`StudentRank` in any way. This is consistent with `beltRanking` staying the plain-text field it already is.
+
+**V2 (future, not scheduled):** link Instructor rank to the real grading system. Recorded as direction only — not designed.
+
+### What this does NOT resolve
+
+V1 specifics still open, not to be guessed at when this is built: the dropdown's actual option set (freeform per-School text vs. a fixed generic belt list vs. pulling from the caller's own Discipline/Rank ladders, which are School-configurable per domain-rules §5); whether an Instructor can hold one rank total or one per discipline (mirroring `StudentRank`'s one-per-discipline shape, domain-rules §5, is a plausible but unconfirmed default); and which profile settings screen this lives on, since no Instructor-facing "my profile settings" page has been designed yet (only the School-staff-facing Instructor list/detail views this session's mockup work has covered).
+
+V2 specifics are entirely open: whether it reuses `StudentRank`/`Rank` directly or a parallel structure, whether promotion stays coach-initiated the same way `StudentRank` promotion does (domain-rules §5), and how/whether an Instructor who is also independently a Student (with their own real `StudentRank`) reconciles the two. None of this should be built from inference when V2 is scheduled — needs its own decision.
+
+### Recorded by
+
+Logged during a direct exchange with the user, 17 Sep 2026, while reviewing the Instructors page mockup (`docs/design-mockup-notes.md`) and confirming why `beltRanking` is plain text rather than a grading-system reference.
+
+---
+
+## Decision 109 — Transactions Student-name resolution: embed `studentFirstName`/`studentSurname` on `TransactionResponseDto`, not a new lookup endpoint
+
+**Date:** 18 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** a real, previously-flagged gap in `TransactionsPage.tsx` (own comment: *"No 'look up a User's name by id' endpoint exists yet"*) — the Transactions page showed a truncated `studentId` instead of the paying Student's name because no endpoint anywhere resolved a `userId`/`studentId` to a name.
+
+### Decision
+
+`TransactionsService.findAllForSchool` now joins `Transaction.student` (`User.firstName`/`surname`) directly via a Prisma `include`, flattened onto two new flat fields on `TransactionResponseDto` — `studentFirstName`, `studentSurname`. No new endpoint, no RLS/migration change: the existing `user_self_or_shared_school` policy on `User` (`apps/api/prisma/migrations/20260902000000_init/migration.sql`) already permits a School Owner/Manager to read a same-School Student's `User` row, since `RoleGrant`'s own `rolegrant_school_manager_scope` policy grants them visibility into every `RoleGrant` at their School, including the target Student's — traced through the actual policy chain, not assumed. `TransactionsPage.tsx` now renders the resolved name, falling back to the truncated id only if both fields are empty.
+
+### What this does NOT resolve
+
+The identical "id only, no name" gap independently exists in three other real screens — `ClassDetailPage.tsx` (Bookings/Waitlist), `InstructorFormModal.tsx`, and `StaffPage.tsx` — each with its own code comment flagging it, none touched by this change. Whether those should each get the same embedded-field treatment repeated per-DTO, or a shared batch lookup endpoint (e.g. `GET /schools/{id}/users?ids=...`) built once and reused, is a real open architectural question this decision deliberately does not answer — flagged for the Architect if/when those three sites are scoped for a real fix.
+
+### Recorded by
+
+Logged while implementing the Transactions page mockup fix for real, 18 Sep 2026, as part of a direct request to move one of this session's page mockups into working code.

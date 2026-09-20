@@ -6,10 +6,10 @@ This file is written for coding agents to read before generating UI — referenc
 
 ## Typography
 
-Keep it system-native for speed: no webfont request on first paint.
+Figtree, self-hosted as a single variable font (`@fontsource-variable/figtree`, SIL Open Font License), is the product's typeface — a deliberate trade-off against the previous system-native-only stance, chosen for brand consistency across the app rather than for its performance profile. The mitigations that make this acceptable: it's self-hosted (no third-party CDN round trip), it's one variable file per script subset rather than separate files per weight, and `font-display: swap` means the system fallback stack renders immediately and text is never blocked on the webfont — Figtree swaps in once loaded, it doesn't delay first paint.
 
 ```css
---font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+--font-sans: "Figtree Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
 ```
 
@@ -34,16 +34,16 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
 ```css
 :root {
   /* accent — slate blue */
-  --color-accent-50:  #f5f7fa;
-  --color-accent-100: #e4ebf1;
-  --color-accent-200: #c7d4e1;
-  --color-accent-300: #9fb6cb;
-  --color-accent-400: #7495b4;
-  --color-accent-500: #4a6b8a; /* brand reference value */
-  --color-accent-600: #3d5871;
-  --color-accent-700: #30465a;
-  --color-accent-800: #243442;
-  --color-accent-900: #17212b;
+  --color-accent-50:  #fcfdfd;
+  --color-accent-100: #edf0f2;
+  --color-accent-200: #d3d9df;
+  --color-accent-300: #afbbc5;
+  --color-accent-400: #889aaa;
+  --color-accent-500: #5d7081; /* brand reference value */
+  --color-accent-600: #4d5d6b;
+  --color-accent-700: #3e4b56;
+  --color-accent-800: #2f3941;
+  --color-accent-900: #20262c;
 
   /* neutral */
   --color-neutral-50:  #f9fafa;
@@ -129,8 +129,8 @@ Dark mode ships at launch, derived from the same ramps above — never hand-auth
 |---|---|
 | `text-primary` on `surface-0` (light) | 17.2:1 |
 | `text-secondary` on `surface-0` (light) | 7.0:1 |
-| `on-accent` (white) on `fill-accent` #4a6b8a | 5.6:1 |
-| `text-accent` #30465a on white | 9.3:1 |
+| `on-accent` (white) on `fill-accent` #5d7081 | 5.1:1 |
+| `text-accent` #3e4b56 on white | 8.6:1 |
 | `text-primary` (dark) on `surface-0` (dark) | 16.0:1 |
 | `text-secondary` (dark) on `surface-0` (dark) | 6.6:1 |
 | white on `--color-danger` | 6.5:1 |
@@ -177,6 +177,29 @@ Every component defines these states. Hover is a progressive enhancement for mou
 
 Minimum set requiring all of the above: buttons, inputs/selects, cards that are tappable, list rows, tabs/nav items, checkboxes/toggles.
 
+## Patterns
+
+Recurring structures built from the tokens and component states above. Adapted from screen patterns observed in the ULTM8 Figma file — per the source-of-truth hierarchy, a Figma screen is illustrative only, so the specific copy, icon choice, and exact proportions below are a starting point, not a pixel-for-pixel copy; the token usage is what's binding. Neither pattern implies new business logic — see the domain-rules skill before wiring either one to real behavior.
+
+### Success confirmation panel
+
+Confirms a completed action (a save, an update, a login) with a self-contained panel rather than a silent redirect — this shape recurs across dozens of flows in the Figma file (login, profile updates, timetable changes):
+
+- `--color-success` filled circle (44–64px) with a check mark, centered
+- Bold title (`--font-size-heading-sm`, `--font-weight-semibold`) stating what succeeded
+- One line of body text (`--font-size-footnote`, `--text-secondary`) with the specific detail
+- A dismiss control (`×`) in the corner — whether a given flow also auto-advances after a delay is a per-flow decision, not something this pattern decides on its own
+- Card surface (`--surface-1`, `--radius-lg`, `--shadow-md`), same as any other card
+
+### Segmented code input
+
+For a flow that collects a short numeric code (OTP, PIN-style passcode):
+
+- One `--radius-sm`-bordered box per digit, fixed square aspect ratio, `--font-mono` + `font-variant-numeric: tabular-nums` so digits don't shift width as they fill
+- Minimum 44×44px touch target per box (same rule as any other interactive element)
+- A live countdown/expiry line below, in `--text-muted` — the actual expiry duration is a backend/business value, never hardcoded in the UI layer
+- Primary action stays disabled until every box is filled
+
 ## Motion
 
 ```css
@@ -196,7 +219,7 @@ Prefer CSS transitions over JS animation. Keep everything in the 120–280ms ran
 
 ## Performance
 
-- System font stack (above) — zero webfont requests on first paint. If a custom display font is ever added, it must be a single self-hosted variable font, not multiple weight files.
+- Figtree (above) is self-hosted as a single variable font per script subset, not separate files per weight, with `font-display: swap` so the system fallback stack renders immediately and first paint is never blocked on the webfont.
 - No layout-shifting images: always set explicit `width`/`height` or `aspect-ratio`.
 - Lazy-load everything below the fold.
 - Keep first-load JS/CSS minimal — many users worldwide are on slower mobile connections, not just small screens; this is a network-speed constraint as much as a screen-size one.
