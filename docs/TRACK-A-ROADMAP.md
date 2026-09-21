@@ -21,7 +21,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 ## Where things stand right now
 
 - **55 phases shipped** (Phase 0 walking skeleton through Phase 55; Phase 55 is
-  this PR), covering every backend module in `ultm8-nestjs-module` §5's confirmed
+  PR #76), covering every backend module in `ultm8-nestjs-module` §5's confirmed
   table except the one named below, plus `apps/school-portal` UI for essentially
   all of it, plus `apps/platform-admin` through Translations authoring and now
   SubscriptionPlansModule authoring.
@@ -32,9 +32,11 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   branding-field UI), PR #75 (Phase 54), PR #61 (Decisions 108/109 + a design-system
   refresh — see below), and PR #31 (shared `@ultm8/ui` mobile-nav/table-overflow
   fix — see below) are all merged. Phase 55 (`SubscriptionPlansModule`'s
-  `apps/platform-admin` authoring UI) is this PR.**
-- **Zero open PRs, repo-wide** — every phase and every standalone fix described in
-  this doc has landed on `master`.
+  `apps/platform-admin` authoring UI) is PR #76.**
+- **One open PR** — PR #76 (Phase 55), pushed and green, awaiting review; every
+  other phase and standalone fix described in this doc has landed on `master`.
+  Decision 110 (general tenant/content offboarding, see below) and this doc's own
+  update for it are going out as a separate PR from PR #76.
 - **Two items shipped outside the Phase-N sequence**, not tied to a specific phase
   number since neither PR framed itself as one (same treatment this doc already
   gives Decision-only PRs like #71):
@@ -65,7 +67,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   49–50; `SubscriptionPlansModule` (backend) shipped in Phase 54 — see below.
 - **`SubscriptionPlansModule`'s "blocked" status was a stale citation, now fixed
   (Decision 106) — and the module itself now shipped end to end (Phase 54 backend,
-  merged via PR #75; Phase 55 `apps/platform-admin` authoring UI, this PR).** This
+  merged via PR #75; Phase 55 `apps/platform-admin` authoring UI, PR #76).** This
   doc used to say the billing-direction question was `[UNRESOLVED]` per
   `ultm8-domain-rules` §2; that citation was out of date — the question was
   genuinely resolved in Spec 55's own Pass 4 review, before Phase 0 even started
@@ -88,14 +90,19 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   is a Student/parent-facing concept, and Track B's own roadmap already names this as
   its own blocked item ("Slice 7 — Guardian-facing screens," blocked on a design pass
   that's never happened). Track A doesn't need to build it; Track B does, later.
-- **A systemic gap not previously called out in this doc**: no tenant/content
-  offboarding exists anywhere in the platform. There is no `DELETE` endpoint for
-  School, Branch, Class, Timetable, Instructor, Membership, Rank, Waiver, Franchise, or
-  Curriculum — `ultm8-app-publishing` §4/§5.5 flags this as its own unspecified item,
-  and the same "`[UNRESOLVED]`, general tenant/content offboarding" comment recurs
-  verbatim across ~15 files. This blocks any real account-closure or data-erasure flow
-  and is worth its own decision + phase, not just a footnote — see
-  `docs/ULTM8-MASTER-ROADMAP.md` for the full cross-track picture.
+- **General tenant/content offboarding — the policy question is now resolved
+  (Decision 110), the ~16 files' worth of `DELETE` endpoints are not yet built.**
+  No `DELETE` endpoint exists anywhere for School, Branch, Class, Timetable,
+  Instructor, Membership, Rank, Waiver, Franchise, or Curriculum —
+  `ultm8-app-publishing` §4/§5.5 flagged this as its own unspecified item, the same
+  "`[UNRESOLVED]`, general tenant/content offboarding" comment recurring verbatim
+  across every one of those files. Decision 110 settles what "offboarding" means:
+  soft-archive immediately, hard-delete after a 90-day retention window (matching
+  the white-label credential's own Decision 27 precedent), triggered only by an
+  explicit close-account action — never by platform-subscription cancellation alone,
+  which stays billing-only. See "What's actually left" item 3 below for the full
+  account, including the one still-open piece (`Waiver`'s own retention period,
+  pending legal input) and what remains genuine follow-up build work.
 
 ---
 
@@ -113,9 +120,9 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | `CurriculumModule` (Lesson content) | ✅ DONE — Phase 44–45 |
 | `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend + Phase 50 UI, both merged |
 | QR check-in redesign + Attendance roll-call scan (Decisions 66, 71, 107) | ✅ DONE (backend) — Phase 51, merged via PR #72 |
-| `SubscriptionPlansModule` (platform-level plans) | ✅ DONE — Phase 54 (backend: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75) + Phase 55 (`apps/platform-admin` authoring UI, this PR). Only the `whiteLabelApp` entitlement remains deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
+| `SubscriptionPlansModule` (platform-level plans) | ✅ DONE — Phase 54 (backend: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75) + Phase 55 (`apps/platform-admin` authoring UI, PR #76). Only the `whiteLabelApp` entitlement remains deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
-| General tenant/content offboarding (no DELETE anywhere) | ⛔ NOT BUILT — unspecified in Spec 55, systemic gap across ~15 files |
+| General tenant/content offboarding (no DELETE anywhere) | 🟡 Policy decided (Decision 110) — soft-archive + 90-day purge, gated behind an explicit close-account action, not subscription cancellation. Endpoints across 16 files still to be built |
 | QR code display screen (`apps/school-portal`, Staff-facing) | ✅ DONE — Phase 52, merged via PR #73 |
 | Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
 | Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
@@ -250,7 +257,7 @@ doc), so they're named here without a number rather than guessed at.
 - **Phase 54** — `SubscriptionPlansModule` (core: Plan CRUD, subscribe/cancel,
   `PlatformCharge`, degraded-portal gate).
 - **Phase 55** — `SubscriptionPlansModule`'s `apps/platform-admin` authoring UI
-  (this PR): `SubscriptionPlansPage` — list/add/edit, no delete action (the backend
+  (PR #76): `SubscriptionPlansPage` — list/add/edit, no delete action (the backend
   has no `DELETE` route — an already-subscribed Franchise/School has no confirmed
   safe orphaning behavior, see the Prisma model's own comment). Required one small
   backend addition alongside the UI: `GET /platform-admin/subscription-plans`, a
@@ -294,7 +301,7 @@ other Stripe integration in this codebase), the `PlatformCharge` ledger, and the
 read-only degraded-portal gate Spec 55 §10.2 confirms (new Class/Booking/payment
 creation blocked once a School's platform Subscription is genuinely Canceled — never
 on `PAST_DUE` or on a School that simply never subscribed, the ordinary state of
-every School in this codebase before this phase). Phase 55 (this PR) then built
+every School in this codebase before this phase). Phase 55 (PR #76) then built
 `apps/platform-admin`'s own authoring UI for Plan CRUD — backend-then-UI split, same
 convention `TranslationsModule` (Phase 49/50) and `CurriculumModule` (Phase 44/45)
 already established.
@@ -321,16 +328,32 @@ needs the Apple compliance question actually resolved first. The white-label add
 own metered billing rate ($0.99–$1.99/active-student/month range) is also never
 finalized — a second, independent open item under this same module.
 
-### 3. General tenant/content offboarding — unspecified in the spec, never scoped
+### 3. General tenant/content offboarding — policy decided (Decision 110); endpoints not yet built
 
 No `DELETE` endpoint exists anywhere in the platform for School, Branch, Class,
 Timetable, Instructor, Membership, Rank, Waiver, Franchise, or Curriculum.
 `ultm8-app-publishing` §4/§5.5 names this as its own new open item, not covered
-anywhere else in Spec 55. The same flagged comment recurs verbatim across roughly 15
-service/controller files. This blocks any real account-closure or GDPR/LGPD-style
-data-erasure flow — a genuine, systemic gap rather than a per-module oversight. Needs
-a product/legal decision on what "offboarding" actually means per entity (hard delete?
-soft-archive? retention period?) before any of those ~15 files gets a real `DELETE`.
+anywhere else in Spec 55. The same flagged comment recurs verbatim across 16
+service/controller files.
+
+**Decision 110** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) resolves what
+"offboarding" means: soft-archive (read-only/hidden) immediately, hard-delete after a
+90-day retention window — matching the white-label credential's own 90-day
+grace-then-purge precedent (Decision 27) rather than an invented number. Triggered
+only by a new, explicit, Platform-Admin-mediated close-account action — **not** by
+platform-subscription cancellation alone, which stays billing-only (the existing
+`SubscriptionGateService` degraded-portal gate) and leaves data untouched, same
+"billing lapsed ≠ delete my account" separation every major SaaS product makes.
+Scoped to School/Franchise-level offboarding only — GDPR/LGPD per-user erasure
+requests are deliberately out of scope, tracked as their own separate open item
+(`docs/ULTM8-MASTER-ROADMAP.md` §4). `Waiver`'s own retention period is flagged, not
+resolved — liability-waiver signatures may need a legal-review-driven retention
+period longer than 90 days, unlike every other entity in this list.
+
+**Still not built**: the close-account endpoint(s), the soft-archived state's own
+access behavior, the 90-day scheduled purge job, and updating all 16 flagged files
+from "no delete method" to this real lifecycle — genuine follow-up work, not done by
+the decision alone.
 
 ### 4. Guardian consent-management UI — no screen anywhere
 
@@ -366,7 +389,7 @@ responsive bugs — mobile-nav collapse and table horizontal-overflow (PR #31).
 ## Immediate next actions (not phases — just what's actually queued)
 
 1. ~~`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI~~ — done
-   (Phase 55, this PR).
+   (Phase 55, PR #76).
 2. Decision 109 (Transaction Student-name resolution, PR #61) is still a
    Developer-level inference, flagged in the decision log but not yet given an
    Architect confirmation — worth a short pass, though nothing is blocked on it.

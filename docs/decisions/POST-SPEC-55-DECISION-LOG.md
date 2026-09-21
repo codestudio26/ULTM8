@@ -1005,3 +1005,31 @@ The identical "id only, no name" gap independently exists in three other real sc
 ### Recorded by
 
 Logged while implementing the Transactions page mockup fix for real, 18 Sep 2026, as part of a direct request to move one of this session's page mockups into working code.
+
+---
+
+## Decision 110 — General tenant/content offboarding: soft-archive with a 90-day retention window, gated behind an explicit close-account action
+
+**Date:** 21 Sep 2026
+**Status:** Product-owner decision, made directly with the user — Claude's own recommendation requested and followed (same shape as Decision 105)
+**Resolves:** the systemic `[UNRESOLVED]` gap `ultm8-app-publishing` §4/§5.5 flags ("General tenant/School cancellation and offboarding... is not otherwise specified anywhere in Spec 55... flagged as its own new open item") — the reason `School`, `Branch`, `Franchise`, `Class`, `TimetableSlot`, `Instructor`, `MembershipPlan`, `Rank`, `Waiver`, and `Curriculum`/`Lesson` have no `DELETE` endpoint anywhere, each with its own "general tenant offboarding is `[UNRESOLVED]`" code comment (16 files).
+
+### Decision
+
+Three parts, all requested from Claude as a recommendation based on standard SaaS-market practice rather than picked from a set of options, then accepted as-is:
+
+1. **Semantics — soft-archive immediately, hard-delete after a 90-day retention window.** Not indefinite soft-archive, not immediate hard delete. On the trigger (below), the entity becomes read-only/hidden but is retained in full; after 90 days with no reversal, a scheduled job purges it for real. 90 days specifically to match the one directly analogous precedent already shipped in this exact codebase — the white-label credential grace-period purge (`ultm8-app-publishing` §5.5, Decision 27) — rather than inventing an unrelated number. This also matches ordinary market practice: a bounded retention window balances "don't destroy data over a change of mind" against GDPR/LGPD's own data-minimization principle (Art 5(1)(c)), which disfavors retaining a cancelled tenant's data indefinitely "just in case."
+   - **One flagged exception, not resolved here:** `Waiver` signatures are legal liability documents; many jurisdictions require retaining a signed waiver well past 90 days (statute-of-limitations periods, often years — longer still if the signer was a minor, running from age of majority). `Waiver`'s own purge timing needs real legal input for the jurisdictions ULTM8 operates in before it runs on the same 90-day clock as everything else. Every other entity in the list above gets the uniform 90-day rule.
+2. **Trigger — two independent triggers, not one; platform-subscription cancellation alone is NOT one of them.** `platformSubscriptionStatus` → `CANCELED` (Phase 54, already shipped) stays billing-only: it blocks new writes via the existing `SubscriptionGateService` degraded-portal gate, but does **not** by itself start the offboarding countdown — a School/Franchise that simply stops paying keeps its data fully intact, the same way Stripe/Shopify/GitHub/Salesforce all separate "billing lapsed" from "delete my account." The only trigger for actual offboarding is a new, explicit, separate **close-account action** — Platform-Admin-mediated, FULL_ADMIN-only, expected to need its own confirmation step (e.g. re-typing the School/Franchise name) given the consequence. That action is what starts the soft-archive → 90-day countdown from part 1.
+3. **Scope — School/Franchise-level (and owned content) offboarding only; GDPR/LGPD per-user erasure is explicitly out of scope here.** An individual Student/User's "erase my personal data" request is a different legal mechanism (GDPR Art 17, with its own exceptions for legal retention obligations), a different trigger (a specific erasure/DSAR request, not a School closing), and a different technical shape (anonymize/delete one person's rows without necessarily touching the School/Franchise around them). Conflating the two into one decision would understate the legal complexity either one deserves on its own.
+
+### What this does NOT resolve
+
+- **No code shipped by this decision.** The actual close-account endpoint(s), the soft-archived/read-only state's own access behavior, the 90-day scheduled purge job, and updating all 16 flagged files from "no delete method" to this real lifecycle is genuine follow-up build work (`docs/ULTM8-MASTER-ROADMAP.md` §5 item 9), not done here.
+- **Who may trigger close-account** is stated above as Platform-Admin-mediated (FULL_ADMIN-only) as part of the recommendation, but this was not independently re-verified against Spec 55 §4.4's own role table before being proposed — worth a quick confirmation pass before it's built, same discipline Decision 105's own citation-checking used.
+- **`Waiver`'s own retention period** is explicitly left open pending real legal input — not resolved by the uniform 90-day rule this decision sets for everything else.
+- **Per-user GDPR/LGPD erasure** remains its own separate, not-yet-made decision — still tracked as its own open item (`docs/ULTM8-MASTER-ROADMAP.md` §4, "a tracking gap, not a technical one").
+
+### Recorded by
+
+Logged during a direct exchange with the user, 21 Sep 2026 — presented with the three sub-questions above (offboarding semantics, trigger, and GDPR/LGPD scope) plus multiple options for each, the user asked for Claude's own recommendation based on standard market practice rather than picking between the options; the recommendation was given for all three and followed as given, the same "recommendation given, user's own choice followed" shape as Decisions 101–105.
