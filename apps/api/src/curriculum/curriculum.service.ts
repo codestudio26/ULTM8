@@ -39,6 +39,8 @@ export class CurriculumService {
   async createLesson(callerId: string, schoolId: string, dto: CreateLessonDto) {
     await this.schoolsService.findOne(callerId, schoolId);
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     if (dto.instructorId) {
       // Lesson has no Branch of its own — null targetBranchId means "any of this
       // Instructor's grants at the School count," same as a School-wide Class.
@@ -108,6 +110,8 @@ export class CurriculumService {
       throw new NotFoundException('Lesson not found');
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (dto.instructorId) {
       await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, existing.schoolId, null);
     }

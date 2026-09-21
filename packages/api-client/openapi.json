@@ -1981,6 +1981,166 @@
         ]
       }
     },
+    "/v1/platform-admin/schools/{id}/close": {
+      "post": {
+        "operationId": "PlatformAdminTenantLifecycleController_closeSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseTenantAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantLifecycleStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-tenant-lifecycle"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/reactivate": {
+      "post": {
+        "operationId": "PlatformAdminTenantLifecycleController_reactivateSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantLifecycleStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-tenant-lifecycle"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/franchises/{id}/close": {
+      "post": {
+        "operationId": "PlatformAdminTenantLifecycleController_closeFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseTenantAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantLifecycleStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-tenant-lifecycle"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/franchises/{id}/reactivate": {
+      "post": {
+        "operationId": "PlatformAdminTenantLifecycleController_reactivateFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantLifecycleStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-tenant-lifecycle"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/payment-accounts": {
       "post": {
         "operationId": "PaymentsController_createForSchool",
@@ -7271,6 +7431,44 @@
           "accessToken",
           "expiresAt",
           "impersonatedUserId"
+        ]
+      },
+      "CloseTenantAccountDto": {
+        "type": "object",
+        "properties": {
+          "confirmName": {
+            "type": "string",
+            "description": "Must exactly match the School/Franchise's current name — the required confirmation step for this action."
+          }
+        },
+        "required": [
+          "confirmName"
+        ]
+      },
+      "TenantLifecycleStatusDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO timestamp this School/Franchise was closed, or null if active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO timestamp the 90-day retention window elapses, or null if active."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO timestamp the scheduled purge job actually processed this row, or null if not yet purged."
+          }
+        },
+        "required": [
+          "id"
         ]
       },
       "CreatePaymentAccountDto": {

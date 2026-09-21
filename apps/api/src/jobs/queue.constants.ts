@@ -21,3 +21,6 @@ export const NOTIFICATION_FANOUT_QUEUE = 'notification-fanout';
 // standing Subscription exists" pass — see the processor's own comment for why
 // one job covers both rather than splitting them.
 export const FRANCHISE_FEE_USAGE_REPORTING_QUEUE = 'franchise-fee-usage-reporting';
+// Phase 56 — Decision 110's own 90-day scheduled purge, the second half of the
+// close-account/purge lifecycle TenantLifecycleService starts.
+export const TENANT_LIFECYCLE_PURGE_QUEUE = 'tenant-lifecycle-purge';

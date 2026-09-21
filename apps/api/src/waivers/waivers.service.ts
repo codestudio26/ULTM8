@@ -52,6 +52,8 @@ export class WaiversService {
   async createWaiver(callerId: string, schoolId: string, dto: CreateWaiverDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const id = randomUUID();
     const waiver = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -111,6 +113,8 @@ export class WaiversService {
   async updateWaiver(callerId: string, waiverId: string, dto: UpdateWaiverDto) {
     const existing = await this.findOneWaiver(callerId, waiverId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.waiver.update({ where: { id: waiverId }, data: { title: dto.title, body: dto.body } }),
     );

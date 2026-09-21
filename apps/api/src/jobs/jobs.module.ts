@@ -12,6 +12,7 @@ import { BookingNoShowProcessingProcessor, BookingNoShowProcessingScheduler } fr
 import { WaitlistCascadeProcessingProcessor, WaitlistCascadeProcessingScheduler } from './waitlist-cascade-processing.processor';
 import { NotificationFanoutProcessor } from './notification-fanout.processor';
 import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingScheduler } from './franchise-fee-usage-reporting.processor';
+import { TenantLifecyclePurgeProcessor, TenantLifecyclePurgeScheduler } from './tenant-lifecycle-purge.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -44,6 +45,11 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
  * to fetch the full Invoice), hence the new PaymentsModule import. Imports
  * FranchiseFeesModule for FranchiseFeeBillingService (the new processor's own
  * Stripe-primitives dependency).
+ *
+ * Phase 56 adds TenantLifecyclePurgeProcessor/Scheduler (Decision 110) — a
+ * pure scheduled sweep, same shape as ClassOccurrenceGenerationScheduler/
+ * BookingNoShowProcessingScheduler, needing no new module import (only
+ * PrismaJobsService, already global).
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -60,6 +66,8 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
     NotificationFanoutProcessor,
     FranchiseFeeUsageReportingProcessor,
     FranchiseFeeUsageReportingScheduler,
+    TenantLifecyclePurgeProcessor,
+    TenantLifecyclePurgeScheduler,
   ],
 })
 export class JobsModule {}

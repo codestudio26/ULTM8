@@ -27,6 +27,11 @@ const PLATFORM_ADMIN_FRANCHISE_SELECT = {
   perHeadcountRate: true,
   createdAt: true,
   updatedAt: true,
+  // Phase 56 (Decision 110) — lifecycle state, same addition as the School twin
+  // of this constant (platform-admin-schools.service.ts).
+  archivedAt: true,
+  purgeAt: true,
+  purgedAt: true,
   // Deliberately excluded: stripeMeterId, stripeUsagePriceId — see this
   // constant's own header comment.
 } as const;

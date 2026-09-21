@@ -173,6 +173,8 @@ export class FranchisesService {
    */
   async update(callerId: string, franchiseId: string, dto: UpdateFranchiseDto) {
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    // Decision 110 (Phase 56) — a closed Franchise accepts no further writes.
+    await this.tenantAuth.assertFranchiseNotArchived(callerId, franchiseId);
 
     // FOUND ON REVIEW: `flatFeeAmount`/`perHeadcountRate` are deliberately NOT
     // widened to nullable in UpdateFranchiseDto (see that DTO's own header
