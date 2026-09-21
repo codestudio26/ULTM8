@@ -50,7 +50,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   let branchB: { id: string };
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
-  let verifiedInvitee: { id: string; email: string };
+  let verifiedInvitee: { id: string; email: string; phone: string };
   let tokenOwnerA: string;
   let tokenOwnerB: string;
 
@@ -244,6 +244,14 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .send({ role: 'BRANCH_STAFF', schoolId: schoolA.id, branchId: branchRes.body.id });
     expect(grantRes.status).toBe(201);
 
+    const listRes = await request(app.getHttpServer())
+      .get(`/v1/users/${verifiedInvitee.id}/role-grants`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(listRes.status).toBe(200);
+    const listedGrant = listRes.body.items.find((g: { id: string }) => g.id === grantRes.body.id);
+    expect(listedGrant.userFirstName).toBe('invitee');
+    expect(listedGrant.userSurname).toBe('Tenant');
+
     const revokeRes = await request(app.getHttpServer())
       .delete(`/v1/users/${verifiedInvitee.id}/role-grants/${grantRes.body.id}`)
       .set('Authorization', `Bearer ${tokenOwnerA}`);
@@ -251,6 +259,82 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     const revoked = await superuser.roleGrant.findUniqueOrThrow({ where: { id: grantRes.body.id } });
     expect(revoked.revokedAt).not.toBeNull();
+  });
+
+  it('findAllForUser resolves the target name even when every one of their RoleGrants at this School is revoked (Decision 113 regression)', async () => {
+    // At this point verifiedInvitee holds no ACTIVE RoleGrant anywhere at schoolA —
+    // the one created and revoked in the test above. Before Decision 113's fix, the
+    // name join was a Prisma `include` on RoleGrant.user, which relied on
+    // user_self_or_shared_school RLS: invisible once the target holds zero active
+    // RoleGrants overlapping the caller's own School, even though the caller
+    // (a real SCHOOL_OWNER_MANAGER at schoolA) remains fully authorized to see the
+    // now-revoked RoleGrant row itself (rolegrant_school_manager_scope doesn't
+    // depend on the target row's own revokedAt status at all).
+    const listRes = await request(app.getHttpServer())
+      .get(`/v1/users/${verifiedInvitee.id}/role-grants`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(listRes.status).toBe(200);
+    const revokedRow = listRes.body.items.find((g: { schoolId: string | null }) => g.schoolId === schoolA.id);
+    expect(revokedRow).toBeDefined();
+    expect(revokedRow.revokedAt).not.toBeNull();
+    expect(revokedRow.userFirstName).toBe('invitee');
+    expect(revokedRow.userSurname).toBe('Tenant');
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET .../role-grants/invite-candidate (Decision 112) — exact email/phone match
+  // only, ahead of the invite form actually firing create(). verifiedInvitee has no
+  // RoleGrant at schoolA at this point in the suite (any it held were revoked above),
+  // proving this lookup does NOT depend on an existing shared grant the way
+  // fetchUserRoleGrants/findAllForUser does.
+  // ---------------------------------------------------------------------------
+
+  it('finds an invite candidate by exact email match', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ email: verifiedInvitee.email })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      found: true,
+      id: verifiedInvitee.id,
+      firstName: 'invitee',
+      surname: 'Tenant',
+    });
+  });
+
+  it('finds an invite candidate by exact phone match', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ phone: verifiedInvitee.phone })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    expect(res.body.id).toBe(verifiedInvitee.id);
+  });
+
+  it('returns found:false for an email/phone with no matching account — never a 404', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ email: `nobody-${randomUUID()}@example.test` })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ found: false, id: null, firstName: null, surname: null });
+  });
+
+  it('invite candidate lookup requires email or phone', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('cannot look up an invite candidate at another tenant\'s School', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ email: verifiedInvitee.email })
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(403);
   });
 
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {

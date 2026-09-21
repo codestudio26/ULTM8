@@ -228,6 +228,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/role-grants/invite-candidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_lookupInviteCandidate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises": {
         parameters: {
             query?: never;
@@ -782,6 +798,22 @@ export interface paths {
         get: operations["InstructorsController_findAll"];
         put?: never;
         post: operations["InstructorsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructors/eligible-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorsController_findEligibleUsers"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1861,6 +1893,8 @@ export interface components {
             /** @enum {string} */
             role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
             userId: string;
+            userFirstName: string;
+            userSurname: string;
             franchiseId?: string | null;
             schoolId?: string | null;
             branchId?: string | null;
@@ -1925,6 +1959,8 @@ export interface components {
             /** @enum {string} */
             role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
             userId: string;
+            userFirstName: string;
+            userSurname: string;
             franchiseId?: string | null;
             schoolId?: string | null;
             branchId?: string | null;
@@ -1937,6 +1973,12 @@ export interface components {
         RoleGrantListResponseDto: {
             items: components["schemas"]["RoleGrantResponseDto"][];
             nextCursor?: string | null;
+        };
+        InviteCandidateResponseDto: {
+            found: boolean;
+            id?: string | null;
+            firstName?: string | null;
+            surname?: string | null;
         };
         CreateFranchiseDto: {
             name: string;
@@ -2435,6 +2477,15 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
+        EligibleInstructorUserDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+            email: string;
+        };
+        EligibleInstructorListResponseDto: {
+            items: components["schemas"]["EligibleInstructorUserDto"][];
+        };
         UpdateInstructorDto: {
             specializations?: string[];
             /** @description Branch to scope this profile to. Pass null to clear (make it School-wide). */
@@ -2849,6 +2900,8 @@ export interface components {
         BookingResponseDto: {
             id: string;
             studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
             classId: string;
             schoolId: string;
             branchId?: string | null;
@@ -2882,6 +2935,8 @@ export interface components {
         WaitlistEntryResponseDto: {
             id: string;
             studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
             classId: string;
             schoolId: string;
             branchId?: string | null;
@@ -3583,6 +3638,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleGrantResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_lookupInviteCandidate: {
+        parameters: {
+            query?: {
+                email?: string;
+                /** @description E.164 format */
+                phone?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteCandidateResponseDto"];
                 };
             };
         };
@@ -4567,6 +4647,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstructorResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_findEligibleUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EligibleInstructorListResponseDto"];
                 };
             };
         };

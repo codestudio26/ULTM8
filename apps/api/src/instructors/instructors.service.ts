@@ -84,6 +84,25 @@ export class InstructorsService {
     );
   }
 
+  /** Candidate pool for InstructorFormModal's picker (Decision 111) — Users holding an
+   * active INSTRUCTOR RoleGrant at this School, i.e. exactly who assertValidInstructor
+   * would accept for a create() call here. School Owner/Manager only, same gate as
+   * create(). Deliberately unpaginated (bounded by realistic Instructor headcount) and
+   * hardcoded to INSTRUCTOR — no generic role param, since this is the only consumer. */
+  async findEligibleInstructorUsers(callerId: string, schoolId: string) {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { schoolId, role: 'INSTRUCTOR', revokedAt: null },
+        distinct: ['userId'],
+        select: { user: { select: { id: true, firstName: true, surname: true, email: true } } },
+      }),
+    );
+    return { items: grants.map((g) => g.user) };
+  }
+
   async findOne(callerId: string, instructorId: string) {
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.instructor.findUnique({ where: { id: instructorId } }),

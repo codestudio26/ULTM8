@@ -4,13 +4,20 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useCreateInstructor, useInstructors, useUpdateInstructor, type InstructorResponse } from './instructorQueries';
+import {
+  useCreateInstructor,
+  useEligibleInstructorUsers,
+  useInstructors,
+  useUpdateInstructor,
+  type InstructorResponse,
+} from './instructorQueries';
 import { InstructorFormModal } from './InstructorFormModal';
 
 export function InstructorsPage() {
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useInstructors(schoolId);
   const { data: branchData } = useBranches(schoolId);
+  const { data: eligibleUsersData } = useEligibleInstructorUsers(schoolId);
   const createInstructor = useCreateInstructor(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<InstructorResponse | null>(null);
@@ -71,6 +78,7 @@ export function InstructorsPage() {
         <InstructorFormModal
           title="Add instructor"
           branches={branches}
+          eligibleUsers={eligibleUsersData?.items ?? []}
           submitting={createInstructor.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to

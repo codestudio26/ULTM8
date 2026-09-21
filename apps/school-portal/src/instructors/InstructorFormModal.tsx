@@ -2,22 +2,22 @@ import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
-import type { InstructorResponse } from './instructorQueries';
+import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
 
 /** Fields match CreateInstructorDto/UpdateInstructorDto exactly —
- * apps/api/src/instructors/dto/create-instructor.dto.ts. `userId` is a plain
- * text field, not a dropdown — there's no "list Users eligible to become an
- * Instructor" endpoint in this codebase (same documented gap StaffPage.tsx's
- * own header comment already flags for RoleGrant lookups); the User must
- * already hold an active INSTRUCTOR RoleGrant at this School, granted first
- * via the Staff page. `userId` is only editable on create — CreateInstructorDto
- * has it, UpdateInstructorDto (PartialType, per this codebase's DTO convention)
+ * apps/api/src/instructors/dto/create-instructor.dto.ts. `userId` is a
+ * dropdown of Users already holding an active INSTRUCTOR RoleGrant at this
+ * School (GET .../instructors/eligible-users, Decision 111) — that role must
+ * be granted first via the Staff page; this picker only shows who already
+ * qualifies. `userId` is only editable on create — CreateInstructorDto has
+ * it, UpdateInstructorDto (PartialType, per this codebase's DTO convention)
  * would technically accept it too, but re-pointing an existing profile at a
  * different User isn't a real product action, so it's fixed after creation. */
 export function InstructorFormModal({
   title,
   initial,
   branches,
+  eligibleUsers,
   submitting,
   onSubmit,
   onClose,
@@ -25,6 +25,8 @@ export function InstructorFormModal({
   title: string;
   initial?: Partial<InstructorResponse>;
   branches: BranchResponse[];
+  /** Only needed (and only rendered) on create — see the `isEdit` check below. */
+  eligibleUsers?: EligibleInstructorUser[];
   submitting: boolean;
   onSubmit: (values: {
     /** Always populated (required on create; echoed from `initial` on edit) —
@@ -86,11 +88,22 @@ export function InstructorFormModal({
         {error ? <ErrorBanner message={error} /> : null}
         {isEdit ? null : (
           <Field
-            label="User ID"
+            label="User"
             htmlFor="instructor-userId"
             hint="Must already hold an active Instructor role at this School — grant it first on the Staff page."
           >
-            <TextField required value={form.userId} onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))} />
+            <SelectField
+              required
+              value={form.userId}
+              onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+              options={[
+                { value: '', label: 'Select a user…' },
+                ...(eligibleUsers ?? []).map((u) => ({
+                  value: u.id,
+                  label: `${u.firstName} ${u.surname} (${u.email})`,
+                })),
+              ]}
+            />
           </Field>
         )}
         <Field label="Branch" htmlFor="instructor-branch" hint="Leave unselected for a School-wide profile.">

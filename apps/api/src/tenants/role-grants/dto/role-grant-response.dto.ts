@@ -24,6 +24,14 @@ export class RoleGrantResponseDto {
   @ApiProperty()
   userId!: string;
 
+  /** Joined from RoleGrant.user (a User relation), not a RoleGrant column —
+   * see RoleGrantsService.findAllForUser. */
+  @ApiProperty()
+  userFirstName!: string;
+
+  @ApiProperty()
+  userSurname!: string;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   franchiseId!: string | null;
 

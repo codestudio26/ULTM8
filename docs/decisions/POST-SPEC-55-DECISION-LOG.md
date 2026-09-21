@@ -1005,3 +1005,104 @@ The identical "id only, no name" gap independently exists in three other real sc
 ### Recorded by
 
 Logged while implementing the Transactions page mockup fix for real, 18 Sep 2026, as part of a direct request to move one of this session's page mockups into working code.
+
+---
+
+## Decision 110 — Booking/WaitlistEntry/RoleGrant name resolution: mechanical extension of Decision 109's embed pattern
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** two of the three sites Decision 109 explicitly left open — `ClassDetailPage.tsx`'s Bookings/Waitlist tables and `StaffPage.tsx`'s lookup-results table, both showing a raw `studentId`/`userId` instead of a name for the same reason Transactions did (no join resolved it).
+
+### Decision
+
+Same shape as Decision 109, applied to three more query/DTO pairs, no new architectural choice made:
+
+- `BookingsService.findAllForClass` / `WaitlistService.findAllForClass` now join `Booking.student`/`WaitlistEntry.student` (`User.firstName`/`surname`), flattened onto `studentFirstName`/`studentSurname` on `BookingResponseDto`/`WaitlistEntryResponseDto`. `ClassDetailPage.tsx` renders the resolved name, falling back to the truncated id.
+- `RoleGrantsService.findAllForUser` now joins `RoleGrant.user`, flattened onto `userFirstName`/`userSurname` on `RoleGrantResponseDto`. `StaffPage.tsx`'s lookup-results table shows a "Showing grants for **{name}**" heading above the table rather than a repeated per-row column, since every row in a single lookup shares the same target user.
+
+No RLS/migration change for any of the three — `Booking`/`WaitlistEntry` already carry a broad `*_staff_read` policy covering School Owner/Manager, Branch Staff, and Instructor (the same caller set `TenantAuthorizationService.assertStaffAtSchool` already gates these two endpoints on), and `RoleGrant`'s own `rolegrant_school_manager_scope` policy already covers `findAllForUser`'s caller set. `WaitlistEntry.findAllForClass` remains deliberately unpaginated, per its own pre-existing documented reasoning — untouched by this change.
+
+### What this does NOT resolve
+
+`InstructorFormModal.tsx`'s candidate field (Decision 111) and `StaffPage.tsx`'s *invite* form (Decision 112) are structurally different — a picker over an unknown, not-yet-scoped candidate set rather than a lookup of an already-known id — and are recorded separately rather than folded into this mechanical extension.
+
+### Recorded by
+
+Logged while extending Decision 109's pattern to the remaining known-id lookup sites, 21 Sep 2026, as part of a direct request to fix the Class Detail/InstructorFormModal/StaffPage name gaps.
+
+---
+
+## Decision 111 — InstructorFormModal candidate picker: new `GET .../instructors/eligible-users` endpoint, scoped to active INSTRUCTOR RoleGrant holders
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** `InstructorFormModal.tsx`'s raw `userId` text field, previously requiring the School Owner to already know and correctly type a target User's UUID with no way to discover one in the UI.
+
+### Decision
+
+New `GET /schools/{schoolId}/instructors/eligible-users`, School-Owner-gated (same gate as `POST .../instructors`), returning every User holding an active `INSTRUCTOR` RoleGrant at that School — i.e. exactly the set `TenantAuthorizationService.assertValidInstructor` would already accept for a create() call, fanned out into a real list instead of checked one candidate at a time. Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'INSTRUCTOR', revokedAt: null }, distinct: ['userId'], select: { user: {...} } })`. Deliberately unpaginated (bounded by realistic Instructor headcount per School, matching this codebase's existing precedent of leaving small/bounded sets unpaginated) and hardcoded to `INSTRUCTOR` — no generic role parameter, since `InstructorFormModal` is this endpoint's only consumer. Response includes `email` alongside `id`/`firstName`/`surname` specifically to disambiguate same-name candidates in the picker UI. `InstructorFormModal.tsx`'s `userId` field is now a `SelectField` populated from this endpoint (create only — edit already hides this field, since re-pointing an existing profile at a different User isn't a real product action).
+
+### What this does NOT resolve
+
+Whether "eligible" should ever broaden beyond "already holds an active INSTRUCTOR RoleGrant at this School" (e.g. surfacing users who could be granted the role but haven't been yet) — deliberately kept narrow, matching the existing hint text on this field ("Must already hold an active Instructor role at this School — grant it first on the Staff page"), not a new capability.
+
+### Recorded by
+
+Logged while designing the InstructorFormModal candidate-picker fix, 21 Sep 2026, as part of a direct request to fix the Class Detail/InstructorFormModal/StaffPage name gaps.
+
+---
+
+## Decision 112 — StaffPage invite-target lookup: exact email/phone match only, confirm before inviting, resolved directly with the user
+
+**Date:** 21 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `StaffPage.tsx`'s invite form, previously a raw `userId` text field with no way to discover a target's id — structurally different from Decisions 110/111 above because the invite target has **no existing RoleGrant at this School yet**, so `user_self_or_shared_school` and every other lookup this session built genuinely cannot see them; the ordinary RLS-scoped read has nothing to scope through.
+
+### Decision
+
+The user was asked what scope this lookup should have and chose **exact email or phone match only, never a name search** — avoiding an unprecedented cross-tenant User-search surface, matching the realistic "invite someone you already know" use case. New `GET /schools/{schoolId}/role-grants/invite-candidate` (query: `email` or `phone`, at least one required, enforced in the service rather than via a class-validator cross-field decorator — no precedent for one in this codebase), gated on `assertSchoolOwner` *before* the lookup runs. Uses `PrismaAuthService` — the same pre-tenant-context bypass `RoleGrantsService.create()`'s own target-existence-by-id check already uses (`prismaAuth.user.findUnique({ where: { id: targetUserId }, select: { id: true } })`), generalized to an exact email-or-phone `findFirst`, same minimum-fields-only convention (`id`, `firstName`, `surname` — never a full profile). Returns `{ found, id, firstName, surname }`, all null except `found` when no match. `RoleGrantsController`'s class-level `@Controller('users/:userId/role-grants')` prefix was converted to `@Controller()` with full explicit paths on all four routes (mechanical, no behavior change to the three pre-existing routes) since the new `schools/:schoolId/...` route can't live under that prefix. This is a separate lookup-then-confirm step, not folded into `create()` itself — `StaffPage.tsx`'s invite form now finds a candidate by email/phone, shows "Found: {name}" before any grant is created, and only then submits the existing, untouched `create()` call with the confirmed id.
+
+### Why exact match, not a name search
+
+An exact-match lookup can confirm whether a given email/phone is registered — the same class of exposure `AuthService.register()`'s own already-taken check already accepts for any anonymous, unauthenticated caller. Here the caller must already hold a real `SCHOOL_OWNER_MANAGER` grant at the School in question, a materially higher bar than "anonymous," so this isn't a new risk category and doesn't warrant protection beyond what's already standard elsewhere in this codebase. A name search was explicitly rejected as a broader, unprecedented cross-tenant User-search capability with no corresponding need — the realistic invite flow is "I know this specific person's email or phone," not "let me browse for someone."
+
+### What this does NOT resolve
+
+Whether a broader staff-directory/name-search capability should ever exist for some other confirmed use case — not addressed here, and not to be inferred from this decision if it comes up later.
+
+### Recorded by
+
+Scoped directly with the user via a clarifying question during this session ("what's the best [scope for this lookup]?"), who chose exact email/phone match only; implemented and logged 21 Sep 2026.
+
+---
+
+## Decision 113 — Name-resolution joins (Bookings/Waitlist/RoleGrant/Transactions) switched from a Prisma `include` to a `PrismaAuthService`-backed lookup, closing a real RLS visibility gap
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** a correctness gap found during a deep-dive review (requested by the user before committing Decisions 110–112) of the just-implemented Bookings/Waitlist/RoleGrant name-resolution joins — a gap that, on inspection, also already existed in the merged Decision 109 Transactions endpoint.
+
+### The gap
+
+`user_self_or_shared_school` (`User`'s RLS policy, `20260902000000_init/migration.sql:235`) makes a `User` row visible to a caller only if that User currently holds an ACTIVE RoleGrant at a School where the caller also holds one — it checks the *target's* own current RoleGrant status, not just the caller's. `RoleGrant.user`, `Transaction.student`, `Booking.student`, and `WaitlistEntry.student` are all REQUIRED relations in `schema.prisma`; Decisions 109/110 resolved display names via a Prisma `include` on these relations, then destructured the result unconditionally (`({ student, ...b }) => ({ ...b, studentFirstName: student.firstName, ... })`).
+
+Prisma's `include` issues a *separate* query for the related row through the *same* RLS-scoped connection — if RLS hides that row, Prisma doesn't error; it silently fails to resolve the relation (a known Prisma+RLS limitation), even though the TS type — trusting the schema's non-null relation — claims it can't be missing. The unconditional destructure would then throw on `student.firstName` for exactly that row.
+
+This is concretely reachable, not theoretical: `GuardiansService.withdrawConsent` (`apps/api/src/guardians/guardians.service.ts:280`), on a BASELINE-tier consent withdrawal, runs `prismaJobs.roleGrant.updateMany({ where: { userId: existing.studentId, revokedAt: null }, data: { revokedAt: new Date() } })` — revoking every active RoleGrant a Student holds, everywhere, synchronously, in-request. Any Booking, WaitlistEntry, Transaction, or RoleGrant-lookup row referencing that Student/User from that point on hit this gap. The parent row itself stayed visible regardless — `booking_staff_read`/`rolegrant_school_manager_scope` key only off the *caller's* own active RoleGrant, never the target's — so this was specifically "the name breaks," not "the whole row disappears for a sensible reason."
+
+Confirmed NOT to affect Decision 111 (`findEligibleInstructorUsers`): its `where` clause already requires the exact RoleGrant row being read to have `revokedAt: null` at the caller's own School, which is itself the visibility witness `user_self_or_shared_school` needs. Confirmed NOT to affect Decision 112 (`lookupInviteCandidate`): it already uses `PrismaAuthService`, immune to this class of gap entirely.
+
+### Decision
+
+Replaced the `include`-based join in `BookingsService.findAllForClass`, `WaitlistService.findAllForClass`, `RoleGrantsService.findAllForUser`, and — retrofitting the already-merged Decision 109 endpoint rather than leaving a known gap unaddressed — `TransactionsService.findAllForSchool`, with a shared helper, `resolveUserNames()` (`apps/api/src/common/prisma/resolve-user-names.ts`), that batch-resolves display names via `PrismaAuthService` — the same pre-tenant-context, SELECT-only-on-`User`, no-tenant-restriction connection `RoleGrantsService.create()` and Decision 112 already use. This makes name resolution depend on nothing but the row's own physical existence (User rows are never hard-deleted anywhere in this codebase today — verified via `grep -rn "user.delete" src`, zero matches), closing the gap completely rather than gracefully degrading it. Authorization is unaffected: the caller's right to see the parent row is still fully gated by the unchanged RLS policy + `assertStaffAtSchool`/`assertSchoolOwner` calls on the primary query; this only changes how the display name for an id the caller is already authorized to know about gets resolved, under the same minimum-fields-only (`id`, `firstName`, `surname`) discipline every other `PrismaAuthService` call site follows. `PrismaJobsService` was considered and ruled out — its `ultm8_jobs` Postgres role has no SELECT grant on `User` at all today (per its own header comment), which would have needed a new migration for a capability `PrismaAuthService` already has.
+
+Response shapes are unchanged (`studentFirstName`/`studentSurname`/`userFirstName`/`userSurname` stay non-nullable strings, falling back to `''` only in the — currently unreachable, given no User hard-delete path — case the batch lookup somehow misses an id; kept as defense-in-depth, not an expected outcome). No new migration, no RLS/schema change, no OpenAPI schema drift (confirmed via a full `export:openapi` → `generate` diff).
+
+### What this does NOT resolve
+
+Whether `PrismaJobsService` should eventually be granted SELECT on `User` for genuine background/aggregate jobs that need it — out of scope here, not needed for this fix. Regression tests were added for all four call sites (`bookings.e2e-spec.ts` ×2, `tenants.e2e-spec.ts`, `memberships.e2e-spec.ts`) proving the name still resolves after the target's only RoleGrant at the School is revoked — real e2e execution still needs CI/a real DB, same as every other fix this session.
+
+### Recorded by
+
+Found during a deep-dive review the user explicitly requested before committing Decisions 110–112 ("deep dive before commit and push"), traced through the actual migration SQL and service code rather than assumed; the user was given three options (defensive patch only / defensive patch + retrofit Transactions / ship as-is and log as follow-up) and asked instead for "the best possible solution" — read as authorizing the fuller `PrismaAuthService`-based fix across all four sites, implemented and logged 21 Sep 2026.

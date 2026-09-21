@@ -5,6 +5,7 @@ import { apiClient } from '../api';
 
 export type RoleGrantResponse = components['schemas']['RoleGrantResponseDto'];
 export type CreateRoleGrantInput = components['schemas']['CreateRoleGrantDto'];
+export type InviteCandidateResponse = components['schemas']['InviteCandidateResponseDto'];
 
 /**
  * There is no "list all RoleGrants at my School" endpoint — Phase 2 built
@@ -17,6 +18,22 @@ export type CreateRoleGrantInput = components['schemas']['CreateRoleGrantDto'];
  */
 export function fetchUserRoleGrants(userId: string) {
   return unwrap(apiClient.GET('/v1/users/{userId}/role-grants', { params: { path: { userId } } }));
+}
+
+/**
+ * Exact email/phone match only, never a name search (Decision 112) — the invite
+ * target has no RoleGrant at this School yet, so fetchUserRoleGrants' own lookup
+ * (which relies on a shared RoleGrant already existing) can't find them. Called
+ * imperatively from StaffPage's "Find" step, same convention as fetchUserRoleGrants
+ * itself, not a react-query hook — this is a one-shot lookup, not cached reference
+ * data.
+ */
+export function fetchInviteCandidate(schoolId: string, query: { email?: string; phone?: string }) {
+  return unwrap(
+    apiClient.GET('/v1/schools/{schoolId}/role-grants/invite-candidate', {
+      params: { path: { schoolId }, query },
+    }),
+  );
 }
 
 export function useInviteStaff() {

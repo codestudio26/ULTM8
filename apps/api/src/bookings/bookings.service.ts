@@ -4,7 +4,9 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
@@ -48,6 +50,7 @@ export class BookingsService {
 
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly guardiansService: GuardiansService,
@@ -355,9 +358,31 @@ export class BookingsService {
     // common single-grant wrong-Branch case is already a 404 via RLS alone,
     // before this line is ever reached).
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }), cursor, limit),
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }),
+        cursor,
+        limit,
+      ),
     );
+    // Resolved via PrismaAuthService (Decision 113), not a Prisma `include` on
+    // Booking.student — an RLS-scoped include can silently fail to resolve the
+    // Student's own User row once their RoleGrant is revoked (e.g.
+    // GuardiansService.withdrawConsent's BASELINE cascade), even though this
+    // caller is fully authorized to see the Booking row itself. See
+    // resolveUserNames's own header comment.
+    const names = await resolveUserNames(this.prismaAuth, page.items.map((b) => b.studentId));
+    return {
+      ...page,
+      items: page.items.map((b) => ({
+        ...b,
+        // Falls back to '' only if the id genuinely doesn't resolve — not expected
+        // in practice (User rows are never hard-deleted in this codebase today),
+        // kept as defense-in-depth rather than a non-null assertion.
+        studentFirstName: names.get(b.studentId)?.firstName ?? '',
+        studentSurname: names.get(b.studentId)?.surname ?? '',
+      })),
+    };
   }
 
   // ---------------------------------------------------------------------------

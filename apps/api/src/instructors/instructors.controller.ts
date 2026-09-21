@@ -8,6 +8,7 @@ import { InstructorsService } from './instructors.service';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { InstructorListResponseDto, InstructorResponseDto } from './dto/instructor-response.dto';
+import { EligibleInstructorListResponseDto } from './dto/eligible-instructor-response.dto';
 
 // Instructor profile CRUD only this phase — attendance-scan and booking-override wait
 // for Booking to exist and Decision 71's still-open engineering design pass. See the
@@ -39,6 +40,13 @@ export class InstructorsController {
     @Query() query: PaginationQueryDto,
   ) {
     return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
+  }
+
+  /** Candidate pool for InstructorFormModal's picker (Decision 111). */
+  @ApiOkResponse({ type: EligibleInstructorListResponseDto })
+  @Get('schools/:schoolId/instructors/eligible-users')
+  findEligibleUsers(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.instructorsService.findEligibleInstructorUsers(user.sub, schoolId);
   }
 
   @ApiOkResponse({ type: InstructorResponseDto })
