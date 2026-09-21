@@ -37,7 +37,16 @@ services:
     type: web
     runtime: node
     plan: free
-    buildCommand: npm install && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
+    # FIXED: a plain `npm install` at repo root pulls in EVERY workspace's
+    # deps — including apps/student's Expo/React Native toolchain and
+    # apps/school-portal's Vite frontend, neither of which apps/api needs
+    # (confirmed: apps/api/package.json has zero @ultm8/* workspace
+    # dependencies). That full install hung for 3+ hours on Render's free
+    # build machine on the first real attempt. Scoped to just this workspace
+    # (+ root tooling) instead — still anchored at repo root, not `rootDir`,
+    # to avoid any ambiguity about npm's workspace-root detection when
+    # invoked from within a subdirectory.
+    buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
     startCommand: node apps/api/dist/main.js
     envVars:
       # Superuser connection — used for `prisma migrate deploy` (run manually
