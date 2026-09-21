@@ -95,21 +95,29 @@ export function MyRankSection({
   // screen can't actually confirm.
   if (!ranksIsError && ranks.length === 0) return null;
 
+  // FOUND ON REVIEW: showing the error unconditionally whenever `ranksIsError`
+  // was true replaced already-loaded ranks with an inline error the moment
+  // any background refetch failed. Only block on it when there's genuinely
+  // nothing cached to show (the check above already handles "no error, no
+  // data" by rendering nothing at all).
+  if (ranksIsError && ranks.length === 0) {
+    return (
+      <View style={{ marginTop: 16 }}>
+        <Text style={{ fontWeight: '600', marginBottom: 6 }}>My Rank</Text>
+        <InlineError message={getApiErrorMessage(ranksError, 'Failed to load your rank — please try again.')} />
+      </View>
+    );
+  }
+
   return (
     <View style={{ marginTop: 16 }}>
       <Text style={{ fontWeight: '600', marginBottom: 6 }}>My Rank</Text>
-      {ranksIsError ? (
-        <InlineError message={getApiErrorMessage(ranksError, 'Failed to load your rank — please try again.')} />
-      ) : (
-        <>
-          {disciplinesIsError ? (
-            <InlineError message={getApiErrorMessage(disciplinesError, 'Could not load discipline names.')} />
-          ) : null}
-          {ranks.map((r) => (
-            <MyRankRow key={r.id} studentRank={r} disciplineName={disciplineNameById.get(r.disciplineId) ?? 'Unknown discipline'} />
-          ))}
-        </>
-      )}
+      {disciplinesIsError ? (
+        <InlineError message={getApiErrorMessage(disciplinesError, 'Could not load discipline names.')} />
+      ) : null}
+      {ranks.map((r) => (
+        <MyRankRow key={r.id} studentRank={r} disciplineName={disciplineNameById.get(r.disciplineId) ?? 'Unknown discipline'} />
+      ))}
     </View>
   );
 }

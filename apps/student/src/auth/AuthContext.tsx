@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { asyncStoragePersister } from '../lib/queryPersister';
 import { decodeJwtPayload } from './decodeJwt';
 import { secureTokenStore } from './secureTokenStore';
 import { setCachedAccessToken } from './tokenCache';
@@ -70,6 +71,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // cached My Bookings/Academies data for a moment after the next login, since no
     // query key here is scoped by user id. Found on review, before this ever shipped.
     queryClient.clear();
+    // FOUND ON REVIEW: this does NOT reliably "win" against queryClient.clear()'s own
+    // effect on the persisted copy — clear()'s cache-event notifications are deferred
+    // (react-query's notifyManager batches them via setTimeout(fn, 0), a macrotask),
+    // so the persist subscription's own write can still land after this call,
+    // re-creating an entry under the same key. That's not a data leak — clear() has
+    // already synchronously emptied the in-memory cache by the time that deferred
+    // write's own dehydrate() runs, so at worst it re-writes an empty snapshot, never
+    // the previous account's real data — but this call is a best-effort belt-and-
+    // braces attempt, not the guaranteed-immediate clear an earlier version of this
+    // comment claimed. `.catch` swallows a rejected AsyncStorage.removeItem (e.g. a
+    // storage I/O error) rather than leaving an unhandled promise rejection at the
+    // exact moment a user expects a clean logout; maxAge already bounds how long any
+    // leftover entry could matter regardless.
+    void Promise.resolve(asyncStoragePersister.removeClient()).catch(() => {});
   }, [queryClient]);
 
   const value = useMemo(

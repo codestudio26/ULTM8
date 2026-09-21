@@ -22,9 +22,9 @@ Detail for each Slice is in its own section below; this table is the map.
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
 | 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
 | 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b still blocked — needs a design pass + schema change; partially unblockable by syncing with `master` (see below) |
-| 5 | **Attendance** | 8 (QR check-in) | Blocked — genuinely unresolved even on `master`, needs a backend/product decision on the QR mechanism itself |
+| 5 | **Attendance** | 8 (QR check-in) | Scoped (2026-09-22), not yet built — the backend endpoint already exists (`POST /attendance/scan`); needs your call on 2 remaining product questions + a new `apps/school-portal` screen |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
-| 7 | **Resilience** | 10 (offline behavior/caching) | Not scoped — nothing in the spec, any skill, or the decision log addresses this; don't start until someone asks with real requirements |
+| 7 | **Resilience** | 10 (offline behavior/caching) | ✅ DONE (light read-only caching via react-query persistence) |
 
 **Cross-cutting prerequisite, not a phase of its own: syncing `track-b-student-app`
 with `master`.** As of this doc, the branch is 60+ commits / 27+ backend phases behind
@@ -59,19 +59,100 @@ in-scope is deliberately deferred, not forgotten.
   Pending: the user creating a Railway account and connecting the GitHub repo — this
   can't be done on their behalf (account creation / payment details are always the
   user's own action).
-- QR check-in (Phase 5) — direction decided: **Student displays a rotating, signed QR
-  code; a Staff member scans it to check them into a specific class session** (not
-  School-displays/Student-scans). Chosen because a Staff-verified scan can't be faked
-  by sharing a photo of a static code, and it ties cleanly to real attendance for
-  rank/stripe progression — both matter more here than in a typical gym app given the
-  youth-safety context already central to this spec. Still needs real scoping before
-  build: a token-minting endpoint, and a Staff-facing scanner surface (likely
-  `apps/school-portal`, not `apps/student`) — treat as its own small sub-project, not
-  a same-day add.
-- Offline (Phase 7) — scoped narrowly to **light read-only caching**: previously-loaded
-  screens (bookings, timetable, ranks) stay viewable with no connection. No offline
-  writes, no sync, no conflict resolution — chosen specifically because it needs zero
-  new business-logic decisions and carries no correctness risk, unlike full offline-first.
+- Offline (Phase 7) ✅ **DONE (2026-09-22)** — scoped to **light read-only caching**:
+  previously-loaded screens stay viewable with no connection, including across an app
+  restart (not just mid-session), via `@tanstack/react-query-persist-client` +
+  AsyncStorage. No offline writes, no sync, no conflict resolution — mutations are
+  excluded by react-query's own default regardless of this feature.
+
+  An 8-agent review found this was more consequential than a routine wiring task and
+  caught two real issues, both fixed before commit:
+  - **Persisted sensitive data unfiltered**: the first version persisted every
+    successful query indiscriminately, including a Student's actual typed Waiver
+    signature text and a Guardian-linked minor's name/DOB/consent status — to plain,
+    unencrypted AsyncStorage, for up to 24h. This codebase already treats that
+    distinction seriously elsewhere (the JWT itself lives in `expo-secure-store`,
+    never AsyncStorage, specifically because AsyncStorage is unencrypted). Fixed by
+    switching from an implicit "persist everything" default to an explicit
+    **allowlist** (`PERSISTED_QUERY_KEY_PREFIXES` in `queryPersister.ts`) matching
+    this phase's own named scope (academies, bookings, notifications, ranks,
+    memberships) — Waiver and Guardian query keys are deliberately never persisted.
+  - **The feature didn't actually deliver its own promise for most screens**:
+    `AcademyDetailScreen`, `MyRankSection`, `MyMinorsScreen`, and `MinorConsentScreen`
+    all checked `isError` *before* checking whether cached data existed — so a
+    background refetch failure (which happens on essentially every screen mount while
+    offline, confirmed: no NetInfo/`onlineManager` wiring exists to short-circuit
+    that) replaced perfectly good cached content with a full-screen error banner.
+    Only the `PaginatedListScreen`-based screens (already fixed in an earlier slice's
+    own review) got this right. Fixed by applying that same "data takes precedence
+    over a stale isError" rule to all four screens.
+  - Also fixed: a comment overclaiming that `logout()`'s explicit
+    `asyncStoragePersister.removeClient()` call "immediately" clears the persisted
+    cache — react-query's own cache-clear notifications are deferred, so the ordering
+    isn't actually guaranteed (though no real data leak was possible either way,
+    confirmed by tracing the library's own source); and an unhandled-promise-rejection
+    risk on that same call.
+
+  **Flagged as follow-ups, not fixed here** (separate tasks spawned): unbounded
+  `useInfiniteQuery` page growth for the persisted paginated queries (no `maxPages`
+  set, so a long scroll history grows the persisted blob indefinitely), and missing
+  `NetInfo`/`onlineManager` wiring (offline screen mounts still attempt and fail a
+  real fetch before falling back to cache, rather than detecting offline immediately).
+
+  **Verified**: `npx tsc --noEmit` clean (run sequentially, not via `turbo run
+  lint build` in parallel — that combination triggered a transient
+  out-of-memory crash on this machine unrelated to the code, confirmed by the
+  identical command succeeding when run alone). The actual persistence mechanism
+  (save, restart-restore, logout-clear, no-leak-between-users, maxAge-expiry, and the
+  security allowlist) was proven via an isolated Node script exercising the real
+  `@tanstack/query-persist-client-core`/`@tanstack/query-async-storage-persister`
+  libraries directly — chosen specifically because the machine's memory pressure
+  made running the full Metro/Expo web bundler for a click-through test unreliable,
+  and because this particular claim (data survives a restart) can't be distinguished
+  from "a fresh fetch happened to be fast" through a UI alone anyway.
+
+**QR check-in (Phase 5) — correction (2026-09-22): the earlier direction was wrong
+given what's actually built, not just under-scoped.** Reading `apps/api/src/attendance/`
+directly (not just SKILL.md's summary) found a real, already-built, already-shipped
+endpoint: `POST /attendance/scan { bookingId }` (Phase 13). It's **strictly
+self-service** — it requires the caller's own JWT to match the Booking's `studentId`
+(`booking.studentId !== callerId` → 404), checks the Class's configured check-in
+window (`Class.qrAttendanceEndAt`, Staff-set at Class creation), checks camera-tier
+consent hasn't been withdrawn, then marks the Booking `COMPLETED` and increments rank
+progress. **This makes "Staff scans a Student's QR" — the direction previously
+recorded here — structurally incompatible with the one piece of this system that's
+actually been built**: a Staff member's own JWT could never satisfy
+`booking.studentId === callerId`. That would need a genuinely different, separate
+endpoint (the "Instructor roll-call scan," `POST /classes/{id}/attendance-scan`,
+confirmed only as a *named concept* by Decision 71 — its mechanics are explicitly
+undesigned, and it isn't built).
+
+What IS still genuinely unresolved (SKILL.md §12, a binding constraint per Decision
+66): the QR code itself must be "time-boxed, rotating... never a single static code,"
+but **nothing server-side ever validates the QR's contents** — the real enforcement
+(booking ownership, time window, consent) is already 100% handled by the existing
+endpoint regardless of what triggers the call. That means the QR's actual job is
+narrower than it first appears: proving the Student is physically at the venue right
+now (a code that only exists live, on a screen at the venue, can't be satisfied by a
+screenshot from home) — not carrying a cryptographically-verified payload.
+
+**Corrected direction**: an Instructor/Staff device (a new `apps/school-portal`
+screen — a different app than `apps/student`) displays a rotating code, scoped to a
+specific live Class session; the Student scans it with their own phone and the
+**already-built** `POST /attendance/scan` fires using the Student's own identity and
+their own already-known `bookingId` for that Class (visible to them via "My
+Bookings"). No new backend endpoint is required for the core flow — only a
+QR-scanning capability in `apps/student` and a QR-display screen in
+`apps/school-portal`. The Instructor roll-call fallback (Decision 71) stays a
+separate, genuinely unbuilt follow-up, not a blocker for this.
+
+**Still open, needs your call before building**: exactly what the rotating code
+encodes (a `classId` + a short-lived nonce the client only uses to gate *when* a
+"Check in" action becomes available is the minimal design — the nonce need not reach
+the backend at all, given it doesn't validate one today) and where that display
+screen lives operationally (an Instructor's own phone running `apps/school-portal`
+during class vs. a fixed venue tablet/kiosk) are real product decisions, not
+technical ones this doc should guess at.
 
 **Deferred past V1 (fast-follow candidates, not abandoned):**
 - Slice 4b (Stripe/PaymentSheet) — deferred to avoid shipping the highest-risk,
@@ -706,52 +787,48 @@ generated type's own comment) — deliberately not used for any icon/categorizat
 
 ## Explicitly blocked — do not scope a slice for these yet
 
-- **Waiver signing** — Decision 74/78 confirm typed-name + drawn-signature is legally
-  required, but the drawn-signature capture screen has never been designed anywhere
-  (Figma shows typed name only). Needs a design pass before this becomes a buildable
-  slice. Also directly blocks part of Slice 2 (see above) for any class that requires
-  a waiver — that's accepted as a known gap for Slice 2, not a reason to build a
-  signature pad from assumption.
-- **Attendance QR check-in** — genuinely unresolved, not just deferred: QR payload
-  contents, generation, and client-side scan/decode are all unconfirmed
-  (`ultm8-domain-rules` §12/§18). Needs a backend/product decision first.
-- **Guardian-facing screens** (linking a minor, consent management) — no
-  consent-management UI exists in any confirmed design, and Guardian-enrolling-a-minor
-  into a School is explicitly unbuilt server-side too (Decision 96). Needs both a
-  design pass and a backend phase before this is scoped.
+*(Superseded in most cases by the Version 1 Plan section above and each Slice's own
+section — kept here only for what's still genuinely blocked as of 2026-09-22.)*
+
+- **Waiver drawn-signature capture** — the typed-name path shipped as Slice 6a;
+  Decision 74/78 confirm drawn-signature is legally sufficient too, but that specific
+  capture screen has never been designed anywhere. Needs a design pass + a
+  `WaiverSignature` schema change.
 - **Per-School white-label branding** — `packages/build-pipeline` is still an unbuilt
-  placeholder; nothing to build against yet.
-- **Offline behavior / caching strategy** — unconfirmed anywhere in the spec, any
-  skill, or the decision log. Not scoped until someone explicitly asks for it.
+  placeholder; nothing to build against yet, and it's a standalone business decision
+  (one app with dynamic theming vs. per-School app-store listings) beyond scope here.
 - **Invoice/receipt viewing, Student-scoped transaction history** — the endpoints
   these would need don't exist yet as real controllers, despite appearing in a
   "representative" table in one of the skills.
+
+Everything else previously listed here (Attendance QR check-in, Guardian-facing
+screens, Offline caching) has since been scoped and/or built — see the Version 1 Plan
+section and each item's own section above for the current, accurate status.
 
 ---
 
 ## Recommendation
 
-Slices 2, 3, 4a, and 5 are all done — see their own sections above for what shipped,
-every scope change (each recorded here, not just in code comments), and what was found
-on review and while interactively testing.
+**Shipped**: Slices 1, 2, 3, 4a, 5, 6a; the Guardian consent candidate (My Minors +
+consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read-only
+offline caching (Phase 7); the Membership authorization-check fix.
 
-**Slice 4b (Stripe/PaymentSheet)** is the only remaining item from the original
-Slices 1-5 roadmap, and it's genuinely blocked on the user's own decision, not on
-further research — the API shape is fully confirmed (see its section above), and the
-open question isn't "which library" (already settled: `@stripe/stripe-react-native`'s
-PaymentSheet) but whether to take on the custom-dev-client workflow change (losing this
-track's web-preview verification method) right now. Since Slice 4a shipped the
-non-Stripe `pending_confirmation`/`active` paths as the smaller, unblocking slice,
-Slice 4b is purely additive whenever that decision is made.
+**Scoped, not yet built**: QR check-in (Phase 5) — the backend endpoint it needs
+already exists (`POST /attendance/scan`); what's left is a `apps/school-portal` QR
+display screen, a scanning capability in `apps/student`, and your call on the 2
+remaining product questions in that section above.
 
-With Phase 3 (Commerce) now effectively as far along as it can go without that
-decision, the next genuinely unblocked candidate is the shared paginated-list
-component extraction flagged in Slice 4a's section above (4th occurrence of the same
-row-component/list-screen shape). Phases 4-7 (Guardian/Waiver, QR check-in,
-white-label, offline) all remain blocked on design passes, backend decisions, or the
-`master`-sync question described in the Phase overview table.
+**Blocked on your decision, not further research**: Slice 4b (Stripe/PaymentSheet) —
+the API shape and library choice are both settled; the open question is only whether
+to take on the native dev-client workflow change right now.
 
-Several follow-ups are already spawned and tracked outside this doc: the waitlist
-notification-dispatch backend gap (Slice 2), the StudentRank-detail-denormalization
-question (Slice 3), and the Membership authorization-check / Stripe-provider-signal
-gaps (Slice 4a).
+**Genuinely blocked** (see the section above): the Waiver drawn-signature capture and
+per-School white-label branding.
+
+Several follow-ups are already spawned and tracked outside this doc (visible as task
+chips in the session): the waitlist notification-dispatch backend gap, the
+StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
+gaps, a pre-existing timetable pagination bug, a shared `usePaginatedQuery` hook
+extraction, proper multi-School support for the Waivers screen, a deep-link from
+booking errors to the Waivers screen, a `formatDate` timezone bug, and a
+severity-proportional confirmation for BASELINE consent withdrawal.

@@ -31,7 +31,13 @@ export function MyMinorsScreen({ navigation }: Props) {
     );
   }
 
-  if (isError) {
+  // FOUND ON REVIEW: checking `isError` before `data` replaced perfectly good
+  // already-loaded minors with a full-screen error banner the moment any
+  // background refetch failed — including the exact "no connection" case this
+  // app's offline-caching phase exists to handle gracefully. Only block on
+  // the error when there's genuinely nothing to show, matching
+  // PaginatedListScreen's own established "data takes precedence" discipline.
+  if (isError && !data) {
     return (
       <Screen>
         <ErrorBanner message={getApiErrorMessage(error, 'Failed to load your minors — please try again.')} />

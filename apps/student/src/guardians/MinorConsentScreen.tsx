@@ -25,7 +25,11 @@ export function MinorConsentScreen({ route }: Props) {
     );
   }
 
-  if (isError) {
+  // FOUND ON REVIEW: checking `isError` before `data` (same class of bug fixed
+  // across every other screen this session) replaced already-loaded consent
+  // status with a full-screen error the moment any background refetch
+  // failed. Only block on the error when there's genuinely nothing cached.
+  if (isError && !data) {
     return (
       <Screen>
         <ErrorBanner message={getApiErrorMessage(error, 'Failed to load consent records — please try again.')} />

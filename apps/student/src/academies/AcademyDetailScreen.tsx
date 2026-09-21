@@ -27,7 +27,7 @@ const WEEKDAY_LABEL: Record<string, string> = {
 export function AcademyDetailScreen({ route }: Props) {
   const { academyId } = route.params;
   const { claims } = useAuth();
-  const { data: academy, isLoading, isError, error } = useAcademy(academyId);
+  const { data: academy, isLoading, error } = useAcademy(academyId);
   const { data: timetable } = useAcademyTimetable(academyId);
   // Fetched here, in parallel with academy/timetable above, rather than inside
   // MyRankSection itself — found on review: firing them only once MyRankSection
@@ -55,7 +55,14 @@ export function AcademyDetailScreen({ route }: Props) {
     );
   }
 
-  if (isError || !academy) {
+  // FOUND ON REVIEW: checking `isError` unconditionally replaced an
+  // already-loaded academy (activities, plans, timetable, everything below)
+  // with a full-screen error the moment any background refetch failed —
+  // including the "no connection" case this app's offline caching exists to
+  // handle gracefully. Only block on the error when there's truly nothing to
+  // show, matching PaginatedListScreen's own "data takes precedence"
+  // discipline (its own isError gate is `&& items.length === 0`, not bare).
+  if (!academy) {
     return (
       <Screen>
         <ErrorBanner message={getApiErrorMessage(error, 'Failed to load this academy — please try again.')} />
