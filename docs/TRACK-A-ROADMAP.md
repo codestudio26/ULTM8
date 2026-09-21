@@ -21,8 +21,8 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 ## Where things stand right now
 
 - **56 phases shipped** (Phase 0 walking skeleton through Phase 56; Phase 55 is
-  PR #76, Phase 56 — tenant/content offboarding endpoints — is on this same
-  branch, not yet PR'd), covering every backend module in `ultm8-nestjs-module`
+  PR #76, Phase 56 — tenant/content offboarding endpoints — is PR #77), covering
+  every backend module in `ultm8-nestjs-module`
   §5's confirmed table except the one named below, plus `apps/school-portal` UI
   for essentially all of it, plus `apps/platform-admin` through Translations
   authoring and now SubscriptionPlansModule authoring.
@@ -34,12 +34,10 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   refresh — see below), and PR #31 (shared `@ultm8/ui` mobile-nav/table-overflow
   fix — see below) are all merged. Phase 55 (`SubscriptionPlansModule`'s
   `apps/platform-admin` authoring UI) is PR #76.**
-- **One open PR** — PR #76 (Phase 55), pushed and green, awaiting review; every
+- **Two open PRs** — PR #76 (Phase 55), pushed and green, awaiting review; and
+  PR #77 (Decision 110 + Phase 56 — general tenant/content offboarding,
+  including this doc's own update for both), also pushed and green. Every
   other phase and standalone fix described in this doc has landed on `master`.
-  Decision 110 (general tenant/content offboarding) and its own Phase 56
-  implementation (this doc's own update for both) are on branch
-  `decision/110-tenant-content-offboarding`, not yet opened as a PR — separate
-  from PR #76.
 - **Two items shipped outside the Phase-N sequence**, not tied to a specific phase
   number since neither PR framed itself as one (same treatment this doc already
   gives Decision-only PRs like #71):
@@ -440,7 +438,7 @@ responsive bugs — mobile-nav collapse and table horizontal-overflow (PR #31).
 1. ~~`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI~~ — done
    (Phase 55, PR #76).
 2. ~~General tenant/content offboarding backend (Decision 110)~~ — done (Phase 56,
-   this branch). `apps/platform-admin`'s own close/reactivate UI is the natural
+   PR #77). `apps/platform-admin`'s own close/reactivate UI is the natural
    Phase 57.
 3. Decision 109 (Transaction Student-name resolution, PR #61) is still a
    Developer-level inference, flagged in the decision log but not yet given an

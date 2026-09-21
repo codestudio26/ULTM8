@@ -60,7 +60,7 @@ own close/reactivate UI.
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 56 phases shipped. **One PR open** (PR #76, Phase 55, pushed and green, awaiting review) plus this doc's own update branch (Decision 110 + its Phase 56 implementation, not yet PR'd). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` fully shipped (Phase 54 backend + Phase 55 admin UI, PR #76); only its `whiteLabelApp` entitlement remains, blocked on Apple compliance. General tenant/content offboarding is built end to end backend-side (Phase 56, Decision 110) — close/reactivate, the archived-gate, the 90-day purge job; only the `apps/platform-admin` UI and `Waiver`'s own retention period remain. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109) and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
+| **Track A** — backend + school-portal + platform-admin | 56 phases shipped. **Two PRs open** (PR #76, Phase 55; PR #77, Decision 110 + Phase 56 — this doc's own update for both), both pushed and green, awaiting review. 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` fully shipped (Phase 54 backend + Phase 55 admin UI, PR #76); only its `whiteLabelApp` entitlement remains, blocked on Apple compliance. General tenant/content offboarding is built end to end backend-side (Phase 56, Decision 110) — close/reactivate, the archived-gate, the 90-day purge job; only the `apps/platform-admin` UI and `Waiver`'s own retention period remain. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109) and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
 | **Open decisions** | 41 post-spec decisions logged (Decisions 108/109 added: Instructor rank V1/V2 dropdown, Transaction Student-name resolution; Decision 110 added: general tenant/content offboarding policy), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges, 109 itself awaiting Architect confirmation, 110's own `Waiver`-retention piece pending legal input). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). GDPR/LGPD data-residency and per-user erasure (both distinct from, and explicitly out of scope for, Decision 110's own School/Franchise-level offboarding) remain their own tracking gap — still not carried into any decision-log entry. |
@@ -103,9 +103,9 @@ re-typed-name confirmation, audited), the archived-gate wired into all 10 named
 entity services' create/update paths, and a daily scheduled purge job that
 hard-deletes or (for two flagged exceptions) anonymizes a closed School/Franchise
 90 days out — backend only, `apps/platform-admin`'s own UI still to come. **Track A
-has one open PR** (PR #76, Phase 55, pushed and green, awaiting review) **plus this
-doc's own update branch**, `decision/110-tenant-content-offboarding`, carrying both
-Decision 110's record and its Phase 56 implementation, not yet opened as a PR.
+has two open PRs**: PR #76 (Phase 55) and PR #77 (Decision 110's record plus its
+Phase 56 implementation, including this doc's own update for both), both pushed
+and green, awaiting review.
 
 **Left, in priority order:**
 
@@ -124,7 +124,7 @@ Decision 110's record and its Phase 56 implementation, not yet opened as a PR.
    is genuinely now outdated by Phase 53 shipping it, and worth a small Architect
    update to match — a much narrower finding than first thought.
 2. ~~**General tenant/content offboarding** — needs a product/legal decision, then
-   build~~ — done (**Decision 110** + **Phase 56**, this branch). Policy: soft-archive
+   build~~ — done (**Decision 110** + **Phase 56**, PR #77). Policy: soft-archive
    immediately, hard-delete after a 90-day retention window (matching the
    white-label credential's own Decision 27 precedent), triggered only by an
    explicit close-account action, never by platform-subscription cancellation
@@ -432,7 +432,7 @@ unit of effort. Not a committed schedule — a structure to work through.
    subscribe/cancel, `PlatformCharge`, degraded-portal gate, and the admin authoring
    screen. Left: only the `whiteLabelApp` entitlement (still gated on item 4's Apple
    compliance decision).
-9. ~~Tenant/content offboarding endpoints~~ — **done (Phase 56, this branch)**: the
+9. ~~Tenant/content offboarding endpoints~~ — **done (Phase 56, PR #77)**: the
    close-account/reactivate action for School and Franchise, the archived-gate
    wired into all 10 named entity services (School, Branch, Class, Timetable,
    Instructor, Membership, Rank, Waiver, Franchise, Curriculum), and the daily
