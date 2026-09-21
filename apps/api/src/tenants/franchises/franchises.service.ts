@@ -46,6 +46,12 @@ const FRANCHISE_PUBLIC_SELECT = {
   perHeadcountRate: true,
   createdAt: true,
   updatedAt: true,
+  // Phase 57 — FranchiseResponseDto now types archivedAt/purgeAt/purgedAt
+  // (Decision 110); selected here so the tenant-facing read genuinely returns
+  // them too, not just the platform-admin one.
+  archivedAt: true,
+  purgeAt: true,
+  purgedAt: true,
   // Deliberately excluded: stripeMeterId, stripeUsagePriceId — see this
   // constant's own header comment.
 } as const;

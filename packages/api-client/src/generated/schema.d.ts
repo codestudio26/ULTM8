@@ -1883,6 +1883,9 @@ export interface components {
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
             updatedAt: string;
+            archivedAt?: string | null;
+            purgeAt?: string | null;
+            purgedAt?: string | null;
             accessToken?: string;
         };
         SchoolListResponseDto: {
@@ -2045,6 +2048,9 @@ export interface components {
             perHeadcountRate?: number | null;
             createdAt: string;
             updatedAt: string;
+            archivedAt?: string | null;
+            purgeAt?: string | null;
+            purgedAt?: string | null;
             accessToken?: string;
         };
         FranchiseListResponseDto: {

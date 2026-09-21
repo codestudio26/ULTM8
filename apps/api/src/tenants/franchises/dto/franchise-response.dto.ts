@@ -63,6 +63,18 @@ export class FranchiseResponseDto {
   @ApiProperty()
   updatedAt!: string;
 
+  /** Phase 56/57 (Decision 110) — same reasoning as SchoolResponseDto's own
+   * identical trio (no explicit `select` anywhere this DTO is built from, so
+   * these were already returned at runtime; this just types them). */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  archivedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  purgeAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  purgedAt!: string | null;
+
   /**
    * Present only on the response from POST /franchises (self-service creation) — same
    * narrow, approved re-mint exception SchoolResponseDto's own `accessToken` field

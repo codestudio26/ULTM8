@@ -20,12 +20,14 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ## Where things stand right now
 
-- **56 phases shipped** (Phase 0 walking skeleton through Phase 56; Phase 55 is
-  PR #76, Phase 56 — tenant/content offboarding endpoints — is PR #77), covering
-  every backend module in `ultm8-nestjs-module`
+- **57 phases shipped** (Phase 0 walking skeleton through Phase 57; Phase 55 is
+  PR #76, Phase 56 + Phase 57 — tenant/content offboarding endpoints and the
+  `apps/platform-admin` close/reactivate UI for them — are both on PR #77),
+  covering every backend module in `ultm8-nestjs-module`
   §5's confirmed table except the one named below, plus `apps/school-portal` UI
   for essentially all of it, plus `apps/platform-admin` through Translations
-  authoring and now SubscriptionPlansModule authoring.
+  authoring, SubscriptionPlansModule authoring, and now the tenant-lifecycle
+  close/reactivate controls on the School/Franchise lookup screens.
 - **PR #64 (Phase 47), PR #65 (Phase 48), PR #66 (this doc's own first version), PR
   #67 (Phase 49 — `TranslationsModule` backend), PR #68 (Phase 50 — Translations
   authoring UI), PR #69 (the master roadmap doc), PR #71 (Decision 106), PR #72
@@ -35,9 +37,11 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   fix — see below) are all merged. Phase 55 (`SubscriptionPlansModule`'s
   `apps/platform-admin` authoring UI) is PR #76.**
 - **Two open PRs** — PR #76 (Phase 55), pushed and green, awaiting review; and
-  PR #77 (Decision 110 + Phase 56 — general tenant/content offboarding,
-  including this doc's own update for both), also pushed and green. Every
-  other phase and standalone fix described in this doc has landed on `master`.
+  PR #77 (Decision 110 + Phase 56 — general tenant/content offboarding
+  endpoints — now also carrying Phase 57, the `apps/platform-admin`
+  close/reactivate UI for the same feature, plus this doc's own update for
+  all three), also pushed and green. Every other phase and standalone fix
+  described in this doc has landed on `master`.
 - **Two items shipped outside the Phase-N sequence**, not tied to a specific phase
   number since neither PR framed itself as one (same treatment this doc already
   gives Decision-only PRs like #71):
@@ -112,6 +116,18 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   (Membership/Transaction/PaymentAccount/Booking/RoleGrant — none of them named
   in Decision 110, several with the same financial-record character the existing
   `RESTRICT` protection already treats carefully).
+- **Decision 110/Phase 56's own `apps/platform-admin` UI is now built too,
+  Phase 57.** A shared `TenantLifecycleControls` component (parameterized by
+  `kind: 'school' | 'franchise'`, since the backend shape is identical for
+  both) was added to `SchoolLookupPage`/`FranchiseLookupPage`: an "Active"/
+  "Closed" status badge, a re-typed-name confirmation modal for "Close
+  account," and a "Reactivate" button — or, once a row has actually been
+  purged, a plain "cannot be reactivated" message instead of a dead button.
+  Required widening `SchoolResponseDto`/`FranchiseResponseDto` to type
+  `archivedAt`/`purgeAt`/`purgedAt` (already returned at runtime for School's
+  whole-row `findOne()`, but genuinely absent from the Franchise response
+  until `FRANCHISE_PUBLIC_SELECT` was widened too — caught by checking each
+  service directly rather than assuming both entities read the same way).
 
 ---
 
@@ -131,7 +147,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | QR check-in redesign + Attendance roll-call scan (Decisions 66, 71, 107) | ✅ DONE (backend) — Phase 51, merged via PR #72 |
 | `SubscriptionPlansModule` (platform-level plans) | ✅ DONE — Phase 54 (backend: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75) + Phase 55 (`apps/platform-admin` authoring UI, PR #76). Only the `whiteLabelApp` entitlement remains deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
-| General tenant/content offboarding (close-account, archived-gate, 90-day purge) | ✅ DONE — Phase 56 (Decision 110). Close/reactivate endpoints, the archived-gate across all 10 named entity services, the scheduled purge job. `Waiver`'s own retention period still pending legal input (Decision 110's own flagged exception) |
+| General tenant/content offboarding (close-account, archived-gate, 90-day purge) | ✅ DONE — Phase 56 (Decision 110, backend) + Phase 57 (`apps/platform-admin` close/reactivate UI). Close/reactivate endpoints, the archived-gate across all 10 named entity services, the scheduled purge job, and the School/Franchise lookup screens' own status controls. `Waiver`'s own retention period still pending legal input (Decision 110's own flagged exception) |
 | QR code display screen (`apps/school-portal`, Staff-facing) | ✅ DONE — Phase 52, merged via PR #73 |
 | Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
 | Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
@@ -295,6 +311,27 @@ doc), so they're named here without a number rather than guessed at.
   `packages/api-client` regenerated. No `apps/platform-admin` UI yet for
   close/reactivate — same backend-then-UI split as every other module in this
   codebase; a natural Phase 57.
+- **Phase 57** — `apps/platform-admin` close/reactivate UI for Decision
+  110/Phase 56, on the same PR #77 branch (no new PR — a UI-only phase
+  continuing the still-open Phase 56 PR, not a separate slice). One shared
+  `TenantLifecycleControls` component, dropped into `SchoolLookupPage`/
+  `FranchiseLookupPage` between the entity-details Card and the
+  PaymentAccount section: an Active/Closed status badge, a re-typed-name
+  confirmation modal gating the close action, and a Reactivate button (or a
+  "already purged, cannot be reactivated" message once `purgedAt` is set).
+  Needed `SchoolResponseDto`/`FranchiseResponseDto` widened to type
+  `archivedAt`/`purgeAt`/`purgedAt` — School's `findOne()` already returned
+  them at runtime (no explicit Prisma `select`), but Franchise's did not
+  until `FRANCHISE_PUBLIC_SELECT` was widened too, confirmed by reading each
+  service directly rather than assuming the two entities behaved alike. Full
+  e2e suite still green (347/347, unchanged — no new backend behavior, just
+  wider DTOs), `tsc --noEmit` clean on both `apps/api` and
+  `apps/platform-admin` (including the dynamic close/reactivate path union
+  type), `turbo build` clean across all 8 packages, `packages/api-client`
+  regenerated, and the full close → Closed badge/Reactivate button →
+  reactivate → Active badge flow browser-verified end to end (Playwright
+  against a live backend, real minted FULL_ADMIN token) for both a School and
+  a Franchise.
 
 Also shipped, each on its own separate PR (not folded into this doc's own narrative
 sections above in detail — see each PR's own description), all now merged:
@@ -353,7 +390,7 @@ needs the Apple compliance question actually resolved first. The white-label add
 own metered billing rate ($0.99–$1.99/active-student/month range) is also never
 finalized — a second, independent open item under this same module.
 
-### 3. General tenant/content offboarding — Decision 110 built end to end, Phase 56 (backend only)
+### 3. General tenant/content offboarding — Decision 110 built end to end, Phase 56 (backend) + Phase 57 (UI)
 
 Was: no `DELETE` endpoint existed anywhere in the platform for School, Branch, Class,
 Timetable, Instructor, Membership, Rank, Waiver, Franchise, or Curriculum —
@@ -398,9 +435,17 @@ several are financial/attendance records of the same character the existing
 `RESTRICT` protection already treats carefully; flagged as a narrower-than-literal
 reading, not silently decided.
 
-**Still not built**: `apps/platform-admin`'s own UI for close/reactivate (backend
-only this phase, same split every other module here followed — a natural Phase 57),
-and a real decision on `Waiver`'s own retention period.
+**Phase 57 built the `apps/platform-admin` UI**: a shared `TenantLifecycleControls`
+component on `SchoolLookupPage`/`FranchiseLookupPage` (Active/Closed status badge,
+re-typed-name confirmation modal for closing, Reactivate button, a plain "already
+purged" message once `purgedAt` is set instead of a dead button). Required widening
+`SchoolResponseDto`/`FranchiseResponseDto` to type the three new fields — School's
+`findOne()` already returned them at runtime (whole-row, no explicit `select`), but
+Franchise's `FRANCHISE_PUBLIC_SELECT` genuinely omitted them until this phase, caught
+by checking each service directly rather than assuming both entities read alike.
+
+**Still not built**: a real decision on `Waiver`'s own retention period (Decision
+110's own flagged exception, unaffected by Phase 57).
 
 ### 4. Guardian consent-management UI — no screen anywhere
 
@@ -437,9 +482,10 @@ responsive bugs — mobile-nav collapse and table horizontal-overflow (PR #31).
 
 1. ~~`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI~~ — done
    (Phase 55, PR #76).
-2. ~~General tenant/content offboarding backend (Decision 110)~~ — done (Phase 56,
-   PR #77). `apps/platform-admin`'s own close/reactivate UI is the natural
-   Phase 57.
+2. ~~General tenant/content offboarding (Decision 110)~~ — done end to end: backend
+   (Phase 56) and the `apps/platform-admin` close/reactivate UI (Phase 57), both on
+   PR #77. Only `Waiver`'s own retention period (Decision 110's flagged exception)
+   remains an open question.
 3. Decision 109 (Transaction Student-name resolution, PR #61) is still a
    Developer-level inference, flagged in the decision log but not yet given an
    Architect confirmation — worth a short pass, though nothing is blocked on it.

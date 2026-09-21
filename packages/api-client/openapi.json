@@ -6010,6 +6010,18 @@
           "updatedAt": {
             "type": "string"
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true
+          },
           "accessToken": {
             "type": "string"
           }
@@ -6570,6 +6582,18 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true
           },
           "accessToken": {
             "type": "string"
