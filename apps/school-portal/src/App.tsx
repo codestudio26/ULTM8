@@ -14,6 +14,7 @@ import { StaffPage } from './roleGrants/StaffPage';
 import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
+import { StudentsPage } from './students/StudentsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
 import { ClassQrCodePage } from './attendance/ClassQrCodePage';
@@ -106,6 +107,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <InstructorsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/students"
+        element={
+          <RequireAuth>
+            <Shell>
+              <StudentsPage />
             </Shell>
           </RequireAuth>
         }

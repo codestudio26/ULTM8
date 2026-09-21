@@ -13,6 +13,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         { label: 'Staff', to: '/staff' },
         { label: 'Disciplines', to: '/disciplines' },
         { label: 'Instructors', to: '/instructors' },
+        { label: 'Students', to: '/students' },
         { label: 'Classes', to: '/classes' },
         { label: 'Curriculum', to: '/curriculum' },
         { label: 'Timetable', to: '/timetable' },

@@ -1106,3 +1106,27 @@ Whether `PrismaJobsService` should eventually be granted SELECT on `User` for ge
 ### Recorded by
 
 Found during a deep-dive review the user explicitly requested before committing Decisions 110–112 ("deep dive before commit and push"), traced through the actual migration SQL and service code rather than assumed; the user was given three options (defensive patch only / defensive patch + retrofit Transactions / ship as-is and log as follow-up) and asked instead for "the best possible solution" — read as authorizing the fuller `PrismaAuthService`-based fix across all four sites, implemented and logged 21 Sep 2026.
+
+---
+
+## Decision 114 — Student roster: new `GET /schools/{id}/students`, Staff-gated (not Owner-only)
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** a real, verified gap in `apps/school-portal` — no page anywhere let a School's Staff see who was actually enrolled as a Student. Confirmed there is no `apps/api/src/students/` module or `StudentsController` anywhere in this codebase (a Student is a User plus a `STUDENT`-role RoleGrant, not a separate entity — the same shape already established for Instructors), and confirmed independently by `docs/TRACK-B-ROADMAP.md` on the `track-b-student-app` branch, which found the identical gap from the mobile-app side while building Rank & Grading (Slice 3).
+
+### Decision
+
+New `GET /schools/{id}/students` on `SchoolsController`/`SchoolsService.findAllStudentsForSchool`, returning every User holding an active `STUDENT` RoleGrant at that School (`id`, `firstName`, `surname`, `email`, `enrolledAt` — the RoleGrant's own `grantedAt`, not `User.createdAt`). Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { user: {...}, grantedAt: true } })` — the exact pattern Decision 111 (`findEligibleInstructorUsers`) already established for `INSTRUCTOR`. Safe from the Decision 113 RLS name-join gap by construction, same reasoning as Decision 111: the RoleGrant row being read is itself the `user_self_or_shared_school` visibility witness, so the joined `User` row is always resolvable — no `PrismaAuthService` lookup needed.
+
+Gated on `TenantAuthorizationService.assertStaffAtSchool` (School Owner/Manager, Branch Staff, **or** Instructor — no `branchId` scoping, since Student enrollment itself has no Branch dimension) — deliberately broader than Decision 111's Owner-only gate, because seeing the roster is an ordinary read any Staff member needs, not an Owner-only write flow like granting the Instructor role is.
+
+`apps/school-portal`: a new read-only `StudentsPage.tsx` (no create/edit — a Staff member doesn't create a Student profile directly; a Student joins via `SchoolsService.join()`, self-service or Guardian-on-behalf-of), added to the sidebar nav and router between Instructors and Classes.
+
+### What this does NOT resolve
+
+Whether the roster should eventually show more than name/email/enrollment date (Membership status, current Rank, Guardian info for a minor) — deliberately kept to the minimum-fields precedent this codebase already uses elsewhere (Decision 111), not expanded speculatively. A per-Student detail page is a natural follow-up, not built here.
+
+### Recorded by
+
+Logged while auditing what's actually built vs. missing across ULTM8's frontend apps, 21 Sep 2026, in the same pass that corrected `CLAUDE.md`'s stale "development has not started" framing and reviewed `track-b-student-app`'s own status.

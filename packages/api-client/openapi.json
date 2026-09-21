@@ -346,6 +346,41 @@
         ]
       }
     },
+    "/v1/schools/{id}/students": {
+      "get": {
+        "operationId": "SchoolsController_findStudents",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/join": {
       "post": {
         "operationId": "SchoolsController_join",
@@ -5997,6 +6032,47 @@
             "nullable": true
           }
         }
+      },
+      "StudentSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "enrolledAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
+          "email",
+          "enrolledAt"
+        ]
+      },
+      "StudentListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentSummaryResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
       },
       "JoinSchoolDto": {
         "type": "object",

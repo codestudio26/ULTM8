@@ -322,6 +322,42 @@ export class SchoolsService {
     return school;
   }
 
+  /**
+   * The Student roster — Users holding an active STUDENT RoleGrant at this School.
+   * Staff-gated broadly (School Owner/Manager, Branch Staff, or Instructor — the
+   * same set Bookings/Waitlist's own roster reads already use via
+   * assertStaffAtSchool), not School-Owner-only, since seeing who's enrolled is a
+   * read any Staff member legitimately needs, unlike Instructors' eligible-users
+   * endpoint (which gates an Owner-only write flow). No branchId scoping — a
+   * School-wide roster, matching how Student enrollment itself has no Branch
+   * dimension (SchoolsService.join() grants schoolId-only, no branchId).
+   *
+   * Safe from the RLS name-join gap (Decision 113) by construction, same reasoning
+   * as InstructorsService.findEligibleInstructorUsers: the RoleGrant row being read
+   * (schoolId, role STUDENT, revokedAt null) is itself the exact witness
+   * user_self_or_shared_school's visibility check needs, so the joined User row is
+   * always visible — no separate PrismaAuthService lookup needed here.
+   */
+  async findAllStudentsForSchool(callerId: string, schoolId: string) {
+    await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { schoolId, role: 'STUDENT', revokedAt: null },
+        distinct: ['userId'],
+        orderBy: { grantedAt: 'asc' },
+        select: {
+          grantedAt: true,
+          user: { select: { id: true, firstName: true, surname: true, email: true } },
+        },
+      }),
+    );
+    return {
+      items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt })),
+    };
+  }
+
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */
   async update(callerId: string, schoolId: string, dto: UpdateSchoolDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);

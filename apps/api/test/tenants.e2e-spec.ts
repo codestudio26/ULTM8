@@ -337,6 +337,59 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(403);
   });
 
+  // ---------------------------------------------------------------------------
+  // GET /schools/{id}/students — the Student roster (SchoolsService.
+  // findAllStudentsForSchool). Staff-gated broadly, unlike the Owner-only
+  // eligible-users endpoint Instructors has — any Staff member should be able
+  // to see who's enrolled.
+  // ---------------------------------------------------------------------------
+
+  it('the Student roster lists everyone with an active STUDENT RoleGrant, and is Staff-only', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-roster-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'roster-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const studentToken = signAccessToken(studentUser, []);
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send();
+    expect(joinRes.status).toBe(201);
+
+    const rosterRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(rosterRes.status).toBe(200);
+    const row = rosterRes.body.items.find((s: { id: string }) => s.id === studentUser.id);
+    expect(row).toBeDefined();
+    expect(row.firstName).toBe('roster-student');
+    expect(row.surname).toBe('Tenant');
+    expect(row.email).toBe(studentUser.email);
+    expect(row.enrolledAt).toBeDefined();
+
+    // The Student themselves is not School Staff (Owner/Manager, Branch Staff,
+    // or Instructor) — cannot read the roster.
+    const asStudentRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${studentToken}`);
+    expect(asStudentRes.status).toBe(403);
+  });
+
+  it('cannot read another tenant\'s Student roster', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(404);
+  });
+
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')

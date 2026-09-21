@@ -132,6 +132,22 @@ export interface paths {
         patch: operations["SchoolsController_update"];
         trace?: never;
     };
+    "/v1/schools/{id}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_findStudents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/join": {
         parameters: {
             query?: never;
@@ -1884,6 +1900,16 @@ export interface components {
             logoUrl?: string | null;
             bannerUrl?: string | null;
         };
+        StudentSummaryResponseDto: {
+            id: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            enrolledAt: string;
+        };
+        StudentListResponseDto: {
+            items: components["schemas"]["StudentSummaryResponseDto"][];
+        };
         JoinSchoolDto: {
             /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
             studentId?: string;
@@ -3420,6 +3446,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_findStudents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentListResponseDto"];
                 };
             };
         };
