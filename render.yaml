@@ -13,17 +13,22 @@
 # _DISCOVERY) rather than generated or hardcoded here — they need real
 # passwords for the scoped Postgres roles the app's own init migration
 # creates (ultm8_app/ultm8_auth/ultm8_jobs/ultm8_discovery), which are NOT
-# derivable from Render's own `fromDatabase` (Render only knows the superuser
-# connection it provisions, not roles the app's migrations create afterward).
-# Committing real passwords into this file would defeat the point of using
-# strong ones — Render prompts for `sync: false` values during Blueprint
-# creation instead, so they're entered once, in Render's own UI, never in git.
+# derivable from a superuser connection string alone. Committing real
+# passwords into this file would defeat the point of using strong ones —
+# Render prompts for `sync: false` values during Blueprint creation instead,
+# so they're entered once, in Render's own UI, never in git.
+#
+# Postgres is hosted on Supabase, not Render — Render's own free Postgres
+# has a hard 30-day-from-creation expiry regardless of usage, while
+# Supabase's free tier only pauses after 7 days of NO activity (reversible,
+# and never triggers as long as this stays in active use). `DATABASE_URL`
+# is `sync: false` below rather than `fromDatabase` for this reason — it
+# points at Supabase's connection string, entered directly in Render's UI.
+# The `databases:` block that would provision Render's own Postgres has
+# been removed deliberately (not just left unused) — no unused resource
+# left sitting on the account.
 
-databases:
-  - name: ultm8-postgres
-    plan: free
-    databaseName: ultm8
-    user: ultm8
+databases: []
 
 services:
   - name: ultm8-redis
@@ -49,13 +54,12 @@ services:
     buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
     startCommand: node apps/api/dist/main.js
     envVars:
-      # Superuser connection — used for `prisma migrate deploy` (run manually
-      # after first deploy, see the accompanying setup instructions) and by
-      # PrismaJobsService's own cross-role writes.
+      # Superuser connection — Supabase's connection string, entered directly
+      # (see this file's header comment for why Postgres lives on Supabase,
+      # not Render). Used for `prisma migrate deploy` (run manually after
+      # first deploy) and by PrismaJobsService's own cross-role writes.
       - key: DATABASE_URL
-        fromDatabase:
-          name: ultm8-postgres
-          property: connectionString
+        sync: false
       # FIXED: Render's own Blueprint validator rejected `fromDatabase` here
       # ("depends on non-existent DB: ultm8-redis") — `fromDatabase` only
       # resolves against the top-level `databases:` list (Postgres). A
