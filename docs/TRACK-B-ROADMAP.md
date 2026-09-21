@@ -21,7 +21,7 @@ Detail for each Slice is in its own section below; this table is the map.
 | 1 | **Foundation** | 1 (walking skeleton), 2 (booking/waitlist), 3 (rank/grading) | ✅ DONE |
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
 | 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
-| 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a unblocked (in V1); 6b/7 blocked — need a design pass; partially unblockable by syncing with `master` (see below) |
+| 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b still blocked — needs a design pass + schema change; partially unblockable by syncing with `master` (see below) |
 | 5 | **Attendance** | 8 (QR check-in) | Blocked — genuinely unresolved even on `master`, needs a backend/product decision on the QR mechanism itself |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
 | 7 | **Resilience** | 10 (offline behavior/caching) | Not scoped — nothing in the spec, any skill, or the decision log addresses this; don't start until someone asks with real requirements |
@@ -144,22 +144,63 @@ local mock server: correct signed/unsigned status per Waiver, a real sign
 submission (`POST /waivers/{id}/sign`) returning 201 and the row flipping to
 "Signed ✓" immediately with no error, and no console errors beyond expected ones.
 
-**Still genuinely blocked, path forward identified:**
-- Guardian consent screen (Phase 4) — confirmed via direct research: no Figma design,
-  no screen inventory, no mockup exists anywhere for it — nothing beyond the backend
-  `ConsentRecord`/`GuardianLink` data model. `skills/ultm8-domain-rules/SKILL.md` tags
-  it `[UNRESOLVED]` outright: "No consent-management interface... exists anywhere in
-  the confirmed designs." The drawn-signature capture enhancement for Waivers (on top
-  of the typed-name version now in V1 above) is the other half of this same gap —
-  Decision 74 flags it as "still undesigned... for the Architect / design work before
-  this can be built," and would need a `WaiverSignature` schema change besides.
-  Building either without a real design would mean inventing unconfirmed business
-  logic — the thing this doc's own source-of-truth rules exist to prevent. **Path
-  forward**: a candidate Guardian consent screen will be drafted and shown to the user
-  for approval before any wiring to real backend logic — that approval stands in for
-  the missing design pass, rather than leaving this blocked indefinitely with no way
-  to move. The drawn-signature enhancement stays parked behind that same design pass
-  plus the separate schema-change decision.
+**Guardian consent candidate — drafted, reviewed, and committed (2026-09-22).**
+Confirmed via direct research: no Figma design, no screen inventory, no mockup
+existed anywhere for this — nothing beyond the backend `ConsentRecord`/`GuardianLink`
+data model, which is itself real and confirmed (`apps/api/src/guardians/`).
+`skills/ultm8-domain-rules/SKILL.md` tags the consent-management interface
+`[UNRESOLVED]` outright. Per this doc's own "path forward," a candidate screen was
+built against the real, confirmed API and shown to the user for approval — that
+approval stands in for the missing design pass.
+
+**What was built**: `MyMinorsScreen` (off Home, gated on a `GUARDIAN` RoleGrant via
+the new `useIsGuardian` hook) listing linked minors plus an "Add a minor" form;
+`MinorConsentScreen` showing both confirmed consent tiers (Baseline, Camera) with
+their real descriptions and withdrawal consequences (quoted from SKILL.md §14, not
+invented); `ConsentTierRow` handling grant/withdraw per tier. `CURRENT_POLICY_VERSION`
+is an explicit, disclosed placeholder pending real privacy-notice content from
+product/legal — not invented legal text.
+
+An 8-agent review found two real correctness bugs, fixed before commit:
+- **A stuck consent-status bug**: `grant`/`withdraw` are two separate mutation
+  objects, so calling one never reset the other's leftover `isSuccess`. Withdrawing
+  once and then granting again on the same still-mounted screen left the row stuck
+  showing "Grant consent" forever, even though the backend record was genuinely
+  active — a Guardian could reasonably believe consent was never restored. Fixed by
+  resetting the opposing mutation when a new action starts.
+- **A misplaced re-entrancy guard**: the destructive withdraw action's `isPending`
+  check ran before the confirmation dialog was shown, not immediately before the
+  actual mutation call inside the dialog's async callback — a fast double-tap could
+  stack two confirmations. Fixed by re-checking at the real call site, matching
+  `MyBookingsScreen`'s own established pattern.
+- Also fixed: an untrimmed form-submission mismatch (the enable check trimmed
+  fields, the mutation didn't), and extracted the inline Guardian-role check into a
+  reusable `useIsGuardian` hook alongside the existing `useEnrolledSchoolId`
+  precedent.
+
+**Flagged as follow-ups, not fixed here** (separate tasks spawned): a
+severity-proportional confirmation for BASELINE withdrawal specifically (its
+`Alert.alert` confirmation is a documented no-op on React Native Web, this app's
+own test target, and arguably too lightweight for an action that deactivates a
+minor's entire account regardless of platform); and a pre-existing `formatDate`
+timezone bug (renders in local time, which can shift a UTC-midnight
+date-of-birth to the wrong calendar day for users west of UTC) — not introduced by
+this slice, but newly consequential here.
+
+**Verified**: `npx tsc --noEmit` and `npx turbo run lint build` (run sequentially —
+running them in parallel hit a transient out-of-memory crash on this machine
+unrelated to the code, confirmed by the identical command succeeding when run
+sequentially). Interactively tested via `expo start --web`: correct tier status
+display, a real grant submission updating the UI immediately with no error, and
+the trim fix confirmed via the actual network request payload. The withdraw→regrant
+race itself couldn't be click-tested end-to-end (the confirmation dialog doesn't
+render on web), so that specific fix is verified by direct code/logic tracing
+against react-query's mutation reducer, not a live click-through.
+
+The drawn-signature capture enhancement for Waivers (a different, still-genuinely-
+blocked half of the original combined gap) remains parked — Decision 74 flags it as
+"still undesigned... for the Architect / design work before this can be built," and
+would need a `WaiverSignature` schema change besides.
 
 ---
 

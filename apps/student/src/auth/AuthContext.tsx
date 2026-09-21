@@ -100,3 +100,12 @@ export function useEnrolledSchoolId(): string | null {
   const schoolIds = claims.grants.filter((g) => g.role === 'STUDENT' && g.schoolId).map((g) => g.schoolId as string);
   return schoolIds.sort()[0] ?? null;
 }
+
+/** Same "derive from claims.grants" shape as useEnrolledSchoolId, for the
+ * one other role check this app makes — Guardian is a boolean presence
+ * check (any active GUARDIAN grant, not scoped to a School) rather than a
+ * value to resolve, so this returns boolean instead of string | null. */
+export function useIsGuardian(): boolean {
+  const { claims } = useAuth();
+  return claims?.grants.some((g) => g.role === 'GUARDIAN') ?? false;
+}

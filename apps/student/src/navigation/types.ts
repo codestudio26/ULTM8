@@ -14,4 +14,6 @@ export type AppStackParamList = {
   Notifications: undefined;
   MyMemberships: undefined;
   Waivers: undefined;
+  MyMinors: undefined;
+  MinorConsent: { studentId: string; name: string };
 };
