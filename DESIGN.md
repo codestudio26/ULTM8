@@ -27,23 +27,23 @@ Weights: 400 (body), 500 (emphasis, buttons, labels), 600 (headings only). Body 
 
 ## Color
 
-Neutral-dominant, one accent. Most of the UI is grayscale; blue appears only where it carries meaning — primary actions, active/selected states, links, focus rings. It is never decorative.
+Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears only where it carries meaning — primary actions, active/selected states, links, focus rings. It is never decorative.
 
-**Base ramps** — literal hex, mode-stable. The accent ramp is anchored on `#1f5eff`, the brand blue already shipping in `packages/ui/src/tokens.css` (`--color-accent`) and live in `school-portal`/`platform-admin` today — not a new color, and not the slate blue an earlier draft of this file specified before `packages/ui` existed. That slate-blue draft was never implemented anywhere in the codebase (confirmed by a full-repo search) and has been dropped here in favor of matching what's actually shipped, rather than repainting the live apps to match a draft none of them ever used:
+**Base ramps** — literal hex, mode-stable:
 
 ```css
 :root {
-  /* accent — brand blue */
-  --color-accent-50:  #f2f5ff;
-  --color-accent-100: #dde7ff;
-  --color-accent-200: #b7cbff;
-  --color-accent-300: #8babff;
-  --color-accent-400: #5585ff;
-  --color-accent-500: #1f5eff; /* brand reference value — matches packages/ui's --color-accent */
-  --color-accent-600: #1b51db;
-  --color-accent-700: #1642b3;
-  --color-accent-800: #103185;
-  --color-accent-900: #0b2057;
+  /* accent — slate blue */
+  --color-accent-50:  #f5f7fa;
+  --color-accent-100: #e4ebf1;
+  --color-accent-200: #c7d4e1;
+  --color-accent-300: #9fb6cb;
+  --color-accent-400: #7495b4;
+  --color-accent-500: #4a6b8a; /* brand reference value */
+  --color-accent-600: #3d5871;
+  --color-accent-700: #30465a;
+  --color-accent-800: #243442;
+  --color-accent-900: #17212b;
 
   /* neutral */
   --color-neutral-50:  #f9fafa;
@@ -84,6 +84,15 @@ Neutral-dominant, one accent. Most of the UI is grayscale; blue appears only whe
 
   --bg-success: color-mix(in srgb, var(--color-success) 12%, white);
   --text-success: var(--color-success);
+
+  /* Solid "success" button fill — a distinct pair from bg-success/text-success
+     above (badge/alert tint), because a filled button needs its own hover step
+     and its own on-fill text color: text-success on this fill only reaches
+     ~4.4:1, just under AA for normal-size text — see the contrast table below. */
+  --fill-success: #def2e2;
+  --fill-success-hover: color-mix(in srgb, var(--color-success) 20%, white);
+  --on-success: var(--color-neutral-900); /* literal ramp ref, not --text-primary — see tokens.css comment for why */
+
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
@@ -114,21 +123,20 @@ Neutral-dominant, one accent. Most of the UI is grayscale; blue appears only whe
 
 Dark mode ships at launch, derived from the same ramps above — never hand-authored separately.
 
-**Verified contrast** (WCAG AA, 4.5:1 normal text / 3:1 large text & UI) — recomputed for the `#1f5eff` accent ramp above, not copied from the earlier slate-blue draft:
+**Verified contrast** (WCAG AA, 4.5:1 normal text / 3:1 large text & UI):
 
 | Pairing | Ratio |
 |---|---|
 | `text-primary` on `surface-0` (light) | 17.2:1 |
 | `text-secondary` on `surface-0` (light) | 7.0:1 |
-| `on-accent` (white) on `fill-accent` #1f5eff | 5.1:1 |
-| `text-accent` #1642b3 on white | 8.5:1 |
+| `on-accent` (white) on `fill-accent` #4a6b8a | 5.6:1 |
+| `text-accent` #30465a on white | 9.3:1 |
 | `text-primary` (dark) on `surface-0` (dark) | 16.0:1 |
 | `text-secondary` (dark) on `surface-0` (dark) | 6.6:1 |
-| `on-accent` (dark ink, neutral-900) on `fill-accent` #5585ff (dark mode) | 5.3:1 |
-| `text-accent` #8babff on `surface-0` (dark) | 8.0:1 |
 | white on `--color-danger` | 6.5:1 |
 | white on `--color-success` | 5.3:1 |
 | dark ink on `--color-warning` | 4.9:1 (use dark text here, not white — white only reaches 3.6:1) |
+| `on-success` on `fill-success` #def2e2 | 14.8:1 (dark neutral text — `text-success` on this same fill only reaches ~4.4:1, just under the 4.5:1 AA floor for normal-size text, so the solid button variant deliberately does not reuse it) |
 
 ## Layout & spacing
 
