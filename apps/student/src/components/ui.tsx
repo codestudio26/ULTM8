@@ -5,6 +5,15 @@
  * package.json/src before assuming it was reusable, per the kickoff doc's instruction
  * not to assume. This file exists only because a walking-skeleton auth flow needs
  * *something* to render — it is deliberately small, not a new design system.
+ *
+ * Colors/spacing/type now come from theme/tokens.ts (DESIGN.md translated to plain RN
+ * values) rather than the ad hoc Material-style hex this file shipped with in Slice 1
+ * — see tokens.ts's own header for why a separate translation was needed instead of
+ * reusing packages/ui directly. Two real DESIGN.md violations were caught fixing this,
+ * not just a color swap: the input font size was 15px (DESIGN.md requires >=16px on
+ * any text input — below that, iOS Safari/WebKit auto-zooms the viewport on focus),
+ * and the Button had no guaranteed minimum touch target (DESIGN.md: "every interactive
+ * element: minimum 44×44px, regardless of visual size").
  */
 import React from 'react';
 import {
@@ -16,6 +25,7 @@ import {
   TextInputProps,
   View,
 } from 'react-native';
+import { colors, theme, spacing, fontSize, fontWeight, radius, minTouchTarget } from '../theme/tokens';
 
 export function Screen({ children }: { children: React.ReactNode }) {
   return <View style={styles.screen}>{children}</View>;
@@ -40,7 +50,7 @@ export function Field({
 }
 
 export function TextField(props: TextInputProps) {
-  return <TextInput style={styles.input} placeholderTextColor="#9AA0A6" {...props} />;
+  return <TextInput style={styles.input} placeholderTextColor={theme.textMuted} {...props} />;
 }
 
 export function Button({
@@ -69,7 +79,7 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? '#1F6FEB' : '#fff'} />
+        <ActivityIndicator color={variant === 'secondary' ? theme.textAccent : theme.onAccent} />
       ) : (
         <Text style={[styles.buttonText, variant === 'secondary' && styles.buttonTextSecondary]}>
           {title}
@@ -105,45 +115,46 @@ export function InlineError({ message }: { message: string }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
+    backgroundColor: theme.surface0,
+    padding: spacing[4] + spacing[1], // 20 — no exact DESIGN.md token, closest is space-4/space-6; kept as-is since it's a wrapper margin, not a component listed in DESIGN.md's own state table.
   },
   field: {
-    marginBottom: 14,
+    marginBottom: spacing[4],
   },
   label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#3C4043',
-    marginBottom: 6,
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.heading,
+    color: theme.textPrimary,
+    marginBottom: spacing[2],
   },
   hint: {
-    fontSize: 12,
-    color: '#5F6368',
-    marginTop: 4,
+    fontSize: fontSize.caption,
+    color: theme.textSecondary,
+    marginTop: spacing[1],
   },
   input: {
     borderWidth: 1,
-    borderColor: '#DADCE0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#202124',
+    borderColor: theme.border,
+    borderRadius: radius.input,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    fontSize: fontSize.input,
+    color: theme.textPrimary,
   },
   button: {
-    backgroundColor: '#1F6FEB',
-    borderRadius: 8,
-    paddingVertical: 12,
+    backgroundColor: theme.fillAccent,
+    borderRadius: radius.button,
+    paddingVertical: spacing[3],
+    minHeight: minTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: spacing[2],
   },
   buttonSecondary: {
     backgroundColor: 'transparent',
   },
   buttonDestructive: {
-    backgroundColor: '#C5221F',
+    backgroundColor: colors.danger,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -152,36 +163,36 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
+    color: theme.onAccent,
+    fontWeight: fontWeight.heading,
+    fontSize: fontSize.footnote,
   },
   buttonTextSecondary: {
-    color: '#1F6FEB',
+    color: theme.textAccent,
   },
   errorBanner: {
-    backgroundColor: '#FCE8E6',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+    backgroundColor: theme.bgDanger,
+    borderRadius: radius.input,
+    padding: spacing[3],
+    marginBottom: spacing[3],
   },
   errorText: {
-    color: '#C5221F',
-    fontSize: 13,
+    color: theme.textDanger,
+    fontSize: fontSize.caption,
   },
   inlineErrorText: {
-    color: '#C5221F',
-    fontSize: 12,
-    marginTop: 4,
+    color: theme.textDanger,
+    fontSize: fontSize.caption,
+    marginTop: spacing[1],
   },
   successBanner: {
-    backgroundColor: '#E6F4EA',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+    backgroundColor: theme.bgSuccess,
+    borderRadius: radius.input,
+    padding: spacing[3],
+    marginBottom: spacing[3],
   },
   successText: {
-    color: '#188038',
-    fontSize: 13,
+    color: theme.textSuccess,
+    fontSize: fontSize.caption,
   },
 });
