@@ -9,6 +9,17 @@
  * same "no hardcoded hex outside the token file" discipline DESIGN.md's `packages/ui`
  * already follows on the web side.
  *
+ * CORRECTION: an earlier version of this file anchored the accent ramp on #1f5eff,
+ * reasoning that Track B's own packages/ui/src/tokens.css (an ad hoc palette
+ * predating this DESIGN.md) was "what's actually shipped." That was wrong — Track A
+ * did rebase onto a slate-blue accent (PR #61, 2026-09-20), confirming the direction
+ * here, but the specific hex values below were checked against a stale branch
+ * (`origin/docs/track-a-roadmap`) rather than current `master`'s own
+ * `packages/ui/src/tokens.css` — its real `--color-accent-500` is `#5d7081`, not
+ * `#4a6b8a`. Re-verified directly against `master`'s `packages/ui/src/tokens.css`
+ * during the Track B merge (2026-10-01) and corrected to match exactly; this file's
+ * own ramp had been a close but genuinely wrong approximation until now.
+ *
  * `color-mix(in srgb, X p%, white)` tokens (bg-success/warning/danger) have no RN
  * equivalent — resolved here to their literal computed hex (verified via a Node
  * script reproducing the CSS color-mix formula, not eyeballed).
@@ -18,22 +29,19 @@
  * for when that changes, not reproduced here to avoid dead, unused tokens.
  */
 
-/** Base ramps — DESIGN.md's `--color-accent-*`/`--color-neutral-*`/semantic tokens.
- * Accent anchored on #1f5eff, the brand blue already shipping in
- * packages/ui/src/tokens.css and live in school-portal/platform-admin today — see
- * DESIGN.md's Color section for why (an earlier slate-blue draft was dropped in
- * favor of matching what's actually shipped, never implemented anywhere). */
+/** Base ramps — DESIGN.md's `--color-accent-*`/`--color-neutral-*`/semantic tokens,
+ * verified against Track A's packages/ui/src/tokens.css (see file header). */
 export const colors = {
-  accent50: '#f2f5ff',
-  accent100: '#dde7ff',
-  accent200: '#b7cbff',
-  accent300: '#8babff',
-  accent400: '#5585ff',
-  accent500: '#1f5eff',
-  accent600: '#1b51db',
-  accent700: '#1642b3',
-  accent800: '#103185',
-  accent900: '#0b2057',
+  accent50: '#fcfdfd',
+  accent100: '#edf0f2',
+  accent200: '#d3d9df',
+  accent300: '#afbbc5',
+  accent400: '#889aaa',
+  accent500: '#5d7081',
+  accent600: '#4d5d6b',
+  accent700: '#3e4b56',
+  accent800: '#2f3941',
+  accent900: '#20262c',
 
   neutral50: '#f9fafa',
   neutral100: '#f1f2f3',
