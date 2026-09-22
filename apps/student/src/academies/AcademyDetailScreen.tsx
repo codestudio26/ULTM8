@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ErrorBanner, Screen } from '../components/ui';
+import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useAuth } from '../auth/AuthContext';
 import { ClassBookingRow } from '../bookings/ClassBookingRow';
@@ -28,7 +28,19 @@ export function AcademyDetailScreen({ route }: Props) {
   const { academyId } = route.params;
   const { claims } = useAuth();
   const { data: academy, isLoading, error } = useAcademy(academyId);
-  const { data: timetable } = useAcademyTimetable(academyId);
+  // FOUND ON REVIEW: `data` was destructured on its own, with fetchNextPage/
+  // hasNextPage never wired to anything — only the timetable's first page (the
+  // server's default page size) could ever render, silently, for any School whose
+  // weekly timetable has more slots than that. This screen is a ScrollView holding
+  // several sections (Activities/Plans/Rank/Classes/Timetable), not a single
+  // PaginatedListScreen-style FlatList, so pagination here is a "Load more" tap
+  // rather than infinite scroll.
+  const {
+    data: timetable,
+    fetchNextPage: fetchNextTimetablePage,
+    hasNextPage: hasMoreTimetableSlots,
+    isFetchingNextPage: isFetchingMoreTimetableSlots,
+  } = useAcademyTimetable(academyId);
   // Fetched here, in parallel with academy/timetable above, rather than inside
   // MyRankSection itself — found on review: firing them only once MyRankSection
   // mounts (i.e. after the isLoading early-return below) meant they never started
@@ -114,6 +126,16 @@ export function AcademyDetailScreen({ route }: Props) {
                 </Text>
               </View>
             ))}
+            {hasMoreTimetableSlots ? (
+              <View style={{ marginTop: 8 }}>
+                <Button
+                  title="Load more"
+                  variant="secondary"
+                  loading={isFetchingMoreTimetableSlots}
+                  onPress={() => fetchNextTimetablePage()}
+                />
+              </View>
+            ) : null}
           </View>
         ) : null}
       </Screen>

@@ -54,6 +54,39 @@ in-scope is deliberately deferred, not forgotten.
   check beyond a valid Student JWT) — a real security risk, must close before V1 ships.
 - Extract the shared paginated-list component (now duplicated 4x across
   `ClassBookingRow`/`NotificationRow`/`MembershipRow`/the underlying list-screen shape).
+  ✅ **DONE (2026-09-22), with a correction**: the screen-shell extraction this line
+  describes had already shipped as `PaginatedListScreen.tsx` (used correctly by
+  Academies/My Bookings/Notifications/My Memberships). `ClassBookingRow`/
+  `MembershipPlanRow` were never pagination logic at all — they render a School's
+  embedded array from a single `useAcademy` fetch, not a `useInfiniteQuery`. What
+  remained was the follow-up already named below: 4 near-identical `useInfiniteQuery`
+  hook bodies (`academyQueries`/`bookingQueries`/`membershipQueries`/
+  `notificationQueries`), collapsed into one `usePaginatedQuery(queryKey, fetchPage,
+  options?)` helper in `apps/student/src/lib/usePaginatedQuery.ts` — each call site
+  keeps its own typed `apiClient.GET`/`unwrap` call, only the `useInfiniteQuery`
+  wiring (initialPageParam/getNextPageParam) is shared. Net -14 lines across 4 files.
+  Query keys are unchanged, so `PERSISTED_QUERY_KEY_PREFIXES`'s allowlist in
+  `queryPersister.ts` is unaffected.
+
+  **Also fixed in the same pass**, since it sits in a function this touched and was
+  already named below as a spawned follow-up: the pre-existing timetable pagination
+  bug. `AcademyDetailScreen` destructured only `useAcademyTimetable`'s `data`, never
+  wiring `fetchNextPage`/`hasNextPage` — so any School with more Timetable slots than
+  the server's default page size silently showed only the first page, with no
+  indication more existed. Fixed with a "Load more" `Button` (reusing the existing
+  `variant="secondary"`/`loading` props), not `onEndReached`-style infinite scroll —
+  this screen is a `ScrollView` holding several sections (Activities/Plans/
+  Rank/Classes/Timetable), not a single `PaginatedListScreen`-style `FlatList`.
+
+  **Verified**: `npx turbo run lint build --filter=@ultm8/student` (`tsc --noEmit`
+  both ways) passes clean, run together this time — no repeat of the earlier
+  transient OOM some other slices hit running lint+build in parallel. **Not**
+  interactively click-tested via `expo start --web` — no mock backend server exists
+  in this checkout for this session, and standing one up was judged disproportionate
+  for a mechanical hook-signature refactor plus a `fetchNextPage` wiring fix that
+  reuses an already-proven pattern (`PaginatedListScreen`'s own identical
+  fetchNextPage/hasNextPage/isFetchingNextPage usage, and `Button`'s already-used
+  `loading` prop) rather than new logic. Flagged here rather than silently assumed.
 - A real staging deployment of `apps/api` + Postgres (+ Redis) on Railway, so V1 is
   verified against the genuine backend, not indefinitely against throwaway mocks.
   Pending: the user creating a Railway account and connecting the GitHub repo — this
@@ -828,7 +861,6 @@ per-School white-label branding.
 Several follow-ups are already spawned and tracked outside this doc (visible as task
 chips in the session): the waitlist notification-dispatch backend gap, the
 StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
-gaps, a pre-existing timetable pagination bug, a shared `usePaginatedQuery` hook
-extraction, proper multi-School support for the Waivers screen, a deep-link from
+gaps, proper multi-School support for the Waivers screen, a deep-link from
 booking errors to the Waivers screen, a `formatDate` timezone bug, and a
 severity-proportional confirmation for BASELINE consent withdrawal.
