@@ -1037,3 +1037,35 @@ Phase B itself (the actual `chargeback-pattern-restriction` job, the new `User.p
 ### Recorded by
 
 Logged during a direct scoping conversation with the user, 22 Sep 2026, following a full deep-dive audit of Track A that surfaced this as a confirmed-but-unbuilt gap. Options for the threshold were presented with a stated recommendation and reasoning; the user asked for the reasoning restated in more detail plus a fuller explanation of what each phase actually contains before deciding, then accepted the recommendation (2) and asked to proceed with Phase A.
+
+---
+
+## Decision 112 — `chargeback-pattern-restriction` (Decision 68/111 Phase B) built: three Developer-level design gaps closed, all flagged before writing code
+
+**Date:** 22 Sep 2026
+**Status:** Developer-level design decisions, made while implementing an already-confirmed rule (Decision 68) — none of these invent new business logic; each closes a genuine implementation gap Decision 68's own confirmed text left unanswered once checked against the actual codebase.
+**Resolves:** Decision 111's own deferred Phase B — the job itself, `User.paymentRestrictedAt`, and the Cash/Bank-only purchase gate.
+
+### Decision 68's own text, quoted (skills/ultm8-domain-rules/SKILL.md §9)
+
+"A platform-wide `chargeback-pattern-restriction` background job counts a Student's **lost** Stripe disputes (`Transaction.status = Disputed` outcomes... that resolve as lost) across **every School the Student holds a RoleGrant at**... Once a confirmed threshold is exceeded, the Student is restricted to **Cash/Bank Transfer payment methods only**, going forward... The Student's current School(s) are notified via the existing notification-fanout mechanism."
+
+### Gap 1 — the schema cannot currently distinguish a lost dispute from a merely open one
+
+Decision 111 Phase A made `Transaction.status = DISPUTED` the terminal representation for BOTH an unresolved, in-progress dispute (`needs_response`, `under_review`, etc.) and a permanently lost one — Decision 55's own confirmed contract never needed to tell them apart (the only entity-level consequence of a loss, Membership force-Expiry, is applied at the moment of loss, not queried back out later). Decision 68's own text above explicitly says "outcomes... that resolve as lost," which this schema genuinely cannot answer today. **Closed by adding `Transaction.disputeLostAt DateTime?`** — set at the exact moment `stripe-webhook-processing`'s dispute handler already determines `outcome.lost === true` (Phase A's own `resolveDisputeOutcome()`), cleared back to `null` on the rare reversal to `won`. This is not new business logic — it's persisting a fact Phase A's own code already computes in memory but never previously needed to write down.
+
+### Decision — event-triggered, not a periodic sweep
+
+Decision 68 calls this "a background job," which this codebase already uses for two genuinely different shapes: a periodic `Processor`/`Scheduler` pair (`FranchiseFeeUsageReportingProcessor`/`Scheduler`, `BookingNoShowProcessingProcessor`/`Scheduler`) and a plain event-triggered `Processor` with no scheduler at all, enqueued by whichever action produces the event (`WaitlistCascadeProcessingProcessor`, triggered by a Booking cancellation freeing a seat). Nothing in Decision 68's text requires a periodic cadence, and a periodic sweep would need its own extra idempotency bookkeeping to avoid re-notifying a already-restricted Student's Schools on every run forever. **Built as event-triggered**: `stripe-webhook-processing`'s dispute handler enqueues a `chargeback-pattern-restriction` check the instant it records a NEW lost dispute (`outcome.lost === true`), mirroring `WaitlistCascadeProcessingProcessor`'s exact shape — a `Processor` only, no `Scheduler`. The check itself (count this Student's lost disputes, compare to the threshold, restrict once) is naturally idempotent per Stripe event via the same `ProcessedStripeEvent` dedup Phase A already relies on upstream.
+
+### Decision — what "restricted to Cash/Bank Transfer" means in THIS codebase, verified against the actual purchase flow before writing the gate
+
+Checked `MembershipsService.purchase()` directly rather than assuming a Student ever chooses a payment method per-purchase: **they don't**. Payment method is fixed per School — `paymentAccount.provider` (`STRIPE` or `CASH`/`BANK_TRANSFER`, one value per School's own `PaymentAccount` row) — never a per-purchase Student choice, and `PurchaseMembershipDto` carries no such field. So "restricted to Cash/Bank Transfer payment methods only" cannot mean "offer the Student a Cash/Bank option instead" (no such per-purchase choice exists to offer); it can only mean **block the purchase outright at any School whose PaymentAccount is Stripe-only**, while leaving purchases at an already-Cash/Bank-provider School untouched (the Student was already paying Cash/Bank there — nothing changes). Built as a single guard inside `purchase()`'s existing `paymentAccount.provider === 'STRIPE'` branch, checking `User.paymentRestrictedAt`.
+
+### What this does NOT resolve
+
+No appeal/reversal mechanism — `paymentRestrictedAt` is set once and never cleared by any code this decision builds; Decision 68's own text describes no un-restriction path, and inventing one would be exactly the "fill the gap with a plausible guess" CLAUDE.md forbids. Same accepted, unclosed loophole Decision 68 itself already names: a Student can still evade this by registering a fresh account, which this decision does not attempt to close either.
+
+### Recorded by
+
+Logged while implementing Phase B directly, 22 Sep 2026, following the user's "Go ahead and start Phase B." All three decisions above are implementation-level closures of an already-`[CONFIRMED]` rule, not new business logic — flagged here per this codebase's own standing discipline rather than silently assumed.

@@ -12,6 +12,7 @@ import { BookingNoShowProcessingProcessor, BookingNoShowProcessingScheduler } fr
 import { WaitlistCascadeProcessingProcessor, WaitlistCascadeProcessingScheduler } from './waitlist-cascade-processing.processor';
 import { NotificationFanoutProcessor } from './notification-fanout.processor';
 import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingScheduler } from './franchise-fee-usage-reporting.processor';
+import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-restriction.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -54,6 +55,15 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
  * financially exposed. No new module import needed for this — QueueModule
  * already registers NOTIFICATION_FANOUT_QUEUE and PaymentsModule already
  * provides StripeClientService, both from the Phase 15/16b-ii wiring above.
+ *
+ * Decision 112 adds ChargebackPatternRestrictionProcessor (Decision 68's own
+ * confirmed job, Decision 111 Phase B) — event-triggered only, no Scheduler
+ * (see that processor's own header comment for why); StripeWebhookProcessingProcessor
+ * now also injects CHARGEBACK_PATTERN_RESTRICTION_QUEUE to enqueue a check the
+ * instant it records a new lost dispute. No new module import needed here either
+ * — QueueModule already registers the new queue (added alongside the others),
+ * and the new processor's own NOTIFICATION_FANOUT_QUEUE injection is covered by
+ * the same QueueModule import already in this module.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -70,6 +80,7 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
     NotificationFanoutProcessor,
     FranchiseFeeUsageReportingProcessor,
     FranchiseFeeUsageReportingScheduler,
+    ChargebackPatternRestrictionProcessor,
   ],
 })
 export class JobsModule {}

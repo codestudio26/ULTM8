@@ -60,15 +60,20 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   is a Student/parent-facing concept, and Track B's own roadmap already names this as
   its own blocked item ("Slice 7 — Guardian-facing screens," blocked on a design pass
   that's never happened). Track A doesn't need to build it; Track B does, later.
-- **Decision 111, Phase A — Stripe dispute handling built end to end.** Decision 55's
-  own confirmed dispute contract (idempotent status-driven webhook processing across
-  `Transaction`/`FranchiseFeeCharge`/`PlatformCharge`, refund/credit-restore frozen
-  while disputed, Membership force-Expiry + Stripe Subscription cancellation on a
-  loss, notification routed by who's financially exposed) was fully modeled in the
-  schema but had zero code behind it until now — surfaced during a deep-dive audit
-  of Track A for anything open, not previously tracked here. Phase B (Decision 68's
-  own `chargeback-pattern-restriction` job) is deliberately deferred — see "What's
-  actually left" below.
+- **Decision 111/112 — Stripe dispute handling AND chargeback-pattern-restriction,
+  both built end to end.** Decision 55's own confirmed dispute contract (idempotent
+  status-driven webhook processing across `Transaction`/`FranchiseFeeCharge`/
+  `PlatformCharge`, refund/credit-restore frozen while disputed, Membership
+  force-Expiry + Stripe Subscription cancellation on a loss, notification routed by
+  who's financially exposed) was fully modeled in the schema but had zero code
+  behind it until Phase A — surfaced during a deep-dive audit of Track A for
+  anything open, not previously tracked here. Phase B then built Decision 68's own
+  `chargeback-pattern-restriction` job on top of it: counts a Student's lost
+  disputes (a new `Transaction.disputeLostAt` signal, closing a real gap —
+  `status = DISPUTED` alone can't distinguish "lost" from "still open"), restricts
+  them to Cash/Bank Transfer payment methods only past the threshold (2), and
+  notifies every School they hold an active STUDENT RoleGrant at. See "Payments —
+  Stripe dispute handling" below for the full account.
 - **A systemic gap not previously called out in this doc**: no tenant/content
   offboarding exists anywhere in the platform. There is no `DELETE` endpoint for
   School, Branch, Class, Timetable, Instructor, Membership, Rank, Waiver, Franchise, or
@@ -102,7 +107,8 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
 | `apps/platform-admin` general tenant-data edit UI | 🅿️ Parked — Decision 105, pending a named use case |
 | `apps/platform-admin` home dashboard | 🅿️ Parked — cosmetic, nothing to summarize yet |
-| Stripe dispute-handling webhook mechanics (Decision 55/111, Phase A) | ✅ DONE — real `charge.dispute.*` handlers, freeze guards, Membership/Subscription force-actions, notification routing. `chargeback-pattern-restriction` (Phase B) deliberately deferred |
+| Stripe dispute-handling webhook mechanics (Decision 55/111, Phase A) | ✅ DONE — real `charge.dispute.*` handlers, freeze guards, Membership/Subscription force-actions, notification routing |
+| `chargeback-pattern-restriction` job (Decision 68/112, Phase B) | ✅ DONE — counts a Student's lost disputes, restricts to Cash/Bank Transfer past the threshold (2), notifies every School they hold an active STUDENT grant at |
 
 ---
 
@@ -209,7 +215,7 @@ doc), so they're named here without a number rather than guessed at.
   directly, per the skill's own "only the Architect may edit this file" rule.
   Merged via PR #74.
 
-## Payments — Stripe dispute handling (Decision 55/111, Phase A) — DONE
+## Payments — Stripe dispute handling + chargeback-pattern-restriction (Decision 55/68/111/112) — DONE
 
 Built end to end during a deep-dive audit of Track A that surfaced this as a
 confirmed-but-unbuilt gap: `charge.dispute.created/updated/closed` was a literal
@@ -217,8 +223,9 @@ no-op in `stripe-webhook-processing.processor.ts` despite `Transaction`/
 `FranchiseFeeCharge`/`PlatformCharge` all already carrying a `DISPUTED` status value
 and a `disputedAmount` column, and Decision 68's own `chargeback-pattern-restriction`
 job (the natural next consumer of a `DISPUTED` outcome) didn't exist at all. Scoped
-and split into two phases (Decision 111): Phase A (this entry, built now) and Phase B
-(deferred — see "What's actually left" below).
+and split into two phases (Decision 111): **Phase A** (the dispute webhook mechanics
+themselves) and **Phase B** (the chargeback-pattern-restriction job) — both now
+built.
 
 - **Correlation** — a new `stripePaymentIntentId` column on `FranchiseFeeCharge`/
   `PlatformCharge` (migration `20261007000000_dispute_handling`; `Transaction`
@@ -244,10 +251,37 @@ and split into two phases (Decision 111): Phase A (this entry, built now) and Ph
   `PlatformCharge` disputes have no real channel (`Notification.userId` only ever
   points at tenant `User`, never `AdminUser`) — a loud log line, not a fabricated
   notification path.
-- Full e2e coverage (in-progress/won/lost across all three entities, the two
-  freeze guards, the "no matching charge" no-op case), `tsc`/`turbo build` clean,
-  no schema/DTO changes beyond the one new column pair, so no OpenAPI regeneration
-  was needed this phase.
+- Phase A: full e2e coverage (in-progress/won/lost across all three entities, the
+  two freeze guards, the "no matching charge" no-op case), `tsc`/`turbo build`
+  clean, no schema/DTO changes beyond the one new column pair, so no OpenAPI
+  regeneration was needed that phase.
+
+**Phase B — `chargeback-pattern-restriction` (Decision 68/112) — DONE:**
+
+- **The real gap Phase B had to close first**: `Transaction.status = DISPUTED` is
+  the terminal state for BOTH a still-open dispute and a permanently lost one —
+  Phase A never needed to tell them apart. Decision 68's own confirmed text says
+  "outcomes... that resolve as lost," which the schema genuinely couldn't answer.
+  Closed with a new `Transaction.disputeLostAt` column, set the instant Phase A's
+  own `resolveDisputeOutcome()` determines a loss, cleared on the rare reversal to
+  `won` — not new business logic, just persisting a fact Phase A already computed
+  in memory but never wrote down.
+- **Event-triggered, not a periodic sweep** — `stripe-webhook-processing`'s dispute
+  handler enqueues a `chargeback-pattern-restriction` check the instant it records
+  a NEW lost dispute, same shape `WaitlistCascadeProcessingProcessor`'s own
+  event-triggered `seat-freed` job already establishes. No `Scheduler` class.
+- **What "restricted to Cash/Bank Transfer" means in this codebase** — verified
+  against the actual purchase flow before writing the gate: a Student never
+  chooses a payment method per-purchase here; it's fixed per School
+  (`PaymentAccount.provider`). So the gate blocks a purchase outright at any
+  Stripe-only School once `User.paymentRestrictedAt` is set, and leaves an
+  already-Cash/Bank School untouched.
+- Threshold set at 2 lost disputes (Decision 111); no un-restriction path exists —
+  Decision 68 names none, so none was invented.
+- Full e2e coverage (below/at/past the threshold, idempotency on a 3rd lost
+  dispute, the purchase gate at both a Stripe-only and a Cash/Bank School),
+  `tsc`/`turbo build` clean. No DTO/OpenAPI-facing changes — the new columns are
+  internal only.
 
 ## `apps/platform-admin` — DONE through Slice 4, Slice 4 unmerged
 
@@ -370,17 +404,14 @@ cover — building it speculatively is exactly what Decision 105 says not to do.
 Still lands directly on Admin Users. Low priority; nothing yet to summarize on a
 landing page until more of the admin surface exists.
 
-### 8. `chargeback-pattern-restriction` job (Decision 68, Decision 111's own Phase B) — scoped, not built
+### 8. ~~`chargeback-pattern-restriction` job~~ — DONE (Decision 68/112, Phase B)
 
-Decision 68's confirmed job: counts a Student's lost disputes across every School
-they hold a RoleGrant at, and past a threshold restricts them to Cash/Bank-only
-purchases across that scope, notifying their current School(s). Genuinely depends
-on Phase A (above) actually recording `DISPUTED` outcomes to count against — that
-dependency is now closed. The threshold itself is set at **2 lost disputes**
-(Decision 111 — a business risk-tolerance call, not an engineering constraint,
-recorded with its own reasoning in the decision log). Needs: the scheduled job
-itself, a new `User.paymentRestrictedAt` field, and the Cash/Bank-only purchase
-gate it drives — none of that is built by Phase A.
+Built: counts a Student's lost disputes (`Transaction.disputeLostAt`), and past
+the confirmed threshold (**2**, Decision 111) restricts them to Cash/Bank Transfer
+purchases only, notifying every School they hold an active STUDENT RoleGrant at.
+Event-triggered off Phase A's own dispute handler, no periodic sweep. See
+"Payments — Stripe dispute handling + chargeback-pattern-restriction" above for
+the full account.
 
 ---
 

@@ -37,10 +37,10 @@ same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Dec
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 54+ phases shipped or in flight, plus Decision 111 Phase A (Stripe dispute handling, this branch). One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. `chargeback-pattern-restriction` (Decision 68/111 Phase B) is scoped and unblocked but not yet built. Guardian consent UI remains the one designed-but-unscreened gap. |
+| **Track A** — backend + school-portal + platform-admin | 54+ phases shipped or in flight, plus Decision 111/112 Phase A + Phase B (Stripe dispute handling + chargeback-pattern-restriction, this branch, both done). One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
-| **Open decisions** | 39+ post-spec decisions logged (Decision 111 added: dispute-handling scope split into Phase A/B, chargeback threshold set at 2 lost disputes), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
+| **Open decisions** | 40+ post-spec decisions logged (Decision 111: dispute-handling scope split into Phase A/B, chargeback threshold set at 2 lost disputes; Decision 112: Phase B's own implementation design, closing the "lost vs. still-open" schema gap and clarifying what the Cash/Bank-only restriction means in this codebase's purchase flow), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
 and infra/deployment are the two biggest remaining bodies of work, and they're
@@ -303,7 +303,9 @@ see Track A item 2 and the "Done" summary in §1 above. Branch's field-level set
 screen (Decision 76) is resolved too, shipped in Phase 53 (merged via PR #74).
 `SubscriptionPlansModule` itself shipped too (Phase 54, merged via PR #75). Decision
 55's own dispute-handling contract — previously modeled in the schema with zero code
-behind it — is built too (Decision 111 Phase A, this branch); see §1's "Done" summary.
+behind it — is built too (Decision 111 Phase A, this branch), and so is Decision 68's
+own `chargeback-pattern-restriction` job (Decision 112 Phase B, this branch); see
+§1's "Done" summary.
 
 ### Real but narrower — worth a decision, doesn't block a whole feature
 - Late-cancellation fee **collection** mechanism unanswered (distinct from the
@@ -322,11 +324,6 @@ behind it — is built too (Decision 111 Phase A, this branch); see §1's "Done"
   accidentally missed.
 - `ultm8-tenant-isolation` SKILL.md hasn't been updated to reflect Decisions 89/92/93/94
   — an Architect documentation task flagged by Decision 94 itself.
-- `chargeback-pattern-restriction` job (Decision 68, Decision 111's own Phase B) —
-  scoped and unblocked now that Phase A records real `DISPUTED` outcomes to count,
-  but not built. Threshold set at 2 lost disputes (Decision 111); still needs the
-  scheduled job itself, a new `User.paymentRestrictedAt` field, and the Cash/Bank-only
-  purchase gate it drives.
 
 ### A tracking gap, not a technical one
 - **Data residency / GDPR & LGPD compliance across markets** — named explicitly in the

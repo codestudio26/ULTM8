@@ -23,7 +23,7 @@ import { randomUUID } from 'crypto';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../src/payments/stripe-client.service';
-import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE } from '../src/jobs/queue.constants';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_JOBS = process.env.DATABASE_URL_JOBS;
@@ -71,11 +71,14 @@ describeIfDb('stripe-webhook-processing job', () => {
       // the event types this describe block exercises ever produce a notification (see
       // the dedicated "charge.dispute.* handling" describe block below for real
       // dispute-notification coverage, with its own fully-controllable fake).
+      //
+      // Decision 112 — same reasoning, now also for CHARGEBACK_PATTERN_RESTRICTION_QUEUE.
       providers: [
         StripeWebhookProcessingProcessor,
         PrismaJobsService,
         StripeClientService,
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
@@ -384,6 +387,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
     platformClient: jest.fn(() => ({ disputes: { retrieve: fakeDisputeRetrieve }, subscriptions: { cancel: fakeSubscriptionCancel } })),
   };
   const fakeNotificationFanoutQueue = { addBulk: jest.fn().mockResolvedValue(undefined) };
+  const fakeChargebackPatternRestrictionQueue = { addBulk: jest.fn().mockResolvedValue(undefined) };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -392,6 +396,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
         PrismaJobsService,
         { provide: StripeClientService, useValue: fakeStripeClient },
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: fakeNotificationFanoutQueue },
+        { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: fakeChargebackPatternRestrictionQueue },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
@@ -404,6 +409,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
     fakeStripeClient.scopedClient.mockClear();
     fakeStripeClient.platformClient.mockClear();
     fakeNotificationFanoutQueue.addBulk.mockClear();
+    fakeChargebackPatternRestrictionQueue.addBulk.mockClear();
   });
 
   afterAll(async () => {
@@ -544,12 +550,19 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
     const updatedTransaction = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
     expect(updatedTransaction.status).toBe('DISPUTED');
     expect(updatedTransaction.disputedAmount).toBe(1000);
+    expect(updatedTransaction.disputeLostAt).not.toBeNull();
 
     const updatedMembership = await superuser.membership.findUniqueOrThrow({ where: { id: membershipId! } });
     expect(updatedMembership.status).toBe('EXPIRED');
 
     expect(fakeStripeClient.scopedClient).toHaveBeenCalledWith(paymentAccount.stripeConnectedAccountId);
     expect(fakeSubscriptionCancel).toHaveBeenCalledWith(stripeSubscriptionId);
+
+    // Decision 112 — a newly-recorded lost dispute enqueues exactly one
+    // chargeback-pattern-restriction check, for this Transaction's own Student.
+    expect(fakeChargebackPatternRestrictionQueue.addBulk).toHaveBeenCalledTimes(1);
+    const checks = fakeChargebackPatternRestrictionQueue.addBulk.mock.calls[0][0] as Array<{ data: { studentId: string } }>;
+    expect(checks.map((c) => c.data.studentId)).toEqual([transaction.studentId]);
   });
 
   it('a won dispute reverts Transaction to SUCCESSFUL with disputedAmount cleared', async () => {
@@ -566,6 +579,10 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
     const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
     expect(updated.status).toBe('SUCCESSFUL');
     expect(updated.disputedAmount).toBeNull();
+    expect(updated.disputeLostAt).toBeNull();
+    // A won outcome never enqueues a chargeback-pattern-restriction check — there's
+    // no new lost dispute to count.
+    expect(fakeChargebackPatternRestrictionQueue.addBulk).not.toHaveBeenCalled();
   });
 
   it('a lost FranchiseFeeCharge dispute sets DISPUTED with no forced consequence, and notifies the Franchise Owner', async () => {
