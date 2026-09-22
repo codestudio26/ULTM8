@@ -861,8 +861,7 @@ per-School white-label branding.
 Several follow-ups are already spawned and tracked outside this doc (visible as task
 chips in the session): the waitlist notification-dispatch backend gap, the
 StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
-gaps, proper multi-School support for the Waivers screen, and a deep-link from
-booking errors to the Waivers screen.
+gaps, and a deep-link from booking errors to the Waivers screen.
 
 **Note on the deep-link follow-up**: checked, not built this pass. `bookings.service.ts`'s
 unsigned-Waiver rejection is a plain `BadRequestException(message)` with no distinct
@@ -891,6 +890,46 @@ identical no-op-on-web problem, meaning the Cancel button did nothing at all on 
 Fixed with the same inline-panel pattern and the new `destructive` Button variant.
 Confirmed with a repo-wide grep afterward: no `Alert.alert` usage remains anywhere in
 `apps/student`.
+
+**Proper multi-School support for the Waivers screen ✅ FIXED (2026-09-22).**
+Previously `useEnrolledSchoolId` resolved to exactly one School (deterministically
+sorted, but still only the first) — a Student enrolled at more than one School (a
+real, confirmed case per SKILL.md §6.1/§8.3) never saw the other Schools' Waivers at
+all. Replaced with `useEnrolledSchoolIds` (`AuthContext.tsx`, the only caller was
+WaiversScreen, so the old singular hook is fully removed, not left dead) returning
+every School the caller holds a STUDENT grant at, deduplicated and sorted.
+
+`WaiversScreen` now fetches every enrolled School's Waivers via a new
+`useAllEnrolledSchoolWaivers` (`waiverQueries.ts`), using react-query's `useQueries`
+— not N individual `useInfiniteQuery` calls, which the Rules of Hooks forbid for a
+dynamic-length list. Each School is fetched as one wide page (`limit: 100`, not
+cursor-paginated) — merging N independently cursor-paginated lists into one
+scrollable view has no clean "next page" meaning, and this mirrors the exact
+precedent `useMyWaiverSignatures` already established for the same reason. Each
+returned Waiver is tagged with its `schoolId` (the response DTO doesn't carry it
+itself, since a single-School fetch has it implied by the path param) so the screen
+can group by School. A School name label (`useEnrolledSchoolNames`) reuses the exact
+`['academy', schoolId]` query key `useAcademy` already uses — confirmed via
+`apps/api/src/academies/academies.service.ts` that `academyId` IS `schoolId`
+(`findOne(schoolId)` looks up the School row directly) — so a name already cached
+from browsing AcademyDetailScreen is free here, and vice versa. The screen only
+shows School headers when there's more than one enrolled School, to avoid a
+pointless single-item grouping for the common case.
+
+The offline-cache persistence allowlist is unaffected: the new `school-waivers-all`
+key was never added to it (Waiver query keys are deliberately excluded, per Phase
+7's own decision above), and `academy` was already allowlisted before this change.
+
+**Verified**: `npx turbo run lint build --filter=@ultm8/student` clean — including
+the `.name` field access on the academy response, which TypeScript would have
+rejected at compile time had it not existed on the generated DTO. Not click-tested
+(same reasoning as this pass's earlier fixes — no mock backend in this checkout);
+traced by hand instead: an empty `schoolIds` array short-circuits before any query
+fires (no wasted requests pre-enrollment); a School that fails to load while others
+succeed doesn't blank the whole screen (same `isError && items.length === 0` gate as
+`PaginatedListScreen`); the Waivers/signatures loading gate is preserved exactly as
+the single-School version had it, so the pre-existing "no false Sign button before
+signature status is known" protection against a 409 still holds.
 
 **Verified**: `npx turbo run lint build --filter=@ultm8/student` clean. **Not**
 click-tested — no mock backend or component-test harness exists in this checkout
