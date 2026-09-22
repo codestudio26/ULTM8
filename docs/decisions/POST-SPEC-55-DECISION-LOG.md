@@ -1130,3 +1130,35 @@ Whether the roster should eventually show more than name/email/enrollment date (
 ### Recorded by
 
 Logged while auditing what's actually built vs. missing across ULTM8's frontend apps, 21 Sep 2026, in the same pass that corrected `CLAUDE.md`'s stale "development has not started" framing and reviewed `track-b-student-app`'s own status.
+
+---
+
+## Decision 115 — Auth flow implemented for real: brand rail, passcode show/hide, success panel, segmented OTP input
+
+**Date:** 22 Sep 2026
+**Status:** Two sub-decisions resolved directly with the user; the rest is a mechanical port of the already-approved mockup direction (`docs/design-mockup-notes.md`), not a new judgment call
+**Resolves:** the auth-flow mockups (Login "Combined" concept, Register, Verify OTP/Forgot/Reset — artifacts linked in `docs/design-mockup-notes.md`) were approved as the working direction but never implemented into `LoginPage.tsx`/`RegisterPage.tsx`/`VerifyOtpPage.tsx`/`ForgotPasscodePage.tsx`/`ResetPasscodePage.tsx` — the pages still only carried the two global tokens (Figtree, accent color) that cascade automatically, not any of the actual layout/pattern work.
+
+### New shared `packages/ui` components (all token-driven, no hardcoded values)
+
+- `PasscodeField` — `TextField`-compatible masked input with a show/hide eye-icon toggle. Applied to every 6-digit passcode entry point (Login, Register's passcode + confirm, Reset's new passcode + confirm), not just Login — the mockup notes only documented it for Login, but it's the same field type/concern everywhere, so this generalizes an already-approved pattern rather than inventing a new one.
+- `SegmentedCodeInput` — 6-box digit input for the OTP/verification `code` field, single-box-per-digit with paste support. **Flagged assumption, not a confirmed value:** `VerifyOtpDto`/`ConfirmPasscodeResetDto` validate `code` as `@Length(4, 8)`, not a fixed length — the real Twilio Verify Service's configured code length isn't in this codebase at all. 6 was chosen as the default (matches this app's own passcode length and Twilio's typical default) after the user was shown this exact gap and chose segmented boxes over the safer plain-text default the mockup notes themselves recommended keeping. If the configured Twilio code length is ever confirmed to not be 6, this needs revisiting — not treated as settled beyond "reasonable default, clearly documented."
+  - **Deep-dive review before commit** (user explicitly asked for one) caught two real interaction bugs in the first pass, both fixed and re-verified live before commit: (1) the original per-box `chars[index] = digit; chars.join('')` update, when a box ahead of the current end was clicked directly (a real mouse-driven path, not just sequential typing), advanced focus to the wrong box — `index + 1` of the *clicked* box rather than the true next empty slot, landing focus on an unrelated, still-empty box while the digit actually appeared elsewhere. Fixed by distinguishing an in-place edit (`index < value.length`, preserves the tail) from typing ahead of the end (always lands at the real next slot, focus follows it). (2) Backspace on an already-filled box silently did nothing in a real, reproducible case — with `maxLength={1}`, the browser places the cursor inside an existing single character ambiguously (before or after it depending on click position), and Backspace has nothing to delete when the cursor lands before it, so no `change` event ever fired. Fixed by handling Backspace explicitly in `onKeyDown` (`preventDefault` + direct state update) instead of relying on native deletion, and added `onFocus={(e) => e.target.select()}` so clicking an already-filled box actually lets the user retype over it (otherwise `maxLength={1}` blocks a keystroke with nothing selected to replace). All four interaction paths — click-ahead, sequential typing, in-place edit, multi-step backspace — were re-verified live via Playwright against the running app after the fix, not just re-read.
+- `SuccessPanel` / `AuthSuccessCard` — the DESIGN.md-documented checkmark/title/subtitle/dismiss pattern, now built. Behavior resolved directly with the user (the mockup notes flagged this as explicitly open, not to be assumed): **auto-advances after 2s, but a dismiss (×) lets the user skip the wait immediately** — not auto-only, not dismiss-only.
+- `Field` gained an optional `labelAction` slot (inline element next to the label, e.g. Login's "Forgot your passcode?" moved from the footer to inline with the Passcode label, per the approved Combined concept) and `.ultm8-field-row`/`.ultm8-details` utility classes (two-column field pairs on Register, a styled collapsible "Optional details" block replacing the unstyled native `<details>`).
+
+### Per-page changes
+
+- **Login** — brand rail (dark slate band: mark + "ULTM8" + tagline) above the card per the approved "Combined" concept; title copy "Log in" → "Welcome back"; passcode field is now `PasscodeField`; "Forgot your passcode?" moved inline; footer now just "New School? Create an account"; on success shows `AuthSuccessCard` ("Successful" / "You are successfully logged in to your account.") instead of redirecting immediately.
+- **Register** — First/Surname and Passcode/Confirm now paired in two-column rows; passcode fields use `PasscodeField`; "Optional details" now visually styled; on success shows `AuthSuccessCard` ("Account created") before continuing to `/verify-otp`, instead of redirecting immediately (previously flagged as an open question in the mockup notes — resolved by the same auto-advance-+-dismissible answer above).
+- **Verify OTP** — `code` field is now `SegmentedCodeInput` (see flagged assumption above). No success panel added here — not shown in the approved mockup for this screen, so not invented.
+- **Forgot passcode** — unchanged; the mockup already matched current code exactly.
+- **Reset passcode** — `code` field is `SegmentedCodeInput`; new/confirm passcode use `PasscodeField`; on success shows `AuthSuccessCard` ("Passcode changed") before continuing to `/login`, instead of redirecting immediately.
+
+### Verification
+
+`tsc --noEmit` clean across `packages/ui` and `apps/school-portal`. Verified live, not just compiled: ran the real stack (local Postgres/Redis/`apps/api`/`apps/school-portal` dev server) and screenshotted every page with real interaction (typed values, passcode-toggle click, full Login submit → success panel → auto-navigate to `/school`, segmented-box typing) via Playwright against `localhost:5173` — not a static mockup render.
+
+### Recorded by
+
+Resolved directly with the user via two explicit questions (success-panel timing; OTP field style) before implementing, per the mockup notes' own repeated "open question, not assumed" flags and this project's standing rule against silently deciding flagged-open design questions. Implemented 22 Sep 2026.

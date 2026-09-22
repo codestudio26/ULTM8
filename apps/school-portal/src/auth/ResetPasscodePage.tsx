@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, TextField } from '@ultm8/ui';
+import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, SegmentedCodeInput, TextField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -13,6 +13,7 @@ export function ResetPasscodePage() {
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [changed, setChanged] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,12 +27,22 @@ export function ResetPasscodePage() {
     setSubmitting(true);
     try {
       await unwrap(apiClient.POST('/v1/auth/reset-password', { body: { phone, code, newPasscode } }));
-      navigate('/login');
+      setChanged(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (changed) {
+    return (
+      <AuthSuccessCard
+        title="Passcode changed"
+        subtitle="Log in with your new 6-digit passcode."
+        onContinue={() => navigate('/login')}
+      />
+    );
   }
 
   return (
@@ -42,11 +53,10 @@ export function ResetPasscodePage() {
           <TextField type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
         <Field label="Verification code" htmlFor="reset-code">
-          <TextField required value={code} onChange={(e) => setCode(e.target.value)} />
+          <SegmentedCodeInput value={code} onChange={setCode} />
         </Field>
         <Field label="New passcode" htmlFor="reset-newPasscode" hint="6 digits">
-          <TextField
-            type="password"
+          <PasscodeField
             inputMode="numeric"
             pattern="\d{6}"
             maxLength={6}
@@ -56,8 +66,7 @@ export function ResetPasscodePage() {
           />
         </Field>
         <Field label="Confirm new passcode" htmlFor="reset-confirmPasscode">
-          <TextField
-            type="password"
+          <PasscodeField
             inputMode="numeric"
             pattern="\d{6}"
             maxLength={6}

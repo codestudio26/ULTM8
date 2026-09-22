@@ -22,8 +22,8 @@ picked, not yet implemented) · `implemented` (in real app code).
 
 ## school-portal — Login flow
 
-**Status:** mockup (Combined concept approved as the working direction, not
-yet implemented in `LoginPage.tsx`)
+**Status:** implemented (22 Sep 2026, Decision 115) — `LoginPage.tsx` now
+matches the approved Combined concept
 
 - Figma nodes: `2301:72` (Login Form) → `2301:1781` (LoginSuccessMessage)
 - Real source: `apps/school-portal/src/auth/LoginPage.tsx`, Decision 72
@@ -35,9 +35,9 @@ yet implemented in `LoginPage.tsx`)
 - **Kept from Figma:** show/hide toggle icon on the passcode field, success
   panel copy ("Successful" / "You are successfully logged in to your
   account." + dismiss ×)
-- **Open question, not assumed:** does the success panel auto-navigate after
-  a delay, or wait for the user to dismiss it? Needs an answer before this
-  becomes real state.
+- **Resolved (was open):** the success panel auto-advances after 2s, and a
+  dismiss (×) lets the user skip the wait — decided directly with the user,
+  see Decision 115.
 - Artifact: https://claude.ai/artifact/5aDC5GJLfShqmA5uEbZ8p1
 
 ## platform-admin — Login
@@ -53,15 +53,15 @@ yet implemented in `LoginPage.tsx`)
 
 ## school-portal — Register flow
 
-**Status:** mockup
+**Status:** implemented (22 Sep 2026, Decision 115)
 
 - Figma nodes: `2301:1431` (registerScreen) → `2301:1670` (success) / `2301:1693` (error)
 - Real source: `apps/school-portal/src/auth/RegisterPage.tsx` (fields match `RegisterDto` exactly per its own header comment)
 - **Excluded:** Remember Me, social signup buttons, "Agree to Martial App's Terms of Use" checkbox — same reasoning as Login
 - **Added despite Figma omitting it:** Date of birth — required on `RegisterDto`, Figma's form is just missing it, not treating it as skippable
-- **Kept:** the real "Optional details" collapsed section (username/gender/nationality/language/currency/address) — not in Figma at all, but real working code
+- **Kept:** the real "Optional details" collapsed section (username/gender/nationality/language/currency/address) — not in Figma at all, but real working code; now visually styled (bordered, custom disclosure marker) instead of an unstyled native `<details>`
 - **Not used:** Figma's generic "Unable to Register Account" error panel — real code shows the actual `ApiError.message` inline instead, which carries more information
-- **Open question, not assumed:** Figma shows a success interstitial before continuing; real code today navigates straight to `/verify-otp` with no pause. Shown as a proposed addition using the new DESIGN.md success-panel pattern, not treated as decided.
+- **Resolved (was open):** registration now pauses on a success panel ("Account created") before continuing to `/verify-otp` — auto-advances after 2s, dismissible early. Same Decision 115 as Login.
 - Artifact: https://claude.ai/artifact/28pd49EhjuZLW986cevJ9u
 
 ## school-portal — Instructors & Branches
@@ -77,7 +77,7 @@ yet implemented in `LoginPage.tsx`)
 
 ## school-portal — Verify OTP (register's second step) & Forgot/Reset passcode
 
-**Status:** mockup
+**Status:** implemented (22 Sep 2026, Decision 115)
 
 - **Flow-structure correction, not just a style one:** Figma implies a 3-step
   reset (forgot → separate OTP screen → new-password-only screen), but real
@@ -93,12 +93,18 @@ yet implemented in `LoginPage.tsx`)
 - **Kept:** real "Resend code" button + "Code resent." success banner (not
   in Figma at all); phone field left editable in the OTP-verify screen
   (Figma shows it as static text)
-- **Flagged, not assumed:** the real `code` field has no length constraint
-  in code — Figma shows 4 digit boxes, but that count isn't confirmed
-  anywhere. Shown as a labeled alternative, not the default.
-- **Open question, not assumed:** same success-panel-vs-immediate-redirect
-  question as Login/Register — real code navigates straight to `/login`
-  today with no pause.
+- **Resolved (was flagged, not assumed):** the real `code` field has no
+  length constraint in code (`@Length(4, 8)` on both `VerifyOtpDto` and
+  `ConfirmPasscodeResetDto`) — the user was shown this exact gap and chose
+  the 6-box segmented input over the safer plain-text default anyway; 6 is
+  a documented assumption (matches the app's own passcode length + Twilio's
+  typical default), not a confirmed value — see Decision 115. Both
+  Verify-OTP's and Reset's `code` fields now use `SegmentedCodeInput`.
+- **Resolved (was open):** Reset passcode now pauses on a success panel
+  ("Passcode changed") before continuing to `/login`, same auto-advance-+-
+  dismissible behavior as Login/Register. Verify OTP intentionally did
+  **not** get a success panel — none was shown in the approved mockup for
+  this screen.
 - Artifact: https://claude.ai/artifact/CTTu5AcXMdb7tZ7ETPVV4Y
 
 **Auth flow is now fully covered** (Login, Register, Verify OTP, Forgot/Reset passcode) across the three artifacts above.

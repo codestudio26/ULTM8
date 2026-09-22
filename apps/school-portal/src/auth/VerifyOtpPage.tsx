@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, SuccessBanner, TextField } from '@ultm8/ui';
+import { AuthCard, Button, ErrorBanner, Field, SegmentedCodeInput, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -47,7 +47,7 @@ export function VerifyOtpPage() {
           <TextField type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
         <Field label="Verification code" htmlFor="verify-code">
-          <TextField required value={code} onChange={(e) => setCode(e.target.value)} />
+          <SegmentedCodeInput value={code} onChange={setCode} autoFocus />
         </Field>
         <Button type="submit" fullWidth loading={submitting}>
           Verify
