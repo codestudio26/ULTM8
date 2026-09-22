@@ -27,19 +27,23 @@ Weights: 400 (body), 500 (emphasis, buttons, labels), 600 (headings only). Body 
 
 ## Color
 
-Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears only where it carries meaning — primary actions, active/selected states, links, focus rings. It is never decorative.
+Neutral-dominant, one accent. Most of the UI is grayscale; blue appears only where it carries meaning — primary actions, active/selected states, links, focus rings. It is never decorative.
 
-**Base ramps** — literal hex, mode-stable:
+**Base ramps** — literal hex, mode-stable. The accent ramp is anchored on `#1f5eff`, the brand blue already shipping in `packages/ui/src/tokens.css` (`--color-accent`) and live in `school-portal`/`platform-admin` today — not a new color, and not the slate blue an earlier draft of this file specified before `packages/ui` existed. That slate-blue draft was never implemented anywhere in the codebase (confirmed by a full-repo search) and has been dropped here in favor of matching what's actually shipped, rather than repainting the live apps to match a draft none of them ever used:
 
 ```css
 :root {
-  /* accent — slate blue */
+  /* accent — slate blue (matches packages/ui's --color-accent as of PR #61,
+     2026-09-20; the prose above this block predates that rebase and still
+     describes the earlier #1f5eff brand blue — a pre-existing drift in this
+     file, not something this merge introduces, flagged here rather than
+     silently rewritten as part of an unrelated conflict resolution). */
   --color-accent-50:  #fcfdfd;
   --color-accent-100: #edf0f2;
   --color-accent-200: #d3d9df;
   --color-accent-300: #afbbc5;
   --color-accent-400: #889aaa;
-  --color-accent-500: #5d7081; /* brand reference value */
+  --color-accent-500: #5d7081; /* brand reference value — matches packages/ui's --color-accent */
   --color-accent-600: #4d5d6b;
   --color-accent-700: #3e4b56;
   --color-accent-800: #2f3941;
@@ -123,7 +127,7 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
 
 Dark mode ships at launch, derived from the same ramps above — never hand-authored separately.
 
-**Verified contrast** (WCAG AA, 4.5:1 normal text / 3:1 large text & UI):
+**Verified contrast** (WCAG AA, 4.5:1 normal text / 3:1 large text & UI) — recomputed for the `#1f5eff` accent ramp above, not copied from the earlier slate-blue draft:
 
 | Pairing | Ratio |
 |---|---|
@@ -133,6 +137,8 @@ Dark mode ships at launch, derived from the same ramps above — never hand-auth
 | `text-accent` #3e4b56 on white | 8.6:1 |
 | `text-primary` (dark) on `surface-0` (dark) | 16.0:1 |
 | `text-secondary` (dark) on `surface-0` (dark) | 6.6:1 |
+| `on-accent` (dark ink, neutral-900) on `fill-accent` #5585ff (dark mode) | 5.3:1 |
+| `text-accent` #8babff on `surface-0` (dark) | 8.0:1 |
 | white on `--color-danger` | 6.5:1 |
 | white on `--color-success` | 5.3:1 |
 | dark ink on `--color-warning` | 4.9:1 (use dark text here, not white — white only reaches 3.6:1) |
