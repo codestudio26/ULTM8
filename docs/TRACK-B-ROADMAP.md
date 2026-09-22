@@ -882,10 +882,15 @@ it renders identically on every platform. BASELINE's panel additionally requires
 explicit tap-to-acknowledge ("I understand this deactivates the account") before its
 Confirm button enables; CAMERA's panel only needs the one warning read + tap, matching
 its narrower, non-account-affecting effect. Added a `destructive` variant to the
-shared `Button` component (`components/ui.tsx`) for the confirm action's styling —
-usable elsewhere later (e.g. MyBookingsScreen's own `Alert.alert`-based cancel flow
-has the identical no-op-on-web problem, not fixed here — out of scope for this
-specifically-flagged BASELINE follow-up, spawned as its own follow-up instead).
+shared `Button` component (`components/ui.tsx`) for the confirm action's styling.
+
+**MyBookingsScreen's cancel flow ✅ ALSO FIXED (2026-09-22), same pass.** Unlike
+ConsentTierRow (a pending-approval candidate screen), this one is already-shipped V1
+functionality — its `Alert.alert`-based "Cancel booking?" confirmation had the
+identical no-op-on-web problem, meaning the Cancel button did nothing at all on web.
+Fixed with the same inline-panel pattern and the new `destructive` Button variant.
+Confirmed with a repo-wide grep afterward: no `Alert.alert` usage remains anywhere in
+`apps/student`.
 
 **Verified**: `npx turbo run lint build --filter=@ultm8/student` clean. **Not**
 click-tested — no mock backend or component-test harness exists in this checkout
