@@ -1213,3 +1213,24 @@ Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 1
 ### Recorded by
 
 Logged after the user asked to "update the rest of the pages too" following the auth-flow pass (Decision 115); five parallel research agents audited the remaining pages against their approved mockups, findings synthesized and implemented directly, 22 Sep 2026.
+
+---
+
+## Decision 117 — Social/OAuth login is a confirmed V2 scope item, not excluded permanently
+
+**Date:** 22 Sep 2026
+**Status:** Approved by product owner — a scoping/roadmap decision, not a technical one
+**Resolves:** why Login's real code (and every other auth screen) has no Google/Facebook/Apple/Microsoft/Discord sign-in buttons even though the Figma reference shows them — flagged and excluded during the mockup-review pass and again when implementing Decision 115, on the grounds that no OAuth/social provider is confirmed anywhere in the spec (Decision 72: passcode is the *sole* login credential) and building it would mean inventing a whole auth capability, not a style choice.
+
+### Decision
+
+Social/OAuth login (sign in via Google, Facebook, Apple, Microsoft, Discord, or similar) is confirmed as **planned for ULTM8 V2** — a real, intended feature, not a permanently rejected one. It is explicitly **out of scope for the current build**. Nothing about V1's passcode-only login model (Decision 72) changes as a result of this — V1 ships and stays email/phone + 6-digit passcode only, per Decision 72, with no OAuth path.
+
+### Effect
+
+- No code change from this decision alone — it confirms the *reasoning* already applied when the social-login buttons were excluded from `LoginPage.tsx`/`RegisterPage.tsx` (Decision 115) was correct, and converts "not confirmed, so excluded" into "confirmed as deferred, so excluded — with a known target version."
+- When V2 auth work actually starts, this needs its own real design/engineering pass, not a Figma-icon copy: which provider(s) specifically, how a socially-authenticated account reconciles with the existing email/phone + passcode identity model (a returning user signing in via Google needs to map to the same `User` row as their existing email-based account, not create a duplicate), and how/whether `AuthContext.tsx`'s current `login(email, passcode)`-only shape extends to support it. None of that is decided here — this decision only confirms the feature is planned and gives it a target version, not a design.
+
+### Recorded by
+
+Stated directly by the user in response to being asked why social-login icons don't appear on the real Login page, 22 Sep 2026.
