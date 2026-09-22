@@ -13,6 +13,15 @@ export class InstructorResponseDto {
   @ApiProperty()
   userId!: string;
 
+  /** Resolved via PrismaAuthService (see resolveUserNames.ts) — not a raw Instructor
+   * column. Added so the Instructors list and any picker built on it can show a real
+   * name instead of a truncated userId or the beltRanking text standing in for one. */
+  @ApiProperty()
+  firstName!: string;
+
+  @ApiProperty()
+  surname!: string;
+
   @ApiProperty()
   schoolId!: string;
 

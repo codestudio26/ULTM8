@@ -50,6 +50,17 @@ export function ClassesPage() {
                 // otherwise collide on the same key.
                 render: (c) => c.activities.map((a, i) => <Badge key={`${a}-${i}`}>{a}</Badge>),
               },
+              {
+                key: 'instructor',
+                header: 'Instructor',
+                render: (c) => {
+                  // Class.instructorId is a direct FK into User (schema.prisma's own
+                  // comment: "NOT a separate Instructor table"), so the match is on
+                  // instructor.userId, not instructor.id.
+                  const instructor = instructors.find((i) => i.userId === c.instructorId);
+                  return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—';
+                },
+              },
               { key: 'start', header: 'Starts', render: (c) => new Date(c.startDate).toLocaleString() },
               { key: 'end', header: 'Ends', render: (c) => new Date(c.endDate).toLocaleString() },
               { key: 'capacity', header: 'Capacity', render: (c) => c.capacity ?? 'Unlimited' },

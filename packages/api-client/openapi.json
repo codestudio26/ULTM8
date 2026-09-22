@@ -7914,6 +7914,12 @@
           "userId": {
             "type": "string"
           },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
           "schoolId": {
             "type": "string"
           },
@@ -7957,6 +7963,8 @@
         "required": [
           "id",
           "userId",
+          "firstName",
+          "surname",
           "schoolId",
           "specializations",
           "createdAt",

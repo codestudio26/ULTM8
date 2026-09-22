@@ -2487,6 +2487,8 @@ export interface components {
         InstructorResponseDto: {
             id: string;
             userId: string;
+            firstName: string;
+            surname: string;
             schoolId: string;
             branchId?: string | null;
             photoUrl?: string | null;

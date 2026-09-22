@@ -486,6 +486,31 @@
   line-height: 1.5;
 }
 
+/* Card sub-title (e.g. a lookup result's own name inside a Card) and the
+   definition-list layout used to show a looked-up entity's fields. */
+.ultm8-subcard-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-4);
+  color: var(--text-primary);
+}
+.ultm8-info-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-6);
+}
+.ultm8-info-grid dt,
+.ultm8-info-grid dd {
+  font-size: var(--font-size-footnote);
+  margin: 0;
+}
+.ultm8-info-grid dt {
+  color: var(--text-secondary);
+}
+.ultm8-info-grid dd {
+  color: var(--text-primary);
+}
+
 /* Collapsed "Optional details" section (Register) */
 .ultm8-details {
   border: 1px solid var(--border);

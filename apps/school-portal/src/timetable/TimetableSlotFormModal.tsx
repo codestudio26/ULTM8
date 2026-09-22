@@ -213,7 +213,7 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: 'Unassigned' },
-              ...instructors.map((i) => ({ value: i.userId, label: i.beltRanking ?? `Instructor ${i.userId.slice(0, 8)}` })),
+              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
             ]}
           />
         </Field>

@@ -66,7 +66,8 @@ matches the approved Combined concept
 
 ## school-portal — Instructors & Branches
 
-**Status:** mockup
+**Status:** implemented (22 Sep 2026, Decision 116) — Instructors' real name gap
+closed; Branches confirmed already matching, no changes needed
 
 - Instructors — Figma: `" instructorList"` (`2380:640`); Real: `InstructorResponseDto`
   - **Excluded:** progress-bar "Ranking" (real `beltRanking` is plain text, not a progress metric), "Active" status badge (no such field), date-range picker (endpoint takes no date params), a Name column (DTO has no name field — real code doesn't render one either, confirmed real gap)
@@ -111,7 +112,8 @@ matches the approved Combined concept
 
 ## school-portal — Timetable
 
-**Status:** mockup
+**Status:** implemented (confirmed 22 Sep 2026, Decision 116) — already matched
+the approved mockup exactly, no changes needed
 
 - Figma: "timeTableList" (`2389:3922`); Real: `TimetableSlotResponseDto`, `TimetablePage.tsx`
 - **Figma's list screen doesn't match this resource at all** — it's the same unadapted generic-list template as Instructors (same dummy row, date-range picker, numbered pagination), with "Start Date"/"End Date" columns that describe *Classes*, not Timetable. Real code's own comment is explicit that Timetable (recurring `weekday` + `startTime`/`endTime`) and Classes (dated `startDate`/`endDate`) are deliberately separate resources — using Figma's columns here would blur that distinction.
@@ -120,7 +122,10 @@ matches the approved Combined concept
 
 ## school-portal — Staff
 
-**Status:** mockup
+**Status:** implemented (confirmed 22 Sep 2026, Decision 116) — resolved-name
+display and exact email/phone invite lookup (Decisions 110/112) already exceed
+this mockup's own simpler bare-User-ID invite form; one minor flagged gap
+(card-heading style) deliberately not fixed in isolation, see Decision 116
 
 - No Figma screen exists for this page at all (checked the whole file)
 - **Hard constraint from the code itself:** no "list all staff at my School" endpoint exists — `roleGrantQueries.ts`'s own comment confirms it. Only real capabilities: invite a known User ID as Instructor/Branch Staff, and look up/revoke one known user's grants at a time. A staff directory/roster view would need new backend work, not a UI change.
@@ -130,7 +135,8 @@ matches the approved Combined concept
 
 ## school-portal — Disciplines, Skills & Ranks
 
-**Status:** mockup
+**Status:** implemented (22 Sep 2026, Decision 116) — Ranks' colour column now
+renders a real swatch; Disciplines list and Skills table already matched
 
 - No Figma screen exists for this page either — "Ranks"/"Belt" only appear as small nested labels inside unrelated screens (e.g. the Instructor list's progress-bar column, already flagged as not matching real data)
 - Built entirely from `DisciplineResponseDto`, `SkillResponseDto`, `RankResponseDto`
@@ -141,7 +147,9 @@ matches the approved Combined concept
 
 ## school-portal — Classes & Class detail
 
-**Status:** mockup
+**Status:** implemented (22 Sep 2026, Decision 116) — Classes list gained a
+real Instructor column; Class Detail already had real Bookings/Waitlist name
+resolution (Decision 113)
 
 - Figma: "classesList" (`2389:4491`); Real: `ClassResponseDto`, `BookingResponseDto`, `WaitlistEntryResponseDto`
 - **"Fees: $300.00" column → removed.** `ClassResponseDto` has no price field at all — a Class isn't sold directly, access comes through Membership Plans. This is the opposite direction of the Timetable finding: here Figma invents a field the DTO doesn't have.
@@ -153,7 +161,8 @@ matches the approved Combined concept
 
 ## school-portal — Membership Plans
 
-**Status:** mockup
+**Status:** implemented (confirmed 22 Sep 2026, Decision 116) — already
+matched the approved mockup exactly, no changes needed
 
 - Figma: "membershipList" (`2406:5604`); Real: `MembershipPlanResponseDto`, `MembershipPlansPage.tsx`
 - **Type labels kept exact** to the 5 real enum values — Figma's "Subscriptions"/"Single Passes"/"Trial Memberships" don't map cleanly onto them
@@ -164,7 +173,11 @@ matches the approved Combined concept
 
 ## school-portal — Transactions
 
-**Status:** partially implemented — Student-name fix is real, rest is still mockup-only
+**Status:** implemented (confirmed 22 Sep 2026, Decision 116) — Student-name
+fix was already real (Decision 109); the mockup's remaining "unimplemented"
+items (balance-widget cards, Download action) were always meant to be
+*excluded*, and real code already excludes them — the page is fully aligned,
+not partial
 
 - Figma: "transactionsHistory"; Real: `TransactionResponseDto`, `TransactionsPage.tsx`
 - **Note:** Figma's MCP tool call limit was hit partway through this page — built from the structural text already cached locally (column labels) plus the real code, not a fresh screenshot. Remaining pages below have the same limitation until it resets.
@@ -178,11 +191,12 @@ matches the approved Combined concept
 - The mockup's Student-name correction (see the "Audit — same 'no name field' mistake" entry above) has been built into the actual app, not just the preview. `TransactionsService.findAllForSchool` now joins `Transaction.student` and `TransactionResponseDto` carries `studentFirstName`/`studentSurname`; `TransactionsPage.tsx` renders the resolved name, falling back to the truncated id only if both are empty. See **Decision 109** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) for the full reasoning, RLS trace, and what's explicitly still out of scope (the identical gap in `ClassDetailPage.tsx`/`InstructorFormModal.tsx`/`StaffPage.tsx`).
 - Regenerated `packages/api-client/openapi.json`/`schema.d.ts` from the live Swagger output to pick up the new fields — diffed to confirm only the two expected fields changed.
 - Added an assertion to `apps/api/test/memberships.e2e-spec.ts`'s existing Transactions-list test, extending rather than duplicating it. **Not run in this environment** — no reachable Postgres (confirmed: no `DATABASE_URL*` set, `pg_isready` unreachable) — verified instead via `tsc --noEmit` across `apps/api`, `packages/api-client`, and `apps/school-portal` (all clean). Needs `npm run test:e2e -- memberships.e2e-spec` against a real database before this is fully proven, not just compiled.
-- Everything else on this page (balance-widget cards, Download action, date/pagination) is still mockup-only — not implemented.
+- Everything else on this page (balance-widget cards, Download action, date/pagination) was always meant to be excluded, not built — confirmed 22 Sep 2026 (Decision 116) that real code already excludes all of it, so nothing further was needed. One unrelated cosmetic note surfaced by that audit: the Failed/Disputed badge colors are inverted between this mockup and real `paymentStatusBadge.tsx` — not changed, since neither was ever confirmed as the deliberate choice.
 
 ## school-portal — Waivers
 
-**Status:** mockup
+**Status:** implemented (confirmed 22 Sep 2026, Decision 116) — already
+matched the approved mockup exactly, no changes needed
 
 - No Figma screen exists for Waiver management — "Liability waivers" only appears as a small checkbox label elsewhere, and a "Severability and Waiver" legal clause on an unrelated Terms page (naming coincidence, not the same concept)
 - Built entirely from `WaiverResponseDto` — pure styling pass, 80-char body preview matches the real code's own `bodyPreview()` convention
@@ -190,7 +204,9 @@ matches the approved Combined concept
 
 ## school-portal — Franchises & Franchise detail
 
-**Status:** mockup
+**Status:** implemented (confirmed 22 Sep 2026, Decision 116) — already
+matched the approved mockup exactly; `mobileNumber` stays unrendered on the
+list, still a proposed-not-decided addition, not added
 
 - Figma: "franchiseList" (`2337:9161`); Real: `FranchiseResponseDto`, `FranchiseDetailPage.tsx`
 - **"Status: Active" → removed** (no status field on the DTO)
@@ -200,7 +216,8 @@ matches the approved Combined concept
 
 ## school-portal — Notifications
 
-**Status:** mockup
+**Status:** implemented (confirmed 22 Sep 2026, Decision 116) — already
+matched the approved mockup exactly, no changes needed
 
 - No Figma screen matches an in-app notification inbox — the only nearby match is an unrelated "Email notifications" settings/preferences screen (toggles, not a message list), not used
 - Built entirely from `NotificationResponseDto` — pure styling pass, list + mark-read only (no device-token registration UI, out of scope per the real code's own comment)
@@ -208,7 +225,11 @@ matches the approved Combined concept
 
 ## platform-admin — Admin Users, School lookup, Franchise lookup
 
-**Status:** mockup
+**Status:** implemented (22 Sep 2026, Decision 116) — Admin Users already
+matched exactly; School/Franchise lookup gained token-driven spacing/subtitle
+styling in place of hardcoded pixel values. Not live-verified in a browser —
+this sandbox has no AWS Cognito configured, which platform-admin's real login
+requires — verified via type-check and code review only
 
 - **Confirmed zero Figma coverage for this app.** The whole Figma file has exactly one top-level page, literally named "School Portal" — there is no platform-admin content in it at all.
 - Built entirely from real code: `AdminUsersPage.tsx` (populated by default, Full-Admin-only), `SchoolLookupPage.tsx` / `FranchiseLookupPage.tsx` (lookup-gated, empty by default, shown here post-search)
@@ -231,7 +252,9 @@ matches the approved Combined concept
 
 ## school-portal — Instructors (full-page "look replica")
 
-**Status:** mockup
+**Status:** implemented (22 Sep 2026, Decision 116) — see the final column
+order/name-resolution notes below; superseded by the earlier "Instructors &
+Branches" section's status line, kept here as the historical revision record
 
 - Source: PDF export of the same Figma "instructorList" screen already reviewed — no new information, same analysis applied
 - User asked for a 100%-look replica (full shell, header bar, pagination component, etc.), with the explicit constraint: don't fabricate data that doesn't apply

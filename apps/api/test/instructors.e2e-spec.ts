@@ -251,6 +251,56 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // GET .../instructors (the roster list) resolves a real name per profile — and
+  // keeps resolving it even after the profiled User's own RoleGrant is revoked,
+  // proving this uses PrismaAuthService (Decision 113's pattern), not a plain
+  // RLS-scoped `include` that user_self_or_shared_school could silently break.
+  // ---------------------------------------------------------------------------
+
+  it('roster list resolves a real name per profile, and keeps resolving it after the RoleGrant is revoked', async () => {
+    const nameUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-name-resolution-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'NameResolution',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const nameGrant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'INSTRUCTOR', userId: nameUser.id, schoolId: schoolA.id },
+    });
+
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(profileBody(nameUser.id));
+    expect(createRes.status).toBe(201);
+    instructorIds.push(createRes.body.id);
+
+    async function fetchProfile() {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolA.id}/instructors`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(res.status).toBe(200);
+      return res.body.items.find((i: { id: string }) => i.id === createRes.body.id);
+    }
+
+    const before = await fetchProfile();
+    expect(before.firstName).toBe('NameResolution');
+    expect(before.surname).toBe('Tenant');
+
+    await superuser.roleGrant.update({ where: { id: nameGrant.id }, data: { revokedAt: new Date() } });
+
+    const after = await fetchProfile();
+    expect(after.firstName).toBe('NameResolution');
+    expect(after.surname).toBe('Tenant');
+  });
+
+  // ---------------------------------------------------------------------------
   // The RoleGrant-gate piece, novel to this module: a profile can only be created
   // for a userId that already holds an active INSTRUCTOR RoleGrant matching scope.
   // ---------------------------------------------------------------------------

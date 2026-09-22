@@ -31,7 +31,7 @@ export function SchoolLookupPage() {
     <>
       <PageHeader title="Look up a School" subtitle="Cross-tenant read, audited on every successful lookup." />
       <Card>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
           <Field label="School ID" htmlFor="school-id-input">
             <TextField id="school-id-input" required value={idInput} onChange={(e) => setIdInput(e.target.value)} />
           </Field>
@@ -55,8 +55,8 @@ export function SchoolLookupPage() {
           ) : null}
           {school.data ? (
             <Card>
-              <h3 style={{ marginTop: 0 }}>{school.data.name}</h3>
-              <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 16px' }}>
+              <p className="ultm8-subcard-title">{school.data.name}</p>
+              <dl className="ultm8-info-grid">
                 <dt>Franchise</dt>
                 <dd>{school.data.franchiseId ?? <em>Independent — no Franchise</em>}</dd>
                 <dt>Address</dt>
@@ -81,7 +81,7 @@ export function SchoolLookupPage() {
               show a confusing "no payment account" message underneath it. */}
           {school.data ? (
             <Card>
-              <h3 style={{ marginTop: 0 }}>Payment account</h3>
+              <p className="ultm8-subcard-title">Payment account</p>
               {paymentAccount.isLoading ? <Spinner /> : null}
               {paymentAccount.error instanceof ApiError && paymentAccount.error.status === 404 ? (
                 <p>No payment account configured for this School.</p>

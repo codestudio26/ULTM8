@@ -1162,3 +1162,54 @@ Logged while auditing what's actually built vs. missing across ULTM8's frontend 
 ### Recorded by
 
 Resolved directly with the user via two explicit questions (success-panel timing; OTP field style) before implementing, per the mockup notes' own repeated "open question, not assumed" flags and this project's standing rule against silently deciding flagged-open design questions. Implemented 22 Sep 2026.
+
+---
+
+## Decision 116 — Remaining 13 mockups audited against real code; Instructor name-resolution gap closed
+
+**Date:** 22 Sep 2026
+**Status:** Developer-level inference (the new `InstructorResponseDto.firstName`/`surname` fields, same pattern as Decision 113), flagged for Architect confirmation like every other same-shape fix this session — everything else in this entry is a mechanical audit result, not a judgment call
+
+**Resolves:** the user asked to "update the rest of the pages too" after the auth-flow pass (Decision 115) — the remaining 13 pages flagged `mockup` in `docs/design-mockup-notes.md` (Instructors, Staff, Branches, Timetable, Classes & detail, Disciplines/Skills/Ranks, Membership Plans, Transactions, Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users/School lookup/Franchise lookup).
+
+### Approach
+
+Five parallel research passes (one per page group) compared each page's current real code against its already-approved mockup artifact, rather than re-deriving design decisions already made during the earlier mockup-review phase. Finding: **most pages already matched their mockups exactly** — the content/field decisions made during that phase were already real. Only four concrete gaps existed:
+
+### 1. Instructors list — missing Id/avatar/Name columns, traced to a real backend gap
+
+`InstructorResponseDto` had no name field at all — verified, not guessed: `Class.instructorId`/`TimetableSlot.instructorId` are direct FKs into `User` (schema.prisma's own comment: "NOT a separate Instructor table"), and `ClassFormModal`'s/`TimetableSlotFormModal`'s instructor pickers were falling back to `beltRanking` text or a truncated id because there was nothing else to show. Fixed the same way Decision 113 fixed the identical class of gap for Bookings/Waitlist/RoleGrant/Transactions: `InstructorsService.findAllForSchool` now resolves `firstName`/`surname` via `resolveUserNames`/`PrismaAuthService`, added to `InstructorResponseDto`. This single backend fix unlocked three frontend fixes at once (all three already reuse the same `useInstructors` hook):
+- `InstructorsPage.tsx` — reordered to the Figma-confirmed column order (Id · avatar · Name · Ranking · Specializations · Experience · Phone · Branch · Actions), added a generic silhouette avatar placeholder (`photoUrl` is real/nullable but no upload UI exists anywhere yet, so an icon-for-no-photo is honest, not a fabricated photo).
+- `ClassFormModal.tsx`/`TimetableSlotFormModal.tsx` — instructor-picker dropdown now labeled by real name instead of belt/ranking text or a truncated id.
+- `ClassesPage.tsx` — added an Instructor column (matched on `instructor.userId === class.instructorId`, the same FK target), showing the resolved name.
+
+Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedicated Instructor profile, confirms the roster list resolves its name, then revokes its RoleGrant and confirms the name **still** resolves — proving this uses the RLS-immune `PrismaAuthService` path, not a plain `include` that Decision 113 already found breaks under exactly that condition.
+
+### 2. Disciplines — Ranks table showed colour as plain text, not a swatch
+
+`RankResponseDto.primaryColour`/`secondaryColour` are real structured fields (unlike Instructors' plain-text `beltRanking`), so a visual swatch reflects real data. `DisciplineDetailPage.tsx`'s Colour column now renders a colored dot + the text value. Note: the field is free text (`RankFormModal`'s own input is a plain `TextField`, not a color picker), not guaranteed to be a valid CSS color — handled safely by construction, since an invalid CSS `background` value is silently ignored by the browser rather than erroring.
+
+### 3. platform-admin School/Franchise lookup — hardcoded pixel spacing, not design tokens
+
+`SchoolLookupPage.tsx`/`FranchiseLookupPage.tsx` used inline `style={{gap: '4px 16px'}}`-style hardcoded values instead of this app's own spacing/typography tokens (both pages already inherit `@ultm8/ui`'s tokens/components automatically — confirmed, not assumed, via `main.tsx`'s `import '@ultm8/ui'` and a zero-result glob for any local CSS in this app). Added two small shared classes, `.ultm8-subcard-title`/`.ultm8-info-grid`, to `packages/ui/src/components.css`, applied to both pages' entity-detail cards. Not live-verified in the browser — this sandbox has no AWS Cognito configuration, and platform-admin's real login flow requires it — verified via `tsc --noEmit` and code review only; flagged explicitly rather than silently claimed as visually confirmed.
+
+### 4. Everything else — confirmed already matching, nothing changed
+
+Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 113), Branches, Membership Plans, Transactions (its remaining "unimplemented" items were mockup items meant to be *excluded*, already correctly absent from real code), Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users page all already matched their mockups exactly — re-confirmed by direct comparison, not assumed unchanged.
+
+### What this does NOT resolve (explicitly flagged, not decided here)
+
+- **Transactions' Failed/Disputed badge colors** are inverted between the mockup (Failed=red/danger, Disputed=blue/accent) and real code (`paymentStatusBadge.tsx`: Disputed=red/danger, Failed=blue/accent). Cosmetic only, not a data/structure gap, and no record anywhere of which was an intentional choice — left as-is rather than silently "fixed" against a reference that was never confirmed authoritative on this specific point.
+- **Franchises' `mobileNumber` column** stays unrendered on the list (already wired into `FranchiseFormModal`, just not shown as a column) — the mockup itself flags this as a proposed addition, not a decided one, same category as Instructors' `photoUrl`. Not added.
+- **StaffPage's card-section headings** use an inline-style hack (`className="ultm8-page-header__title" style={{fontSize: 18}}`) instead of a dedicated class — flagged by the audit, but NOT changed: the identical pattern is the established convention in `ClassDetailPage.tsx`/`TimetablePage.tsx`/`DisciplineDetailPage.tsx` too, so fixing it only on Staff would make that one page inconsistent with the other three rather than more consistent. A real fix here would mean introducing `.ultm8-subcard-title`-style tokens app-wide across all four pages at once — a separate, bigger decision, not bundled into this pass.
+- **Instructor rank/grading-system link** (V1 manual dropdown vs. V2 grading-system link) — Decision 108's own scope, unaffected by this pass.
+
+### Verification
+
+`tsc --noEmit` clean across `apps/api`, `packages/ui`, `packages/api-client`, `apps/school-portal`, `apps/platform-admin`. `export:openapi` → `generate` diffed to confirm only the two new `InstructorResponseDto` fields changed. Live-verified against the running app (real Postgres/Redis/`apps/api`/`apps/school-portal`, Playwright against `localhost:5173`): Instructors list shows a real resolved name, Classes list shows a real resolved Instructor, Ranks table renders a real colour swatch. platform-admin's two changed pages verified by type-check and code review only (Cognito unavailable in this sandbox, noted above).
+
+**`apps/api/test/instructors.e2e-spec.ts` was actually run against a real Postgres in this sandbox, not just compiled** — unlike most other decisions in this file, which could only claim `tsc --noEmit` and flag e2e execution as needing CI (no reachable database in earlier sessions). All 16 cases passed, including the new regression test, confirming the name-resolution fix holds against real RLS, not just against the type system. One environmental note worth recording: the first run attempt hung for ~43 minutes with the process pinned near-idle (only ~42s of real CPU time) because this sandbox's Postgres was killed by a container reset mid-run, and the Prisma client hung indefinitely retrying a dead connection instead of failing fast — not a code or test bug. Confirmed via `pg_isready`/`psql` returning "connection refused" mid-hang, killed the stuck process, restarted Postgres (data persisted — the same ephemerality/persistence pattern already documented elsewhere this session), and reran clean in 11.4s.
+
+### Recorded by
+
+Logged after the user asked to "update the rest of the pages too" following the auth-flow pass (Decision 115); five parallel research agents audited the remaining pages against their approved mockups, findings synthesized and implemented directly, 22 Sep 2026.
