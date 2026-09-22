@@ -51,7 +51,20 @@ services:
     # (+ root tooling) instead — still anchored at repo root, not `rootDir`,
     # to avoid any ambiguity about npm's workspace-root detection when
     # invoked from within a subdirectory.
-    buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
+    #
+    # `prisma migrate deploy` runs here, as part of the build, rather than
+    # "manually after first deploy" as this file originally said — the
+    # coding-agent environment this repo is developed in can't reach any
+    # Postgres server over raw TCP at all (its egress proxy only forwards
+    # HTTP(S); confirmed by direct testing: DNS resolves the pooler host
+    # fine, but the TCP connection itself times out on both 5432 and 6543).
+    # Render's own build machine has normal outbound network access, so it
+    # runs the migration itself instead. Safe to run on every deploy — it's
+    # idempotent, only ever applies pending migrations — so this isn't a
+    # one-time step to remove later. Needs DATABASE_URL (the superuser
+    # connection string, set below) available at build time, which Render
+    # provides by default for every env var on this service.
+    buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
     startCommand: node apps/api/dist/main.js
     envVars:
       # Superuser connection — Supabase's connection string, entered directly
