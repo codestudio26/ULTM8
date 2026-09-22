@@ -1,17 +1,14 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { usePaginatedQuery } from '../lib/usePaginatedQuery';
 
 /** Every list endpoint uses cursor-based pagination (?cursor=&limit=), never
  * offset/page — Decision 22/70, platform-wide convention. */
 export function useAcademies() {
-  return useInfiniteQuery({
-    queryKey: ['academies'],
-    queryFn: ({ pageParam }: { pageParam?: string }) =>
-      unwrap(apiClient.GET('/v1/academies', { params: { query: { cursor: pageParam } } })),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-  });
+  return usePaginatedQuery(['academies'], (cursor) =>
+    unwrap(apiClient.GET('/v1/academies', { params: { query: { cursor } } })),
+  );
 }
 
 export function useAcademy(academyId: string | null) {
@@ -23,16 +20,14 @@ export function useAcademy(academyId: string | null) {
 }
 
 export function useAcademyTimetable(academyId: string | null) {
-  return useInfiniteQuery({
-    queryKey: ['academy-timetable', academyId],
-    queryFn: ({ pageParam }: { pageParam?: string }) =>
+  return usePaginatedQuery(
+    ['academy-timetable', academyId],
+    (cursor) =>
       unwrap(
         apiClient.GET('/v1/academies/{id}/timetable', {
-          params: { path: { id: academyId! }, query: { cursor: pageParam } },
+          params: { path: { id: academyId! }, query: { cursor } },
         }),
       ),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    enabled: !!academyId,
-  });
+    { enabled: !!academyId },
+  );
 }

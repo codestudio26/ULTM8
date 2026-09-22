@@ -1,15 +1,12 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { usePaginatedQuery } from '../lib/usePaginatedQuery';
 
 export function useMyBookings() {
-  return useInfiniteQuery({
-    queryKey: ['my-bookings'],
-    queryFn: ({ pageParam }: { pageParam?: string }) =>
-      unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { cursor: pageParam } } })),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-  });
+  return usePaginatedQuery(['my-bookings'], (cursor) =>
+    unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { cursor } } })),
+  );
 }
 
 /** Self-booking only — an empty body. `studentId`/`overrideReason` on BookClassDto are
