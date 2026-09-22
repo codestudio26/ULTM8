@@ -64,13 +64,22 @@ services:
     # one-time step to remove later. Needs DATABASE_URL (the superuser
     # connection string, set below) available at build time, which Render
     # provides by default for every env var on this service.
-    buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
+    #
+    # `rotate-role-passwords` (apps/api/scripts/rotate-role-passwords.ts)
+    # runs right after, for the same reason — same environment, same "can't
+    # reach raw Postgres" blocker applies to the ALTER ROLE statements that
+    # used to be run by hand. Reads each target password directly out of
+    # DATABASE_URL_APP/_AUTH/_JOBS/_DISCOVERY below (one source of truth,
+    # nothing duplicated) and applies it to the matching role the migration
+    # just created with its own 'changeme' placeholder. Also idempotent.
+    buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npm run rotate-role-passwords --workspace=apps/api && npx turbo run build --filter=@ultm8/api
     startCommand: node apps/api/dist/main.js
     envVars:
       # Superuser connection — Supabase's connection string, entered directly
       # (see this file's header comment for why Postgres lives on Supabase,
-      # not Render). Used for `prisma migrate deploy` (run manually after
-      # first deploy) and by PrismaJobsService's own cross-role writes.
+      # not Render). Used for `prisma migrate deploy` and `rotate-role-
+      # passwords` (both run automatically as part of buildCommand above)
+      # and by PrismaJobsService's own cross-role writes.
       - key: DATABASE_URL
         sync: false
       # FIXED: Render's own Blueprint validator rejected `fromDatabase` here
@@ -86,8 +95,11 @@ services:
 
       # RLS-subject app roles — see this file's own header comment for why
       # these can't be auto-derived. Fill in with the actual Postgres host
-      # Render shows you, plus the rotated passwords already generated for
-      # this deploy (not "changeme" — the migration's own dev-only default).
+      # Render shows you, and whatever real password you want each role to
+      # have — NOT "changeme" (the migration's own dev-only default). You
+      # choose these values; `rotate-role-passwords` (buildCommand above)
+      # applies them to the actual Postgres role automatically on every
+      # deploy, so there's no separate manual ALTER ROLE step anymore.
       - key: DATABASE_URL_APP
         sync: false
       - key: DATABASE_URL_AUTH
