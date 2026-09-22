@@ -1381,6 +1381,17 @@ model FranchiseFeeCharge {
   stripeInvoiceId      String? @unique
   stripeSubscriptionId String?
 
+  /// Decision 111 — the PaymentIntent id behind this Invoice, captured at
+  /// `handleInvoicePaid()` time from `invoice.payments` (the only reachable path in
+  /// this Stripe API version — `Charge`/`PaymentIntent` no longer carry a direct
+  /// `invoice` reference; verified against the installed SDK's own type
+  /// definitions, not assumed). Exists so a later `charge.dispute.*` webhook —
+  /// which only ever gives a `payment_intent` id, never an Invoice id — can
+  /// correlate back to this row the same direct way `Transaction.stripePaymentIntentId`
+  /// already does; without this column a dispute against a franchise-fee charge
+  /// would have no reliable way to find its row at all.
+  stripePaymentIntentId String? @unique
+
   // Cumulative across possibly-multiple partial refunds against the same charge,
   // same convention as Transaction.refundedAmount. Set by
   // FranchiseFeeChargesService.refund() (Franchise Owner only, Spec 55 §10.2 —
@@ -1388,9 +1399,10 @@ model FranchiseFeeCharge {
   // paying School, is the party who'd issue it back).
   refundedAmount Int?
 
-  // Only ever reachable for a disputed charge (Decision 55's dispute handling) —
-  // no code path sets this yet, same "modeled for schema completeness only"
-  // treatment Transaction.disputedAmount got in Phase 9.
+  /// Decision 111 — real now: stripe-webhook-processing's charge.dispute.*
+  /// handlers set this and flip `status` to DISPUTED. See Transaction.disputedAmount's
+  /// own comment for the "modeled for schema completeness only" history this
+  /// column carried before Decision 111 built real handlers for it.
   disputedAmount Int?
 
   createdAt DateTime @default(now())
@@ -1464,6 +1476,11 @@ model PlatformCharge {
   stripeInvoiceId      String? @unique
   stripeSubscriptionId String?
 
+  /// Decision 111 — same shape and reasoning as FranchiseFeeCharge.stripePaymentIntentId's
+  /// own comment: captured from `invoice.payments` at `handleInvoicePaid()` time so a
+  /// later `charge.dispute.*` webhook (payment_intent-keyed only) can find this row.
+  stripePaymentIntentId String? @unique
+
   // Cumulative across possibly-multiple partial refunds, same convention as
   // Transaction.refundedAmount/FranchiseFeeCharge.refundedAmount. No refund code
   // path exists yet this phase (no refund endpoint for platform billing is
@@ -1471,9 +1488,10 @@ model PlatformCharge {
   // FranchiseFeeCharge.refundedAmount got before its own refund() existed.
   refundedAmount Int?
 
-  // Only ever reachable for a disputed charge (Decision 55's dispute handling) — no
-  // code path sets this yet, same "modeled for schema completeness only" treatment
-  // Transaction.disputedAmount/FranchiseFeeCharge.disputedAmount both already got.
+  /// Decision 111 — real now: stripe-webhook-processing's charge.dispute.*
+  /// handlers set this and flip `status` to DISPUTED. See
+  /// Transaction.disputedAmount's own comment for the "modeled for schema
+  /// completeness only" history this column carried before Decision 111.
   disputedAmount Int?
 
   createdAt DateTime @default(now())

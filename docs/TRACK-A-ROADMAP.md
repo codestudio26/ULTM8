@@ -60,6 +60,15 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   is a Student/parent-facing concept, and Track B's own roadmap already names this as
   its own blocked item ("Slice 7 — Guardian-facing screens," blocked on a design pass
   that's never happened). Track A doesn't need to build it; Track B does, later.
+- **Decision 111, Phase A — Stripe dispute handling built end to end.** Decision 55's
+  own confirmed dispute contract (idempotent status-driven webhook processing across
+  `Transaction`/`FranchiseFeeCharge`/`PlatformCharge`, refund/credit-restore frozen
+  while disputed, Membership force-Expiry + Stripe Subscription cancellation on a
+  loss, notification routed by who's financially exposed) was fully modeled in the
+  schema but had zero code behind it until now — surfaced during a deep-dive audit
+  of Track A for anything open, not previously tracked here. Phase B (Decision 68's
+  own `chargeback-pattern-restriction` job) is deliberately deferred — see "What's
+  actually left" below.
 - **A systemic gap not previously called out in this doc**: no tenant/content
   offboarding exists anywhere in the platform. There is no `DELETE` endpoint for
   School, Branch, Class, Timetable, Instructor, Membership, Rank, Waiver, Franchise, or
@@ -93,6 +102,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
 | `apps/platform-admin` general tenant-data edit UI | 🅿️ Parked — Decision 105, pending a named use case |
 | `apps/platform-admin` home dashboard | 🅿️ Parked — cosmetic, nothing to summarize yet |
+| Stripe dispute-handling webhook mechanics (Decision 55/111, Phase A) | ✅ DONE — real `charge.dispute.*` handlers, freeze guards, Membership/Subscription force-actions, notification routing. `chargeback-pattern-restriction` (Phase B) deliberately deferred |
 
 ---
 
@@ -198,6 +208,46 @@ doc), so they're named here without a number rather than guessed at.
   and worth an Architect update to `[CONFIRMED]`/resolved — flagged, not patched
   directly, per the skill's own "only the Architect may edit this file" rule.
   Merged via PR #74.
+
+## Payments — Stripe dispute handling (Decision 55/111, Phase A) — DONE
+
+Built end to end during a deep-dive audit of Track A that surfaced this as a
+confirmed-but-unbuilt gap: `charge.dispute.created/updated/closed` was a literal
+no-op in `stripe-webhook-processing.processor.ts` despite `Transaction`/
+`FranchiseFeeCharge`/`PlatformCharge` all already carrying a `DISPUTED` status value
+and a `disputedAmount` column, and Decision 68's own `chargeback-pattern-restriction`
+job (the natural next consumer of a `DISPUTED` outcome) didn't exist at all. Scoped
+and split into two phases (Decision 111): Phase A (this entry, built now) and Phase B
+(deferred — see "What's actually left" below).
+
+- **Correlation** — a new `stripePaymentIntentId` column on `FranchiseFeeCharge`/
+  `PlatformCharge` (migration `20261007000000_dispute_handling`; `Transaction`
+  already had this from Phase 9), captured at `handleInvoicePaid()` time from the
+  Invoice's own `payments` list. Required because the installed Stripe SDK's API
+  version carries no `Charge`/`PaymentIntent -> Invoice` reverse link at all
+  (verified directly against the SDK's own type definitions before writing any
+  code) — a `charge.dispute.*` webhook only ever gives a `payment_intent` id, so
+  this forward-captured column is the only reachable correlator.
+- **Unified handler** — one method driven by `Dispute.status` covers all three event
+  names identically (`won` -> revert to `SUCCESSFUL`; `lost` -> `DISPUTED` +
+  Membership force-`EXPIRED` + Stripe Subscription cancellation, Transaction/
+  Membership only; any other in-progress status -> `DISPUTED` only).
+- **Freeze while disputed** — `BookingsService.restoreCredit()` (the only real
+  Auto-Credit path) and `FranchiseFeesService.refund()` (the only real
+  `stripe.refunds.create()` call in the codebase) both now refuse to move value
+  against a disputed Transaction/charge; `FranchiseFeesService.refund()` needed no
+  new logic at all — its existing `status !== 'SUCCESSFUL'` guard already rejects
+  `DISPUTED` once the webhook handler starts setting it.
+- **Notification routing "by who's financially exposed"** — `Transaction` disputes
+  notify the School Owner/Manager, `FranchiseFeeCharge` disputes notify the
+  Franchise Owner, both via the existing `notification-fanout` job.
+  `PlatformCharge` disputes have no real channel (`Notification.userId` only ever
+  points at tenant `User`, never `AdminUser`) — a loud log line, not a fabricated
+  notification path.
+- Full e2e coverage (in-progress/won/lost across all three entities, the two
+  freeze guards, the "no matching charge" no-op case), `tsc`/`turbo build` clean,
+  no schema/DTO changes beyond the one new column pair, so no OpenAPI regeneration
+  was needed this phase.
 
 ## `apps/platform-admin` — DONE through Slice 4, Slice 4 unmerged
 
@@ -319,6 +369,18 @@ cover — building it speculatively is exactly what Decision 105 says not to do.
 
 Still lands directly on Admin Users. Low priority; nothing yet to summarize on a
 landing page until more of the admin surface exists.
+
+### 8. `chargeback-pattern-restriction` job (Decision 68, Decision 111's own Phase B) — scoped, not built
+
+Decision 68's confirmed job: counts a Student's lost disputes across every School
+they hold a RoleGrant at, and past a threshold restricts them to Cash/Bank-only
+purchases across that scope, notifying their current School(s). Genuinely depends
+on Phase A (above) actually recording `DISPUTED` outcomes to count against — that
+dependency is now closed. The threshold itself is set at **2 lost disputes**
+(Decision 111 — a business risk-tolerance call, not an engineering constraint,
+recorded with its own reasoning in the decision log). Needs: the scheduled job
+itself, a new `User.paymentRestrictedAt` field, and the Cash/Bank-only purchase
+gate it drives — none of that is built by Phase A.
 
 ---
 

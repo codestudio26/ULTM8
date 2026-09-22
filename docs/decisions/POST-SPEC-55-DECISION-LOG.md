@@ -1005,3 +1005,35 @@ The identical "id only, no name" gap independently exists in three other real sc
 ### Recorded by
 
 Logged while implementing the Transactions page mockup fix for real, 18 Sep 2026, as part of a direct request to move one of this session's page mockups into working code.
+
+---
+
+## Decision 111 — Stripe dispute handling (Decision 55) built end to end: webhook mechanics now, chargeback-pattern threshold set at 2 lost disputes
+
+**Date:** 22 Sep 2026
+**Status:** Product-owner decision (the threshold number) plus a Developer-level scope/design split, both made directly with the user
+**Resolves:** Decision 55's own confirmed dispute-handling contract — idempotent status-driven webhook processing across `Transaction`/`FranchiseFeeCharge`/`PlatformCharge`, refund/credit-restore frozen while disputed, Membership force-Expiry plus Stripe Subscription cancellation on a loss, notification routed by who's financially exposed — was fully specified in the schema (all three entities already carry `status: DISPUTED` and a `disputedAmount` column) but had zero code behind it: `charge.dispute.created/updated/closed` was a literal no-op in `stripe-webhook-processing.processor.ts`, and Decision 68's own `chargeback-pattern-restriction` job didn't exist at all. Surfaced during a deep-dive audit of Track A for anything open, not previously tracked in `docs/TRACK-A-ROADMAP.md`.
+
+### Decision
+
+**Split into two phases**, because the second genuinely depends on data the first produces:
+
+- **Phase A (this decision's own scope, built now)** — the dispute webhook mechanics themselves: real `charge.dispute.*` handlers, the refund/credit-restore freeze, Membership/Subscription force-actions on a loss, and notification routing. Fully specified by Decision 55; no open question blocks it.
+- **Phase B (deferred, separately scoped when built)** — the `chargeback-pattern-restriction` scheduled job (Decision 68) that counts a Student's lost disputes across every School they hold a grant at and restricts them to Cash/Bank-only past a threshold. Genuinely depends on Phase A actually recording `DISPUTED` outcomes to count.
+
+**The chargeback threshold is set at 2 lost disputes** — Claude's own recommendation, requested and followed, same shape as Decisions 101–105: the job is named "chargeback-*pattern*-restriction," and a single lost dispute is not a pattern — it's as likely a genuinely fraudulent card or an honest billing dispute as it is abuse. Two is the common "second strike" heuristic in subscription businesses generally (one loss tolerated as noise, a second confirms it isn't). This does not need to be treated as final — it is a business risk-tolerance call, not an engineering constraint, and can be revisited.
+
+### Phase A's design, confirmed against the actual code before writing anything
+
+- **Correlation** mirrors `handleSubscriptionDeleted()`'s own established "try each correlator column in turn" shape: a disputed charge is matched against `Transaction.stripePaymentIntentId` first (one-time Membership purchases), then `FranchiseFeeCharge`/`PlatformCharge` via their Invoice's Subscription id (recurring, Direct-charge or platform billing) — never a guess, always a real stored correlator.
+- **Freeze while disputed** — verified there are only two real call sites to guard, not a broad sweep: `BookingsService.restoreCredit()` (the only real Auto-Credit path — Auto-Refund for Membership purchases doesn't call Stripe at all yet, a separate, already-tracked gap, so there's nothing there to freeze) and `FranchiseFeesService.refund()` (the only real `stripe.refunds.create()` call in the codebase outside Connect onboarding). `PlatformCharge` has no refund endpoint at all yet, so nothing to freeze there either.
+- **Lost-dispute consequences** — confirmed only `Transaction` (Membership) disputes carry a further consequence: force-`Membership.status = EXPIRED`, and cancel the Stripe Subscription if `stripeSubscriptionId` is set. Nothing in Decision 55 or the schema implies an equivalent forced action on a lost `FranchiseFeeCharge`/`PlatformCharge` dispute — recording the loss is sufficient there.
+- **Notification routing "by who's financially exposed"** — `Transaction` disputes notify the School Owner/Manager, `FranchiseFeeCharge` disputes notify the Franchise Owner, both via the existing `notification-fanout` job (a real, working channel). `PlatformCharge` disputes have no equivalent channel: `Notification.userId` only ever points at tenant `User`, never `AdminUser` — Platform Admin is a structurally separate identity with no notification inbox anywhere in this codebase. Rather than inventing one, this follows the same "reasonable-minimum, flagged for Architect review" treatment Decision 95 gave an analogous gap: a loud log line, not a fabricated notification path. **Corrected during implementation**: the original scoping conversation for this bullet said "an `AuditLogService` entry plus a loud log line" — checked directly against `AuditLogService`'s own `RecordAuditLogInput` interface before writing the handler, and that service requires a real `adminUserId` actor, which a system/webhook-triggered event genuinely has none of. `AuditLogService` is the wrong mechanism here; a plain `Logger.error()` call is the actual, correct treatment, and is what's built.
+
+### What this does NOT resolve
+
+Phase B itself (the actual `chargeback-pattern-restriction` job, the new `User.paymentRestrictedAt` field, and the Cash/Bank-only purchase gate) is not built by this decision — only scoped and unblocked by it. The already-tracked, separate gap that Membership/Transaction "Auto-Refund" never actually calls Stripe (it only ever restores credit) is unaffected either way — freezing a refund path that doesn't exist yet is moot until that gap is closed on its own.
+
+### Recorded by
+
+Logged during a direct scoping conversation with the user, 22 Sep 2026, following a full deep-dive audit of Track A that surfaced this as a confirmed-but-unbuilt gap. Options for the threshold were presented with a stated recommendation and reasoning; the user asked for the reasoning restated in more detail plus a fuller explanation of what each phase actually contains before deciding, then accepted the recommendation (2) and asked to proceed with Phase A.

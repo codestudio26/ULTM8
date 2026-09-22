@@ -44,6 +44,16 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
  * to fetch the full Invoice), hence the new PaymentsModule import. Imports
  * FranchiseFeesModule for FranchiseFeeBillingService (the new processor's own
  * Stripe-primitives dependency).
+ *
+ * Decision 111 extends StripeWebhookProcessingProcessor again, with real
+ * charge.dispute.created/updated/closed handling (Decision 55's own confirmed
+ * contract) — the processor now also injects NOTIFICATION_FANOUT_QUEUE directly
+ * (the same cross-queue @InjectQueue pattern BookingNoShowProcessingProcessor/
+ * WaiverSignatureRequestsProcessor already established) to route a dispute
+ * notification to whichever School Owner/Manager or Franchise Owner is
+ * financially exposed. No new module import needed for this — QueueModule
+ * already registers NOTIFICATION_FANOUT_QUEUE and PaymentsModule already
+ * provides StripeClientService, both from the Phase 15/16b-ii wiring above.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],

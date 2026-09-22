@@ -231,6 +231,16 @@ describeIfDb('FranchiseFeesModule — HTTP-level cross-tenant isolation and refu
     expect(res.status).toBe(400);
   });
 
+  it('refunding a DISPUTED charge is rejected — 400 (Decision 111\'s "refund frozen while disputed" freeze, same guard as the PENDING case above)', async () => {
+    const charge = await seedCharge({ status: 'DISPUTED' });
+    const res = await request(app.getHttpServer())
+      .post(`/v1/franchise-fee-charges/${charge.id}/refund`)
+      .set('Authorization', `Bearer ${tokenFranchiseOwner}`)
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('dispute');
+  });
+
   it('refunding more than the charge\'s own amount is rejected — 400, before any Stripe call', async () => {
     const charge = await seedCharge({ amount: 5000 });
     const res = await request(app.getHttpServer())
