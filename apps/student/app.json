@@ -25,7 +25,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiBaseUrl": "http://localhost:3000"
+      "apiBaseUrl": "https://ultm8-api.onrender.com"
     },
     "plugins": [
       "expo-secure-store"
