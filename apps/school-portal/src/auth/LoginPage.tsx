@@ -63,7 +63,7 @@ export function LoginPage() {
             onChange={(e) => setPasscode(e.target.value)}
           />
         </Field>
-        <Button type="submit" fullWidth loading={submitting}>
+        <Button type="submit" variant="cta" fullWidth loading={submitting}>
           Log in
         </Button>
       </form>

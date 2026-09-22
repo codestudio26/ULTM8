@@ -97,6 +97,13 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
   --text-danger: var(--color-danger);
+
+  /* Brand accents — exact values picked from the ULTM8 marketing site, kept
+     separate from the app-wide accent ramp above rather than overwriting it. */
+  --color-footer-bg: #d0d9e0;
+  --color-brand-ink: #16374e;   /* logotype, footer headings — never literal black */
+  --fill-cta: #355762;          /* "Login"-style neutral CTA fill */
+  --fill-cta-hover: color-mix(in srgb, #355762 85%, black);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -114,6 +121,11 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
     --fill-accent-hover: var(--color-accent-300);
     --on-accent: var(--color-neutral-900);
     --text-accent: var(--color-accent-300);
+
+    --color-footer-bg: var(--color-neutral-800);
+    --color-brand-ink: var(--color-accent-200);
+    --fill-cta: var(--color-accent-400);
+    --fill-cta-hover: var(--color-accent-300);
   }
 }
 [data-theme="dark"] {
@@ -122,6 +134,8 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
 ```
 
 Dark mode ships at launch, derived from the same ramps above — never hand-authored separately.
+
+**Never set text to literal black (`#000000`/`black`).** Default UI/body text uses `--text-primary` (`--color-neutral-900`, #151719 — an off-black, not pure black). Brand-toned headings, logotype, and other text that should read as navy-dark ink rather than gray-dark ink (e.g. on the marketing footer below) use `--color-brand-ink` (#16374e) instead. Both are dark enough to read as "black" at a glance without ever being #000.
 
 **Verified contrast** (WCAG AA, 4.5:1 normal text / 3:1 large text & UI):
 
@@ -137,6 +151,8 @@ Dark mode ships at launch, derived from the same ramps above — never hand-auth
 | white on `--color-success` | 5.3:1 |
 | dark ink on `--color-warning` | 4.9:1 (use dark text here, not white — white only reaches 3.6:1) |
 | `on-success` on `fill-success` #def2e2 | 14.8:1 (dark neutral text — `text-success` on this same fill only reaches ~4.4:1, just under the 4.5:1 AA floor for normal-size text, so the solid button variant deliberately does not reuse it) |
+| white on `--fill-cta` #355762 | 7.8:1 |
+| `--color-brand-ink` #16374e on `--color-footer-bg` #d0d9e0 | 8.7:1 |
 
 ## Layout & spacing
 
@@ -199,6 +215,28 @@ For a flow that collects a short numeric code (OTP, PIN-style passcode):
 - Minimum 44×44px touch target per box (same rule as any other interactive element)
 - A live countdown/expiry line below, in `--text-muted` — the actual expiry duration is a backend/business value, never hardcoded in the UI layer
 - Primary action stays disabled until every box is filled
+
+### Button pairing — neutral action vs. affirmative action
+
+When two actions sit side by side (e.g. "Login" / "Sign up" in a header, or a form's "Cancel" / "Confirm"), don't invent a third color — pair the brand CTA fill with the success solid button so the fill difference alone signals which action is a plain navigation/neutral step versus which one commits to something new:
+
+| Role | Example | Fill | Text |
+|---|---|---|---|
+| Neutral / navigation action | "Login" | `--fill-cta` (hover `--fill-cta-hover`) | `--on-accent` |
+| Affirmative / commit action | "Sign up" | `--fill-success` (hover `--fill-success-hover`) | `--on-success` |
+
+Same shape, radius, and padding for both — only the fill and text-on-fill pair changes.
+
+### Footer
+
+Marketing/auth-adjacent footers use the dedicated brand accents instead of the neutral ramp, to feel branded rather than like a plain content panel:
+
+| Element | Token |
+|---|---|
+| Background | `--color-footer-bg` |
+| Logotype / section headings | `--color-brand-ink` (never literal black — see color note above) |
+| Body copy & links | `--text-secondary` |
+| Divider above legal row | `--border-strong` |
 
 ## Motion
 

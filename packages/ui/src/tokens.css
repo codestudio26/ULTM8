@@ -80,6 +80,14 @@
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
   --text-danger: var(--color-danger);
 
+  /* Brand accents (DESIGN.md "Color") — exact values from the ULTM8 marketing
+     site, kept separate from the app-wide accent ramp above rather than
+     overwriting it. */
+  --color-footer-bg: #d0d9e0;
+  --color-brand-ink: #16374e; /* logotype, footer headings — never literal black */
+  --fill-cta: #355762; /* "Login"-style neutral CTA fill */
+  --fill-cta-hover: color-mix(in srgb, #355762 85%, black);
+
   /* ---- Typography (DESIGN.md "Typography") ---- */
   --font-sans: 'Figtree Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
@@ -141,6 +149,11 @@
     --on-accent: var(--color-neutral-900);
     --text-accent: var(--color-accent-300);
 
+    --color-footer-bg: var(--color-neutral-800);
+    --color-brand-ink: var(--color-accent-200);
+    --fill-cta: var(--color-accent-400);
+    --fill-cta-hover: var(--color-accent-300);
+
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.45);
@@ -160,6 +173,11 @@
   --fill-accent-hover: var(--color-accent-300);
   --on-accent: var(--color-neutral-900);
   --text-accent: var(--color-accent-300);
+
+  --color-footer-bg: var(--color-neutral-800);
+  --color-brand-ink: var(--color-accent-200);
+  --fill-cta: var(--color-accent-400);
+  --fill-cta-hover: var(--color-accent-300);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);

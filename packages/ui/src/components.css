@@ -63,6 +63,13 @@
 .ultm8-btn--success:not(:disabled):hover {
   background: var(--fill-success-hover);
 }
+.ultm8-btn--cta {
+  background: var(--fill-cta);
+  color: var(--on-accent);
+}
+.ultm8-btn--cta:not(:disabled):hover {
+  background: var(--fill-cta-hover);
+}
 .ultm8-btn--full {
   width: 100%;
 }
