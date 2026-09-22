@@ -862,5 +862,27 @@ Several follow-ups are already spawned and tracked outside this doc (visible as 
 chips in the session): the waitlist notification-dispatch backend gap, the
 StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
 gaps, proper multi-School support for the Waivers screen, a deep-link from
-booking errors to the Waivers screen, a `formatDate` timezone bug, and a
-severity-proportional confirmation for BASELINE consent withdrawal.
+booking errors to the Waivers screen, and a severity-proportional confirmation for
+BASELINE consent withdrawal.
+
+**`formatDate` timezone bug ✅ FIXED (2026-09-22).** Confirmed against
+`apps/api/prisma/schema.prisma`: only `Minor.dateOfBirth` is a calendar-only
+`@db.Date` column (line 211) — `Class.startDate/endDate`, `Membership.expiryDate`,
+and `WaiverSignature.signedDate` are all genuine `DateTime` timestamps, where
+`formatDate`'s existing local-timezone rendering is correct (a Class really does
+start at a specific instant). Only the DOB display was wrong: the backend
+serializes a `@db.Date` as UTC midnight, and `formatDate`'s local-timezone
+`Intl.DateTimeFormat` shifted it back a calendar day for any viewer west of UTC
+(verified: `2015-06-01T00:00:00.000Z` rendered as "May 31, 2015" in
+`America/Los_Angeles`). Added `formatDateOnly` (`apps/student/src/lib/
+formatDate.ts`), pinning `timeZone: 'UTC'` so the rendered day always matches the
+stored one regardless of viewer timezone, and swapped `MyMinorsScreen.tsx`'s
+`Born {formatDate(minor.dateOfBirth)}` to it — confirmed via the same Node check
+that this renders "Jun 1, 2015" correctly. The three genuine-timestamp call sites
+(`ClassBookingRow`, `MyMembershipsScreen`, `WaiverRow`) and `RegisterScreen`'s
+typed-text DOB input (never round-tripped through `formatDate`) were left
+untouched — confirmed as out of scope for this bug, not overlooked.
+
+**Verified**: `npx turbo run lint build --filter=@ultm8/student` (`tsc --noEmit`)
+clean, plus a standalone `node -e` check (above) proving the actual Intl output
+difference, not just that it typechecks.
