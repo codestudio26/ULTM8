@@ -53,7 +53,7 @@ export function Button({
   title: string;
   onPress: () => void;
   loading?: boolean;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'destructive';
   disabled?: boolean;
 }) {
   return (
@@ -63,12 +63,13 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         variant === 'secondary' && styles.buttonSecondary,
+        variant === 'destructive' && styles.buttonDestructive,
         (disabled || loading) && styles.buttonDisabled,
         pressed && styles.buttonPressed,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#fff' : '#1F6FEB'} />
+        <ActivityIndicator color={variant === 'secondary' ? '#1F6FEB' : '#fff'} />
       ) : (
         <Text style={[styles.buttonText, variant === 'secondary' && styles.buttonTextSecondary]}>
           {title}
@@ -140,6 +141,9 @@ const styles = StyleSheet.create({
   },
   buttonSecondary: {
     backgroundColor: 'transparent',
+  },
+  buttonDestructive: {
+    backgroundColor: '#C5221F',
   },
   buttonDisabled: {
     opacity: 0.6,

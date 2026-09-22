@@ -861,9 +861,43 @@ per-School white-label branding.
 Several follow-ups are already spawned and tracked outside this doc (visible as task
 chips in the session): the waitlist notification-dispatch backend gap, the
 StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
-gaps, proper multi-School support for the Waivers screen, a deep-link from
-booking errors to the Waivers screen, and a severity-proportional confirmation for
-BASELINE consent withdrawal.
+gaps, proper multi-School support for the Waivers screen, and a deep-link from
+booking errors to the Waivers screen.
+
+**Note on the deep-link follow-up**: checked, not built this pass. `bookings.service.ts`'s
+unsigned-Waiver rejection is a plain `BadRequestException(message)` with no distinct
+error `code` (`HttpExceptionFilter` falls back to the generic `BAD_REQUEST` code
+shared by every other 400) — the only signal available client-side to detect "this
+specific error" is matching the free-text message, which is fragile and not something
+to build silently. Needs either a backend change (a stable error code) or an explicit
+decision to accept text-matching; left open rather than guessed at.
+
+**Severity-proportional BASELINE withdrawal confirmation ✅ FIXED (2026-09-22).**
+Found something worse than "not severity-proportional" while looking at this:
+`Alert.alert` — used for both tiers' withdraw confirmation — is a documented no-op on
+React Native Web, this app's own interactive-test target, so tapping "Withdraw" did
+nothing at all on web, for either tier, not just BASELINE. Replaced with an inline
+confirmation panel (`ConsentTierRow.tsx`) — plain Views/Text, no native dialog API, so
+it renders identically on every platform. BASELINE's panel additionally requires an
+explicit tap-to-acknowledge ("I understand this deactivates the account") before its
+Confirm button enables; CAMERA's panel only needs the one warning read + tap, matching
+its narrower, non-account-affecting effect. Added a `destructive` variant to the
+shared `Button` component (`components/ui.tsx`) for the confirm action's styling —
+usable elsewhere later (e.g. MyBookingsScreen's own `Alert.alert`-based cancel flow
+has the identical no-op-on-web problem, not fixed here — out of scope for this
+specifically-flagged BASELINE follow-up, spawned as its own follow-up instead).
+
+**Verified**: `npx turbo run lint build --filter=@ultm8/student` clean. **Not**
+click-tested — no mock backend or component-test harness exists in this checkout
+(no jest config, no `react-test-renderer` installed in `apps/student`), and adding
+test infrastructure wasn't judged proportionate to verify one component's local state
+machine. Verified instead by tracing every transition by hand: open→cancel resets
+`acknowledged`; open→confirm is blocked pre-mutate for BASELINE until acknowledged;
+a failed withdraw still surfaces via the pre-existing `withdraw.isError` banner
+(rendered outside the confirm/active branch, so unaffected by which one is showing);
+a successful withdraw's `granted` becomes `undefined` immediately (existing
+`withdraw.isSuccess` derivation, untouched), which hides the whole active/confirm
+block regardless of `confirming`'s leftover value.
 
 **`formatDate` timezone bug ✅ FIXED (2026-09-22).** Confirmed against
 `apps/api/prisma/schema.prisma`: only `Minor.dateOfBirth` is a calendar-only

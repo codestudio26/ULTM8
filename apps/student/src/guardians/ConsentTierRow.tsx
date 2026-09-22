@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
@@ -49,6 +49,8 @@ export function ConsentTierRow({
   const grant = useGrantConsent();
   const withdraw = useWithdrawConsent();
   const copy = TIER_COPY[tier];
+  const [confirming, setConfirming] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   // Same "derive from the mutation's own result, don't wait on a round-tripped
   // prop" discipline as WaiverRow's `effectiveSignature` (found on that slice's
@@ -74,25 +76,38 @@ export function ConsentTierRow({
     grant.mutate({ studentId, tier, policyVersion: CURRENT_POLICY_VERSION });
   }
 
-  function handleWithdraw() {
+  // FOUND ON REVIEW: `Alert.alert` is a documented no-op on React Native Web —
+  // this app's own interactive-test target — so the previous Alert-based
+  // confirmation never actually appeared there at all; tapping "Withdraw" did
+  // nothing, silently, on the one platform this app is actually click-tested
+  // against. Replaced with an inline confirmation panel (plain Views/Text, no
+  // native dialog API), which renders identically on every platform. BASELINE
+  // additionally requires an explicit tap-to-acknowledge before its Withdraw
+  // enables — proportional to what it actually does (deactivates the minor's
+  // entire account, every role and enrollment, per copy.withdrawWarning above)
+  // versus CAMERA's narrower, non-account-affecting effect, which only needs
+  // the one warning read + confirm tap.
+  function openConfirm() {
     if (!granted || withdraw.isPending) return;
-    Alert.alert(copy.title, copy.withdrawWarning, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Withdraw',
-        style: 'destructive',
-        // Re-checked here, not just in handleWithdraw — this is the actual
-        // mutate() call site (Alert.alert's onPress fires later, async,
-        // matching MyBookingsScreen's own confirmDelete precedent for why the
-        // check has to live at the real call site, not just before the
-        // Alert is shown).
-        onPress: () => {
-          if (withdraw.isPending) return;
-          grant.reset();
-          withdraw.mutate(granted.id);
-        },
-      },
-    ]);
+    setAcknowledged(false);
+    setConfirming(true);
+  }
+
+  function cancelConfirm() {
+    setConfirming(false);
+    setAcknowledged(false);
+  }
+
+  function confirmWithdraw() {
+    // Re-checked here, not just in openConfirm — this is the actual mutate()
+    // call site, matching handleGrant/handleWithdraw's existing re-entrancy
+    // discipline elsewhere in this file.
+    if (!granted || withdraw.isPending) return;
+    if (tier === 'BASELINE' && !acknowledged) return;
+    setConfirming(false);
+    setAcknowledged(false);
+    grant.reset();
+    withdraw.mutate(granted.id);
   }
 
   return (
@@ -107,10 +122,47 @@ export function ConsentTierRow({
         <InlineError message={getApiErrorMessage(withdraw.error, 'Could not withdraw consent — please try again.')} />
       ) : null}
 
-      {granted ? (
+      {granted && confirming ? (
+        <View style={{ marginTop: 8 }}>
+          <Text style={{ color: '#C5221F', fontSize: 13 }}>{copy.withdrawWarning}</Text>
+          {tier === 'BASELINE' ? (
+            <Pressable
+              onPress={() => setAcknowledged((a) => !a)}
+              style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}
+            >
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 4,
+                  borderWidth: 1,
+                  borderColor: '#C5221F',
+                  backgroundColor: acknowledged ? '#C5221F' : 'transparent',
+                  marginRight: 8,
+                }}
+              />
+              <Text style={{ fontSize: 13, flex: 1 }}>I understand this deactivates the account</Text>
+            </Pressable>
+          ) : null}
+          <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <Button title="Cancel" variant="secondary" onPress={cancelConfirm} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button
+                title="Confirm withdraw"
+                variant="destructive"
+                onPress={confirmWithdraw}
+                loading={withdraw.isPending}
+                disabled={tier === 'BASELINE' && !acknowledged}
+              />
+            </View>
+          </View>
+        </View>
+      ) : granted ? (
         <>
           <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>Active ✓</Text>
-          <Button title="Withdraw" variant="secondary" onPress={handleWithdraw} loading={withdraw.isPending} />
+          <Button title="Withdraw" variant="secondary" onPress={openConfirm} loading={withdraw.isPending} />
         </>
       ) : (
         <Button title="Grant consent" onPress={handleGrant} loading={grant.isPending} />
