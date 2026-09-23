@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { School } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
@@ -7,6 +7,48 @@ import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-pagin
 import { AuthService } from '../../auth/auth.service';
 import { CreateFranchiseDto } from './dto/create-franchise.dto';
 import { UpdateFranchiseDto } from './dto/update-franchise.dto';
+
+/**
+ * FOUND ON REVIEW, before this ever shipped: `FranchiseResponseDto`'s own header
+ * comment claims `stripeMeterId`/`stripeUsagePriceId` are "deliberately not exposed
+ * here" — but nothing anywhere in this file actually enforced that. Every method
+ * below returned the full Prisma row straight through the controller with no
+ * projection at all, so both internal Stripe correlator ids were silently present
+ * in every `POST/GET/PATCH /franchises...` response body, contradicting the DTO's
+ * own stated intent.
+ *
+ * Fixed by explicitly `select`-ing every OTHER Franchise field on every query that
+ * returns a row — not Prisma's own `omit` API: a first draft used `omit:
+ * { stripeMeterId: true, stripeUsagePriceId: true }`, which looked right and matches
+ * Prisma's documented syntax, but failed `tsc` against this project's actually-
+ * generated client (`omit` needs `previewFeatures = ["omit"]` in schema.prisma's
+ * generator block for this Prisma version — confirmed absent by grepping the
+ * generated client's own type definitions for a per-model `Omit` type and finding
+ * none — not present here, and adding it is a broader generator change this fix
+ * doesn't need to make). Verified against the actually-installed client this time,
+ * not assumed from Prisma's own docs.
+ */
+const FRANCHISE_PUBLIC_SELECT = {
+  id: true,
+  name: true,
+  mobileNumber: true,
+  address: true,
+  type: true,
+  activities: true,
+  facilities: true,
+  defaultLanguage: true,
+  defaultCurrency: true,
+  description: true,
+  logoUrl: true,
+  bannerUrl: true,
+  feeModel: true,
+  flatFeeAmount: true,
+  perHeadcountRate: true,
+  createdAt: true,
+  updatedAt: true,
+  // Deliberately excluded: stripeMeterId, stripeUsagePriceId — see this
+  // constant's own header comment.
+} as const;
 
 @Injectable()
 export class FranchisesService {
@@ -55,7 +97,10 @@ export class FranchisesService {
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
           feeModel: dto.feeModel,
+          flatFeeAmount: dto.flatFeeAmount,
+          perHeadcountRate: dto.perHeadcountRate,
         },
+        select: FRANCHISE_PUBLIC_SELECT,
       });
 
       await tx.roleGrant.create({
@@ -86,13 +131,13 @@ export class FranchisesService {
    * franchiseId, so this is equivalent to "Franchises the caller owns". */
   async findAllForCaller(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.franchise.findMany(args), cursor, limit),
+      cursorPaginate((args) => tx.franchise.findMany({ ...args, select: FRANCHISE_PUBLIC_SELECT }), cursor, limit),
     );
   }
 
   async findOne(callerId: string, franchiseId: string) {
     const franchise = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.franchise.findUnique({ where: { id: franchiseId } }),
+      tx.franchise.findUnique({ where: { id: franchiseId }, select: FRANCHISE_PUBLIC_SELECT }),
     );
     // RLS returns null (not another tenant's row) for a Franchise outside the
     // caller's scope — same "genuine 404 and a cross-tenant-blocked read are
@@ -107,12 +152,68 @@ export class FranchisesService {
   /** Franchise Owner only (Spec §8.2) — mirrors SchoolsService.update() exactly: no
    * separate findOne() call first, since assertFranchiseOwner's own RoleGrant lookup
    * already 403s for a nonexistent/invisible franchiseId (no grant could ever exist
-   * for an id that doesn't exist). */
+   * for an id that doesn't exist).
+   *
+   * FOUND ON REVIEW, before this ever shipped: a first draft let `flatFeeAmount`/
+   * `perHeadcountRate` be changed freely at any time (Decision 99's own self-service
+   * grant). Review traced what actually happens Stripe-side and found a real,
+   * silent-corruption gap: `FranchiseFeeBillingService.ensureMeterAndPrice()` creates
+   * a Stripe Price ONCE and caches it forever (`Franchise.stripeUsagePriceId`) —
+   * Stripe Prices are immutable, so once any School's standing Subscription
+   * references it, changing `perHeadcountRate` afterward does NOTHING to what
+   * Stripe actually charges, while `franchise-fee-usage-reporting`'s own
+   * `usageReportPass()` keeps computing each new PENDING row's `amount` from the
+   * CURRENT (now-wrong) rate — the local ledger and Stripe's real invoices would
+   * permanently and silently disagree, with nothing ever reconciling them. Rather
+   * than build a full rate-migration mechanism (recreate the Price, walk every
+   * affected Subscription's line item onto it) with no confirmed design for it
+   * (Decision 99's own "what this does NOT resolve"), this blocks the change
+   * outright once billing has started for at least one School — a safe rejection,
+   * not a guessed fix.
+   */
   async update(callerId: string, franchiseId: string, dto: UpdateFranchiseDto) {
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
 
-    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.franchise.update({
+    // FOUND ON REVIEW: `flatFeeAmount`/`perHeadcountRate` are deliberately NOT
+    // widened to nullable in UpdateFranchiseDto (see that DTO's own header
+    // comment) — but `@IsOptional()` treats an explicit JSON `null` exactly
+    // like an omitted field and skips `@IsInt()`/`@Min()`/`@Max()` entirely,
+    // so `null` still reaches this method (`dto.flatFeeAmount` typed as
+    // `number | undefined`, but nothing at the validation layer actually
+    // stops a raw `null` at runtime). Without this explicit rejection, that
+    // `null` would pass `!== undefined` below, skip the schoolsAlreadyBilling
+    // guard as a "no-op" change when nothing is currently configured, and
+    // silently clear a configured rate via `tx.franchise.update()` — exactly
+    // the un-designed "clear a configured rate" transition that DTO's own
+    // comment says is out of scope. Same defensive pattern
+    // MembershipsService.updatePlan() already established for its own
+    // not-nullable `classesIncluded` field.
+    if (dto.flatFeeAmount === null || dto.perHeadcountRate === null) {
+      throw new BadRequestException('flatFeeAmount/perHeadcountRate cannot be null — omit the field to leave it unchanged.');
+    }
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (dto.flatFeeAmount !== undefined || dto.perHeadcountRate !== undefined) {
+        const current = await tx.franchise.findUniqueOrThrow({
+          where: { id: franchiseId },
+          select: { flatFeeAmount: true, perHeadcountRate: true },
+        });
+        const changingRate =
+          (dto.flatFeeAmount !== undefined && dto.flatFeeAmount !== current.flatFeeAmount) ||
+          (dto.perHeadcountRate !== undefined && dto.perHeadcountRate !== current.perHeadcountRate);
+        if (changingRate) {
+          const schoolsAlreadyBilling = await tx.school.count({
+            where: { franchiseId, stripeFranchiseFeeSubscriptionId: { not: null } },
+          });
+          if (schoolsAlreadyBilling > 0) {
+            throw new ConflictException(
+              "This Franchise's fee rate cannot be changed once franchise-fee billing has started for at least one School — Stripe Prices are immutable once created, and changing the rate now would silently diverge from what Stripe actually charges. Not yet supported.",
+            );
+          }
+        }
+      }
+
+      return tx.franchise.update({
         where: { id: franchiseId },
         data: {
           name: dto.name,
@@ -127,10 +228,12 @@ export class FranchisesService {
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
           feeModel: dto.feeModel,
+          flatFeeAmount: dto.flatFeeAmount,
+          perHeadcountRate: dto.perHeadcountRate,
         },
-      }),
-    );
-    return updated;
+        select: FRANCHISE_PUBLIC_SELECT,
+      });
+    });
   }
 
   /**

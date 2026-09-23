@@ -359,6 +359,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinSchoolDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "",
@@ -366,6 +376,51 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JoinSchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/join-franchise": {
+      "post": {
+        "operationId": "SchoolsController_joinFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinFranchiseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
                 }
               }
             }
@@ -892,6 +947,172 @@
         ]
       }
     },
+    "/v1/guardians/me/minors": {
+      "post": {
+        "operationId": "GuardiansController_createMinor",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMinorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "GuardiansController_findMyMinors",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/consent": {
+      "post": {
+        "operationId": "GuardiansController_grantConsent",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantConsentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/consent": {
+      "get": {
+        "operationId": "GuardiansController_findMyConsentRecords",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/consent/{id}/withdraw": {
+      "patch": {
+        "operationId": "GuardiansController_withdrawConsent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/classes": {
       "post": {
         "operationId": "ClassesController_create",
@@ -1060,6 +1281,876 @@
         },
         "tags": [
           "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/plans": {
+      "get": {
+        "operationId": "SubscriptionPlansController_findAll",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlanListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/subscription-plans/{planId}/subscribe": {
+      "post": {
+        "operationId": "SubscriptionPlansController_subscribeSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "planId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscribeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/subscription-plans/{planId}/subscribe": {
+      "post": {
+        "operationId": "SubscriptionPlansController_subscribeFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "planId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscribeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/subscription/cancel": {
+      "post": {
+        "operationId": "SubscriptionPlansController_cancelSchoolSubscription",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelSubscriptionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/subscription/cancel": {
+      "post": {
+        "operationId": "SubscriptionPlansController_cancelFranchiseSubscription",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelSubscriptionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/subscription-plans": {
+      "post": {
+        "operationId": "PlatformAdminSubscriptionPlansController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubscriptionPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/subscription-plans/{id}": {
+      "patch": {
+        "operationId": "PlatformAdminSubscriptionPlansController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSubscriptionPlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-subscription-plans"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/auth/exchange": {
+      "post": {
+        "operationId": "PlatformAdminAuthController_exchange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeCognitoTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-auth"
+        ]
+      }
+    },
+    "/v1/platform-admin/auth/me": {
+      "get": {
+        "operationId": "PlatformAdminAuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}": {
+      "get": {
+        "operationId": "PlatformAdminSchoolsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/franchises/{id}": {
+      "get": {
+        "operationId": "PlatformAdminFranchisesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/admin-users": {
+      "post": {
+        "operationId": "PlatformAdminUsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PlatformAdminUsersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/admin-users/{id}": {
+      "delete": {
+        "operationId": "PlatformAdminUsersController_revoke",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{schoolId}/payment-account": {
+      "get": {
+        "operationId": "PlatformAdminPaymentAccountsController_findForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/franchises/{franchiseId}/payment-account": {
+      "get": {
+        "operationId": "PlatformAdminPaymentAccountsController_findForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAdminPaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/payment-accounts/{id}/rotate-credential": {
+      "post": {
+        "operationId": "PlatformAdminPaymentAccountsController_initiateCredentialRotation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateCredentialResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-payment-accounts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/impersonation-sessions": {
+      "post": {
+        "operationId": "PlatformAdminImpersonationController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartImpersonationSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpersonationSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-impersonation"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payment-accounts": {
+      "post": {
+        "operationId": "PaymentsController_createForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payment-account": {
+      "get": {
+        "operationId": "PaymentsController_findForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/payment-accounts": {
+      "post": {
+        "operationId": "PaymentsController_createForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{franchiseId}/payment-account": {
+      "get": {
+        "operationId": "PaymentsController_findForFranchise",
+        "parameters": [
+          {
+            "name": "franchiseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/payment-accounts/{id}/connect/onboard": {
+      "post": {
+        "operationId": "PaymentsController_initiateConnectOnboarding",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectOnboardingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/transactions/{id}/confirm": {
+      "patch": {
+        "operationId": "PaymentsController_confirmTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
         ],
         "security": [
           {
@@ -1558,229 +2649,6 @@
         ]
       }
     },
-    "/v1/schools/{schoolId}/payment-accounts": {
-      "post": {
-        "operationId": "PaymentsController_createForSchool",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePaymentAccountDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/schools/{schoolId}/payment-account": {
-      "get": {
-        "operationId": "PaymentsController_findForSchool",
-        "parameters": [
-          {
-            "name": "schoolId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/franchises/{franchiseId}/payment-accounts": {
-      "post": {
-        "operationId": "PaymentsController_createForFranchise",
-        "parameters": [
-          {
-            "name": "franchiseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePaymentAccountDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/franchises/{franchiseId}/payment-account": {
-      "get": {
-        "operationId": "PaymentsController_findForFranchise",
-        "parameters": [
-          {
-            "name": "franchiseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentAccountResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/payment-accounts/{id}/connect/onboard": {
-      "post": {
-        "operationId": "PaymentsController_initiateConnectOnboarding",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConnectOnboardingResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/transactions/{id}/confirm": {
-      "patch": {
-        "operationId": "PaymentsController_confirmTransaction",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "payments"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/v1/schools/{schoolId}/membership-plans": {
       "post": {
         "operationId": "MembershipsController_createPlan",
@@ -1970,6 +2838,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseMembershipDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -3180,6 +4058,51 @@
         ]
       }
     },
+    "/v1/waivers/{id}/signature-upload-url": {
+      "post": {
+        "operationId": "WaiversController_requestSignatureUploadUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestSignatureUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignatureUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/book": {
       "post": {
         "operationId": "BookingsController_bookClass",
@@ -3238,6 +4161,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -3352,6 +4285,61 @@
         ]
       }
     },
+    "/v1/classes/{id}/bookings": {
+      "get": {
+        "operationId": "BookingsController_findAllForClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/waitlist": {
       "post": {
         "operationId": "WaitlistController_joinWaitlist",
@@ -3365,6 +4353,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinWaitlistDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "",
@@ -3372,6 +4370,39 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WaitlistEntryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "WaitlistController_findAllForClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistEntryListResponseDto"
                 }
               }
             }
@@ -3395,6 +4426,15 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "Guardian-only: if the caller has no direct visibility into this Waitlist entry, retry the lookup under this linked minor Student's own context.",
             "schema": {
               "type": "string"
             }
@@ -3428,6 +4468,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimWaitlistDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -3450,58 +4500,34 @@
         ]
       }
     },
-    "/v1/guardians/me/minors": {
+    "/v1/attendance/scan": {
       "post": {
-        "operationId": "GuardiansController_createMinor",
+        "operationId": "AttendanceController_scan",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateMinorDto"
+                "$ref": "#/components/schemas/ScanAttendanceDto"
               }
             }
           }
         },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MinorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "GuardiansController_findMyMinors",
-        "parameters": [],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MinorListResponseDto"
+                  "$ref": "#/components/schemas/BookingResponseDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "guardians"
+          "attendance"
         ],
         "security": [
           {
@@ -3510,80 +4536,9 @@
         ]
       }
     },
-    "/v1/guardians/me/minors/{studentId}/consent": {
-      "post": {
-        "operationId": "GuardiansController_grantConsent",
-        "parameters": [
-          {
-            "name": "studentId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GrantConsentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/guardians/me/consent": {
+    "/v1/classes/{id}/qr-token": {
       "get": {
-        "operationId": "GuardiansController_findMyConsentRecords",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsentRecordListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guardians"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/guardians/me/consent/{id}/withdraw": {
-      "patch": {
-        "operationId": "GuardiansController_withdrawConsent",
+        "operationId": "AttendanceController_issueClassQrToken",
         "parameters": [
           {
             "name": "id",
@@ -3600,14 +4555,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConsentRecordResponseDto"
+                  "$ref": "#/components/schemas/QrTokenResponseDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "guardians"
+          "attendance"
         ],
         "security": [
           {
@@ -3616,16 +4571,51 @@
         ]
       }
     },
-    "/v1/attendance/scan": {
-      "post": {
-        "operationId": "AttendanceController_scan",
+    "/v1/attendance/my-qr-token": {
+      "get": {
+        "operationId": "AttendanceController_issueMyQrToken",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrTokenResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/attendance-scan": {
+      "post": {
+        "operationId": "AttendanceController_instructorScan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ScanAttendanceDto"
+                "$ref": "#/components/schemas/InstructorScanDto"
               }
             }
           }
@@ -3927,6 +4917,559 @@
         },
         "tags": [
           "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/fee-charges": {
+      "get": {
+        "operationId": "FranchiseFeesController_findAllForFranchise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{id}/fee-charges": {
+      "get": {
+        "operationId": "FranchiseFeesController_findAllForSchool",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchise-fee-charges/{id}": {
+      "get": {
+        "operationId": "FranchiseFeesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchise-fee-charges/{id}/refund": {
+      "post": {
+        "operationId": "FranchiseFeesController_refund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundFranchiseFeeChargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseFeeChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchise-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/lessons": {
+      "post": {
+        "operationId": "CurriculumController_createLesson",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLessonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CurriculumController_findLessonsForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/skills/{id}/lessons": {
+      "get": {
+        "operationId": "CurriculumController_findLessonsForSkill",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/lessons/{id}": {
+      "get": {
+        "operationId": "CurriculumController_findOneLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "CurriculumController_updateLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLessonDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/translations": {
+      "get": {
+        "operationId": "TranslationsController_findAll",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "screen",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "translations"
+        ]
+      }
+    },
+    "/v1/platform-admin/translations": {
+      "post": {
+        "operationId": "PlatformAdminTranslationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTranslationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-translations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/translations/{id}": {
+      "patch": {
+        "operationId": "PlatformAdminTranslationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTranslationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-translations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PlatformAdminTranslationsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-translations"
         ],
         "security": [
           {
@@ -4303,15 +5846,6 @@
           "name": {
             "type": "string"
           },
-          "mobileNumber": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "businessType": {
-            "type": "string"
-          },
           "activities": {
             "type": "array",
             "items": {
@@ -4327,23 +5861,6 @@
           "ranksToggle": {
             "type": "boolean"
           },
-          "defaultLanguage": {
-            "type": "string",
-            "description": "One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment."
-          },
-          "defaultCurrency": {
-            "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
-          },
-          "description": {
-            "type": "string"
-          },
-          "logoUrl": {
-            "type": "string"
-          },
-          "bannerUrl": {
-            "type": "string"
-          },
           "classCancellationPolicy": {
             "type": "string",
             "enum": [
@@ -4357,6 +5874,49 @@
             "type": "number",
             "default": 120,
             "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+          },
+          "mobileNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessType": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment.",
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "JoinSchoolDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: enroll this linked minor Student at the School instead of the caller."
           }
         }
       },
@@ -4410,7 +5970,8 @@
             "type": "string"
           },
           "accessToken": {
-            "type": "string"
+            "type": "string",
+            "description": "Present for an ordinary self-service join; absent for a Guardian enrolling a linked minor (see this DTO's own header comment)."
           }
         },
         "required": [
@@ -4419,8 +5980,18 @@
           "userId",
           "grantedAt",
           "createdAt",
-          "updatedAt",
-          "accessToken"
+          "updatedAt"
+        ]
+      },
+      "JoinFranchiseDto": {
+        "type": "object",
+        "properties": {
+          "franchiseId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "franchiseId"
         ]
       },
       "CreateBranchDto": {
@@ -4530,23 +6101,29 @@
             "type": "string"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "contactPhone": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "timezone": {
             "type": "string",
-            "description": "IANA timezone name."
+            "description": "IANA timezone name.",
+            "nullable": true
           },
           "currencyOverride": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "logoUrl": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "bannerUrl": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -4701,6 +6278,14 @@
               "PER_HEADCOUNT"
             ],
             "default": "FLAT"
+          },
+          "flatFeeAmount": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless."
+          },
+          "perHeadcountRate": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
           }
         },
         "required": [
@@ -4767,6 +6352,14 @@
               "PER_HEADCOUNT"
             ]
           },
+          "flatFeeAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "perHeadcountRate": {
+            "type": "number",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string"
           },
@@ -4812,15 +6405,6 @@
           "name": {
             "type": "string"
           },
-          "mobileNumber": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
           "activities": {
             "type": "array",
             "items": {
@@ -4833,23 +6417,6 @@
               "type": "string"
             }
           },
-          "defaultLanguage": {
-            "type": "string",
-            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1)."
-          },
-          "defaultCurrency": {
-            "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
-          },
-          "description": {
-            "type": "string"
-          },
-          "logoUrl": {
-            "type": "string"
-          },
-          "bannerUrl": {
-            "type": "string"
-          },
           "feeModel": {
             "type": "string",
             "enum": [
@@ -4857,8 +6424,191 @@
               "PER_HEADCOUNT"
             ],
             "default": "FLAT"
+          },
+          "flatFeeAmount": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless."
+          },
+          "perHeadcountRate": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless."
+          },
+          "mobileNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).",
+            "nullable": true
+          },
+          "defaultCurrency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
           }
         }
+      },
+      "CreateMinorDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component."
+          },
+          "gender": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "dateOfBirth"
+        ]
+      },
+      "MinorResponseDto": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "linkId",
+          "studentId",
+          "firstName",
+          "surname",
+          "dateOfBirth"
+        ]
+      },
+      "MinorListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GrantConsentDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "BASELINE",
+              "CAMERA"
+            ]
+          },
+          "policyVersion": {
+            "type": "string",
+            "description": "The specific privacy-notice/data-practice description version being consented to."
+          }
+        },
+        "required": [
+          "tier",
+          "policyVersion"
+        ]
+      },
+      "ConsentRecordResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guardianId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string"
+          },
+          "policyVersion": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "consentedAt": {
+            "type": "string"
+          },
+          "withdrawnAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "guardianId",
+          "studentId",
+          "tier",
+          "policyVersion",
+          "status",
+          "consentedAt"
+        ]
+      },
+      "ConsentRecordListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentRecordResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
       },
       "CreateClassDto": {
         "type": "object",
@@ -5043,14 +6793,6 @@
       "UpdateClassDto": {
         "type": "object",
         "properties": {
-          "branchId": {
-            "type": "string",
-            "description": "Branch to scope this Class to. Omit for a School-wide Class."
-          },
-          "instructorId": {
-            "type": "string",
-            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
-          },
           "title": {
             "type": "string"
           },
@@ -5061,12 +6803,6 @@
               "type": "string"
             }
           },
-          "bannerUrl": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
           "startDate": {
             "type": "string",
             "description": "ISO 8601 date-time."
@@ -5074,11 +6810,6 @@
           "endDate": {
             "type": "string",
             "description": "ISO 8601 date-time."
-          },
-          "capacity": {
-            "type": "number",
-            "description": "Nullable/omitted = unlimited.",
-            "minimum": 1
           },
           "bookingEndAt": {
             "type": "string",
@@ -5092,10 +6823,6 @@
             "type": "string",
             "description": "ISO 8601 date-time — cancel-before-this cutoff for refund/credit."
           },
-          "cancellationCharge": {
-            "type": "number",
-            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
@@ -5104,8 +6831,491 @@
             "type": "boolean",
             "default": false,
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this Class to. Pass null to clear (make it School-wide).",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign.",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Pass null to clear (unlimited).",
+            "minimum": 1
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor currency unit (e.g. cents). Pass null to clear."
           }
         }
+      },
+      "SubscriptionPlanResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor-unit, single USD anchor currency."
+          },
+          "featureList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "featureList",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SubscriptionPlanListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionPlanResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SubscribeResponseDto": {
+        "type": "object",
+        "properties": {
+          "subscriptionId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string",
+            "description": "Stripe PaymentIntent client secret — complete payment client-side via Stripe Elements."
+          }
+        },
+        "required": [
+          "subscriptionId",
+          "clientSecret"
+        ]
+      },
+      "CancelSubscriptionResponseDto": {
+        "type": "object",
+        "properties": {
+          "cancelsAt": {
+            "type": "string",
+            "description": "ISO timestamp of when the current paid period ends and access actually degrades."
+          }
+        },
+        "required": [
+          "cancelsAt"
+        ]
+      },
+      "CreateSubscriptionPlanDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Plan name, e.g. \"Growth\"."
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents), single USD anchor currency (Decision 7) — e.g. \"£30.00 Per Month\" in Spec 55's own example is 3000."
+          },
+          "featureList": {
+            "description": "Marketing feature-list bullets shown alongside the plan.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "price"
+        ]
+      },
+      "UpdateSubscriptionPlanDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Plan name, e.g. \"Growth\"."
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents), single USD anchor currency (Decision 7) — e.g. \"£30.00 Per Month\" in Spec 55's own example is 3000."
+          },
+          "featureList": {
+            "description": "Marketing feature-list bullets shown alongside the plan.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ExchangeCognitoTokenDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Cognito-issued ID token (JWT) from the frontend's own Hosted-UI/PKCE token exchange."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "AdminAuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
+      },
+      "AdminMeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "subRole"
+        ]
+      },
+      "CreateAdminUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          },
+          "ssoSubject": {
+            "type": "string",
+            "description": "Cognito's own `sub` claim for the account being invited — see this DTO's own header comment."
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "subRole",
+          "ssoSubject"
+        ]
+      },
+      "AdminUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subRole": {
+            "type": "string",
+            "enum": [
+              "SUPPORT",
+              "BILLING_PAYMENTS_OPS",
+              "FULL_ADMIN"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "subRole",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AdminUserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PlatformAdminPaymentAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string"
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "accountTitle",
+          "country",
+          "status",
+          "mode",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "RotateCredentialResponseDto": {
+        "type": "object",
+        "properties": {
+          "onboardingUrl": {
+            "type": "string",
+            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
+          }
+        },
+        "required": [
+          "onboardingUrl"
+        ]
+      },
+      "StartImpersonationSessionDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "The tenant User id to impersonate."
+          },
+          "schoolId": {
+            "type": "string",
+            "description": "The one School this impersonation session is scoped to (Decision 39) — not the target user's other Schools/Franchises, if any."
+          }
+        },
+        "required": [
+          "userId",
+          "schoolId"
+        ]
+      },
+      "ImpersonationSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO datetime this session (and the token itself) expires."
+          },
+          "impersonatedUserId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresAt",
+          "impersonatedUserId"
+        ]
+      },
+      "CreatePaymentAccountDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "STRIPE",
+              "CASH",
+              "BANK_TRANSFER"
+            ]
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code — not validated against the actual list this phase, flagged for Architect review same as other inferred format choices."
+          }
+        },
+        "required": [
+          "provider",
+          "accountTitle",
+          "country"
+        ]
+      },
+      "PaymentAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string"
+          },
+          "accountTitle": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "stripeConnectedAccountId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "accountTitle",
+          "country",
+          "status",
+          "mode",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ConnectOnboardingResponseDto": {
+        "type": "object",
+        "properties": {
+          "onboardingUrl": {
+            "type": "string",
+            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
+          }
+        },
+        "required": [
+          "onboardingUrl"
+        ]
       },
       "CreateTimetableSlotDto": {
         "type": "object",
@@ -5350,14 +7560,6 @@
       "UpdateTimetableSlotDto": {
         "type": "object",
         "properties": {
-          "branchId": {
-            "type": "string",
-            "description": "Branch to scope this slot to. Omit for a School-wide slot."
-          },
-          "instructorId": {
-            "type": "string",
-            "description": "A User holding an active INSTRUCTOR RoleGrant at this School."
-          },
           "weekday": {
             "type": "string",
             "enum": [
@@ -5406,17 +7608,6 @@
               "type": "string"
             }
           },
-          "capacity": {
-            "type": "number",
-            "description": "Nullable/omitted = unlimited.",
-            "minimum": 1
-          },
-          "description": {
-            "type": "string"
-          },
-          "bannerUrl": {
-            "type": "string"
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
@@ -5426,21 +7617,49 @@
             "default": false,
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
           },
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this slot to. Pass null to clear (make it School-wide).",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign.",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Pass null to clear (unlimited).",
+            "minimum": 1
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "bookingCutoffMinutesBeforeStart": {
             "type": "number",
-            "description": "Booking cutoff, in minutes before each occurrence starts."
+            "nullable": true,
+            "description": "Booking cutoff, in minutes before each occurrence starts. Pass null to clear."
           },
           "qrAttendanceWindowMinutes": {
             "type": "number",
-            "description": "QR check-in window, in minutes, from each occurrence's start."
+            "nullable": true,
+            "description": "QR check-in window, in minutes, from each occurrence's start. Pass null to clear."
           },
           "refundCutoffHoursBeforeStart": {
             "type": "number",
-            "description": "Refund/credit cutoff, in hours before each occurrence starts."
+            "nullable": true,
+            "description": "Refund/credit cutoff, in hours before each occurrence starts. Pass null to clear."
           },
           "cancellationCharge": {
             "type": "number",
-            "description": "Minor currency unit (e.g. cents), in the School/Branch's own currency."
+            "nullable": true,
+            "description": "Minor currency unit (e.g. cents). Pass null to clear."
           }
         }
       },
@@ -5564,33 +7783,39 @@
       "UpdateInstructorDto": {
         "type": "object",
         "properties": {
-          "branchId": {
-            "type": "string",
-            "description": "Branch to scope this profile to. Omit for a School-wide profile."
-          },
-          "photoUrl": {
-            "type": "string"
-          },
-          "beltRanking": {
-            "type": "string",
-            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system."
-          },
           "specializations": {
             "type": "array",
             "items": {
               "type": "string"
             }
           },
+          "branchId": {
+            "type": "string",
+            "description": "Branch to scope this profile to. Pass null to clear (make it School-wide).",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "beltRanking": {
+            "type": "string",
+            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system.",
+            "nullable": true
+          },
           "phone": {
             "type": "string",
-            "description": "School-facing contact number, E.164 — distinct from this User's own login phone."
+            "description": "School-facing contact number, E.164 — distinct from this User's own login phone. Pass null to clear.",
+            "nullable": true
           },
           "yearsOfExperience": {
             "type": "number",
+            "nullable": true,
             "minimum": 0
           },
           "bio": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -5746,95 +7971,6 @@
           "title",
           "createdAt",
           "updatedAt"
-        ]
-      },
-      "CreatePaymentAccountDto": {
-        "type": "object",
-        "properties": {
-          "provider": {
-            "type": "string",
-            "enum": [
-              "STRIPE",
-              "CASH",
-              "BANK_TRANSFER"
-            ]
-          },
-          "accountTitle": {
-            "type": "string"
-          },
-          "country": {
-            "type": "string",
-            "description": "ISO 3166-1 alpha-2 country code — not validated against the actual list this phase, flagged for Architect review same as other inferred format choices."
-          }
-        },
-        "required": [
-          "provider",
-          "accountTitle",
-          "country"
-        ]
-      },
-      "PaymentAccountResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "schoolId": {
-            "type": "string",
-            "nullable": true
-          },
-          "franchiseId": {
-            "type": "string",
-            "nullable": true
-          },
-          "provider": {
-            "type": "string"
-          },
-          "accountTitle": {
-            "type": "string"
-          },
-          "country": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "mode": {
-            "type": "string"
-          },
-          "stripeConnectedAccountId": {
-            "type": "string",
-            "nullable": true,
-            "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "provider",
-          "accountTitle",
-          "country",
-          "status",
-          "mode",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "ConnectOnboardingResponseDto": {
-        "type": "object",
-        "properties": {
-          "onboardingUrl": {
-            "type": "string",
-            "description": "Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics."
-          }
-        },
-        "required": [
-          "onboardingUrl"
         ]
       },
       "CreateMembershipPlanDto": {
@@ -6001,21 +8137,9 @@
             "type": "number",
             "description": "Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS."
           },
-          "currency": {
-            "type": "string",
-            "description": "One of the 6 supported currencies (School's own choice, no conversion applied)."
-          },
-          "expiryDurationDays": {
-            "type": "number",
-            "description": "Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS."
-          },
           "classesIncluded": {
             "type": "number",
             "description": "CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set."
-          },
-          "scopedClassId": {
-            "type": "string",
-            "description": "Restricts this plan to one specific Class."
           },
           "visible": {
             "type": "boolean",
@@ -6025,13 +8149,38 @@
             "type": "string",
             "description": "ISO 8601 date-time."
           },
-          "cancellationCharge": {
-            "type": "number",
-            "description": "Minor currency unit."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
+          },
+          "currency": {
+            "type": "string",
+            "description": "One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear.",
+            "nullable": true
+          },
+          "expiryDurationDays": {
+            "type": "number",
+            "nullable": true,
+            "description": "Computes each purchased Membership's expiry date at creation time. Pass null to clear."
+          },
+          "scopedClassId": {
+            "type": "string",
+            "description": "Restricts this plan to one specific Class. Pass null to clear (unrestrict).",
+            "nullable": true
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor currency unit. Pass null to clear."
+          }
+        }
+      },
+      "PurchaseMembershipDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller."
           }
         }
       },
@@ -6172,6 +8321,12 @@
           "studentId": {
             "type": "string"
           },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
           "paymentAccountId": {
             "type": "string"
           },
@@ -6217,6 +8372,8 @@
           "id",
           "schoolId",
           "studentId",
+          "studentFirstName",
+          "studentSurname",
           "paymentAccountId",
           "membershipPlanId",
           "billingDate",
@@ -6528,12 +8685,6 @@
           "primaryColour": {
             "type": "string"
           },
-          "secondaryColour": {
-            "type": "string"
-          },
-          "weeklyClassCountCap": {
-            "type": "number"
-          },
           "yearsInRankFlag": {
             "type": "boolean",
             "default": false,
@@ -6552,6 +8703,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "secondaryColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "weeklyClassCountCap": {
+            "type": "number",
+            "nullable": true
           }
         }
       },
@@ -6625,7 +8784,8 @@
             "type": "string"
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -6871,6 +9031,10 @@
           "studentId": {
             "type": "string"
           },
+          "signedById": {
+            "type": "string",
+            "description": "The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf."
+          },
           "schoolId": {
             "type": "string"
           },
@@ -6879,6 +9043,11 @@
           },
           "signatureText": {
             "type": "string"
+          },
+          "signatureImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Presigned R2 GET URL, valid for 15 minutes — null if no drawn-signature image was captured."
           },
           "signedDate": {
             "type": "string"
@@ -6897,6 +9066,7 @@
           "id",
           "waiverId",
           "studentId",
+          "signedById",
           "schoolId",
           "signerFullName",
           "signatureText",
@@ -6939,12 +9109,20 @@
       "SignWaiverDto": {
         "type": "object",
         "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: sign on behalf of this linked minor Student instead of the caller."
+          },
           "signerFullName": {
             "type": "string"
           },
           "signatureText": {
             "type": "string",
-            "description": "Typed signature text (not a drawn/canvas signature — see WaiverSignature's own schema comment)."
+            "description": "Typed signature text (the confirmed baseline mechanism — see WaiverSignature's own schema comment)."
+          },
+          "signatureImageKey": {
+            "type": "string",
+            "description": "R2 object key from a prior POST /waivers/{id}/signature-upload-url call — see this DTO's own header comment."
           }
         },
         "required": [
@@ -6952,12 +9130,38 @@
           "signatureText"
         ]
       },
+      "RequestSignatureUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller."
+          }
+        }
+      },
+      "SignatureUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned PUT URL, valid for 5 minutes — upload the raster (PNG) signature image directly here."
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "Pass this back as signatureImageKey when calling POST /waivers/{id}/sign."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "objectKey"
+        ]
+      },
       "BookClassDto": {
         "type": "object",
         "properties": {
           "studentId": {
             "type": "string",
-            "description": "Staff-only: book on behalf of this Student instead of the caller."
+            "description": "Book on behalf of this Student instead of the caller — Staff (with optional overrideReason), or a Guardian for a linked minor."
           },
           "attendeeMembershipIds": {
             "description": "One Membership id per guest beyond the Student themselves (whoJoinYou) — each guest's own valid Membership or School-gifted Friend Pass.",
@@ -7028,6 +9232,14 @@
             "type": "string",
             "nullable": true
           },
+          "checkInMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkedInById": {
+            "type": "string",
+            "nullable": true
+          },
           "refundResolution": {
             "type": "string",
             "nullable": true
@@ -7061,6 +9273,15 @@
           "updatedAt"
         ]
       },
+      "CancelBookingDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Guardian-only: if the caller has no direct visibility into this Booking, retry the lookup under this linked minor Student's own context."
+          }
+        }
+      },
       "UpdateBookingOverrideDto": {
         "type": "object",
         "properties": {
@@ -7089,6 +9310,15 @@
         "required": [
           "items"
         ]
+      },
+      "JoinWaitlistDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
+          }
+        }
       },
       "WaitlistEntryResponseDto": {
         "type": "object",
@@ -7141,140 +9371,22 @@
           "joinedAt"
         ]
       },
-      "CreateMinorDto": {
+      "ClaimWaitlistDto": {
         "type": "object",
         "properties": {
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "description": "ISO 8601 date, no time component."
-          },
-          "gender": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "firstName",
-          "surname",
-          "dateOfBirth"
-        ]
-      },
-      "MinorResponseDto": {
-        "type": "object",
-        "properties": {
-          "linkId": {
-            "type": "string"
-          },
           "studentId": {
-            "type": "string"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "dateOfBirth": {
-            "type": "string"
-          },
-          "gender": {
             "type": "string",
-            "nullable": true
+            "description": "Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor."
           }
-        },
-        "required": [
-          "linkId",
-          "studentId",
-          "firstName",
-          "surname",
-          "dateOfBirth"
-        ]
+        }
       },
-      "MinorListResponseDto": {
+      "WaitlistEntryListResponseDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MinorResponseDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "GrantConsentDto": {
-        "type": "object",
-        "properties": {
-          "tier": {
-            "type": "string",
-            "enum": [
-              "BASELINE",
-              "CAMERA"
-            ]
-          },
-          "policyVersion": {
-            "type": "string",
-            "description": "The specific privacy-notice/data-practice description version being consented to."
-          }
-        },
-        "required": [
-          "tier",
-          "policyVersion"
-        ]
-      },
-      "ConsentRecordResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "guardianId": {
-            "type": "string"
-          },
-          "studentId": {
-            "type": "string"
-          },
-          "tier": {
-            "type": "string"
-          },
-          "policyVersion": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "consentedAt": {
-            "type": "string"
-          },
-          "withdrawnAt": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "guardianId",
-          "studentId",
-          "tier",
-          "policyVersion",
-          "status",
-          "consentedAt"
-        ]
-      },
-      "ConsentRecordListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ConsentRecordResponseDto"
+              "$ref": "#/components/schemas/WaitlistEntryResponseDto"
             }
           }
         },
@@ -7285,12 +9397,47 @@
       "ScanAttendanceDto": {
         "type": "object",
         "properties": {
-          "bookingId": {
+          "classId": {
+            "type": "string"
+          },
+          "qrToken": {
+            "type": "string",
+            "description": "The rotating token from GET /classes/{id}/qr-token."
+          }
+        },
+        "required": [
+          "classId",
+          "qrToken"
+        ]
+      },
+      "QrTokenResponseDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
             "type": "string"
           }
         },
         "required": [
-          "bookingId"
+          "token",
+          "expiresAt"
+        ]
+      },
+      "InstructorScanDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "studentToken": {
+            "type": "string",
+            "description": "The Student's own token from GET /attendance/my-qr-token. Omit for a manual, camera-free confirmation."
+          }
+        },
+        "required": [
+          "studentId"
         ]
       },
       "AcademySummaryDto": {
@@ -7734,6 +9881,388 @@
           "lastSeenAt",
           "createdAt"
         ]
+      },
+      "FranchiseFeeChargeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "franchisePaymentAccountId": {
+            "type": "string"
+          },
+          "billingPeriodStart": {
+            "type": "string"
+          },
+          "billingPeriodEnd": {
+            "type": "string"
+          },
+          "feeBasisSnapshot": {
+            "type": "string",
+            "enum": [
+              "FLAT",
+              "PER_HEADCOUNT"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "activeStudentCountSnapshot": {
+            "type": "number",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUCCESSFUL",
+              "PENDING",
+              "FAILED",
+              "REFUNDED",
+              "DISPUTED"
+            ]
+          },
+          "stripeInvoiceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "stripeSubscriptionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "disputedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "franchiseId",
+          "schoolId",
+          "franchisePaymentAccountId",
+          "billingPeriodStart",
+          "billingPeriodEnd",
+          "feeBasisSnapshot",
+          "amount",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "FranchiseFeeChargeListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseFeeChargeResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RefundFranchiseFeeChargeDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Minor-unit (e.g. cents). Omit to refund the full remaining unrefunded balance."
+          }
+        }
+      },
+      "CreateLessonDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "description": "Plain field only — Spec 55's own \"Belongs to a Category\" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation."
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "PRERECORDED",
+              "LIVE"
+            ]
+          },
+          "instructorId": {
+            "type": "string",
+            "description": "A User holding an active INSTRUCTOR RoleGrant at this School — validated the same way Class.instructorId is (TenantAuthorizationService.assertValidInstructor), not a separate Instructor-profile FK."
+          },
+          "skillIds": {
+            "minItems": 1,
+            "description": "Skill ids this Lesson teaches — must all belong to this School.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "format",
+          "skillIds"
+        ]
+      },
+      "LessonResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "instructorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "durationSeconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "PRERECORDED",
+              "LIVE"
+            ]
+          },
+          "videoRef": {
+            "type": "string",
+            "nullable": true,
+            "description": "Vendor-agnostic pointer (Decision 101: Cloudflare Stream) — null until the video-hosting pipeline exists."
+          },
+          "captionStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "captionTrackRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "skillIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "title",
+          "format",
+          "captionStatus",
+          "skillIds",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "LessonListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LessonResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateLessonDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "PRERECORDED",
+              "LIVE"
+            ]
+          },
+          "instructorId": {
+            "type": "string"
+          },
+          "skillIds": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TranslationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "labelKey": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "screen",
+          "labelKey",
+          "locale",
+          "content",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TranslationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranslationResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateTranslationDto": {
+        "type": "object",
+        "properties": {
+          "screen": {
+            "type": "string",
+            "description": "The app screen this label belongs to (e.g. \"login\", \"academyDetail\")."
+          },
+          "labelKey": {
+            "type": "string",
+            "description": "The label key within that screen (e.g. \"welcomeMessage\")."
+          },
+          "locale": {
+            "type": "string",
+            "description": "Free text — no canonical language code list is confirmed yet (domain-rules §1)."
+          },
+          "content": {
+            "type": "string",
+            "description": "The translated text for this screen/labelKey/locale."
+          }
+        },
+        "required": [
+          "screen",
+          "labelKey",
+          "locale",
+          "content"
+        ]
+      },
+      "UpdateTranslationDto": {
+        "type": "object",
+        "properties": {
+          "screen": {
+            "type": "string",
+            "description": "The app screen this label belongs to (e.g. \"login\", \"academyDetail\")."
+          },
+          "labelKey": {
+            "type": "string",
+            "description": "The label key within that screen (e.g. \"welcomeMessage\")."
+          },
+          "locale": {
+            "type": "string",
+            "description": "Free text — no canonical language code list is confirmed yet (domain-rules §1)."
+          },
+          "content": {
+            "type": "string",
+            "description": "The translated text for this screen/labelKey/locale."
+          }
+        }
       }
     }
   }

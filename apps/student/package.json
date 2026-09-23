@@ -2,7 +2,7 @@
   "name": "@ultm8/student",
   "version": "0.1.0",
   "private": true,
-  "description": "React Native — Student app (Spec §4.2). Expo-managed workflow (Decision 98) — EAS Build is the direct path to the confirmed per-School white-label rebuild pipeline (Spec §5).",
+  "description": "React Native — Student app (Spec §4.2). Expo-managed workflow (Decision 113) — EAS Build is the direct path to the confirmed per-School white-label rebuild pipeline (Spec §5).",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",

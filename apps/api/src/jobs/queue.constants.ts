@@ -15,3 +15,9 @@ export const WAITLIST_CASCADE_PROCESSING_QUEUE = 'waitlist-cascade-processing';
 // samples" text feeds this one queue ("Triggered by: Any of the above, plus
 // manual school messages").
 export const NOTIFICATION_FANOUT_QUEUE = 'notification-fanout';
+// Phase 16b-ii — Spec 55 §9/§10.2's confirmed job name, quoted directly:
+// "franchise-fee-usage-reporting job... reporting each School's
+// active-student-count monthly." Also owns the (Flat-fee-only) "ensure the
+// standing Subscription exists" pass — see the processor's own comment for why
+// one job covers both rather than splitting them.
+export const FRANCHISE_FEE_USAGE_REPORTING_QUEUE = 'franchise-fee-usage-reporting';

@@ -4,7 +4,25 @@ import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from './branchQueries';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
- * apps/api/src/tenants/branches/dto/create-branch.dto.ts, re-verified before writing. */
+ * apps/api/src/tenants/branches/dto/create-branch.dto.ts, re-verified before writing.
+ *
+ * FOUND ON REVIEW (Phase 53): this form covered name/address/contactPhone/
+ * timezone/currencyOverride since Phase 3, but never logoUrl/bannerUrl —
+ * Decision 76's own field list names "branding" explicitly, and the backend
+ * (create/update DTOs, response DTO, Prisma model) has carried both fields the
+ * whole time; only this form had never been updated to expose them. Added
+ * here as plain-text URL fields, the same treatment Franchise/Class/
+ * TimetableSlot's own forms already give logoUrl/bannerUrl elsewhere in this
+ * app — no image-upload infrastructure exists for general branding assets
+ * (R2 is wired up for waiver signatures specifically, Phase 34, not this).
+ *
+ * FOUND ON REVIEW (Phase 18): `null` (not `undefined`) means "the field was
+ * cleared" — UpdateBranchDto now accepts `null` on these fields to mean
+ * exactly that (this exact bug — a cleared field silently no-op'ing on save —
+ * has been live since Phase 3; see that DTO's own header comment for the full
+ * reasoning). `BranchesPage` maps `null` back to `undefined` for the CREATE
+ * path, where there's nothing to clear and CreateBranchDto doesn't accept
+ * `null` on these fields. */
 export function BranchFormModal({
   title,
   initial,
@@ -17,10 +35,12 @@ export function BranchFormModal({
   submitting: boolean;
   onSubmit: (values: {
     name: string;
-    address?: string;
-    contactPhone?: string;
-    timezone?: string;
-    currencyOverride?: string;
+    address?: string | null;
+    contactPhone?: string | null;
+    timezone?: string | null;
+    currencyOverride?: string | null;
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
   }) => Promise<void>;
   onClose: () => void;
 }) {
@@ -30,6 +50,8 @@ export function BranchFormModal({
     contactPhone: initial?.contactPhone ?? '',
     timezone: initial?.timezone ?? '',
     currencyOverride: initial?.currencyOverride ?? '',
+    logoUrl: initial?.logoUrl ?? '',
+    bannerUrl: initial?.bannerUrl ?? '',
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -39,10 +61,12 @@ export function BranchFormModal({
     try {
       await onSubmit({
         name: form.name,
-        address: form.address || undefined,
-        contactPhone: form.contactPhone || undefined,
-        timezone: form.timezone || undefined,
-        currencyOverride: form.currencyOverride || undefined,
+        address: form.address || null,
+        contactPhone: form.contactPhone || null,
+        timezone: form.timezone || null,
+        currencyOverride: form.currencyOverride || null,
+        logoUrl: form.logoUrl || null,
+        bannerUrl: form.bannerUrl || null,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
@@ -67,6 +91,12 @@ export function BranchFormModal({
         </Field>
         <Field label="Currency override" htmlFor="branch-currency">
           <TextField value={form.currencyOverride} onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))} />
+        </Field>
+        <Field label="Logo URL" htmlFor="branch-logo">
+          <TextField value={form.logoUrl} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} />
+        </Field>
+        <Field label="Banner URL" htmlFor="branch-banner">
+          <TextField value={form.bannerUrl} onChange={(e) => setForm((f) => ({ ...f, bannerUrl: e.target.value }))} />
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>

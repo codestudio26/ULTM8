@@ -58,11 +58,14 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   let studentB: { id: string; email: string };
   let branchStaff: { id: string; email: string };
   let outsider: { id: string; email: string };
+  let guardian: { id: string; email: string };
+  let minor: { id: string; email: string };
   let tokenOwner: string;
   let tokenStudentA: string;
   let tokenStudentB: string;
   let tokenBranchStaff: string;
   let tokenOutsider: string;
+  let tokenGuardian: string;
 
   let subscriptionPlanId: string;
   let classPackPlanId: string;
@@ -137,6 +140,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     studentB = await mkUser('student-b');
     branchStaff = await mkUser('branch-staff');
     outsider = await mkUser('outsider');
+    guardian = await mkUser('guardian');
+    minor = await mkUser('minor');
 
     await superuser.roleGrant.createMany({
       data: [
@@ -144,14 +149,20 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: school.id },
         { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: school.id },
         { id: randomUUID(), role: 'BRANCH_STAFF', userId: branchStaff.id, schoolId: school.id },
+        // Stands in for Phase 38's own Guardian-on-behalf-of enrollment —
+        // exercised end-to-end in that phase's own test suite, not re-proven
+        // here.
+        { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: school.id },
       ],
     });
+    await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
 
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentB = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenBranchStaff = signAccessToken(branchStaff, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenOutsider = signAccessToken(outsider, []);
+    tokenGuardian = signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
 
     const subscriptionPlan = await superuser.membershipPlan.create({
       data: { id: randomUUID(), schoolId: school.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 },
@@ -219,6 +230,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     await superuser.rank.deleteMany({ where: { schoolId: school.id } });
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
+    await superuser.guardianLink.deleteMany({ where: { guardianId: guardian.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { email: { contains: 'bookings-http-' } } });
     await superuser.school.delete({ where: { id: school.id } });
@@ -254,6 +266,159 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     const meRes = await request(app.getHttpServer()).get('/v1/bookings/me').set('Authorization', `Bearer ${tokenStudentA}`);
     expect(meRes.status).toBe(200);
     expect(meRes.body.items.some((b: { id: string }) => b.id === res.body.id)).toBe(true);
+  });
+
+  it('GET /classes/:id/bookings — School Owner and Branch Staff can see the roster; a Student or outsider cannot', async () => {
+    const ownerRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.items.some((b: { studentId: string }) => b.studentId === studentA.id)).toBe(true);
+
+    const staffRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenBranchStaff}`);
+    expect(staffRes.status).toBe(200);
+
+    const studentRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(studentRes.status).toBe(403);
+
+    // The outsider holds no RoleGrant anywhere at this School, so Class's own
+    // `class_tenant_isolation` RLS policy already filters the row out before
+    // assertStaffAtSchool ever runs — a 404, not a 403, matching this
+    // codebase's own established "RLS-blocked and genuinely-missing are
+    // indistinguishable by design" convention (ultm8-tenant-isolation §2).
+    const outsiderRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(outsiderRes.status).toBe(404);
+  });
+
+  it('GET /classes/:id/bookings — a single-grant Branch-scoped Staff member outside this Class\'s own Branch gets 404 (RLS hides the Class row itself, same as any cross-tenant read — ultm8-tenant-isolation §2); a genuinely empty Class returns 200 + []', async () => {
+    // Self-contained fixture — mirrors the established branch-scoping pattern
+    // already used in classes.e2e-spec.ts/instructors.e2e-spec.ts/
+    // timetable.e2e-spec.ts for the identical three-way RLS structure, not
+    // reused from this file's own beforeAll (which never set up a second
+    // Branch).
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Branch B' } });
+    const staffB = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-branch-b-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'branch-b-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffB.id, schoolId: school.id, branchId: branchB.id },
+    });
+    const tokenStaffB = signAccessToken(staffB, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id }]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    // Wrong Branch, single grant — traced directly against class_tenant_isolation
+    // (20260907000000_classes_module/migration.sql): staffB's only RoleGrant
+    // (BRANCH_STAFF at branchB) does not satisfy that policy's own three-way
+    // EXISTS clause for a Class scoped to branchA, so `findAllForClass`'s own
+    // `tx.class.findUnique` already returns null under RLS, before
+    // assertStaffAtSchool's branch check is ever reached — a 404, exactly
+    // like ClassesService.findOne()'s own documented "RLS-blocked and
+    // genuinely-missing are indistinguishable by design" convention. This is
+    // NOT the scenario assertStaffAtSchool's targetBranchId param defends —
+    // see the dual-grant test directly below for the case where it does real
+    // work (RLS lets the Class row through via a non-matching-branch grant,
+    // but no Staff grant of the caller's own covers this Branch).
+    const wrongBranchRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenStaffB}`);
+    expect(wrongBranchRes.status).toBe(404);
+
+    // A genuinely empty (but authorized) Class still returns 200 + [], not an
+    // error — School Owner has no Branch restriction, so this exercises the
+    // "authorized but nothing to show" path distinctly from the 404 above.
+    const emptyRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(emptyRes.status).toBe(200);
+    expect(emptyRes.body.items).toEqual([]);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffB.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+  });
+
+  it('GET /classes/:id/bookings — a Staff member holding a SECOND, non-matching-branch RoleGrant that lets the Class pass RLS still gets a real 403 from assertStaffAtSchool, not a false-positive 200', async () => {
+    // This is the scenario assertStaffAtSchool's targetBranchId param actually
+    // defends against (see this file's single-grant test directly above for
+    // why the simple case is a 404, not a 403, via RLS alone). Here, staffC
+    // holds TWO RoleGrants at the same School: a STUDENT grant scoped to
+    // branchA (satisfying class_tenant_isolation's EXISTS clause, since RLS
+    // admits ANY active RoleGrant holder, not just Staff roles — that
+    // policy's own migration comment), and a BRANCH_STAFF grant scoped to
+    // branchB (the mismatched one). The Class row is therefore visible via
+    // RLS, so findAllForClass proceeds past its NotFoundException check —
+    // proving assertStaffAtSchool's own branch check is what blocks this,
+    // not RLS silently doing the job for it.
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Dual-Grant Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Bookings Dual-Grant Branch B' } });
+    const staffC = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-dual-grant-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'dual-grant-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'STUDENT', userId: staffC.id, schoolId: school.id, branchId: branchA.id },
+        { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffC.id, schoolId: school.id, branchId: branchB.id },
+      ],
+    });
+    const tokenStaffC = signAccessToken(staffC, [
+      { role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: branchA.id },
+      { role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id },
+    ]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Dual-Grant Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenStaffC}`);
+    expect(res.status).toBe(403);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffC.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
   });
 
   it('a duplicate active Booking for the same Student/Class is rejected — 409', async () => {
@@ -460,6 +625,130 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(duplicateJoin.status).toBe(409);
   });
 
+  it('GET /classes/:id/waitlist — School Owner and Branch Staff can see the queue; a Student or outsider cannot', async () => {
+    const ownerRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.items.some((e: { studentId: string; status: string }) => e.studentId === studentB.id && e.status === 'WAITING')).toBe(
+      true,
+    );
+
+    const staffRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenBranchStaff}`);
+    expect(staffRes.status).toBe(200);
+
+    const studentRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenStudentB}`);
+    expect(studentRes.status).toBe(403);
+
+    // Same RLS-vs-404 reasoning as the bookings admin-read test above.
+    const outsiderRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(outsiderRes.status).toBe(404);
+  });
+
+  it('GET /classes/:id/waitlist — a single-grant Branch-scoped Staff member outside this Class\'s own Branch gets 404, same RLS-driven reasoning as the Bookings version of this test above', async () => {
+    // Same class_tenant_isolation-traced reasoning as the Bookings single-
+    // grant test above: staffB's only RoleGrant is BRANCH_STAFF at branchB,
+    // which does not satisfy class_tenant_isolation's EXISTS clause for a
+    // branchA-scoped Class, so the Class row itself is invisible under RLS —
+    // findAllForClass's own NotFoundException fires before
+    // assertStaffAtSchool's branch check is ever reached. 404, not 403.
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Branch B' } });
+    const staffB = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-waitlist-branch-b-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'waitlist-branch-b-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffB.id, schoolId: school.id, branchId: branchB.id },
+    });
+    const tokenStaffB = signAccessToken(staffB, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id }]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Waitlist Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const wrongBranchRes = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenStaffB}`);
+    expect(wrongBranchRes.status).toBe(404);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffB.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+  });
+
+  it('GET /classes/:id/waitlist — a Staff member holding a SECOND, non-matching-branch RoleGrant that lets the Class pass RLS still gets a real 403 from assertStaffAtSchool', async () => {
+    // Same dual-grant reasoning as the Bookings version of this test above —
+    // proves assertStaffAtSchool's own branch check is the thing blocking
+    // this, since RLS itself lets the Class row through via staffC's
+    // school_tenant_isolation-satisfying STUDENT grant at branchA.
+    const branchA = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Dual-Grant Branch A' } });
+    const branchB = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Waitlist Dual-Grant Branch B' } });
+    const staffC = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-waitlist-dual-grant-staff-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'waitlist-dual-grant-staff',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'STUDENT', userId: staffC.id, schoolId: school.id, branchId: branchA.id },
+        { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffC.id, schoolId: school.id, branchId: branchB.id },
+      ],
+    });
+    const tokenStaffC = signAccessToken(staffC, [
+      { role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: branchA.id },
+      { role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: branchB.id },
+    ]);
+    const classBranchA = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        branchId: branchA.id,
+        title: 'Waitlist Dual-Grant Branch A Only Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBranchA.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenStaffC}`);
+    expect(res.status).toBe(403);
+
+    await superuser.class.delete({ where: { id: classBranchA.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: staffC.id } });
+    await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
+  });
+
   it('withdrawing frees the Student to rejoin the same Class\'s waitlist', async () => {
     const entryId = waitlistEntryIds[0];
     const withdrawRes = await request(app.getHttpServer()).delete(`/v1/waitlist/${entryId}`).set('Authorization', `Bearer ${tokenStudentB}`);
@@ -579,6 +868,219 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
     expect(after.classesRemaining).toBe(2); // still decremented, never restored
+  });
+
+  // ---------------------------------------------------------------------------
+  // Guardian-on-behalf-of booking (Phase 40).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN book a Class for a linked minor — the Booking belongs to the MINOR, not the Guardian', async () => {
+    await mkActiveMembership(minor.id, subscriptionPlanId, null);
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBasic.id}/book`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('UPCOMING');
+    expect(res.body.studentId).toBe(minor.id);
+    bookingIds.push(res.body.id);
+
+    // Direct Prisma, under the minor's own tenant context — confirms the row
+    // is genuinely readable as the minor's own (Booking RLS's "self" branch),
+    // the same style of check Phase 39's own Membership test already used.
+    const asMinor = await withUser(minor.id, (tx) => tx.booking.findMany({ where: { id: res.body.id } }));
+    expect(asMinor).toHaveLength(1);
+  });
+
+  it('a Guardian may NOT supply overrideReason — 403, only Instructor/Staff may override', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classRankGated.id}/book`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id, overrideReason: 'Guardian trying to override' });
+    expect(res.status).toBe(403);
+  });
+
+  it('a caller with NO active GuardianLink to the named Student is rejected — 403, not a silent no-op', async () => {
+    // studentA stands in for "some other real Student" — outsider holds no
+    // GuardianLink to them (or anyone) at all.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBasic.id}/book`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({ studentId: studentA.id });
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Guardian-on-behalf-of booking cancellation (Phase 41).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN cancel a linked minor\'s own Booking', async () => {
+    // Not individually deleted at the end of this test — the resulting
+    // Booking still holds a live FK to it even once CANCELLED (a cancelled
+    // Booking is a status flip, not a delete), so cleanup relies on the
+    // suite's own bulk afterAll (bookingAttendee -> booking -> ... -> class,
+    // by schoolId), same precedent the "CONCURRENCY" test's own
+    // classConcurrency fixture above already established.
+    const classForCancel = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Cancel Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const bookRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForCancel.id}/book`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const cancelRes = await request(app.getHttpServer())
+      .patch(`/v1/bookings/${bookRes.body.id}/cancel`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.status).toBe('CANCELLED');
+    // resolvedById is the GUARDIAN (the actual caller who cancelled it), same
+    // "record the real actor" convention Phase 37's own signedById established.
+    expect(cancelRes.body.resolvedById).toBe(guardian.id);
+  });
+
+  it('a caller with NO active GuardianLink to the Booking\'s real Student cannot cancel it, even naming that Student explicitly — 403', async () => {
+    // studentA already holds at least one Booking from earlier tests in this
+    // suite — outsider names studentA's real id, but holds no GuardianLink to
+    // them at all.
+    const studentABooking = await withUser(studentA.id, (tx) => tx.booking.findFirst({ where: { studentId: studentA.id, status: 'UPCOMING' } }));
+    expect(studentABooking).not.toBeNull();
+
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/bookings/${studentABooking!.id}/cancel`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({ studentId: studentA.id });
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Guardian/Staff-on-behalf-of Waitlist join/withdraw/claim (Phase 42, Decision
+  // 103). Deliberately placed after the Phase 40/41 Guardian booking sections
+  // above, not earlier in the file — the claim test below relies on minor
+  // already holding the Active general-access Membership the Phase 40 booking
+  // test creates (FOUND ON REVIEW, before this ever merged: an earlier draft
+  // placed this section immediately after the ORIGINAL "claiming a Notified
+  // entry..." test instead, well before Phase 40/41 run in file order — Jest
+  // runs `it` blocks in file order, so minor had no Membership yet at that
+  // point and the claim test failed on CI with a genuine 400, not a build
+  // error. Moved here rather than making the test mint its own membership,
+  // since minting a second general-access one for minor would then collide
+  // with Phase 40's own creation via `Membership_one_active_general_access_
+  // per_school` once IT ran later in file order instead).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN join a Class\'s waitlist for a linked minor — the entry belongs to the MINOR, not the Guardian', async () => {
+    // Not individually deleted — both WaitlistEntry rows created below stay
+    // WAITING and still hold a live FK to this Class, same reasoning the
+    // Phase 41 cancellation fixture's own comment already documents; cleanup
+    // relies on the suite's own bulk afterAll.
+    const classForGuardianWaitlist = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Waitlist Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianWaitlist.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(joinRes.status).toBe(201);
+    expect(joinRes.body.studentId).toBe(minor.id);
+    waitlistEntryIds.push(joinRes.body.id);
+
+    const asMinor = await withUser(minor.id, (tx) => tx.waitlistEntry.findMany({ where: { id: joinRes.body.id } }));
+    expect(asMinor).toHaveLength(1);
+
+    // Staff-on-behalf-of also works, same shape, for a different Student —
+    // Decision 103 extended join to BOTH, not just Guardian.
+    const staffJoinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianWaitlist.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ studentId: studentA.id });
+    expect(staffJoinRes.status).toBe(201);
+    expect(staffJoinRes.body.studentId).toBe(studentA.id);
+    waitlistEntryIds.push(staffJoinRes.body.id);
+  });
+
+  it('a caller with NO active GuardianLink to the named Student cannot join a waitlist on their behalf — 403', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBasic.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({ studentId: studentA.id });
+    expect(res.status).toBe(403);
+  });
+
+  it('a Guardian CAN claim a Notified entry on behalf of a linked minor — creates a real Booking for the MINOR', async () => {
+    const classForGuardianClaim = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Claim Fixture', capacity: 1, startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianClaim.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(joinRes.status).toBe(201);
+    waitlistEntryIds.push(joinRes.body.id);
+
+    await superuser.waitlistEntry.update({
+      where: { id: joinRes.body.id },
+      data: { status: 'NOTIFIED', notifiedAt: new Date(), claimByDeadline: new Date(Date.now() + 3_600_000) },
+    });
+
+    // minor already holds an Active general-access Membership from the earlier
+    // Phase 40 booking test — general-access is never consumed, so it's still
+    // valid here and funds this claim without minting a second one.
+    const claimRes = await request(app.getHttpServer())
+      .post(`/v1/waitlist/${joinRes.body.id}/claim`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(claimRes.status).toBe(201);
+    expect(claimRes.body.studentId).toBe(minor.id);
+    bookingIds.push(claimRes.body.id);
+
+    const claimedEntry = await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: joinRes.body.id } });
+    expect(claimedEntry.status).toBe('CLAIMED');
+  });
+
+  it('a Guardian CAN withdraw a linked minor\'s own Waitlist entry via the studentId query hint', async () => {
+    // Not individually deleted — a withdrawn (CANCELLED) entry is a status
+    // flip, not a row delete, so it still holds a live FK to this Class; same
+    // reasoning as every other throwaway-Class fixture in this section.
+    const classForGuardianWithdraw = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Guardian Withdraw Fixture', startDate: new Date(Date.now() + 24 * 3_600_000), endDate: new Date(Date.now() + 25 * 3_600_000) },
+    });
+
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classForGuardianWithdraw.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(joinRes.status).toBe(201);
+    waitlistEntryIds.push(joinRes.body.id);
+
+    const withdrawRes = await request(app.getHttpServer())
+      .delete(`/v1/waitlist/${joinRes.body.id}`)
+      .query({ studentId: minor.id })
+      .set('Authorization', `Bearer ${tokenGuardian}`);
+    expect(withdrawRes.status).toBe(204);
+
+    const afterWithdraw = await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: joinRes.body.id } });
+    expect(afterWithdraw.status).toBe('CANCELLED');
+  });
+
+  it('a caller with NO active GuardianLink to the entry\'s real Student cannot withdraw it, even naming that Student explicitly — 403', async () => {
+    const studentAWaitlistEntry = await withUser(studentA.id, (tx) =>
+      tx.waitlistEntry.findFirst({ where: { studentId: studentA.id, status: { in: ['WAITING', 'NOTIFIED'] } } }),
+    );
+    expect(studentAWaitlistEntry).not.toBeNull();
+
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/waitlist/${studentAWaitlistEntry!.id}`)
+      .query({ studentId: studentA.id })
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(res.status).toBe(403);
   });
 
   // ---------------------------------------------------------------------------

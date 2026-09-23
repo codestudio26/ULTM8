@@ -58,17 +58,23 @@ export function SchoolPage() {
     setSaveError(null);
     setSaved(false);
     try {
+      // `null` (not `undefined`) for a cleared field — UpdateSchoolDto accepts
+      // null on these fields to mean "clear it" (FOUND ON REVIEW, Phase 18:
+      // this exact "clearing a field silently no-ops" bug has been live since
+      // Phase 3, see that DTO's own header comment). SchoolPage is edit-only
+      // (School creation is CreateSchoolPage's own separate flow), so there's
+      // no create-path mapping to undefined needed here.
       await updateSchool.mutateAsync({
         name: form.name,
-        mobileNumber: form.mobileNumber || undefined,
-        address: form.address || undefined,
-        businessType: form.businessType || undefined,
+        mobileNumber: form.mobileNumber || null,
+        address: form.address || null,
+        businessType: form.businessType || null,
         activities: form.activities.split(',').map((s) => s.trim()).filter(Boolean),
         facilities: form.facilities.split(',').map((s) => s.trim()).filter(Boolean),
         ranksToggle: form.ranksToggle,
-        defaultLanguage: form.defaultLanguage || undefined,
-        defaultCurrency: form.defaultCurrency || undefined,
-        description: form.description || undefined,
+        defaultLanguage: form.defaultLanguage || null,
+        defaultCurrency: form.defaultCurrency || null,
+        description: form.description || null,
         classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
       });

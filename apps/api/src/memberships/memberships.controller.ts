@@ -7,6 +7,7 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { MembershipsService } from './memberships.service';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
+import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
 import { MembershipPlanListResponseDto, MembershipPlanResponseDto } from './dto/membership-plan-response.dto';
 import {
   MembershipListResponseDto,
@@ -14,9 +15,10 @@ import {
   PurchaseMembershipResponseDto,
 } from './dto/membership-response.dto';
 
-// MembershipPlan CRUD + purchase + Student/Staff reads only this phase — no refund,
-// no credit-restore, no invoice download, no franchise-fees, no Stripe dispute
-// handling. See the Phase 9 kickoff prompt for the full scoping rationale.
+// MembershipPlan CRUD + purchase (self-service, or Guardian-on-behalf-of a linked
+// minor as of Phase 39) + Student/Staff reads — no refund, no credit-restore, no
+// invoice download, no franchise-fees, no Stripe dispute handling. See the Phase 9
+// kickoff prompt for the full scoping rationale.
 @ApiTags('memberships')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -58,8 +60,8 @@ export class MembershipsController {
 
   @ApiOkResponse({ type: PurchaseMembershipResponseDto })
   @Post('membership-plans/:id/purchase')
-  purchase(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.membershipsService.purchase(user.sub, id);
+  purchase(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: PurchaseMembershipDto) {
+    return this.membershipsService.purchase(user.sub, id, dto);
   }
 
   @ApiOkResponse({ type: MembershipListResponseDto })

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -55,10 +55,27 @@ export class FranchisesController {
    * — `@ApiOkResponse` only drives Swagger/api-client generation, and Prisma's own
    * `School[]` already matches SchoolResponseDto structurally at the JSON-serialized
    * boundary (Date fields serialize to ISO strings automatically).
+   *
+   * Phase 47 — rejected outright for an active impersonation session, not merely
+   * scoped down. `schools_for_franchise()` (the SECURITY DEFINER function behind
+   * FranchisesService.findSchoolsForFranchise) is a purpose-built cross-tenant read,
+   * deliberately NOT an RLS policy at all (see school_tenant_isolation's own Phase 1
+   * comment) — the impersonation-scope RLS fix (migration
+   * 20261002000000_impersonation_scope_rls_fix) narrows RoleGrant's own policies and
+   * everything that reaches RoleGrant through them, but this function bypasses RLS by
+   * design and returns every School under a Franchise with no way to further narrow
+   * that to "just the one School impersonation was scoped to" without changing its
+   * whole contract. Blocking it here is the same "narrower than a real login, not
+   * silently equivalent to one" posture Decision 102 already established for writes.
    */
   @ApiOkResponse({ type: SchoolListResponseDto })
   @Get(':id/schools')
   async findSchools(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    if (user.impersonation) {
+      throw new ForbiddenException(
+        'The Franchise School roster is not available during an impersonation session (Decision 39).',
+      );
+    }
     const items = await this.franchisesService.findSchoolsForFranchise(user.sub, id);
     return { items, nextCursor: null };
   }

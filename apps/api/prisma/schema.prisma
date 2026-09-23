@@ -76,6 +76,84 @@ enum FranchiseFeeSubscriptionStatus {
   CANCELED
 }
 
+/// Franchise.platformSubscriptionStatus / School.platformSubscriptionStatus (Phase 54,
+/// domain-rules §2/§15) — synced from the platform SubscriptionPlan's own Stripe
+/// Subscription, the same three-value shape FranchiseFeeSubscriptionStatus already
+/// uses for the unrelated School<->Franchise fee relationship. Kept as its own,
+/// separately-named enum rather than reusing FranchiseFeeSubscriptionStatus — the two
+/// billing relationships must "never be conflated" (domain-rules §2's own confirmed
+/// warning), and a shared DB type would make that conflation easy to do by accident in
+/// a future migration/query even though the three literal values happen to match today.
+enum PlatformSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+/// PlatformCharge.chargeType (Phase 54, Spec 55 §6.1: "charge type (SubscriptionPlan
+/// tier fee or whiteLabelApp entitlement fee)"). Both values modeled now for schema
+/// completeness even though WHITE_LABEL_APP_FEE has no code path creating it yet —
+/// whiteLabelApp billing is deferred out of this phase (gated on both the still-unset
+/// metered rate, Spec 55 §12.2, and MobileAppPublishingModule, itself blocked on the
+/// separate Apple 4.2.6 compliance decision) — same "model the confirmed enum now,
+/// wire the second case later" precedent PromotionEventType's own BULK_* values
+/// already established in this schema.
+enum PlatformChargeType {
+  SUBSCRIPTION_PLAN_FEE
+  WHITE_LABEL_APP_FEE
+}
+
+/// SubscriptionPlan (platform) — Phase 54, Spec 55 §6.1/§7 (SubscriptionPlansModule).
+/// ULTM8's own platform revenue — a Franchise/School subscribes to this directly;
+/// never a plan the Franchise resells onward to its member Schools (Decision 106,
+/// domain-rules §2 — reconciled, not still open). NOT the same entity as
+/// MembershipPlan (School<->Student billing, domain-rules §15's own explicit
+/// "must never be merged or used interchangeably" warning).
+///
+/// Confirmed fields quoted from Spec 55 §6.1: "Plan name, price (e.g. '£30.00 Per
+/// Month'), description, feature list, payment type (Auto Renew), payment schedule".
+/// `price` is a minor-unit Int (Decision 84's established convention for every money
+/// field in this schema), billed in the single USD anchor currency ULTM8's own
+/// revenue always uses (domain-rules §7/§11.2, Decision 7) — no per-Plan currency
+/// column, same reasoning FranchiseFeeCharge.currency already documents. "Payment
+/// type (Auto Renew)" and "payment schedule" are NOT modeled as their own columns —
+/// every Stripe Subscription this codebase creates (Membership, franchise-fee Flat,
+/// and this one) is already hardcoded to a monthly recurring interval with no
+/// per-row schedule choice anywhere else in this schema (PaymentsService.subscribe(),
+/// FranchiseFeeBillingService.ensureSubscription()); a SubscriptionPlan is
+/// structurally always-recurring by what it IS, so a literal "type=Auto Renew" flag
+/// would carry no information a `SubscriptionPlan` row doesn't already imply. Flagged
+/// as a Developer-level scope call, same class as Decision 84's own "no code change,
+/// confirms convention" entries — not silently assumed, open for Architect review.
+///
+/// `whiteLabelApp` entitlement flag (Spec 55 §5.3/§6.1) is deliberately NOT modeled
+/// yet — this phase's own scope is the core platform-subscription flow only; the
+/// entitlement is meaningless before MobileAppPublishingModule exists (still blocked
+/// on the Apple 4.2.6 compliance decision) and its own metered rate is itself
+/// unresolved (Spec 55 §12.2: "$0.99-$1.99/active-student/month... exact rate still
+/// to be set"). Add the column when that module is unblocked, not preemptively.
+///
+/// No RLS — global, Platform-Admin-authored content with no tenant column, the exact
+/// same shape Translation/LegalDocument already established in this schema (see
+/// Translation's own migration comment for the full "no per-caller row subset to
+/// restrict" reasoning). Read via the plain `ultm8_app` role from both the public
+/// tenant-facing GET and the FULL_ADMIN-gated authoring CRUD — one service, not two,
+/// same deliberate deviation from "one service per realm" TranslationsService's own
+/// header comment already documents and justifies for the identical no-RLS case.
+model SubscriptionPlan {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Int // minor-unit USD (Decision 7/84) — "£30.00 Per Month" example, Spec 55 §6.1
+  featureList String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  franchises Franchise[]
+  schools    School[]
+}
+
 /// TimetableSlot.weekday — Phase 5. Confirmed field ("Week day"), Spec 55 §6.1.
 enum Weekday {
   MONDAY
@@ -220,20 +298,23 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants           RoleGrant[]     @relation("RoleGrantUser")
-  grantsIssued         RoleGrant[]     @relation("RoleGrantGrantedBy")
-  classesTaught        Class[]         @relation("ClassInstructor")
-  timetableSlotsTaught TimetableSlot[] @relation("TimetableSlotInstructor")
-  instructorProfiles   Instructor[]
-  memberships          Membership[]    @relation("MembershipStudent")
-  membershipsGifted    Membership[]    @relation("MembershipGiftedBy")
-  transactionsPaid     Transaction[]   @relation("TransactionPayer")
-  studentRanks         StudentRank[]
-  promotionEventsPerformed PromotionEvent[] @relation("PromotionEventPerformedBy")
-  waiverSignatures     WaiverSignature[]
+  roleGrants               RoleGrant[]       @relation("RoleGrantUser")
+  grantsIssued             RoleGrant[]       @relation("RoleGrantGrantedBy")
+  classesTaught            Class[]           @relation("ClassInstructor")
+  timetableSlotsTaught     TimetableSlot[]   @relation("TimetableSlotInstructor")
+  instructorProfiles       Instructor[]
+  lessonsAuthored          Lesson[]          @relation("LessonInstructor")
+  memberships              Membership[]      @relation("MembershipStudent")
+  membershipsGifted        Membership[]      @relation("MembershipGiftedBy")
+  transactionsPaid         Transaction[]     @relation("TransactionPayer")
+  studentRanks             StudentRank[]
+  promotionEventsPerformed PromotionEvent[]  @relation("PromotionEventPerformedBy")
+  waiverSignatures         WaiverSignature[] @relation("WaiverSignatureStudent")
+  waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
   bookings                 Booking[]         @relation("BookingStudent")
   bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
   bookingsResolved         Booking[]         @relation("BookingResolvedBy")
+  bookingsCheckedIn        Booking[]         @relation("BookingCheckedInBy")
   bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
   waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian  GuardianLink[]    @relation("GuardianLinkGuardian")
@@ -263,6 +344,66 @@ model AdminUser {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   revokedAt DateTime? // access revoked immediately on offboarding (§4.4)
+
+  auditLogEntries AuditLogEntry[]
+}
+
+/// Every Platform Admin action that touches tenant data (ultm8-tenant-isolation
+/// SKILL.md §6, Spec §4.7): "who, when, what, on which tenant." Immutable by design —
+/// UPDATE/DELETE are revoked at the database layer for every role, including the
+/// break-glass credential (see this phase's own migration). Range-partitioned by
+/// month on createdAt from the start (§6, §11.6) — see that same migration for why
+/// this means `id` is NOT independently unique at the database level (Postgres
+/// requires a partitioned table's primary key to include the partition key), only
+/// the composite (id, createdAt) is — acceptable here since a UUID's own collision
+/// probability makes `id` unique in practice, and this table's real access pattern is
+/// filtered `findMany` (by actor/target/time-range), never `findUnique` by bare id.
+///
+/// Exact retention period is a compliance/legal input, explicitly left open by the
+/// spec (§12.2) — deliberately NOT invented here; no deletion path exists on this
+/// table at all yet, which is the correct default for "not yet decided," not a gap.
+///
+/// targetType/targetId are a deliberate polymorphic reference (School, Franchise,
+/// PaymentAccount, User — whatever the action actually touched), NOT a real foreign
+/// key — Postgres has no single-column FK that can point at different tables per row,
+/// and an audit entry must remain permanently readable even if the target row is
+/// later deleted, so no FK/cascade relationship exists to it at all (validated at the
+/// application layer only). schoolId/franchiseId are a separate, direct "on which
+/// tenant" reference — both nullable, whichever applies (mirrors RoleGrant's own
+/// nullable-scope convention) — kept distinct from targetType/targetId specifically
+/// so "which tenant" can be queried/filtered directly without joining through the
+/// polymorphic reference first.
+model AuditLogEntry {
+  id String @default(uuid())
+
+  adminUserId String
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id])
+
+  /// A short action label (e.g. "VIEW_SCHOOL") — plain string, not a DB enum: the
+  /// spec's own confirmed examples ("viewing/editing another tenant's records,
+  /// viewing/rotating a payment credential, impersonating a tenant user") are
+  /// illustrative, not an exhaustive closed set, and a DB enum would need a migration
+  /// for every future Platform Admin capability. Disciplined string constants at each
+  /// call site, not a free-for-all — see AuditLogService's own header comment.
+  action String
+
+  targetType String
+  targetId   String
+
+  schoolId    String?
+  franchiseId String?
+
+  /// Freeform structured context (e.g. what changed) — deliberately optional; a
+  /// read-only "viewed a record" action has nothing to put here.
+  details Json?
+
+  createdAt DateTime @default(now()) // the partition key
+
+  @@id([id, createdAt])
+  @@index([adminUserId, createdAt])
+  @@index([schoolId, createdAt])
+  @@index([franchiseId, createdAt])
+  @@index([targetType, targetId, createdAt])
 }
 
 /// The sole source of truth for who holds what role, where (domain-rules §3, §6.1).
@@ -325,14 +466,76 @@ model Franchise {
 
   feeModel FeeModel @default(FLAT)
 
+  /// Phase 16b-ii — the actual franchise-fee rate, resolved directly with the
+  /// product owner (Decision 99): self-service, the Franchise Owner sets their own
+  /// rate, same shape MembershipPlan.price already uses for School->Student pricing
+  /// and the same self-service precedent feeModel itself already established.
+  /// Deliberately deferred out of 16b-i (see Decision 98) rather than added
+  /// unilaterally — see Decision 99 for the full account. Minor-unit Int, matching
+  /// every other money field in this schema; no upper bound at the schema level
+  /// (Postgres INTEGER's own 2^31-1 ceiling), but validated with an explicit
+  /// @Max() in CreateFranchiseDto/UpdateFranchiseDto — a first draft of these
+  /// fields (16b-i) shipped without that bound and code review caught it before
+  /// the fields were reverted entirely; carried forward now that they're back.
+  /// Currency is NOT a separate column — domain-rules §11.2/Decision 7 confirms
+  /// Franchise-fee is billed in a single anchor currency (USD) always, unlike
+  /// MembershipPlan's genuinely per-currency pricing, so there is nothing to store
+  /// per-Franchise here (FranchiseFeeCharge's own `currency` column is set to
+  /// 'USD' in code, not read from anywhere on Franchise).
+  ///
+  /// Both nullable and independently settable via the existing PATCH
+  /// /franchises/:id (no dedicated endpoint) regardless of which feeModel is
+  /// currently active — a Franchise can exist, and even have Schools join it
+  /// (Phase 16b-i), before its billing rate is configured; enforcement that the
+  /// RELEVANT rate is actually set happens in the franchise-fee-usage-reporting
+  /// job (this phase), which simply skips a School whose Franchise isn't fully
+  /// configured yet rather than erroring.
+  flatFeeAmount    Int?
+  perHeadcountRate Int?
+
+  /// Phase 16b-ii — lazily created the first time this Franchise's own
+  /// PER_HEADCOUNT metered billing is set up (franchise-fee-usage-reporting job),
+  /// never at Franchise creation/update time. A Stripe Billing Meter is scoped to
+  /// the Stripe account it's created on — here, the Franchise's own connected
+  /// account (Decision 86) — so each PER_HEADCOUNT Franchise needs its own Meter
+  /// and metered Price, not a shared platform-wide one. See
+  /// PaymentsService.ensureFranchiseFeeSubscription's own comment for the full
+  /// Stripe-mechanics account (verified directly against the installed `stripe`
+  /// SDK v22's Billing Meters API — the modern replacement for the removed legacy
+  /// usage_record API, not assumed).
+  stripeMeterId      String?
+  stripeUsagePriceId String?
+
+  /// Phase 54 — this Franchise's own platform SubscriptionPlan billing relationship
+  /// (ULTM8 <-> Franchise, distinct from and never conflated with the School<->
+  /// Franchise franchise-fee fields above — domain-rules §2/§15). `subscriptionPlanId`
+  /// is nullable: a Franchise can exist, and even own Schools, without ever
+  /// subscribing to a platform plan (this billing surface is new, optional
+  /// monetization added on top of an already-functioning platform, not a
+  /// precondition to operate it — see SubscriptionGateService's own header comment
+  /// for why the degraded-portal gate this phase builds never fires for a Franchise/
+  /// School that simply never subscribed). `stripePlatformSubscriptionId` is the
+  /// correlator id stripe-webhook-processing matches against;
+  /// `platformSubscriptionStatus` is its synced health, same three-field shape
+  /// School's own franchiseFeeSubscriptionStatus/stripeFranchiseFeeSubscriptionId
+  /// pair already established for the sibling billing relationship.
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
+  stripePlatformSubscriptionId String?                     @unique
+  platformSubscriptionStatus   PlatformSubscriptionStatus?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  schools        School[]
-  roleGrants     RoleGrant[]
-  paymentAccount PaymentAccount?
+  schools             School[]
+  roleGrants          RoleGrant[]
+  paymentAccount      PaymentAccount?
+  franchiseFeeCharges FranchiseFeeCharge[]
+  platformCharges     PlatformCharge[]
 
   @@index([name])
+  @@index([subscriptionPlanId])
 }
 
 /// School (domain-rules §2, Spec §6.1). franchiseId is nullable — an independent,
@@ -361,23 +564,49 @@ model School {
   waitlistClaimWindowMinutes     Int                             @default(120)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
+  /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
+  /// franchise-fee billing relationship (created lazily by the
+  /// franchise-fee-usage-reporting job the first time this School has both a
+  /// Franchise affiliation, Phase 16b-i, and that Franchise has a configured rate +
+  /// onboarded PaymentAccount). Paired with franchiseFeeSubscriptionStatus above —
+  /// that field tracks the subscription's health (synced via
+  /// customer.subscription.* webhooks), this field is the correlator id itself.
+  /// Null for an independent School, or a Franchise-affiliated one whose billing
+  /// hasn't started yet.
+  stripeFranchiseFeeSubscriptionId String? @unique
+
+  /// Phase 54 — this School's own platform SubscriptionPlan billing relationship.
+  /// Same shape/reasoning as Franchise's own identical trio above — see that
+  /// model's own comment for the full account, including why `subscriptionPlanId`
+  /// being null is the ordinary, unaffected state for a School that never opted
+  /// into platform billing, not an error case.
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
+  stripePlatformSubscriptionId String?                     @unique
+  platformSubscriptionStatus   PlatformSubscriptionStatus?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches        Branch[]
-  roleGrants      RoleGrant[]
-  classes         Class[]
-  timetableSlots  TimetableSlot[]
-  instructors     Instructor[]
-  paymentAccount  PaymentAccount?
-  membershipPlans MembershipPlan[]
-  transactions    Transaction[]
-  disciplines     Discipline[]
-  waivers         Waiver[]
+  branches            Branch[]
+  roleGrants          RoleGrant[]
+  classes             Class[]
+  timetableSlots      TimetableSlot[]
+  instructors         Instructor[]
+  paymentAccount      PaymentAccount?
+  membershipPlans     MembershipPlan[]
+  transactions        Transaction[]
+  disciplines         Discipline[]
+  waivers             Waiver[]
+  franchiseFeeCharges FranchiseFeeCharge[]
+  lessons             Lesson[]
+  platformCharges     PlatformCharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
   @@index([franchiseId])
+  @@index([subscriptionPlanId])
 }
 
 /// Branch (Decision 76 — field set mirrors School's profile fields; the RLS-enforced
@@ -709,6 +938,48 @@ model LegalDocument {
   createdAt DateTime @default(now())
 }
 
+/// Translation (Phase 49, ultm8-nestjs-module §5) — the CMS-backed i18n content this
+/// codebase's own LegalDocument comment (above) already forward-referenced.
+/// Confirmed shape: `docs/ultm8-blueprint.html`'s own term glossary states
+/// "Translation: Screen · label key · locale · content" — corroborating
+/// ultm8-nestjs-module §5's confirmed query params (`GET /translations?locale=&screen=`)
+/// and supplying the remaining two fields those params imply.
+///
+/// No RLS — same precedent as LegalDocument (see that model's own comment for the
+/// full AdminUser-precedent reasoning): global, platform-level content, not
+/// tenant-scoped data, queried via the plain PrismaAppService/ultm8_app role, no
+/// PrismaPlatformAdminService bypass needed for the row itself.
+///
+/// `id` is a Prisma-client-generated UUID (`@default(uuid())`), not a human-meaningful
+/// key like LegalDocument's `slug` — there's no natural single-field identity here the
+/// way a legal document's own url slug is one; the real natural key is the
+/// (screen, labelKey, locale) triple below, enforced as a unique index rather than as
+/// the primary key so callers still address a row by a stable opaque id (matching
+/// every other CRUD resource in this codebase).
+///
+/// `locale` is free text, not an enum against `settings/constants/languages.ts`'s
+/// `LANGUAGES` list — same reasoning `UpdateFranchiseDto.defaultLanguage`'s own
+/// comment already gives: no canonical language code list is confirmed anywhere yet
+/// (domain-rules §1), so this doesn't invent a stricter constraint than the spec
+/// itself confirms.
+model Translation {
+  id String @id @default(uuid())
+
+  screen   String
+  labelKey String
+  locale   String
+  content  String
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  /// The natural key implied by the confirmed Translation shape — `content` is the
+  /// value, these three are the address. Enforced here, not just at the app layer,
+  /// so a raw client can't create a duplicate slot even if TranslationsService's own
+  /// check were ever bypassed.
+  @@unique([screen, labelKey, locale])
+}
+
 /// PaymentAccount (Phase 8, Spec 55 §6.1) — a School's or a Franchise's own Stripe
 /// Connect Express account reference (Decision 86,
 /// docs/decisions/POST-SPEC-55-DECISION-LOG.md). No raw secret keys are ever stored
@@ -745,8 +1016,8 @@ model PaymentAccount {
   provider     PaymentAccountProvider
   accountTitle String
   country      String
-  status       PaymentAccountStatus @default(ACTIVE)
-  mode         PaymentAccountMode   @default(TEST)
+  status       PaymentAccountStatus   @default(ACTIVE)
+  mode         PaymentAccountMode     @default(TEST)
 
   /// Never a raw secret key (Decision, existing, §4.5/§10.4). Null until Stripe
   /// Connect onboarding is initiated — set synchronously in
@@ -761,7 +1032,8 @@ model PaymentAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
+  transactions        Transaction[]
+  franchiseFeeCharges FranchiseFeeCharge[]
 
   // One PaymentAccount per School, one per Franchise — "has one PaymentAccount set"
   // (School's and Franchise's own confirmed entity rows, singular).
@@ -855,7 +1127,7 @@ model MembershipPlan {
   classesIncluded Int?
 
   scopedClassId String?
-  scopedClass   Class? @relation("MembershipPlanScopedClass", fields: [scopedClassId], references: [id])
+  scopedClass   Class?  @relation("MembershipPlanScopedClass", fields: [scopedClassId], references: [id])
 
   visible Boolean @default(true)
 
@@ -918,7 +1190,7 @@ model Membership {
   // Inherited from MembershipPlan when it names one (Spec 55 §6.1) — restricts which
   // Class this Membership can book. Set once at creation from membershipPlan.scopedClassId.
   scopedClassId String?
-  scopedClass   Class? @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
+  scopedClass   Class?  @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
 
   // Friend Pass only — distinguishes a School comp from a paid purchase.
   giftedById String?
@@ -1024,6 +1296,198 @@ model Transaction {
   @@index([schoolId])
   @@index([studentId])
   @@index([membershipPlanId])
+}
+
+/// FranchiseFeeCharge (Phase 16b-ii, Spec 55 §6.1/§10.2) — the per-billing-cycle
+/// ledger record for a School->Franchise franchise-fee charge, a wholly separate
+/// payment relationship from Transaction (Student->School) and PlatformCharge
+/// (School/Franchise->ULTM8) — never conflate the three (domain-rules §2).
+///
+/// Confirmed field list (quoted, not paraphrased): "Franchise, School, billing
+/// period, fee basis snapshot (Flat or Per-Headcount, copied from
+/// Franchise.feeModel at charge time so a later feeModel change never rewrites
+/// history), computed amount, currency, active-student-count snapshot
+/// (Per-Headcount only, captured at charge time), Stripe PaymentIntent/Invoice id,
+/// status (Successful/Pending/Failed/Refunded/Disputed — same enum as
+/// Transaction), refundedAmount (nullable, cumulative), disputedAmount (nullable,
+/// taken straight from the Stripe dispute event payload)."
+///
+/// `status` reuses TransactionStatus directly (spec's own words: "same enum as
+/// Transaction") rather than a second identical enum — same reuse convention
+/// PaymentAccountProvider already established for Transaction.paymentMethod.
+///
+/// `franchisePaymentAccountId` — spec says this entity "references both parties'
+/// PaymentAccount". Modeled as a single explicit FK to the Franchise's own
+/// PaymentAccount (the payee/destination) only, mirroring Transaction's own
+/// `paymentAccountId` shape exactly (that field is also only ever the payee's
+/// account — a Student has no PaymentAccount of their own either). The School
+/// (payer) side is NOT a second FK to a School PaymentAccount: the School's own
+/// PaymentAccount (if it has one) is a wholly separate Stripe Connect account
+/// used for its OWN Student->School billing, and a franchise-fee charge is paid
+/// via a Stripe Customer+PaymentMethod created ON the Franchise's connected
+/// account instead (PaymentsService.ensureFranchiseFeeSubscription) — the same
+/// "throwaway Customer scoped to the payee's own connected account" pattern
+/// MembershipsService.subscribe() already established for Student->School, here
+/// applied School->Franchise instead. Developer-level interpretation of an
+/// otherwise-ambiguous spec phrase, flagged for Architect review.
+///
+/// `currency` is always 'USD', set in code, never read from a per-Franchise
+/// field — domain-rules §11.2/Decision 7 confirms Franchise-fee is billed in a
+/// single anchor currency, unlike MembershipPlan's genuinely per-currency
+/// pricing. Stored per-row anyway (nullable String, matching Transaction's own
+/// convention) rather than omitted, since the confirmed field list names it
+/// explicitly and PlatformCharge's own sibling entity does the same.
+///
+/// `billingPeriodStart`/`billingPeriodEnd` model "billing period" as an explicit
+/// date range rather than a single label — the natural reading for a recurring
+/// monthly charge, and needed by the franchise-fee-usage-reporting job to know
+/// which month's active-student-count a given Per-Headcount row snapshots.
+///
+/// One row is created per billing cycle (NOT once per School<->Franchise
+/// relationship, unlike Membership) — a genuinely different creation-timing
+/// shape from every other billing entity in this schema so far. See
+/// PaymentsService.ensureFranchiseFeeSubscription and the
+/// franchise-fee-usage-reporting job/stripe-webhook-processing's own new
+/// invoice.paid/invoice.payment_failed handlers for the full creation-timing
+/// account: a Per-Headcount row is created PENDING by the monthly usage-report
+/// job (which knows the activeStudentCountSnapshot value at that moment); a Flat
+/// row has no snapshot to capture in advance and is instead created directly,
+/// already Successful, by the invoice.paid webhook handler.
+model FranchiseFeeCharge {
+  id String @id @default(uuid())
+
+  franchiseId String
+  franchise   Franchise @relation(fields: [franchiseId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  franchisePaymentAccountId String
+  franchisePaymentAccount   PaymentAccount @relation(fields: [franchisePaymentAccountId], references: [id])
+
+  billingPeriodStart DateTime
+  billingPeriodEnd   DateTime
+
+  feeBasisSnapshot FeeModel
+  amount           Int // minor-unit, same convention as Transaction.amount
+  currency         String? // always 'USD' in practice — see header comment
+
+  // Per-Headcount only — the active-student-count reported to Stripe for this
+  // billing period. Null for a Flat-fee row.
+  activeStudentCountSnapshot Int?
+
+  status TransactionStatus // reused directly — spec's own "same enum as Transaction"
+
+  stripeInvoiceId      String? @unique
+  stripeSubscriptionId String?
+
+  // Cumulative across possibly-multiple partial refunds against the same charge,
+  // same convention as Transaction.refundedAmount. Set by
+  // FranchiseFeeChargesService.refund() (Franchise Owner only, Spec 55 §10.2 —
+  // the Franchise's own PaymentAccount holds the money, so the Franchise, not the
+  // paying School, is the party who'd issue it back).
+  refundedAmount Int?
+
+  // Only ever reachable for a disputed charge (Decision 55's dispute handling) —
+  // no code path sets this yet, same "modeled for schema completeness only"
+  // treatment Transaction.disputedAmount got in Phase 9.
+  disputedAmount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30) — this entity
+  // has two tenant sides (Franchise the payee, School the payer), so both get one.
+  @@index([franchiseId])
+  @@index([schoolId])
+  // Matches franchise-fee-usage-reporting.processor.ts's and stripe-webhook-
+  // processing.processor.ts's own (stripeSubscriptionId, status) query shape —
+  // see the migration's own comment. The companion partial unique index
+  // enforcing "one charge row per (subscription, billing period)" is NOT
+  // representable here — Prisma's schema DSL has no partial/filtered unique
+  // index support, same established limitation as every other partial unique
+  // index in this schema (Membership_one_active_general_access_per_school and
+  // siblings) — it exists only in the migration's own hand-authored SQL.
+  @@index([stripeSubscriptionId, status])
+}
+
+/// PlatformCharge (Phase 54, Spec 55 §6.1/§10.2, Decision 42) — ULTM8's own
+/// platform-level billing ledger, quoted: "School/Franchise reference, charge type
+/// (SubscriptionPlan tier fee or whiteLabelApp entitlement fee), amount, currency,
+/// Stripe charge/invoice reference, status... disputedAmount." Mirrors
+/// FranchiseFeeCharge's own shape directly (same confirmed spec line: "mirrors
+/// FranchiseFeeCharge's shape but bills ULTM8's own platform-level fees... rather
+/// than School<->Franchise fees") but bills the opposite direction — ULTM8 IS the
+/// payee here, never a School or Franchise's own connected PaymentAccount, so
+/// (unlike FranchiseFeeCharge) there is no `xPaymentAccountId` FK on this table at
+/// all; the money settles into ULTM8's own platform Stripe balance
+/// (StripeClientService.platformClient()), not a tenant's Connected Account.
+///
+/// "Belongs to whichever School or Franchise the platform-level charge is against"
+/// — exactly one of `schoolId`/`franchiseId` is set per row, never both, never
+/// neither (enforced by the migration's own hand-authored CHECK constraint, the
+/// same "Prisma's schema DSL can't express this, only the migration SQL can"
+/// limitation every other cross-field invariant in this schema already lives with).
+///
+/// This phase only ever creates SUBSCRIPTION_PLAN_FEE rows (see PlatformChargeType's
+/// own comment) — created by stripe-webhook-processing's invoice.paid handler,
+/// directly, already Successful, the same "nothing was snapshotted in advance"
+/// shape FranchiseFeeCharge's own Flat-fee branch already uses (there is no
+/// Per-Headcount-style usage-reporting job for platform SubscriptionPlan billing —
+/// it's a flat plan price, not metered, this phase).
+///
+/// Deliberately NOT exposed via any tenant-facing read endpoint this phase — Spec
+/// 55's own §7 representative endpoint table names no `GET .../platform-charges`
+/// anywhere (unlike FranchiseFeeCharge/Transaction, which do have confirmed read
+/// endpoints), so building one now would be inventing UI/API surface the spec
+/// doesn't ask for — same "don't build unrequested surface" discipline
+/// TranslationsService's own header comment already applies to its own no-separate-
+/// admin-list decision. Only `ultm8_jobs` (stripe-webhook-processing) can read/write
+/// this table today; add tenant-facing `ultm8_app` access + RLS policies + an
+/// endpoint together, in one later phase, if/when a real screen needs to show this
+/// history — not preemptively.
+model PlatformCharge {
+  id String @id @default(uuid())
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+
+  franchiseId String?
+  franchise   Franchise? @relation(fields: [franchiseId], references: [id])
+
+  chargeType PlatformChargeType
+  amount     Int // minor-unit, same convention as Transaction.amount/FranchiseFeeCharge.amount
+  currency   String? // always 'USD' in practice — see SubscriptionPlan's own header comment
+
+  status TransactionStatus // reused directly, same "same enum as Transaction" precedent FranchiseFeeCharge.status already follows
+
+  stripeInvoiceId      String? @unique
+  stripeSubscriptionId String?
+
+  // Cumulative across possibly-multiple partial refunds, same convention as
+  // Transaction.refundedAmount/FranchiseFeeCharge.refundedAmount. No refund code
+  // path exists yet this phase (no refund endpoint for platform billing is
+  // confirmed anywhere) — modeled for schema completeness only, same treatment
+  // FranchiseFeeCharge.refundedAmount got before its own refund() existed.
+  refundedAmount Int?
+
+  // Only ever reachable for a disputed charge (Decision 55's dispute handling) — no
+  // code path sets this yet, same "modeled for schema completeness only" treatment
+  // Transaction.disputedAmount/FranchiseFeeCharge.disputedAmount both already got.
+  disputedAmount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30) — two possible
+  // tenant sides on this entity (exactly one set per row), so both get one, same
+  // shape FranchiseFeeCharge's own two indexes already use.
+  @@index([schoolId])
+  @@index([franchiseId])
+  // Matches stripe-webhook-processing's own "find the most recent row for this
+  // subscription" lookup shape — same "index the actual query, not a guess"
+  // discipline FranchiseFeeCharge's own identical index already follows.
+  @@index([stripeSubscriptionId, status])
 }
 
 /// PromotionEvent.type — Phase 10b. Confirmed field (skills/ultm8-domain-rules/
@@ -1145,7 +1609,7 @@ model RankStripeTier {
   id String @id @default(uuid())
 
   rankId String
-  rank   Rank @relation(fields: [rankId], references: [id])
+  rank   Rank   @relation(fields: [rankId], references: [id])
 
   // Denormalized from rank.schoolId — see Rank's own comment for the full
   // "avoid a multi-hop RLS join" reasoning, doubly true here (three hops from
@@ -1173,11 +1637,11 @@ model RankStripeTier {
 }
 
 /// Skill (Phase 10b, Spec 55 §5/§6.1) — belongs to Discipline. Confirmed fields:
-/// "name, description." Many-to-many with Rank (required-skills gate). Also
-/// "referenced by Lesson" per Decision 58 (CurriculumModule) — that FK doesn't
-/// exist yet, deliberately: CurriculumModule is out of scope this phase, and this
-/// model isn't shaped in any way that would need a breaking change once Lesson is
-/// added (Lesson would simply gain its own skillId FK pointing here).
+/// "name, description." Many-to-many with Rank (required-skills gate) and, as of
+/// Phase 44 (CurriculumModule, Decision 58), many-to-many with Lesson too — Spec
+/// 55 §6.1 says "linked skill(s)" (plural) on Lesson's own side, so this is a real
+/// M2M via LessonSkill below, not the single skillId FK an earlier draft of this
+/// comment anticipated.
 model Skill {
   id String @id @default(uuid())
 
@@ -1196,6 +1660,7 @@ model Skill {
 
   requiredByRanks      RankRequiredSkill[]
   studentSkillStatuses StudentRankSkillStatus[]
+  lessons              LessonSkill[]
 
   @@index([schoolId])
   @@index([disciplineId])
@@ -1209,11 +1674,106 @@ model Skill {
 /// verify against would be needless risk for zero benefit over an explicit one).
 model RankRequiredSkill {
   rankId  String
-  rank    Rank  @relation(fields: [rankId], references: [id])
+  rank    Rank   @relation(fields: [rankId], references: [id])
   skillId String
-  skill   Skill @relation(fields: [skillId], references: [id])
+  skill   Skill  @relation(fields: [skillId], references: [id])
 
   @@id([rankId, skillId])
+  @@index([skillId])
+}
+
+enum LessonFormat {
+  PRERECORDED
+  LIVE
+}
+
+enum CaptionStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+/// Lesson (Phase 44, Decision 58 — Spec 55 §6.1/§7, CurriculumModule). Confirmed
+/// fields (quoted): "Title, category, duration, instructor, description, linked
+/// skill(s), format (Prerecorded/Live), videoRef, captionStatus
+/// (Pending/Processing/Ready/Failed), captionTrackRef." Links to one or more
+/// Skills via LessonSkill below (a real M2M — "linked skill(s)" is plural).
+///
+/// Scoping/authorship: Decision 58's own prose ("an instructor uploads") and Spec
+/// 55's own §7 endpoint table (`CRUD /admin/curriculum/lessons`, which per this
+/// project's own /admin/* == Platform-Admin-realm convention, ultm8-nestjs-module
+/// §5, would mean Platform-Admin-authored) directly contradict each other — a real
+/// gap inside Spec 55 itself, not resolved by picking whichever reading was found
+/// first. Resolved DIRECTLY WITH THE USER (Decision 104,
+/// docs/decisions/POST-SPEC-55-DECISION-LOG.md): School-scoped, Instructor/Staff-
+/// authored, ordinary tenant endpoints — same shape as every other content entity
+/// in this schema (Class, Waiver, MembershipPlan, ...), not the Platform Admin
+/// realm.
+///
+/// [UNRESOLVED, deliberately not modeled] Spec 55's own field row also says Lesson
+/// "Belongs to a Category" — no Category entity exists anywhere else in the
+/// document (verified directly against the extracted spec text: the word
+/// "Category" occurs exactly once in the whole document, this one relationship
+/// clause, one line below `category` used as a plain field). Treated as a spec
+/// doc-bug, not built as a relation — `category` below is a plain string only.
+/// Flag to the Architect before ever promoting this to a real model.
+///
+/// `instructorId` mirrors Class.instructorId's own established shape exactly (a
+/// User holding an active INSTRUCTOR RoleGrant at this School, validated via
+/// TenantAuthorizationService.assertValidInstructor — never a separate
+/// Instructor-profile FK, per that method's own header comment) — reused, not
+/// reinvented.
+///
+/// `videoRef`/`captionTrackRef` are deliberately vendor-agnostic opaque strings,
+/// not shaped around Cloudflare Stream specifically — Decision 101 (15 Sep 2026)
+/// picked that vendor (+ AWS Transcribe for captioning) but explicitly does not
+/// build the integration itself; no credentials for either are provisioned in this
+/// working environment, matching every other unprovisioned vendor in this codebase
+/// (Stripe/Cognito/R2/Twilio's own precedent) — the actual upload/dispatch calls
+/// are still unbuilt.
+model Lesson {
+  id String @id @default(uuid())
+
+  schoolId     String
+  school       School  @relation(fields: [schoolId], references: [id])
+  instructorId String?
+  instructor   User?   @relation("LessonInstructor", fields: [instructorId], references: [id])
+
+  title           String
+  category        String?
+  durationSeconds Int?
+  description     String?
+  format          LessonFormat
+
+  videoRef        String?
+  captionStatus   CaptionStatus @default(PENDING)
+  captionTrackRef String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  skills LessonSkill[]
+
+  @@index([schoolId])
+  @@index([instructorId])
+}
+
+/// LessonSkill — the confirmed Lesson<->Skill many-to-many ("linked skill(s)",
+/// plural, Spec 55 §6.1). Explicit join table, same convention as
+/// RankRequiredSkill above (no implicit Prisma many-to-many anywhere in this
+/// codebase, by deliberate choice — see that model's own comment). No schoolId of
+/// its own — RLS delegates entirely to Lesson/Skill's own policies via the FK join,
+/// same reasoning as RankRequiredSkill's own migration comment: this table carries
+/// no queryable data beyond the two FKs, so a caller can only ever reach a row here
+/// by already having Lesson/Skill visibility.
+model LessonSkill {
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id])
+  skillId  String
+  skill    Skill  @relation(fields: [skillId], references: [id])
+
+  @@id([lessonId, skillId])
   @@index([skillId])
 }
 
@@ -1253,7 +1813,7 @@ model StudentRank {
   schoolId String
 
   currentRankId String
-  currentRank   Rank @relation("StudentRankCurrentRank", fields: [currentRankId], references: [id])
+  currentRank   Rank   @relation("StudentRankCurrentRank", fields: [currentRankId], references: [id])
 
   currentStripeId String?
   currentStripe   RankStripeTier? @relation("StudentRankCurrentStripe", fields: [currentStripeId], references: [id])
@@ -1386,16 +1946,26 @@ model Waiver {
   @@index([schoolId])
 }
 
-/// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13) — belongs to Waiver and
-/// Student. Confirmed fields (quoted): "signer full name, signature, signed date,
-/// status." `signatureText` models the CONFIRMED baseline e-signature mechanism —
-/// "a typed full name plus a signature field" (§2.2) — not Decision 74/78's later
-/// drawn-signature-capture upgrade, whose own UI and possible schema change remain
-/// explicitly undesigned ("Decision 74's own engineering follow-up... remains open
-/// on its own terms," Decision 78's own effect note). Do not add a drawn-signature
-/// blob/canvas-data column as a guess — that's a real, separate, still-open piece
-/// of engineering work, not something this phase silently ships an interim answer
-/// for.
+/// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13; drawn-signature capture added
+/// Phase 34) — belongs to Waiver and Student. Confirmed fields (quoted): "signer
+/// full name, signature, signed date, status." `signatureText` models the
+/// CONFIRMED baseline e-signature mechanism — "a typed full name plus a signature
+/// field" (§2.2). `signatureImageKey` is Decision 74/78's drawn-signature-capture
+/// upgrade (legally confirmed sufficient by Decision 78; the engineering
+/// follow-up — raster vs. vector storage, the schema field itself — was left
+/// explicitly open by Decision 74 and resolved here, Phase 34): raster (PNG),
+/// not vector/stroke-path data — matches how virtually every production
+/// signature-pad capture works (a canvas's own toDataURL() output), directly
+/// displayable as an image with no custom renderer needed, and Spec 55 §11.3
+/// already classifies this exact asset category ("signed-waiver and invoice
+/// PDFs... served from R2 directly, no transformation needed") by the same
+/// "legal record, not a resizable gallery asset" reasoning this applies to a
+/// signature image. Nullable — a signature may still be Signed via typed-name
+/// only if the drawn-capture step was never completed, preserving the existing
+/// baseline mechanism rather than making drawn capture mandatory (not itself
+/// confirmed anywhere as required). Stores the R2 OBJECT KEY, not a public URL —
+/// see R2ClientService's own header comment for why every read of this image
+/// goes through a freshly-generated, short-lived presigned URL instead.
 ///
 /// RLS shape: deliberately the SAME narrow "School Owner/Manager, or the row's own
 /// Student, nobody else" shape Membership/Transaction use (Phase 9) — NOT the
@@ -1409,6 +1979,20 @@ model Waiver {
 /// default and flags it for Architect confirmation rather than silently choosing
 /// the broader shape. See the migration's own RLS policy comment for the concrete
 /// policy this produces.
+///
+/// Phase 37 added `signedById` — the actual signer, which diverges from
+/// `studentId` (whose waiver this is) once Guardian-on-behalf-of signing
+/// (SKILL.md §14, [CONFIRMED]) is possible. RLS is UNCHANGED — every write
+/// still runs under `withTenantContext(studentId, ...)` (the row's own
+/// "self" branch above), the same target-tenant-context substitution
+/// Booking's own Staff-on-behalf-of write already established, so a
+/// Guardian caller never needs a new RLS branch of their own. See
+/// WaiversService.sign()'s own header comment for the authorization check
+/// (GuardianLink, not RoleGrant) and the known limitation this surfaced:
+/// there is still no Guardian-on-behalf-of ENROLLMENT path (School's own
+/// `join()` is self-service-only), so this is only exercisable once a
+/// minor already holds a STUDENT RoleGrant by some other means — a
+/// separate, not-yet-built gap, not one this phase silently papers over.
 model WaiverSignature {
   id String @id @default(uuid())
 
@@ -1416,17 +2000,31 @@ model WaiverSignature {
   waiver   Waiver @relation(fields: [waiverId], references: [id])
 
   studentId String
-  student   User   @relation(fields: [studentId], references: [id])
+  student   User   @relation("WaiverSignatureStudent", fields: [studentId], references: [id])
+
+  // Phase 37 (Guardian-on-behalf-of signing, skills/ultm8-domain-rules/SKILL.md
+  // §14 — "Guardian... full access to... waiver-signing authority... for each
+  // linked minor", [CONFIRMED]): the actual human who signed, which is NOT
+  // always studentId — a Guardian may sign on a linked minor's behalf
+  // (WaiversService.sign()'s own header comment). Always set, including for the
+  // ordinary self-signing case (signedById == studentId there) — no nullable
+  // "assume self if absent" convention, so every row states its real signer
+  // explicitly. Backfilled from studentId for every row that predates this
+  // column (this migration), since every signature before Phase 37 was
+  // necessarily self-signed (no Guardian-signing path existed yet).
+  signedById String
+  signedBy   User   @relation("WaiverSignatureSignedBy", fields: [signedById], references: [id])
 
   // Denormalized from waiver.schoolId — same reasoning Membership.schoolId is
   // denormalized from membershipPlan.schoolId (Phase 9): keeps this row's own RLS
   // policy a direct column comparison rather than a join through Waiver.
   schoolId String
 
-  signerFullName String
-  signatureText  String // see header comment — typed name, not a drawn-signature blob
-  signedDate     DateTime @default(now())
-  status         WaiverSignatureStatus @default(SIGNED)
+  signerFullName    String
+  signatureText     String // see header comment — typed name, not a drawn-signature blob
+  signatureImageKey String? // see header comment — R2 object key, nullable, PNG raster
+  signedDate        DateTime              @default(now())
+  status            WaiverSignatureStatus @default(SIGNED)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1442,6 +2040,7 @@ model WaiverSignature {
   @@index([schoolId])
   @@index([studentId])
   @@index([waiverId])
+  @@index([signedById])
 }
 
 // =============================================================================
@@ -1460,6 +2059,22 @@ enum BookingStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+/// Booking.checkInMethod (Phase 51, Decision 107 — a flagged engineering design,
+/// not a SKILL.md-confirmed enum) — which of the three check-in paths a COMPLETED
+/// Booking actually went through. SELF_SERVICE is the Student's own rotating
+/// Class-QR scan (Phase 13, now token-verified — see AttendanceService); the other
+/// two are the Instructor roll-call scan this phase adds (SKILL.md §12, Decision
+/// 71): INSTRUCTOR_SCAN when the Instructor scanned the Student's own personal
+/// rotating token, INSTRUCTOR_MANUAL when Staff confirmed presence by name with no
+/// token at all (Decision 107's own camera-free fallback for a Student whose
+/// camera-tier consent is withdrawn, or an accessibility need). Null until a
+/// Booking is actually checked in (Upcoming/Cancelled/No-Show all leave it null).
+enum CheckInMethod {
+  SELF_SERVICE
+  INSTRUCTOR_SCAN
+  INSTRUCTOR_MANUAL
 }
 
 /// Booking.refundResolution / BookingAttendee.refundResolution — a Developer-level
@@ -1544,6 +2159,18 @@ model Booking {
   overriddenById String?
   overriddenBy   User?   @relation("BookingOverriddenBy", fields: [overriddenById], references: [id])
   overrideReason String?
+
+  // Check-in method (Phase 51, Decision 107) — same "always recorded together"
+  // pairing as overriddenById/overrideReason above. checkedInById is the
+  // Instructor for INSTRUCTOR_SCAN/INSTRUCTOR_MANUAL, always null for
+  // SELF_SERVICE (the Student's own action, already identified by studentId —
+  // recording it again here would be redundant). No separate checkedInAt column:
+  // updatedAt already captures it, same as every other status transition on this
+  // model (cancel, no-show) already relies on updatedAt rather than a dedicated
+  // timestamp per transition.
+  checkInMethod CheckInMethod?
+  checkedInById String?
+  checkedInBy   User?          @relation("BookingCheckedInBy", fields: [checkedInById], references: [id])
 
   // See RefundResolution's own comment for exactly when/how this is set.
   refundResolution RefundResolution?

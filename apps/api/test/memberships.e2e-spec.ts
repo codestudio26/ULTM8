@@ -60,11 +60,14 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   let studentB: { id: string; email: string };
   let branchStaff: { id: string; email: string };
   let outsider: { id: string; email: string };
+  let guardian: { id: string; email: string };
+  let minor: { id: string; email: string };
   let tokenOwner: string;
   let tokenStudentA: string;
   let tokenStudentB: string;
   let tokenBranchStaff: string;
   let tokenOutsider: string;
+  let tokenGuardian: string;
   let paymentAccountId: string;
 
   const membershipPlanIds: string[] = [];
@@ -111,6 +114,8 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     studentB = await mkUser('student-b');
     branchStaff = await mkUser('branch-staff');
     outsider = await mkUser('outsider');
+    guardian = await mkUser('guardian');
+    minor = await mkUser('minor');
 
     await superuser.roleGrant.createMany({
       data: [
@@ -118,14 +123,20 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
         { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: school.id },
         { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: school.id },
         { id: randomUUID(), role: 'BRANCH_STAFF', userId: branchStaff.id, schoolId: school.id },
+        // Stands in for Phase 38's own Guardian-on-behalf-of enrollment — the
+        // minor's own path into holding this, exercised end-to-end in that
+        // phase's own test suite, not re-proven here.
+        { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: school.id },
       ],
     });
+    await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
 
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentB = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenBranchStaff = signAccessToken(branchStaff, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenOutsider = signAccessToken(outsider, []);
+    tokenGuardian = signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
 
     // Cash/Bank Transfer PaymentAccount — every purchase path this file exercises
     // (£0-immediate, Cash/Bank Pending+confirm) works against this; the Stripe paths
@@ -141,6 +152,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
     await superuser.paymentAccount.delete({ where: { id: paymentAccountId } });
+    await superuser.guardianLink.deleteMany({ where: { guardianId: guardian.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { email: { contains: 'memberships-http-' } } });
     await superuser.school.delete({ where: { id: school.id } });
@@ -218,6 +230,70 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.class.delete({ where: { id: cls.id } });
   });
 
+  it('PATCH with explicit null clears currency/expiryDurationDays/scopedClassId/cancellationCharge; omitting a field leaves it unchanged', async () => {
+    const cls = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        title: 'Clearable-field Fixture Class',
+        activities: ['Jiu Jitsu'],
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 3600_000),
+      },
+    });
+
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({
+        type: 'CLASS_PACK',
+        title: 'Clearable Fields Pack',
+        price: 2500,
+        currency: 'gbp',
+        expiryDurationDays: 30,
+        classesIncluded: 1,
+        scopedClassId: cls.id,
+        cancellationCharge: 500,
+      });
+    expect(createRes.status).toBe(201);
+    membershipPlanIds.push(createRes.body.id);
+    expect(createRes.body.currency).toBe('gbp');
+    expect(createRes.body.expiryDurationDays).toBe(30);
+    expect(createRes.body.scopedClassId).toBe(cls.id);
+    expect(createRes.body.cancellationCharge).toBe(500);
+
+    // Omitting `title` here must leave it unchanged — proves "field absent"
+    // still means "no change" even now that these DTOs accept an explicit
+    // null on other fields (the two behaviors aren't conflated).
+    const clearRes = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ currency: null, expiryDurationDays: null, scopedClassId: null, cancellationCharge: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.currency).toBeNull();
+    expect(clearRes.body.expiryDurationDays).toBeNull();
+    expect(clearRes.body.scopedClassId).toBeNull();
+    expect(clearRes.body.cancellationCharge).toBeNull();
+    expect(clearRes.body.title).toBe('Clearable Fields Pack');
+
+    await superuser.class.delete({ where: { id: cls.id } });
+  });
+
+  it('rejects an explicit classesIncluded: null on PATCH — 400, not a silent no-op', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Reject-Null-ClassesIncluded Pack', price: 1000, classesIncluded: 5 });
+    expect(createRes.status).toBe(201);
+    membershipPlanIds.push(createRes.body.id);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ classesIncluded: null });
+    expect(res.status).toBe(400);
+  });
+
   // ---------------------------------------------------------------------------
   // Purchase — £0-immediate path (Decision 6)
   // ---------------------------------------------------------------------------
@@ -259,6 +335,82 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
       .set('Authorization', `Bearer ${tokenStudentA}`)
       .send({});
     expect(purchaseRes.status).toBe(409);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Purchase — Guardian-on-behalf-of-a-linked-minor (Phase 39).
+  // ---------------------------------------------------------------------------
+
+  it('a Guardian CAN purchase a £0 plan for a linked minor — the Membership belongs to the MINOR, not the Guardian', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Guardian Free Trial', price: 0 });
+    expect(planRes.status).toBe(201);
+    membershipPlanIds.push(planRes.body.id);
+
+    const purchaseRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(purchaseRes.status).toBe(201);
+    expect(purchaseRes.body.outcome).toBe('active');
+    expect(purchaseRes.body.membership.studentId).toBe(minor.id);
+    membershipIds.push(purchaseRes.body.membership.id);
+
+    // Direct Prisma, under the minor's own tenant context — confirms the row
+    // is genuinely readable as the minor's own (Membership RLS's "self"
+    // branch), not just present in the raw response body. A Guardian has no
+    // findMyMemberships()-for-a-linked-minor equivalent yet (out of scope
+    // this phase, same as every other Guardian-reads-a-minor's-own-data gap
+    // flagged but not built across Phase 37/38).
+    const asMinor = await withUser(minor.id, (tx) => tx.membership.findMany({ where: { id: purchaseRes.body.membership.id } }));
+    expect(asMinor).toHaveLength(1);
+  });
+
+  it('a Guardian CAN purchase a Cash/Bank-eligible plan for a linked minor — Transaction.studentId is the minor, and School Owner can still confirm it', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Guardian Cash Pack', price: 2000, currency: 'gbp', classesIncluded: 2 });
+    expect(planRes.status).toBe(201);
+    membershipPlanIds.push(planRes.body.id);
+
+    const purchaseRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id });
+    expect(purchaseRes.status).toBe(201);
+    expect(purchaseRes.body.outcome).toBe('pending_confirmation');
+    const transactionId = purchaseRes.body.transactionId;
+    transactionIds.push(transactionId);
+
+    const rawTransaction = await superuser.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+    expect(rawTransaction.studentId).toBe(minor.id);
+
+    const confirmRes = await request(app.getHttpServer())
+      .patch(`/v1/transactions/${transactionId}/confirm`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(confirmRes.status).toBe(200);
+    expect(confirmRes.body.membershipCreated).toBe(true);
+    expect(confirmRes.body.membership.studentId).toBe(minor.id);
+    membershipIds.push(confirmRes.body.membership.id);
+  });
+
+  it('a caller with NO active GuardianLink to the named Student is rejected — 403, not a silent no-op', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Unlinked Guardian Attempt', price: 0 });
+    membershipPlanIds.push(planRes.body.id);
+
+    // studentA stands in for "some other real Student" — the Guardian holds
+    // no GuardianLink to them at all.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: studentA.id });
+    expect(res.status).toBe(403);
   });
 
   // ---------------------------------------------------------------------------
@@ -346,12 +498,20 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   // Transactions ledger — School Owner/Manager only.
   // ---------------------------------------------------------------------------
 
-  it('GET /schools/{id}/transactions is School Owner/Manager only', async () => {
+  it('GET /schools/{id}/transactions is School Owner/Manager only, and resolves the paying Student\'s name', async () => {
     const ownerRes = await request(app.getHttpServer())
       .get(`/v1/schools/${school.id}/transactions`)
       .set('Authorization', `Bearer ${tokenOwner}`);
     expect(ownerRes.status).toBe(200);
     expect(ownerRes.body.items.length).toBeGreaterThan(0);
+
+    // Transaction.student is joined server-side — confirms the row for the
+    // minor (created via the Guardian Cash/Bank test above) carries a real
+    // name, not just studentId.
+    const minorItem = ownerRes.body.items.find((t: { studentId: string }) => t.studentId === minor.id);
+    expect(minorItem).toBeDefined();
+    expect(minorItem.studentFirstName).toBe('minor');
+    expect(minorItem.studentSurname).toBe('Tenant');
 
     const studentRes = await request(app.getHttpServer())
       .get(`/v1/schools/${school.id}/transactions`)
