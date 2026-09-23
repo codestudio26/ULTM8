@@ -31,6 +31,12 @@ knowledge), Track B (`origin/track-b-student-app` HEAD `b34bb97`), infrastructur
 same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Decision
 106) and its core backend shipped (Phase 54) — see §1 and §4.
 
+**Updated 2026-09-23:** Track B is synced onto current master and PR'd — see §2's own
+"Integration status" for the full account (Decision 98 collision resolved/renumbered to
+113, two real bug fixes carried over, one real API-contract drift found and fixed).
+Not yet merged. Test coverage (still zero) remains explicitly open, scoped out of the
+sync PR on purpose — see §2's own "Recommended next actions."
+
 ---
 
 ## Snapshot
@@ -38,7 +44,7 @@ same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Dec
 | Track | State |
 |---|---|
 | **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
-| **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
+| **Track B** — Student mobile app | Synced onto current master and PR'd (see §2) — was 19 commits behind on an unmerged branch, never PR'd, 79 master commits behind. Zero test coverage (still true, unchanged). Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe)/Guardian-consent-candidate/light offline caching built and verified; Payment UI, Waiver signing (client), full Guardian screens, QR scanning, white-label, and richer offline are still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
 | **Open decisions** | 38 post-spec decisions logged (Decision 107 added, closing Decision 71's attendance-mechanics gap), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
 
@@ -174,16 +180,33 @@ Cash/Bank and free plans (not Stripe).
   CI added for Phase 25/26 and Phase 34. If tested today, the branch's copy of
   `apps/api` would fail to boot in CI purely from environment staleness.
 
-**Integration status — the real headline finding:**
-- **No PR has ever been opened for `track-b-student-app`.** It has never been proposed
-  for merge, never had CI run against it as a unit, and is invisible from `master`'s
-  own `docs/` folder (which has Track A's roadmap but no Track B one).
-- **34 phases / 69 commits behind master** (fork point `f71b481`, Phase 16a) and
-  growing every day both tracks run in parallel without syncing.
-- **A guaranteed merge conflict is already sitting there**: both branches independently
-  added an unrelated "Decision 98" to `docs/decisions/POST-SPEC-55-DECISION-LOG.md`
-  with completely different content (master: School→Franchise linking; track-b: Track
-  B's own Slice 1 kickoff). Whoever merges this has to resolve and renumber by hand.
+**Integration status — updated 2026-09-23, no longer the headline finding it was:**
+- **A sync PR is now open** — `track-b-student-app` (19 commits, fork point `f71b481`
+  / Phase 16a, 79 master commits behind by the time of the sync) merged onto current
+  master in a new branch, CI-verified before opening: `apps/api` and `apps/student`
+  both typecheck clean, the full 30-suite/327-test e2e gate passes against real
+  Postgres+Redis, and `turbo run build` is clean across all 8 packages. Not yet
+  merged — see the PR for current status.
+- **The Decision 98 collision (below) is resolved**, not just flagged: both branches
+  had independently used "Decision 98" for unrelated content (master:
+  School→Franchise linking; Track B: its own Expo/secure-store kickoff decision).
+  Track B's entry was renumbered to **Decision 113** (the next free slot once PRs
+  #77/#79's own claimed numbers 110–112 are accounted for, not just master's own
+  109) at sync time, with its own numbering note explaining why, and all 5 of its
+  code/doc citations updated to match.
+- **Two real carried-over fixes** rode along in the sync, previously living only on
+  Track B's own branch: `MembershipsService.findAllPlans` was missing its
+  owner/manager authorization gate (any tenant JWT could list any School's plans) —
+  now fixed on master too; `packages/api-client`'s `unwrap()` mishandled a genuine
+  `204 No Content` response as a failure in some cases — also fixed for every
+  consumer (school-portal, platform-admin), not just apps/student.
+- **A real API-contract drift was found and fixed during the sync**, not just
+  merged around: master's later on-behalf-of work (Decision 103 and siblings) added
+  an optional `studentId` to three DTOs Track B's own mutations call
+  (cancel-booking, join-waitlist, purchase-membership), making `body` itself a
+  required key even though `studentId` stays optional — 3 call sites in
+  `apps/student` didn't have it and failed `tsc`. Fixed by adding `body: {}`,
+  mirroring the pattern Track B's own `useBookClass()` already used correctly.
 
 **Backend gaps Track B surfaced while building** (real findings, not Track B's fault —
 worth carrying into Track A's own backlog): no `GET /waitlist/me`-equivalent endpoint,
@@ -197,13 +220,17 @@ PaymentIntent before the app can show its own "not available yet" message — a 
 correctness bug waiting for Slice 4b to matter.
 
 **Recommended next actions for Track B**, roughly in order:
-1. Sync Track B onto current master (69 commits / 34 phases), resolving the Decision 98
-   conflict by hand (renumber one of the two entries).
-2. Fix Track B's CI env-var drift so the isolation gate can actually run.
-3. Open a real PR — even a draft one — so this track gets a review trail and stops
-   being invisible from master.
+1. ~~Sync Track B onto current master, resolving the Decision 98 conflict~~ — done,
+   see "Integration status" above; PR open, not yet merged.
+2. ~~Fix Track B's CI env-var drift~~ — turned out to be API-contract drift, not
+   env-var drift (ci.yml's `build-and-unit-test` job already runs `turbo run build`
+   generically, no apps/student-specific job was ever needed); the 3 real call-site
+   breakages found are fixed, see above.
+3. ~~Open a real PR~~ — done, same PR as #1.
 4. Add a `test` script and at least smoke-level coverage before the next slice, so this
-   gap doesn't compound further.
+   gap doesn't compound further. **Still open** — not attempted in the sync PR, which
+   scoped itself to getting Track B mergeable and green, not to writing its first
+   tests from zero.
 5. Only then: pick up Slice 4b (Stripe UI, needs a product decision on approach first)
    or re-attempt Waiver/Guardian screens now that more of their backend exists.
 
@@ -350,8 +377,9 @@ unit of effort. Not a committed schedule — a structure to work through.
 5. Guardian consent UI — needs both a design pass and an "which app owns this" call.
 
 **C. Track B integration (buildable today, growing more expensive to defer)**
-6. Sync onto master, resolve the Decision 98 conflict, fix CI env drift, open a PR.
-7. Add test coverage.
+6. ~~Sync onto master, resolve the Decision 98 conflict, fix CI env drift, open a
+   PR~~ — done, see §2's "Integration status." PR open, not yet merged.
+7. Add test coverage. **Still open.**
 
 **D. Unblocked build work once B lands**
 8. ~~`SubscriptionPlansModule`~~ — **core done (Phase 54, merged via PR #75)**: Plan
