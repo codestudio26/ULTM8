@@ -31,6 +31,17 @@ knowledge), Track B (`origin/track-b-student-app` HEAD `b34bb97`), infrastructur
 same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Decision
 106) and its core backend shipped (Phase 54) — see §1 and §4.
 
+**Updated 2026-09-23:** Infrastructure & deployment's "code that can be written now"
+half (§3's own framing) is done — a production `apps/api/Dockerfile`, first-pass
+Terraform for the full confirmed AWS stack, a manual/gated CD pipeline skeleton, and
+`docs/ops/` docs for backup/DR, APM/observability, and the numeric-NFR-targets gap.
+No new product/architecture decision was made or needed — every choice in this work
+is a self-flagged, Developer-level infra default (same treatment `variables.tf`'s own
+comments already give sizing/region), not a Decision-log entry. **Still nothing is
+provisioned or running** — this environment has no AWS account or credentials,
+`terraform apply` has never been run, and `.github/workflows/deploy.yml` has no
+automatic trigger by design. See §3.
+
 ---
 
 ## Snapshot
@@ -39,7 +50,7 @@ same day: `SubscriptionPlansModule`'s stale blocker citation was reconciled (Dec
 |---|---|
 | **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
-| **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
+| **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6). First-pass Dockerfile, Terraform for the full confirmed stack, a manual/gated CD pipeline skeleton, and backup/DR + APM + NFR-gap docs now exist (`apps/api/Dockerfile`, `infra/terraform/`, `.github/workflows/deploy.yml`, `docs/ops/`) — **still nothing is provisioned or running**: no AWS account/credentials exist in this environment, `terraform apply` has never been run, and CI remains test-only (deploy is manual-dispatch only, by design). |
 | **Open decisions** | 38 post-spec decisions logged (Decision 107 added, closing Decision 71's attendance-mechanics gap), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
@@ -233,46 +244,81 @@ by direct audit of `.github/workflows/`, the repo's `.env.example` files, `docs/
   not provisioned.
 - **Local dev environment** — a real `.devcontainer/docker-compose.yml` (Postgres 16 +
   Redis 7). Dev-only, not a production container definition.
+- **Production Dockerfile** (`apps/api/Dockerfile`) — multi-stage
+  (`turbo prune --docker` → install → build → non-root runtime), targets the
+  confirmed Fargate deploy target. Build mechanics were validated in this sandbox
+  against a substitute base image (Docker Hub's own CDN is blocked by this
+  environment's org egress policy — the same class of denial as the Terraform
+  registry block below, not routed around); the real committed image
+  (`node:20-bookworm-slim`) was never itself built end-to-end here. See the
+  Dockerfile's own header comment.
+- **First-pass Terraform** (`infra/terraform/`) — the full "decided, zero
+  provisioning" stack below, as code: VPC, RDS + RDS Proxy, ElastiCache, ECS
+  Fargate + ALB, ECR, Secrets Manager, Cognito, least-privilege IAM.
+  `terraform fmt -check` clean across all 15 files; `terraform validate`/`init`
+  could not be run (`registry.terraform.io` blocked by this sandbox's own org
+  policy) — flagged, not silently assumed passing, in `infra/terraform/README.md`.
+  **Not applied** — no AWS account/credentials exist in this environment.
+- **CD pipeline skeleton** (`.github/workflows/deploy.yml`) — `workflow_dispatch`
+  -only (no automatic trigger, by design): build+push `apps/api`'s image,
+  `terraform plan`/`apply`, and an opt-in migration step (`aws ecs run-task`
+  against the same task definition the service uses, since RDS Proxy has no
+  route from a GitHub-hosted runner). Every required secret/variable (AWS OIDC
+  role, domain, Terraform backend) is named in `infra/terraform/README.md`'s own
+  "CD pipeline" section but unset — dispatching it today fails closed at the
+  first AWS-credentials step, not a silent no-op.
+- **Backup/DR, APM/observability, and NFR-target gap docs** (`docs/ops/`) — each
+  of the three "genuine gaps" this section used to list bare is now its own
+  document: what's actually provisioned, what's still missing, and (NFR targets
+  specifically) an explicit statement that no number in that doc is a decision.
 
 ### Decided, zero provisioning (the largest category)
-Every one of these has a real, named decision behind it (cited) but **no Dockerfile,
-Terraform/CDK, live account, or credentials exist anywhere in this environment**:
+Every one of these has a real, named decision behind it (cited); Terraform for
+all but one now exists (`infra/terraform/`, above) — **none of it has been
+applied**, and no live AWS account/credentials exist anywhere in this
+environment:
 
 | Target | Decision | Provisioned? |
 |---|---|---|
-| AWS RDS + ElastiCache + ECS Fargate hosting | Spec §11.6, Decision 11 | No |
-| AWS Secrets Manager | Spec §11.6, `ultm8-payments` §1 | No |
-| AWS Cognito (Platform Admin IdP) | Decision 100 | No |
-| RDS Proxy (connection pooling) | Decision 63 | No — not implemented in code either |
-| Cloudflare Stream + AWS Transcribe (video) | Decision 101 | No — schema fields exist, unused |
-| CloudWatch (job-queue observability) | Decision 53 | Partially — a logging *rule* is designed, no CloudWatch integration exists |
+| AWS RDS + ElastiCache + ECS Fargate hosting | Spec §11.6, Decision 11 | Terraform written (`rds.tf`, `elasticache.tf`, `ecs.tf`) — not applied |
+| AWS Secrets Manager | Spec §11.6, `ultm8-payments` §1 | Terraform written (`secrets.tf`) — not applied |
+| AWS Cognito (Platform Admin IdP) | Decision 100 | Terraform written (`cognito.tf`) — not applied |
+| RDS Proxy (connection pooling) | Decision 63 | Terraform written (`rds_proxy.tf`) — not applied; still no app-code path specific to it (`DATABASE_URL*` is consumed the same either way) |
+| Cloudflare Stream + AWS Transcribe (video) | Decision 101 | No — schema fields exist, unused; out of this infra phase's scope |
+| CloudWatch (job-queue observability) | Decision 53 | Partially — log shipping to CloudWatch Logs is now provisioned (`ecs.tf`'s `awslogs` driver + Container Insights) and every job processor's designed error-logging rule already flows there; no metric filter/alarm turns that into a page yet — see `docs/ops/APM-AND-OBSERVABILITY.md` |
 
-### Genuine gaps — no decision found at all
-- **CD/deploy pipeline** — nothing, not even a stub.
-- **Dockerfile / container build definition** — none exist, including for `apps/api`,
-  despite Fargate being the confirmed deploy target.
-- **Any IaC tool** (Terraform/Pulumi/CDK/CloudFormation/Kubernetes) — none.
-- **Database backup/DR strategy, point-in-time recovery, read replicas** — not
-  mentioned anywhere, not even at the decision-log level.
-- **Error-tracking/APM** (Sentry, Datadog, or equivalent) — none; only NestJS's
-  built-in `Logger`.
-- **Numeric NFR targets** (uptime/SLA, p95 latency, concurrent-user budgets) — none
-  found anywhere in the repo.
+### Genuine gaps — still open (docs now exist to track them; numbers/tooling do not)
+- **Database backup/DR strategy** — RDS's own automated-backup/PITR/Multi-AZ
+  defaults are now documented, with their real limits (no Redis snapshotting,
+  no timed restore runbook) — `docs/ops/BACKUP-AND-DR.md`. No RPO/RTO target is
+  confirmed anywhere; that part of the gap is unchanged.
+  Still not mentioned at the decision-log level.
+- **Error-tracking/APM** — current state (structured logs → CloudWatch Logs,
+  Container Insights, ALB health checks) and what's missing (alarms, tracing,
+  an error-tracking SaaS, a real `/health` route) are now documented —
+  `docs/ops/APM-AND-OBSERVABILITY.md`. None of the missing pieces are built.
+- **Numeric NFR targets** (uptime/SLA, p95 latency, concurrent-user budgets) —
+  still none found anywhere in the repo; now has a canonical, explicitly-flagged
+  place to record them once a product/architecture decision sets them —
+  `docs/ops/NFR-TARGETS.md`.
 - **Formal compliance program** (SOC 2, PCI DSS attestation beyond the SAQ-A design
   target, GDPR/LGPD data-residency program) — see the dedicated finding below.
+  Unchanged by this infra phase.
 - **`packages/build-pipeline`** — confirmed, explicit placeholder (its own `build`
   script literally echoes "placeholder"). Not a disguised gap — it's honestly labeled
   and blocked on the same Apple compliance decision as Track A item 5 / Track B's
-  Phase 6.
+  Phase 6. Unchanged by this infra phase.
 
 ### What CAN start now, without waiting on AWS provisioning
-Writing a Dockerfile for `apps/api` and a first pass of Terraform/CDK for the
-RDS/ElastiCache/Fargate/Cognito/Secrets-Manager stack doesn't require live AWS
-credentials to draft and review — same as every other "confirmed target, not yet
-built" item in this codebase. What genuinely can't proceed without the product owner
-is the actual `terraform apply`/account provisioning step. Worth splitting this
-workstream into "code that can be written now" vs. "steps that need a real AWS
-account handed over."
+This split has now played out once, not just been proposed: the Dockerfile,
+first-pass Terraform, CD pipeline skeleton, and `docs/ops/` docs above are all
+"code that can be written now" (above), done without live AWS credentials —
+same as every other "confirmed target, not yet built" item in this codebase.
+What genuinely still can't proceed without the product owner is unchanged: the
+actual `terraform apply`/account-provisioning step, and everything gated behind
+it (a real domain/ACM cert, a real image pushed to ECR, real vendor-secret
+values, real migrations run, and eventually real NFR targets to size and
+alert against).
 
 ---
 
