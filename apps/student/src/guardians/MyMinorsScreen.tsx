@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Field, InlineError, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
-import { formatDate } from '../lib/formatDate';
+import { formatDateOnly } from '../lib/formatDate';
 import { useAddMinor, useMyMinors } from './guardianQueries';
 import type { AppStackParamList } from '../navigation/types';
 
@@ -81,7 +81,7 @@ export function MyMinorsScreen({ navigation }: Props) {
           <Text style={{ fontSize: 16, fontWeight: '600' }}>
             {minor.firstName} {minor.surname}
           </Text>
-          <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>Born {formatDate(minor.dateOfBirth)}</Text>
+          <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>Born {formatDateOnly(minor.dateOfBirth)}</Text>
         </Pressable>
       ))}
 
