@@ -47,7 +47,7 @@ export function VerifyOtpPage() {
           <TextField type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
         <Field label="Verification code" htmlFor="verify-code">
-          <SegmentedCodeInput value={code} onChange={setCode} autoFocus />
+          <SegmentedCodeInput value={code} onChange={setCode} autoFocus required />
         </Field>
         <Button type="submit" fullWidth loading={submitting}>
           Verify

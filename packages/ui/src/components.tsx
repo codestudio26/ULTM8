@@ -159,12 +159,32 @@ export interface SegmentedCodeInputProps extends Omit<React.HTMLAttributes<HTMLD
   value: string;
   onChange: (value: string) => void;
   autoFocus?: boolean;
+  /** Applied to every box, so the browser blocks submission until all are filled —
+   * matches (and improves on) the plain-text field's own `required`, which only
+   * checked "not empty," not "exactly `length` digits." */
+  required?: boolean;
 }
 
 /** A 6-box (by default) digit input for OTP/verification codes, matching the
  * approved Figma-reference design. Single control: `value`/`onChange` carry the
- * concatenated digit string, same shape a plain text `code` field would. */
-export function SegmentedCodeInput({ length = 6, value, onChange, autoFocus, id, ...rest }: SegmentedCodeInputProps) {
+ * concatenated digit string, same shape a plain text `code` field would.
+ *
+ * `id`/`aria-invalid`/`aria-describedby` (as `Field` clones onto a single child)
+ * land on the FIRST box, not the outer group `<div>` — a `<label htmlFor>` can
+ * only associate with a labelable control, and a `role="group"` div isn't one; the
+ * previous plain `<input>` was directly labelable, so anchoring to box 0 keeps
+ * "click the label to focus the field" and the screen-reader name/error working. */
+export function SegmentedCodeInput({
+  length = 6,
+  value,
+  onChange,
+  autoFocus,
+  required,
+  id,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
+  ...rest
+}: SegmentedCodeInputProps) {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   function handleChange(index: number, e: React.ChangeEvent<HTMLInputElement>) {
@@ -221,10 +241,14 @@ export function SegmentedCodeInput({ length = 6, value, onChange, autoFocus, id,
   }
 
   return (
-    <div className="ultm8-segmented-code" id={id} role="group" {...rest}>
+    <div className="ultm8-segmented-code" role="group" {...rest}>
       {Array.from({ length }).map((_, i) => (
         <input
           key={i}
+          id={i === 0 ? id : undefined}
+          aria-invalid={i === 0 ? ariaInvalid : undefined}
+          aria-describedby={i === 0 ? ariaDescribedBy : undefined}
+          required={required}
           ref={(el) => {
             inputsRef.current[i] = el;
           }}

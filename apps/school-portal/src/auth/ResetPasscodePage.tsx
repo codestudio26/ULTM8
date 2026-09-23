@@ -53,7 +53,7 @@ export function ResetPasscodePage() {
           <TextField type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
         </Field>
         <Field label="Verification code" htmlFor="reset-code">
-          <SegmentedCodeInput value={code} onChange={setCode} />
+          <SegmentedCodeInput value={code} onChange={setCode} required />
         </Field>
         <Field label="New passcode" htmlFor="reset-newPasscode" hint="6 digits">
           <PasscodeField
