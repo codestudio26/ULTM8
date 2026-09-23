@@ -38,7 +38,10 @@ export function useBookClass() {
 export function useCancelBooking() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (bookingId: string) => unwrap(apiClient.PATCH('/v1/bookings/{id}/cancel', { params: { path: { id: bookingId } } })),
+    // Self-cancel only — an empty body. `studentId` on CancelBookingDto is the same
+    // Staff/Guardian on-behalf-of field as BookClassDto's (see useBookClass above);
+    // a Student cancelling their own Booking never sends it.
+    mutationFn: (bookingId: string) => unwrap(apiClient.PATCH('/v1/bookings/{id}/cancel', { params: { path: { id: bookingId } }, body: {} })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
   });
 }

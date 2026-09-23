@@ -32,7 +32,10 @@ export function useMyMemberships() {
 export function usePurchaseMembership() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (planId: string) => unwrap(apiClient.POST('/v1/membership-plans/{id}/purchase', { params: { path: { id: planId } } })),
+    // Self-purchase only — an empty body. `studentId` on PurchaseMembershipDto is the
+    // same Staff/Guardian on-behalf-of field as BookClassDto's (see
+    // bookingQueries.ts); a Student purchasing their own Membership never sends it.
+    mutationFn: (planId: string) => unwrap(apiClient.POST('/v1/membership-plans/{id}/purchase', { params: { path: { id: planId } }, body: {} })),
     onSuccess: (result) => {
       if (result.outcome === 'active') {
         return queryClient.invalidateQueries({ queryKey: ['my-memberships'] });

@@ -10,7 +10,10 @@ import { apiClient } from '../api';
  * returned id itself for the rest of this screen session. */
 export function useJoinWaitlist() {
   return useMutation({
-    mutationFn: (classId: string) => unwrap(apiClient.POST('/v1/classes/{id}/waitlist', { params: { path: { id: classId } } })),
+    // Self-join only — an empty body. `studentId` on JoinWaitlistDto is the same
+    // Staff/Guardian on-behalf-of field as BookClassDto's (see bookingQueries.ts);
+    // a Student joining their own waitlist entry never sends it.
+    mutationFn: (classId: string) => unwrap(apiClient.POST('/v1/classes/{id}/waitlist', { params: { path: { id: classId } }, body: {} })),
   });
 }
 
