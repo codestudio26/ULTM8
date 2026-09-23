@@ -74,6 +74,19 @@ BEGIN
 END
 $$;
 
+-- FOUND ON REVIEW, deploying against a real (non-CI) Postgres: creating a role does not
+-- by itself make the creator a member of it (that auto-grant is Postgres 16+ only, and
+-- not guaranteed even there depending on how the role was created) — so without this,
+-- the ALTER FUNCTION ... OWNER TO ultm8_rls_helper below fails with "must be able to
+-- SET ROLE ultm8_rls_helper" whenever the deploying role isn't a true superuser (e.g.
+-- Supabase's `postgres`, which has enough privilege to create the role above but not to
+-- reassign ownership to it without this). CI's Docker Postgres superuser is already
+-- implicitly a member of every role, so this is a no-op there. Idempotent: granting an
+-- already-held membership is a no-op, not an error. CURRENT_USER rather than a
+-- hardcoded role name so this resolves correctly to whichever role actually runs
+-- `prisma migrate deploy` in a given environment.
+GRANT ultm8_rls_helper TO CURRENT_USER;
+
 -- ============================================================================
 -- 2. The membership-check function itself.
 --    - STABLE, not VOLATILE: it only reads, and gives the planner room to avoid
