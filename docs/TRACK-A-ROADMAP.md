@@ -161,7 +161,7 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
 | General tenant/content offboarding (close-account, archived-gate, 90-day purge) | ✅ DONE — Phase 56 (Decision 110, backend) + Phase 57 (`apps/platform-admin` close/reactivate UI). Close/reactivate endpoints, the archived-gate across all 10 named entity services, the scheduled purge job, and the School/Franchise lookup screens' own status controls. `Waiver`'s own retention period still pending legal input (Decision 110's own flagged exception) |
 | QR code display screen (`apps/school-portal`, Staff-facing) | ✅ DONE — Phase 52, merged via PR #73 |
-| Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
+| Guardian consent-management UI (view/withdraw) | ↪️ TRACK B'S, not Track A's — `Guardian` is confirmed to have only "own login, own React Native app session" (SKILL.md §14), so this was never School Portal/Platform Admin's to build. A candidate screen already exists (`apps/student/src/guardians/`, built 2026-09-22/23) but is explicitly unapproved/pending design review in its own code comments; SKILL.md §14's `[UNRESOLVED]` "no consent-management interface exists" tag has not been updated to reflect it |
 | Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
 | Transaction Student-name resolution (Decision 109) | ✅ DONE — merged via PR #61. Developer-level inference, flagged for Architect confirmation |
 | Design system refresh — accent color rebase + Figtree typeface | ✅ DONE — merged via PR #61 |
@@ -529,13 +529,22 @@ by checking each service directly rather than assuming both entities read alike.
 **Still not built**: a real decision on `Waiver`'s own retention period (Decision
 110's own flagged exception, unaffected by Phase 57).
 
-### 4. Guardian consent-management UI — no screen anywhere
+### 4. Guardian consent-management UI — Track B's, not Track A's
 
-No interface exists for a Guardian to view current consent status or withdraw either
-tier of `ConsentRecord` consent — `ultm8-domain-rules` §14 flags this as blocking any
-market with children's-data-protection law. This is Track A surface (Platform
-Admin/School Portal don't obviously own it either — needs a decision on which app it
-belongs to) as much as it's Track B's already-known "Guardian-facing screens" gap.
+Was framed here as a live "which app owns it" question. It isn't one: `ultm8-domain-rules`
+§14 confirms `Guardian` has "own login, own **React Native app session**" — Guardian
+never has a School Portal or Platform Admin surface, so this was never Track A's to
+build. Track B already has a candidate implementation (`apps/student/src/guardians/`
+— `MyMinorsScreen` → `MinorConsentScreen` → `ConsentTierRow`, built 2026-09-22/23,
+wired to the real `GuardiansController` endpoints), explicitly flagged unapproved/
+pending design review in its own code comments. `ultm8-domain-rules` §14's own
+`[UNRESOLVED]` "no consent-management interface exists" tag has not been updated to
+reflect that candidate — worth reporting to the Architect (only they may edit that
+skill), not something Track A needs to resolve. One genuinely open, track-agnostic
+product decision remains regardless of which track implements it: whether Guardian
+actions (consent withdrawal, reusing a saved payment method) need step-up
+authentication — nothing today stands between an unlocked device and a change
+affecting someone else's child beyond ordinary biometric re-lock (§14, §12.2).
 
 ### 5. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
 

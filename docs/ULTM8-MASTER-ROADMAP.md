@@ -89,7 +89,7 @@ PRs; Track B is merged and current with master as of PR #81's own base commit. S
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 57 phases shipped, all merged to master — no Track A PRs open (PR #76, Phase 55, and PR #77, Decision 110 + Phase 56 + Phase 57, both merged). Decision 111/112 (Stripe dispute handling + chargeback-pattern-restriction) already merged to master. 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` fully shipped (Phase 54 backend + Phase 55 admin UI, PR #76); only its `whiteLabelApp` entitlement remains, blocked on Apple compliance. General tenant/content offboarding is now built end to end, both backend (Phase 56) and its `apps/platform-admin` close/reactivate UI (Phase 57) — only `Waiver`'s own retention period remains open. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109), the infra Dockerfile/Terraform/CD-pipeline skeleton, and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
+| **Track A** — backend + school-portal + platform-admin | 57 phases shipped, all merged to master — no Track A PRs open (PR #76, Phase 55, and PR #77, Decision 110 + Phase 56 + Phase 57, both merged). Decision 111/112 (Stripe dispute handling + chargeback-pattern-restriction) already merged to master. 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` fully shipped (Phase 54 backend + Phase 55 admin UI, PR #76); only its `whiteLabelApp` entitlement remains, blocked on Apple compliance. General tenant/content offboarding is now built end to end, both backend (Phase 56) and its `apps/platform-admin` close/reactivate UI (Phase 57) — only `Waiver`'s own retention period remains open. Guardian consent UI turned out to not be Track A's at all — `ultm8-domain-rules` §14 confirms Guardian has only a React Native app session, and Track B already has an unapproved candidate screen (see §2). Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109), the infra Dockerfile/Terraform/CD-pipeline skeleton, and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
 | **Track B** — Student mobile app | Synced onto current master and merged (PR #81, see §2) — was 19 commits behind on an unmerged branch, never PR'd, 79 master commits behind at sync time. Zero test coverage (still true, unchanged). Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe)/Guardian-consent-candidate/light offline caching built and verified; Payment UI, Waiver signing (client), full Guardian screens, QR scanning, white-label, and richer offline are still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6). First-pass Dockerfile, Terraform for the full confirmed stack, a manual/gated CD pipeline skeleton, and backup/DR + APM + NFR-gap docs now exist (`apps/api/Dockerfile`, `infra/terraform/`, `.github/workflows/deploy.yml`, `docs/ops/`) — **still nothing is provisioned or running**: no AWS account/credentials exist in this environment, `terraform apply` has never been run, and CI remains test-only (deploy is manual-dispatch only, by design). |
 | **Open decisions** | 44 post-spec decisions logged (Decisions 108/109: Instructor rank V1/V2 dropdown, Transaction Student-name resolution; Decision 110: general tenant/content offboarding policy; Decision 111: dispute-handling scope split into Phase A/B, chargeback threshold set at 2 lost disputes; Decision 112: Phase B's own implementation design; Decision 113: Track B's Expo/secure-token-storage choice, renumbered from a colliding "Decision 98" at sync time), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges, 109 itself awaiting Architect confirmation, 110's own `Waiver`-retention piece pending legal input). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). GDPR/LGPD data-residency and per-user erasure (both distinct from, and explicitly out of scope for, Decision 110's own School/Franchise-level offboarding) remain their own tracking gap — still not carried into any decision-log entry. |
@@ -189,10 +189,13 @@ implementation) are both merged to master.
    to type `archivedAt`/`purgeAt`/`purgedAt`, and `FRANCHISE_PUBLIC_SELECT`
    widened to actually select them (School's `findOne()` already returned them at
    runtime; Franchise's did not). Left: `Waiver`'s own retention period.
-3. **Guardian consent-management UI** — no screen exists for a Guardian to view or
-   withdraw consent (`ultm8-domain-rules` §14). Blocks launch in any market with
-   children's-data-protection law. Needs a decision on which app owns it (School
-   Portal? A future Guardian-facing surface in Track B?) plus a design pass.
+3. **Guardian consent-management UI** — Track B's, not Track A's/School Portal's:
+   `ultm8-domain-rules` §14 confirms `Guardian` has "own login, own React Native app
+   session," so there's no School Portal or Platform Admin surface for this. Track B
+   already has a candidate implementation (`apps/student/src/guardians/`, built
+   2026-09-22/23), explicitly flagged unapproved/pending design review in its own
+   code comments — see §2 below. Blocks launch in any market with
+   children's-data-protection law until formalized.
 4. **`MobileAppPublishingModule` + `packages/build-pipeline`** — blocked on the Apple
    4.2.6/4.3 template-farm compliance question (see §4 below — shared blocker with
    Track B's own Phase 6). Its white-label metered-billing rate is also unfinalized —
@@ -442,7 +445,7 @@ load-bearing for planning.
 | Item | Blocks | Owner needed |
 |---|---|---|
 | Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 4, Track B Phase 6, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement (Phase 54) — the entire branded-app tier | Product/legal |
-| Guardian consent-management UI (no screen anywhere) | Any market with children's-data-protection law; Track B's "Guardian-facing screens" slice | Design + a decision on which app owns it |
+| Guardian consent-management UI — candidate exists (Track B, `apps/student/src/guardians/`), unapproved | Any market with children's-data-protection law | Design review/approval of the existing candidate, in the Track B session |
 
 `SubscriptionPlansModule`'s billing-direction citation conflict and the QR
 mechanism/roll-call-mechanics rows this table used to carry are resolved — Decision
@@ -525,7 +528,10 @@ unit of effort. Not a committed schedule — a structure to work through.
 4. Apple 4.2.6/4.3 compliance question — unblocks `MobileAppPublishingModule` across
    both tracks AND `SubscriptionPlansModule`'s own deferred `whiteLabelApp`
    entitlement (Phase 54) — 3 things now, not 2.
-5. Guardian consent UI — needs both a design pass and an "which app owns this" call.
+5. ~~Guardian consent UI — "which app owns this" call~~ — resolved: `ultm8-domain-rules`
+   §14 confirms Guardian has only a React Native app session, so this is Track B's,
+   not Track A's. A candidate implementation exists there already (see §2), pending
+   design review/approval in the Track B session — see item 10 below.
 
 **C. Track B integration (buildable today, growing more expensive to defer)**
 6. ~~Sync onto master, resolve the Decision 98 conflict, fix CI env drift, open a
@@ -548,8 +554,9 @@ unit of effort. Not a committed schedule — a structure to work through.
    still needs real legal input before its rows are ever purged — the job leaves
    them (and the School that owns them) untouched pending that, per Decision
    110's own flagged exception.
-10. Guardian consent UI (once designed) — likely spans both a School Portal or new
-    surface AND Track B.
+10. Guardian consent UI — a candidate already exists in Track B
+    (`apps/student/src/guardians/`); needs design review/approval there, not net-new
+    build work, and not Track A/School Portal's concern.
 11. Track B Waiver signing + Guardian screens (backend already mostly there).
 12. Track B Slice 4b (Stripe payment UI) — needs its own product decision on approach
     first, independent of the items above.
