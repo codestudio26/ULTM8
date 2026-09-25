@@ -42,11 +42,21 @@ resource "aws_secretsmanager_secret" "db" {
 # not just a bare password — so ECS's own `secrets` block (see ecs.tf) can inject it
 # directly with no glue code. Host/port point at RDS Proxy (Decision 63), never RDS
 # directly, matching security_groups.tf's own "every connection is proxied" posture.
+#
+# FOUND ON REVIEW, before this ever shipped: the "superuser" role's secret_string
+# was built from random_password.db["superuser"].result — but the actual RDS master
+# password is a separate, independently-generated value (rds.tf's own
+# random_password.rds_master, required because RDS needs the plaintext at
+# instance-creation time). Those two random values never match, so this secret would
+# have held a password that fails to authenticate against the real database the
+# instant a migration task tried to use it. random_password.db["superuser"] is left
+# in place (harmless, just unused) rather than restructuring the for_each and risking
+# an invalid-index error in the conditional below for every other role.
 resource "aws_secretsmanager_secret_version" "db" {
   for_each = local.db_roles
 
   secret_id     = aws_secretsmanager_secret.db[each.key].id
-  secret_string = "postgresql://${each.value.username}:${random_password.db[each.key].result}@${aws_db_proxy.main.endpoint}:5432/${aws_db_instance.main.db_name}?schema=public"
+  secret_string = "postgresql://${each.value.username}:${each.key == "superuser" ? random_password.rds_master.result : random_password.db[each.key].result}@${aws_db_proxy.main.endpoint}:5432/${aws_db_instance.main.db_name}?schema=public"
 }
 
 # ---- App-internal secrets (JWT signing keys, QR token secrets) — generated, never
