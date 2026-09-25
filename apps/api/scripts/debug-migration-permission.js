@@ -67,6 +67,12 @@ async function main() {
 
   await step(
     client,
+    '3.5 GRANT CREATE ON SCHEMA public TO ultm8_rls_helper (candidate fix)',
+    'GRANT CREATE ON SCHEMA public TO ultm8_rls_helper;',
+  );
+
+  await step(
+    client,
     '4. ALTER FUNCTION ... OWNER TO ultm8_rls_helper',
     'ALTER FUNCTION is_active_school_owner_manager_test(text) OWNER TO ultm8_rls_helper;',
   );
