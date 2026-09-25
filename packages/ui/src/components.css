@@ -74,10 +74,26 @@
   gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
+.ultm8-field__label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
 .ultm8-field__label {
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-medium);
   color: var(--text-primary);
+}
+.ultm8-field__label-action {
+  font-size: var(--font-size-caption);
+  color: var(--text-accent);
+  text-decoration: none;
+}
+.ultm8-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
 }
 .ultm8-field__hint {
   font-size: var(--font-size-caption);
@@ -297,6 +313,16 @@
 .ultm8-shell__footer-action {
   margin-top: auto;
 }
+.ultm8-shell__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
 
 /* Auth screens (centered card layout) */
 .ultm8-auth-page {
@@ -330,6 +356,204 @@
 .ultm8-auth-card__footer a {
   color: var(--text-accent);
   text-decoration: none;
+}
+
+/* Login brand rail — the approved "Combined" Login concept's mobile header band,
+   sits above the card inside the same centered column. */
+.ultm8-auth-rail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-accent-900);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-4);
+}
+.ultm8-auth-rail__mark {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-footnote);
+}
+.ultm8-auth-rail__copy {
+  font-size: var(--font-size-caption);
+  color: var(--color-accent-200);
+  line-height: 1.4;
+}
+.ultm8-auth-rail__copy strong {
+  display: block;
+  color: #fff;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Passcode field show/hide toggle */
+.ultm8-passcode-field {
+  position: relative;
+}
+.ultm8-passcode-field .ultm8-input {
+  padding-right: var(--space-8);
+}
+.ultm8-passcode-field__toggle {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.ultm8-passcode-field__toggle:hover {
+  color: var(--text-secondary);
+}
+
+/* Segmented code input (OTP) */
+.ultm8-segmented-code {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+.ultm8-segmented-code__box {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 44px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+.ultm8-segmented-code__box:focus {
+  border-color: var(--fill-accent);
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Success confirmation panel (DESIGN.md "Success confirmation panel" pattern) */
+.ultm8-success-panel {
+  position: relative;
+  text-align: center;
+  padding-top: var(--space-2);
+}
+.ultm8-success-panel__dismiss {
+  position: absolute;
+  top: calc(var(--space-2) * -1);
+  right: calc(var(--space-2) * -1);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-body);
+  line-height: 1;
+}
+.ultm8-success-panel__dismiss:hover {
+  border-color: var(--fill-accent);
+  color: var(--text-primary);
+}
+.ultm8-success-panel__check {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin: 0 auto var(--space-4);
+}
+.ultm8-success-panel__title {
+  font-size: var(--font-size-heading-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1);
+}
+.ultm8-success-panel__subtitle {
+  font-size: var(--font-size-footnote);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Card sub-title (e.g. a lookup result's own name inside a Card) and the
+   definition-list layout used to show a looked-up entity's fields. */
+.ultm8-subcard-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-4);
+  color: var(--text-primary);
+}
+.ultm8-info-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-6);
+}
+.ultm8-info-grid dt,
+.ultm8-info-grid dd {
+  font-size: var(--font-size-footnote);
+  margin: 0;
+}
+.ultm8-info-grid dt {
+  color: var(--text-secondary);
+}
+.ultm8-info-grid dd {
+  color: var(--text-primary);
+}
+
+/* Collapsed "Optional details" section (Register) */
+.ultm8-details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.ultm8-details > summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-accent);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.ultm8-details > summary::-webkit-details-marker {
+  display: none;
+}
+.ultm8-details > summary::before {
+  content: '\25B8';
+  font-size: 11px;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.ultm8-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.ultm8-details[open] > summary {
+  margin-bottom: var(--space-4);
 }
 
 /* Modal */

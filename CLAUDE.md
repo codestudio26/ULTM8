@@ -2,7 +2,7 @@
 
 ## Purpose & status
 
-ULTM8 is a multi-tenant SaaS platform for Sports schools/clubs management — Franchise → School → Branch tenancy, Students and Guardian/minor accounts, Instructors, belt/rank grading, class scheduling, memberships, liability waivers, and QR-code check-in. The technical specification and domain rules have been reconciled and finalized (Spec 55). **Development has not started** — this repository is currently in a preparation/planning phase only.
+ULTM8 is a multi-tenant SaaS platform for Sports schools/clubs management — Franchise → School → Branch tenancy, Students and Guardian/minor accounts, Instructors, belt/rank grading, class scheduling, memberships, liability waivers, and QR-code check-in. The technical specification and domain rules have been reconciled and finalized (Spec 55). **Development is well underway** — see "Current phase" below for the verified state.
 
 ## Source-of-truth hierarchy
 
@@ -38,4 +38,11 @@ When sources disagree, resolve in this order, highest first:
 
 ## Current phase
 
-Development has **not started**. This repository is in a preparation phase: spec review, domain-rule maintenance, and planning only. Do not begin implementation work unless explicitly instructed to.
+**Corrected 21 Sep 2026** — this section previously read "Development has not started... preparation/planning phase only," which was stale and contradicted the repository's actual state (verified directly, not assumed):
+
+- `apps/api` — a NestJS + Prisma + Postgres RLS backend, 50+ shipped Phases (see `docs/decisions/POST-SPEC-55-DECISION-LOG.md`'s own numbering, Decisions 70–113 as of this correction), covering tenancy, auth, Students/Instructors/Guardians, grading, classes/bookings/waitlist, memberships/payments, waivers, QR attendance, notifications, and Platform Admin.
+- `apps/school-portal` (School Owner/Staff web app) — 22 real, wired-in pages backed by real API calls.
+- `apps/platform-admin` (web app) — 6 real, wired-in pages.
+- `apps/student` (Student/Guardian-facing React Native app) — in active development on the separate `track-b-student-app` branch (see `docs/TRACK-B-ROADMAP.md` on that branch for its own detailed status); not yet merged to `master`.
+
+Treat git history, the decision log, and each app's own code as the source of truth for what's built — not a static status paragraph. Still applies: don't begin work in an area without checking the actual current code first, and don't assume a feature is unbuilt (or built) without verifying.

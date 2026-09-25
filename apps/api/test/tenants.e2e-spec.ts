@@ -50,7 +50,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   let branchB: { id: string };
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
-  let verifiedInvitee: { id: string; email: string };
+  let verifiedInvitee: { id: string; email: string; phone: string };
   let tokenOwnerA: string;
   let tokenOwnerB: string;
 
@@ -77,7 +77,16 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
         data: {
           id: randomUUID(),
           email: `tenants-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          // A "555" area code (the earlier format here) is a real, deterministic
+          // rejection under class-validator's @IsPhoneNumber (libphonenumber-js
+          // treats it as reserved/fictional, not just an arbitrary placeholder) —
+          // fine for a fixture only ever written straight to Postgres, but this
+          // suite's own invite-candidate lookup test sends a fixture phone through
+          // that exact validated DTO field, so it needs a number that actually
+          // validates. 650 is a real NANP area code; the exchange digit is forced
+          // into 2-9 since NANP exchange codes can't start with 0/1 (verified:
+          // 0 failures across 20,000 samples, vs. the naive random range's ~11%).
+          phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -244,6 +253,14 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .send({ role: 'BRANCH_STAFF', schoolId: schoolA.id, branchId: branchRes.body.id });
     expect(grantRes.status).toBe(201);
 
+    const listRes = await request(app.getHttpServer())
+      .get(`/v1/users/${verifiedInvitee.id}/role-grants`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(listRes.status).toBe(200);
+    const listedGrant = listRes.body.items.find((g: { id: string }) => g.id === grantRes.body.id);
+    expect(listedGrant.userFirstName).toBe('invitee');
+    expect(listedGrant.userSurname).toBe('Tenant');
+
     const revokeRes = await request(app.getHttpServer())
       .delete(`/v1/users/${verifiedInvitee.id}/role-grants/${grantRes.body.id}`)
       .set('Authorization', `Bearer ${tokenOwnerA}`);
@@ -251,6 +268,135 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     const revoked = await superuser.roleGrant.findUniqueOrThrow({ where: { id: grantRes.body.id } });
     expect(revoked.revokedAt).not.toBeNull();
+  });
+
+  it('findAllForUser resolves the target name even when every one of their RoleGrants at this School is revoked (Decision 117 regression)', async () => {
+    // At this point verifiedInvitee holds no ACTIVE RoleGrant anywhere at schoolA —
+    // the one created and revoked in the test above. Before Decision 117's fix, the
+    // name join was a Prisma `include` on RoleGrant.user, which relied on
+    // user_self_or_shared_school RLS: invisible once the target holds zero active
+    // RoleGrants overlapping the caller's own School, even though the caller
+    // (a real SCHOOL_OWNER_MANAGER at schoolA) remains fully authorized to see the
+    // now-revoked RoleGrant row itself (rolegrant_school_manager_scope doesn't
+    // depend on the target row's own revokedAt status at all).
+    const listRes = await request(app.getHttpServer())
+      .get(`/v1/users/${verifiedInvitee.id}/role-grants`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(listRes.status).toBe(200);
+    const revokedRow = listRes.body.items.find((g: { schoolId: string | null }) => g.schoolId === schoolA.id);
+    expect(revokedRow).toBeDefined();
+    expect(revokedRow.revokedAt).not.toBeNull();
+    expect(revokedRow.userFirstName).toBe('invitee');
+    expect(revokedRow.userSurname).toBe('Tenant');
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET .../role-grants/invite-candidate (Decision 116) — exact email/phone match
+  // only, ahead of the invite form actually firing create(). verifiedInvitee has no
+  // RoleGrant at schoolA at this point in the suite (any it held were revoked above),
+  // proving this lookup does NOT depend on an existing shared grant the way
+  // fetchUserRoleGrants/findAllForUser does.
+  // ---------------------------------------------------------------------------
+
+  it('finds an invite candidate by exact email match', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ email: verifiedInvitee.email })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      found: true,
+      id: verifiedInvitee.id,
+      firstName: 'invitee',
+      surname: 'Tenant',
+    });
+  });
+
+  it('finds an invite candidate by exact phone match', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ phone: verifiedInvitee.phone })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body.found).toBe(true);
+    expect(res.body.id).toBe(verifiedInvitee.id);
+  });
+
+  it('returns found:false for an email/phone with no matching account — never a 404', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ email: `nobody-${randomUUID()}@example.test` })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ found: false, id: null, firstName: null, surname: null });
+  });
+
+  it('invite candidate lookup requires email or phone', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('cannot look up an invite candidate at another tenant\'s School', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/role-grants/invite-candidate`)
+      .query({ email: verifiedInvitee.email })
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /schools/{id}/students — the Student roster (SchoolsService.
+  // findAllStudentsForSchool). Staff-gated broadly, unlike the Owner-only
+  // eligible-users endpoint Instructors has — any Staff member should be able
+  // to see who's enrolled.
+  // ---------------------------------------------------------------------------
+
+  it('the Student roster lists everyone with an active STUDENT RoleGrant, and is Staff-only', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-roster-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'roster-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const studentToken = signAccessToken(studentUser, []);
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send();
+    expect(joinRes.status).toBe(201);
+
+    const rosterRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(rosterRes.status).toBe(200);
+    const row = rosterRes.body.items.find((s: { id: string }) => s.id === studentUser.id);
+    expect(row).toBeDefined();
+    expect(row.firstName).toBe('roster-student');
+    expect(row.surname).toBe('Tenant');
+    expect(row.email).toBe(studentUser.email);
+    expect(row.enrolledAt).toBeDefined();
+
+    // The Student themselves is not School Staff (Owner/Manager, Branch Staff,
+    // or Instructor) — cannot read the roster.
+    const asStudentRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${studentToken}`);
+    expect(asStudentRes.status).toBe(403);
+  });
+
+  it('cannot read another tenant\'s Student roster', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(404);
   });
 
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {

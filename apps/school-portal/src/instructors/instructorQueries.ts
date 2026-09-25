@@ -6,6 +6,7 @@ import { apiClient } from '../api';
 export type InstructorResponse = components['schemas']['InstructorResponseDto'];
 export type CreateInstructorInput = components['schemas']['CreateInstructorDto'];
 export type UpdateInstructorInput = components['schemas']['UpdateInstructorDto'];
+export type EligibleInstructorUser = components['schemas']['EligibleInstructorUserDto'];
 
 /** No pagination in this UI yet — same established convention as
  * useBranches/useDisciplines (see their own header comments). */
@@ -21,6 +22,22 @@ export function useInstructors(schoolId: string | null) {
     // re-fetch reference data that rarely changes; a real create/update still
     // invalidates this query key directly).
     staleTime: 60_000,
+  });
+}
+
+/** Candidate pool for InstructorFormModal's picker (Decision 115) — Users already
+ * holding an active INSTRUCTOR RoleGrant at this School. Unpaginated, matching the
+ * backend endpoint. */
+export function useEligibleInstructorUsers(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['instructors', 'eligible-users', schoolId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/instructors/eligible-users', {
+          params: { path: { schoolId: schoolId! } },
+        }),
+      ),
+    enabled: !!schoolId,
   });
 }
 

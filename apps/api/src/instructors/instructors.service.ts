@@ -1,9 +1,11 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
+import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
-import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { cursorPaginate } from '../common/pagination/cursor-paginate';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
 
@@ -11,6 +13,7 @@ import { UpdateInstructorDto } from './dto/update-instructor.dto';
 export class InstructorsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
   ) {}
@@ -73,17 +76,50 @@ export class InstructorsService {
   /** Profiles visible to the caller under one School — RLS restricts this to a School-
    * level grant (sees every profile, any Branch) or a Branch-scoped grant (their own
    * Branch's profiles plus School-wide ones — instructor_tenant_isolation, this
-   * phase's migration; same three-way structure as class_tenant_isolation). */
-  async findAllForSchool(
-    callerId: string,
-    schoolId: string,
-    cursor?: string,
-    limit?: number,
-  ): Promise<CursorPage<{ id: string }>> {
+   * phase's migration; same three-way structure as class_tenant_isolation).
+   *
+   * Names are resolved via PrismaAuthService/resolveUserNames (Decision 117's
+   * pattern), not a Prisma `include` on `user` — closes the same real, verified gap
+   * Decision 117 found for Bookings/Waitlist/RoleGrant/Transactions: this endpoint's
+   * own list of profiles is exactly where InstructorsPage's Name column and every
+   * other page reusing this same hook (Classes, Timetable) look up an Instructor's
+   * display name, and none of them had one to show before this. */
+  async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.instructor.findMany({ ...args, where: { schoolId } }), cursor, limit),
     );
+    const names = await resolveUserNames(
+      this.prismaAuth,
+      page.items.map((i) => i.userId),
+    );
+    return {
+      ...page,
+      items: page.items.map((i) => ({
+        ...i,
+        firstName: names.get(i.userId)?.firstName ?? '',
+        surname: names.get(i.userId)?.surname ?? '',
+      })),
+    };
+  }
+
+  /** Candidate pool for InstructorFormModal's picker (Decision 115) — Users holding an
+   * active INSTRUCTOR RoleGrant at this School, i.e. exactly who assertValidInstructor
+   * would accept for a create() call here. School Owner/Manager only, same gate as
+   * create(). Deliberately unpaginated (bounded by realistic Instructor headcount) and
+   * hardcoded to INSTRUCTOR — no generic role param, since this is the only consumer. */
+  async findEligibleInstructorUsers(callerId: string, schoolId: string) {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { schoolId, role: 'INSTRUCTOR', revokedAt: null },
+        distinct: ['userId'],
+        select: { user: { select: { id: true, firstName: true, surname: true, email: true } } },
+      }),
+    );
+    return { items: grants.map((g) => g.user) };
   }
 
   async findOne(callerId: string, instructorId: string) {

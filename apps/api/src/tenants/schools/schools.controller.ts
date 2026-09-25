@@ -11,6 +11,7 @@ import { SchoolListResponseDto, SchoolResponseDto } from './dto/school-response.
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
+import { StudentListResponseDto } from './dto/student-summary-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -45,6 +46,13 @@ export class SchoolsController {
   @Patch(':id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateSchoolDto) {
     return this.schoolsService.update(user.sub, id, dto);
+  }
+
+  /** The Student roster — Staff-only, see SchoolsService.findAllStudentsForSchool. */
+  @ApiOkResponse({ type: StudentListResponseDto })
+  @Get(':id/students')
+  findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.findAllStudentsForSchool(user.sub, id);
   }
 
   @ApiCreatedResponse({ type: JoinSchoolResponseDto })

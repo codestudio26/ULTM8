@@ -47,8 +47,8 @@ export interface ClassFormValues {
  * sourced from this School's own Instructor profiles (value = the profile's
  * `userId`, since instructorId means "a User holding an active INSTRUCTOR
  * RoleGrant", not the Instructor profile's own id — see that DTO's own
- * comment) — labeled by belt/ranking since Instructor profiles don't carry a
- * display name (see InstructorFormModal's own comment on why). `activities`
+ * comment), labeled by the profile's resolved name (InstructorResponseDto's
+ * firstName/surname, joined server-side via PrismaAuthService). `activities`
  * is comma-separated free text, same convention as School.activities and
  * Discipline.classTypesOffered — not a hard FK to Discipline (the DTO
  * validates it as free-form strings, not discipline ids). */
@@ -165,7 +165,7 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: 'Unassigned' },
-              ...instructors.map((i) => ({ value: i.userId, label: i.beltRanking ?? `Instructor ${i.userId.slice(0, 8)}` })),
+              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
             ]}
           />
         </Field>

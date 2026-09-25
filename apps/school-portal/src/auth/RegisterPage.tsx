@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, TextField } from '@ultm8/ui';
+import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, TextField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -27,6 +27,7 @@ export function RegisterPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [created, setCreated] = useState(false);
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -63,12 +64,22 @@ export function RegisterPage() {
         }),
       );
       // Registration sends the OTP itself (AuthService.register()) — no separate send call needed.
-      navigate('/verify-otp', { state: { phone: form.phone } });
+      setCreated(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (created) {
+    return (
+      <AuthSuccessCard
+        title="Account created"
+        subtitle="Thanks for joining — next, verify your phone number."
+        onContinue={() => navigate('/verify-otp', { state: { phone: form.phone } })}
+      />
+    );
   }
 
   return (
@@ -89,39 +100,41 @@ export function RegisterPage() {
         <Field label="Phone" htmlFor="reg-phone" hint="E.164 format, e.g. +15551234567">
           <TextField type="tel" required value={form.phone} onChange={(e) => set('phone', e.target.value)} />
         </Field>
-        <Field label="First name" htmlFor="reg-firstName">
-          <TextField required value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
-        </Field>
-        <Field label="Surname" htmlFor="reg-surname">
-          <TextField required value={form.surname} onChange={(e) => set('surname', e.target.value)} />
-        </Field>
-        <Field label="Passcode" htmlFor="reg-passcode" hint="6 digits — this is your entire login credential">
-          <TextField
-            type="password"
-            inputMode="numeric"
-            pattern="\d{6}"
-            maxLength={6}
-            required
-            value={form.passcode}
-            onChange={(e) => set('passcode', e.target.value)}
-          />
-        </Field>
-        <Field label="Confirm passcode" htmlFor="reg-passcodeConfirm">
-          <TextField
-            type="password"
-            inputMode="numeric"
-            pattern="\d{6}"
-            maxLength={6}
-            required
-            value={form.passcodeConfirm}
-            onChange={(e) => set('passcodeConfirm', e.target.value)}
-          />
-        </Field>
+        <div className="ultm8-field-row">
+          <Field label="First name" htmlFor="reg-firstName">
+            <TextField required value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
+          </Field>
+          <Field label="Surname" htmlFor="reg-surname">
+            <TextField required value={form.surname} onChange={(e) => set('surname', e.target.value)} />
+          </Field>
+        </div>
+        <div className="ultm8-field-row">
+          <Field label="Passcode" htmlFor="reg-passcode" hint="6 digits — this is your entire login credential">
+            <PasscodeField
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              required
+              value={form.passcode}
+              onChange={(e) => set('passcode', e.target.value)}
+            />
+          </Field>
+          <Field label="Confirm passcode" htmlFor="reg-passcodeConfirm">
+            <PasscodeField
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              required
+              value={form.passcodeConfirm}
+              onChange={(e) => set('passcodeConfirm', e.target.value)}
+            />
+          </Field>
+        </div>
         <Field label="Date of birth" htmlFor="reg-dob">
           <TextField type="date" required value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
         </Field>
 
-        <details>
+        <details className="ultm8-details">
           <summary>Optional details</summary>
           <Field label="Username" htmlFor="reg-username" hint="Mobile app only">
             <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />

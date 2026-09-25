@@ -54,7 +54,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   let branchA2: { id: string };
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
-  let grantedSchoolWide: { id: string };
+  let grantedSchoolWide: { id: string; email: string };
   let grantedSchoolWide2: { id: string };
   let grantedSchoolWide3: { id: string };
   let grantedBranchA2: { id: string };
@@ -251,6 +251,56 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // GET .../instructors (the roster list) resolves a real name per profile — and
+  // keeps resolving it even after the profiled User's own RoleGrant is revoked,
+  // proving this uses PrismaAuthService (Decision 117's pattern), not a plain
+  // RLS-scoped `include` that user_self_or_shared_school could silently break.
+  // ---------------------------------------------------------------------------
+
+  it('roster list resolves a real name per profile, and keeps resolving it after the RoleGrant is revoked', async () => {
+    const nameUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-name-resolution-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'NameResolution',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const nameGrant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'INSTRUCTOR', userId: nameUser.id, schoolId: schoolA.id },
+    });
+
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(profileBody(nameUser.id));
+    expect(createRes.status).toBe(201);
+    instructorIds.push(createRes.body.id);
+
+    async function fetchProfile() {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolA.id}/instructors`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(res.status).toBe(200);
+      return res.body.items.find((i: { id: string }) => i.id === createRes.body.id);
+    }
+
+    const before = await fetchProfile();
+    expect(before.firstName).toBe('NameResolution');
+    expect(before.surname).toBe('Tenant');
+
+    await superuser.roleGrant.update({ where: { id: nameGrant.id }, data: { revokedAt: new Date() } });
+
+    const after = await fetchProfile();
+    expect(after.firstName).toBe('NameResolution');
+    expect(after.surname).toBe('Tenant');
+  });
+
+  // ---------------------------------------------------------------------------
   // The RoleGrant-gate piece, novel to this module: a profile can only be created
   // for a userId that already holds an active INSTRUCTOR RoleGrant matching scope.
   // ---------------------------------------------------------------------------
@@ -407,5 +457,81 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
 
     const unchanged = await superuser.instructor.findUniqueOrThrow({ where: { id: created.body.id } });
     expect(unchanged.specializations).toEqual(['BJJ']); // update was rejected, not partially applied
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET .../instructors/eligible-users (Decision 115) — the candidate pool for
+  // InstructorFormModal's picker: Users holding an active INSTRUCTOR RoleGrant at
+  // this School, i.e. exactly who assertValidInstructor would accept for create().
+  // ---------------------------------------------------------------------------
+
+  it('School Owner sees every active INSTRUCTOR RoleGrant holder at their School, and no one else', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.items.map((u: { id: string }) => u.id);
+    // Every School-scoped or Branch-scoped INSTRUCTOR grant holder fixtured in
+    // beforeAll — regardless of whether a profile was ever created for them.
+    expect(ids).toContain(grantedSchoolWide.id);
+    expect(ids).toContain(grantedSchoolWide2.id);
+    expect(ids).toContain(grantedSchoolWide3.id);
+    expect(ids).toContain(grantedBranchA2.id);
+    // `ungranted` has no RoleGrant at all; the caller (a SCHOOL_OWNER_MANAGER, not an
+    // INSTRUCTOR) shouldn't show up as their own candidate either.
+    expect(ids).not.toContain(ungranted.id);
+    expect(ids).not.toContain(ownerA.id);
+
+    const match = res.body.items.find((u: { id: string }) => u.id === grantedSchoolWide.id);
+    expect(match.firstName).toBe('granted-school-wide');
+    expect(match.surname).toBe('Tenant');
+    expect(match.email).toBe(grantedSchoolWide.email);
+  });
+
+  it('excludes a User whose INSTRUCTOR RoleGrant has been revoked', async () => {
+    const revokedUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-revoked-instructor-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Revoked',
+        surname: 'Instructor',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: {
+        id: randomUUID(),
+        role: 'INSTRUCTOR',
+        userId: revokedUser.id,
+        schoolId: schoolA.id,
+        revokedAt: new Date(),
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.items.map((u: { id: string }) => u.id);
+    expect(ids).not.toContain(revokedUser.id);
+    // The still-active grants from the previous test remain visible — proves this is
+    // a real revokedAt filter, not an empty/broken query.
+    expect(ids).toContain(grantedSchoolWide.id);
+  });
+
+  it('Branch Staff cannot list eligible Instructor candidates (School Owner only, narrower than the roster read)', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenBranchStaffA1}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('cannot list another tenant\'s eligible Instructor candidates', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(404);
   });
 });

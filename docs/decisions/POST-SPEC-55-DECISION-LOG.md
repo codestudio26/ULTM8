@@ -1125,3 +1125,232 @@ Camera/QR-scanning native-module needs (still `[UNRESOLVED]` per the kickoff doc
 ### Recorded by
 
 Logged during a direct, live exchange with the user, 16 Sep 2026 — user asked "what's best? suggest me" on the Expo-vs-bare-RN question; the kickoff doc's own recommendation (Expo) was restated and accepted. Renumbered from 98 to 113 during the Track B/master sync (see numbering note above).
+
+---
+
+## Decision 114 — Booking/WaitlistEntry/RoleGrant name resolution: mechanical extension of Decision 109's embed pattern
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** two of the three sites Decision 109 explicitly left open — `ClassDetailPage.tsx`'s Bookings/Waitlist tables and `StaffPage.tsx`'s lookup-results table, both showing a raw `studentId`/`userId` instead of a name for the same reason Transactions did (no join resolved it).
+
+### Decision
+
+Same shape as Decision 109, applied to three more query/DTO pairs, no new architectural choice made:
+
+- `BookingsService.findAllForClass` / `WaitlistService.findAllForClass` now join `Booking.student`/`WaitlistEntry.student` (`User.firstName`/`surname`), flattened onto `studentFirstName`/`studentSurname` on `BookingResponseDto`/`WaitlistEntryResponseDto`. `ClassDetailPage.tsx` renders the resolved name, falling back to the truncated id.
+- `RoleGrantsService.findAllForUser` now joins `RoleGrant.user`, flattened onto `userFirstName`/`userSurname` on `RoleGrantResponseDto`. `StaffPage.tsx`'s lookup-results table shows a "Showing grants for **{name}**" heading above the table rather than a repeated per-row column, since every row in a single lookup shares the same target user.
+
+No RLS/migration change for any of the three — `Booking`/`WaitlistEntry` already carry a broad `*_staff_read` policy covering School Owner/Manager, Branch Staff, and Instructor (the same caller set `TenantAuthorizationService.assertStaffAtSchool` already gates these two endpoints on), and `RoleGrant`'s own `rolegrant_school_manager_scope` policy already covers `findAllForUser`'s caller set. `WaitlistEntry.findAllForClass` remains deliberately unpaginated, per its own pre-existing documented reasoning — untouched by this change.
+
+### What this does NOT resolve
+
+`InstructorFormModal.tsx`'s candidate field (Decision 115) and `StaffPage.tsx`'s *invite* form (Decision 116) are structurally different — a picker over an unknown, not-yet-scoped candidate set rather than a lookup of an already-known id — and are recorded separately rather than folded into this mechanical extension.
+
+### Recorded by
+
+Logged while extending Decision 109's pattern to the remaining known-id lookup sites, 21 Sep 2026, as part of a direct request to fix the Class Detail/InstructorFormModal/StaffPage name gaps.
+
+---
+
+## Decision 115 — InstructorFormModal candidate picker: new `GET .../instructors/eligible-users` endpoint, scoped to active INSTRUCTOR RoleGrant holders
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** `InstructorFormModal.tsx`'s raw `userId` text field, previously requiring the School Owner to already know and correctly type a target User's UUID with no way to discover one in the UI.
+
+### Decision
+
+New `GET /schools/{schoolId}/instructors/eligible-users`, School-Owner-gated (same gate as `POST .../instructors`), returning every User holding an active `INSTRUCTOR` RoleGrant at that School — i.e. exactly the set `TenantAuthorizationService.assertValidInstructor` would already accept for a create() call, fanned out into a real list instead of checked one candidate at a time. Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'INSTRUCTOR', revokedAt: null }, distinct: ['userId'], select: { user: {...} } })`. Deliberately unpaginated (bounded by realistic Instructor headcount per School, matching this codebase's existing precedent of leaving small/bounded sets unpaginated) and hardcoded to `INSTRUCTOR` — no generic role parameter, since `InstructorFormModal` is this endpoint's only consumer. Response includes `email` alongside `id`/`firstName`/`surname` specifically to disambiguate same-name candidates in the picker UI. `InstructorFormModal.tsx`'s `userId` field is now a `SelectField` populated from this endpoint (create only — edit already hides this field, since re-pointing an existing profile at a different User isn't a real product action).
+
+### What this does NOT resolve
+
+Whether "eligible" should ever broaden beyond "already holds an active INSTRUCTOR RoleGrant at this School" (e.g. surfacing users who could be granted the role but haven't been yet) — deliberately kept narrow, matching the existing hint text on this field ("Must already hold an active Instructor role at this School — grant it first on the Staff page"), not a new capability.
+
+### Recorded by
+
+Logged while designing the InstructorFormModal candidate-picker fix, 21 Sep 2026, as part of a direct request to fix the Class Detail/InstructorFormModal/StaffPage name gaps.
+
+---
+
+## Decision 116 — StaffPage invite-target lookup: exact email/phone match only, confirm before inviting, resolved directly with the user
+
+**Date:** 21 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `StaffPage.tsx`'s invite form, previously a raw `userId` text field with no way to discover a target's id — structurally different from Decisions 114/115 above because the invite target has **no existing RoleGrant at this School yet**, so `user_self_or_shared_school` and every other lookup this session built genuinely cannot see them; the ordinary RLS-scoped read has nothing to scope through.
+
+### Decision
+
+The user was asked what scope this lookup should have and chose **exact email or phone match only, never a name search** — avoiding an unprecedented cross-tenant User-search surface, matching the realistic "invite someone you already know" use case. New `GET /schools/{schoolId}/role-grants/invite-candidate` (query: `email` or `phone`, at least one required, enforced in the service rather than via a class-validator cross-field decorator — no precedent for one in this codebase), gated on `assertSchoolOwner` *before* the lookup runs. Uses `PrismaAuthService` — the same pre-tenant-context bypass `RoleGrantsService.create()`'s own target-existence-by-id check already uses (`prismaAuth.user.findUnique({ where: { id: targetUserId }, select: { id: true } })`), generalized to an exact email-or-phone `findFirst`, same minimum-fields-only convention (`id`, `firstName`, `surname` — never a full profile). Returns `{ found, id, firstName, surname }`, all null except `found` when no match. `RoleGrantsController`'s class-level `@Controller('users/:userId/role-grants')` prefix was converted to `@Controller()` with full explicit paths on all four routes (mechanical, no behavior change to the three pre-existing routes) since the new `schools/:schoolId/...` route can't live under that prefix. This is a separate lookup-then-confirm step, not folded into `create()` itself — `StaffPage.tsx`'s invite form now finds a candidate by email/phone, shows "Found: {name}" before any grant is created, and only then submits the existing, untouched `create()` call with the confirmed id.
+
+### Why exact match, not a name search
+
+An exact-match lookup can confirm whether a given email/phone is registered — the same class of exposure `AuthService.register()`'s own already-taken check already accepts for any anonymous, unauthenticated caller. Here the caller must already hold a real `SCHOOL_OWNER_MANAGER` grant at the School in question, a materially higher bar than "anonymous," so this isn't a new risk category and doesn't warrant protection beyond what's already standard elsewhere in this codebase. A name search was explicitly rejected as a broader, unprecedented cross-tenant User-search capability with no corresponding need — the realistic invite flow is "I know this specific person's email or phone," not "let me browse for someone."
+
+### What this does NOT resolve
+
+Whether a broader staff-directory/name-search capability should ever exist for some other confirmed use case — not addressed here, and not to be inferred from this decision if it comes up later.
+
+### Recorded by
+
+Scoped directly with the user via a clarifying question during this session ("what's the best [scope for this lookup]?"), who chose exact email/phone match only; implemented and logged 21 Sep 2026.
+
+---
+
+## Decision 117 — Name-resolution joins (Bookings/Waitlist/RoleGrant/Transactions) switched from a Prisma `include` to a `PrismaAuthService`-backed lookup, closing a real RLS visibility gap
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** a correctness gap found during a deep-dive review (requested by the user before committing Decisions 114–116) of the just-implemented Bookings/Waitlist/RoleGrant name-resolution joins — a gap that, on inspection, also already existed in the merged Decision 109 Transactions endpoint.
+
+### The gap
+
+`user_self_or_shared_school` (`User`'s RLS policy, `20260902000000_init/migration.sql:235`) makes a `User` row visible to a caller only if that User currently holds an ACTIVE RoleGrant at a School where the caller also holds one — it checks the *target's* own current RoleGrant status, not just the caller's. `RoleGrant.user`, `Transaction.student`, `Booking.student`, and `WaitlistEntry.student` are all REQUIRED relations in `schema.prisma`; Decisions 109/113 resolved display names via a Prisma `include` on these relations, then destructured the result unconditionally (`({ student, ...b }) => ({ ...b, studentFirstName: student.firstName, ... })`).
+
+Prisma's `include` issues a *separate* query for the related row through the *same* RLS-scoped connection — if RLS hides that row, Prisma doesn't error; it silently fails to resolve the relation (a known Prisma+RLS limitation), even though the TS type — trusting the schema's non-null relation — claims it can't be missing. The unconditional destructure would then throw on `student.firstName` for exactly that row.
+
+This is concretely reachable, not theoretical: `GuardiansService.withdrawConsent` (`apps/api/src/guardians/guardians.service.ts:280`), on a BASELINE-tier consent withdrawal, runs `prismaJobs.roleGrant.updateMany({ where: { userId: existing.studentId, revokedAt: null }, data: { revokedAt: new Date() } })` — revoking every active RoleGrant a Student holds, everywhere, synchronously, in-request. Any Booking, WaitlistEntry, Transaction, or RoleGrant-lookup row referencing that Student/User from that point on hit this gap. The parent row itself stayed visible regardless — `booking_staff_read`/`rolegrant_school_manager_scope` key only off the *caller's* own active RoleGrant, never the target's — so this was specifically "the name breaks," not "the whole row disappears for a sensible reason."
+
+Confirmed NOT to affect Decision 115 (`findEligibleInstructorUsers`): its `where` clause already requires the exact RoleGrant row being read to have `revokedAt: null` at the caller's own School, which is itself the visibility witness `user_self_or_shared_school` needs. Confirmed NOT to affect Decision 116 (`lookupInviteCandidate`): it already uses `PrismaAuthService`, immune to this class of gap entirely.
+
+### Decision
+
+Replaced the `include`-based join in `BookingsService.findAllForClass`, `WaitlistService.findAllForClass`, `RoleGrantsService.findAllForUser`, and — retrofitting the already-merged Decision 109 endpoint rather than leaving a known gap unaddressed — `TransactionsService.findAllForSchool`, with a shared helper, `resolveUserNames()` (`apps/api/src/common/prisma/resolve-user-names.ts`), that batch-resolves display names via `PrismaAuthService` — the same pre-tenant-context, SELECT-only-on-`User`, no-tenant-restriction connection `RoleGrantsService.create()` and Decision 116 already use. This makes name resolution depend on nothing but the row's own physical existence (User rows are never hard-deleted anywhere in this codebase today — verified via `grep -rn "user.delete" src`, zero matches), closing the gap completely rather than gracefully degrading it. Authorization is unaffected: the caller's right to see the parent row is still fully gated by the unchanged RLS policy + `assertStaffAtSchool`/`assertSchoolOwner` calls on the primary query; this only changes how the display name for an id the caller is already authorized to know about gets resolved, under the same minimum-fields-only (`id`, `firstName`, `surname`) discipline every other `PrismaAuthService` call site follows. `PrismaJobsService` was considered and ruled out — its `ultm8_jobs` Postgres role has no SELECT grant on `User` at all today (per its own header comment), which would have needed a new migration for a capability `PrismaAuthService` already has.
+
+Response shapes are unchanged (`studentFirstName`/`studentSurname`/`userFirstName`/`userSurname` stay non-nullable strings, falling back to `''` only in the — currently unreachable, given no User hard-delete path — case the batch lookup somehow misses an id; kept as defense-in-depth, not an expected outcome). No new migration, no RLS/schema change, no OpenAPI schema drift (confirmed via a full `export:openapi` → `generate` diff).
+
+### What this does NOT resolve
+
+Whether `PrismaJobsService` should eventually be granted SELECT on `User` for genuine background/aggregate jobs that need it — out of scope here, not needed for this fix. Regression tests were added for all four call sites (`bookings.e2e-spec.ts` ×2, `tenants.e2e-spec.ts`, `memberships.e2e-spec.ts`) proving the name still resolves after the target's only RoleGrant at the School is revoked — real e2e execution still needs CI/a real DB, same as every other fix this session.
+
+### Recorded by
+
+Found during a deep-dive review the user explicitly requested before committing Decisions 114–116 ("deep dive before commit and push"), traced through the actual migration SQL and service code rather than assumed; the user was given three options (defensive patch only / defensive patch + retrofit Transactions / ship as-is and log as follow-up) and asked instead for "the best possible solution" — read as authorizing the fuller `PrismaAuthService`-based fix across all four sites, implemented and logged 21 Sep 2026.
+
+---
+
+## Decision 118 — Student roster: new `GET /schools/{id}/students`, Staff-gated (not Owner-only)
+
+**Date:** 21 Sep 2026
+**Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
+**Resolves:** a real, verified gap in `apps/school-portal` — no page anywhere let a School's Staff see who was actually enrolled as a Student. Confirmed there is no `apps/api/src/students/` module or `StudentsController` anywhere in this codebase (a Student is a User plus a `STUDENT`-role RoleGrant, not a separate entity — the same shape already established for Instructors), and confirmed independently by `docs/TRACK-B-ROADMAP.md` on the `track-b-student-app` branch, which found the identical gap from the mobile-app side while building Rank & Grading (Slice 3).
+
+### Decision
+
+New `GET /schools/{id}/students` on `SchoolsController`/`SchoolsService.findAllStudentsForSchool`, returning every User holding an active `STUDENT` RoleGrant at that School (`id`, `firstName`, `surname`, `email`, `enrolledAt` — the RoleGrant's own `grantedAt`, not `User.createdAt`). Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { user: {...}, grantedAt: true } })` — the exact pattern Decision 115 (`findEligibleInstructorUsers`) already established for `INSTRUCTOR`. Safe from the Decision 117 RLS name-join gap by construction, same reasoning as Decision 115: the RoleGrant row being read is itself the `user_self_or_shared_school` visibility witness, so the joined `User` row is always resolvable — no `PrismaAuthService` lookup needed.
+
+Gated on `TenantAuthorizationService.assertStaffAtSchool` (School Owner/Manager, Branch Staff, **or** Instructor — no `branchId` scoping, since Student enrollment itself has no Branch dimension) — deliberately broader than Decision 115's Owner-only gate, because seeing the roster is an ordinary read any Staff member needs, not an Owner-only write flow like granting the Instructor role is.
+
+`apps/school-portal`: a new read-only `StudentsPage.tsx` (no create/edit — a Staff member doesn't create a Student profile directly; a Student joins via `SchoolsService.join()`, self-service or Guardian-on-behalf-of), added to the sidebar nav and router between Instructors and Classes.
+
+### What this does NOT resolve
+
+Whether the roster should eventually show more than name/email/enrollment date (Membership status, current Rank, Guardian info for a minor) — deliberately kept to the minimum-fields precedent this codebase already uses elsewhere (Decision 115), not expanded speculatively. A per-Student detail page is a natural follow-up, not built here.
+
+### Recorded by
+
+Logged while auditing what's actually built vs. missing across ULTM8's frontend apps, 21 Sep 2026, in the same pass that corrected `CLAUDE.md`'s stale "development has not started" framing and reviewed `track-b-student-app`'s own status.
+
+---
+
+## Decision 119 — Auth flow implemented for real: brand rail, passcode show/hide, success panel, segmented OTP input
+
+**Date:** 22 Sep 2026
+**Status:** Two sub-decisions resolved directly with the user; the rest is a mechanical port of the already-approved mockup direction (`docs/design-mockup-notes.md`), not a new judgment call
+**Resolves:** the auth-flow mockups (Login "Combined" concept, Register, Verify OTP/Forgot/Reset — artifacts linked in `docs/design-mockup-notes.md`) were approved as the working direction but never implemented into `LoginPage.tsx`/`RegisterPage.tsx`/`VerifyOtpPage.tsx`/`ForgotPasscodePage.tsx`/`ResetPasscodePage.tsx` — the pages still only carried the two global tokens (Figtree, accent color) that cascade automatically, not any of the actual layout/pattern work.
+
+### New shared `packages/ui` components (all token-driven, no hardcoded values)
+
+- `PasscodeField` — `TextField`-compatible masked input with a show/hide eye-icon toggle. Applied to every 6-digit passcode entry point (Login, Register's passcode + confirm, Reset's new passcode + confirm), not just Login — the mockup notes only documented it for Login, but it's the same field type/concern everywhere, so this generalizes an already-approved pattern rather than inventing a new one.
+- `SegmentedCodeInput` — 6-box digit input for the OTP/verification `code` field, single-box-per-digit with paste support. **Flagged assumption, not a confirmed value:** `VerifyOtpDto`/`ConfirmPasscodeResetDto` validate `code` as `@Length(4, 8)`, not a fixed length — the real Twilio Verify Service's configured code length isn't in this codebase at all. 6 was chosen as the default (matches this app's own passcode length and Twilio's typical default) after the user was shown this exact gap and chose segmented boxes over the safer plain-text default the mockup notes themselves recommended keeping. If the configured Twilio code length is ever confirmed to not be 6, this needs revisiting — not treated as settled beyond "reasonable default, clearly documented."
+  - **Deep-dive review before commit** (user explicitly asked for one) caught two real interaction bugs in the first pass, both fixed and re-verified live before commit: (1) the original per-box `chars[index] = digit; chars.join('')` update, when a box ahead of the current end was clicked directly (a real mouse-driven path, not just sequential typing), advanced focus to the wrong box — `index + 1` of the *clicked* box rather than the true next empty slot, landing focus on an unrelated, still-empty box while the digit actually appeared elsewhere. Fixed by distinguishing an in-place edit (`index < value.length`, preserves the tail) from typing ahead of the end (always lands at the real next slot, focus follows it). (2) Backspace on an already-filled box silently did nothing in a real, reproducible case — with `maxLength={1}`, the browser places the cursor inside an existing single character ambiguously (before or after it depending on click position), and Backspace has nothing to delete when the cursor lands before it, so no `change` event ever fired. Fixed by handling Backspace explicitly in `onKeyDown` (`preventDefault` + direct state update) instead of relying on native deletion, and added `onFocus={(e) => e.target.select()}` so clicking an already-filled box actually lets the user retype over it (otherwise `maxLength={1}` blocks a keystroke with nothing selected to replace). All four interaction paths — click-ahead, sequential typing, in-place edit, multi-step backspace — were re-verified live via Playwright against the running app after the fix, not just re-read.
+- `SuccessPanel` / `AuthSuccessCard` — the DESIGN.md-documented checkmark/title/subtitle/dismiss pattern, now built. Behavior resolved directly with the user (the mockup notes flagged this as explicitly open, not to be assumed): **auto-advances after 2s, but a dismiss (×) lets the user skip the wait immediately** — not auto-only, not dismiss-only.
+- `Field` gained an optional `labelAction` slot (inline element next to the label, e.g. Login's "Forgot your passcode?" moved from the footer to inline with the Passcode label, per the approved Combined concept) and `.ultm8-field-row`/`.ultm8-details` utility classes (two-column field pairs on Register, a styled collapsible "Optional details" block replacing the unstyled native `<details>`).
+
+### Per-page changes
+
+- **Login** — brand rail (dark slate band: mark + "ULTM8" + tagline) above the card per the approved "Combined" concept; title copy "Log in" → "Welcome back"; passcode field is now `PasscodeField`; "Forgot your passcode?" moved inline; footer now just "New School? Create an account"; on success shows `AuthSuccessCard` ("Successful" / "You are successfully logged in to your account.") instead of redirecting immediately.
+- **Register** — First/Surname and Passcode/Confirm now paired in two-column rows; passcode fields use `PasscodeField`; "Optional details" now visually styled; on success shows `AuthSuccessCard` ("Account created") before continuing to `/verify-otp`, instead of redirecting immediately (previously flagged as an open question in the mockup notes — resolved by the same auto-advance-+-dismissible answer above).
+- **Verify OTP** — `code` field is now `SegmentedCodeInput` (see flagged assumption above). No success panel added here — not shown in the approved mockup for this screen, so not invented.
+- **Forgot passcode** — unchanged; the mockup already matched current code exactly.
+- **Reset passcode** — `code` field is `SegmentedCodeInput`; new/confirm passcode use `PasscodeField`; on success shows `AuthSuccessCard` ("Passcode changed") before continuing to `/login`, instead of redirecting immediately.
+
+### Verification
+
+`tsc --noEmit` clean across `packages/ui` and `apps/school-portal`. Verified live, not just compiled: ran the real stack (local Postgres/Redis/`apps/api`/`apps/school-portal` dev server) and screenshotted every page with real interaction (typed values, passcode-toggle click, full Login submit → success panel → auto-navigate to `/school`, segmented-box typing) via Playwright against `localhost:5173` — not a static mockup render.
+
+### Recorded by
+
+Resolved directly with the user via two explicit questions (success-panel timing; OTP field style) before implementing, per the mockup notes' own repeated "open question, not assumed" flags and this project's standing rule against silently deciding flagged-open design questions. Implemented 22 Sep 2026.
+
+---
+
+## Decision 120 — Remaining 13 mockups audited against real code; Instructor name-resolution gap closed
+
+**Date:** 22 Sep 2026
+**Status:** Developer-level inference (the new `InstructorResponseDto.firstName`/`surname` fields, same pattern as Decision 117), flagged for Architect confirmation like every other same-shape fix this session — everything else in this entry is a mechanical audit result, not a judgment call
+
+**Resolves:** the user asked to "update the rest of the pages too" after the auth-flow pass (Decision 119) — the remaining 13 pages flagged `mockup` in `docs/design-mockup-notes.md` (Instructors, Staff, Branches, Timetable, Classes & detail, Disciplines/Skills/Ranks, Membership Plans, Transactions, Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users/School lookup/Franchise lookup).
+
+### Approach
+
+Five parallel research passes (one per page group) compared each page's current real code against its already-approved mockup artifact, rather than re-deriving design decisions already made during the earlier mockup-review phase. Finding: **most pages already matched their mockups exactly** — the content/field decisions made during that phase were already real. Only four concrete gaps existed:
+
+### 1. Instructors list — missing Id/avatar/Name columns, traced to a real backend gap
+
+`InstructorResponseDto` had no name field at all — verified, not guessed: `Class.instructorId`/`TimetableSlot.instructorId` are direct FKs into `User` (schema.prisma's own comment: "NOT a separate Instructor table"), and `ClassFormModal`'s/`TimetableSlotFormModal`'s instructor pickers were falling back to `beltRanking` text or a truncated id because there was nothing else to show. Fixed the same way Decision 117 fixed the identical class of gap for Bookings/Waitlist/RoleGrant/Transactions: `InstructorsService.findAllForSchool` now resolves `firstName`/`surname` via `resolveUserNames`/`PrismaAuthService`, added to `InstructorResponseDto`. This single backend fix unlocked three frontend fixes at once (all three already reuse the same `useInstructors` hook):
+- `InstructorsPage.tsx` — reordered to the Figma-confirmed column order (Id · avatar · Name · Ranking · Specializations · Experience · Phone · Branch · Actions), added a generic silhouette avatar placeholder (`photoUrl` is real/nullable but no upload UI exists anywhere yet, so an icon-for-no-photo is honest, not a fabricated photo).
+- `ClassFormModal.tsx`/`TimetableSlotFormModal.tsx` — instructor-picker dropdown now labeled by real name instead of belt/ranking text or a truncated id.
+- `ClassesPage.tsx` — added an Instructor column (matched on `instructor.userId === class.instructorId`, the same FK target), showing the resolved name.
+
+Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedicated Instructor profile, confirms the roster list resolves its name, then revokes its RoleGrant and confirms the name **still** resolves — proving this uses the RLS-immune `PrismaAuthService` path, not a plain `include` that Decision 117 already found breaks under exactly that condition.
+
+### 2. Disciplines — Ranks table showed colour as plain text, not a swatch
+
+`RankResponseDto.primaryColour`/`secondaryColour` are real structured fields (unlike Instructors' plain-text `beltRanking`), so a visual swatch reflects real data. `DisciplineDetailPage.tsx`'s Colour column now renders a colored dot + the text value. Note: the field is free text (`RankFormModal`'s own input is a plain `TextField`, not a color picker), not guaranteed to be a valid CSS color — handled safely by construction, since an invalid CSS `background` value is silently ignored by the browser rather than erroring.
+
+### 3. platform-admin School/Franchise lookup — hardcoded pixel spacing, not design tokens
+
+`SchoolLookupPage.tsx`/`FranchiseLookupPage.tsx` used inline `style={{gap: '4px 16px'}}`-style hardcoded values instead of this app's own spacing/typography tokens (both pages already inherit `@ultm8/ui`'s tokens/components automatically — confirmed, not assumed, via `main.tsx`'s `import '@ultm8/ui'` and a zero-result glob for any local CSS in this app). Added two small shared classes, `.ultm8-subcard-title`/`.ultm8-info-grid`, to `packages/ui/src/components.css`, applied to both pages' entity-detail cards. Not live-verified in the browser — this sandbox has no AWS Cognito configuration, and platform-admin's real login flow requires it — verified via `tsc --noEmit` and code review only; flagged explicitly rather than silently claimed as visually confirmed.
+
+### 4. Everything else — confirmed already matching, nothing changed
+
+Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 117), Branches, Membership Plans, Transactions (its remaining "unimplemented" items were mockup items meant to be *excluded*, already correctly absent from real code), Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users page all already matched their mockups exactly — re-confirmed by direct comparison, not assumed unchanged.
+
+### What this does NOT resolve (explicitly flagged, not decided here)
+
+- **Transactions' Failed/Disputed badge colors** are inverted between the mockup (Failed=red/danger, Disputed=blue/accent) and real code (`paymentStatusBadge.tsx`: Disputed=red/danger, Failed=blue/accent). Cosmetic only, not a data/structure gap, and no record anywhere of which was an intentional choice — left as-is rather than silently "fixed" against a reference that was never confirmed authoritative on this specific point.
+- **Franchises' `mobileNumber` column** stays unrendered on the list (already wired into `FranchiseFormModal`, just not shown as a column) — the mockup itself flags this as a proposed addition, not a decided one, same category as Instructors' `photoUrl`. Not added.
+- **StaffPage's card-section headings** use an inline-style hack (`className="ultm8-page-header__title" style={{fontSize: 18}}`) instead of a dedicated class — flagged by the audit, but NOT changed: the identical pattern is the established convention in `ClassDetailPage.tsx`/`TimetablePage.tsx`/`DisciplineDetailPage.tsx` too, so fixing it only on Staff would make that one page inconsistent with the other three rather than more consistent. A real fix here would mean introducing `.ultm8-subcard-title`-style tokens app-wide across all four pages at once — a separate, bigger decision, not bundled into this pass.
+- **Instructor rank/grading-system link** (V1 manual dropdown vs. V2 grading-system link) — Decision 108's own scope, unaffected by this pass.
+
+### Verification
+
+`tsc --noEmit` clean across `apps/api`, `packages/ui`, `packages/api-client`, `apps/school-portal`, `apps/platform-admin`. `export:openapi` → `generate` diffed to confirm only the two new `InstructorResponseDto` fields changed. Live-verified against the running app (real Postgres/Redis/`apps/api`/`apps/school-portal`, Playwright against `localhost:5173`): Instructors list shows a real resolved name, Classes list shows a real resolved Instructor, Ranks table renders a real colour swatch. platform-admin's two changed pages verified by type-check and code review only (Cognito unavailable in this sandbox, noted above).
+
+**`apps/api/test/instructors.e2e-spec.ts` was actually run against a real Postgres in this sandbox, not just compiled** — unlike most other decisions in this file, which could only claim `tsc --noEmit` and flag e2e execution as needing CI (no reachable database in earlier sessions). All 16 cases passed, including the new regression test, confirming the name-resolution fix holds against real RLS, not just against the type system. One environmental note worth recording: the first run attempt hung for ~43 minutes with the process pinned near-idle (only ~42s of real CPU time) because this sandbox's Postgres was killed by a container reset mid-run, and the Prisma client hung indefinitely retrying a dead connection instead of failing fast — not a code or test bug. Confirmed via `pg_isready`/`psql` returning "connection refused" mid-hang, killed the stuck process, restarted Postgres (data persisted — the same ephemerality/persistence pattern already documented elsewhere this session), and reran clean in 11.4s.
+
+### Recorded by
+
+Logged after the user asked to "update the rest of the pages too" following the auth-flow pass (Decision 119); five parallel research agents audited the remaining pages against their approved mockups, findings synthesized and implemented directly, 22 Sep 2026.
+
+---
+
+## Decision 121 — Social/OAuth login is a confirmed V2 scope item, not excluded permanently
+
+**Date:** 22 Sep 2026
+**Status:** Approved by product owner — a scoping/roadmap decision, not a technical one
+**Resolves:** why Login's real code (and every other auth screen) has no Google/Facebook/Apple/Microsoft/Discord sign-in buttons even though the Figma reference shows them — flagged and excluded during the mockup-review pass and again when implementing Decision 119, on the grounds that no OAuth/social provider is confirmed anywhere in the spec (Decision 72: passcode is the *sole* login credential) and building it would mean inventing a whole auth capability, not a style choice.
+
+### Decision
+
+Social/OAuth login (sign in via Google, Facebook, Apple, Microsoft, Discord, or similar) is confirmed as **planned for ULTM8 V2** — a real, intended feature, not a permanently rejected one. It is explicitly **out of scope for the current build**. Nothing about V1's passcode-only login model (Decision 72) changes as a result of this — V1 ships and stays email/phone + 6-digit passcode only, per Decision 72, with no OAuth path.
+
+### Effect
+
+- No code change from this decision alone — it confirms the *reasoning* already applied when the social-login buttons were excluded from `LoginPage.tsx`/`RegisterPage.tsx` (Decision 119) was correct, and converts "not confirmed, so excluded" into "confirmed as deferred, so excluded — with a known target version."
+- When V2 auth work actually starts, this needs its own real design/engineering pass, not a Figma-icon copy: which provider(s) specifically, how a socially-authenticated account reconciles with the existing email/phone + passcode identity model (a returning user signing in via Google needs to map to the same `User` row as their existing email-based account, not create a duplicate), and how/whether `AuthContext.tsx`'s current `login(email, passcode)`-only shape extends to support it. None of that is decided here — this decision only confirms the feature is planned and gives it a target version, not a design.
+
+### Recorded by
+
+Stated directly by the user in response to being asked why social-login icons don't appear on the real Login page, 22 Sep 2026.
