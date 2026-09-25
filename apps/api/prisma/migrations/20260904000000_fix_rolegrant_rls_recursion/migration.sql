@@ -87,6 +87,20 @@ $$;
 -- `prisma migrate deploy` in a given environment.
 GRANT ultm8_rls_helper TO CURRENT_USER;
 
+-- FOUND ON REVIEW, same deploy attempt as the fix directly above — membership alone
+-- wasn't enough. ALTER FUNCTION ... OWNER TO has a SECOND precondition beyond "the
+-- current role can SET ROLE to the new owner": Postgres also requires the NEW OWNER
+-- role itself to hold CREATE privilege on the object's own schema (this is the same
+-- check applied when creating a fresh object in that schema, since a reassignment is
+-- treated equivalently for permission purposes) — confirmed directly against a real
+-- Supabase Postgres instance: granting only the CURRENT_USER membership above still
+-- failed the ALTER FUNCTION below with "permission denied for schema public" (42501,
+-- aclchk.c), and adding this GRANT resolved it. ultm8_rls_helper is NOLOGIN and never
+-- connected to directly, so granting it CREATE on public doesn't meaningfully widen
+-- its real capability — it only satisfies this ownership-transfer precondition.
+-- Idempotent, same as the GRANT above.
+GRANT CREATE ON SCHEMA public TO ultm8_rls_helper;
+
 -- ============================================================================
 -- 2. The membership-check function itself.
 --    - STABLE, not VOLATILE: it only reads, and gives the planner room to avoid
