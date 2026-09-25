@@ -72,6 +72,20 @@ export class SchoolResponseDto {
   @ApiProperty()
   updatedAt!: string;
 
+  /** Phase 56/57 (Decision 110) — already returned at runtime before this field
+   * existed on this DTO (no explicit `select` anywhere this DTO is built from,
+   * and ultm8_app holds whole-table SELECT on School) — this just makes the
+   * type match reality, for `apps/platform-admin`'s own close/reactivate UI
+   * (Phase 57) to read without a cast. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  archivedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  purgeAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  purgedAt!: string | null;
+
   /**
    * Present only on the response from POST /schools (self-service creation) — a
    * freshly-minted token reflecting the caller's new SCHOOL_OWNER_MANAGER grant

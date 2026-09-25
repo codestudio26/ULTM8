@@ -20,26 +20,60 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ## Where things stand right now
 
-- **54 phases shipped or in flight** (Phase 0 walking skeleton through Phase 54),
-  covering every backend module in `ultm8-nestjs-module` §5's confirmed table except
-  the one named below, plus `apps/school-portal` UI for essentially all of it, plus
-  `apps/platform-admin` through Translations authoring.
+- **57 phases shipped** (Phase 0 walking skeleton through Phase 57; Phase 55 is
+  PR #76, Phase 56 + Phase 57 — tenant/content offboarding endpoints and the
+  `apps/platform-admin` close/reactivate UI for them — are both on PR #77),
+  covering every backend module in `ultm8-nestjs-module`
+  §5's confirmed table except the one named below, plus `apps/school-portal` UI
+  for essentially all of it, plus `apps/platform-admin` through Translations
+  authoring, SubscriptionPlansModule authoring, and now the tenant-lifecycle
+  close/reactivate controls on the School/Franchise lookup screens.
 - **PR #64 (Phase 47), PR #65 (Phase 48), PR #66 (this doc's own first version), PR
   #67 (Phase 49 — `TranslationsModule` backend), PR #68 (Phase 50 — Translations
   authoring UI), PR #69 (the master roadmap doc), PR #71 (Decision 106), PR #72
-  (Phase 51), PR #74 (Phase 53 — Branch branding-field UI), and PR #75 (Phase 54 —
-  this PR) are merged.**
-- **One phase sitting in an open, unmerged PR right now**:
-  - **PR #73 — Phase 52**, the `apps/school-portal` QR-display screen. Was stacked on
-    Phase 51; its base has since moved to `master` and its diff shrunk to just the
-    QR-display screen itself.
+  (Phase 51), PR #73 (Phase 52 — QR-display screen), PR #74 (Phase 53 — Branch
+  branding-field UI), PR #75 (Phase 54), PR #61 (Decisions 108/109 + a design-system
+  refresh — see below), and PR #31 (shared `@ultm8/ui` mobile-nav/table-overflow
+  fix — see below) are all merged. Phase 55 (`SubscriptionPlansModule`'s
+  `apps/platform-admin` authoring UI) is PR #76.**
+- **Two open PRs** — PR #76 (Phase 55), pushed and green, awaiting review; and
+  PR #77 (Decision 110 + Phase 56 — general tenant/content offboarding
+  endpoints — now also carrying Phase 57, the `apps/platform-admin`
+  close/reactivate UI for the same feature, plus this doc's own update for
+  all three), also pushed and green. Every other phase and standalone fix
+  described in this doc has landed on `master`.
+- **Two items shipped outside the Phase-N sequence**, not tied to a specific phase
+  number since neither PR framed itself as one (same treatment this doc already
+  gives Decision-only PRs like #71):
+  - **PR #61** — a design-system refresh (accent color ramp rebased to `#5D7081`;
+    Figtree adopted as the self-hosted product typeface, `--font-sans`) bundled with
+    a real backend fix: `TransactionsService` now joins `Transaction.student` and
+    returns the paying Student's real name (`studentFirstName`/`studentSurname` on
+    `TransactionResponseDto`) instead of a bare `studentId`, so `TransactionsPage.tsx`
+    shows a real name instead of a truncated id. Recorded as **Decision 108**
+    (Instructor rank: V1 is a manual belt dropdown on the Instructor's own profile
+    settings page, V2 linking to the real grading system deferred) and **Decision
+    109** (Transaction Student-name resolution — a Developer-level inference, flagged
+    in the decision log for Architect confirmation, not yet given one). Also added
+    `docs/design-mockup-notes.md`, a running per-page Figma-audit log for
+    cross-session continuity.
+  - **PR #31** — fixed two responsive bugs in shared `packages/ui`, affecting every
+    page in `apps/school-portal` at once: the mobile nav (`<720px`) media query set
+    `flex-direction: row` on `.ultm8-shell__sidebar` itself, which only reflows the
+    sidebar's three *direct* children and doesn't cascade into `<nav>`'s own
+    block-stacked children — fixed by keeping the sidebar a column and making
+    `<nav>` itself the horizontal, `overflow-x: auto` scrolling strip. `<Table>`
+    gained an `overflow-x: auto` wrapper (`.ultm8-table-scroll`) so a table wider
+    than the viewport scrolls within itself instead of forcing the whole page to
+    scroll sideways.
 - **One backend module from the original confirmed module table is still fully
   unbuilt** — not partially done, not scaffolded, nothing — detailed in its own
   section below (`MobileAppPublishingModule`). `TranslationsModule` shipped in Phase
   49–50; `SubscriptionPlansModule` (backend) shipped in Phase 54 — see below.
 - **`SubscriptionPlansModule`'s "blocked" status was a stale citation, now fixed
-  (Decision 106) — and the module itself now shipped (Phase 54, this PR).** This doc
-  used to say the billing-direction question was `[UNRESOLVED]` per
+  (Decision 106) — and the module itself now shipped end to end (Phase 54 backend,
+  merged via PR #75; Phase 55 `apps/platform-admin` authoring UI, PR #76).** This
+  doc used to say the billing-direction question was `[UNRESOLVED]` per
   `ultm8-domain-rules` §2; that citation was out of date — the question was
   genuinely resolved in Spec 55's own Pass 4 review, before Phase 0 even started
   (three independent primary sources verified this: the skill file's own current
@@ -48,11 +82,12 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   confirmed core scope directly: Plan CRUD (Platform Admin authoring),
   Franchise/School subscribe/cancel against ULTM8's own platform Stripe account, the
   `PlatformCharge` ledger, and the read-only degraded-portal gate (Spec 55 §10.2) on
-  new Class/Booking/payment creation. Deliberately deferred: the `whiteLabelApp`
-  metered entitlement (its own rate is still unresolved, Spec 55 §12.2, and it's
-  gated on `MobileAppPublishingModule` anyway) and the `apps/platform-admin`
-  authoring UI (backend-then-UI split, same as every other module in this
-  codebase).
+  new Class/Booking/payment creation. Phase 55 then built the `apps/platform-admin`
+  authoring screen itself (list/add/edit, no delete — see below) — same
+  backend-then-UI split every other module in this codebase already followed
+  (Translations, Curriculum). Only one piece remains deliberately deferred: the
+  `whiteLabelApp` metered entitlement (its own rate is still unresolved, Spec 55
+  §12.2, and it's gated on `MobileAppPublishingModule` anyway).
 - **Everything Guardian/minor-facing that exists is backend-only.** `GuardiansModule`
   (Phase 12) and every Guardian-on-behalf-of flow (Phases 37–42: Waivers, Schools,
   Memberships, Bookings, Waitlist) has real API surface and is exercised by e2e tests —
@@ -60,6 +95,39 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   is a Student/parent-facing concept, and Track B's own roadmap already names this as
   its own blocked item ("Slice 7 — Guardian-facing screens," blocked on a design pass
   that's never happened). Track A doesn't need to build it; Track B does, later.
+- **General tenant/content offboarding — Decision 110's policy is now fully
+  built, Phase 56.** `TenantLifecycleModule` (inside `PlatformAdminModule`) adds
+  `POST /platform-admin/schools/:id/close` and `.../reactivate`, plus the
+  Franchise twins — FULL_ADMIN-only, re-typed-name confirmation, audited. Closing
+  sets `archivedAt`/`purgeAt` (90 days out); `TenantAuthorizationService.
+  assertSchoolNotArchived`/`assertFranchiseNotArchived` then refuses every
+  create/update across all 10 of the entity services Decision 110 names (School,
+  Franchise, Branch, Class, TimetableSlot, Instructor, MembershipPlan,
+  Discipline/Rank/Skill, Waiver, Lesson) — reads stay unaffected, matching "read-
+  only," not hidden. A new scheduled job (`tenant-lifecycle-purge`, daily sweep)
+  hard-deletes a School/Franchise past its `purgeAt` — Postgres's own cascade
+  handles every owned child row in one statement — except in two flagged cases
+  it anonymizes the row in place instead: a School that still owns `Waiver` rows
+  (Decision 110's own explicit exception, pending real legal input on retention)
+  and a School/Franchise with billing history protected by the existing
+  `PlatformCharge`/`FranchiseFeeCharge` `RESTRICT` FKs. See "What's actually
+  left" item 3 below for the full account, including what this job's own
+  narrower-than-literal scope reading deliberately does NOT touch
+  (Membership/Transaction/PaymentAccount/Booking/RoleGrant — none of them named
+  in Decision 110, several with the same financial-record character the existing
+  `RESTRICT` protection already treats carefully).
+- **Decision 110/Phase 56's own `apps/platform-admin` UI is now built too,
+  Phase 57.** A shared `TenantLifecycleControls` component (parameterized by
+  `kind: 'school' | 'franchise'`, since the backend shape is identical for
+  both) was added to `SchoolLookupPage`/`FranchiseLookupPage`: an "Active"/
+  "Closed" status badge, a re-typed-name confirmation modal for "Close
+  account," and a "Reactivate" button — or, once a row has actually been
+  purged, a plain "cannot be reactivated" message instead of a dead button.
+  Required widening `SchoolResponseDto`/`FranchiseResponseDto` to type
+  `archivedAt`/`purgeAt`/`purgedAt` (already returned at runtime for School's
+  whole-row `findOne()`, but genuinely absent from the Franchise response
+  until `FRANCHISE_PUBLIC_SELECT` was widened too — caught by checking each
+  service directly rather than assuming both entities read the same way).
 - **Decision 111/112 — Stripe dispute handling AND chargeback-pattern-restriction,
   both built end to end.** Decision 55's own confirmed dispute contract (idempotent
   status-driven webhook processing across `Transaction`/`FranchiseFeeCharge`/
@@ -74,14 +142,6 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   them to Cash/Bank Transfer payment methods only past the threshold (2), and
   notifies every School they hold an active STUDENT RoleGrant at. See "Payments —
   Stripe dispute handling" below for the full account.
-- **A systemic gap not previously called out in this doc**: no tenant/content
-  offboarding exists anywhere in the platform. There is no `DELETE` endpoint for
-  School, Branch, Class, Timetable, Instructor, Membership, Rank, Waiver, Franchise, or
-  Curriculum — `ultm8-app-publishing` §4/§5.5 flags this as its own unspecified item,
-  and the same "`[UNRESOLVED]`, general tenant/content offboarding" comment recurs
-  verbatim across ~15 files. This blocks any real account-closure or data-erasure flow
-  and is worth its own decision + phase, not just a footnote — see
-  `docs/ULTM8-MASTER-ROADMAP.md` for the full cross-track picture.
 
 ---
 
@@ -99,12 +159,15 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 | `CurriculumModule` (Lesson content) | ✅ DONE — Phase 44–45 |
 | `TranslationsModule` (i18n CMS) | ✅ DONE — Phase 49 backend + Phase 50 UI, both merged |
 | QR check-in redesign + Attendance roll-call scan (Decisions 66, 71, 107) | ✅ DONE (backend) — Phase 51, merged via PR #72 |
-| `SubscriptionPlansModule` (platform-level plans, core) | ✅ DONE (backend) — Phase 54: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75. `whiteLabelApp` entitlement + `apps/platform-admin` UI deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
+| `SubscriptionPlansModule` (platform-level plans) | ✅ DONE — Phase 54 (backend: Plan CRUD, subscribe/cancel, `PlatformCharge`, degraded-portal gate, merged via PR #75) + Phase 55 (`apps/platform-admin` authoring UI, PR #76). Only the `whiteLabelApp` entitlement remains deliberately deferred. Blocker citation reconciled — Decision 106, merged via PR #71 |
 | `MobileAppPublishingModule` + `packages/build-pipeline` | ⛔ NOT BUILT — blocked on a real product/legal decision |
-| General tenant/content offboarding (no DELETE anywhere) | ⛔ NOT BUILT — unspecified in Spec 55, systemic gap across ~15 files |
-| QR code display screen (`apps/school-portal`, Staff-facing) | 🟡 Built — Phase 52, **PR #73, unmerged** (was stacked on Phase 51; base moves to `master` now that Phase 51 has merged) |
+| General tenant/content offboarding (close-account, archived-gate, 90-day purge) | ✅ DONE — Phase 56 (Decision 110, backend) + Phase 57 (`apps/platform-admin` close/reactivate UI). Close/reactivate endpoints, the archived-gate across all 10 named entity services, the scheduled purge job, and the School/Franchise lookup screens' own status controls. `Waiver`'s own retention period still pending legal input (Decision 110's own flagged exception) |
+| QR code display screen (`apps/school-portal`, Staff-facing) | ✅ DONE — Phase 52, merged via PR #73 |
 | Guardian consent-management UI (view/withdraw) | ⛔ NOT BUILT — no screen exists anywhere in confirmed designs |
 | Branch field-level settings UI | ✅ DONE — Phase 53. Turned out ~80% already shipped since Phase 3; only Decision 76's branding fields (logoUrl/bannerUrl) were missing from the form |
+| Transaction Student-name resolution (Decision 109) | ✅ DONE — merged via PR #61. Developer-level inference, flagged for Architect confirmation |
+| Design system refresh — accent color rebase + Figtree typeface | ✅ DONE — merged via PR #61 |
+| Shared `packages/ui` mobile-nav / table-overflow fix | ✅ DONE — merged via PR #31 |
 | `apps/platform-admin` general tenant-data edit UI | 🅿️ Parked — Decision 105, pending a named use case |
 | `apps/platform-admin` home dashboard | 🅿️ Parked — cosmetic, nothing to summarize yet |
 | Stripe dispute-handling webhook mechanics (Decision 55/111, Phase A) | ✅ DONE — real `charge.dispute.*` handlers, freeze guards, Membership/Subscription force-actions, notification routing |
@@ -161,8 +224,8 @@ doc), so they're named here without a number rather than guessed at.
   content, same precedent as `LegalDocument`/`AdminUser`), public `GET /translations`,
   FULL_ADMIN-only `platform-admin/translations` CRUD. Merged via PR #67.
 - **Phase 50** — `apps/platform-admin` Translations authoring UI (list/filter/add/
-  edit/delete), end-to-end browser-verified against a live backend. **PR #68, not yet
-  merged.**
+  edit/delete), end-to-end browser-verified against a live backend. Merged via
+  PR #68.
 - **Phase 51** — `AttendanceModule` QR check-in redesign (Decision 107): replaced
   Phase 13's static-`bookingId` self-service scan with two independently-keyed,
   short-lived rotating JWTs (`GET /classes/:id/qr-token` Staff-minted Class token,
@@ -188,7 +251,7 @@ doc), so they're named here without a number rather than guessed at.
   (an explicit Developer-level placeholder on the backend) ever changes. Built
   stacked on Phase 51's branch; end-to-end Playwright-verified against a live
   backend, including proving the auto-refresh re-polls for a fresh token before the
-  old one expires. **PR #73, not yet merged** as of this doc's own last edit.
+  old one expires. Merged via PR #73.
 - **Phase 53** — Branch field-level settings UI. Turned out to be almost entirely
   already shipped: `BranchesPage`/`BranchFormModal` (name/address/contactPhone/
   timezone/currencyOverride) have existed since Phase 3, and the backend
@@ -301,16 +364,65 @@ built.
 - **Phase 49–50** — `TranslationsModule` backend + `apps/platform-admin` authoring UI.
   See "Core domain..." above and "What's actually left" below.
 - **Phase 54** — `SubscriptionPlansModule` (core: Plan CRUD, subscribe/cancel,
-  `PlatformCharge`, degraded-portal gate) — see "What's actually left" below for
-  what remains (the `whiteLabelApp` entitlement and this module's own
-  `apps/platform-admin` authoring UI).
+  `PlatformCharge`, degraded-portal gate).
+- **Phase 55** — `SubscriptionPlansModule`'s `apps/platform-admin` authoring UI
+  (PR #76): `SubscriptionPlansPage` — list/add/edit, no delete action (the backend
+  has no `DELETE` route — an already-subscribed Franchise/School has no confirmed
+  safe orphaning behavior, see the Prisma model's own comment). Required one small
+  backend addition alongside the UI: `GET /platform-admin/subscription-plans`, a
+  new list route on `PlatformAdminSubscriptionPlansController` — unlike
+  `TranslationsModule`, whose public `GET /translations` the Translations authoring
+  UI reuses directly, `GET /plans` is tenant-JWT-gated (Platform Admin has no tenant
+  token to call it with), so there was no existing route this screen could browse
+  through. Authentication-only (no `assertFullAdmin`), same "nothing here is
+  sensitive" reasoning `SubscriptionPlanResponseDto`'s own comment already gives.
+  Full e2e suite green (328 tests, 2 new), `turbo build` clean, `packages/api-client`
+  regenerated, browser-verified end to end (Playwright against a live backend:
+  list → create → edit, zero console errors).
+- **Phase 56** — General tenant/content offboarding (Decision 110), backend only.
+  `TenantLifecycleModule`: close/reactivate for School and Franchise
+  (FULL_ADMIN-only, re-typed-name confirmation, audited), a new `archivedAt`/
+  `purgeAt`/`purgedAt` trio on both models, `TenantAuthorizationService.
+  assertSchoolNotArchived`/`assertFranchiseNotArchived` wired into all 10 named
+  entity services' create/update paths (22 call sites), and a daily
+  `tenant-lifecycle-purge` scheduled job that hard-deletes a School/Franchise
+  90 days past close (Postgres cascade handles the child-row graph in one
+  statement — the same empirically-verified RLS-bypass-on-cascade behavior this
+  phase's own investigation confirmed) or anonymizes it in place for the two
+  flagged exceptions (retained `Waiver` rows; `PlatformCharge`/
+  `FranchiseFeeCharge` billing-history `RESTRICT`). Full e2e suite green (347
+  tests, 26 new across two new spec files), `turbo build` clean,
+  `packages/api-client` regenerated. No `apps/platform-admin` UI yet for
+  close/reactivate — same backend-then-UI split as every other module in this
+  codebase; a natural Phase 57.
+- **Phase 57** — `apps/platform-admin` close/reactivate UI for Decision
+  110/Phase 56, on the same PR #77 branch (no new PR — a UI-only phase
+  continuing the still-open Phase 56 PR, not a separate slice). One shared
+  `TenantLifecycleControls` component, dropped into `SchoolLookupPage`/
+  `FranchiseLookupPage` between the entity-details Card and the
+  PaymentAccount section: an Active/Closed status badge, a re-typed-name
+  confirmation modal gating the close action, and a Reactivate button (or a
+  "already purged, cannot be reactivated" message once `purgedAt` is set).
+  Needed `SchoolResponseDto`/`FranchiseResponseDto` widened to type
+  `archivedAt`/`purgeAt`/`purgedAt` — School's `findOne()` already returned
+  them at runtime (no explicit Prisma `select`), but Franchise's did not
+  until `FRANCHISE_PUBLIC_SELECT` was widened too, confirmed by reading each
+  service directly rather than assuming the two entities behaved alike. Full
+  e2e suite still green (347/347, unchanged — no new backend behavior, just
+  wider DTOs), `tsc --noEmit` clean on both `apps/api` and
+  `apps/platform-admin` (including the dynamic close/reactivate path union
+  type), `turbo build` clean across all 8 packages, `packages/api-client`
+  regenerated, and the full close → Closed badge/Reactivate button →
+  reactivate → Active badge flow browser-verified end to end (Playwright
+  against a live backend, real minted FULL_ADMIN token) for both a School and
+  a Franchise.
 
-Also shipped, on their own separate unmerged branches (not folded into this doc's
-own narrative sections above in detail — see each PR's own description):
-**Phase 51** (QR check-in redesign + Instructor roll-call scan, Decision 107,
-PR #72), **Phase 52** (`apps/school-portal` QR-display screen, PR #73, stacked on
-#72), and **Phase 53** (Branch field-level settings UI — the branding-fields gap,
-PR #74).
+Also shipped, each on its own separate PR (not folded into this doc's own narrative
+sections above in detail — see each PR's own description), all now merged:
+**Phase 51** (QR check-in redesign + Instructor roll-call scan, Decision 107, merged
+via PR #72), **Phase 52** (`apps/school-portal` QR-display screen, merged via
+PR #73), and **Phase 53** (Branch field-level settings UI — the branding-fields gap,
+merged via PR #74).
 
 ---
 
@@ -319,7 +431,7 @@ PR #74).
 Full cross-track detail (Track B, infra/deployment, and every open decision) now lives
 in `docs/ULTM8-MASTER-ROADMAP.md`. This section keeps only the Track A-specific items.
 
-### 1. `SubscriptionPlansModule` — core shipped (Phase 54); two pieces remain
+### 1. `SubscriptionPlansModule` — fully shipped except one blocked entitlement
 
 Confirmed scope (`ultm8-nestjs-module` §5): `GET /plans`, `POST /plans/{id}/subscribe`,
 Platform-Admin-authoring only. This doc previously said the module was blocked on an
@@ -335,16 +447,16 @@ other Stripe integration in this codebase), the `PlatformCharge` ledger, and the
 read-only degraded-portal gate Spec 55 §10.2 confirms (new Class/Booking/payment
 creation blocked once a School's platform Subscription is genuinely Canceled — never
 on `PAST_DUE` or on a School that simply never subscribed, the ordinary state of
-every School in this codebase before this phase).
+every School in this codebase before this phase). Phase 55 (PR #76) then built
+`apps/platform-admin`'s own authoring UI for Plan CRUD — backend-then-UI split, same
+convention `TranslationsModule` (Phase 49/50) and `CurriculumModule` (Phase 44/45)
+already established.
 
-Two pieces deliberately deferred, not silently dropped:
-- The `whiteLabelApp` metered entitlement — its own rate is itself unresolved
-  ($0.99–$1.99/active-student/month, Spec 55 §12.2: "exact rate still to be set"),
-  and the entitlement is meaningless before `MobileAppPublishingModule` exists
-  (item 2 below, itself blocked on the Apple compliance decision).
-- `apps/platform-admin`'s own authoring UI for Plan CRUD — backend-then-UI split,
-  same convention `TranslationsModule` (Phase 49/50) and `CurriculumModule` (Phase
-  44/45) already established.
+One piece deliberately deferred, not silently dropped: the `whiteLabelApp` metered
+entitlement — its own rate is itself unresolved ($0.99–$1.99/active-student/month,
+Spec 55 §12.2: "exact rate still to be set"), and the entitlement is meaningless
+before `MobileAppPublishingModule` exists (item 2 below, itself blocked on the Apple
+compliance decision). Nothing left to build here until that decision lands.
 
 ### 2. `MobileAppPublishingModule` + `packages/build-pipeline` — blocked on a product/legal decision
 
@@ -362,29 +474,64 @@ needs the Apple compliance question actually resolved first. The white-label add
 own metered billing rate ($0.99–$1.99/active-student/month range) is also never
 finalized — a second, independent open item under this same module.
 
-### 3. General tenant/content offboarding — unspecified in the spec, never scoped
+### 3. General tenant/content offboarding — Decision 110 built end to end, Phase 56 (backend) + Phase 57 (UI)
 
-No `DELETE` endpoint exists anywhere in the platform for School, Branch, Class,
-Timetable, Instructor, Membership, Rank, Waiver, Franchise, or Curriculum.
-`ultm8-app-publishing` §4/§5.5 names this as its own new open item, not covered
-anywhere else in Spec 55. The same flagged comment recurs verbatim across roughly 15
-service/controller files. This blocks any real account-closure or GDPR/LGPD-style
-data-erasure flow — a genuine, systemic gap rather than a per-module oversight. Needs
-a product/legal decision on what "offboarding" actually means per entity (hard delete?
-soft-archive? retention period?) before any of those ~15 files gets a real `DELETE`.
+Was: no `DELETE` endpoint existed anywhere in the platform for School, Branch, Class,
+Timetable, Instructor, Membership, Rank, Waiver, Franchise, or Curriculum —
+`ultm8-app-publishing` §4/§5.5's own flagged open item, the same comment recurring
+verbatim across 16 files.
 
-### 4. QR code display screen — already built, just unmerged (Phase 52, PR #73)
+**Decision 110** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) resolved what
+"offboarding" means: soft-archive (read-only, not hidden) immediately, hard-delete
+after a 90-day retention window — matching the white-label credential's own 90-day
+grace-then-purge precedent (Decision 27) rather than an invented number. Triggered
+only by a new, explicit, Platform-Admin-mediated close-account action — **not** by
+platform-subscription cancellation alone, which stays billing-only (the existing
+`SubscriptionGateService` degraded-portal gate) and leaves data untouched, same
+"billing lapsed ≠ delete my account" separation every major SaaS product makes.
+Scoped to School/Franchise-level offboarding only — GDPR/LGPD per-user erasure
+requests are deliberately out of scope, tracked as their own separate open item
+(`docs/ULTM8-MASTER-ROADMAP.md` §4).
 
-Phase 51 (Decision 107) closed both mechanics gaps this section used to describe:
-`POST /classes/{id}/attendance-scan` (Instructor-run roll-call) is built and
-e2e-tested, and the self-service Class QR token now genuinely rotates
-(`GET /classes/:id/qr-token`, Decision 66's "time-boxed, rotating, never static"
-constraint). Phase 52 then built the `apps/school-portal` display screen itself —
-the first interval-polling UI pattern in this app — browser-verified end to end.
-**PR #73, not yet merged** as of this doc's own last edit; nothing left to design or
-build here, just to merge.
+**Phase 56 built this**: `TenantLifecycleModule` (`apps/api/src/platform-admin/`) —
+`POST /platform-admin/{schools,franchises}/:id/close` (re-typed-name confirmation,
+FULL_ADMIN-only, audited — `CLOSE_SCHOOL_ACCOUNT`/`CLOSE_FRANCHISE_ACCOUNT`) and
+`.../reactivate`. Closing sets `archivedAt`/`purgeAt` (now + 90 days) on School/
+Franchise; `TenantAuthorizationService.assertSchoolNotArchived`/
+`assertFranchiseNotArchived` (same file, same shared-check convention as
+`assertSchoolOwner`) is called immediately after the existing ownership/staff check
+in every one of the 10 named services' create/update methods (22 call sites total —
+Ranks alone has 6, one per Discipline/Rank/Skill create+update). A reactivated
+School/Franchise clears both fields and the gate lifts immediately — proven directly
+over HTTP in `test/tenant-lifecycle.e2e-spec.ts` (PATCH succeeds again after
+reactivate). The daily `tenant-lifecycle-purge` job (`apps/api/src/jobs/`) finds
+every row past `purgeAt` with no reactivation and either hard-deletes it (Postgres's
+own `ON DELETE CASCADE` graph — empirically verified earlier this same phase to
+bypass per-child RLS/grants even under `FORCE ROW LEVEL SECURITY`) or, in two
+flagged cases, anonymizes the row's PII-bearing fields in place instead of deleting
+it: a School that still owns `Waiver` rows (Decision 110's own explicit exception —
+Waiver retention needs real legal input before it runs on the uniform 90-day clock),
+or a School/Franchise with billing history protected by the pre-existing
+`PlatformCharge`/`FranchiseFeeCharge` `RESTRICT` FKs (caught as a Postgres P2003, not
+pre-checked). Deliberately does **not** touch Membership/Transaction/PaymentAccount/
+Booking/WaitlistEntry/RoleGrant — none are named in Decision 110's own scope, and
+several are financial/attendance records of the same character the existing
+`RESTRICT` protection already treats carefully; flagged as a narrower-than-literal
+reading, not silently decided.
 
-### 5. Guardian consent-management UI — no screen anywhere
+**Phase 57 built the `apps/platform-admin` UI**: a shared `TenantLifecycleControls`
+component on `SchoolLookupPage`/`FranchiseLookupPage` (Active/Closed status badge,
+re-typed-name confirmation modal for closing, Reactivate button, a plain "already
+purged" message once `purgedAt` is set instead of a dead button). Required widening
+`SchoolResponseDto`/`FranchiseResponseDto` to type the three new fields — School's
+`findOne()` already returned them at runtime (whole-row, no explicit `select`), but
+Franchise's `FRANCHISE_PUBLIC_SELECT` genuinely omitted them until this phase, caught
+by checking each service directly rather than assuming both entities read alike.
+
+**Still not built**: a real decision on `Waiver`'s own retention period (Decision
+110's own flagged exception, unaffected by Phase 57).
+
+### 4. Guardian consent-management UI — no screen anywhere
 
 No interface exists for a Guardian to view current consent status or withdraw either
 tier of `ConsentRecord` consent — `ultm8-domain-rules` §14 flags this as blocking any
@@ -392,14 +539,14 @@ market with children's-data-protection law. This is Track A surface (Platform
 Admin/School Portal don't obviously own it either — needs a decision on which app it
 belongs to) as much as it's Track B's already-known "Guardian-facing screens" gap.
 
-### 6. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
+### 5. `apps/platform-admin` general tenant-data edit UI — parked, not blocked
 
 Decision 105 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) already resolved this:
 **not built, pending a named use case.** Nothing to do here until a real support/ops
 scenario names what "editing another tenant's records generally" actually needs to
 cover — building it speculatively is exactly what Decision 105 says not to do.
 
-### 7. `apps/platform-admin` home dashboard — parked, cosmetic
+### 6. `apps/platform-admin` home dashboard — parked, cosmetic
 
 Still lands directly on Admin Users. Low priority; nothing yet to summarize on a
 landing page until more of the admin surface exists.
@@ -415,20 +562,27 @@ the full account.
 
 ---
 
-**Resolved since this list was last written** (each on its own separate unmerged
-branch — see "Where things stand right now" for PR numbers): Attendance roll-call
-scan mechanics + QR code display (Phase 51/52), and Branch field-level settings UI
-(Phase 53, turned out to be a 2-field gap, not a whole undesigned screen).
+**Resolved since this list was last written** (see "Where things stand right now"
+for PR numbers — all now merged): Attendance roll-call scan mechanics + QR code
+display (Phase 51/52, PR #72/#73), Branch field-level settings UI (Phase 53, PR #74
+— turned out to be a 2-field gap, not a whole undesigned screen), Transaction
+Student-name resolution (Decision 109, PR #61), and two shared `packages/ui`
+responsive bugs — mobile-nav collapse and table horizontal-overflow (PR #31).
 
 ---
 
 ## Immediate next actions (not phases — just what's actually queued)
 
-1. Get **PR #73** reviewed and merged — green, clean, no reviews yet, nothing
-   blocking on the engineering side.
-2. `SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI (item 1) —
-   the natural next phase, same backend-then-UI split as Translations/Curriculum.
-3. Everything else in "What's actually left" needs a decision, design pass, or both
+1. ~~`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI~~ — done
+   (Phase 55, PR #76).
+2. ~~General tenant/content offboarding (Decision 110)~~ — done end to end: backend
+   (Phase 56) and the `apps/platform-admin` close/reactivate UI (Phase 57), both on
+   PR #77. Only `Waiver`'s own retention period (Decision 110's flagged exception)
+   remains an open question.
+3. Decision 109 (Transaction Student-name resolution, PR #61) is still a
+   Developer-level inference, flagged in the decision log but not yet given an
+   Architect confirmation — worth a short pass, though nothing is blocked on it.
+4. Everything else in "What's actually left" needs a decision, design pass, or both
    before code should be written against it — see `docs/ULTM8-MASTER-ROADMAP.md` for
    the full prioritized path, including where Track A's open items overlap Track B's
    and infra's.

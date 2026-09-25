@@ -35,6 +35,8 @@ export class MembershipsService {
   async createPlan(callerId: string, schoolId: string, dto: CreateMembershipPlanDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     this.assertValidPlanShape(dto.type, dto.price, dto.classesIncluded, dto.scopedClassId);
 
     if (dto.scopedClassId) {
@@ -86,6 +88,8 @@ export class MembershipsService {
   async updatePlan(callerId: string, planId: string, dto: UpdateMembershipPlanDto) {
     const existing = await this.findOnePlan(callerId, planId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     // FOUND ON REVIEW (Phase 18): `classesIncluded` is deliberately NOT among
     // UpdateMembershipPlanDto's null-widened fields (see that DTO's own header

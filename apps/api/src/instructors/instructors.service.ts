@@ -27,6 +27,8 @@ export class InstructorsService {
   async create(callerId: string, schoolId: string, dto: CreateInstructorDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     if (dto.branchId) {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
@@ -105,6 +107,8 @@ export class InstructorsService {
     // exactly the shape this method needs.
     const existing = await this.findOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId;
 

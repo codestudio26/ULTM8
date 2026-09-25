@@ -325,6 +325,8 @@ export class SchoolsService {
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */
   async update(callerId: string, schoolId: string, dto: UpdateSchoolDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({

@@ -536,6 +536,27 @@ model Franchise {
   stripePlatformSubscriptionId String?                     @unique
   platformSubscriptionStatus   PlatformSubscriptionStatus?
 
+  /// Phase 56 — Decision 110 (general tenant/content offboarding: soft-archive
+  /// with a 90-day retention window, gated behind an explicit close-account
+  /// action). `archivedAt` set = this Franchise is closed: read-only, blocked
+  /// from every mutating endpoint via TenantAuthorizationService.assertFranchiseNotArchived
+  /// (mirrors SubscriptionGateService's own degraded-portal gate shape, Phase 54,
+  /// but permanent rather than payment-lapse-driven — Decision 110 is explicit
+  /// that a cancelled subscription alone never sets this). `purgeAt` =
+  /// archivedAt + 90 days, set at the same time; the scheduled purge job
+  /// (tenant-lifecycle-purge.processor.ts) hard-deletes (or, where a RESTRICT
+  /// constraint or a flagged retention exception applies, anonymizes in place —
+  /// see that job's own header comment for the full account) once `purgeAt`
+  /// elapses. `purgedAt` records that this row itself has already been
+  /// processed by the purge job, so the scheduler never reprocesses an
+  /// already-anonymized row. Reactivation (PlatformAdminTenantLifecycleController)
+  /// clears archivedAt/purgeAt back to null; purgedAt is never cleared — once a
+  /// tenant's data has actually been purged, reactivating the (now-empty) row is
+  /// not the same as undoing the purge.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -547,6 +568,7 @@ model Franchise {
 
   @@index([name])
   @@index([subscriptionPlanId])
+  @@index([purgeAt])
 }
 
 /// School (domain-rules §2, Spec §6.1). franchiseId is nullable — an independent,
@@ -597,6 +619,20 @@ model School {
   stripePlatformSubscriptionId String?                     @unique
   platformSubscriptionStatus   PlatformSubscriptionStatus?
 
+  /// Phase 56 — Decision 110. Same shape/reasoning as Franchise's own identical
+  /// trio above — see that model's own comment for the full account.
+  ///
+  /// One School-specific wrinkle the purge job's own header comment covers in
+  /// full: Waiver is explicitly flagged by Decision 110 as NOT on the uniform
+  /// 90-day clock (signed liability waivers need real legal input on retention
+  /// first), so a School that still owns Waiver rows is never hard-deleted by
+  /// the purge job even past its own purgeAt — it's anonymized in place instead,
+  /// same fallback the job uses when a PlatformCharge/FranchiseFeeCharge RESTRICT
+  /// blocks the delete outright.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -618,6 +654,7 @@ model School {
   // "tenant column" one level up is franchiseId.
   @@index([franchiseId])
   @@index([subscriptionPlanId])
+  @@index([purgeAt])
 }
 
 /// Branch (Decision 76 — field set mirrors School's profile fields; the RLS-enforced

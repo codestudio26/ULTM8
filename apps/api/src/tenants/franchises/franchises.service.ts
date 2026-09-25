@@ -46,6 +46,12 @@ const FRANCHISE_PUBLIC_SELECT = {
   perHeadcountRate: true,
   createdAt: true,
   updatedAt: true,
+  // Phase 57 — FranchiseResponseDto now types archivedAt/purgeAt/purgedAt
+  // (Decision 110); selected here so the tenant-facing read genuinely returns
+  // them too, not just the platform-admin one.
+  archivedAt: true,
+  purgeAt: true,
+  purgedAt: true,
   // Deliberately excluded: stripeMeterId, stripeUsagePriceId — see this
   // constant's own header comment.
 } as const;
@@ -173,6 +179,8 @@ export class FranchisesService {
    */
   async update(callerId: string, franchiseId: string, dto: UpdateFranchiseDto) {
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    // Decision 110 (Phase 56) — a closed Franchise accepts no further writes.
+    await this.tenantAuth.assertFranchiseNotArchived(callerId, franchiseId);
 
     // FOUND ON REVIEW: `flatFeeAmount`/`perHeadcountRate` are deliberately NOT
     // widened to nullable in UpdateFranchiseDto (see that DTO's own header

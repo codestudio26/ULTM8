@@ -19,6 +19,8 @@ export class BranchesService {
   async create(callerId: string, schoolId: string, dto: CreateBranchDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const branchId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -67,6 +69,8 @@ export class BranchesService {
   async update(callerId: string, branchId: string, dto: UpdateBranchDto) {
     const existing = await this.findOne(callerId, branchId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.branch.update({
