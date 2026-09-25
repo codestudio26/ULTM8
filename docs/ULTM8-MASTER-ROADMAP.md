@@ -61,16 +61,27 @@ to actually select them — School's `findOne()` already returned them at
 runtime, Franchise's did not). Both phases are on the same still-open PR #77. See
 §1 for the full account. Only `Waiver`'s own retention period remains open.
 
+**Updated 2026-09-23:** Infrastructure & deployment's "code that can be written now"
+half (§3's own framing) is done — a production `apps/api/Dockerfile`, first-pass
+Terraform for the full confirmed AWS stack, a manual/gated CD pipeline skeleton, and
+`docs/ops/` docs for backup/DR, APM/observability, and the numeric-NFR-targets gap.
+No new product/architecture decision was made or needed — every choice in this work
+is a self-flagged, Developer-level infra default (same treatment `variables.tf`'s own
+comments already give sizing/region), not a Decision-log entry. **Still nothing is
+provisioned or running** — this environment has no AWS account or credentials,
+`terraform apply` has never been run, and `.github/workflows/deploy.yml` has no
+automatic trigger by design. See §3.
+
 ---
 
 ## Snapshot
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 57 phases shipped. **Two PRs open** (PR #76, Phase 55; PR #77, Decision 110 + Phase 56 + Phase 57 — this doc's own update for all three), both pushed and green, awaiting review. 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` fully shipped (Phase 54 backend + Phase 55 admin UI, PR #76); only its `whiteLabelApp` entitlement remains, blocked on Apple compliance. General tenant/content offboarding is now built end to end, both backend (Phase 56) and its `apps/platform-admin` close/reactivate UI (Phase 57) — only `Waiver`'s own retention period remains open. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109) and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
+| **Track A** — backend + school-portal + platform-admin | 57 phases shipped. **One PR open** (PR #76, Phase 55, pushed and green, awaiting review — PR #77, Decision 110 + Phase 56 + Phase 57, is this branch, about to merge). Decision 111/112 (Stripe dispute handling + chargeback-pattern-restriction) already merged to master. 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` fully shipped (Phase 54 backend + Phase 55 admin UI, PR #76); only its `whiteLabelApp` entitlement remains, blocked on Apple compliance. General tenant/content offboarding is now built end to end, both backend (Phase 56) and its `apps/platform-admin` close/reactivate UI (Phase 57) — only `Waiver`'s own retention period remains open. Guardian consent UI remains the one designed-but-unscreened gap. Also shipped outside the Phase-N sequence: a design-system refresh + Transaction Student-name resolution (PR #61, Decisions 108/109), the infra Dockerfile/Terraform/CD-pipeline skeleton, and a shared `packages/ui` mobile-nav/table-overflow fix (PR #31). |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
-| **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6) — **nothing is provisioned**. CI is real but test-only; no CD, no Dockerfile, no IaC, no backup/DR plan, no APM/error-tracking, no numeric NFR targets. |
-| **Open decisions** | 41 post-spec decisions logged (Decisions 108/109 added: Instructor rank V1/V2 dropdown, Transaction Student-name resolution; Decision 110 added: general tenant/content offboarding policy), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges, 109 itself awaiting Architect confirmation, 110's own `Waiver`-retention piece pending legal input). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). GDPR/LGPD data-residency and per-user erasure (both distinct from, and explicitly out of scope for, Decision 110's own School/Franchise-level offboarding) remain their own tracking gap — still not carried into any decision-log entry. |
+| **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6). First-pass Dockerfile, Terraform for the full confirmed stack, a manual/gated CD pipeline skeleton, and backup/DR + APM + NFR-gap docs now exist (`apps/api/Dockerfile`, `infra/terraform/`, `.github/workflows/deploy.yml`, `docs/ops/`) — **still nothing is provisioned or running**: no AWS account/credentials exist in this environment, `terraform apply` has never been run, and CI remains test-only (deploy is manual-dispatch only, by design). |
+| **Open decisions** | 43 post-spec decisions logged (Decisions 108/109 added: Instructor rank V1/V2 dropdown, Transaction Student-name resolution; Decision 110 added: general tenant/content offboarding policy; Decision 111: dispute-handling scope split into Phase A/B, chargeback threshold set at 2 lost disputes; Decision 112: Phase B's own implementation design), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges, 109 itself awaiting Architect confirmation, 110's own `Waiver`-retention piece pending legal input). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). GDPR/LGPD data-residency and per-user erasure (both distinct from, and explicitly out of scope for, Decision 110's own School/Franchise-level offboarding) remain their own tracking gap — still not carried into any decision-log entry. |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
 and infra/deployment are the two biggest remaining bodies of work, and they're
@@ -100,21 +111,29 @@ authoring UI, PR #76), `apps/school-portal` full admin surface,
 `apps/platform-admin` through Translations authoring including Cognito auth, audit
 logging, cross-tenant read/write for Schools/Franchises/PaymentAccounts/AdminUsers,
 Stripe credential rotation, and read-only Support impersonation (with its RLS-scope
-hardening). Also merged, outside the Phase-N sequence: a design-system refresh
+hardening), and Decision 55/111/112's Stripe dispute-handling + chargeback-pattern-
+restriction, both merged to master: real `charge.dispute.*` handlers across
+Transaction/FranchiseFeeCharge/PlatformCharge, refund/credit-restore frozen while
+disputed, Membership force-Expiry + Subscription cancellation on a loss, notification
+routed by who's financially exposed (Phase A), plus the `chargeback-pattern-
+restriction` job restricting a Student to Cash/Bank Transfer past 2 lost disputes
+(Phase B). Full detail: `docs/TRACK-A-ROADMAP.md`'s own "Payments — Stripe dispute
+handling" section. Also merged, outside the Phase-N sequence: a design-system refresh
 (accent color rebase, Figtree typeface) bundled with a real Transaction Student-name
-resolution fix (PR #61, Decisions 108/109), and a shared `packages/ui` fix for
-mobile-nav collapse + table horizontal-overflow affecting every `apps/school-portal`
-page (PR #31). Also shipped: general tenant/content offboarding, both backend
-(Phase 56, Decision 110) — `TenantLifecycleModule`'s close/reactivate endpoints
-(FULL_ADMIN-only, re-typed-name confirmation, audited), the archived-gate wired
-into all 10 named entity services' create/update paths, and a daily scheduled
-purge job that hard-deletes or (for two flagged exceptions) anonymizes a closed
-School/Franchise 90 days out — and its `apps/platform-admin` UI (Phase 57) — a
-shared `TenantLifecycleControls` component on `SchoolLookupPage`/
-`FranchiseLookupPage` (Active/Closed badge, re-typed-name confirmation modal,
-Reactivate button). **Track A has two open PRs**: PR #76 (Phase 55) and PR #77
-(Decision 110's record plus its Phase 56 + Phase 57 implementation, including
-this doc's own update for all three), both pushed and green, awaiting review.
+resolution fix (PR #61, Decisions 108/109), the infra Dockerfile/Terraform/CD-pipeline
+skeleton (merged), and a shared `packages/ui` fix for mobile-nav collapse + table
+horizontal-overflow affecting every `apps/school-portal` page (PR #31). Also shipped:
+general tenant/content offboarding, both backend (Phase 56, Decision 110) —
+`TenantLifecycleModule`'s close/reactivate endpoints (FULL_ADMIN-only, re-typed-name
+confirmation, audited), the archived-gate wired into all 10 named entity services'
+create/update paths, and a daily scheduled purge job that hard-deletes or (for two
+flagged exceptions) anonymizes a closed School/Franchise 90 days out — and its
+`apps/platform-admin` UI (Phase 57) — a shared `TenantLifecycleControls` component on
+`SchoolLookupPage`/`FranchiseLookupPage` (Active/Closed badge, re-typed-name
+confirmation modal, Reactivate button). **Track A has one open PR**: PR #76
+(Phase 55), pushed and green, awaiting review — PR #77 (Decision 110's record plus
+its Phase 56 + Phase 57 implementation, including this doc's own update for all
+three) is this branch, about to merge.
 
 **Left, in priority order:**
 
@@ -301,46 +320,81 @@ by direct audit of `.github/workflows/`, the repo's `.env.example` files, `docs/
   not provisioned.
 - **Local dev environment** — a real `.devcontainer/docker-compose.yml` (Postgres 16 +
   Redis 7). Dev-only, not a production container definition.
+- **Production Dockerfile** (`apps/api/Dockerfile`) — multi-stage
+  (`turbo prune --docker` → install → build → non-root runtime), targets the
+  confirmed Fargate deploy target. Build mechanics were validated in this sandbox
+  against a substitute base image (Docker Hub's own CDN is blocked by this
+  environment's org egress policy — the same class of denial as the Terraform
+  registry block below, not routed around); the real committed image
+  (`node:20-bookworm-slim`) was never itself built end-to-end here. See the
+  Dockerfile's own header comment.
+- **First-pass Terraform** (`infra/terraform/`) — the full "decided, zero
+  provisioning" stack below, as code: VPC, RDS + RDS Proxy, ElastiCache, ECS
+  Fargate + ALB, ECR, Secrets Manager, Cognito, least-privilege IAM.
+  `terraform fmt -check` clean across all 15 files; `terraform validate`/`init`
+  could not be run (`registry.terraform.io` blocked by this sandbox's own org
+  policy) — flagged, not silently assumed passing, in `infra/terraform/README.md`.
+  **Not applied** — no AWS account/credentials exist in this environment.
+- **CD pipeline skeleton** (`.github/workflows/deploy.yml`) — `workflow_dispatch`
+  -only (no automatic trigger, by design): build+push `apps/api`'s image,
+  `terraform plan`/`apply`, and an opt-in migration step (`aws ecs run-task`
+  against the same task definition the service uses, since RDS Proxy has no
+  route from a GitHub-hosted runner). Every required secret/variable (AWS OIDC
+  role, domain, Terraform backend) is named in `infra/terraform/README.md`'s own
+  "CD pipeline" section but unset — dispatching it today fails closed at the
+  first AWS-credentials step, not a silent no-op.
+- **Backup/DR, APM/observability, and NFR-target gap docs** (`docs/ops/`) — each
+  of the three "genuine gaps" this section used to list bare is now its own
+  document: what's actually provisioned, what's still missing, and (NFR targets
+  specifically) an explicit statement that no number in that doc is a decision.
 
 ### Decided, zero provisioning (the largest category)
-Every one of these has a real, named decision behind it (cited) but **no Dockerfile,
-Terraform/CDK, live account, or credentials exist anywhere in this environment**:
+Every one of these has a real, named decision behind it (cited); Terraform for
+all but one now exists (`infra/terraform/`, above) — **none of it has been
+applied**, and no live AWS account/credentials exist anywhere in this
+environment:
 
 | Target | Decision | Provisioned? |
 |---|---|---|
-| AWS RDS + ElastiCache + ECS Fargate hosting | Spec §11.6, Decision 11 | No |
-| AWS Secrets Manager | Spec §11.6, `ultm8-payments` §1 | No |
-| AWS Cognito (Platform Admin IdP) | Decision 100 | No |
-| RDS Proxy (connection pooling) | Decision 63 | No — not implemented in code either |
-| Cloudflare Stream + AWS Transcribe (video) | Decision 101 | No — schema fields exist, unused |
-| CloudWatch (job-queue observability) | Decision 53 | Partially — a logging *rule* is designed, no CloudWatch integration exists |
+| AWS RDS + ElastiCache + ECS Fargate hosting | Spec §11.6, Decision 11 | Terraform written (`rds.tf`, `elasticache.tf`, `ecs.tf`) — not applied |
+| AWS Secrets Manager | Spec §11.6, `ultm8-payments` §1 | Terraform written (`secrets.tf`) — not applied |
+| AWS Cognito (Platform Admin IdP) | Decision 100 | Terraform written (`cognito.tf`) — not applied |
+| RDS Proxy (connection pooling) | Decision 63 | Terraform written (`rds_proxy.tf`) — not applied; still no app-code path specific to it (`DATABASE_URL*` is consumed the same either way) |
+| Cloudflare Stream + AWS Transcribe (video) | Decision 101 | No — schema fields exist, unused; out of this infra phase's scope |
+| CloudWatch (job-queue observability) | Decision 53 | Partially — log shipping to CloudWatch Logs is now provisioned (`ecs.tf`'s `awslogs` driver + Container Insights) and every job processor's designed error-logging rule already flows there; no metric filter/alarm turns that into a page yet — see `docs/ops/APM-AND-OBSERVABILITY.md` |
 
-### Genuine gaps — no decision found at all
-- **CD/deploy pipeline** — nothing, not even a stub.
-- **Dockerfile / container build definition** — none exist, including for `apps/api`,
-  despite Fargate being the confirmed deploy target.
-- **Any IaC tool** (Terraform/Pulumi/CDK/CloudFormation/Kubernetes) — none.
-- **Database backup/DR strategy, point-in-time recovery, read replicas** — not
-  mentioned anywhere, not even at the decision-log level.
-- **Error-tracking/APM** (Sentry, Datadog, or equivalent) — none; only NestJS's
-  built-in `Logger`.
-- **Numeric NFR targets** (uptime/SLA, p95 latency, concurrent-user budgets) — none
-  found anywhere in the repo.
+### Genuine gaps — still open (docs now exist to track them; numbers/tooling do not)
+- **Database backup/DR strategy** — RDS's own automated-backup/PITR/Multi-AZ
+  defaults are now documented, with their real limits (no Redis snapshotting,
+  no timed restore runbook) — `docs/ops/BACKUP-AND-DR.md`. No RPO/RTO target is
+  confirmed anywhere; that part of the gap is unchanged.
+  Still not mentioned at the decision-log level.
+- **Error-tracking/APM** — current state (structured logs → CloudWatch Logs,
+  Container Insights, ALB health checks) and what's missing (alarms, tracing,
+  an error-tracking SaaS, a real `/health` route) are now documented —
+  `docs/ops/APM-AND-OBSERVABILITY.md`. None of the missing pieces are built.
+- **Numeric NFR targets** (uptime/SLA, p95 latency, concurrent-user budgets) —
+  still none found anywhere in the repo; now has a canonical, explicitly-flagged
+  place to record them once a product/architecture decision sets them —
+  `docs/ops/NFR-TARGETS.md`.
 - **Formal compliance program** (SOC 2, PCI DSS attestation beyond the SAQ-A design
   target, GDPR/LGPD data-residency program) — see the dedicated finding below.
+  Unchanged by this infra phase.
 - **`packages/build-pipeline`** — confirmed, explicit placeholder (its own `build`
   script literally echoes "placeholder"). Not a disguised gap — it's honestly labeled
   and blocked on the same Apple compliance decision as Track A item 4 / Track B's
-  Phase 6.
+  Phase 6. Unchanged by this infra phase.
 
 ### What CAN start now, without waiting on AWS provisioning
-Writing a Dockerfile for `apps/api` and a first pass of Terraform/CDK for the
-RDS/ElastiCache/Fargate/Cognito/Secrets-Manager stack doesn't require live AWS
-credentials to draft and review — same as every other "confirmed target, not yet
-built" item in this codebase. What genuinely can't proceed without the product owner
-is the actual `terraform apply`/account provisioning step. Worth splitting this
-workstream into "code that can be written now" vs. "steps that need a real AWS
-account handed over."
+This split has now played out once, not just been proposed: the Dockerfile,
+first-pass Terraform, CD pipeline skeleton, and `docs/ops/` docs above are all
+"code that can be written now" (above), done without live AWS credentials —
+same as every other "confirmed target, not yet built" item in this codebase.
+What genuinely still can't proceed without the product owner is unchanged: the
+actual `terraform apply`/account-provisioning step, and everything gated behind
+it (a real domain/ACM cert, a real image pushed to ECR, real vendor-secret
+values, real migrations run, and eventually real NFR targets to size and
+alert against).
 
 ---
 
@@ -374,7 +428,10 @@ its own open item, now tracked explicitly under "A tracking gap, not a technical
 one" below rather than folded into the offboarding row.
 Decisions 108 (Instructor rank V1/V2, PR #61) and 109 (Transaction Student-name
 resolution, PR #61 — still awaiting Architect confirmation) are also recorded; see
-Track A item 6.
+Track A item 6. Decision 55's own dispute-handling contract — previously modeled in
+the schema with zero code behind it — is built too (Decision 111 Phase A, merged to
+master), and so is Decision 68's own `chargeback-pattern-restriction` job (Decision
+112 Phase B, merged to master); see §1's "Done" summary.
 
 ### Real but narrower — worth a decision, doesn't block a whole feature
 - Late-cancellation fee **collection** mechanism unanswered (distinct from the
