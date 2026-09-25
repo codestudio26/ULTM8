@@ -286,6 +286,17 @@ model User {
   /// wrong.
   phoneVerifiedAt DateTime?
 
+  /// Decision 68/112 — set once by the chargeback-pattern-restriction job when this
+  /// Student's lost Stripe disputes (Transaction.disputeLostAt) cross the confirmed
+  /// threshold (2). While set, MembershipsService.purchase() refuses a purchase at any
+  /// School whose PaymentAccount is Stripe-provider — see that method's own comment for
+  /// why "restricted to Cash/Bank Transfer only" means exactly that in this codebase's
+  /// purchase flow (payment method is fixed per School, never a per-purchase Student
+  /// choice). Never cleared by any code in this codebase — Decision 68 names no
+  /// un-restriction path, so none is built; a genuinely open, flagged gap, not an
+  /// oversight.
+  paymentRestrictedAt DateTime?
+
   dateOfBirth     DateTime @db.Date // ISO 8601 date, no time component (confirmed)
   gender          String?
   nationality     String?
@@ -1273,6 +1284,15 @@ model Transaction {
   // — see the Phase 9 kickoff prompt §3); modeled for schema completeness only.
   disputedAmount Int?
 
+  /// Decision 112 — set the instant stripe-webhook-processing's dispute handler
+  /// determines a dispute resolved as `lost` (Phase A's own `resolveDisputeOutcome()`
+  /// already computes this in memory; this persists it), cleared back to null on the
+  /// rare reversal to `won`. Exists purely so chargeback-pattern-restriction can count
+  /// "disputes that resolve as lost" (Decision 68's own confirmed wording) — `status =
+  /// DISPUTED` alone can't answer that, since it's also the state for a dispute that's
+  /// merely still open/unresolved.
+  disputeLostAt DateTime?
+
   // Cumulative across possibly-multiple partial refunds against the same Transaction
   // (Spec 55 §6.1). No Phase 9 code path sets this (refund isn't buildable yet —
   // needs Booking); modeled for schema completeness only, always null this phase.
@@ -1381,6 +1401,17 @@ model FranchiseFeeCharge {
   stripeInvoiceId      String? @unique
   stripeSubscriptionId String?
 
+  /// Decision 111 — the PaymentIntent id behind this Invoice, captured at
+  /// `handleInvoicePaid()` time from `invoice.payments` (the only reachable path in
+  /// this Stripe API version — `Charge`/`PaymentIntent` no longer carry a direct
+  /// `invoice` reference; verified against the installed SDK's own type
+  /// definitions, not assumed). Exists so a later `charge.dispute.*` webhook —
+  /// which only ever gives a `payment_intent` id, never an Invoice id — can
+  /// correlate back to this row the same direct way `Transaction.stripePaymentIntentId`
+  /// already does; without this column a dispute against a franchise-fee charge
+  /// would have no reliable way to find its row at all.
+  stripePaymentIntentId String? @unique
+
   // Cumulative across possibly-multiple partial refunds against the same charge,
   // same convention as Transaction.refundedAmount. Set by
   // FranchiseFeeChargesService.refund() (Franchise Owner only, Spec 55 §10.2 —
@@ -1388,9 +1419,10 @@ model FranchiseFeeCharge {
   // paying School, is the party who'd issue it back).
   refundedAmount Int?
 
-  // Only ever reachable for a disputed charge (Decision 55's dispute handling) —
-  // no code path sets this yet, same "modeled for schema completeness only"
-  // treatment Transaction.disputedAmount got in Phase 9.
+  /// Decision 111 — real now: stripe-webhook-processing's charge.dispute.*
+  /// handlers set this and flip `status` to DISPUTED. See Transaction.disputedAmount's
+  /// own comment for the "modeled for schema completeness only" history this
+  /// column carried before Decision 111 built real handlers for it.
   disputedAmount Int?
 
   createdAt DateTime @default(now())
@@ -1464,6 +1496,11 @@ model PlatformCharge {
   stripeInvoiceId      String? @unique
   stripeSubscriptionId String?
 
+  /// Decision 111 — same shape and reasoning as FranchiseFeeCharge.stripePaymentIntentId's
+  /// own comment: captured from `invoice.payments` at `handleInvoicePaid()` time so a
+  /// later `charge.dispute.*` webhook (payment_intent-keyed only) can find this row.
+  stripePaymentIntentId String? @unique
+
   // Cumulative across possibly-multiple partial refunds, same convention as
   // Transaction.refundedAmount/FranchiseFeeCharge.refundedAmount. No refund code
   // path exists yet this phase (no refund endpoint for platform billing is
@@ -1471,9 +1508,10 @@ model PlatformCharge {
   // FranchiseFeeCharge.refundedAmount got before its own refund() existed.
   refundedAmount Int?
 
-  // Only ever reachable for a disputed charge (Decision 55's dispute handling) — no
-  // code path sets this yet, same "modeled for schema completeness only" treatment
-  // Transaction.disputedAmount/FranchiseFeeCharge.disputedAmount both already got.
+  /// Decision 111 — real now: stripe-webhook-processing's charge.dispute.*
+  /// handlers set this and flip `status` to DISPUTED. See
+  /// Transaction.disputedAmount's own comment for the "modeled for schema
+  /// completeness only" history this column carried before Decision 111.
   disputedAmount Int?
 
   createdAt DateTime @default(now())

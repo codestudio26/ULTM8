@@ -870,6 +870,61 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(after.classesRemaining).toBe(2); // still decremented, never restored
   });
 
+  it('cancelling a Booking whose Membership was funded by a DISPUTED Transaction does NOT restore the credit (Decision 111 freeze) — the cancellation itself still succeeds', async () => {
+    // classWaiverGated, not classBasic — studentB already holds an active Booking
+    // on classBasic from the earlier "spend order" test above (never cancelled),
+    // and the one-active-Booking-per-Student-per-Class guard would 409 a second
+    // attempt there. studentB already signed classWaiverGated's own Waiver in the
+    // "cancelling BEFORE the refund cutoff" test above, and that test's own
+    // Booking on it was CANCELLED — so it's free to book again here, no
+    // WITHHELD-vs-REFUNDED cutoff configured on it (matches classBasic's own
+    // shape for this test's purposes).
+    await superuser.membership.updateMany({ where: { studentId: studentB.id, classesRemaining: { not: null } }, data: { status: 'EXPIRED' } });
+
+    const membership = await mkActiveMembership(studentB.id, classPackPlanId, 3);
+    // A minimal PaymentAccount + DISPUTED Transaction funding this Membership —
+    // BookingsService.restoreCredit()'s own freeze guard checks for exactly this
+    // shape (a Transaction row with this membershipId and status DISPUTED).
+    const paymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Freeze Guard Fixture', country: 'GB' },
+    });
+    const transaction = await superuser.transaction.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        studentId: studentB.id,
+        paymentAccountId: paymentAccount.id,
+        membershipPlanId: classPackPlanId,
+        membershipId: membership.id,
+        amount: 3000,
+        status: 'DISPUTED',
+        paymentMethod: 'STRIPE',
+        disputedAmount: 3000,
+      },
+    });
+
+    const bookRes = await request(app.getHttpServer()).post(`/v1/classes/${classWaiverGated.id}/book`).set('Authorization', `Bearer ${tokenStudentB}`).send({});
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const afterBook = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(afterBook.classesRemaining).toBe(2);
+
+    const cancelRes = await request(app.getHttpServer()).patch(`/v1/bookings/${bookRes.body.id}/cancel`).set('Authorization', `Bearer ${tokenStudentB}`);
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.status).toBe('CANCELLED');
+    // Still REFUNDED — the freeze only withholds the credit-restore ACTION
+    // (restoreCredit's own comment explains why refundResolution itself isn't
+    // repurposed to reflect this), not the cutoff-driven resolution field.
+    expect(cancelRes.body.refundResolution).toBe('REFUNDED');
+
+    const afterCancel = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(afterCancel.classesRemaining).toBe(2); // NOT restored — frozen while disputed
+
+    await superuser.transaction.delete({ where: { id: transaction.id } });
+    await superuser.paymentAccount.delete({ where: { id: paymentAccount.id } });
+  });
+
   // ---------------------------------------------------------------------------
   // Guardian-on-behalf-of booking (Phase 40).
   // ---------------------------------------------------------------------------

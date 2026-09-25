@@ -1,14 +1,32 @@
 import { Logger } from '@nestjs/common';
-import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { Prisma } from '@prisma/client';
+import { InjectQueue, OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job, Queue } from 'bullmq';
+import { Prisma, Transaction, FranchiseFeeCharge, PlatformCharge } from '@prisma/client';
 import Stripe from 'stripe';
 import { randomUUID } from 'crypto';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../payments/stripe-client.service';
-import { STRIPE_WEBHOOK_PROCESSING_QUEUE } from './queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE } from './queue.constants';
+import { NotificationFanoutJobData } from './notification-fanout.types';
+import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
+
+/**
+ * Decision 111/112 — the three real, external-facing side effects a
+ * `charge.dispute.*` webhook can produce: a School Owner/Manager or Franchise
+ * Owner notification, a Membership Subscription cancellation on a lost dispute,
+ * and (Decision 112) a chargeback-pattern-restriction check when a NEW lost
+ * dispute is recorded. Returned by dispatch()/handleChargeDispute() rather than
+ * carried out inline — see process()'s own comment for why these only ever run
+ * AFTER the DB transaction they're derived from has actually committed, never
+ * from inside it.
+ */
+type DisputeSideEffects = {
+  notifications: NotificationFanoutJobData[];
+  subscriptionCancellations: { connectedAccountId: string; subscriptionId: string }[];
+  chargebackPatternCheckStudentIds: string[];
+};
 
 /**
  * Consumes the `stripe-webhook-processing` queue — the dedup+handling half of Spec
@@ -30,9 +48,16 @@ type WebhookJobData = { stripeEventId: string; eventType: string; objectId: stri
  * **Phase 9 is the first real handler** — Phase 8 shipped this as a deliberate no-op
  * logger with no per-event-type branching at all. Structured as specific-case-plus-
  * safe-default, not an exhaustive enumeration: Stripe delivers event types this
- * phase doesn't name a handler for (charge.dispute.*, customer.subscription.updated,
- * invoice.paid — see below), and the safe default is exactly Phase 8's old
- * behavior (dedup, log, return), so an unhandled type is inert, never a crash.
+ * codebase doesn't name a handler for (customer.subscription.updated — see below),
+ * and the safe default is exactly Phase 8's old behavior (dedup, log, return), so
+ * an unhandled type is inert, never a crash.
+ *
+ * **Decision 111 — charge.dispute.created/updated/closed are real handlers now**,
+ * no longer the safe default. See handleChargeDispute's own comment for the full
+ * account (Decision 55's confirmed contract: idempotent status-driven processing
+ * across Transaction/FranchiseFeeCharge/PlatformCharge, Membership force-Expiry +
+ * Subscription cancellation on a lost Membership-purchase dispute, notification
+ * routed by who's financially exposed).
  *
  * **Ordering fix**: Phase 8's own header comment flagged a real ordering gap — the
  * dedup INSERT committed before the (then nonexistent) handler logic ran, so a
@@ -50,6 +75,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   constructor(
     private readonly prismaJobs: PrismaJobsService,
     private readonly stripeClient: StripeClientService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
+    @InjectQueue(CHARGEBACK_PATTERN_RESTRICTION_QUEUE) private readonly chargebackPatternRestrictionQueue: Queue,
   ) {
     super();
   }
@@ -88,13 +115,34 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           `${eventType} for object ${objectId} (event ${stripeEventId}) arrived with no stripeAccountId on the job payload — cannot fetch its Invoice, refusing to silently mark this event processed.`,
         );
       }
-      invoice = await this.stripeClient.scopedClient(stripeAccountId).invoices.retrieve(objectId);
+      // Decision 111 — `expand: ['payments']` added so handleInvoicePaid can
+      // capture the PaymentIntent id behind this Invoice (see that method's own
+      // comment for why this is the only reachable correlator path).
+      invoice = await this.stripeClient.scopedClient(stripeAccountId).invoices.retrieve(objectId, { expand: ['payments'] });
     }
 
+    // Decision 111 — same "pre-fetch outside the transaction" discipline as the
+    // invoice fetch above, for the identical reason (an external Stripe API call
+    // has no place holding a DB transaction open): the queue payload's `objectId`
+    // for a charge.dispute.* event is the Dispute's OWN id (payments.service.ts's
+    // handleIncomingWebhook sets objectId = event.data.object.id uniformly), so
+    // the full Dispute object — in particular its `payment_intent` correlator —
+    // has to be fetched here, exactly like the Invoice fetch above. Unlike
+    // invoice.paid/invoice.payment_failed, a MISSING `stripeAccountId` here is the
+    // EXPECTED case, not an anomaly: a platform-billed (PlatformCharge) dispute
+    // has no connected account at all, so platformClient() is used instead of
+    // throwing.
+    let dispute: Stripe.Dispute | undefined;
+    if (eventType === 'charge.dispute.created' || eventType === 'charge.dispute.updated' || eventType === 'charge.dispute.closed') {
+      const client = stripeAccountId ? this.stripeClient.scopedClient(stripeAccountId) : this.stripeClient.platformClient();
+      dispute = await client.disputes.retrieve(objectId);
+    }
+
+    let sideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
     try {
       await this.prismaJobs.$transaction(async (tx) => {
         await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
-        await this.dispatch(tx, eventType, objectId, stripeEventId, invoice);
+        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute);
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
@@ -102,6 +150,62 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         return;
       }
       throw err;
+    }
+
+    // Decision 111 — a dispute's own notification/Subscription-cancellation side
+    // effects are carried out ONLY here, after the transaction above has actually
+    // committed, never from inside dispatch()/handleChargeDispute(). Neither
+    // BullMQ (Redis) nor Stripe's own API participates in the Postgres
+    // transaction, so performing either one before the transaction is known to
+    // have committed would risk a real notification/cancellation for a DB write
+    // that then rolled back.
+    //
+    // FLAGGED, not fully closed: a process crash in the narrow window between the
+    // transaction committing and this code running would still lose these side
+    // effects permanently — the dedup row committed above means a BullMQ retry of
+    // this same event would just see "already processed" (the catch block above)
+    // and skip straight past this code, never re-attempting it. Same class of
+    // narrow, documented, out-of-scope gap FranchiseFeesService.refund()'s own
+    // comment already accepts for an analogous post-Stripe-call reconciliation
+    // window, not solved here either. A failure in the loop/enqueue below is
+    // caught and logged rather than thrown for the identical reason: letting it
+    // propagate would mark this BullMQ job failed and trigger a retry, but that
+    // retry can never reach this code again either (same dedup-row blocker) — so
+    // throwing here would only turn a real failure into a *second*, misleading
+    // "permanently failed" alarm from onFailed, not a genuine chance to recover.
+    try {
+      for (const cancellation of sideEffects.subscriptionCancellations) {
+        await this.stripeClient.scopedClient(cancellation.connectedAccountId).subscriptions.cancel(cancellation.subscriptionId);
+      }
+      if (sideEffects.notifications.length > 0) {
+        await this.notificationFanoutQueue.addBulk(
+          sideEffects.notifications.map((notification) => ({
+            name: 'notify',
+            data: notification,
+            opts: { jobId: notification.notificationId, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } },
+          })),
+        );
+      }
+      // Decision 112 — one check per NEWLY-recorded lost dispute (never more than
+      // one entry in this array per event: handleChargeDispute() correlates a
+      // dispute to at most one Transaction). jobId keyed on (stripeEventId,
+      // studentId) so a genuine BullMQ redelivery of THIS job (not the outer
+      // Stripe event, which is already deduped above) is a safe no-op, matching
+      // every other job in this file's own jobId convention.
+      if (sideEffects.chargebackPatternCheckStudentIds.length > 0) {
+        await this.chargebackPatternRestrictionQueue.addBulk(
+          sideEffects.chargebackPatternCheckStudentIds.map((studentId) => ({
+            name: 'check',
+            data: { studentId } satisfies ChargebackPatternRestrictionJobData,
+            opts: { jobId: `chargeback-check-${stripeEventId}-${studentId}`, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } },
+          })),
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Stripe event ${stripeEventId} (${eventType}) — DB write committed but a post-commit side effect (Subscription cancellation, notification fan-out, or chargeback-pattern check) failed and cannot be retried (the dedup row already committed). Needs manual follow-up.`,
+        err as Error,
+      );
     }
   }
 
@@ -138,17 +242,19 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     objectId: string,
     stripeEventId: string,
     invoice: Stripe.Invoice | undefined,
-  ): Promise<void> {
+    dispute: Stripe.Dispute | undefined,
+  ): Promise<DisputeSideEffects> {
+    const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
     switch (eventType) {
       case 'payment_intent.succeeded':
         await this.handlePaymentIntentSucceeded(tx, objectId);
-        return;
+        return noSideEffects;
       case 'payment_intent.payment_failed':
         await this.handlePaymentIntentFailed(tx, objectId);
-        return;
+        return noSideEffects;
       case 'customer.subscription.deleted':
         await this.handleSubscriptionDeleted(tx, objectId);
-        return;
+        return noSideEffects;
       // Phase 16b-ii — real handlers, no longer safe-default no-ops. Decision
       // 6's own "invoice.paid does NOT create a Membership" reasoning (still
       // true, unchanged) was never a blanket "invoice.paid has no role" —
@@ -176,19 +282,25 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         } else {
           await this.handleInvoicePaymentFailed(tx, invoice);
         }
-        return;
-      // Safe defaults — see this file's own header comment for why each of these
-      // stays log-only this phase rather than a guessed handler:
-      //  - customer.subscription.updated: nothing built yet reacts differently to
-      //    past_due vs Active beyond what .deleted already covers on cancellation.
-      //  - charge.dispute.*: Decision 55's real handling exists to freeze
-      //    refund/credit-restore, neither built yet.
-      case 'customer.subscription.updated':
+        return noSideEffects;
+      // Decision 111 — real handler, no longer a safe-default no-op. See
+      // handleChargeDispute's own comment for the full account.
       case 'charge.dispute.created':
       case 'charge.dispute.updated':
       case 'charge.dispute.closed':
+        // Same "guaranteed set, defensive backstop only" reasoning as the
+        // Invoice guard above — process() throws first if it couldn't fetch one.
+        if (!dispute) {
+          throw new Error(`dispatch() reached ${eventType} (event ${stripeEventId}) with no Dispute — this should be unreachable; see process()'s own guard.`);
+        }
+        return this.handleChargeDispute(tx, dispute, stripeEventId);
+      // Safe default — see this file's own header comment for why this stays
+      // log-only: nothing built yet reacts differently to past_due vs Active
+      // beyond what customer.subscription.deleted already covers on cancellation.
+      case 'customer.subscription.updated':
       default:
         this.logger.log(`Stripe event ${stripeEventId} (${eventType}) received and recorded — no handler for this type yet.`);
+        return noSideEffects;
     }
   }
 
@@ -365,6 +477,13 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     if (!subscriptionId) {
       return; // a one-off, non-subscription invoice — never ours (franchise fees are always subscription-billed)
     }
+    // Decision 111 — captured here (requires `expand: ['payments']` on the fetch
+    // in process()) and stored on the row this method creates/updates, so a later
+    // charge.dispute.* webhook (payment_intent-keyed only) can find it. See
+    // extractPaymentIntentId's own comment for why this forward path — never a
+    // reverse Charge/PaymentIntent -> Invoice lookup — is the only one that exists
+    // in the installed Stripe API version.
+    const paymentIntentId = this.extractPaymentIntentId(invoice);
 
     const pending = await tx.franchiseFeeCharge.findFirst({
       where: { stripeSubscriptionId: subscriptionId, status: 'PENDING' },
@@ -394,7 +513,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       }
       await tx.franchiseFeeCharge.update({
         where: { id: pending.id },
-        data: { status: 'SUCCESSFUL', stripeInvoiceId: invoice.id },
+        data: { status: 'SUCCESSFUL', stripeInvoiceId: invoice.id, stripePaymentIntentId: paymentIntentId },
       });
       await tx.school.updateMany({
         where: { stripeFranchiseFeeSubscriptionId: subscriptionId, franchiseFeeSubscriptionStatus: { not: 'ACTIVE' } },
@@ -425,6 +544,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           status: 'SUCCESSFUL',
           stripeInvoiceId: invoice.id,
           stripeSubscriptionId: subscriptionId,
+          stripePaymentIntentId: paymentIntentId,
         },
       });
       await tx.school.updateMany({
@@ -459,6 +579,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         status: 'SUCCESSFUL',
         stripeInvoiceId: invoice.id,
         stripeSubscriptionId: subscriptionId,
+        stripePaymentIntentId: paymentIntentId,
       },
     });
 
@@ -542,6 +663,236 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         data: { platformSubscriptionStatus: 'PAST_DUE' },
       });
     }
+  }
+
+  /** Decision 111 — extracts the PaymentIntent id behind this Invoice, from its
+   * own `payments` list (requires `expand: ['payments']` on the fetch — see
+   * process()'s own comment). Verified against the installed Stripe SDK's own
+   * type definitions before writing this: neither Charge nor PaymentIntent
+   * carries a reverse `invoice` reference in this API version (an earlier draft
+   * of this phase's own design assumed one still existed), so this forward path
+   * (Invoice -> its own InvoicePayment -> payment_intent) is the only reachable
+   * one. Returns undefined for a `payment.type !== 'payment_intent'` entry (e.g.
+   * a Cash/Bank Out-of-Band payment recorded against the invoice) — nothing for
+   * a later dispute webhook to correlate against in that case, which is correct:
+   * Stripe only ever disputes a real card charge, never an Out-of-Band payment.
+   */
+  private extractPaymentIntentId(invoice: Stripe.Invoice): string | undefined {
+    const payment = invoice.payments?.data.find((p) => p.payment.type === 'payment_intent');
+    const ref = payment?.payment.payment_intent;
+    return typeof ref === 'string' ? ref : ref?.id;
+  }
+
+  /**
+   * Decision 111 (Decision 55's own confirmed contract) — unified handler for
+   * charge.dispute.created/updated/closed, driven entirely by `dispute.status`
+   * rather than by which of the three event names delivered it: Stripe fires all
+   * three identically shaped, and the entity-level consequence only ever depends
+   * on where the dispute currently stands, never on the event name itself.
+   *
+   * Correlation: `dispute.payment_intent` is the only correlator a Dispute object
+   * carries (verified against the installed SDK's own type definitions — Dispute
+   * has no Invoice id anywhere on it) — tried against Transaction, then
+   * FranchiseFeeCharge, then PlatformCharge's own stripePaymentIntentId in turn,
+   * mirroring handleSubscriptionDeleted's own established "try each correlator
+   * column in turn, genuine either/or" shape above (the three columns can never
+   * all match the same paymentIntentId — Decision 111's own migration adds a
+   * `@unique` constraint on each).
+   *
+   * Idempotency relies entirely on the outer dedup (ProcessedStripeEvent,
+   * process()'s own transaction) — each distinct Stripe event id reaches this
+   * method at most once, so no extra guard logic is needed here beyond what the
+   * Membership-force-expire branch's own `updateMany({ where: { status: 'ACTIVE' } })`
+   * already gives it (protecting a *different*, narrower race: the Membership
+   * reaching EXPIRED some other way in between).
+   *
+   * Returns the notification/Subscription-cancellation side effects to carry out
+   * — NOT performed here. See process()'s own comment for why both wait until
+   * this method's own DB writes have actually committed.
+   */
+  private async handleChargeDispute(tx: Prisma.TransactionClient, dispute: Stripe.Dispute, stripeEventId: string): Promise<DisputeSideEffects> {
+    const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
+    const paymentIntentId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id;
+    if (!paymentIntentId) {
+      this.logger.warn(`Dispute ${dispute.id} (status ${dispute.status}) has no payment_intent — cannot correlate to any charge. Ignoring.`);
+      return noSideEffects;
+    }
+
+    const transaction = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (transaction) {
+      return this.applyDisputeToTransaction(tx, transaction, dispute, stripeEventId);
+    }
+
+    const franchiseFeeCharge = await tx.franchiseFeeCharge.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (franchiseFeeCharge) {
+      return this.applyDisputeToFranchiseFeeCharge(tx, franchiseFeeCharge, dispute, stripeEventId);
+    }
+
+    const platformCharge = await tx.platformCharge.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (platformCharge) {
+      return this.applyDisputeToPlatformCharge(tx, platformCharge, dispute);
+    }
+
+    this.logger.warn(`Dispute ${dispute.id} (payment_intent ${paymentIntentId}, status ${dispute.status}) — no matching Transaction, FranchiseFeeCharge, or PlatformCharge found. Ignoring.`);
+    return noSideEffects;
+  }
+
+  /** `won` reverts the entity to SUCCESSFUL with no disputedAmount; `lost` sets
+   * DISPUTED with the Stripe-reported amount and IS the terminal outcome —
+   * Decision 55/the schema deliberately has no separate "chargeback lost" status
+   * beyond DISPUTED (TransactionStatus, reused directly by all three entities).
+   * Every other Dispute.status (needs_response, under_review, warning_*,
+   * prevented, or an unrecognized future value) is still genuinely in-progress —
+   * recorded identically to a loss at the entity level (DISPUTED + the current
+   * disputed amount) but without `lost`'s own further consequences.
+   */
+  private resolveDisputeOutcome(dispute: Stripe.Dispute): { status: 'SUCCESSFUL' | 'DISPUTED'; disputedAmount: number | null; lost: boolean } {
+    if (dispute.status === 'won') {
+      return { status: 'SUCCESSFUL', disputedAmount: null, lost: false };
+    }
+    return { status: 'DISPUTED', disputedAmount: dispute.amount, lost: dispute.status === 'lost' };
+  }
+
+  /** Transaction (Membership purchase) disputes — the only one of the three that
+   * carries Decision 55's further "lost" consequence: force-Expire the Membership
+   * and cancel its Stripe Subscription (SUBSCRIPTION-type plans only —
+   * stripeSubscriptionId is null for a one-time purchase, so there is nothing to
+   * cancel). Notifies the School Owner/Manager — the School's own PaymentAccount
+   * is the party whose money is actually at stake (Decision 55's "notification
+   * routed by who's financially exposed").
+   */
+  private async applyDisputeToTransaction(tx: Prisma.TransactionClient, transaction: Transaction, dispute: Stripe.Dispute, stripeEventId: string): Promise<DisputeSideEffects> {
+    const outcome = this.resolveDisputeOutcome(dispute);
+    // Decision 112 — disputeLostAt is the persisted "resolved as lost" signal
+    // chargeback-pattern-restriction counts against (status=DISPUTED alone can't
+    // distinguish a loss from a still-open dispute). Set the instant a loss is
+    // recorded, cleared back to null on the rare reversal to won, left untouched
+    // (`undefined`, no-op in Prisma's data object) for every other in-progress
+    // status — it isn't resolved yet either way.
+    const disputeLostAt = outcome.lost ? new Date() : outcome.status === 'SUCCESSFUL' ? null : undefined;
+    await tx.transaction.update({ where: { id: transaction.id }, data: { status: outcome.status, disputedAmount: outcome.disputedAmount, disputeLostAt } });
+
+    const subscriptionCancellations: DisputeSideEffects['subscriptionCancellations'] = [];
+    if (outcome.lost && transaction.membershipId) {
+      const membershipUpdate = await tx.membership.updateMany({ where: { id: transaction.membershipId, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
+      if (membershipUpdate.count > 0) {
+        this.logger.log(`Dispute ${dispute.id} lost — Membership ${transaction.membershipId} force-Expired (Decision 55).`);
+        const membership = await tx.membership.findUnique({ where: { id: transaction.membershipId }, select: { stripeSubscriptionId: true } });
+        if (membership?.stripeSubscriptionId) {
+          // scopedClient(), not platformClient() — this Subscription was created
+          // on the School's own connected account (PaymentsService.subscribe()'s
+          // own Direct-charge pattern, Decision 86), never the platform account.
+          const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: transaction.schoolId } });
+          if (paymentAccount?.stripeConnectedAccountId) {
+            subscriptionCancellations.push({ connectedAccountId: paymentAccount.stripeConnectedAccountId, subscriptionId: membership.stripeSubscriptionId });
+          } else {
+            this.logger.error(
+              `Dispute ${dispute.id} — Membership ${transaction.membershipId}'s Subscription ${membership.stripeSubscriptionId} could not be canceled: School ${transaction.schoolId} has no PaymentAccount with a connected Stripe account.`,
+            );
+          }
+        }
+      }
+    }
+
+    const ownerGrants = await tx.roleGrant.findMany({
+      where: { schoolId: transaction.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    return {
+      notifications: ownerGrants.map((grant) => this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, 'Membership payment')),
+      subscriptionCancellations,
+      // Decision 112 — only on a NEWLY-recorded loss (never on a redelivery of an
+      // already-lost dispute, since disputeLostAt is set unconditionally above
+      // regardless of its previous value — but the outer ProcessedStripeEvent
+      // dedup already guarantees this method runs at most once per real Stripe
+      // event, so "newly recorded" and "this method ran" are the same thing here).
+      chargebackPatternCheckStudentIds: outcome.lost ? [transaction.studentId] : [],
+    };
+  }
+
+  /** FranchiseFeeCharge disputes — no further forced consequence beyond recording
+   * the outcome (nothing in Decision 55 or the schema implies an equivalent
+   * forced action here the way a lost Membership-purchase dispute gets one).
+   * Notifies the Franchise Owner — the Franchise's own PaymentAccount is the
+   * party financially exposed for this relationship.
+   */
+  private async applyDisputeToFranchiseFeeCharge(
+    tx: Prisma.TransactionClient,
+    charge: FranchiseFeeCharge,
+    dispute: Stripe.Dispute,
+    stripeEventId: string,
+  ): Promise<DisputeSideEffects> {
+    const outcome = this.resolveDisputeOutcome(dispute);
+    await tx.franchiseFeeCharge.update({ where: { id: charge.id }, data: { status: outcome.status, disputedAmount: outcome.disputedAmount } });
+
+    const ownerGrants = await tx.roleGrant.findMany({
+      where: { franchiseId: charge.franchiseId, role: 'FRANCHISE_OWNER', revokedAt: null },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    return {
+      notifications: ownerGrants.map((grant) => this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, 'franchise fee charge')),
+      subscriptionCancellations: [],
+      // Decision 68/112 is Student-scoped (Membership purchase disputes only) —
+      // a FranchiseFeeCharge dispute has no Student to check.
+      chargebackPatternCheckStudentIds: [],
+    };
+  }
+
+  /** PlatformCharge disputes — ULTM8 itself is the financially exposed party, and
+   * there is no notification channel for that: Notification.userId only ever
+   * points at a tenant User, never AdminUser (Platform Admin is a structurally
+   * separate identity with no notification inbox anywhere in this codebase —
+   * confirmed by reading Notification's own schema.prisma model before writing
+   * this). A loud log line is the reasonable-minimum treatment, same class of
+   * "flagged for Architect review, not a fabricated notification path" Decision
+   * 95 already gave an analogous gap — deliberately NOT AuditLogService: that
+   * service's RecordAuditLogInput requires a real adminUserId actor (checked
+   * directly against its own interface before writing this), which a
+   * system/webhook-triggered event genuinely has none of.
+   */
+  private async applyDisputeToPlatformCharge(tx: Prisma.TransactionClient, charge: PlatformCharge, dispute: Stripe.Dispute): Promise<DisputeSideEffects> {
+    const outcome = this.resolveDisputeOutcome(dispute);
+    await tx.platformCharge.update({ where: { id: charge.id }, data: { status: outcome.status, disputedAmount: outcome.disputedAmount } });
+    this.logger.error(
+      `PlatformCharge ${charge.id} (School ${charge.schoolId ?? '-'} / Franchise ${charge.franchiseId ?? '-'}) disputed — Stripe status ${dispute.status}, amount ${dispute.amount} ${dispute.currency}. ` +
+        "No Platform Admin notification channel exists for this — see this method's own comment. Needs manual review.",
+    );
+    return { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
+  }
+
+  /** One notification per event per recipient, keyed by (stripeEventId, userId)
+   * so `created`/`updated`/`closed` for the SAME dispute (Dispute.id stays
+   * constant across all three) each get their own delivery rather than deduping
+   * against each other via BullMQ's own jobId mechanism — `dispute.id` alone
+   * would have collided a dispute's opening notification with its closing one.
+   */
+  private buildDisputeNotification(
+    userId: string,
+    dispute: Stripe.Dispute,
+    outcome: { status: 'SUCCESSFUL' | 'DISPUTED'; disputedAmount: number | null; lost: boolean },
+    stripeEventId: string,
+    chargeLabel: string,
+  ): NotificationFanoutJobData {
+    const amount = this.formatDisputeAmount(dispute);
+    const title = outcome.lost ? 'Payment dispute lost' : dispute.status === 'won' ? 'Payment dispute resolved' : 'Payment dispute opened';
+    const body = outcome.lost
+      ? `A disputed ${chargeLabel} of ${amount} was lost — the charge is no longer considered paid.`
+      : dispute.status === 'won'
+        ? `A disputed ${chargeLabel} of ${amount} was resolved in your favor.`
+        : `A ${chargeLabel} of ${amount} has been disputed by the payer (status: ${dispute.status}).`;
+    return {
+      notificationId: `dispute-${stripeEventId}-${userId}`,
+      userId,
+      title,
+      body,
+      type: 'PAYMENT_DISPUTE',
+    };
+  }
+
+  private formatDisputeAmount(dispute: Stripe.Dispute): string {
+    return `${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`;
   }
 
   @OnWorkerEvent('failed')

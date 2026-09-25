@@ -21,3 +21,10 @@ export const NOTIFICATION_FANOUT_QUEUE = 'notification-fanout';
 // standing Subscription exists" pass — see the processor's own comment for why
 // one job covers both rather than splitting them.
 export const FRANCHISE_FEE_USAGE_REPORTING_QUEUE = 'franchise-fee-usage-reporting';
+// Decision 68/112 — the confirmed job name, quoted directly from
+// skills/ultm8-domain-rules/SKILL.md §9: "A platform-wide
+// `chargeback-pattern-restriction` background job counts a Student's lost
+// Stripe disputes... across every School the Student holds a RoleGrant at."
+// Event-triggered (enqueued by stripe-webhook-processing on a newly-lost
+// dispute), not a periodic sweep — see Decision 112's own reasoning.
+export const CHARGEBACK_PATTERN_RESTRICTION_QUEUE = 'chargeback-pattern-restriction';

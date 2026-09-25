@@ -48,10 +48,10 @@ automatic trigger by design. See §3.
 
 | Track | State |
 |---|---|
-| **Track A** — backend + school-portal + platform-admin | 54 phases shipped or in flight. One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
+| **Track A** — backend + school-portal + platform-admin | 54+ phases shipped or in flight, plus Decision 111/112 Phase A + Phase B (Stripe dispute handling + chargeback-pattern-restriction, this branch, both done). One PR open (#73, Phase 52 QR-display screen, green). 1 confirmed-scope module still fully unbuilt (`MobileAppPublishingModule`, genuinely blocked). `SubscriptionPlansModule` core shipped (Phase 54); its own admin UI + whiteLabelApp entitlement remain. Guardian consent UI remains the one designed-but-unscreened gap. |
 | **Track B** — Student mobile app | 10 commits on an unmerged branch, never PR'd, **34 phases behind master**. Zero test coverage. Foundation/Booking/Notifications(read)/Rank(read)/Membership(non-Stripe) built and verified; Payment UI, Waiver signing, Guardian screens, QR scanning, white-label, and offline are all still unbuilt. |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6). First-pass Dockerfile, Terraform for the full confirmed stack, a manual/gated CD pipeline skeleton, and backup/DR + APM + NFR-gap docs now exist (`apps/api/Dockerfile`, `infra/terraform/`, `.github/workflows/deploy.yml`, `docs/ops/`) — **still nothing is provisioned or running**: no AWS account/credentials exist in this environment, `terraform apply` has never been run, and CI remains test-only (deploy is manual-dispatch only, by design). |
-| **Open decisions** | 38 post-spec decisions logged (Decision 107 added, closing Decision 71's attendance-mechanics gap), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
+| **Open decisions** | 40+ post-spec decisions logged (Decision 111: dispute-handling scope split into Phase A/B, chargeback threshold set at 2 lost disputes; Decision 112: Phase B's own implementation design, closing the "lost vs. still-open" schema gap and clarifying what the Cash/Bank-only restriction means in this codebase's purchase flow), most resolved but several carry real open follow-ups (86 non-UAE Stripe, 92 multi-Guardian consent, 94 discovery-role precedent, 97/98/99 Franchise lifecycle edges). Decision 76's Branch-UI gap was closed by Phase 53. `SubscriptionPlansModule`'s stale blocker citation is reconciled (Decision 106, merged via PR #71) and its backend core shipped on that strength (Phase 54, merged via PR #75). One tracking gap found (GDPR/data-residency named in the original spec handover, never carried into any living doc). |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
 and infra/deployment are the two biggest remaining bodies of work, and they're
@@ -81,7 +81,12 @@ core backend (Phase 54, merged via PR #75) — Plan CRUD, subscribe/cancel,
 `apps/platform-admin` through Translations authoring including Cognito auth, audit
 logging, cross-tenant read/write for Schools/Franchises/PaymentAccounts/AdminUsers,
 Stripe credential rotation, and read-only Support impersonation (with its RLS-scope
-hardening).
+hardening), and Decision 55/111's Stripe dispute-handling webhook mechanics (Phase
+A): real `charge.dispute.*` handlers across Transaction/FranchiseFeeCharge/
+PlatformCharge, refund/credit-restore frozen while disputed, Membership force-Expiry
++ Subscription cancellation on a loss, notification routed by who's financially
+exposed. Full detail: `docs/TRACK-A-ROADMAP.md`'s own "Payments — Stripe dispute
+handling" section.
 
 **Left, in priority order:**
 
@@ -342,7 +347,11 @@ mechanism/roll-call-mechanics rows this table used to carry are resolved — Dec
 106 (merged via PR #71) and Decision 107 (Phase 51, merged via PR #72) respectively;
 see Track A item 2 and the "Done" summary in §1 above. Branch's field-level settings
 screen (Decision 76) is resolved too, shipped in Phase 53 (merged via PR #74).
-`SubscriptionPlansModule` itself shipped too (Phase 54, merged via PR #75).
+`SubscriptionPlansModule` itself shipped too (Phase 54, merged via PR #75). Decision
+55's own dispute-handling contract — previously modeled in the schema with zero code
+behind it — is built too (Decision 111 Phase A, this branch), and so is Decision 68's
+own `chargeback-pattern-restriction` job (Decision 112 Phase B, this branch); see
+§1's "Done" summary.
 
 ### Real but narrower — worth a decision, doesn't block a whole feature
 - Late-cancellation fee **collection** mechanism unanswered (distinct from the

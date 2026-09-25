@@ -429,6 +429,83 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     expect(secondConfirmRes.body.membershipCreated).toBe(false);
   });
 
+  // ---------------------------------------------------------------------------
+  // Decision 68/112 — chargeback-pattern-restriction's own purchase gate.
+  // ---------------------------------------------------------------------------
+
+  it('a payment-restricted Student is rejected at a Stripe-provider School — 400, before any Stripe call — but CAN still purchase Cash/Bank-eligible', async () => {
+    // A separate, self-contained School+PaymentAccount(STRIPE)+Plan+Student — this
+    // file's own header comment explains why no Stripe purchase path is exercised
+    // anywhere else here (no live Stripe credentials); this test only needs the
+    // restriction guard to fire BEFORE MembershipsService.purchase() ever reaches
+    // PaymentsService.charge()/subscribe(), which it does (see that method's own
+    // comment) — no live Stripe call is actually made.
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School' } });
+    const stripePaymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+    });
+    const restrictedStudent = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `memberships-http-restricted-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'Restricted',
+        surname: 'Student',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+        paymentRestrictedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.createMany({
+      data: [
+        { id: randomUUID(), role: 'STUDENT', userId: restrictedStudent.id, schoolId: stripeSchool.id },
+        { id: randomUUID(), role: 'STUDENT', userId: restrictedStudent.id, schoolId: school.id },
+      ],
+    });
+    const tokenRestrictedStudent = signAccessToken(restrictedStudent, [
+      { role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null },
+      { role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null },
+    ]);
+
+    // tokenOwner has no grant at stripeSchool — seed the Plan directly instead of
+    // going through the create endpoint.
+    const stripePlan = await superuser.membershipPlan.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'CLASS_PACK', title: 'Stripe Pack', price: 3000, classesIncluded: 3 },
+    });
+
+    const rejectedRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${stripePlan.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenRestrictedStudent}`)
+      .send({});
+    expect(rejectedRes.status).toBe(400);
+    expect(rejectedRes.body.error.message).toContain('Cash/Bank Transfer');
+
+    // Same restricted Student, Cash/Bank-eligible plan at the main (BANK_TRANSFER)
+    // School fixture — untouched by the restriction.
+    const cashPlanRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Restricted Cash Pack', price: 1500, currency: 'gbp', classesIncluded: 1 });
+    expect(cashPlanRes.status).toBe(201);
+    membershipPlanIds.push(cashPlanRes.body.id);
+
+    const allowedRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${cashPlanRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenRestrictedStudent}`)
+      .send({});
+    expect(allowedRes.status).toBe(201);
+    expect(allowedRes.body.outcome).toBe('pending_confirmation');
+    transactionIds.push(allowedRes.body.transactionId);
+
+    await superuser.transaction.deleteMany({ where: { studentId: restrictedStudent.id } });
+    await superuser.membershipPlan.delete({ where: { id: stripePlan.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: restrictedStudent.id } });
+    await superuser.user.delete({ where: { id: restrictedStudent.id } });
+    await superuser.paymentAccount.delete({ where: { id: stripePaymentAccount.id } });
+    await superuser.school.delete({ where: { id: stripeSchool.id } });
+  });
+
   it('a Student (not School Owner/Manager) cannot confirm a Transaction — 403', async () => {
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)

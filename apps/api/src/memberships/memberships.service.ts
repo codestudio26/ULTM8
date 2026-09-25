@@ -281,11 +281,20 @@ export class MembershipsService {
     }
 
     const student = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { email: true } }),
+      tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { email: true, paymentRestrictedAt: true } }),
     );
     const currency = plan.currency ?? 'usd';
 
     if (paymentAccount.provider === 'STRIPE') {
+      // Decision 68/112 — "restricted to Cash/Bank Transfer payment methods only"
+      // means exactly this here: payment method is fixed per School
+      // (paymentAccount.provider), never a per-purchase Student choice, so there is
+      // no alternative to offer at a Stripe-only School — the purchase is blocked
+      // outright. A School already configured for Cash/Bank is untouched below;
+      // this Student was already paying that way there.
+      if (student.paymentRestrictedAt) {
+        throw new BadRequestException('This account is restricted to Cash/Bank Transfer payment methods, following a pattern of lost Stripe disputes — this School only accepts Stripe.');
+      }
       const transactionId = randomUUID();
       if (plan.type === 'SUBSCRIPTION') {
         // Payment is still collected fresh, client-side, via Stripe Elements
