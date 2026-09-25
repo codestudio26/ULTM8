@@ -596,6 +596,60 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     expect(studentRes.status).toBe(403);
   });
 
+  it('resolves the paying Student\'s name even after their only RoleGrant at this School is revoked (Decision 117 regression)', async () => {
+    // A fresh, throwaway Student — isolated from the shared fixtures above so
+    // revoking their RoleGrant here can't affect any other test in this suite.
+    // Simulates the real trigger: GuardiansService.withdrawConsent's BASELINE
+    // cascade revokes every active RoleGrant a Student holds, everywhere,
+    // synchronously. Before Decision 117's fix, the name join was a Prisma
+    // `include` on Transaction.student, relying on user_self_or_shared_school RLS —
+    // invisible once this grant is revoked, even though the caller (School Owner)
+    // remains fully authorized to see the Transaction row itself.
+    const revokedStudent = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `memberships-http-revoked-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'revoked-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const grant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: revokedStudent.id, schoolId: school.id },
+    });
+    const revokedStudentToken = signAccessToken(revokedStudent, [
+      { role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null },
+    ]);
+
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Revoked-Student Regression Pack', price: 1500, currency: 'gbp', classesIncluded: 1 });
+    expect(planRes.status).toBe(201);
+    membershipPlanIds.push(planRes.body.id);
+
+    const purchaseRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${revokedStudentToken}`)
+      .send({});
+    expect(purchaseRes.status).toBe(201);
+    transactionIds.push(purchaseRes.body.transactionId);
+
+    await superuser.roleGrant.update({ where: { id: grant.id }, data: { revokedAt: new Date() } });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/transactions`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(res.status).toBe(200);
+    const row = res.body.items.find((t: { studentId: string }) => t.studentId === revokedStudent.id);
+    expect(row).toBeDefined();
+    expect(row.studentFirstName).toBe('revoked-student');
+    expect(row.studentSurname).toBe('Tenant');
+  });
+
   // ---------------------------------------------------------------------------
   // RLS — the policy fix this phase's own verification pass found before build.
   // Direct Prisma, not HTTP — see this file's own header comment for why.

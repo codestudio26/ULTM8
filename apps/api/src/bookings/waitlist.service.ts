@@ -2,7 +2,9 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
@@ -32,6 +34,7 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
 export class WaitlistService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly guardiansService: GuardiansService,
@@ -293,9 +296,17 @@ export class WaitlistService {
     // that method's own comment for the corrected account of what this
     // actually defends against (CI caught an earlier, inaccurate version).
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const entries = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.waitlistEntry.findMany({ where: { classId }, orderBy: { position: 'asc' } }),
     );
+    // Resolved via PrismaAuthService (Decision 117) — see BookingsService.
+    // findAllForClass's identical comment for why an `include` here isn't safe.
+    const names = await resolveUserNames(this.prismaAuth, entries.map((e) => e.studentId));
+    return entries.map((e) => ({
+      ...e,
+      studentFirstName: names.get(e.studentId)?.firstName ?? '',
+      studentSurname: names.get(e.studentId)?.surname ?? '',
+    }));
   }
 
   // ---------------------------------------------------------------------------

@@ -113,10 +113,10 @@ export function DisciplineDetailPage() {
                 key: 'colour',
                 header: 'Colour',
                 render: (r) => (
-                  <>
-                    <Badge>{r.primaryColour}</Badge>
-                    {r.secondaryColour ? <Badge>{r.secondaryColour}</Badge> : null}
-                  </>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <ColourSwatch hex={r.primaryColour} />
+                    {r.secondaryColour ? <ColourSwatch hex={r.secondaryColour} /> : null}
+                  </div>
                 ),
               },
               { key: 'tiers', header: 'Stripe tiers', render: (r) => r.stripeTiers.length },
@@ -181,6 +181,29 @@ export function DisciplineDetailPage() {
         <EditRankModal disciplineId={disciplineId} skills={skills} rank={editingRank} onClose={() => setEditingRank(null)} />
       ) : null}
     </>
+  );
+}
+
+/** `primaryColour`/`secondaryColour` are free text (RankFormModal's own field is a
+ * plain TextField, not a color picker) — usually a CSS-recognized name ("White",
+ * "Black") but not guaranteed to be. An unparseable value is safe here: CSS silently
+ * ignores an invalid `background`, so the dot just renders empty rather than erroring. */
+function ColourSwatch({ hex }: { hex: string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          background: hex,
+          border: '1px solid var(--border-strong)',
+          flex: 'none',
+        }}
+      />
+      <span style={{ fontSize: 'var(--font-size-caption)', color: 'var(--text-secondary)' }}>{hex}</span>
+    </span>
   );
 }
 

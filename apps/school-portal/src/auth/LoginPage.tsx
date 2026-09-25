@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, TextField } from '@ultm8/ui';
+import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from './AuthContext';
 
@@ -13,6 +13,7 @@ export function LoginPage() {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,7 +21,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, passcode);
-      navigate(location.state?.from?.pathname ?? '/', { replace: true });
+      setLoggedIn(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
     } finally {
@@ -28,17 +29,36 @@ export function LoginPage() {
     }
   }
 
+  function handleContinue() {
+    navigate(location.state?.from?.pathname ?? '/', { replace: true });
+  }
+
+  if (loggedIn) {
+    return (
+      <AuthSuccessCard
+        title="Successful"
+        subtitle="You are successfully logged in to your account."
+        onContinue={handleContinue}
+      />
+    );
+  }
+
   return (
     <AuthCard
-      title="Log in"
+      title="Welcome back"
       subtitle="Email and your 6-digit passcode — that's your whole login (no separate password)."
-      footer={
-        <>
-          New School? <Link to="/register">Create an account</Link>
-          <br />
-          Forgot your passcode? <Link to="/forgot-passcode">Reset it</Link>
-        </>
+      rail={
+        <div className="ultm8-auth-rail">
+          <span className="ultm8-auth-rail__mark" aria-hidden="true">
+            U8
+          </span>
+          <div className="ultm8-auth-rail__copy">
+            <strong>ULTM8</strong>
+            Every belt, every booking, one place.
+          </div>
+        </div>
       }
+      footer={<>New School? <Link to="/register">Create an account</Link></>}
     >
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
@@ -51,9 +71,17 @@ export function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </Field>
-        <Field label="Passcode" htmlFor="login-passcode" hint="6 digits">
-          <TextField
-            type="password"
+        <Field
+          label="Passcode"
+          htmlFor="login-passcode"
+          hint="6 digits"
+          labelAction={
+            <Link to="/forgot-passcode" className="ultm8-field__label-action">
+              Forgot your passcode?
+            </Link>
+          }
+        >
+          <PasscodeField
             inputMode="numeric"
             pattern="\d{6}"
             maxLength={6}

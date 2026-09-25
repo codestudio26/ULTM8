@@ -274,6 +274,9 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       .set('Authorization', `Bearer ${tokenOwner}`);
     expect(ownerRes.status).toBe(200);
     expect(ownerRes.body.items.some((b: { studentId: string }) => b.studentId === studentA.id)).toBe(true);
+    const bookingA = ownerRes.body.items.find((b: { studentId: string }) => b.studentId === studentA.id);
+    expect(bookingA.studentFirstName).toBe('student-a');
+    expect(bookingA.studentSurname).toBe('Tenant');
 
     const staffRes = await request(app.getHttpServer())
       .get(`/v1/classes/${classBasic.id}/bookings`)
@@ -294,6 +297,54 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       .get(`/v1/classes/${classBasic.id}/bookings`)
       .set('Authorization', `Bearer ${tokenOutsider}`);
     expect(outsiderRes.status).toBe(404);
+  });
+
+  it('GET /classes/:id/bookings resolves the Student name even after their only RoleGrant at this School is revoked (Decision 117 regression)', async () => {
+    // Simulates the real trigger: GuardiansService.withdrawConsent's BASELINE
+    // cascade revokes every active RoleGrant a Student holds, everywhere,
+    // synchronously — a fresh, throwaway Student here so revoking it can't affect
+    // any other test in this suite. Before Decision 117's fix, the name join was a
+    // Prisma `include` on Booking.student, which relied on user_self_or_shared_school
+    // RLS — invisible once this grant is revoked, even though the caller remains
+    // fully authorized to see the Booking row itself (booking_staff_read doesn't
+    // depend on the target Student's own RoleGrant status at all).
+    const revokedStudent = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-revoked-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'revoked-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    const grant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: revokedStudent.id, schoolId: school.id },
+    });
+    const membership = await mkActiveMembership(revokedStudent.id, subscriptionPlanId, null);
+    const booking = await superuser.booking.create({
+      data: {
+        id: randomUUID(),
+        studentId: revokedStudent.id,
+        classId: classBasic.id,
+        schoolId: school.id,
+        sourceMembershipId: membership.id,
+        status: 'UPCOMING',
+      },
+    });
+    bookingIds.push(booking.id);
+
+    await superuser.roleGrant.update({ where: { id: grant.id }, data: { revokedAt: new Date() } });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/classes/${classBasic.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(res.status).toBe(200);
+    const row = res.body.items.find((b: { studentId: string }) => b.studentId === revokedStudent.id);
+    expect(row).toBeDefined();
+    expect(row.studentFirstName).toBe('revoked-student');
+    expect(row.studentSurname).toBe('Tenant');
   });
 
   it('GET /classes/:id/bookings — a single-grant Branch-scoped Staff member outside this Class\'s own Branch gets 404 (RLS hides the Class row itself, same as any cross-tenant read — ultm8-tenant-isolation §2); a genuinely empty Class returns 200 + []', async () => {
@@ -633,6 +684,9 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(ownerRes.body.items.some((e: { studentId: string; status: string }) => e.studentId === studentB.id && e.status === 'WAITING')).toBe(
       true,
     );
+    const entryB = ownerRes.body.items.find((e: { studentId: string }) => e.studentId === studentB.id);
+    expect(entryB.studentFirstName).toBe('student-b');
+    expect(entryB.studentSurname).toBe('Tenant');
 
     const staffRes = await request(app.getHttpServer())
       .get(`/v1/classes/${classFull.id}/waitlist`)
@@ -649,6 +703,46 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       .get(`/v1/classes/${classFull.id}/waitlist`)
       .set('Authorization', `Bearer ${tokenOutsider}`);
     expect(outsiderRes.status).toBe(404);
+  });
+
+  it('GET /classes/:id/waitlist resolves the Student name even after their only RoleGrant at this School is revoked (Decision 117 regression)', async () => {
+    // Same regression as the Bookings version above — see that test's own comment.
+    const revokedStudent = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-revoked-waitlist-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        firstName: 'revoked-waitlist-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    const grant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: revokedStudent.id, schoolId: school.id },
+    });
+    const entry = await superuser.waitlistEntry.create({
+      data: {
+        id: randomUUID(),
+        studentId: revokedStudent.id,
+        classId: classFull.id,
+        schoolId: school.id,
+        position: 999,
+        status: 'WAITING',
+      },
+    });
+    waitlistEntryIds.push(entry.id);
+
+    await superuser.roleGrant.update({ where: { id: grant.id }, data: { revokedAt: new Date() } });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/classes/${classFull.id}/waitlist`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(res.status).toBe(200);
+    const row = res.body.items.find((e: { studentId: string }) => e.studentId === revokedStudent.id);
+    expect(row).toBeDefined();
+    expect(row.studentFirstName).toBe('revoked-waitlist-student');
+    expect(row.studentSurname).toBe('Tenant');
   });
 
   it('GET /classes/:id/waitlist — a single-grant Branch-scoped Staff member outside this Class\'s own Branch gets 404, same RLS-driven reasoning as the Bookings version of this test above', async () => {

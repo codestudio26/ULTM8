@@ -4,13 +4,48 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useCreateInstructor, useInstructors, useUpdateInstructor, type InstructorResponse } from './instructorQueries';
+import {
+  useCreateInstructor,
+  useEligibleInstructorUsers,
+  useInstructors,
+  useUpdateInstructor,
+  type InstructorResponse,
+} from './instructorQueries';
 import { InstructorFormModal } from './InstructorFormModal';
+
+/** Generic silhouette placeholder — InstructorResponseDto.photoUrl is real and
+ * nullable, but no upload UI exists yet anywhere in this app, so every row is
+ * always this icon today. An icon for "no photo set" is honest; a stock photo
+ * standing in for a specific instructor would not be. */
+function AvatarPlaceholder() {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 32,
+        height: 32,
+        borderRadius: '50%',
+        background: 'var(--surface-0)',
+        border: '1px solid var(--border)',
+        color: 'var(--text-muted)',
+      }}
+    >
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M3 17c1.2-3.5 4-5 7-5s5.8 1.5 7 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
+}
 
 export function InstructorsPage() {
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useInstructors(schoolId);
   const { data: branchData } = useBranches(schoolId);
+  const { data: eligibleUsersData } = useEligibleInstructorUsers(schoolId);
   const createInstructor = useCreateInstructor(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<InstructorResponse | null>(null);
@@ -39,15 +74,18 @@ export function InstructorsPage() {
           <Table<InstructorResponse>
             rows={instructors}
             columns={[
-              { key: 'belt', header: 'Belt / ranking', render: (i) => i.beltRanking ?? '—' },
+              { key: 'id', header: 'Id', render: (i) => <code>{i.id.slice(0, 8)}</code> },
+              { key: 'image', header: '', render: () => <AvatarPlaceholder /> },
+              { key: 'name', header: 'Name', render: (i) => `${i.firstName} ${i.surname}`.trim() },
+              { key: 'ranking', header: 'Ranking', render: (i) => i.beltRanking ?? '—' },
               {
                 key: 'specializations',
                 header: 'Specializations',
                 render: (i) =>
                   i.specializations.length ? i.specializations.map((s, idx) => <Badge key={`${s}-${idx}`}>{s}</Badge>) : '—',
               },
-              { key: 'phone', header: 'Phone', render: (i) => i.phone ?? '—' },
               { key: 'experience', header: 'Years exp.', render: (i) => i.yearsOfExperience ?? '—' },
+              { key: 'phone', header: 'Phone', render: (i) => i.phone ?? '—' },
               {
                 key: 'branch',
                 header: 'Branch',
@@ -71,6 +109,7 @@ export function InstructorsPage() {
         <InstructorFormModal
           title="Add instructor"
           branches={branches}
+          eligibleUsers={eligibleUsersData?.items ?? []}
           submitting={createInstructor.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to

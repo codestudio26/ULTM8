@@ -28,7 +28,7 @@ export function FranchiseLookupPage() {
     <>
       <PageHeader title="Look up a Franchise" subtitle="Cross-tenant read, audited on every successful lookup." />
       <Card>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
           <Field label="Franchise ID" htmlFor="franchise-id-input">
             <TextField id="franchise-id-input" required value={idInput} onChange={(e) => setIdInput(e.target.value)} />
           </Field>
@@ -52,8 +52,8 @@ export function FranchiseLookupPage() {
           ) : null}
           {franchise.data ? (
             <Card>
-              <h3 style={{ marginTop: 0 }}>{franchise.data.name}</h3>
-              <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 16px' }}>
+              <p className="ultm8-subcard-title">{franchise.data.name}</p>
+              <dl className="ultm8-info-grid">
                 <dt>Address</dt>
                 <dd>{franchise.data.address ?? '—'}</dd>
                 <dt>Mobile</dt>
@@ -81,7 +81,7 @@ export function FranchiseLookupPage() {
 
           {franchise.data ? (
             <Card>
-              <h3 style={{ marginTop: 0 }}>Payment account</h3>
+              <p className="ultm8-subcard-title">Payment account</p>
               {paymentAccount.isLoading ? <Spinner /> : null}
               {paymentAccount.error instanceof ApiError && paymentAccount.error.status === 404 ? (
                 <p>No payment account configured for this Franchise.</p>

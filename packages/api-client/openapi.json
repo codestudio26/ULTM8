@@ -346,6 +346,41 @@
         ]
       }
     },
+    "/v1/schools/{id}/students": {
+      "get": {
+        "operationId": "SchoolsController_findStudents",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/join": {
       "post": {
         "operationId": "SchoolsController_join",
@@ -738,6 +773,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RoleGrantResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/role-grants/invite-candidate": {
+      "get": {
+        "operationId": "RoleGrantsController_lookupInviteCandidate",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "phone",
+            "required": false,
+            "in": "query",
+            "description": "E.164 format",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteCandidateResponseDto"
                 }
               }
             }
@@ -2623,6 +2710,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InstructorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructors/eligible-users": {
+      "get": {
+        "operationId": "InstructorsController_findEligibleUsers",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EligibleInstructorListResponseDto"
                 }
               }
             }
@@ -6128,6 +6250,47 @@
           }
         }
       },
+      "StudentSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "enrolledAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
+          "email",
+          "enrolledAt"
+        ]
+      },
+      "StudentListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentSummaryResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "JoinSchoolDto": {
         "type": "object",
         "properties": {
@@ -6155,6 +6318,12 @@
             ]
           },
           "userId": {
+            "type": "string"
+          },
+          "userFirstName": {
+            "type": "string"
+          },
+          "userSurname": {
             "type": "string"
           },
           "franchiseId": {
@@ -6195,6 +6364,8 @@
           "id",
           "role",
           "userId",
+          "userFirstName",
+          "userSurname",
           "grantedAt",
           "createdAt",
           "updatedAt"
@@ -6387,6 +6558,12 @@
           "userId": {
             "type": "string"
           },
+          "userFirstName": {
+            "type": "string"
+          },
+          "userSurname": {
+            "type": "string"
+          },
           "franchiseId": {
             "type": "string",
             "nullable": true
@@ -6421,6 +6598,8 @@
           "id",
           "role",
           "userId",
+          "userFirstName",
+          "userSurname",
           "grantedAt",
           "createdAt",
           "updatedAt"
@@ -6442,6 +6621,29 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "InviteCandidateResponseDto": {
+        "type": "object",
+        "properties": {
+          "found": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "surname": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "found"
         ]
       },
       "CreateFranchiseDto": {
@@ -7979,6 +8181,12 @@
           "userId": {
             "type": "string"
           },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
           "schoolId": {
             "type": "string"
           },
@@ -8022,6 +8230,8 @@
         "required": [
           "id",
           "userId",
+          "firstName",
+          "surname",
           "schoolId",
           "specializations",
           "createdAt",
@@ -8041,6 +8251,43 @@
             "type": "string",
             "nullable": true,
             "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "EligibleInstructorUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
+          "email"
+        ]
+      },
+      "EligibleInstructorListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibleInstructorUserDto"
+            }
           }
         },
         "required": [
@@ -9475,6 +9722,12 @@
           "studentId": {
             "type": "string"
           },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
           "classId": {
             "type": "string"
           },
@@ -9531,6 +9784,8 @@
         "required": [
           "id",
           "studentId",
+          "studentFirstName",
+          "studentSurname",
           "classId",
           "schoolId",
           "status",
@@ -9596,6 +9851,12 @@
           "studentId": {
             "type": "string"
           },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
           "classId": {
             "type": "string"
           },
@@ -9631,6 +9892,8 @@
         "required": [
           "id",
           "studentId",
+          "studentFirstName",
+          "studentSurname",
           "classId",
           "schoolId",
           "position",

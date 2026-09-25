@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
+import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
@@ -16,6 +18,7 @@ import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate
 export class TransactionsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
   ) {}
@@ -27,22 +30,24 @@ export class TransactionsService {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate(
-        (args) =>
-          tx.transaction.findMany({
-            ...args,
-            where: { schoolId },
-            include: { student: { select: { firstName: true, surname: true } } },
-          }),
-        cursor,
-        limit,
-      ),
+      cursorPaginate((args) => tx.transaction.findMany({ ...args, where: { schoolId } }), cursor, limit),
     );
-    // Flatten the joined User fields onto the row — matches
-    // TransactionResponseDto's flat convention rather than nesting `student`.
+    // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
+    // Transaction.student — an RLS-scoped include can silently fail to resolve the
+    // Student's own User row once their RoleGrant is revoked (e.g.
+    // GuardiansService.withdrawConsent's BASELINE cascade), even though this caller
+    // is fully authorized to see the Transaction row itself. Originally shipped as
+    // an `include` under Decision 109; retrofitted here — see Decision 117 for the
+    // full account (found while reviewing the same pattern applied to Bookings/
+    // Waitlist/RoleGrant in this same change). See resolveUserNames's own comment.
+    const names = await resolveUserNames(this.prismaAuth, page.items.map((t) => t.studentId));
     return {
       ...page,
-      items: page.items.map(({ student, ...t }) => ({ ...t, studentFirstName: student.firstName, studentSurname: student.surname })),
+      items: page.items.map((t) => ({
+        ...t,
+        studentFirstName: names.get(t.studentId)?.firstName ?? '',
+        studentSurname: names.get(t.studentId)?.surname ?? '',
+      })),
     };
   }
 }
