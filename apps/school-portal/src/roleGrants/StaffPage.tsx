@@ -21,13 +21,13 @@ import {
  *
  * The invite target has no RoleGrant at this School yet, so there's no shared-grant
  * path to look them up by — the form finds them by an exact email or phone match
- * first (GET .../role-grants/invite-candidate, Decision 115: exact match only, never
+ * first (GET .../role-grants/invite-candidate, Decision 116: exact match only, never
  * a name search), shows who was found, and only then sends the actual invite.
  *
  * There's no "list my School's staff" endpoint (see roleGrantQueries.ts's header
  * comment) — the lookup section below still looks up one User.id at a time, matching
  * exactly what GET /users/{userId}/role-grants actually supports. That response now
- * resolves the target's name (userFirstName/userSurname, Decision 113) so the lookup
+ * resolves the target's name (userFirstName/userSurname, Decision 114) so the lookup
  * results are attributable, not just a table of raw grant rows.
  */
 export function StaffPage() {

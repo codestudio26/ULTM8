@@ -332,7 +332,7 @@ export class SchoolsService {
    * School-wide roster, matching how Student enrollment itself has no Branch
    * dimension (SchoolsService.join() grants schoolId-only, no branchId).
    *
-   * Safe from the RLS name-join gap (Decision 116) by construction, same reasoning
+   * Safe from the RLS name-join gap (Decision 117) by construction, same reasoning
    * as InstructorsService.findEligibleInstructorUsers: the RoleGrant row being read
    * (schoolId, role STUDENT, revokedAt null) is itself the exact witness
    * user_self_or_shared_school's visibility check needs, so the joined User row is

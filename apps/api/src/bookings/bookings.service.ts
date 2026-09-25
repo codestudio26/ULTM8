@@ -365,7 +365,7 @@ export class BookingsService {
         limit,
       ),
     );
-    // Resolved via PrismaAuthService (Decision 116), not a Prisma `include` on
+    // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
     // Booking.student — an RLS-scoped include can silently fail to resolve the
     // Student's own User row once their RoleGrant is revoked (e.g.
     // GuardiansService.withdrawConsent's BASELINE cascade), even though this

@@ -42,7 +42,7 @@ export class InstructorsController {
     return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
   }
 
-  /** Candidate pool for InstructorFormModal's picker (Decision 114). */
+  /** Candidate pool for InstructorFormModal's picker (Decision 115). */
   @ApiOkResponse({ type: EligibleInstructorListResponseDto })
   @Get('schools/:schoolId/instructors/eligible-users')
   findEligibleUsers(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {

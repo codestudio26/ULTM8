@@ -299,11 +299,11 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(outsiderRes.status).toBe(404);
   });
 
-  it('GET /classes/:id/bookings resolves the Student name even after their only RoleGrant at this School is revoked (Decision 116 regression)', async () => {
+  it('GET /classes/:id/bookings resolves the Student name even after their only RoleGrant at this School is revoked (Decision 117 regression)', async () => {
     // Simulates the real trigger: GuardiansService.withdrawConsent's BASELINE
     // cascade revokes every active RoleGrant a Student holds, everywhere,
     // synchronously — a fresh, throwaway Student here so revoking it can't affect
-    // any other test in this suite. Before Decision 116's fix, the name join was a
+    // any other test in this suite. Before Decision 117's fix, the name join was a
     // Prisma `include` on Booking.student, which relied on user_self_or_shared_school
     // RLS — invisible once this grant is revoked, even though the caller remains
     // fully authorized to see the Booking row itself (booking_staff_read doesn't
@@ -705,7 +705,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(outsiderRes.status).toBe(404);
   });
 
-  it('GET /classes/:id/waitlist resolves the Student name even after their only RoleGrant at this School is revoked (Decision 116 regression)', async () => {
+  it('GET /classes/:id/waitlist resolves the Student name even after their only RoleGrant at this School is revoked (Decision 117 regression)', async () => {
     // Same regression as the Bookings version above — see that test's own comment.
     const revokedStudent = await superuser.user.create({
       data: {

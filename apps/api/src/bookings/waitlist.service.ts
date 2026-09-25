@@ -299,7 +299,7 @@ export class WaitlistService {
     const entries = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.waitlistEntry.findMany({ where: { classId }, orderBy: { position: 'asc' } }),
     );
-    // Resolved via PrismaAuthService (Decision 116) — see BookingsService.
+    // Resolved via PrismaAuthService (Decision 117) — see BookingsService.
     // findAllForClass's identical comment for why an `include` here isn't safe.
     const names = await resolveUserNames(this.prismaAuth, entries.map((e) => e.studentId));
     return entries.map((e) => ({

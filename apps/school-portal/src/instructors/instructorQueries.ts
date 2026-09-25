@@ -25,7 +25,7 @@ export function useInstructors(schoolId: string | null) {
   });
 }
 
-/** Candidate pool for InstructorFormModal's picker (Decision 114) — Users already
+/** Candidate pool for InstructorFormModal's picker (Decision 115) — Users already
  * holding an active INSTRUCTOR RoleGrant at this School. Unpaginated, matching the
  * backend endpoint. */
 export function useEligibleInstructorUsers(schoolId: string | null) {

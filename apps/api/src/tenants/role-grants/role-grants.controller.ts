@@ -15,7 +15,7 @@ import { InviteCandidateResponseDto } from './dto/invite-candidate-response.dto'
 // target, and there is no other way to discover one; flagged for Architect review, same
 // treatment as other reasonable-minimum additions in this codebase.
 //
-// No class-level path prefix (Decision 115) — the three users/:userId/... routes below
+// No class-level path prefix (Decision 116) — the three users/:userId/... routes below
 // keep their full paths explicit so schools/:schoolId/role-grants/invite-candidate can
 // live in this same controller; mechanical change only, no behavior change to those three.
 @ApiTags('role-grants')
@@ -55,7 +55,7 @@ export class RoleGrantsController {
     return this.roleGrantsService.revoke(user.sub, targetUserId, roleGrantId);
   }
 
-  /** Exact email/phone lookup ahead of an invite (Decision 115) — see
+  /** Exact email/phone lookup ahead of an invite (Decision 116) — see
    * RoleGrantsService.lookupInviteCandidate's own header comment. */
   @ApiOkResponse({ type: InviteCandidateResponseDto })
   @Get('schools/:schoolId/role-grants/invite-candidate')

@@ -270,9 +270,9 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(revoked.revokedAt).not.toBeNull();
   });
 
-  it('findAllForUser resolves the target name even when every one of their RoleGrants at this School is revoked (Decision 116 regression)', async () => {
+  it('findAllForUser resolves the target name even when every one of their RoleGrants at this School is revoked (Decision 117 regression)', async () => {
     // At this point verifiedInvitee holds no ACTIVE RoleGrant anywhere at schoolA —
-    // the one created and revoked in the test above. Before Decision 116's fix, the
+    // the one created and revoked in the test above. Before Decision 117's fix, the
     // name join was a Prisma `include` on RoleGrant.user, which relied on
     // user_self_or_shared_school RLS: invisible once the target holds zero active
     // RoleGrants overlapping the caller's own School, even though the caller
@@ -291,7 +291,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // GET .../role-grants/invite-candidate (Decision 115) — exact email/phone match
+  // GET .../role-grants/invite-candidate (Decision 116) — exact email/phone match
   // only, ahead of the invite form actually firing create(). verifiedInvitee has no
   // RoleGrant at schoolA at this point in the suite (any it held were revoked above),
   // proving this lookup does NOT depend on an existing shared grant the way

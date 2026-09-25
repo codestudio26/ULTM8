@@ -1100,7 +1100,35 @@ Logged while implementing Phase B directly, 22 Sep 2026, following the user's "G
 
 ---
 
-## Decision 113 — Booking/WaitlistEntry/RoleGrant name resolution: mechanical extension of Decision 109's embed pattern
+## Decision 113 — Track B, Slice 1: `apps/student` built as an Expo-managed React Native app; secure token storage via `expo-secure-store`
+
+**Date:** 16 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `docs/TRACK-B-STUDENT-APP-KICKOFF.md`'s two flagged pre-Task-1 decisions ("Expo vs. bare React Native" and "RN-appropriate secure token storage") — both explicitly called out there as real trade-offs not to default on silently.
+
+**Numbering note:** originally logged as "Decision 98" on the `track-b-student-app` branch, chosen independently while that branch was already diverged from `master` — by the time this branch was synced back (see the "Sync Track B onto master" PR), `master` had separately used 98 for an unrelated decision (School→Franchise linking, above) and continued on through 109, and three more decisions (110–112) existed in still-open PRs against `master`. Renumbered to the next free slot, 113, at sync time rather than disturbing any already-published number; nothing about the decision's own content, date, or reasoning changed. The three citations of "Decision 98" in `apps/student`'s own code/docs (`README.md`, `package.json`, `src/auth/secureTokenStore.ts`) were updated to cite 113 in the same sync.
+
+### Decision
+
+`apps/student` is built as an **Expo-managed workflow** React Native app, not bare RN. Reasoning, per the kickoff doc's own framing, confirmed with the user directly ("suggest me" → recommendation given → accepted): the per-School white-label rebuild pipeline (`packages/build-pipeline`, Spec 55 §5) is already a confirmed requirement, and EAS Build is the more direct path to it than a bare-RN native-module setup would be. The counter-consideration (bare RN's finer native-module control, relevant if QR-scanning/camera-consent handling end up needing something Expo's managed workflow doesn't expose) is not a concern yet in this walking-skeleton slice — QR check-in is explicitly out of scope here (see kickoff doc's "Explicitly not doing" list) and can force a reconsideration later if it ever becomes one.
+
+Token storage uses `expo-secure-store` (the RN-appropriate secure-storage primitive named as the Expo-path default in the kickoff doc), not `packages/auth`'s existing `TokenStore` (browser-only `sessionStorage`/`atob`) and not `AsyncStorage` (plain, insecure storage for a JWT). This inherits the kickoff doc's already-flagged, known UX limitation: `POST /auth/login` returns only `{ accessToken }`, no refresh-token endpoint exists yet (`[UNRESOLVED]`, `ultm8-nestjs-module` §7), so sessions force re-login at the access token's TTL (≤15 minutes) regardless of storage mechanism — not solved by this decision, carried forward as-is.
+
+### Toolchain check (before Task 1 started)
+
+Verified directly in the Track B working environment (16 Sep 2026): Node v22.20.0, npm 10.9.3 (matches the monorepo's pinned `packageManager`). No local `ANDROID_HOME`/`ANDROID_SDK_ROOT`/`adb` — confirming `apps/student/README.md`'s original Phase 1 note that a local Metro/Xcode/Android native toolchain isn't available in this environment. `npx expo` and `npx eas-cli` both resolve and run cleanly, which is what the Expo path actually depends on for this slice: `expo start` (Metro + Expo Go) for local dev/testing, and EAS Build's cloud service for anything needing a real native binary — neither requires a local Android SDK or Xcode install. This is a environment capability match in Expo's favor, not just a spec-alignment one.
+
+### What this does NOT resolve
+
+Camera/QR-scanning native-module needs (still `[UNRESOLVED]` per the kickoff doc and `ultm8-domain-rules` §12/§18) — if a future slice's QR check-in work finds Expo's managed workflow genuinely insufficient, that would be a new decision, not a silent reversal of this one. Also does not resolve the missing refresh-token endpoint (`ultm8-nestjs-module` §7) — still open, backend-track territory.
+
+### Recorded by
+
+Logged during a direct, live exchange with the user, 16 Sep 2026 — user asked "what's best? suggest me" on the Expo-vs-bare-RN question; the kickoff doc's own recommendation (Expo) was restated and accepted. Renumbered from 98 to 113 during the Track B/master sync (see numbering note above).
+
+---
+
+## Decision 114 — Booking/WaitlistEntry/RoleGrant name resolution: mechanical extension of Decision 109's embed pattern
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
@@ -1117,7 +1145,7 @@ No RLS/migration change for any of the three — `Booking`/`WaitlistEntry` alrea
 
 ### What this does NOT resolve
 
-`InstructorFormModal.tsx`'s candidate field (Decision 114) and `StaffPage.tsx`'s *invite* form (Decision 115) are structurally different — a picker over an unknown, not-yet-scoped candidate set rather than a lookup of an already-known id — and are recorded separately rather than folded into this mechanical extension.
+`InstructorFormModal.tsx`'s candidate field (Decision 115) and `StaffPage.tsx`'s *invite* form (Decision 116) are structurally different — a picker over an unknown, not-yet-scoped candidate set rather than a lookup of an already-known id — and are recorded separately rather than folded into this mechanical extension.
 
 ### Recorded by
 
@@ -1125,7 +1153,7 @@ Logged while extending Decision 109's pattern to the remaining known-id lookup s
 
 ---
 
-## Decision 114 — InstructorFormModal candidate picker: new `GET .../instructors/eligible-users` endpoint, scoped to active INSTRUCTOR RoleGrant holders
+## Decision 115 — InstructorFormModal candidate picker: new `GET .../instructors/eligible-users` endpoint, scoped to active INSTRUCTOR RoleGrant holders
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
@@ -1145,11 +1173,11 @@ Logged while designing the InstructorFormModal candidate-picker fix, 21 Sep 2026
 
 ---
 
-## Decision 115 — StaffPage invite-target lookup: exact email/phone match only, confirm before inviting, resolved directly with the user
+## Decision 116 — StaffPage invite-target lookup: exact email/phone match only, confirm before inviting, resolved directly with the user
 
 **Date:** 21 Sep 2026
 **Status:** Product-owner decision, made directly with the user
-**Resolves:** `StaffPage.tsx`'s invite form, previously a raw `userId` text field with no way to discover a target's id — structurally different from Decisions 113/114 above because the invite target has **no existing RoleGrant at this School yet**, so `user_self_or_shared_school` and every other lookup this session built genuinely cannot see them; the ordinary RLS-scoped read has nothing to scope through.
+**Resolves:** `StaffPage.tsx`'s invite form, previously a raw `userId` text field with no way to discover a target's id — structurally different from Decisions 114/115 above because the invite target has **no existing RoleGrant at this School yet**, so `user_self_or_shared_school` and every other lookup this session built genuinely cannot see them; the ordinary RLS-scoped read has nothing to scope through.
 
 ### Decision
 
@@ -1169,11 +1197,11 @@ Scoped directly with the user via a clarifying question during this session ("wh
 
 ---
 
-## Decision 116 — Name-resolution joins (Bookings/Waitlist/RoleGrant/Transactions) switched from a Prisma `include` to a `PrismaAuthService`-backed lookup, closing a real RLS visibility gap
+## Decision 117 — Name-resolution joins (Bookings/Waitlist/RoleGrant/Transactions) switched from a Prisma `include` to a `PrismaAuthService`-backed lookup, closing a real RLS visibility gap
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
-**Resolves:** a correctness gap found during a deep-dive review (requested by the user before committing Decisions 113–115) of the just-implemented Bookings/Waitlist/RoleGrant name-resolution joins — a gap that, on inspection, also already existed in the merged Decision 109 Transactions endpoint.
+**Resolves:** a correctness gap found during a deep-dive review (requested by the user before committing Decisions 114–116) of the just-implemented Bookings/Waitlist/RoleGrant name-resolution joins — a gap that, on inspection, also already existed in the merged Decision 109 Transactions endpoint.
 
 ### The gap
 
@@ -1183,11 +1211,11 @@ Prisma's `include` issues a *separate* query for the related row through the *sa
 
 This is concretely reachable, not theoretical: `GuardiansService.withdrawConsent` (`apps/api/src/guardians/guardians.service.ts:280`), on a BASELINE-tier consent withdrawal, runs `prismaJobs.roleGrant.updateMany({ where: { userId: existing.studentId, revokedAt: null }, data: { revokedAt: new Date() } })` — revoking every active RoleGrant a Student holds, everywhere, synchronously, in-request. Any Booking, WaitlistEntry, Transaction, or RoleGrant-lookup row referencing that Student/User from that point on hit this gap. The parent row itself stayed visible regardless — `booking_staff_read`/`rolegrant_school_manager_scope` key only off the *caller's* own active RoleGrant, never the target's — so this was specifically "the name breaks," not "the whole row disappears for a sensible reason."
 
-Confirmed NOT to affect Decision 114 (`findEligibleInstructorUsers`): its `where` clause already requires the exact RoleGrant row being read to have `revokedAt: null` at the caller's own School, which is itself the visibility witness `user_self_or_shared_school` needs. Confirmed NOT to affect Decision 115 (`lookupInviteCandidate`): it already uses `PrismaAuthService`, immune to this class of gap entirely.
+Confirmed NOT to affect Decision 115 (`findEligibleInstructorUsers`): its `where` clause already requires the exact RoleGrant row being read to have `revokedAt: null` at the caller's own School, which is itself the visibility witness `user_self_or_shared_school` needs. Confirmed NOT to affect Decision 116 (`lookupInviteCandidate`): it already uses `PrismaAuthService`, immune to this class of gap entirely.
 
 ### Decision
 
-Replaced the `include`-based join in `BookingsService.findAllForClass`, `WaitlistService.findAllForClass`, `RoleGrantsService.findAllForUser`, and — retrofitting the already-merged Decision 109 endpoint rather than leaving a known gap unaddressed — `TransactionsService.findAllForSchool`, with a shared helper, `resolveUserNames()` (`apps/api/src/common/prisma/resolve-user-names.ts`), that batch-resolves display names via `PrismaAuthService` — the same pre-tenant-context, SELECT-only-on-`User`, no-tenant-restriction connection `RoleGrantsService.create()` and Decision 115 already use. This makes name resolution depend on nothing but the row's own physical existence (User rows are never hard-deleted anywhere in this codebase today — verified via `grep -rn "user.delete" src`, zero matches), closing the gap completely rather than gracefully degrading it. Authorization is unaffected: the caller's right to see the parent row is still fully gated by the unchanged RLS policy + `assertStaffAtSchool`/`assertSchoolOwner` calls on the primary query; this only changes how the display name for an id the caller is already authorized to know about gets resolved, under the same minimum-fields-only (`id`, `firstName`, `surname`) discipline every other `PrismaAuthService` call site follows. `PrismaJobsService` was considered and ruled out — its `ultm8_jobs` Postgres role has no SELECT grant on `User` at all today (per its own header comment), which would have needed a new migration for a capability `PrismaAuthService` already has.
+Replaced the `include`-based join in `BookingsService.findAllForClass`, `WaitlistService.findAllForClass`, `RoleGrantsService.findAllForUser`, and — retrofitting the already-merged Decision 109 endpoint rather than leaving a known gap unaddressed — `TransactionsService.findAllForSchool`, with a shared helper, `resolveUserNames()` (`apps/api/src/common/prisma/resolve-user-names.ts`), that batch-resolves display names via `PrismaAuthService` — the same pre-tenant-context, SELECT-only-on-`User`, no-tenant-restriction connection `RoleGrantsService.create()` and Decision 116 already use. This makes name resolution depend on nothing but the row's own physical existence (User rows are never hard-deleted anywhere in this codebase today — verified via `grep -rn "user.delete" src`, zero matches), closing the gap completely rather than gracefully degrading it. Authorization is unaffected: the caller's right to see the parent row is still fully gated by the unchanged RLS policy + `assertStaffAtSchool`/`assertSchoolOwner` calls on the primary query; this only changes how the display name for an id the caller is already authorized to know about gets resolved, under the same minimum-fields-only (`id`, `firstName`, `surname`) discipline every other `PrismaAuthService` call site follows. `PrismaJobsService` was considered and ruled out — its `ultm8_jobs` Postgres role has no SELECT grant on `User` at all today (per its own header comment), which would have needed a new migration for a capability `PrismaAuthService` already has.
 
 Response shapes are unchanged (`studentFirstName`/`studentSurname`/`userFirstName`/`userSurname` stay non-nullable strings, falling back to `''` only in the — currently unreachable, given no User hard-delete path — case the batch lookup somehow misses an id; kept as defense-in-depth, not an expected outcome). No new migration, no RLS/schema change, no OpenAPI schema drift (confirmed via a full `export:openapi` → `generate` diff).
 
@@ -1197,11 +1225,11 @@ Whether `PrismaJobsService` should eventually be granted SELECT on `User` for ge
 
 ### Recorded by
 
-Found during a deep-dive review the user explicitly requested before committing Decisions 113–115 ("deep dive before commit and push"), traced through the actual migration SQL and service code rather than assumed; the user was given three options (defensive patch only / defensive patch + retrofit Transactions / ship as-is and log as follow-up) and asked instead for "the best possible solution" — read as authorizing the fuller `PrismaAuthService`-based fix across all four sites, implemented and logged 21 Sep 2026.
+Found during a deep-dive review the user explicitly requested before committing Decisions 114–116 ("deep dive before commit and push"), traced through the actual migration SQL and service code rather than assumed; the user was given three options (defensive patch only / defensive patch + retrofit Transactions / ship as-is and log as follow-up) and asked instead for "the best possible solution" — read as authorizing the fuller `PrismaAuthService`-based fix across all four sites, implemented and logged 21 Sep 2026.
 
 ---
 
-## Decision 117 — Student roster: new `GET /schools/{id}/students`, Staff-gated (not Owner-only)
+## Decision 118 — Student roster: new `GET /schools/{id}/students`, Staff-gated (not Owner-only)
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
@@ -1209,15 +1237,15 @@ Found during a deep-dive review the user explicitly requested before committing 
 
 ### Decision
 
-New `GET /schools/{id}/students` on `SchoolsController`/`SchoolsService.findAllStudentsForSchool`, returning every User holding an active `STUDENT` RoleGrant at that School (`id`, `firstName`, `surname`, `email`, `enrolledAt` — the RoleGrant's own `grantedAt`, not `User.createdAt`). Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { user: {...}, grantedAt: true } })` — the exact pattern Decision 114 (`findEligibleInstructorUsers`) already established for `INSTRUCTOR`. Safe from the Decision 116 RLS name-join gap by construction, same reasoning as Decision 114: the RoleGrant row being read is itself the `user_self_or_shared_school` visibility witness, so the joined `User` row is always resolvable — no `PrismaAuthService` lookup needed.
+New `GET /schools/{id}/students` on `SchoolsController`/`SchoolsService.findAllStudentsForSchool`, returning every User holding an active `STUDENT` RoleGrant at that School (`id`, `firstName`, `surname`, `email`, `enrolledAt` — the RoleGrant's own `grantedAt`, not `User.createdAt`). Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { user: {...}, grantedAt: true } })` — the exact pattern Decision 115 (`findEligibleInstructorUsers`) already established for `INSTRUCTOR`. Safe from the Decision 117 RLS name-join gap by construction, same reasoning as Decision 115: the RoleGrant row being read is itself the `user_self_or_shared_school` visibility witness, so the joined `User` row is always resolvable — no `PrismaAuthService` lookup needed.
 
-Gated on `TenantAuthorizationService.assertStaffAtSchool` (School Owner/Manager, Branch Staff, **or** Instructor — no `branchId` scoping, since Student enrollment itself has no Branch dimension) — deliberately broader than Decision 114's Owner-only gate, because seeing the roster is an ordinary read any Staff member needs, not an Owner-only write flow like granting the Instructor role is.
+Gated on `TenantAuthorizationService.assertStaffAtSchool` (School Owner/Manager, Branch Staff, **or** Instructor — no `branchId` scoping, since Student enrollment itself has no Branch dimension) — deliberately broader than Decision 115's Owner-only gate, because seeing the roster is an ordinary read any Staff member needs, not an Owner-only write flow like granting the Instructor role is.
 
 `apps/school-portal`: a new read-only `StudentsPage.tsx` (no create/edit — a Staff member doesn't create a Student profile directly; a Student joins via `SchoolsService.join()`, self-service or Guardian-on-behalf-of), added to the sidebar nav and router between Instructors and Classes.
 
 ### What this does NOT resolve
 
-Whether the roster should eventually show more than name/email/enrollment date (Membership status, current Rank, Guardian info for a minor) — deliberately kept to the minimum-fields precedent this codebase already uses elsewhere (Decision 114), not expanded speculatively. A per-Student detail page is a natural follow-up, not built here.
+Whether the roster should eventually show more than name/email/enrollment date (Membership status, current Rank, Guardian info for a minor) — deliberately kept to the minimum-fields precedent this codebase already uses elsewhere (Decision 115), not expanded speculatively. A per-Student detail page is a natural follow-up, not built here.
 
 ### Recorded by
 
@@ -1225,7 +1253,7 @@ Logged while auditing what's actually built vs. missing across ULTM8's frontend 
 
 ---
 
-## Decision 118 — Auth flow implemented for real: brand rail, passcode show/hide, success panel, segmented OTP input
+## Decision 119 — Auth flow implemented for real: brand rail, passcode show/hide, success panel, segmented OTP input
 
 **Date:** 22 Sep 2026
 **Status:** Two sub-decisions resolved directly with the user; the rest is a mechanical port of the already-approved mockup direction (`docs/design-mockup-notes.md`), not a new judgment call
@@ -1257,12 +1285,12 @@ Resolved directly with the user via two explicit questions (success-panel timing
 
 ---
 
-## Decision 119 — Remaining 13 mockups audited against real code; Instructor name-resolution gap closed
+## Decision 120 — Remaining 13 mockups audited against real code; Instructor name-resolution gap closed
 
 **Date:** 22 Sep 2026
-**Status:** Developer-level inference (the new `InstructorResponseDto.firstName`/`surname` fields, same pattern as Decision 116), flagged for Architect confirmation like every other same-shape fix this session — everything else in this entry is a mechanical audit result, not a judgment call
+**Status:** Developer-level inference (the new `InstructorResponseDto.firstName`/`surname` fields, same pattern as Decision 117), flagged for Architect confirmation like every other same-shape fix this session — everything else in this entry is a mechanical audit result, not a judgment call
 
-**Resolves:** the user asked to "update the rest of the pages too" after the auth-flow pass (Decision 118) — the remaining 13 pages flagged `mockup` in `docs/design-mockup-notes.md` (Instructors, Staff, Branches, Timetable, Classes & detail, Disciplines/Skills/Ranks, Membership Plans, Transactions, Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users/School lookup/Franchise lookup).
+**Resolves:** the user asked to "update the rest of the pages too" after the auth-flow pass (Decision 119) — the remaining 13 pages flagged `mockup` in `docs/design-mockup-notes.md` (Instructors, Staff, Branches, Timetable, Classes & detail, Disciplines/Skills/Ranks, Membership Plans, Transactions, Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users/School lookup/Franchise lookup).
 
 ### Approach
 
@@ -1270,12 +1298,12 @@ Five parallel research passes (one per page group) compared each page's current 
 
 ### 1. Instructors list — missing Id/avatar/Name columns, traced to a real backend gap
 
-`InstructorResponseDto` had no name field at all — verified, not guessed: `Class.instructorId`/`TimetableSlot.instructorId` are direct FKs into `User` (schema.prisma's own comment: "NOT a separate Instructor table"), and `ClassFormModal`'s/`TimetableSlotFormModal`'s instructor pickers were falling back to `beltRanking` text or a truncated id because there was nothing else to show. Fixed the same way Decision 116 fixed the identical class of gap for Bookings/Waitlist/RoleGrant/Transactions: `InstructorsService.findAllForSchool` now resolves `firstName`/`surname` via `resolveUserNames`/`PrismaAuthService`, added to `InstructorResponseDto`. This single backend fix unlocked three frontend fixes at once (all three already reuse the same `useInstructors` hook):
+`InstructorResponseDto` had no name field at all — verified, not guessed: `Class.instructorId`/`TimetableSlot.instructorId` are direct FKs into `User` (schema.prisma's own comment: "NOT a separate Instructor table"), and `ClassFormModal`'s/`TimetableSlotFormModal`'s instructor pickers were falling back to `beltRanking` text or a truncated id because there was nothing else to show. Fixed the same way Decision 117 fixed the identical class of gap for Bookings/Waitlist/RoleGrant/Transactions: `InstructorsService.findAllForSchool` now resolves `firstName`/`surname` via `resolveUserNames`/`PrismaAuthService`, added to `InstructorResponseDto`. This single backend fix unlocked three frontend fixes at once (all three already reuse the same `useInstructors` hook):
 - `InstructorsPage.tsx` — reordered to the Figma-confirmed column order (Id · avatar · Name · Ranking · Specializations · Experience · Phone · Branch · Actions), added a generic silhouette avatar placeholder (`photoUrl` is real/nullable but no upload UI exists anywhere yet, so an icon-for-no-photo is honest, not a fabricated photo).
 - `ClassFormModal.tsx`/`TimetableSlotFormModal.tsx` — instructor-picker dropdown now labeled by real name instead of belt/ranking text or a truncated id.
 - `ClassesPage.tsx` — added an Instructor column (matched on `instructor.userId === class.instructorId`, the same FK target), showing the resolved name.
 
-Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedicated Instructor profile, confirms the roster list resolves its name, then revokes its RoleGrant and confirms the name **still** resolves — proving this uses the RLS-immune `PrismaAuthService` path, not a plain `include` that Decision 116 already found breaks under exactly that condition.
+Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedicated Instructor profile, confirms the roster list resolves its name, then revokes its RoleGrant and confirms the name **still** resolves — proving this uses the RLS-immune `PrismaAuthService` path, not a plain `include` that Decision 117 already found breaks under exactly that condition.
 
 ### 2. Disciplines — Ranks table showed colour as plain text, not a swatch
 
@@ -1287,7 +1315,7 @@ Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedi
 
 ### 4. Everything else — confirmed already matching, nothing changed
 
-Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 116), Branches, Membership Plans, Transactions (its remaining "unimplemented" items were mockup items meant to be *excluded*, already correctly absent from real code), Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users page all already matched their mockups exactly — re-confirmed by direct comparison, not assumed unchanged.
+Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 117), Branches, Membership Plans, Transactions (its remaining "unimplemented" items were mockup items meant to be *excluded*, already correctly absent from real code), Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users page all already matched their mockups exactly — re-confirmed by direct comparison, not assumed unchanged.
 
 ### What this does NOT resolve (explicitly flagged, not decided here)
 
@@ -1304,15 +1332,15 @@ Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 1
 
 ### Recorded by
 
-Logged after the user asked to "update the rest of the pages too" following the auth-flow pass (Decision 118); five parallel research agents audited the remaining pages against their approved mockups, findings synthesized and implemented directly, 22 Sep 2026.
+Logged after the user asked to "update the rest of the pages too" following the auth-flow pass (Decision 119); five parallel research agents audited the remaining pages against their approved mockups, findings synthesized and implemented directly, 22 Sep 2026.
 
 ---
 
-## Decision 120 — Social/OAuth login is a confirmed V2 scope item, not excluded permanently
+## Decision 121 — Social/OAuth login is a confirmed V2 scope item, not excluded permanently
 
 **Date:** 22 Sep 2026
 **Status:** Approved by product owner — a scoping/roadmap decision, not a technical one
-**Resolves:** why Login's real code (and every other auth screen) has no Google/Facebook/Apple/Microsoft/Discord sign-in buttons even though the Figma reference shows them — flagged and excluded during the mockup-review pass and again when implementing Decision 118, on the grounds that no OAuth/social provider is confirmed anywhere in the spec (Decision 72: passcode is the *sole* login credential) and building it would mean inventing a whole auth capability, not a style choice.
+**Resolves:** why Login's real code (and every other auth screen) has no Google/Facebook/Apple/Microsoft/Discord sign-in buttons even though the Figma reference shows them — flagged and excluded during the mockup-review pass and again when implementing Decision 119, on the grounds that no OAuth/social provider is confirmed anywhere in the spec (Decision 72: passcode is the *sole* login credential) and building it would mean inventing a whole auth capability, not a style choice.
 
 ### Decision
 
@@ -1320,7 +1348,7 @@ Social/OAuth login (sign in via Google, Facebook, Apple, Microsoft, Discord, or 
 
 ### Effect
 
-- No code change from this decision alone — it confirms the *reasoning* already applied when the social-login buttons were excluded from `LoginPage.tsx`/`RegisterPage.tsx` (Decision 118) was correct, and converts "not confirmed, so excluded" into "confirmed as deferred, so excluded — with a known target version."
+- No code change from this decision alone — it confirms the *reasoning* already applied when the social-login buttons were excluded from `LoginPage.tsx`/`RegisterPage.tsx` (Decision 119) was correct, and converts "not confirmed, so excluded" into "confirmed as deferred, so excluded — with a known target version."
 - When V2 auth work actually starts, this needs its own real design/engineering pass, not a Figma-icon copy: which provider(s) specifically, how a socially-authenticated account reconciles with the existing email/phone + passcode identity model (a returning user signing in via Google needs to map to the same `User` row as their existing email-based account, not create a duplicate), and how/whether `AuthContext.tsx`'s current `login(email, passcode)`-only shape extends to support it. None of that is decided here — this decision only confirms the feature is planned and gives it a target version, not a design.
 
 ### Recorded by

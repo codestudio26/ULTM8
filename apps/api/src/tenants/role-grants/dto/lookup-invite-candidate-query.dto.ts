@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsPhoneNumber } from 'class-validator';
 
-/** Exact match only, email or phone — never a name search (Decision 115). At least one
+/** Exact match only, email or phone — never a name search (Decision 116). At least one
  * of the two is required; enforced in RoleGrantsService.lookupInviteCandidate (same
  * convention as CreateRoleGrantDto's branchId/BRANCH_STAFF cross-field check), since
  * class-validator has no direct decorator for "at least one of these two fields". */

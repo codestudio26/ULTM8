@@ -118,7 +118,7 @@ export class RoleGrantsService {
   }
 
   /**
-   * Exact email/phone match only, never a name search (Decision 115) — the invite
+   * Exact email/phone match only, never a name search (Decision 116) — the invite
    * target has no RoleGrant at this School yet, so user_self_or_shared_school can't
    * cover the read; this is a lookup-then-confirm step ahead of create(), which
    * remains untouched. Uses PrismaAuthService (see its own header comment), the same
@@ -162,7 +162,7 @@ export class RoleGrantsService {
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.roleGrant.findMany({ ...args, where: { userId: targetUserId } }), cursor, limit),
     );
-    // Resolved via PrismaAuthService (Decision 116), not a Prisma `include` on
+    // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
     // RoleGrant.user — an RLS-scoped include can silently fail to resolve the
     // target's own User row once ALL their RoleGrants at this School are revoked
     // (this endpoint deliberately still returns revoked rows), even though this

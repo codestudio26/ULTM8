@@ -253,7 +253,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   // ---------------------------------------------------------------------------
   // GET .../instructors (the roster list) resolves a real name per profile — and
   // keeps resolving it even after the profiled User's own RoleGrant is revoked,
-  // proving this uses PrismaAuthService (Decision 116's pattern), not a plain
+  // proving this uses PrismaAuthService (Decision 117's pattern), not a plain
   // RLS-scoped `include` that user_self_or_shared_school could silently break.
   // ---------------------------------------------------------------------------
 
@@ -460,7 +460,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // GET .../instructors/eligible-users (Decision 114) — the candidate pool for
+  // GET .../instructors/eligible-users (Decision 115) — the candidate pool for
   // InstructorFormModal's picker: Users holding an active INSTRUCTOR RoleGrant at
   // this School, i.e. exactly who assertValidInstructor would accept for create().
   // ---------------------------------------------------------------------------

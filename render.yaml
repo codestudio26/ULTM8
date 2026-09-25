@@ -1,0 +1,124 @@
+# Render Blueprint — provisions the apps/api staging backend (Postgres + Key
+# Value/Redis + the NestJS API) in one deploy, on Render's free tier (no card
+# required). Deploy via Render's dashboard: New + -> Blueprint -> select this
+# repo/branch -> Render reads this file and provisions everything below.
+#
+# No commands here run from apps/api's own directory (no `rootDir`) —
+# deliberately anchored at the repo root instead, since this is an npm
+# workspaces monorepo and `npm install` needs the root package.json/lockfile
+# to resolve correctly, even though apps/api itself has no @ultm8/* workspace
+# dependency of its own (checked: apps/api/package.json).
+#
+# Four env vars below are `sync: false` (DATABASE_URL_APP/_AUTH/_JOBS/
+# _DISCOVERY) rather than generated or hardcoded here — they need real
+# passwords for the scoped Postgres roles the app's own init migration
+# creates (ultm8_app/ultm8_auth/ultm8_jobs/ultm8_discovery), which are NOT
+# derivable from a superuser connection string alone. Committing real
+# passwords into this file would defeat the point of using strong ones —
+# Render prompts for `sync: false` values during Blueprint creation instead,
+# so they're entered once, in Render's own UI, never in git.
+#
+# Postgres is hosted on Supabase, not Render — Render's own free Postgres
+# has a hard 30-day-from-creation expiry regardless of usage, while
+# Supabase's free tier only pauses after 7 days of NO activity (reversible,
+# and never triggers as long as this stays in active use). `DATABASE_URL`
+# is `sync: false` below rather than `fromDatabase` for this reason — it
+# points at Supabase's connection string, entered directly in Render's UI.
+# The `databases:` block that would provision Render's own Postgres has
+# been removed deliberately (not just left unused) — no unused resource
+# left sitting on the account.
+
+databases: []
+
+services:
+  - name: ultm8-redis
+    type: keyvalue
+    plan: free
+    # FOUND ON REVIEW: `ipAllowList` is mandatory on a Key Value service (Render
+    # rejects the Blueprint without it), but an empty list is a valid value —
+    # verified against Render's own docs — and is the recommended setting for
+    # exactly this case ("No external access (internal only)"). The previous
+    # `0.0.0.0/0` entry wasn't a required workaround for the mandatory-field
+    # rule, it was the widest possible public exposure: it let anyone on the
+    # internet attempt a connection using the leaked connection string, not
+    # just Render's own private network. `ultm8-api` still reaches this over
+    # the private network regardless, via REDIS_URL/fromService below — that
+    # part of the original comment was correct, it just drew the wrong
+    # conclusion from it.
+    ipAllowList: []
+
+  - name: ultm8-api
+    type: web
+    runtime: node
+    plan: free
+    # FIXED: a plain `npm install` at repo root pulls in EVERY workspace's
+    # deps — including apps/student's Expo/React Native toolchain and
+    # apps/school-portal's Vite frontend, neither of which apps/api needs
+    # (confirmed: apps/api/package.json has zero @ultm8/* workspace
+    # dependencies). That full install hung for 3+ hours on Render's free
+    # build machine on the first real attempt. Scoped to just this workspace
+    # (+ root tooling) instead — still anchored at repo root, not `rootDir`,
+    # to avoid any ambiguity about npm's workspace-root detection when
+    # invoked from within a subdirectory.
+    buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
+    startCommand: node apps/api/dist/main.js
+    envVars:
+      # Superuser connection — Supabase's connection string, entered directly
+      # (see this file's header comment for why Postgres lives on Supabase,
+      # not Render). Used for `prisma migrate deploy` (run manually after
+      # first deploy) and by PrismaJobsService's own cross-role writes.
+      - key: DATABASE_URL
+        sync: false
+      # FIXED: Render's own Blueprint validator rejected `fromDatabase` here
+      # ("depends on non-existent DB: ultm8-redis") — `fromDatabase` only
+      # resolves against the top-level `databases:` list (Postgres). A
+      # `type: keyvalue` entry lives under `services:` instead, so it's
+      # referenced with `fromService`.
+      - key: REDIS_URL
+        fromService:
+          name: ultm8-redis
+          type: keyvalue
+          property: connectionString
+
+      # RLS-subject app roles — see this file's own header comment for why
+      # these can't be auto-derived. Fill in with the actual Postgres host
+      # Render shows you, plus the rotated passwords already generated for
+      # this deploy (not "changeme" — the migration's own dev-only default).
+      - key: DATABASE_URL_APP
+        sync: false
+      - key: DATABASE_URL_AUTH
+        sync: false
+      - key: DATABASE_URL_JOBS
+        sync: false
+      - key: DATABASE_URL_DISCOVERY
+        sync: false
+
+      # Auth secrets — generated fresh per deploy, never reused across
+      # environments (matches this repo's own devcontainer convention of
+      # dev-only dummy values, just real ones here instead).
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: PLATFORM_ADMIN_JWT_SECRET
+        generateValue: true
+      - key: PLATFORM_ADMIN_JWT_TTL
+        value: 5m
+
+      # Stripe — dummy values, matching CI's own convention (Stripe/Slice 4b
+      # is deferred past V1; nothing here actually calls Stripe yet).
+      - key: STRIPE_SECRET_KEY
+        value: sk_test_ci_dummy_not_a_real_stripe_key
+      - key: STRIPE_WEBHOOK_SECRET
+        value: ci-test-webhook-secret-not-a-real-stripe-secret
+      - key: STRIPE_CONNECT_RETURN_URL
+        value: https://example.com/payments/connect/return
+      - key: STRIPE_CONNECT_REFRESH_URL
+        value: https://example.com/payments/connect/refresh
+
+      - key: PORT
+        value: "3000"
+      # Update once the Student app's actual dev/staging origin is known —
+      # left as `sync: false` rather than a guessed value.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

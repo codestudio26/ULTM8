@@ -182,6 +182,27 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     expect(res.body.visible).toBe(true);
   });
 
+  // FOUND ON REVIEW (Track B Slice 4a): findAllPlans had no role gate at all,
+  // unlike create/update right above — any enrolled Student or Staff could list
+  // every plan, including visible=false ones. Proves the fix over real HTTP.
+  it('School Owner CAN list MembershipPlans; a Student/Branch Staff cannot — 403', async () => {
+    const asOwner = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(asOwner.status).toBe(200);
+    expect(asOwner.body.items.some((p: { id: string }) => p.id === membershipPlanIds[0])).toBe(true);
+
+    const asStudent = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(asStudent.status).toBe(403);
+
+    const asStaff = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenBranchStaff}`);
+    expect(asStaff.status).toBe(403);
+  });
+
   it('rejects a FRIEND_PASS with a non-zero price — 400', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
@@ -575,12 +596,12 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     expect(studentRes.status).toBe(403);
   });
 
-  it('resolves the paying Student\'s name even after their only RoleGrant at this School is revoked (Decision 116 regression)', async () => {
+  it('resolves the paying Student\'s name even after their only RoleGrant at this School is revoked (Decision 117 regression)', async () => {
     // A fresh, throwaway Student — isolated from the shared fixtures above so
     // revoking their RoleGrant here can't affect any other test in this suite.
     // Simulates the real trigger: GuardiansService.withdrawConsent's BASELINE
     // cascade revokes every active RoleGrant a Student holds, everywhere,
-    // synchronously. Before Decision 116's fix, the name join was a Prisma
+    // synchronously. Before Decision 117's fix, the name join was a Prisma
     // `include` on Transaction.student, relying on user_self_or_shared_school RLS —
     // invisible once this grant is revoked, even though the caller (School Owner)
     // remains fully authorized to see the Transaction row itself.

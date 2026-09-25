@@ -22,7 +22,7 @@ picked, not yet implemented) · `implemented` (in real app code).
 
 ## school-portal — Login flow
 
-**Status:** implemented (22 Sep 2026, Decision 118) — `LoginPage.tsx` now
+**Status:** implemented (22 Sep 2026, Decision 119) — `LoginPage.tsx` now
 matches the approved Combined concept
 
 - Figma nodes: `2301:72` (Login Form) → `2301:1781` (LoginSuccessMessage)
@@ -37,7 +37,7 @@ matches the approved Combined concept
   account." + dismiss ×)
 - **Resolved (was open):** the success panel auto-advances after 2s, and a
   dismiss (×) lets the user skip the wait — decided directly with the user,
-  see Decision 118.
+  see Decision 119.
 - Artifact: https://claude.ai/artifact/5aDC5GJLfShqmA5uEbZ8p1
 
 ## platform-admin — Login
@@ -53,7 +53,7 @@ matches the approved Combined concept
 
 ## school-portal — Register flow
 
-**Status:** implemented (22 Sep 2026, Decision 118)
+**Status:** implemented (22 Sep 2026, Decision 119)
 
 - Figma nodes: `2301:1431` (registerScreen) → `2301:1670` (success) / `2301:1693` (error)
 - Real source: `apps/school-portal/src/auth/RegisterPage.tsx` (fields match `RegisterDto` exactly per its own header comment)
@@ -61,12 +61,12 @@ matches the approved Combined concept
 - **Added despite Figma omitting it:** Date of birth — required on `RegisterDto`, Figma's form is just missing it, not treating it as skippable
 - **Kept:** the real "Optional details" collapsed section (username/gender/nationality/language/currency/address) — not in Figma at all, but real working code; now visually styled (bordered, custom disclosure marker) instead of an unstyled native `<details>`
 - **Not used:** Figma's generic "Unable to Register Account" error panel — real code shows the actual `ApiError.message` inline instead, which carries more information
-- **Resolved (was open):** registration now pauses on a success panel ("Account created") before continuing to `/verify-otp` — auto-advances after 2s, dismissible early. Same Decision 118 as Login.
+- **Resolved (was open):** registration now pauses on a success panel ("Account created") before continuing to `/verify-otp` — auto-advances after 2s, dismissible early. Same Decision 119 as Login.
 - Artifact: https://claude.ai/artifact/28pd49EhjuZLW986cevJ9u
 
 ## school-portal — Instructors & Branches
 
-**Status:** implemented (22 Sep 2026, Decision 119) — Instructors' real name gap
+**Status:** implemented (22 Sep 2026, Decision 120) — Instructors' real name gap
 closed; Branches confirmed already matching, no changes needed
 
 - Instructors — Figma: `" instructorList"` (`2380:640`); Real: `InstructorResponseDto`
@@ -78,7 +78,7 @@ closed; Branches confirmed already matching, no changes needed
 
 ## school-portal — Verify OTP (register's second step) & Forgot/Reset passcode
 
-**Status:** implemented (22 Sep 2026, Decision 118)
+**Status:** implemented (22 Sep 2026, Decision 119)
 
 - **Flow-structure correction, not just a style one:** Figma implies a 3-step
   reset (forgot → separate OTP screen → new-password-only screen), but real
@@ -99,7 +99,7 @@ closed; Branches confirmed already matching, no changes needed
   `ConfirmPasscodeResetDto`) — the user was shown this exact gap and chose
   the 6-box segmented input over the safer plain-text default anyway; 6 is
   a documented assumption (matches the app's own passcode length + Twilio's
-  typical default), not a confirmed value — see Decision 118. Both
+  typical default), not a confirmed value — see Decision 119. Both
   Verify-OTP's and Reset's `code` fields now use `SegmentedCodeInput`.
 - **Resolved (was open):** Reset passcode now pauses on a success panel
   ("Passcode changed") before continuing to `/login`, same auto-advance-+-
@@ -112,7 +112,7 @@ closed; Branches confirmed already matching, no changes needed
 
 ## school-portal — Timetable
 
-**Status:** implemented (confirmed 22 Sep 2026, Decision 119) — already matched
+**Status:** implemented (confirmed 22 Sep 2026, Decision 120) — already matched
 the approved mockup exactly, no changes needed
 
 - Figma: "timeTableList" (`2389:3922`); Real: `TimetableSlotResponseDto`, `TimetablePage.tsx`
@@ -122,10 +122,10 @@ the approved mockup exactly, no changes needed
 
 ## school-portal — Staff
 
-**Status:** implemented (confirmed 22 Sep 2026, Decision 119) — resolved-name
-display and exact email/phone invite lookup (Decisions 113/115) already exceed
+**Status:** implemented (confirmed 22 Sep 2026, Decision 120) — resolved-name
+display and exact email/phone invite lookup (Decisions 114/116) already exceed
 this mockup's own simpler bare-User-ID invite form; one minor flagged gap
-(card-heading style) deliberately not fixed in isolation, see Decision 119
+(card-heading style) deliberately not fixed in isolation, see Decision 120
 
 - No Figma screen exists for this page at all (checked the whole file)
 - **Hard constraint from the code itself:** no "list all staff at my School" endpoint exists — `roleGrantQueries.ts`'s own comment confirms it. Only real capabilities: invite a known User ID as Instructor/Branch Staff, and look up/revoke one known user's grants at a time. A staff directory/roster view would need new backend work, not a UI change.
@@ -135,7 +135,7 @@ this mockup's own simpler bare-User-ID invite form; one minor flagged gap
 
 ## school-portal — Disciplines, Skills & Ranks
 
-**Status:** implemented (22 Sep 2026, Decision 119) — Ranks' colour column now
+**Status:** implemented (22 Sep 2026, Decision 120) — Ranks' colour column now
 renders a real swatch; Disciplines list and Skills table already matched
 
 - No Figma screen exists for this page either — "Ranks"/"Belt" only appear as small nested labels inside unrelated screens (e.g. the Instructor list's progress-bar column, already flagged as not matching real data)
@@ -147,9 +147,9 @@ renders a real swatch; Disciplines list and Skills table already matched
 
 ## school-portal — Classes & Class detail
 
-**Status:** implemented (22 Sep 2026, Decision 119) — Classes list gained a
+**Status:** implemented (22 Sep 2026, Decision 120) — Classes list gained a
 real Instructor column; Class Detail already had real Bookings/Waitlist name
-resolution (Decision 116)
+resolution (Decision 117)
 
 - Figma: "classesList" (`2389:4491`); Real: `ClassResponseDto`, `BookingResponseDto`, `WaitlistEntryResponseDto`
 - **"Fees: $300.00" column → removed.** `ClassResponseDto` has no price field at all — a Class isn't sold directly, access comes through Membership Plans. This is the opposite direction of the Timetable finding: here Figma invents a field the DTO doesn't have.
@@ -161,7 +161,7 @@ resolution (Decision 116)
 
 ## school-portal — Membership Plans
 
-**Status:** implemented (confirmed 22 Sep 2026, Decision 119) — already
+**Status:** implemented (confirmed 22 Sep 2026, Decision 120) — already
 matched the approved mockup exactly, no changes needed
 
 - Figma: "membershipList" (`2406:5604`); Real: `MembershipPlanResponseDto`, `MembershipPlansPage.tsx`
@@ -173,7 +173,7 @@ matched the approved mockup exactly, no changes needed
 
 ## school-portal — Transactions
 
-**Status:** implemented (confirmed 22 Sep 2026, Decision 119) — Student-name
+**Status:** implemented (confirmed 22 Sep 2026, Decision 120) — Student-name
 fix was already real (Decision 109); the mockup's remaining "unimplemented"
 items (balance-widget cards, Download action) were always meant to be
 *excluded*, and real code already excludes them — the page is fully aligned,
@@ -191,11 +191,11 @@ not partial
 - The mockup's Student-name correction (see the "Audit — same 'no name field' mistake" entry above) has been built into the actual app, not just the preview. `TransactionsService.findAllForSchool` now joins `Transaction.student` and `TransactionResponseDto` carries `studentFirstName`/`studentSurname`; `TransactionsPage.tsx` renders the resolved name, falling back to the truncated id only if both are empty. See **Decision 109** (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) for the full reasoning, RLS trace, and what's explicitly still out of scope (the identical gap in `ClassDetailPage.tsx`/`InstructorFormModal.tsx`/`StaffPage.tsx`).
 - Regenerated `packages/api-client/openapi.json`/`schema.d.ts` from the live Swagger output to pick up the new fields — diffed to confirm only the two expected fields changed.
 - Added an assertion to `apps/api/test/memberships.e2e-spec.ts`'s existing Transactions-list test, extending rather than duplicating it. **Not run in this environment** — no reachable Postgres (confirmed: no `DATABASE_URL*` set, `pg_isready` unreachable) — verified instead via `tsc --noEmit` across `apps/api`, `packages/api-client`, and `apps/school-portal` (all clean). Needs `npm run test:e2e -- memberships.e2e-spec` against a real database before this is fully proven, not just compiled.
-- Everything else on this page (balance-widget cards, Download action, date/pagination) was always meant to be excluded, not built — confirmed 22 Sep 2026 (Decision 119) that real code already excludes all of it, so nothing further was needed. One unrelated cosmetic note surfaced by that audit: the Failed/Disputed badge colors are inverted between this mockup and real `paymentStatusBadge.tsx` — not changed, since neither was ever confirmed as the deliberate choice.
+- Everything else on this page (balance-widget cards, Download action, date/pagination) was always meant to be excluded, not built — confirmed 22 Sep 2026 (Decision 120) that real code already excludes all of it, so nothing further was needed. One unrelated cosmetic note surfaced by that audit: the Failed/Disputed badge colors are inverted between this mockup and real `paymentStatusBadge.tsx` — not changed, since neither was ever confirmed as the deliberate choice.
 
 ## school-portal — Waivers
 
-**Status:** implemented (confirmed 22 Sep 2026, Decision 119) — already
+**Status:** implemented (confirmed 22 Sep 2026, Decision 120) — already
 matched the approved mockup exactly, no changes needed
 
 - No Figma screen exists for Waiver management — "Liability waivers" only appears as a small checkbox label elsewhere, and a "Severability and Waiver" legal clause on an unrelated Terms page (naming coincidence, not the same concept)
@@ -204,7 +204,7 @@ matched the approved mockup exactly, no changes needed
 
 ## school-portal — Franchises & Franchise detail
 
-**Status:** implemented (confirmed 22 Sep 2026, Decision 119) — already
+**Status:** implemented (confirmed 22 Sep 2026, Decision 120) — already
 matched the approved mockup exactly; `mobileNumber` stays unrendered on the
 list, still a proposed-not-decided addition, not added
 
@@ -216,7 +216,7 @@ list, still a proposed-not-decided addition, not added
 
 ## school-portal — Notifications
 
-**Status:** implemented (confirmed 22 Sep 2026, Decision 119) — already
+**Status:** implemented (confirmed 22 Sep 2026, Decision 120) — already
 matched the approved mockup exactly, no changes needed
 
 - No Figma screen matches an in-app notification inbox — the only nearby match is an unrelated "Email notifications" settings/preferences screen (toggles, not a message list), not used
@@ -225,7 +225,7 @@ matched the approved mockup exactly, no changes needed
 
 ## platform-admin — Admin Users, School lookup, Franchise lookup
 
-**Status:** implemented (22 Sep 2026, Decision 119) — Admin Users already
+**Status:** implemented (22 Sep 2026, Decision 120) — Admin Users already
 matched exactly; School/Franchise lookup gained token-driven spacing/subtitle
 styling in place of hardcoded pixel values. Not live-verified in a browser —
 this sandbox has no AWS Cognito configured, which platform-admin's real login
@@ -252,7 +252,7 @@ requires — verified via type-check and code review only
 
 ## school-portal — Instructors (full-page "look replica")
 
-**Status:** implemented (22 Sep 2026, Decision 119) — see the final column
+**Status:** implemented (22 Sep 2026, Decision 120) — see the final column
 order/name-resolution notes below; superseded by the earlier "Instructors &
 Branches" section's status line, kept here as the historical revision record
 

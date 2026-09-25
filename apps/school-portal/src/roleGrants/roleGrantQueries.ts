@@ -21,7 +21,7 @@ export function fetchUserRoleGrants(userId: string) {
 }
 
 /**
- * Exact email/phone match only, never a name search (Decision 115) — the invite
+ * Exact email/phone match only, never a name search (Decision 116) — the invite
  * target has no RoleGrant at this School yet, so fetchUserRoleGrants' own lookup
  * (which relies on a shared RoleGrant already existing) can't find them. Called
  * imperatively from StaffPage's "Find" step, same convention as fetchUserRoleGrants

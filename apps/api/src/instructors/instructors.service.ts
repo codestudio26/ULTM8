@@ -78,9 +78,9 @@ export class InstructorsService {
    * Branch's profiles plus School-wide ones — instructor_tenant_isolation, this
    * phase's migration; same three-way structure as class_tenant_isolation).
    *
-   * Names are resolved via PrismaAuthService/resolveUserNames (Decision 116's
+   * Names are resolved via PrismaAuthService/resolveUserNames (Decision 117's
    * pattern), not a Prisma `include` on `user` — closes the same real, verified gap
-   * Decision 116 found for Bookings/Waitlist/RoleGrant/Transactions: this endpoint's
+   * Decision 117 found for Bookings/Waitlist/RoleGrant/Transactions: this endpoint's
    * own list of profiles is exactly where InstructorsPage's Name column and every
    * other page reusing this same hook (Classes, Timetable) look up an Instructor's
    * display name, and none of them had one to show before this. */
@@ -103,7 +103,7 @@ export class InstructorsService {
     };
   }
 
-  /** Candidate pool for InstructorFormModal's picker (Decision 114) — Users holding an
+  /** Candidate pool for InstructorFormModal's picker (Decision 115) — Users holding an
    * active INSTRUCTOR RoleGrant at this School, i.e. exactly who assertValidInstructor
    * would accept for a create() call here. School Owner/Manager only, same gate as
    * create(). Deliberately unpaginated (bounded by realistic Instructor headcount) and

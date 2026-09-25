@@ -9,10 +9,15 @@
   // sessions for whoever opens the codespace next, hours or days later.
   "shutdownAction": "stopCompose",
 
-  "forwardPorts": [3000, 5173, 5432, 6379],
+  // 8081 added on track-b-student-app: apps/student (Expo/RN) didn't exist as a
+  // real app yet when this config was first written on master, only a Phase-1
+  // placeholder — Metro's dev server (npx expo start / start --web) serves on
+  // this port.
+  "forwardPorts": [3000, 5173, 8081, 5432, 6379],
   "portsAttributes": {
     "3000": { "label": "API (apps/api)", "onAutoForward": "notify" },
     "5173": { "label": "School Portal (Vite)", "onAutoForward": "openPreview" },
+    "8081": { "label": "Student App (Expo/Metro)", "onAutoForward": "openPreview" },
     "5432": { "label": "Postgres", "onAutoForward": "silent" },
     "6379": { "label": "Redis", "onAutoForward": "silent" }
   },
