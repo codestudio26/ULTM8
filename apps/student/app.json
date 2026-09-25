@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "ULTM8 Student",
+    "slug": "ultm8-student",
+    "scheme": "ultm8-student",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.ultm8.student"
+    },
+    "android": {
+      "package": "app.ultm8.student",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:3000"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}

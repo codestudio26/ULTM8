@@ -1097,3 +1097,31 @@ No appeal/reversal mechanism — `paymentRestrictedAt` is set once and never cle
 ### Recorded by
 
 Logged while implementing Phase B directly, 22 Sep 2026, following the user's "Go ahead and start Phase B." All three decisions above are implementation-level closures of an already-`[CONFIRMED]` rule, not new business logic — flagged here per this codebase's own standing discipline rather than silently assumed.
+
+---
+
+## Decision 113 — Track B, Slice 1: `apps/student` built as an Expo-managed React Native app; secure token storage via `expo-secure-store`
+
+**Date:** 16 Sep 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `docs/TRACK-B-STUDENT-APP-KICKOFF.md`'s two flagged pre-Task-1 decisions ("Expo vs. bare React Native" and "RN-appropriate secure token storage") — both explicitly called out there as real trade-offs not to default on silently.
+
+**Numbering note:** originally logged as "Decision 98" on the `track-b-student-app` branch, chosen independently while that branch was already diverged from `master` — by the time this branch was synced back (see the "Sync Track B onto master" PR), `master` had separately used 98 for an unrelated decision (School→Franchise linking, above) and continued on through 109, and three more decisions (110–112) existed in still-open PRs against `master`. Renumbered to the next free slot, 113, at sync time rather than disturbing any already-published number; nothing about the decision's own content, date, or reasoning changed. The three citations of "Decision 98" in `apps/student`'s own code/docs (`README.md`, `package.json`, `src/auth/secureTokenStore.ts`) were updated to cite 113 in the same sync.
+
+### Decision
+
+`apps/student` is built as an **Expo-managed workflow** React Native app, not bare RN. Reasoning, per the kickoff doc's own framing, confirmed with the user directly ("suggest me" → recommendation given → accepted): the per-School white-label rebuild pipeline (`packages/build-pipeline`, Spec 55 §5) is already a confirmed requirement, and EAS Build is the more direct path to it than a bare-RN native-module setup would be. The counter-consideration (bare RN's finer native-module control, relevant if QR-scanning/camera-consent handling end up needing something Expo's managed workflow doesn't expose) is not a concern yet in this walking-skeleton slice — QR check-in is explicitly out of scope here (see kickoff doc's "Explicitly not doing" list) and can force a reconsideration later if it ever becomes one.
+
+Token storage uses `expo-secure-store` (the RN-appropriate secure-storage primitive named as the Expo-path default in the kickoff doc), not `packages/auth`'s existing `TokenStore` (browser-only `sessionStorage`/`atob`) and not `AsyncStorage` (plain, insecure storage for a JWT). This inherits the kickoff doc's already-flagged, known UX limitation: `POST /auth/login` returns only `{ accessToken }`, no refresh-token endpoint exists yet (`[UNRESOLVED]`, `ultm8-nestjs-module` §7), so sessions force re-login at the access token's TTL (≤15 minutes) regardless of storage mechanism — not solved by this decision, carried forward as-is.
+
+### Toolchain check (before Task 1 started)
+
+Verified directly in the Track B working environment (16 Sep 2026): Node v22.20.0, npm 10.9.3 (matches the monorepo's pinned `packageManager`). No local `ANDROID_HOME`/`ANDROID_SDK_ROOT`/`adb` — confirming `apps/student/README.md`'s original Phase 1 note that a local Metro/Xcode/Android native toolchain isn't available in this environment. `npx expo` and `npx eas-cli` both resolve and run cleanly, which is what the Expo path actually depends on for this slice: `expo start` (Metro + Expo Go) for local dev/testing, and EAS Build's cloud service for anything needing a real native binary — neither requires a local Android SDK or Xcode install. This is a environment capability match in Expo's favor, not just a spec-alignment one.
+
+### What this does NOT resolve
+
+Camera/QR-scanning native-module needs (still `[UNRESOLVED]` per the kickoff doc and `ultm8-domain-rules` §12/§18) — if a future slice's QR check-in work finds Expo's managed workflow genuinely insufficient, that would be a new decision, not a silent reversal of this one. Also does not resolve the missing refresh-token endpoint (`ultm8-nestjs-module` §7) — still open, backend-track territory.
+
+### Recorded by
+
+Logged during a direct, live exchange with the user, 16 Sep 2026 — user asked "what's best? suggest me" on the Expo-vs-bare-RN question; the kickoff doc's own recommendation (Expo) was restated and accepted. Renumbered from 98 to 113 during the Track B/master sync (see numbering note above).
