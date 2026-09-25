@@ -380,11 +380,16 @@ export function AppShell({
   brand,
   navItems,
   footer,
+  header,
   children,
 }: {
   brand: string;
   navItems: NavItem[];
   footer?: ReactNode;
+  /** Optional app-shell header, rendered once at the top of the main content
+   * column (above every page's own content) — opt-in so an app that doesn't
+   * pass it (e.g. platform-admin's Shell today) renders exactly as before. */
+  header?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -404,7 +409,10 @@ export function AppShell({
         </nav>
         {footer ? <div className="ultm8-shell__footer-action">{footer}</div> : null}
       </aside>
-      <main className="ultm8-shell__main">{children}</main>
+      <main className="ultm8-shell__main">
+        {header ? <div className="ultm8-shell__topbar">{header}</div> : null}
+        {children}
+      </main>
     </div>
   );
 }
