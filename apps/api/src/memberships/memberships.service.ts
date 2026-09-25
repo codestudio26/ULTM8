@@ -35,6 +35,8 @@ export class MembershipsService {
   async createPlan(callerId: string, schoolId: string, dto: CreateMembershipPlanDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     this.assertValidPlanShape(dto.type, dto.price, dto.classesIncluded, dto.scopedClassId);
 
     if (dto.scopedClassId) {
@@ -95,6 +97,8 @@ export class MembershipsService {
   async updatePlan(callerId: string, planId: string, dto: UpdateMembershipPlanDto) {
     const existing = await this.findOnePlan(callerId, planId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     // FOUND ON REVIEW (Phase 18): `classesIncluded` is deliberately NOT among
     // UpdateMembershipPlanDto's null-widened fields (see that DTO's own header
@@ -290,11 +294,20 @@ export class MembershipsService {
     }
 
     const student = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { email: true } }),
+      tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { email: true, paymentRestrictedAt: true } }),
     );
     const currency = plan.currency ?? 'usd';
 
     if (paymentAccount.provider === 'STRIPE') {
+      // Decision 68/112 — "restricted to Cash/Bank Transfer payment methods only"
+      // means exactly this here: payment method is fixed per School
+      // (paymentAccount.provider), never a per-purchase Student choice, so there is
+      // no alternative to offer at a Stripe-only School — the purchase is blocked
+      // outright. A School already configured for Cash/Bank is untouched below;
+      // this Student was already paying that way there.
+      if (student.paymentRestrictedAt) {
+        throw new BadRequestException('This account is restricted to Cash/Bank Transfer payment methods, following a pattern of lost Stripe disputes — this School only accepts Stripe.');
+      }
       const transactionId = randomUUID();
       if (plan.type === 'SUBSCRIPTION') {
         // Payment is still collected fresh, client-side, via Stripe Elements

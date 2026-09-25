@@ -34,6 +34,12 @@ const PLATFORM_ADMIN_SCHOOL_SELECT = {
   franchiseFeeSubscriptionStatus: true,
   createdAt: true,
   updatedAt: true,
+  // Phase 56 (Decision 110) — lifecycle state, granted to ultm8_platform_admin
+  // by 20261006000000_tenant_lifecycle_module. Support-tier staff should be
+  // able to see a School is closed from the same read they already use.
+  archivedAt: true,
+  purgeAt: true,
+  purgedAt: true,
   // Deliberately excluded: stripeFranchiseFeeSubscriptionId — see this constant's
   // own header comment.
 } as const;

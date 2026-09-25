@@ -12,6 +12,8 @@ import { BookingNoShowProcessingProcessor, BookingNoShowProcessingScheduler } fr
 import { WaitlistCascadeProcessingProcessor, WaitlistCascadeProcessingScheduler } from './waitlist-cascade-processing.processor';
 import { NotificationFanoutProcessor } from './notification-fanout.processor';
 import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingScheduler } from './franchise-fee-usage-reporting.processor';
+import { TenantLifecyclePurgeProcessor, TenantLifecyclePurgeScheduler } from './tenant-lifecycle-purge.processor';
+import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-restriction.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -44,6 +46,30 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
  * to fetch the full Invoice), hence the new PaymentsModule import. Imports
  * FranchiseFeesModule for FranchiseFeeBillingService (the new processor's own
  * Stripe-primitives dependency).
+ *
+ * Phase 56 adds TenantLifecyclePurgeProcessor/Scheduler (Decision 110) — a
+ * pure scheduled sweep, same shape as ClassOccurrenceGenerationScheduler/
+ * BookingNoShowProcessingScheduler, needing no new module import (only
+ * PrismaJobsService, already global).
+ *
+ * Decision 111 extends StripeWebhookProcessingProcessor again, with real
+ * charge.dispute.created/updated/closed handling (Decision 55's own confirmed
+ * contract) — the processor now also injects NOTIFICATION_FANOUT_QUEUE directly
+ * (the same cross-queue @InjectQueue pattern BookingNoShowProcessingProcessor/
+ * WaiverSignatureRequestsProcessor already established) to route a dispute
+ * notification to whichever School Owner/Manager or Franchise Owner is
+ * financially exposed. No new module import needed for this — QueueModule
+ * already registers NOTIFICATION_FANOUT_QUEUE and PaymentsModule already
+ * provides StripeClientService, both from the Phase 15/16b-ii wiring above.
+ *
+ * Decision 112 adds ChargebackPatternRestrictionProcessor (Decision 68's own
+ * confirmed job, Decision 111 Phase B) — event-triggered only, no Scheduler
+ * (see that processor's own header comment for why); StripeWebhookProcessingProcessor
+ * now also injects CHARGEBACK_PATTERN_RESTRICTION_QUEUE to enqueue a check the
+ * instant it records a new lost dispute. No new module import needed here either
+ * — QueueModule already registers the new queue (added alongside the others),
+ * and the new processor's own NOTIFICATION_FANOUT_QUEUE injection is covered by
+ * the same QueueModule import already in this module.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -60,6 +86,9 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
     NotificationFanoutProcessor,
     FranchiseFeeUsageReportingProcessor,
     FranchiseFeeUsageReportingScheduler,
+    TenantLifecyclePurgeProcessor,
+    TenantLifecyclePurgeScheduler,
+    ChargebackPatternRestrictionProcessor,
   ],
 })
 export class JobsModule {}

@@ -527,11 +527,38 @@ export class BookingsService {
 
   private async restoreCredit(tx: TenantTx, membershipId: string): Promise<void> {
     const membership = await tx.membership.findUniqueOrThrow({ where: { id: membershipId } });
-    if (membership.classesRemaining !== null) {
-      await tx.membership.update({ where: { id: membershipId }, data: { classesRemaining: { increment: 1 } } });
+    if (membership.classesRemaining === null) {
+      // General-access (classesRemaining IS NULL) was never decremented at
+      // booking time — nothing to restore.
+      return;
     }
-    // General-access (classesRemaining IS NULL) was never decremented at booking
-    // time — nothing to restore.
+
+    // Decision 111 — frozen while this Membership's own purchase Transaction is
+    // under an active Stripe dispute (Decision 55's own confirmed "refund/
+    // credit-restore frozen while disputed" contract): giving back a class
+    // credit while the payment that funded it is contested risks the School
+    // delivering free value if the dispute is later lost. Only the
+    // credit-restore is frozen here, not the Booking cancellation itself —
+    // Decision 55's text freezes the money-adjacent action, not every Booking
+    // action.
+    //
+    // FLAGGED, not fully closed: this reads Transaction through the SAME
+    // tenant-scoped `tx` cancelBooking() already opened for the organizer
+    // (resolvedBooking.studentId) — correct for the organizer's own Membership,
+    // but transaction_school_staff_or_self's RLS policy only admits a
+    // Transaction row to School staff OR that Transaction's own studentId. For
+    // a GUEST's membership (the attendee.membershipId call site below, a
+    // genuinely different Student), this lookup can be silently RLS-blocked if
+    // the organizer isn't School staff at this School — a narrow, real gap not
+    // closed here (needs either a jobs-role read or a broadened RLS policy,
+    // out of this phase's own scope of freezing the two real call sites).
+    const disputedTransaction = await tx.transaction.findFirst({ where: { membershipId, status: 'DISPUTED' } });
+    if (disputedTransaction) {
+      this.logger.warn(`Membership ${membershipId}'s credit-restore skipped — its Transaction ${disputedTransaction.id} is under an active Stripe dispute (Decision 55/111).`);
+      return;
+    }
+
+    await tx.membership.update({ where: { id: membershipId }, data: { classesRemaining: { increment: 1 } } });
   }
 
   private isUniqueConstraintViolation(err: unknown): boolean {

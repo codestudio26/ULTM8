@@ -1,0 +1,19 @@
+# Keeps the Dockerfile's pruner stage's `COPY . .` layer small and correct — turbo
+# prune only ever reads source + package.json/lockfile content, never node_modules
+# or build output, so excluding these avoids both bloat and a stale-artifact copy
+# shadowing the image's own fresh install/build.
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+**/coverage
+.git
+.github
+.devcontainer
+**/.env
+**/.env.local
+*.md
+docs
+skills
+deep-review

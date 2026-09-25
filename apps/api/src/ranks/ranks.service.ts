@@ -38,6 +38,8 @@ export class RanksService {
   async createDiscipline(callerId: string, schoolId: string, dto: CreateDisciplineDto) {
     await this.schoolsService.findOne(callerId, schoolId);
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.assertRanksEnabled(callerId, schoolId);
 
     const id = randomUUID();
@@ -66,6 +68,8 @@ export class RanksService {
   async updateDiscipline(callerId: string, disciplineId: string, dto: UpdateDisciplineDto) {
     const existing = await this.findOneDiscipline(callerId, disciplineId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.discipline.update({ where: { id: disciplineId }, data: { name: dto.name, classTypesOffered: dto.classTypesOffered } }),
@@ -82,6 +86,8 @@ export class RanksService {
   async createRank(callerId: string, disciplineId: string, dto: CreateRankDto) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
     await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertContiguousStripeTiers(dto.stripeTiers.map((t) => t.order));
 
@@ -174,6 +180,8 @@ export class RanksService {
   async updateRank(callerId: string, rankId: string, dto: UpdateRankDto) {
     const existing = await this.findOneRank(callerId, rankId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
 
     if (dto.order !== undefined) {
@@ -290,6 +298,8 @@ export class RanksService {
   async createSkill(callerId: string, disciplineId: string, dto: CreateSkillDto) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
     await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
 
     const id = randomUUID();
@@ -313,6 +323,8 @@ export class RanksService {
       throw new NotFoundException('Skill not found');
     }
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.skill.update({ where: { id: skillId }, data: { name: dto.name, description: dto.description } }),
