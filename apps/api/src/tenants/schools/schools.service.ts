@@ -332,7 +332,7 @@ export class SchoolsService {
    * School-wide roster, matching how Student enrollment itself has no Branch
    * dimension (SchoolsService.join() grants schoolId-only, no branchId).
    *
-   * Safe from the RLS name-join gap (Decision 113) by construction, same reasoning
+   * Safe from the RLS name-join gap (Decision 116) by construction, same reasoning
    * as InstructorsService.findEligibleInstructorUsers: the RoleGrant row being read
    * (schoolId, role STUDENT, revokedAt null) is itself the exact witness
    * user_self_or_shared_school's visibility check needs, so the joined User row is
@@ -361,6 +361,8 @@ export class SchoolsService {
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */
   async update(callerId: string, schoolId: string, dto: UpdateSchoolDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({

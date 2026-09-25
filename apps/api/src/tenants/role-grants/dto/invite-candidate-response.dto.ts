@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/** Minimum-fields response for the exact-match invite lookup (Decision 112) — lets
+/** Minimum-fields response for the exact-match invite lookup (Decision 115) — lets
  * StaffPage's invite form show "Found: Jane Doe — invite this person?" before
  * create() actually fires. `found: false` means every other field is null. */
 export class InviteCandidateResponseDto {

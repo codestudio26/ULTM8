@@ -141,8 +141,16 @@ export class FranchiseFeesService {
       // read above — a concurrent refund that fully refunded this charge
       // while this request was waiting for the lock would have flipped
       // `status` to REFUNDED in the meantime.
+      //
+      // Decision 111 — this same guard already satisfies Decision 55's
+      // confirmed "refund frozen while disputed" contract with no new code:
+      // stripe-webhook-processing's charge.dispute.* handler flips `status` to
+      // DISPUTED as soon as a dispute opens, and DISPUTED !== SUCCESSFUL, so a
+      // refund attempt against a disputed charge is already rejected here.
+      // Confirmed, not assumed, before treating this as covered.
       if (fresh.status !== 'SUCCESSFUL') {
-        throw new BadRequestException(`Only a Successful charge can be refunded (this charge is ${fresh.status}).`);
+        const reason = fresh.status === 'DISPUTED' ? 'it is under an active Stripe dispute' : `this charge is ${fresh.status}`;
+        throw new BadRequestException(`Only a Successful charge can be refunded — ${reason}.`);
       }
       const alreadyRefunded = fresh.refundedAmount ?? 0;
       const refundAmount = amount ?? fresh.amount - alreadyRefunded;

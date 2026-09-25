@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 /** A User holding an active INSTRUCTOR RoleGrant at a School — the candidate pool for
- * InstructorFormModal's picker (Decision 111). Not a RoleGrant or Instructor row itself;
+ * InstructorFormModal's picker (Decision 114). Not a RoleGrant or Instructor row itself;
  * see InstructorsService.findEligibleInstructorUsers. */
 export class EligibleInstructorUserDto {
   @ApiProperty()

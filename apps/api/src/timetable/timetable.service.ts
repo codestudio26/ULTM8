@@ -67,6 +67,8 @@ export class TimetableService {
   async create(callerId: string, schoolId: string, dto: CreateTimetableSlotDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     if (dto.branchId) {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
@@ -145,6 +147,8 @@ export class TimetableService {
       throw new NotFoundException('TimetableSlot not found');
     }
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId;
     const nextInstructorId = dto.instructorId !== undefined ? dto.instructorId : existing.instructorId;

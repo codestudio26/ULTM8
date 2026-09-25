@@ -491,7 +491,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["PlatformAdminSubscriptionPlansController_findAll"];
         put?: never;
         post: operations["PlatformAdminSubscriptionPlansController_create"];
         delete?: never;
@@ -670,6 +670,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["PlatformAdminImpersonationController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminTenantLifecycleController_closeSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminTenantLifecycleController_reactivateSchool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/franchises/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminTenantLifecycleController_closeFranchise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/franchises/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminTenantLifecycleController_reactivateFranchise"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1867,6 +1931,9 @@ export interface components {
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
             updatedAt: string;
+            archivedAt?: string | null;
+            purgeAt?: string | null;
+            purgedAt?: string | null;
             accessToken?: string;
         };
         SchoolListResponseDto: {
@@ -2049,6 +2116,9 @@ export interface components {
             perHeadcountRate?: number | null;
             createdAt: string;
             updatedAt: string;
+            archivedAt?: string | null;
+            purgeAt?: string | null;
+            purgedAt?: string | null;
             accessToken?: string;
         };
         FranchiseListResponseDto: {
@@ -2312,6 +2382,19 @@ export interface components {
             /** @description ISO datetime this session (and the token itself) expires. */
             expiresAt: string;
             impersonatedUserId: string;
+        };
+        CloseTenantAccountDto: {
+            /** @description Must exactly match the School/Franchise's current name — the required confirmation step for this action. */
+            confirmName: string;
+        };
+        TenantLifecycleStatusDto: {
+            id: string;
+            /** @description ISO timestamp this School/Franchise was closed, or null if active. */
+            archivedAt?: string | null;
+            /** @description ISO timestamp the 90-day retention window elapses, or null if active. */
+            purgeAt?: string | null;
+            /** @description ISO timestamp the scheduled purge job actually processed this row, or null if not yet purged. */
+            purgedAt?: string | null;
         };
         CreatePaymentAccountDto: {
             /** @enum {string} */
@@ -4141,6 +4224,29 @@ export interface operations {
             };
         };
     };
+    PlatformAdminSubscriptionPlansController_findAll: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPlanListResponseDto"];
+                };
+            };
+        };
+    };
     PlatformAdminSubscriptionPlansController_create: {
         parameters: {
             query?: never;
@@ -4418,6 +4524,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpersonationSessionResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminTenantLifecycleController_closeSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseTenantAccountDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantLifecycleStatusDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminTenantLifecycleController_reactivateSchool: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantLifecycleStatusDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminTenantLifecycleController_closeFranchise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseTenantAccountDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantLifecycleStatusDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminTenantLifecycleController_reactivateFranchise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantLifecycleStatusDto"];
                 };
             };
         };

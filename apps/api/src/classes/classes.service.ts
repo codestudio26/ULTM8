@@ -25,6 +25,8 @@ export class ClassesService {
   async create(callerId: string, schoolId: string, dto: CreateClassDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new Classes"
     // is one of the three actions it explicitly names (Phase 54).
     await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
@@ -99,6 +101,8 @@ export class ClassesService {
   async update(callerId: string, classId: string, dto: UpdateClassDto) {
     const existing = await this.findOne(callerId, classId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     // Resolved "as of after this patch" values — string|null throughout, no
     // undefined round-trip needed since existing.branchId is already string|null.

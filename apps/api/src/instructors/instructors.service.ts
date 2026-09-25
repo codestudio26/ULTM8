@@ -30,6 +30,8 @@ export class InstructorsService {
   async create(callerId: string, schoolId: string, dto: CreateInstructorDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     if (dto.branchId) {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
@@ -76,9 +78,9 @@ export class InstructorsService {
    * Branch's profiles plus School-wide ones — instructor_tenant_isolation, this
    * phase's migration; same three-way structure as class_tenant_isolation).
    *
-   * Names are resolved via PrismaAuthService/resolveUserNames (Decision 113's
+   * Names are resolved via PrismaAuthService/resolveUserNames (Decision 116's
    * pattern), not a Prisma `include` on `user` — closes the same real, verified gap
-   * Decision 113 found for Bookings/Waitlist/RoleGrant/Transactions: this endpoint's
+   * Decision 116 found for Bookings/Waitlist/RoleGrant/Transactions: this endpoint's
    * own list of profiles is exactly where InstructorsPage's Name column and every
    * other page reusing this same hook (Classes, Timetable) look up an Instructor's
    * display name, and none of them had one to show before this. */
@@ -101,7 +103,7 @@ export class InstructorsService {
     };
   }
 
-  /** Candidate pool for InstructorFormModal's picker (Decision 111) — Users holding an
+  /** Candidate pool for InstructorFormModal's picker (Decision 114) — Users holding an
    * active INSTRUCTOR RoleGrant at this School, i.e. exactly who assertValidInstructor
    * would accept for a create() call here. School Owner/Manager only, same gate as
    * create(). Deliberately unpaginated (bounded by realistic Instructor headcount) and
@@ -141,6 +143,8 @@ export class InstructorsService {
     // exactly the shape this method needs.
     const existing = await this.findOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId;
 

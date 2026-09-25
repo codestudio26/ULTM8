@@ -33,6 +33,13 @@ export const AuditAction = {
   // module builds no delete path (see SubscriptionPlan's own schema.prisma comment).
   CREATE_SUBSCRIPTION_PLAN: 'CREATE_SUBSCRIPTION_PLAN',
   UPDATE_SUBSCRIPTION_PLAN: 'UPDATE_SUBSCRIPTION_PLAN',
+  // Phase 56 (Decision 110) — TenantLifecycleModule. The only trigger for
+  // soft-archive per that decision's own part 2 — never fired by a lapsed
+  // subscription. See TenantLifecycleService's own header comment for scope.
+  CLOSE_SCHOOL_ACCOUNT: 'CLOSE_SCHOOL_ACCOUNT',
+  REACTIVATE_SCHOOL_ACCOUNT: 'REACTIVATE_SCHOOL_ACCOUNT',
+  CLOSE_FRANCHISE_ACCOUNT: 'CLOSE_FRANCHISE_ACCOUNT',
+  REACTIVATE_FRANCHISE_ACCOUNT: 'REACTIVATE_FRANCHISE_ACCOUNT',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

@@ -223,4 +223,45 @@ export class TenantAuthorizationService {
       );
     }
   }
+
+  /**
+   * Throws ForbiddenException if `schoolId` is currently soft-archived
+   * (Decision 110, Phase 56 — TenantLifecycleService's close-account action).
+   * Called immediately after this file's own assertSchoolOwner/assertStaffAtSchool
+   * check, in every one of the 10 services' create/update methods Decision 110
+   * names (SchoolsService, BranchesService, ClassesService, TimetableService,
+   * InstructorsService, MembershipsService, RanksService, WaiversService,
+   * CurriculumService — FranchisesService gets the Franchise-scoped twin below).
+   * Mirrors SubscriptionGateService.assertNotDegraded's own shape exactly (Phase
+   * 54): a plain fresh-DB read through the caller's own ultm8_app/RLS context,
+   * no new role or grant needed (ultm8_app already holds whole-table access to
+   * School — see this phase's migration header comment).
+   *
+   * Deliberately does NOT block reads — Decision 110 part 1 calls the archived
+   * state "read-only," not invisible; only the mutating endpoints this gate is
+   * wired into are affected.
+   */
+  async assertSchoolNotArchived(callerId: string, schoolId: string): Promise<void> {
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { archivedAt: true } }),
+    );
+    if (school?.archivedAt) {
+      throw new ForbiddenException(
+        'This School has been closed and no longer accepts new or updated records.',
+      );
+    }
+  }
+
+  /** Franchise-scoped twin of assertSchoolNotArchived above — see that method's
+   * own comment for the full account. Used by FranchisesService.update(). */
+  async assertFranchiseNotArchived(callerId: string, franchiseId: string): Promise<void> {
+    const franchise = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchise.findUnique({ where: { id: franchiseId }, select: { archivedAt: true } }),
+    );
+    if (franchise?.archivedAt) {
+      throw new ForbiddenException(
+        'This Franchise has been closed and no longer accepts new or updated records.',
+      );
+    }
+  }
 }

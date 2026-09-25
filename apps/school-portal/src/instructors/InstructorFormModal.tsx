@@ -7,7 +7,7 @@ import type { EligibleInstructorUser, InstructorResponse } from './instructorQue
 /** Fields match CreateInstructorDto/UpdateInstructorDto exactly —
  * apps/api/src/instructors/dto/create-instructor.dto.ts. `userId` is a
  * dropdown of Users already holding an active INSTRUCTOR RoleGrant at this
- * School (GET .../instructors/eligible-users, Decision 111) — that role must
+ * School (GET .../instructors/eligible-users, Decision 114) — that role must
  * be granted first via the Staff page; this picker only shows who already
  * qualifies. `userId` is only editable on create — CreateInstructorDto has
  * it, UpdateInstructorDto (PartialType, per this codebase's DTO convention)

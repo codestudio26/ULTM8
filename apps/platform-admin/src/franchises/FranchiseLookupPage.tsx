@@ -4,11 +4,13 @@ import { ApiError } from '@ultm8/api-client';
 import { useFranchise, useFranchisePaymentAccount } from './franchiseQueries';
 import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
 import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails';
+import { TenantLifecycleControls } from '../tenantLifecycle/TenantLifecycleControls';
 
 /** Look-up-by-id — see franchiseQueries.ts's own header comment for why
  * there's no list here. Mostly read-only, same scope reasoning as
  * SchoolLookupPage's own header comment — including the same "Rotate
- * credential" write on the PaymentAccount section (Phase 35). */
+ * credential" write on the PaymentAccount section (Phase 35) and, as of
+ * Phase 57, the same shared close/reactivate lifecycle control. */
 export function FranchiseLookupPage() {
   const [idInput, setIdInput] = useState('');
   const [lookedUpId, setLookedUpId] = useState<string | null>(null);
@@ -64,6 +66,17 @@ export function FranchiseLookupPage() {
                 <dd>{new Date(franchise.data.createdAt).toLocaleString()}</dd>
               </dl>
             </Card>
+          ) : null}
+
+          {franchise.data ? (
+            <TenantLifecycleControls
+              kind="franchise"
+              id={franchise.data.id}
+              name={franchise.data.name}
+              archivedAt={franchise.data.archivedAt}
+              purgeAt={franchise.data.purgeAt}
+              purgedAt={franchise.data.purgedAt}
+            />
           ) : null}
 
           {franchise.data ? (

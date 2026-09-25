@@ -7,6 +7,7 @@ import { SchoolLookupPage } from './schools/SchoolLookupPage';
 import { FranchiseLookupPage } from './franchises/FranchiseLookupPage';
 import { ImpersonationPage } from './impersonation/ImpersonationPage';
 import { TranslationsPage } from './translations/TranslationsPage';
+import { SubscriptionPlansPage } from './subscriptionPlans/SubscriptionPlansPage';
 import { Shell } from './layout/Shell';
 
 export function App() {
@@ -63,6 +64,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <TranslationsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/subscription-plans"
+        element={
+          <RequireAuth>
+            <Shell>
+              <SubscriptionPlansPage />
             </Shell>
           </RequireAuth>
         }

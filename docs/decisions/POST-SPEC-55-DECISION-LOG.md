@@ -1008,7 +1008,99 @@ Logged while implementing the Transactions page mockup fix for real, 18 Sep 2026
 
 ---
 
-## Decision 110 — Booking/WaitlistEntry/RoleGrant name resolution: mechanical extension of Decision 109's embed pattern
+## Decision 110 — General tenant/content offboarding: soft-archive with a 90-day retention window, gated behind an explicit close-account action
+
+**Date:** 21 Sep 2026
+**Status:** Product-owner decision, made directly with the user — Claude's own recommendation requested and followed (same shape as Decision 105)
+**Resolves:** the systemic `[UNRESOLVED]` gap `ultm8-app-publishing` §4/§5.5 flags ("General tenant/School cancellation and offboarding... is not otherwise specified anywhere in Spec 55... flagged as its own new open item") — the reason `School`, `Branch`, `Franchise`, `Class`, `TimetableSlot`, `Instructor`, `MembershipPlan`, `Rank`, `Waiver`, and `Curriculum`/`Lesson` have no `DELETE` endpoint anywhere, each with its own "general tenant offboarding is `[UNRESOLVED]`" code comment (16 files).
+
+### Decision
+
+Three parts, all requested from Claude as a recommendation based on standard SaaS-market practice rather than picked from a set of options, then accepted as-is:
+
+1. **Semantics — soft-archive immediately, hard-delete after a 90-day retention window.** Not indefinite soft-archive, not immediate hard delete. On the trigger (below), the entity becomes read-only/hidden but is retained in full; after 90 days with no reversal, a scheduled job purges it for real. 90 days specifically to match the one directly analogous precedent already shipped in this exact codebase — the white-label credential grace-period purge (`ultm8-app-publishing` §5.5, Decision 27) — rather than inventing an unrelated number. This also matches ordinary market practice: a bounded retention window balances "don't destroy data over a change of mind" against GDPR/LGPD's own data-minimization principle (Art 5(1)(c)), which disfavors retaining a cancelled tenant's data indefinitely "just in case."
+   - **One flagged exception, not resolved here:** `Waiver` signatures are legal liability documents; many jurisdictions require retaining a signed waiver well past 90 days (statute-of-limitations periods, often years — longer still if the signer was a minor, running from age of majority). `Waiver`'s own purge timing needs real legal input for the jurisdictions ULTM8 operates in before it runs on the same 90-day clock as everything else. Every other entity in the list above gets the uniform 90-day rule.
+2. **Trigger — two independent triggers, not one; platform-subscription cancellation alone is NOT one of them.** `platformSubscriptionStatus` → `CANCELED` (Phase 54, already shipped) stays billing-only: it blocks new writes via the existing `SubscriptionGateService` degraded-portal gate, but does **not** by itself start the offboarding countdown — a School/Franchise that simply stops paying keeps its data fully intact, the same way Stripe/Shopify/GitHub/Salesforce all separate "billing lapsed" from "delete my account." The only trigger for actual offboarding is a new, explicit, separate **close-account action** — Platform-Admin-mediated, FULL_ADMIN-only, expected to need its own confirmation step (e.g. re-typing the School/Franchise name) given the consequence. That action is what starts the soft-archive → 90-day countdown from part 1.
+3. **Scope — School/Franchise-level (and owned content) offboarding only; GDPR/LGPD per-user erasure is explicitly out of scope here.** An individual Student/User's "erase my personal data" request is a different legal mechanism (GDPR Art 17, with its own exceptions for legal retention obligations), a different trigger (a specific erasure/DSAR request, not a School closing), and a different technical shape (anonymize/delete one person's rows without necessarily touching the School/Franchise around them). Conflating the two into one decision would understate the legal complexity either one deserves on its own.
+
+### What this does NOT resolve
+
+- **No code shipped by this decision.** The actual close-account endpoint(s), the soft-archived/read-only state's own access behavior, the 90-day scheduled purge job, and updating all 16 flagged files from "no delete method" to this real lifecycle is genuine follow-up build work (`docs/ULTM8-MASTER-ROADMAP.md` §5 item 9), not done here.
+- **Who may trigger close-account** is stated above as Platform-Admin-mediated (FULL_ADMIN-only) as part of the recommendation, but this was not independently re-verified against Spec 55 §4.4's own role table before being proposed — worth a quick confirmation pass before it's built, same discipline Decision 105's own citation-checking used.
+- **`Waiver`'s own retention period** is explicitly left open pending real legal input — not resolved by the uniform 90-day rule this decision sets for everything else.
+- **Per-user GDPR/LGPD erasure** remains its own separate, not-yet-made decision — still tracked as its own open item (`docs/ULTM8-MASTER-ROADMAP.md` §4, "a tracking gap, not a technical one").
+
+### Recorded by
+
+Logged during a direct exchange with the user, 21 Sep 2026 — presented with the three sub-questions above (offboarding semantics, trigger, and GDPR/LGPD scope) plus multiple options for each, the user asked for Claude's own recommendation based on standard market practice rather than picking between the options; the recommendation was given for all three and followed as given, the same "recommendation given, user's own choice followed" shape as Decisions 101–105.
+
+---
+
+## Decision 111 — Stripe dispute handling (Decision 55) built end to end: webhook mechanics now, chargeback-pattern threshold set at 2 lost disputes
+
+**Date:** 22 Sep 2026
+**Status:** Product-owner decision (the threshold number) plus a Developer-level scope/design split, both made directly with the user
+**Resolves:** Decision 55's own confirmed dispute-handling contract — idempotent status-driven webhook processing across `Transaction`/`FranchiseFeeCharge`/`PlatformCharge`, refund/credit-restore frozen while disputed, Membership force-Expiry plus Stripe Subscription cancellation on a loss, notification routed by who's financially exposed — was fully specified in the schema (all three entities already carry `status: DISPUTED` and a `disputedAmount` column) but had zero code behind it: `charge.dispute.created/updated/closed` was a literal no-op in `stripe-webhook-processing.processor.ts`, and Decision 68's own `chargeback-pattern-restriction` job didn't exist at all. Surfaced during a deep-dive audit of Track A for anything open, not previously tracked in `docs/TRACK-A-ROADMAP.md`.
+
+### Decision
+
+**Split into two phases**, because the second genuinely depends on data the first produces:
+
+- **Phase A (this decision's own scope, built now)** — the dispute webhook mechanics themselves: real `charge.dispute.*` handlers, the refund/credit-restore freeze, Membership/Subscription force-actions on a loss, and notification routing. Fully specified by Decision 55; no open question blocks it.
+- **Phase B (deferred, separately scoped when built)** — the `chargeback-pattern-restriction` scheduled job (Decision 68) that counts a Student's lost disputes across every School they hold a grant at and restricts them to Cash/Bank-only past a threshold. Genuinely depends on Phase A actually recording `DISPUTED` outcomes to count.
+
+**The chargeback threshold is set at 2 lost disputes** — Claude's own recommendation, requested and followed, same shape as Decisions 101–105: the job is named "chargeback-*pattern*-restriction," and a single lost dispute is not a pattern — it's as likely a genuinely fraudulent card or an honest billing dispute as it is abuse. Two is the common "second strike" heuristic in subscription businesses generally (one loss tolerated as noise, a second confirms it isn't). This does not need to be treated as final — it is a business risk-tolerance call, not an engineering constraint, and can be revisited.
+
+### Phase A's design, confirmed against the actual code before writing anything
+
+- **Correlation** mirrors `handleSubscriptionDeleted()`'s own established "try each correlator column in turn" shape: a disputed charge is matched against `Transaction.stripePaymentIntentId` first (one-time Membership purchases), then `FranchiseFeeCharge`/`PlatformCharge` via their Invoice's Subscription id (recurring, Direct-charge or platform billing) — never a guess, always a real stored correlator.
+- **Freeze while disputed** — verified there are only two real call sites to guard, not a broad sweep: `BookingsService.restoreCredit()` (the only real Auto-Credit path — Auto-Refund for Membership purchases doesn't call Stripe at all yet, a separate, already-tracked gap, so there's nothing there to freeze) and `FranchiseFeesService.refund()` (the only real `stripe.refunds.create()` call in the codebase outside Connect onboarding). `PlatformCharge` has no refund endpoint at all yet, so nothing to freeze there either.
+- **Lost-dispute consequences** — confirmed only `Transaction` (Membership) disputes carry a further consequence: force-`Membership.status = EXPIRED`, and cancel the Stripe Subscription if `stripeSubscriptionId` is set. Nothing in Decision 55 or the schema implies an equivalent forced action on a lost `FranchiseFeeCharge`/`PlatformCharge` dispute — recording the loss is sufficient there.
+- **Notification routing "by who's financially exposed"** — `Transaction` disputes notify the School Owner/Manager, `FranchiseFeeCharge` disputes notify the Franchise Owner, both via the existing `notification-fanout` job (a real, working channel). `PlatformCharge` disputes have no equivalent channel: `Notification.userId` only ever points at tenant `User`, never `AdminUser` — Platform Admin is a structurally separate identity with no notification inbox anywhere in this codebase. Rather than inventing one, this follows the same "reasonable-minimum, flagged for Architect review" treatment Decision 95 gave an analogous gap: a loud log line, not a fabricated notification path. **Corrected during implementation**: the original scoping conversation for this bullet said "an `AuditLogService` entry plus a loud log line" — checked directly against `AuditLogService`'s own `RecordAuditLogInput` interface before writing the handler, and that service requires a real `adminUserId` actor, which a system/webhook-triggered event genuinely has none of. `AuditLogService` is the wrong mechanism here; a plain `Logger.error()` call is the actual, correct treatment, and is what's built.
+
+### What this does NOT resolve
+
+Phase B itself (the actual `chargeback-pattern-restriction` job, the new `User.paymentRestrictedAt` field, and the Cash/Bank-only purchase gate) is not built by this decision — only scoped and unblocked by it. The already-tracked, separate gap that Membership/Transaction "Auto-Refund" never actually calls Stripe (it only ever restores credit) is unaffected either way — freezing a refund path that doesn't exist yet is moot until that gap is closed on its own.
+
+### Recorded by
+
+Logged during a direct scoping conversation with the user, 22 Sep 2026, following a full deep-dive audit of Track A that surfaced this as a confirmed-but-unbuilt gap. Options for the threshold were presented with a stated recommendation and reasoning; the user asked for the reasoning restated in more detail plus a fuller explanation of what each phase actually contains before deciding, then accepted the recommendation (2) and asked to proceed with Phase A.
+
+---
+
+## Decision 112 — `chargeback-pattern-restriction` (Decision 68/111 Phase B) built: three Developer-level design gaps closed, all flagged before writing code
+
+**Date:** 22 Sep 2026
+**Status:** Developer-level design decisions, made while implementing an already-confirmed rule (Decision 68) — none of these invent new business logic; each closes a genuine implementation gap Decision 68's own confirmed text left unanswered once checked against the actual codebase.
+**Resolves:** Decision 111's own deferred Phase B — the job itself, `User.paymentRestrictedAt`, and the Cash/Bank-only purchase gate.
+
+### Decision 68's own text, quoted (skills/ultm8-domain-rules/SKILL.md §9)
+
+"A platform-wide `chargeback-pattern-restriction` background job counts a Student's **lost** Stripe disputes (`Transaction.status = Disputed` outcomes... that resolve as lost) across **every School the Student holds a RoleGrant at**... Once a confirmed threshold is exceeded, the Student is restricted to **Cash/Bank Transfer payment methods only**, going forward... The Student's current School(s) are notified via the existing notification-fanout mechanism."
+
+### Gap 1 — the schema cannot currently distinguish a lost dispute from a merely open one
+
+Decision 111 Phase A made `Transaction.status = DISPUTED` the terminal representation for BOTH an unresolved, in-progress dispute (`needs_response`, `under_review`, etc.) and a permanently lost one — Decision 55's own confirmed contract never needed to tell them apart (the only entity-level consequence of a loss, Membership force-Expiry, is applied at the moment of loss, not queried back out later). Decision 68's own text above explicitly says "outcomes... that resolve as lost," which this schema genuinely cannot answer today. **Closed by adding `Transaction.disputeLostAt DateTime?`** — set at the exact moment `stripe-webhook-processing`'s dispute handler already determines `outcome.lost === true` (Phase A's own `resolveDisputeOutcome()`), cleared back to `null` on the rare reversal to `won`. This is not new business logic — it's persisting a fact Phase A's own code already computes in memory but never previously needed to write down.
+
+### Decision — event-triggered, not a periodic sweep
+
+Decision 68 calls this "a background job," which this codebase already uses for two genuinely different shapes: a periodic `Processor`/`Scheduler` pair (`FranchiseFeeUsageReportingProcessor`/`Scheduler`, `BookingNoShowProcessingProcessor`/`Scheduler`) and a plain event-triggered `Processor` with no scheduler at all, enqueued by whichever action produces the event (`WaitlistCascadeProcessingProcessor`, triggered by a Booking cancellation freeing a seat). Nothing in Decision 68's text requires a periodic cadence, and a periodic sweep would need its own extra idempotency bookkeeping to avoid re-notifying a already-restricted Student's Schools on every run forever. **Built as event-triggered**: `stripe-webhook-processing`'s dispute handler enqueues a `chargeback-pattern-restriction` check the instant it records a NEW lost dispute (`outcome.lost === true`), mirroring `WaitlistCascadeProcessingProcessor`'s exact shape — a `Processor` only, no `Scheduler`. The check itself (count this Student's lost disputes, compare to the threshold, restrict once) is naturally idempotent per Stripe event via the same `ProcessedStripeEvent` dedup Phase A already relies on upstream.
+
+### Decision — what "restricted to Cash/Bank Transfer" means in THIS codebase, verified against the actual purchase flow before writing the gate
+
+Checked `MembershipsService.purchase()` directly rather than assuming a Student ever chooses a payment method per-purchase: **they don't**. Payment method is fixed per School — `paymentAccount.provider` (`STRIPE` or `CASH`/`BANK_TRANSFER`, one value per School's own `PaymentAccount` row) — never a per-purchase Student choice, and `PurchaseMembershipDto` carries no such field. So "restricted to Cash/Bank Transfer payment methods only" cannot mean "offer the Student a Cash/Bank option instead" (no such per-purchase choice exists to offer); it can only mean **block the purchase outright at any School whose PaymentAccount is Stripe-only**, while leaving purchases at an already-Cash/Bank-provider School untouched (the Student was already paying Cash/Bank there — nothing changes). Built as a single guard inside `purchase()`'s existing `paymentAccount.provider === 'STRIPE'` branch, checking `User.paymentRestrictedAt`.
+
+### What this does NOT resolve
+
+No appeal/reversal mechanism — `paymentRestrictedAt` is set once and never cleared by any code this decision builds; Decision 68's own text describes no un-restriction path, and inventing one would be exactly the "fill the gap with a plausible guess" CLAUDE.md forbids. Same accepted, unclosed loophole Decision 68 itself already names: a Student can still evade this by registering a fresh account, which this decision does not attempt to close either.
+
+### Recorded by
+
+Logged while implementing Phase B directly, 22 Sep 2026, following the user's "Go ahead and start Phase B." All three decisions above are implementation-level closures of an already-`[CONFIRMED]` rule, not new business logic — flagged here per this codebase's own standing discipline rather than silently assumed.
+
+---
+
+## Decision 113 — Booking/WaitlistEntry/RoleGrant name resolution: mechanical extension of Decision 109's embed pattern
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
@@ -1025,7 +1117,7 @@ No RLS/migration change for any of the three — `Booking`/`WaitlistEntry` alrea
 
 ### What this does NOT resolve
 
-`InstructorFormModal.tsx`'s candidate field (Decision 111) and `StaffPage.tsx`'s *invite* form (Decision 112) are structurally different — a picker over an unknown, not-yet-scoped candidate set rather than a lookup of an already-known id — and are recorded separately rather than folded into this mechanical extension.
+`InstructorFormModal.tsx`'s candidate field (Decision 114) and `StaffPage.tsx`'s *invite* form (Decision 115) are structurally different — a picker over an unknown, not-yet-scoped candidate set rather than a lookup of an already-known id — and are recorded separately rather than folded into this mechanical extension.
 
 ### Recorded by
 
@@ -1033,7 +1125,7 @@ Logged while extending Decision 109's pattern to the remaining known-id lookup s
 
 ---
 
-## Decision 111 — InstructorFormModal candidate picker: new `GET .../instructors/eligible-users` endpoint, scoped to active INSTRUCTOR RoleGrant holders
+## Decision 114 — InstructorFormModal candidate picker: new `GET .../instructors/eligible-users` endpoint, scoped to active INSTRUCTOR RoleGrant holders
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
@@ -1053,11 +1145,11 @@ Logged while designing the InstructorFormModal candidate-picker fix, 21 Sep 2026
 
 ---
 
-## Decision 112 — StaffPage invite-target lookup: exact email/phone match only, confirm before inviting, resolved directly with the user
+## Decision 115 — StaffPage invite-target lookup: exact email/phone match only, confirm before inviting, resolved directly with the user
 
 **Date:** 21 Sep 2026
 **Status:** Product-owner decision, made directly with the user
-**Resolves:** `StaffPage.tsx`'s invite form, previously a raw `userId` text field with no way to discover a target's id — structurally different from Decisions 110/111 above because the invite target has **no existing RoleGrant at this School yet**, so `user_self_or_shared_school` and every other lookup this session built genuinely cannot see them; the ordinary RLS-scoped read has nothing to scope through.
+**Resolves:** `StaffPage.tsx`'s invite form, previously a raw `userId` text field with no way to discover a target's id — structurally different from Decisions 113/114 above because the invite target has **no existing RoleGrant at this School yet**, so `user_self_or_shared_school` and every other lookup this session built genuinely cannot see them; the ordinary RLS-scoped read has nothing to scope through.
 
 ### Decision
 
@@ -1077,25 +1169,25 @@ Scoped directly with the user via a clarifying question during this session ("wh
 
 ---
 
-## Decision 113 — Name-resolution joins (Bookings/Waitlist/RoleGrant/Transactions) switched from a Prisma `include` to a `PrismaAuthService`-backed lookup, closing a real RLS visibility gap
+## Decision 116 — Name-resolution joins (Bookings/Waitlist/RoleGrant/Transactions) switched from a Prisma `include` to a `PrismaAuthService`-backed lookup, closing a real RLS visibility gap
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
-**Resolves:** a correctness gap found during a deep-dive review (requested by the user before committing Decisions 110–112) of the just-implemented Bookings/Waitlist/RoleGrant name-resolution joins — a gap that, on inspection, also already existed in the merged Decision 109 Transactions endpoint.
+**Resolves:** a correctness gap found during a deep-dive review (requested by the user before committing Decisions 113–115) of the just-implemented Bookings/Waitlist/RoleGrant name-resolution joins — a gap that, on inspection, also already existed in the merged Decision 109 Transactions endpoint.
 
 ### The gap
 
-`user_self_or_shared_school` (`User`'s RLS policy, `20260902000000_init/migration.sql:235`) makes a `User` row visible to a caller only if that User currently holds an ACTIVE RoleGrant at a School where the caller also holds one — it checks the *target's* own current RoleGrant status, not just the caller's. `RoleGrant.user`, `Transaction.student`, `Booking.student`, and `WaitlistEntry.student` are all REQUIRED relations in `schema.prisma`; Decisions 109/110 resolved display names via a Prisma `include` on these relations, then destructured the result unconditionally (`({ student, ...b }) => ({ ...b, studentFirstName: student.firstName, ... })`).
+`user_self_or_shared_school` (`User`'s RLS policy, `20260902000000_init/migration.sql:235`) makes a `User` row visible to a caller only if that User currently holds an ACTIVE RoleGrant at a School where the caller also holds one — it checks the *target's* own current RoleGrant status, not just the caller's. `RoleGrant.user`, `Transaction.student`, `Booking.student`, and `WaitlistEntry.student` are all REQUIRED relations in `schema.prisma`; Decisions 109/113 resolved display names via a Prisma `include` on these relations, then destructured the result unconditionally (`({ student, ...b }) => ({ ...b, studentFirstName: student.firstName, ... })`).
 
 Prisma's `include` issues a *separate* query for the related row through the *same* RLS-scoped connection — if RLS hides that row, Prisma doesn't error; it silently fails to resolve the relation (a known Prisma+RLS limitation), even though the TS type — trusting the schema's non-null relation — claims it can't be missing. The unconditional destructure would then throw on `student.firstName` for exactly that row.
 
 This is concretely reachable, not theoretical: `GuardiansService.withdrawConsent` (`apps/api/src/guardians/guardians.service.ts:280`), on a BASELINE-tier consent withdrawal, runs `prismaJobs.roleGrant.updateMany({ where: { userId: existing.studentId, revokedAt: null }, data: { revokedAt: new Date() } })` — revoking every active RoleGrant a Student holds, everywhere, synchronously, in-request. Any Booking, WaitlistEntry, Transaction, or RoleGrant-lookup row referencing that Student/User from that point on hit this gap. The parent row itself stayed visible regardless — `booking_staff_read`/`rolegrant_school_manager_scope` key only off the *caller's* own active RoleGrant, never the target's — so this was specifically "the name breaks," not "the whole row disappears for a sensible reason."
 
-Confirmed NOT to affect Decision 111 (`findEligibleInstructorUsers`): its `where` clause already requires the exact RoleGrant row being read to have `revokedAt: null` at the caller's own School, which is itself the visibility witness `user_self_or_shared_school` needs. Confirmed NOT to affect Decision 112 (`lookupInviteCandidate`): it already uses `PrismaAuthService`, immune to this class of gap entirely.
+Confirmed NOT to affect Decision 114 (`findEligibleInstructorUsers`): its `where` clause already requires the exact RoleGrant row being read to have `revokedAt: null` at the caller's own School, which is itself the visibility witness `user_self_or_shared_school` needs. Confirmed NOT to affect Decision 115 (`lookupInviteCandidate`): it already uses `PrismaAuthService`, immune to this class of gap entirely.
 
 ### Decision
 
-Replaced the `include`-based join in `BookingsService.findAllForClass`, `WaitlistService.findAllForClass`, `RoleGrantsService.findAllForUser`, and — retrofitting the already-merged Decision 109 endpoint rather than leaving a known gap unaddressed — `TransactionsService.findAllForSchool`, with a shared helper, `resolveUserNames()` (`apps/api/src/common/prisma/resolve-user-names.ts`), that batch-resolves display names via `PrismaAuthService` — the same pre-tenant-context, SELECT-only-on-`User`, no-tenant-restriction connection `RoleGrantsService.create()` and Decision 112 already use. This makes name resolution depend on nothing but the row's own physical existence (User rows are never hard-deleted anywhere in this codebase today — verified via `grep -rn "user.delete" src`, zero matches), closing the gap completely rather than gracefully degrading it. Authorization is unaffected: the caller's right to see the parent row is still fully gated by the unchanged RLS policy + `assertStaffAtSchool`/`assertSchoolOwner` calls on the primary query; this only changes how the display name for an id the caller is already authorized to know about gets resolved, under the same minimum-fields-only (`id`, `firstName`, `surname`) discipline every other `PrismaAuthService` call site follows. `PrismaJobsService` was considered and ruled out — its `ultm8_jobs` Postgres role has no SELECT grant on `User` at all today (per its own header comment), which would have needed a new migration for a capability `PrismaAuthService` already has.
+Replaced the `include`-based join in `BookingsService.findAllForClass`, `WaitlistService.findAllForClass`, `RoleGrantsService.findAllForUser`, and — retrofitting the already-merged Decision 109 endpoint rather than leaving a known gap unaddressed — `TransactionsService.findAllForSchool`, with a shared helper, `resolveUserNames()` (`apps/api/src/common/prisma/resolve-user-names.ts`), that batch-resolves display names via `PrismaAuthService` — the same pre-tenant-context, SELECT-only-on-`User`, no-tenant-restriction connection `RoleGrantsService.create()` and Decision 115 already use. This makes name resolution depend on nothing but the row's own physical existence (User rows are never hard-deleted anywhere in this codebase today — verified via `grep -rn "user.delete" src`, zero matches), closing the gap completely rather than gracefully degrading it. Authorization is unaffected: the caller's right to see the parent row is still fully gated by the unchanged RLS policy + `assertStaffAtSchool`/`assertSchoolOwner` calls on the primary query; this only changes how the display name for an id the caller is already authorized to know about gets resolved, under the same minimum-fields-only (`id`, `firstName`, `surname`) discipline every other `PrismaAuthService` call site follows. `PrismaJobsService` was considered and ruled out — its `ultm8_jobs` Postgres role has no SELECT grant on `User` at all today (per its own header comment), which would have needed a new migration for a capability `PrismaAuthService` already has.
 
 Response shapes are unchanged (`studentFirstName`/`studentSurname`/`userFirstName`/`userSurname` stay non-nullable strings, falling back to `''` only in the — currently unreachable, given no User hard-delete path — case the batch lookup somehow misses an id; kept as defense-in-depth, not an expected outcome). No new migration, no RLS/schema change, no OpenAPI schema drift (confirmed via a full `export:openapi` → `generate` diff).
 
@@ -1105,11 +1197,11 @@ Whether `PrismaJobsService` should eventually be granted SELECT on `User` for ge
 
 ### Recorded by
 
-Found during a deep-dive review the user explicitly requested before committing Decisions 110–112 ("deep dive before commit and push"), traced through the actual migration SQL and service code rather than assumed; the user was given three options (defensive patch only / defensive patch + retrofit Transactions / ship as-is and log as follow-up) and asked instead for "the best possible solution" — read as authorizing the fuller `PrismaAuthService`-based fix across all four sites, implemented and logged 21 Sep 2026.
+Found during a deep-dive review the user explicitly requested before committing Decisions 113–115 ("deep dive before commit and push"), traced through the actual migration SQL and service code rather than assumed; the user was given three options (defensive patch only / defensive patch + retrofit Transactions / ship as-is and log as follow-up) and asked instead for "the best possible solution" — read as authorizing the fuller `PrismaAuthService`-based fix across all four sites, implemented and logged 21 Sep 2026.
 
 ---
 
-## Decision 114 — Student roster: new `GET /schools/{id}/students`, Staff-gated (not Owner-only)
+## Decision 117 — Student roster: new `GET /schools/{id}/students`, Staff-gated (not Owner-only)
 
 **Date:** 21 Sep 2026
 **Status:** Developer-level inference, flagged for Architect confirmation — not a product-owner ruling
@@ -1117,15 +1209,15 @@ Found during a deep-dive review the user explicitly requested before committing 
 
 ### Decision
 
-New `GET /schools/{id}/students` on `SchoolsController`/`SchoolsService.findAllStudentsForSchool`, returning every User holding an active `STUDENT` RoleGrant at that School (`id`, `firstName`, `surname`, `email`, `enrolledAt` — the RoleGrant's own `grantedAt`, not `User.createdAt`). Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { user: {...}, grantedAt: true } })` — the exact pattern Decision 111 (`findEligibleInstructorUsers`) already established for `INSTRUCTOR`. Safe from the Decision 113 RLS name-join gap by construction, same reasoning as Decision 111: the RoleGrant row being read is itself the `user_self_or_shared_school` visibility witness, so the joined `User` row is always resolvable — no `PrismaAuthService` lookup needed.
+New `GET /schools/{id}/students` on `SchoolsController`/`SchoolsService.findAllStudentsForSchool`, returning every User holding an active `STUDENT` RoleGrant at that School (`id`, `firstName`, `surname`, `email`, `enrolledAt` — the RoleGrant's own `grantedAt`, not `User.createdAt`). Query shape: `tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { user: {...}, grantedAt: true } })` — the exact pattern Decision 114 (`findEligibleInstructorUsers`) already established for `INSTRUCTOR`. Safe from the Decision 116 RLS name-join gap by construction, same reasoning as Decision 114: the RoleGrant row being read is itself the `user_self_or_shared_school` visibility witness, so the joined `User` row is always resolvable — no `PrismaAuthService` lookup needed.
 
-Gated on `TenantAuthorizationService.assertStaffAtSchool` (School Owner/Manager, Branch Staff, **or** Instructor — no `branchId` scoping, since Student enrollment itself has no Branch dimension) — deliberately broader than Decision 111's Owner-only gate, because seeing the roster is an ordinary read any Staff member needs, not an Owner-only write flow like granting the Instructor role is.
+Gated on `TenantAuthorizationService.assertStaffAtSchool` (School Owner/Manager, Branch Staff, **or** Instructor — no `branchId` scoping, since Student enrollment itself has no Branch dimension) — deliberately broader than Decision 114's Owner-only gate, because seeing the roster is an ordinary read any Staff member needs, not an Owner-only write flow like granting the Instructor role is.
 
 `apps/school-portal`: a new read-only `StudentsPage.tsx` (no create/edit — a Staff member doesn't create a Student profile directly; a Student joins via `SchoolsService.join()`, self-service or Guardian-on-behalf-of), added to the sidebar nav and router between Instructors and Classes.
 
 ### What this does NOT resolve
 
-Whether the roster should eventually show more than name/email/enrollment date (Membership status, current Rank, Guardian info for a minor) — deliberately kept to the minimum-fields precedent this codebase already uses elsewhere (Decision 111), not expanded speculatively. A per-Student detail page is a natural follow-up, not built here.
+Whether the roster should eventually show more than name/email/enrollment date (Membership status, current Rank, Guardian info for a minor) — deliberately kept to the minimum-fields precedent this codebase already uses elsewhere (Decision 114), not expanded speculatively. A per-Student detail page is a natural follow-up, not built here.
 
 ### Recorded by
 
@@ -1133,7 +1225,7 @@ Logged while auditing what's actually built vs. missing across ULTM8's frontend 
 
 ---
 
-## Decision 115 — Auth flow implemented for real: brand rail, passcode show/hide, success panel, segmented OTP input
+## Decision 118 — Auth flow implemented for real: brand rail, passcode show/hide, success panel, segmented OTP input
 
 **Date:** 22 Sep 2026
 **Status:** Two sub-decisions resolved directly with the user; the rest is a mechanical port of the already-approved mockup direction (`docs/design-mockup-notes.md`), not a new judgment call
@@ -1165,12 +1257,12 @@ Resolved directly with the user via two explicit questions (success-panel timing
 
 ---
 
-## Decision 116 — Remaining 13 mockups audited against real code; Instructor name-resolution gap closed
+## Decision 119 — Remaining 13 mockups audited against real code; Instructor name-resolution gap closed
 
 **Date:** 22 Sep 2026
-**Status:** Developer-level inference (the new `InstructorResponseDto.firstName`/`surname` fields, same pattern as Decision 113), flagged for Architect confirmation like every other same-shape fix this session — everything else in this entry is a mechanical audit result, not a judgment call
+**Status:** Developer-level inference (the new `InstructorResponseDto.firstName`/`surname` fields, same pattern as Decision 116), flagged for Architect confirmation like every other same-shape fix this session — everything else in this entry is a mechanical audit result, not a judgment call
 
-**Resolves:** the user asked to "update the rest of the pages too" after the auth-flow pass (Decision 115) — the remaining 13 pages flagged `mockup` in `docs/design-mockup-notes.md` (Instructors, Staff, Branches, Timetable, Classes & detail, Disciplines/Skills/Ranks, Membership Plans, Transactions, Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users/School lookup/Franchise lookup).
+**Resolves:** the user asked to "update the rest of the pages too" after the auth-flow pass (Decision 118) — the remaining 13 pages flagged `mockup` in `docs/design-mockup-notes.md` (Instructors, Staff, Branches, Timetable, Classes & detail, Disciplines/Skills/Ranks, Membership Plans, Transactions, Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users/School lookup/Franchise lookup).
 
 ### Approach
 
@@ -1178,12 +1270,12 @@ Five parallel research passes (one per page group) compared each page's current 
 
 ### 1. Instructors list — missing Id/avatar/Name columns, traced to a real backend gap
 
-`InstructorResponseDto` had no name field at all — verified, not guessed: `Class.instructorId`/`TimetableSlot.instructorId` are direct FKs into `User` (schema.prisma's own comment: "NOT a separate Instructor table"), and `ClassFormModal`'s/`TimetableSlotFormModal`'s instructor pickers were falling back to `beltRanking` text or a truncated id because there was nothing else to show. Fixed the same way Decision 113 fixed the identical class of gap for Bookings/Waitlist/RoleGrant/Transactions: `InstructorsService.findAllForSchool` now resolves `firstName`/`surname` via `resolveUserNames`/`PrismaAuthService`, added to `InstructorResponseDto`. This single backend fix unlocked three frontend fixes at once (all three already reuse the same `useInstructors` hook):
+`InstructorResponseDto` had no name field at all — verified, not guessed: `Class.instructorId`/`TimetableSlot.instructorId` are direct FKs into `User` (schema.prisma's own comment: "NOT a separate Instructor table"), and `ClassFormModal`'s/`TimetableSlotFormModal`'s instructor pickers were falling back to `beltRanking` text or a truncated id because there was nothing else to show. Fixed the same way Decision 116 fixed the identical class of gap for Bookings/Waitlist/RoleGrant/Transactions: `InstructorsService.findAllForSchool` now resolves `firstName`/`surname` via `resolveUserNames`/`PrismaAuthService`, added to `InstructorResponseDto`. This single backend fix unlocked three frontend fixes at once (all three already reuse the same `useInstructors` hook):
 - `InstructorsPage.tsx` — reordered to the Figma-confirmed column order (Id · avatar · Name · Ranking · Specializations · Experience · Phone · Branch · Actions), added a generic silhouette avatar placeholder (`photoUrl` is real/nullable but no upload UI exists anywhere yet, so an icon-for-no-photo is honest, not a fabricated photo).
 - `ClassFormModal.tsx`/`TimetableSlotFormModal.tsx` — instructor-picker dropdown now labeled by real name instead of belt/ranking text or a truncated id.
 - `ClassesPage.tsx` — added an Instructor column (matched on `instructor.userId === class.instructorId`, the same FK target), showing the resolved name.
 
-Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedicated Instructor profile, confirms the roster list resolves its name, then revokes its RoleGrant and confirms the name **still** resolves — proving this uses the RLS-immune `PrismaAuthService` path, not a plain `include` that Decision 113 already found breaks under exactly that condition.
+Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedicated Instructor profile, confirms the roster list resolves its name, then revokes its RoleGrant and confirms the name **still** resolves — proving this uses the RLS-immune `PrismaAuthService` path, not a plain `include` that Decision 116 already found breaks under exactly that condition.
 
 ### 2. Disciplines — Ranks table showed colour as plain text, not a swatch
 
@@ -1195,7 +1287,7 @@ Regression test added to `apps/api/test/instructors.e2e-spec.ts`: creates a dedi
 
 ### 4. Everything else — confirmed already matching, nothing changed
 
-Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 113), Branches, Membership Plans, Transactions (its remaining "unimplemented" items were mockup items meant to be *excluded*, already correctly absent from real code), Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users page all already matched their mockups exactly — re-confirmed by direct comparison, not assumed unchanged.
+Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 116), Branches, Membership Plans, Transactions (its remaining "unimplemented" items were mockup items meant to be *excluded*, already correctly absent from real code), Waivers, Franchises & detail, Notifications, and platform-admin's Admin Users page all already matched their mockups exactly — re-confirmed by direct comparison, not assumed unchanged.
 
 ### What this does NOT resolve (explicitly flagged, not decided here)
 
@@ -1212,15 +1304,15 @@ Timetable, Class Detail (Bookings/Waitlist names — already fixed by Decision 1
 
 ### Recorded by
 
-Logged after the user asked to "update the rest of the pages too" following the auth-flow pass (Decision 115); five parallel research agents audited the remaining pages against their approved mockups, findings synthesized and implemented directly, 22 Sep 2026.
+Logged after the user asked to "update the rest of the pages too" following the auth-flow pass (Decision 118); five parallel research agents audited the remaining pages against their approved mockups, findings synthesized and implemented directly, 22 Sep 2026.
 
 ---
 
-## Decision 117 — Social/OAuth login is a confirmed V2 scope item, not excluded permanently
+## Decision 120 — Social/OAuth login is a confirmed V2 scope item, not excluded permanently
 
 **Date:** 22 Sep 2026
 **Status:** Approved by product owner — a scoping/roadmap decision, not a technical one
-**Resolves:** why Login's real code (and every other auth screen) has no Google/Facebook/Apple/Microsoft/Discord sign-in buttons even though the Figma reference shows them — flagged and excluded during the mockup-review pass and again when implementing Decision 115, on the grounds that no OAuth/social provider is confirmed anywhere in the spec (Decision 72: passcode is the *sole* login credential) and building it would mean inventing a whole auth capability, not a style choice.
+**Resolves:** why Login's real code (and every other auth screen) has no Google/Facebook/Apple/Microsoft/Discord sign-in buttons even though the Figma reference shows them — flagged and excluded during the mockup-review pass and again when implementing Decision 118, on the grounds that no OAuth/social provider is confirmed anywhere in the spec (Decision 72: passcode is the *sole* login credential) and building it would mean inventing a whole auth capability, not a style choice.
 
 ### Decision
 
@@ -1228,7 +1320,7 @@ Social/OAuth login (sign in via Google, Facebook, Apple, Microsoft, Discord, or 
 
 ### Effect
 
-- No code change from this decision alone — it confirms the *reasoning* already applied when the social-login buttons were excluded from `LoginPage.tsx`/`RegisterPage.tsx` (Decision 115) was correct, and converts "not confirmed, so excluded" into "confirmed as deferred, so excluded — with a known target version."
+- No code change from this decision alone — it confirms the *reasoning* already applied when the social-login buttons were excluded from `LoginPage.tsx`/`RegisterPage.tsx` (Decision 118) was correct, and converts "not confirmed, so excluded" into "confirmed as deferred, so excluded — with a known target version."
 - When V2 auth work actually starts, this needs its own real design/engineering pass, not a Figma-icon copy: which provider(s) specifically, how a socially-authenticated account reconciles with the existing email/phone + passcode identity model (a returning user signing in via Google needs to map to the same `User` row as their existing email-based account, not create a duplicate), and how/whether `AuthContext.tsx`'s current `login(email, passcode)`-only shape extends to support it. None of that is decided here — this decision only confirms the feature is planned and gives it a target version, not a design.
 
 ### Recorded by

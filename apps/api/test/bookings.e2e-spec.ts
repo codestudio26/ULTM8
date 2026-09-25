@@ -299,11 +299,11 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(outsiderRes.status).toBe(404);
   });
 
-  it('GET /classes/:id/bookings resolves the Student name even after their only RoleGrant at this School is revoked (Decision 113 regression)', async () => {
+  it('GET /classes/:id/bookings resolves the Student name even after their only RoleGrant at this School is revoked (Decision 116 regression)', async () => {
     // Simulates the real trigger: GuardiansService.withdrawConsent's BASELINE
     // cascade revokes every active RoleGrant a Student holds, everywhere,
     // synchronously — a fresh, throwaway Student here so revoking it can't affect
-    // any other test in this suite. Before Decision 113's fix, the name join was a
+    // any other test in this suite. Before Decision 116's fix, the name join was a
     // Prisma `include` on Booking.student, which relied on user_self_or_shared_school
     // RLS — invisible once this grant is revoked, even though the caller remains
     // fully authorized to see the Booking row itself (booking_staff_read doesn't
@@ -705,7 +705,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(outsiderRes.status).toBe(404);
   });
 
-  it('GET /classes/:id/waitlist resolves the Student name even after their only RoleGrant at this School is revoked (Decision 113 regression)', async () => {
+  it('GET /classes/:id/waitlist resolves the Student name even after their only RoleGrant at this School is revoked (Decision 116 regression)', async () => {
     // Same regression as the Bookings version above — see that test's own comment.
     const revokedStudent = await superuser.user.create({
       data: {
@@ -962,6 +962,61 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
     expect(after.classesRemaining).toBe(2); // still decremented, never restored
+  });
+
+  it('cancelling a Booking whose Membership was funded by a DISPUTED Transaction does NOT restore the credit (Decision 111 freeze) — the cancellation itself still succeeds', async () => {
+    // classWaiverGated, not classBasic — studentB already holds an active Booking
+    // on classBasic from the earlier "spend order" test above (never cancelled),
+    // and the one-active-Booking-per-Student-per-Class guard would 409 a second
+    // attempt there. studentB already signed classWaiverGated's own Waiver in the
+    // "cancelling BEFORE the refund cutoff" test above, and that test's own
+    // Booking on it was CANCELLED — so it's free to book again here, no
+    // WITHHELD-vs-REFUNDED cutoff configured on it (matches classBasic's own
+    // shape for this test's purposes).
+    await superuser.membership.updateMany({ where: { studentId: studentB.id, classesRemaining: { not: null } }, data: { status: 'EXPIRED' } });
+
+    const membership = await mkActiveMembership(studentB.id, classPackPlanId, 3);
+    // A minimal PaymentAccount + DISPUTED Transaction funding this Membership —
+    // BookingsService.restoreCredit()'s own freeze guard checks for exactly this
+    // shape (a Transaction row with this membershipId and status DISPUTED).
+    const paymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Freeze Guard Fixture', country: 'GB' },
+    });
+    const transaction = await superuser.transaction.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        studentId: studentB.id,
+        paymentAccountId: paymentAccount.id,
+        membershipPlanId: classPackPlanId,
+        membershipId: membership.id,
+        amount: 3000,
+        status: 'DISPUTED',
+        paymentMethod: 'STRIPE',
+        disputedAmount: 3000,
+      },
+    });
+
+    const bookRes = await request(app.getHttpServer()).post(`/v1/classes/${classWaiverGated.id}/book`).set('Authorization', `Bearer ${tokenStudentB}`).send({});
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const afterBook = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(afterBook.classesRemaining).toBe(2);
+
+    const cancelRes = await request(app.getHttpServer()).patch(`/v1/bookings/${bookRes.body.id}/cancel`).set('Authorization', `Bearer ${tokenStudentB}`);
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.status).toBe('CANCELLED');
+    // Still REFUNDED — the freeze only withholds the credit-restore ACTION
+    // (restoreCredit's own comment explains why refundResolution itself isn't
+    // repurposed to reflect this), not the cutoff-driven resolution field.
+    expect(cancelRes.body.refundResolution).toBe('REFUNDED');
+
+    const afterCancel = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(afterCancel.classesRemaining).toBe(2); // NOT restored — frozen while disputed
+
+    await superuser.transaction.delete({ where: { id: transaction.id } });
+    await superuser.paymentAccount.delete({ where: { id: paymentAccount.id } });
   });
 
   // ---------------------------------------------------------------------------

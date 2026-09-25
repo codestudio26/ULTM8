@@ -32,12 +32,12 @@ export class TransactionsService {
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.transaction.findMany({ ...args, where: { schoolId } }), cursor, limit),
     );
-    // Resolved via PrismaAuthService (Decision 113), not a Prisma `include` on
+    // Resolved via PrismaAuthService (Decision 116), not a Prisma `include` on
     // Transaction.student — an RLS-scoped include can silently fail to resolve the
     // Student's own User row once their RoleGrant is revoked (e.g.
     // GuardiansService.withdrawConsent's BASELINE cascade), even though this caller
     // is fully authorized to see the Transaction row itself. Originally shipped as
-    // an `include` under Decision 109; retrofitted here — see Decision 113 for the
+    // an `include` under Decision 109; retrofitted here — see Decision 116 for the
     // full account (found while reviewing the same pattern applied to Bookings/
     // Waitlist/RoleGrant in this same change). See resolveUserNames's own comment.
     const names = await resolveUserNames(this.prismaAuth, page.items.map((t) => t.studentId));

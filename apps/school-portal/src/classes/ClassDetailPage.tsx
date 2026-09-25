@@ -26,7 +26,7 @@ function waitlistStatusBadge(status: string) {
  * depends on (`/classes/:id/bookings`, `/classes/:id/waitlist`) are new this
  * phase — see their own service methods' header comments for why they never
  * existed before despite the RLS policies already anticipating them. Student
- * names resolve via studentFirstName/studentSurname (Decision 110, same
+ * names resolve via studentFirstName/studentSurname (Decision 113, same
  * pattern as TransactionsPage). No write actions here yet (cancel/override-
  * reason/withdraw already exist as Student/self-service or override
  * endpoints — this phase is visibility only, matching TransactionsPage's own

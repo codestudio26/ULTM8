@@ -4,16 +4,19 @@ import { ApiError } from '@ultm8/api-client';
 import { useSchool, useSchoolPaymentAccount } from './schoolQueries';
 import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
 import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails';
+import { TenantLifecycleControls } from '../tenantLifecycle/TenantLifecycleControls';
 
 /** Look-up-by-id — see schoolQueries.ts's own header comment for why there's no
  * list here. Mostly read-only: School fields themselves have no Platform Admin
  * write endpoint (only a School Owner can edit their own School, via
- * apps/school-portal) — the one write this screen DOES expose is the
+ * apps/school-portal) — the writes this screen DOES expose are the
  * PaymentAccount section's own "Rotate credential" action (Phase 35's
- * POST .../payment-accounts/:id/rotate-credential). General tenant-data edits
- * are a separate, not-yet-built slice (see this app's own README) — starting an
- * impersonation session is its own screen (`../impersonation/ImpersonationPage`,
- * Phase 48), not part of this lookup. */
+ * POST .../payment-accounts/:id/rotate-credential) and, as of Phase 57, the
+ * close/reactivate account lifecycle (Decision 110/Phase 56 —
+ * `TenantLifecycleControls`, shared with FranchiseLookupPage). General
+ * tenant-data edits are a separate, not-yet-built slice (see this app's own
+ * README) — starting an impersonation session is its own screen
+ * (`../impersonation/ImpersonationPage`, Phase 48), not part of this lookup. */
 export function SchoolLookupPage() {
   const [idInput, setIdInput] = useState('');
   const [lookedUpId, setLookedUpId] = useState<string | null>(null);
@@ -73,6 +76,17 @@ export function SchoolLookupPage() {
                 <dd>{new Date(school.data.createdAt).toLocaleString()}</dd>
               </dl>
             </Card>
+          ) : null}
+
+          {school.data ? (
+            <TenantLifecycleControls
+              kind="school"
+              id={school.data.id}
+              name={school.data.name}
+              archivedAt={school.data.archivedAt}
+              purgeAt={school.data.purgeAt}
+              purgedAt={school.data.purgedAt}
+            />
           ) : null}
 
           {/* PaymentAccount is its own audited read (BILLING_PAYMENTS_OPS/

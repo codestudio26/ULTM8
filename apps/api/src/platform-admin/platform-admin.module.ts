@@ -17,6 +17,8 @@ import { PlatformAdminPaymentAccountsController } from './platform-admin-payment
 import { PlatformAdminPaymentAccountsService } from './platform-admin-payment-accounts.service';
 import { PlatformAdminImpersonationController } from './platform-admin-impersonation.controller';
 import { PlatformAdminImpersonationService } from './platform-admin-impersonation.service';
+import { PlatformAdminTenantLifecycleController } from './tenant-lifecycle.controller';
+import { TenantLifecycleService } from './tenant-lifecycle.service';
 import { PaymentsModule } from '../payments/payments.module';
 import { AuthModule } from '../auth/auth.module';
 
@@ -176,6 +178,7 @@ import { AuthModule } from '../auth/auth.module';
     PlatformAdminUsersController,
     PlatformAdminPaymentAccountsController,
     PlatformAdminImpersonationController,
+    PlatformAdminTenantLifecycleController,
   ],
   providers: [
     PlatformAdminAuthService,
@@ -188,6 +191,7 @@ import { AuthModule } from '../auth/auth.module';
     PlatformAdminUsersService,
     PlatformAdminPaymentAccountsService,
     PlatformAdminImpersonationService,
+    TenantLifecycleService,
   ],
   // Phase 49 — first-ever export from this module. PlatformAdminJwtAuthGuard is
   // used via @UseGuards() in TranslationsModule's own PlatformAdminTranslationsController,
