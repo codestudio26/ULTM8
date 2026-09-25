@@ -1,12 +1,14 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
 import { useAuth } from '../auth/AuthContext';
+import { TopBar } from './TopBar';
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { logout } = useAuth();
   return (
     <AppShell
       brand="ULTM8 School Portal"
+      header={<TopBar />}
       navItems={[
         { label: 'School', to: '/school' },
         { label: 'Branches', to: '/branches' },

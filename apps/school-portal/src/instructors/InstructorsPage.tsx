@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
+import { Avatar } from '../lib/Avatar';
 import {
   useCreateInstructor,
   useEligibleInstructorUsers,
@@ -13,31 +14,20 @@ import {
 } from './instructorQueries';
 import { InstructorFormModal } from './InstructorFormModal';
 
-/** Generic silhouette placeholder — InstructorResponseDto.photoUrl is real and
- * nullable, but no upload UI exists yet anywhere in this app, so every row is
- * always this icon today. An icon for "no photo set" is honest; a stock photo
- * standing in for a specific instructor would not be. */
-function AvatarPlaceholder() {
+/** Up to 3 specialization badges, then a "+N" overflow badge — keeps a long
+ * specializations list from blowing out the row height instead of silently
+ * dropping data (every specialization is still in the Edit form). */
+function SpecializationBadges({ specializations }: { specializations: string[] }) {
+  if (!specializations.length) return <>—</>;
+  const shown = specializations.slice(0, 3);
+  const overflow = specializations.length - shown.length;
   return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 32,
-        height: 32,
-        borderRadius: '50%',
-        background: 'var(--surface-0)',
-        border: '1px solid var(--border)',
-        color: 'var(--text-muted)',
-      }}
-    >
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.4" />
-        <path d="M3 17c1.2-3.5 4-5 7-5s5.8 1.5 7 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-    </span>
+    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, alignItems: 'center' }}>
+      {shown.map((s, idx) => (
+        <Badge key={`${s}-${idx}`}>{s}</Badge>
+      ))}
+      {overflow > 0 ? <Badge>+{overflow}</Badge> : null}
+    </div>
   );
 }
 
@@ -74,23 +64,33 @@ export function InstructorsPage() {
           <Table<InstructorResponse>
             rows={instructors}
             columns={[
-              { key: 'id', header: 'Id', render: (i) => <code>{i.id.slice(0, 8)}</code> },
-              { key: 'image', header: '', render: () => <AvatarPlaceholder /> },
-              { key: 'name', header: 'Name', render: (i) => `${i.firstName} ${i.surname}`.trim() },
-              { key: 'ranking', header: 'Ranking', render: (i) => i.beltRanking ?? '—' },
+              {
+                key: 'image',
+                header: 'Image',
+                render: (i) => <Avatar firstName={i.firstName} surname={i.surname} photoUrl={i.photoUrl} />,
+              },
+              { key: 'name', header: 'Instructor', render: (i) => `${i.firstName} ${i.surname}`.trim() },
               {
                 key: 'specializations',
                 header: 'Specializations',
-                render: (i) =>
-                  i.specializations.length ? i.specializations.map((s, idx) => <Badge key={`${s}-${idx}`}>{s}</Badge>) : '—',
+                render: (i) => <SpecializationBadges specializations={i.specializations} />,
               },
-              { key: 'experience', header: 'Years exp.', render: (i) => i.yearsOfExperience ?? '—' },
-              { key: 'phone', header: 'Phone', render: (i) => i.phone ?? '—' },
               {
-                key: 'branch',
-                header: 'Branch',
-                render: (i) => branches.find((b) => b.id === i.branchId)?.name ?? (i.branchId ? i.branchId : 'Whole School'),
+                key: 'scope',
+                header: 'Scope',
+                render: (i) => (i.branchId ? branches.find((b) => b.id === i.branchId)?.name ?? i.branchId : 'All branches'),
               },
+              // No backend concept of an Instructor "login" state exists yet
+              // (see the Instructor model's own comment: a profile requires an
+              // already-active RoleGrant, granted immediately — there's no
+              // pending-invite state to show). Shown as "—" rather than a
+              // fabricated status.
+              { key: 'login', header: 'Login', render: () => '—' },
+              { key: 'phone', header: 'Phone Number', render: (i) => i.phone ?? '—' },
+              // RoleGrant.revokedAt (Active/Revoked) isn't resolved onto
+              // InstructorResponseDto yet — same "—" placeholder as Login,
+              // rather than hardcoding "Active" for every row.
+              { key: 'status', header: 'Status', render: () => '—' },
               {
                 key: 'actions',
                 header: '',
