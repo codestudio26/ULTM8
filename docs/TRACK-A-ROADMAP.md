@@ -20,10 +20,10 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ## Where things stand right now
 
-- **57 phases shipped** (Phase 0 walking skeleton through Phase 57; Phase 55 is
-  PR #76, Phase 56 + Phase 57 — tenant/content offboarding endpoints and the
-  `apps/platform-admin` close/reactivate UI for them — are both on PR #77),
-  covering every backend module in `ultm8-nestjs-module`
+- **57 phases shipped, all merged to master** (Phase 0 walking skeleton through
+  Phase 57; Phase 55 is PR #76; Phase 56 + Phase 57 — tenant/content offboarding
+  endpoints and the `apps/platform-admin` close/reactivate UI for them — are both
+  on PR #77), covering every backend module in `ultm8-nestjs-module`
   §5's confirmed table except the one named below, plus `apps/school-portal` UI
   for essentially all of it, plus `apps/platform-admin` through Translations
   authoring, SubscriptionPlansModule authoring, and now the tenant-lifecycle
@@ -32,16 +32,14 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
   #67 (Phase 49 — `TranslationsModule` backend), PR #68 (Phase 50 — Translations
   authoring UI), PR #69 (the master roadmap doc), PR #71 (Decision 106), PR #72
   (Phase 51), PR #73 (Phase 52 — QR-display screen), PR #74 (Phase 53 — Branch
-  branding-field UI), PR #75 (Phase 54), PR #61 (Decisions 108/109 + a design-system
+  branding-field UI), PR #75 (Phase 54), PR #76 (Phase 55 — `SubscriptionPlansModule`'s
+  `apps/platform-admin` authoring UI), PR #77 (Decision 110 + Phase 56 + Phase 57 —
+  general tenant/content offboarding endpoints and their `apps/platform-admin`
+  close/reactivate UI), PR #61 (Decisions 108/109 + a design-system
   refresh — see below), and PR #31 (shared `@ultm8/ui` mobile-nav/table-overflow
-  fix — see below) are all merged. Phase 55 (`SubscriptionPlansModule`'s
-  `apps/platform-admin` authoring UI) is PR #76.**
-- **Two open PRs** — PR #76 (Phase 55), pushed and green, awaiting review; and
-  PR #77 (Decision 110 + Phase 56 — general tenant/content offboarding
-  endpoints — now also carrying Phase 57, the `apps/platform-admin`
-  close/reactivate UI for the same feature, plus this doc's own update for
-  all three), also pushed and green. Every other phase and standalone fix
-  described in this doc has landed on `master`.
+  fix — see below) are all merged.**
+- **No Track A PRs open.** Every phase and standalone fix described in this doc
+  has landed on `master`.
 - **Two items shipped outside the Phase-N sequence**, not tied to a specific phase
   number since neither PR framed itself as one (same treatment this doc already
   gives Decision-only PRs like #71):
@@ -396,8 +394,8 @@ built.
   close/reactivate — same backend-then-UI split as every other module in this
   codebase; a natural Phase 57.
 - **Phase 57** — `apps/platform-admin` close/reactivate UI for Decision
-  110/Phase 56, on the same PR #77 branch (no new PR — a UI-only phase
-  continuing the still-open Phase 56 PR, not a separate slice). One shared
+  110/Phase 56, on the same PR #77 branch, merged (no new PR — a UI-only phase
+  continuing the Phase 56 PR, not a separate slice). One shared
   `TenantLifecycleControls` component, dropped into `SchoolLookupPage`/
   `FranchiseLookupPage` between the entity-details Card and the
   PaymentAccount section: an Active/Closed status badge, a re-typed-name
