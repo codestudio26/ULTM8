@@ -1388,3 +1388,36 @@ Logged in `docs/v1.2-backend-backlog.md` ("Timetable page (mockup — click-to-b
 ### Recorded by
 
 Surfaced while implementing the user's explicit request to add a click-to-book function to the Timetable page (Daily/Weekly/Monthly) — escalated per this project's standing rule (never fill an `[UNRESOLVED]` domain gap with a plausible-sounding guess), 26 Sep 2026.
+
+## Decision 123 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
+
+**Date:** 26 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts; the codegen finding is a Developer-level workaround, not an Architect ruling
+**Resolves:** turning the "Membership Plans — 5 concepts" exploration (`https://claude.ai/artifact/UibYczF3pRDdHXcJAsQRnm`) into real code — the user picked Concept 5 (Stats Ribbon + List) and asked to build what's real now, with anything not backend-ready logged for the dev/backend team instead of faked
+
+### What was built (real, in `MembershipPlansPage.tsx`/`membershipPlanQueries.ts`)
+
+- A stats ribbon above the existing plans table: **Total plans / Visible / Hidden** — real, computed client-side from the same `plans` list the table already renders, no new endpoint.
+- **Active members** — the ribbon's 4th tile, shown as a visibly muted/dashed placeholder ("—") with an explanatory `title`/`aria-label`, same "not built yet, not broken" convention `TopBar.tsx`'s disabled search input already established. No per-plan membership-count endpoint exists (`MembershipsController` only has Student-scoped `findMyMemberships`/`getMembershipStatus`) — logged in `docs/v1.2-backend-backlog.md` rather than guessed at.
+- **Visibility made an inline, real toggle** — replaced the static Visible/Hidden `Badge` with a `Checkbox` wired to a new `useUpdateMembershipPlanVisibility(schoolId)` hook, sending a partial `PATCH /v1/membership-plans/{id}` body of just `{ visible }`. Confirmed safe by reading `MembershipsService.updatePlan()` directly: every field it doesn't receive is left `undefined` in the Prisma `update()` call, so this never touches a FRIEND_PASS plan's forced `price=0`/`classesIncluded=1` or any other cross-field rule — it only ever changes the one field the user actually toggled.
+
+### What was deliberately NOT built
+
+- **Colour-coded Type badges / a toggle-switch visual** — the mockup concepts used a 5-colour categorical palette and a toggle-switch control that don't exist in `@ultm8/ui` today (`Badge` only supports `'default' | 'accent' | 'success' | 'danger'`; no Toggle/Switch component exists at all). Adding either would be a shared-design-system change affecting every consumer of `@ultm8/ui`, not something to invent unilaterally for one page — the real Visibility toggle above reuses the existing `Checkbox` component instead, keeping the same underlying capability without a new design-system primitive. Left for a future, separate design-system decision if the colour/toggle-switch treatment is still wanted.
+- **Duplicate / Archive actions** — present in the mockup's kebab menu as explicitly-flagged proposed items; not carried into real code since no backend endpoint exists for either and this page's real Actions column has only ever had Edit.
+
+### Codegen gap found while wiring the Visibility toggle (not Membership-Plans-specific)
+
+`UpdateMembershipPlanDto`'s generated TS type marks `visible`/`termsWaiverRequired` as non-optional, but a fresh `export:openapi` off the current backend source shows this DTO's OpenAPI schema has **no `required` array at all** — both fields are genuinely optional, matching `updatePlan()`'s own undefined-tolerant handling. `openapi-typescript` appears to render any `@ApiPropertyOptional({ default })` field as non-optional regardless. Grepped the whole schema for the same shape (a `default`-having property absent from its DTO's `required[]`) and found ~10 more affected DTOs: `CreateSchoolDto`/`UpdateSchoolDto`, `CreateFranchiseDto`/`UpdateFranchiseDto`, `CreateClassDto`/`UpdateClassDto`, `CreateTimetableSlotDto`/`UpdateTimetableSlotDto`, `CreateRankDto`/`UpdateRankDto`, `GradingActionDto` — see `docs/v1.2-backend-backlog.md` for the exact field list. Worked around here with one documented type cast in `membershipPlanQueries.ts` rather than widened ad hoc per call site; the real fix (an `openapi-typescript` config/version change, or dropping `default` from the affected Swagger metadata) is a one-time tooling change, logged once rather than repeated per affected page.
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `packages/api-client` and `apps/school-portal`. `export:openapi` re-run and diffed against the committed `packages/api-client/openapi.json` (byte-identical — confirms the DTO source and the committed schema JSON already agree; the gap is purely in the JSON→TS codegen step). No backend files changed — this decision is frontend-only plus documentation.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Membership Plans page") and as `note2` on the "Membership Plans — 5 concepts" canvas artifact.
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 5 and instruction to "build [what's real], and... anything that is not on the back end now... to a list with notes to be done by the dev team back end team," 26 Sep 2026.
