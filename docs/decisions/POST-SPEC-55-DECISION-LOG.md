@@ -1354,3 +1354,37 @@ Social/OAuth login (sign in via Google, Facebook, Apple, Microsoft, Discord, or 
 ### Recorded by
 
 Stated directly by the user in response to being asked why social-login icons don't appear on the real Login page, 22 Sep 2026.
+
+---
+
+## Decision 122 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
+
+**Date:** 26 Sep 2026
+**Status:** Developer-level finding, escalated — **not resolved**, flagged for Architect decision before any backend work starts
+**Resolves:** why the Timetable design-canvas mockup's new "Book" action (added to every slot across Daily/Weekly/Monthly, per the user's request to make booking a class easier straight from the Timetable) is a review-only preview and not a real booking flow
+
+### What was built
+
+Every rendered slot on the Timetable mockup (`https://claude.ai/artifact/MbCT5h6Nq23yeZY8Sf7myu`, `Timetable.dc.html`) now has a "Book" affordance — a pill button on Daily/Weekly's agenda cards, a small icon button on Monthly's dots. Clicking it opens a confirmation preview (Class, Instructor, Day-or-Date, Time, Branch, then Cancel/Confirm) matching Spec §3.2's own confirmed booking-flow field set. Confirm only closes the preview — there is nothing to submit to yet.
+
+### Why this can't be more than a preview today
+
+`skills/ultm8-domain-rules/SKILL.md` §9 already carried this as an `[UNRESOLVED]` citation before this session touched Timetable at all: *"How `TimetableSlot` and `Class` actually relate... do not assume one Class row is auto-spawned per TimetableSlot occurrence without this being confirmed."* The real `Booking` entity belongs to `Class` (§10, §16: `Class *—* Booking`), never to `TimetableSlot` — and the Timetable page's own subtitle already states it renders "the recurring weekly slot template — not the bookable Classes list." Adding a Book button to the Timetable therefore reproduces the exact citation the skill already flags, except now against a concrete, user-requested UI feature instead of an abstract data-model question — worth its own decision-log entry so it doesn't stay buried only inside a skill citation and a mockup tooltip.
+
+### What actually needs deciding (Architect, not a Developer inference)
+
+1. Does selecting a Timetable slot resolve to an **existing, already-dated** `Class` occurrence (i.e. is a `Class` row auto-spawned per `TimetableSlot` × calendar date somewhere already, or by some job not yet built)? Or does one need to be **created/looked up on demand** at the moment of booking?
+2. If on-demand: what identifies "the same" `Class` occurrence across repeat visits (so two Students booking the same Monday 6pm slot land on one shared `Class`, not two separate ones each capped at their own capacity)?
+3. Only once (1)/(2) are answered does a real `POST /timetable-slots/:id/book`-shaped endpoint (or whatever shape falls out of the answer) make sense to design — building one against a guessed answer risks the same class of mistake Decision 105 already warned against (building speculatively ahead of a named, confirmed use case).
+
+### What does NOT need deciding again
+
+The confirmation preview's field set (Class, Instructor, Class Timings, Class Date) is already right — it's a direct match to Spec §3.2's own confirmed booking flow (browse → select → confirm → pay if required). Whatever the Architect decides above, the UI shape built here likely doesn't need to change, only what it's wired to.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Timetable page (mockup — click-to-book preview, Daily/Weekly/Monthly)") and `docs/ULTM8-MASTER-ROADMAP.md` §4 (cross-track open-decisions view), and as `note7` on the canvas artifact itself, so it's discoverable from all three places a future session might look, not just one.
+
+### Recorded by
+
+Surfaced while implementing the user's explicit request to add a click-to-book function to the Timetable page (Daily/Weekly/Monthly) — escalated per this project's standing rule (never fill an `[UNRESOLVED]` domain gap with a plausible-sounding guess), 26 Sep 2026.

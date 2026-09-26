@@ -443,6 +443,7 @@ load-bearing for planning.
 |---|---|---|
 | Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 4, Track B Phase 6, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement (Phase 54) — the entire branded-app tier | Product/legal |
 | Guardian consent-management UI (no screen anywhere) | Any market with children's-data-protection law; Track B's "Guardian-facing screens" slice | Design + a decision on which app owns it |
+| `TimetableSlot` ↔ `Class` relationship unresolved (domain-rules skill §9, `[UNRESOLVED]`) | The Timetable page's new "Book this class" UI (school-portal mockup, all three views — Decision 122) — real booking from the Timetable can't be built until this is answered; also blocks any future "generate Class occurrences from the recurring template" feature | Architect |
 
 `SubscriptionPlansModule`'s billing-direction citation conflict and the QR
 mechanism/roll-call-mechanics rows this table used to carry are resolved — Decision
