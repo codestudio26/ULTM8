@@ -1449,3 +1449,39 @@ Logged as `note2` on the "Transactions — 5 concepts" canvas artifact. No `docs
 ### Recorded by
 
 Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 123, 27 Sep 2026.
+
+## Decision 125 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decisions 123/124: `https://claude.ai/artifact/MctvsgBry9WEkEK2Fqq5QL`); the signature-status finding below is a Developer-level investigation, escalated — not resolved here
+**Resolves:** the user picked Concept 3 (Split-Pane Reader) and, separately, asked for a "signature field... show[ing] if it has been signed or not" to be added — this entry covers both: what was built for real, and why the signature request could not be
+
+### What was built (real, in `WaiversPage.tsx`)
+
+Replaced the flat table with a list-plus-reader split pane, matching the chosen Concept 3: a compact left-hand list (Title, a truncated preview, and a real reading-time/word-count estimate) beside a right-hand reader pane showing the selected Waiver's **full** `body` text (`white-space: pre-line`, preserving paragraph breaks, capped at `70ch` for readability). This directly closes a gap the shipped code's own `bodyPreview()` comment already admitted: `Waiver.body` can run up to 20,000 characters (`CreateWaiverDto`'s own `MaxLength`) — "far too long for a table cell." Staff can now actually read a waiver's full text without opening the Edit form. Title/preview/reading-time/Last-updated/Edit are all real fields or client-computed values requiring no backend change, same as Concept 1's own real columns.
+
+### What was asked for and why it can't be built today — a deeper gap than this session's own earlier note assumed
+
+Asked via AskUserQuestion which shape to show ("rollup count", "full per-student roster", or "both") and whether to build it for real now or flag it as a mockup placeholder first. The user deferred the shape choice ("which would you pick") and asked to build what's real and log the rest for the backend team ("Just as before"). Recommended shape: **both** — a rollup count, expandable to the full per-student roster — since that's the most useful presentation once the data exists. It doesn't today, for three independently-blocking reasons found by re-reading the actual current backend source (not assumed from this session's own earlier canvas note, which only flagged the first of these three):
+
+1. **No staff-facing endpoint exists at all.** `WaiversController` (verified directly) exposes only `POST /waivers/:id/sign` (a Student/Guardian signs), `POST /waivers/:id/signature-upload-url`, and `GET /waivers/me` (a Student's own signatures, self-scoped). There is no `GET .../waivers/:id/signatures` or equivalent for a School Owner. This was already known from this session's earlier Waivers-concepts research.
+2. **New finding — even if that endpoint existed, `WaiverSignature` rows don't model "unsigned."** `WaiversService.sign()` is the *only* code path anywhere that creates a `WaiverSignature` row, and `schema.prisma`'s own model declares `status WaiverSignatureStatus @default(SIGNED)` — grepped the whole backend for any write of `UNSIGNED`/`PENDING`/`EXPIRED` on this model and found none. So a `WaiverSignature` row existing *means* signed; there is no row representing "assigned, not yet signed" despite those being real enum values on `WaiverSignatureStatus`. "Who hasn't signed" can't be read off this table alone — it would have to be computed as (all Students who should sign) minus (Students with a SIGNED row), which needs a Student roster to diff against.
+3. **New finding — that Student roster doesn't exist for real in production either.** `WaiverSignatureRequestsProcessor`'s own header comment (the `waiver-signature-requests` job, confirmed by reading it directly) documents a pre-existing, separate, larger gap: no endpoint anywhere in this codebase ever creates a `STUDENT` RoleGrant through the real API — every e2e test seeds one directly with a superuser Prisma client. In a real deployment today this job's own Student-lookup query would return empty, and so would any "how many Students are there to sign this" denominator. This is already tracked elsewhere (the processor's comment cites Decision 95 and the project roadmap) — not a new gap, but a real blocking dependency for this feature specifically, worth stating plainly here rather than leaving it implicit in a job's code comment.
+
+Given all three, nothing under "signature status" could be shown as genuinely real today — not even a partial figure (e.g. a bare SIGNED count with no denominator) without materially misrepresenting what's known. Built instead as a single, visibly inert "Signatures" panel in the reader pane (dashed border, muted text, explanatory `title` tooltip pointing at the backlog) — the same "not built yet, not broken" convention `StatTile`'s `proposed` mode already established for Membership Plans' Active Members tile, adapted here to a panel rather than a numeric tile since there is no honest number to show at all, not even a placeholder "—" metric with a real (if incomplete) count behind it.
+
+### A related, newly-confirmed real behavior worth flagging to the Architect
+
+While tracing this, confirmed that `skills/ultm8-domain-rules/SKILL.md` §13's `[UNRESOLVED]` item — "where `Class.terms/waiver-required` is actually enforced" — **is resolved in code**, just never updated in the skill: `BookingsService` (verified directly) checks, at booking time, whether the Student holds *any* `WaiverSignature` with `status: 'SIGNED'` at that School — not scoped to a specific required Waiver, since `Class` has no field linking it to one particular `Waiver` row (only the boolean `termsWaiverRequired`). This is a reasonable reading of the schema as it stands, but it does mean "requires a waiver" currently means "requires having signed *some* waiver for this School," which may or may not be the intended rule — flagged for the Architect to confirm or correct, not silently treated as settled by this entry.
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`. No backend or `packages/api-client` files touched — this decision is frontend-only plus documentation; the signature-status feature itself is not implemented anywhere, real or placeholder-wired, beyond the inert panel described above.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Waivers page") with the full three-layer gap above, spelled out for the dev team, and referenced from the "Waivers — 5 concepts" canvas artifact's own `note1` (already recorded there before this page was built for real).
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concept 3") plus a follow-up request for a signature/signed-status field; shape and build-scope confirmed via AskUserQuestion, then built per the user's "build and create the notes for the dev team" answer, continuing the same policy established in Decisions 123/124, 27 Sep 2026.
