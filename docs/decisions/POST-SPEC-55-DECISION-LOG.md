@@ -1512,3 +1512,31 @@ Full backend requirements (a new broadcast/compose endpoint and its open product
 ### Recorded by
 
 Requested directly by the user ("Give 5 great ideas... look at other softwares ideas" pattern, continuing Decisions 123/124/125's process), recommendation given via AskUserQuestion-free direct comparison, then the full non-real inventory logged per the user's explicit "any that is not real add to the note for the dev... to do the back end" instruction, 27 Sep 2026.
+
+## Decision 127 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level correction of an earlier overstated finding (Decision 122), verified directly against `BookingsService`/`SchoolsService` before changing anything
+**Resolves:** the user's own second-guess on the Timetable mockup's "Book" action ("this is the school view, not the students... does not make sense for academies") — investigated rather than agreed with by default, since the premise turned out to be wrong
+
+### What was found (verified directly, not assumed)
+
+`BookingsService.bookClass()` (`apps/api/src/bookings/bookings.service.ts:81-119`) already has a real, shipped **Staff-on-behalf-of** booking path: when `BookClassDto.studentId` names someone other than the caller, `isStaffAction` is set true and the write is gated by `TenantAuthorizationService.assertStaffAtSchool()` — a School Owner/Staff member can, today, book a named Student into a `Class` for real. So "Book" is not inherently wrong for the School Portal audience — a front-desk/walk-in booking is a legitimate, already-designed capability, not something invented for this mockup. The user's instinct that *something* was wrong with the Book action was still correct, just for a narrower reason than "wrong audience": the confirmation preview never asked which Student it was for at all — no student picker existed anywhere in it, despite that being the one piece of information every real booking action absolutely requires.
+
+Also verified before building the fix: `GET /schools/:id/students` is real (`apps/api/src/tenants/schools/schools.controller.ts`, `SchoolsService.findAllStudentsForSchool`), Staff-gated, returns `id`/`firstName`/`surname`/`email`/`enrolledAt`, full unpaginated list — same "small bounded roster, client-side filter" convention every other picker in this app already follows (confirmed via `apps/school-portal/src/students/StudentsPage.tsx`/`studentQueries.ts`, and cross-checked against the near-identical `instructors/eligible-users` endpoint built for the same reason in Fix 3 earlier this session).
+
+### What was built (mockup only — `Timetable.dc.html`)
+
+Added a required "Student" field to the Book confirmation dialog (all three views share one modal), populated from real-shaped sample data matching `StudentSummaryResponseDto`'s actual fields, with "Confirm booking" disabled until a Student is selected — matching what a real submission would require. Updated the board's own inline comments and the backend backlog to state the corrected finding plainly, including retracting the overstated "no backend booking capability exists for a Timetable slot at all" line from the earlier note.
+
+### What's still not real, and why that hasn't changed
+
+Decision 122's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s existing "Timetable page" section rewritten in place (not appended past) to correct the overstated claim and separate the two gaps clearly, rather than leaving a known-inaccurate note live alongside the correct one.
+
+### Recorded by
+
+Investigated in response to the user questioning the Book action's fit for the School Portal audience ("what do you think?"); the premise was checked against the real code rather than accepted, found materially wrong, and the actual narrower gap fixed per the user's follow-up "lets fix it make sense, any thing that we dont have on the back end please add to the back end to do list," 27 Sep 2026.
