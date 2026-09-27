@@ -1421,3 +1421,31 @@ Logged in `docs/v1.2-backend-backlog.md` ("Membership Plans page") and as `note2
 ### Recorded by
 
 Implemented per the user's explicit choice of Concept 5 and instruction to "build [what's real], and... anything that is not on the back end now... to a list with notes to be done by the dev team back end team," 26 Sep 2026.
+
+## Decision 124 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 123, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
+**Resolves:** the user picked Concept 2 (Stats Ribbon + List) and asked for the same "build what's real, log the rest" treatment as Membership Plans
+
+### What was built (real, in `TransactionsPage.tsx`)
+
+A stats ribbon above the existing table: **Total transactions / Successful / Failed+disputed / Total revenue** — all four real and client-computed from the same `transactions` list the table already renders. Unlike Membership Plans' Concept 5, this concept needed no scope decision and produced no backend-backlog entry: `Transaction` already carries `status` and `amount`, so every tile is genuinely real with zero new endpoints and zero proposed placeholders.
+
+One correctness detail worth recording: **Total revenue is grouped by currency, not summed flat.** `Transaction.currency` is per-row and nullable (inherited from `MembershipPlan.currency`, itself an optional, School-chosen field per plan — see `MembershipPlanFormModal`'s own "Your School's own choice, no conversion applied" hint), so a School running plans in more than one currency could have genuinely mixed-currency Transactions. Summing raw minor units across currencies and labeling the result with one currency code would be silently wrong. Implemented as a `Map<currency, sum>` instead, rendering one revenue figure per currency present (almost always just one, in practice) rather than a single figure that assumes a school-wide currency constant that doesn't actually exist in the schema.
+
+### What was deliberately not built
+
+Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 123's same reasoning for why a real read-only page shouldn't grow dead action buttons).
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`. No backend or `packages/api-client` files touched — this decision is frontend-only.
+
+### Tracking
+
+Logged as `note2` on the "Transactions — 5 concepts" canvas artifact. No `docs/v1.2-backend-backlog.md` entry — there is no backend gap to track.
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 123, 27 Sep 2026.

@@ -7,6 +7,32 @@ import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { useTransactions, type TransactionResponse } from './transactionQueries';
 
+/** Small, page-local summary tile — see MembershipPlansPage's own StatTile for why
+ * this isn't promoted to @ultm8/ui yet (only two occurrences, and this one needs no
+ * `proposed`/placeholder variant at all — every stat here is real). */
+function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 140,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+        padding: '14px 18px',
+        background: 'var(--surface-0)',
+        border: '1px solid var(--border-strong)',
+        borderRadius: 'var(--radius-md)',
+      }}
+    >
+      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }}>{value}</span>
+    </div>
+  );
+}
+
 /** Read-only — see transactionQueries.ts's own header comment on why (no
  * refund/credit-restore/invoice-download endpoints exist yet this phase). */
 export function TransactionsPage() {
@@ -25,9 +51,34 @@ export function TransactionsPage() {
   const transactions = data?.items ?? [];
   const plans = planData?.items ?? [];
 
+  const successfulTx = transactions.filter((t) => t.status === 'SUCCESSFUL');
+  const failedOrDisputedCount = transactions.filter((t) => t.status === 'FAILED' || t.status === 'DISPUTED').length;
+  // Grouped by currency rather than summed flat: currency is per-Transaction, not a
+  // single School-wide constant (MembershipPlan.currency is nullable and School-chosen
+  // per plan, see MembershipPlanFormModal's own hint), so a School with plans in more
+  // than one currency shows one revenue figure per currency instead of a meaningless
+  // sum-of-different-units total.
+  const revenueByCurrency = new Map<string, number>();
+  for (const t of successfulTx) {
+    const key = t.currency ?? '';
+    revenueByCurrency.set(key, (revenueByCurrency.get(key) ?? 0) + t.amount);
+  }
+  const revenueLabel = [...revenueByCurrency.entries()].map(([currency, amount]) => formatMoney(amount, currency || null)).join(' + ');
+
   return (
     <>
       <PageHeader title="Transactions" subtitle="Every completed or attempted charge against your School's Membership Plans." />
+
+      {/* Stats ribbon (Decision — see POST-SPEC-55-DECISION-LOG.md): every tile here is
+          real and client-computed from the same `transactions` list rendered below —
+          Transaction already carries status and amount, so no new endpoint was needed. */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
+        <StatTile label="Total transactions" value={transactions.length} />
+        <StatTile label="Successful" value={successfulTx.length} />
+        <StatTile label="Failed / disputed" value={failedOrDisputedCount} />
+        <StatTile label="Total revenue" value={revenueLabel || formatMoney(0, null)} />
+      </div>
+
       <Card>
         {transactions.length === 0 ? (
           <EmptyState title="No Transactions yet" description="Transactions appear here once Students start purchasing Membership Plans." />
