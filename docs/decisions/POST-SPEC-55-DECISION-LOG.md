@@ -1485,3 +1485,30 @@ Logged in `docs/v1.2-backend-backlog.md` ("Waivers page") with the full three-la
 ### Recorded by
 
 Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concept 3") plus a follow-up request for a signature/signed-status field; shape and build-scope confirmed via AskUserQuestion, then built per the user's "build and create the notes for the dev team" answer, continuing the same policy established in Decisions 123/124, 27 Sep 2026.
+
+## Decision 126 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level finding, escalated — the backlog below is logged for the dev/backend team; no real code was changed as part of this entry (design/documentation only)
+**Resolves:** the user's request for 5 Notifications concept directions (same research-first process as Decisions 123/124/125), recommended Concept 3, and asked for every non-real element found across the 5 boards to be logged for the backend team
+
+### What was found (verified directly against `NotificationsController`/`NotificationsService`/`schema.prisma`, not assumed)
+
+The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 125): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
+
+Two smaller, independent gaps were also found: `Notification` has no snoozed/deferred state of any kind (only `read`, a plain boolean), and no delete endpoint exists. Push notification delivery itself is real only at the registration step — `DeviceToken` registration works, but actual push SEND is, per that model's own header comment, "deliberately NOT built this phase," so no delivery-rate or read-time metric can be computed even in principle from what the schema stores today (`Notification.read` has no timestamp — no `readAt` column).
+
+### The 5 concepts
+
+1. Refined Table and 2. Grouped Timeline carry no proposed elements at all — both are 100% real fields (`Notification.title`/`body`/`read`/`type`/`createdAt`) or client-side computations over them (a Type label, a relative-time display, day-grouping), same standard Concepts 1/2 met on Transactions/Waivers.
+3. Priority Inbox (Linear-style, **the recommended and user-favored direction**) — Unread/All tabs and Mark read are both real; Snooze and Delete are shown, explicitly flagged proposed, and — per a follow-up request — consolidated into a single "⋮" row-actions menu rather than three separate icon buttons.
+4. Broadcast Center (ClassDojo/Bloomz-style) — an entirely proposed "Compose announcement" panel above the same real inbox list, built specifically to make the missing-broadcast-capability gap concrete rather than leave it only as prose.
+5. Delivery Ribbon — Total/Unread are real but page-scoped (no count endpoint exists to total across every page); Push delivery rate and Read within 24h are explicitly flagged proposed placeholders.
+
+### Tracking
+
+Full backend requirements (a new broadcast/compose endpoint and its open product questions, a snooze data-model decision, a delete endpoint, push SEND + a delivery-status field, a `readAt` column for time-to-read metrics, and a dedicated count endpoint) logged in `docs/v1.2-backend-backlog.md` ("Notifications page"), and recorded as `note1` on the "Notifications — 5 concepts" canvas artifact (`https://claude.ai/artifact/Vi4uogt6Kpiq166NSR9GHm`).
+
+### Recorded by
+
+Requested directly by the user ("Give 5 great ideas... look at other softwares ideas" pattern, continuing Decisions 123/124/125's process), recommendation given via AskUserQuestion-free direct comparison, then the full non-real inventory logged per the user's explicit "any that is not real add to the note for the dev... to do the back end" instruction, 27 Sep 2026.
