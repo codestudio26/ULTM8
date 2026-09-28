@@ -1540,3 +1540,49 @@ Decision 122's actual blocker stands exactly as before: `bookClass()` takes a `c
 ### Recorded by
 
 Investigated in response to the user questioning the Book action's fit for the School Portal audience ("what do you think?"); the premise was checked against the real code rather than accepted, found materially wrong, and the actual narrower gap fixed per the user's follow-up "lets fix it make sense, any thing that we dont have on the back end please add to the back end to do list," 27 Sep 2026.
+
+---
+
+## Decision 128 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
+
+**Date:** 28 Sep 2026
+**Status:** Developer-level proposed design, **not approved, not built** — flagged for Architect/product-owner confirmation before any of this is implemented. Recorded because the user asked directly for the logic to be worked out and written down, not because it's been signed off.
+**Resolves:** the open question left by "Add Manually" on the Add Instructor mockup (`InstructorAdd.dc.html`) — that mode collects First Name/Surname/Email for a person who has no ULTM8 account at all, but nothing was ever built to say how that person subsequently gets in. Also generalizes the identical, previously-flagged gap on `StaffPage.tsx`'s invite form ("If a true from-zero invite... is wanted, that's a new capability" — logged in `docs/v1.2-backend-backlog.md`'s Instructors section) so the same mechanism can serve both, rather than building it twice.
+
+### What was checked before designing anything
+
+- `RegisterDto` (`apps/api/src/auth/dto/register.dto.ts`) requires **email, phone, firstName, surname, passcode+passcodeConfirm, dateOfBirth** — all mandatory. "Add Manually" only collects name + email. Even a full self-registration can't be synthesized from what Staff enters today; phone and date of birth are missing, and passcode is explicitly "the account's sole login credential" (Decision 72) — nothing in the confirmed model suggests an admin should be the one setting it on someone else's behalf.
+- The only credential-recovery flow that exists (`RequestPasscodeResetDto`/`ConfirmPasscodeResetDto`) is **phone + Twilio Verify OTP**, not an email link or token of any kind. There is no email-based claim/magic-link mechanism anywhere in this codebase to build on — this would be new.
+- No `Invitation`-shaped entity exists in `schema.prisma` today. `RoleGrant` requires a `userId` that already exists (`RoleGrantsService.create()`'s `PrismaAuthService` existence check, Decision 80/81) — there's no "grant a role to someone who doesn't have an account yet" path anywhere, confirmed by re-reading that service directly rather than assumed.
+- Email delivery is real and already wired (`NotificationDeliveryService`, Postmark primary/SES fallback, Spec 55 §11.4) — usable as-is for whatever this sends.
+
+### Proposed design
+
+A new, generic **account-claim invitation**, not an Instructor-specific mechanism (so it also closes the identical gap on Staff's invite form later, without a second design):
+
+1. **New entity — `AccountInvitation`** (name indicative, Architect's call): `id`, `email`, `firstName`, `surname`, `schoolId`, `intendedRole` (`INSTRUCTOR` | `BRANCH_STAFF`), `branchId?`, a cryptographically random single-use `token` (hashed at rest, like the OTP codes already are), `expiresAt` (proposed 7 days), `createdByUserId`, `status` (`PENDING` | `CLAIMED` | `EXPIRED` | `REVOKED`), `draftProfile` (JSON — the rest of what Staff already entered on Add Instructor: branch, phone, beltRanking, specializations, yearsOfExperience, bio, photoUrl; empty for a future Branch Staff use of the same mechanism).
+2. **On Add Instructor's "Add Manually" submit:** server first checks whether `email` already belongs to an existing `User` (via `PrismaAuthService`, same lookup Decision 116 already uses). If it does, **reject** and point Staff at "Invite to Instructor Role" instead — that page already exists precisely for an existing account, and this keeps the two flows from overlapping or ever creating a duplicate account for the same person. If it doesn't, create the `AccountInvitation` row (status `PENDING`) and enqueue an email — reusing `NotificationDeliveryService` — with a claim link (`https://.../claim-invitation?token=...`). No `User`, `RoleGrant`, or `Instructor` row is created yet.
+3. **New unauthenticated, token-gated endpoints:** `GET /invitations/:token` (validates not expired/claimed/revoked, returns `firstName`/`surname`/`email` to prefill a screen — never anything from `draftProfile`, which is internal); `POST /invitations/:token/claim` (body: the same required fields `RegisterDto` already needs minus name/email, which come from the invitation — phone, passcode+confirm, dateOfBirth, plus the existing optional fields). On success, in one transaction: create the `User` row (same path `AuthService.register()` already uses), create the `RoleGrant` (`RoleGrantsService.create()`'s existing logic, `role=intendedRole`), create the `Instructor` row from `draftProfile` (`InstructorsService.create()`'s existing logic), mark the invitation `CLAIMED`. A token that's expired or already claimed fails with a clear error, same as an already-used OTP does today.
+4. **New frontend screen — "Complete Your Registration":** effectively the existing Register screen, pre-filled with the invitation's name/email (email shown read-only — it's what the invite was sent to) and gated by the token in the URL instead of being open self-registration. No new field vocabulary — same fields `RegisterDto` already requires.
+5. **Expiry/resend/revoke:** an expired or revoked invitation should be resendable/revocable by the School Owner (same authorization gate as the invite itself) — not designed further here; flagged as part of the same follow-up work, not a separate gap.
+
+### Why this shape, not a simpler one
+
+- **Not admin-set passcodes** — nothing in the confirmed model treats passcode as something anyone but the account holder sets; this preserves that without needing a new decision to violate it.
+- **Not reusing the phone-OTP reset flow** — that flow authenticates *an existing* User by proving phone ownership; there's no User yet here to attach an OTP challenge to, so it doesn't fit.
+- **Generic, not Instructor-only** — costs nothing extra to design this way now, and avoids building the identical mechanism twice when Staff's own from-zero invite gap (already flagged) gets picked up.
+- **Server-side existing-email check before creating an invitation** — closes the risk of two divergent paths (Add Manually vs. Invite to Instructor Role) ever producing two accounts for one person, which neither page's design considered in isolation.
+
+### What this does NOT resolve
+
+- Whether 7 days is the right expiry, whether resend should be rate-limited, and exact copy/branding for the claim email — left to whoever builds this.
+- Whether `AccountInvitation` should also become the mechanism for Guardian/minor account creation or any other "someone else creates this account" flow elsewhere in the product — out of scope, not evaluated here.
+- This is still unbuilt. `InstructorAdd.dc.html`'s "Add Manually" mode stays tagged Proposed/Placeholder exactly as before; nothing in this decision changes what's real today.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s "Add Manually" note (under "Add / Update Instructor pages") updated to point here instead of carrying the design inline.
+
+### Recorded by
+
+Written up directly at the user's request ("we need to send the new user a log in. How are we going to do that, write the logic and add to the back end notes"), 28 Sep 2026 — a proposed design, not a product decision; needs Architect/product-owner confirmation before anything here is built.
