@@ -55,7 +55,7 @@ When sources disagree, resolve in this order, highest first:
 **Updated 25 Sep 2026** (verified against the repository, not assumed):
 
 - **Track A — V1 frozen** as `v1.0.0` (see "Versioning" above): `apps/api` (NestJS + Prisma + Postgres RLS, covering tenancy, auth, Students/Instructors/Guardians, grading, classes/bookings/waitlist, memberships/payments, waivers, QR attendance, notifications, and Platform Admin), `apps/school-portal` (School Owner/Staff web app), and `apps/platform-admin`. Post-Spec-55 decisions run 70–121 as of V1 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`).
-- **Post-V1 work on `master`:** page-by-page redesign of `apps/school-portal` plus new features, starting with the Instructors page and app-shell header. See `CHANGELOG.md` → Unreleased.
+- **Post-V1 work on `master`:** page-by-page redesign of `apps/school-portal` plus new features, starting with the Instructors page and app-shell header — planned as **v1.1** (the user decides which pages complete it; nothing is tagged until they say so). See `CHANGELOG.md` → Unreleased.
 - **Track B — `apps/student`** (Student/Guardian React Native app): in active development, not part of V1. A partial copy is on `master` (PR #81); later work is on `track-b-student-app-pka8oo` / PR #82. See `docs/TRACK-B-ROADMAP.md` on that branch for its own status.
 - Known V1 gaps and deliberately deferred items are listed in `CHANGELOG.md` under v1.0.0.
 

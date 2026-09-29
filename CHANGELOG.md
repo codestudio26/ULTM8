@@ -8,6 +8,10 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 ## Unreleased
 
+**Planned: v1.1.0** — the website front-end page redesigns and new features now
+under way. This is a plan, not a release: the product owner decides which
+pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
+
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
