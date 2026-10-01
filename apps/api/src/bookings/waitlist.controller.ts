@@ -1,14 +1,22 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { WaitlistService } from './waitlist.service';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 import { WaitlistEntryListResponseDto, WaitlistEntryResponseDto } from './dto/waitlist-entry-response.dto';
 import { BookingResponseDto } from './dto/booking-response.dto';
+
+// Decision 17: extends the per-user/per-IP throttling already used on auth endpoints
+// to waitlist-claim — see BookingsController's own BOOKING_ACTION_THROTTLE comment
+// for the full rationale (identical shape, kept local to each controller the same
+// way AuthController's own throttle constants are).
+const WAITLIST_CLAIM_THROTTLE = { identity: { limit: 20, ttl: 60_000, getTracker: jwtSubTracker } };
 
 @ApiTags('waitlist')
 @ApiBearerAuth()
@@ -31,6 +39,7 @@ export class WaitlistController {
   }
 
   @ApiOkResponse({ type: BookingResponseDto })
+  @Throttle(WAITLIST_CLAIM_THROTTLE)
   @Post('waitlist/:id/claim')
   claim(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: ClaimWaitlistDto) {
     return this.waitlistService.claim(user.sub, id, dto);

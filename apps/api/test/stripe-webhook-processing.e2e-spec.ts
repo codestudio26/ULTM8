@@ -112,7 +112,7 @@ describeIfDb('stripe-webhook-processing job', () => {
       data: {
         id: randomUUID(),
         email: `webhook-job-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Webhook',
         surname: 'Fixture',
         passcodeHash: 'x',
@@ -446,7 +446,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
       data: {
         id: randomUUID(),
         email: `dispute-owner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Dispute',
         surname: 'Owner',
         passcodeHash: 'x',
@@ -468,7 +468,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
       data: {
         id: randomUUID(),
         email: `dispute-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Dispute',
         surname: 'Student',
         passcodeHash: 'x',

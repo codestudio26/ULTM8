@@ -87,7 +87,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
         data: {
           id: randomUUID(),
           email: `instructors-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -195,7 +195,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-school-b-instructor-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'SchoolB',
         surname: 'Instructor',
         passcodeHash: 'x',
@@ -262,7 +262,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-name-resolution-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'NameResolution',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -359,7 +359,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-branch-or-wide-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'BranchOr',
         surname: 'SchoolWide',
         passcodeHash: 'x',
@@ -370,7 +370,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-branch-or-a1-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'BranchOr',
         surname: 'A1',
         passcodeHash: 'x',
@@ -381,7 +381,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-branch-or-a2-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'BranchOr',
         surname: 'A2',
         passcodeHash: 'x',
@@ -493,7 +493,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-revoked-instructor-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Revoked',
         surname: 'Instructor',
         passcodeHash: 'x',

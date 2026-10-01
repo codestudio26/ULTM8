@@ -86,7 +86,7 @@ describeIfDb('chargeback-pattern-restriction job (Decision 68/112)', () => {
       data: {
         id: randomUUID(),
         email: `chargeback-owner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Chargeback',
         surname: 'Owner',
         passcodeHash: 'x',
@@ -100,7 +100,7 @@ describeIfDb('chargeback-pattern-restriction job (Decision 68/112)', () => {
       data: {
         id: randomUUID(),
         email: `chargeback-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Chargeback',
         surname: 'Student',
         passcodeHash: 'x',

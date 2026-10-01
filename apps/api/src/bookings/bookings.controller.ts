@@ -1,14 +1,24 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { BookingsService } from './bookings.service';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
+
+// Decision 17: extends the per-user/per-IP throttling already used on auth endpoints
+// to class-booking and credit-restore (cancelBooking is where BookingsService restores
+// a membership credit — see its own restoreCredit()) — a volumetric-abuse risk
+// distinct from BookingsService's own atomicity/race-condition handling. The `default`
+// (per-IP) throttler already applies globally (app.module.ts); this adds the
+// previously entirely-missing per-user half, keyed by the caller's JWT `sub`.
+const BOOKING_ACTION_THROTTLE = { identity: { limit: 20, ttl: 60_000, getTracker: jwtSubTracker } };
 
 // Booking creation/cancellation/override + the caller's own read. See
 // BookingsService's own header comment for scope/RLS. `GET /bookings/me` has no
@@ -23,12 +33,14 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @ApiCreatedResponse({ type: BookingResponseDto })
+  @Throttle(BOOKING_ACTION_THROTTLE)
   @Post('classes/:id/book')
   bookClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: BookClassDto) {
     return this.bookingsService.bookClass(user.sub, id, dto);
   }
 
   @ApiOkResponse({ type: BookingResponseDto })
+  @Throttle(BOOKING_ACTION_THROTTLE)
   @Patch('bookings/:id/cancel')
   cancelBooking(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: CancelBookingDto) {
     return this.bookingsService.cancelBooking(user.sub, id, dto);

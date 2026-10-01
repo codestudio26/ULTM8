@@ -358,7 +358,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `tenants-http-roster-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'roster-student',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -450,7 +450,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `tenants-http-fresh-joiner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Fresh',
         surname: 'Joiner',
         passcodeHash: 'x',
@@ -515,7 +515,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `tenants-http-guardian-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Fresh',
         surname: 'Guardian',
         passcodeHash: 'x',
@@ -527,7 +527,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `tenants-http-minor-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Fresh',
         surname: 'Minor',
         passcodeHash: 'x',
@@ -577,7 +577,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `tenants-http-not-a-guardian-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Not',
         surname: 'AGuardian',
         passcodeHash: 'x',

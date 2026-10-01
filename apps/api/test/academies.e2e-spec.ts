@@ -82,7 +82,7 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
       data: {
         id: randomUUID(),
         email: `academies-http-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Discovery',
         surname: 'Student',
         passcodeHash: 'x',
@@ -104,7 +104,7 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
       data: {
         id: randomUUID(),
         email: `academies-http-owner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Other',
         surname: 'Owner',
         passcodeHash: 'x',
