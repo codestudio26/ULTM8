@@ -793,6 +793,12 @@ describeIfDb('stripe-webhook-processing job — Membership-purchase-collision au
         { provide: StripeClientService, useValue: fakeStripeClient },
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
         { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        // Decision 122 — the processor also injects WAITLIST_CASCADE_PROCESSING_QUEUE
+        // now (booking-cancellation-on-force-expiry's own waitlist notification) —
+        // none of this block's own tests exercise that path (no Membership ever
+        // force-Expires here), so a bare faked queue is enough, same reasoning the
+        // other two describe blocks above already apply to their own unrelated queues.
+        { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
