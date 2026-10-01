@@ -1,6 +1,7 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { usePaginatedQuery } from '../lib/usePaginatedQuery';
 
 /** GET /memberships/me — a Student's own current Memberships. Cursor-paginated, same
  * convention as My Bookings/Academies (Decision 22/70). MembershipStatus is
@@ -8,13 +9,9 @@ import { apiClient } from '../api';
  * unlike Booking's UPCOMING (nothing to gate a client action on here; this is a
  * read-only list, Slice 4a builds no cancel/renew flow). */
 export function useMyMemberships() {
-  return useInfiniteQuery({
-    queryKey: ['my-memberships'],
-    queryFn: ({ pageParam }: { pageParam?: string }) =>
-      unwrap(apiClient.GET('/v1/memberships/me', { params: { query: { cursor: pageParam } } })),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-  });
+  return usePaginatedQuery(['my-memberships'], (cursor) =>
+    unwrap(apiClient.GET('/v1/memberships/me', { params: { query: { cursor } } })),
+  );
 }
 
 /** POST /membership-plans/{id}/purchase — empty body; sourceMembership-style credit

@@ -1,6 +1,7 @@
-import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { unwrap, type components } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { usePaginatedQuery } from '../lib/usePaginatedQuery';
 
 type NotificationList = components['schemas']['NotificationListResponseDto'];
 
@@ -12,13 +13,9 @@ type NotificationList = components['schemas']['NotificationListResponseDto'];
  * shape is a (createdAt, id) keyset rather than a bare id (apps/api's
  * NotificationsService header comment) — opaque to this client either way. */
 export function useNotifications() {
-  return useInfiniteQuery({
-    queryKey: ['notifications'],
-    queryFn: ({ pageParam }: { pageParam?: string }) =>
-      unwrap(apiClient.GET('/v1/notifications/me', { params: { query: { cursor: pageParam } } })),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-  });
+  return usePaginatedQuery<NotificationList>(['notifications'], (cursor) =>
+    unwrap(apiClient.GET('/v1/notifications/me', { params: { query: { cursor } } })),
+  );
 }
 
 /** Patches the one changed item directly in the cached pages rather than

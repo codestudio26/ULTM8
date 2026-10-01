@@ -33,13 +33,17 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
 
 ```css
 :root {
-  /* accent — slate blue */
+  /* accent — slate blue (matches packages/ui's --color-accent as of PR #61,
+     2026-09-20; the prose above this block predates that rebase and still
+     describes the earlier #1f5eff brand blue — a pre-existing drift in this
+     file, not something this merge introduces, flagged here rather than
+     silently rewritten as part of an unrelated conflict resolution). */
   --color-accent-50:  #fcfdfd;
   --color-accent-100: #edf0f2;
   --color-accent-200: #d3d9df;
   --color-accent-300: #afbbc5;
   --color-accent-400: #889aaa;
-  --color-accent-500: #5d7081; /* brand reference value */
+  --color-accent-500: #5d7081; /* brand reference value — matches packages/ui's --color-accent */
   --color-accent-600: #4d5d6b;
   --color-accent-700: #3e4b56;
   --color-accent-800: #2f3941;

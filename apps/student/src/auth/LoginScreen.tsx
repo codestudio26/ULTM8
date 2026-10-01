@@ -3,6 +3,7 @@ import { ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useAuth } from './AuthContext';
 import type { AuthStackParamList } from '../navigation/types';
 
@@ -33,8 +34,8 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <Screen>
-        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>Log in</Text>
-        <Text style={{ fontSize: 14, color: '#5F6368', marginBottom: 20 }}>
+        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Log in</Text>
+        <Text style={{ fontSize: fontSize.footnote, color: theme.textSecondary, marginBottom: spacing[6] }}>
           Email and your 6-digit passcode — that's your whole login (no separate password).
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
