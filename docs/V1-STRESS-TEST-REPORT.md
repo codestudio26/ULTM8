@@ -134,15 +134,28 @@ against a stored correlator column, no Stripe call needed):
   created a duplicate Membership, confirming `handlePaymentIntentSucceeded`'s
   own documented rollback-together behavior holds under the real BullMQ
   retry/backoff cycle (3 attempts, exponential backoff), not just in Jest.
-  **But this surfaces a real, already-self-documented gap worth prioritizing**:
-  the code's own comment at this exact spot says the correct resolution is a
-  Stripe Refund API call (and Subscription cancellation), deliberately not
-  built yet (`TODO(Phase 9 follow-up)`) — today it's only a loud server log
-  (`StripeWebhookProcessingProcessor`'s `onFailed` alarm: *"Stripe already has
-  the money/state change and this platform hasn't recorded it"*). This round
-  confirms that gap is real and reachable at normal concurrency, not a
-  theoretical edge case — recommend prioritizing the Refund-API follow-up
-  already scoped in that TODO over any of the lower-severity items below.
+  **FIXED, same session**: the code's own comment at this exact spot said the
+  correct resolution was a Stripe Refund API call (and Subscription
+  cancellation), deliberately left unbuilt (`TODO(Phase 9 follow-up)`) —
+  previously only a loud server log. Now built
+  (`StripeWebhookProcessingProcessor.resolveMembershipCollision`): the
+  captured PaymentIntent is refunded, the Subscription is cancelled too for a
+  SUBSCRIPTION-type purchase, and the Transaction moves to the
+  already-modeled-but-previously-unused `REFUNDED` status with
+  `refundedAmount` set, rather than sitting `PENDING` forever. Real
+  implementation obstacle hit and resolved along the way: the original plan
+  was to distinguish this collision from the dedup-row conflict via
+  `err.meta?.target` column-name inspection (same technique
+  `isProcessedStripeEventConflict` already uses) — reliable for the dedup
+  case but NOT for this one, confirmed empirically: Postgres suppresses a
+  unique-violation's DETAIL text (what Prisma parses `target` from) on any
+  RLS-governed table for a non-owner role, and `Membership` has RLS while
+  `ProcessedStripeEvent` doesn't. Fixed by catching the collision with a
+  dedicated error type at the one call site that can produce it instead.
+  4 new e2e tests (own `StripeClientService` stub, matching the existing
+  `charge.dispute.*` block's own established pattern) prove the refund+cancel,
+  the one-time-purchase no-cancel case, and that a redelivery never double-
+  calls Stripe. Full suite: 387/387 passing.
 - An initial version of this test used a `CLASS_PACK` plan for the collision
   case and found no collision at all — a flaw in the test, not the app:
   `Membership_one_active_general_access_per_school` is a *partial* unique
@@ -187,11 +200,6 @@ real HTTP calls against the live server:
 
 ## Improvements worth considering (lower severity, not blockers)
 
-- **Priority**: the Stripe-webhook collision path's own documented TODO
-  (automatic Refund API call + Subscription cancellation on a lost
-  create-Membership race) — see "Stripe payment/dispute flow" above. Confirmed
-  reachable at normal concurrency this round, currently silent beyond a server
-  log.
 - A composite `(studentId, id)` / `(schoolId, id)` index for Bookings-by-
   Student / Transactions-by-School, only if per-entity row counts grow from
   today's tens into the thousands (see DB performance above — not urgent yet).
