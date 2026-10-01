@@ -23,7 +23,7 @@ import { randomUUID } from 'crypto';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../src/payments/stripe-client.service';
-import { NOTIFICATION_FANOUT_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE } from '../src/jobs/queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../src/jobs/queue.constants';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_JOBS = process.env.DATABASE_URL_JOBS;
@@ -51,9 +51,18 @@ describeIfDb('stripe-webhook-processing job', () => {
   const membershipPlanIds: string[] = [];
   const membershipIds: string[] = [];
   const transactionIds: string[] = [];
+  // Decision 122 — deleted in afterAll BEFORE Membership (Booking.sourceMembershipId
+  // FK-references it), and Class deleted after Booking for the same reason.
+  const bookingIds: string[] = [];
+  const classIds: string[] = [];
   // Phase 54 — deleted in afterAll, AFTER School/Franchise (both FK-reference
   // SubscriptionPlan.id with ON DELETE RESTRICT).
   const subscriptionPlanIds: string[] = [];
+
+  // Decision 122 — controllable fake so the new "cancels future Bookings" tests
+  // below can assert what got enqueued; same pattern the dedicated
+  // charge.dispute.* describe block already uses for its own queue fakes.
+  const fakeWaitlistCascadeQueue = { addBulk: jest.fn().mockResolvedValue(undefined) };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -73,19 +82,31 @@ describeIfDb('stripe-webhook-processing job', () => {
       // dispute-notification coverage, with its own fully-controllable fake).
       //
       // Decision 112 — same reasoning, now also for CHARGEBACK_PATTERN_RESTRICTION_QUEUE.
+      //
+      // Decision 122 — the processor also injects WAITLIST_CASCADE_PROCESSING_QUEUE
+      // now (cancelling a Membership's future Bookings on force-Expiry notifies the
+      // waitlist for each freed seat). Controllable, not a bare no-op, so the
+      // dedicated test below can assert on it.
       providers: [
         StripeWebhookProcessingProcessor,
         PrismaJobsService,
         StripeClientService,
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
         { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: fakeWaitlistCascadeQueue },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
   });
 
+  afterEach(() => {
+    fakeWaitlistCascadeQueue.addBulk.mockClear();
+  });
+
   afterAll(async () => {
     await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
+    await superuser.booking.deleteMany({ where: { id: { in: bookingIds } } });
+    await superuser.class.deleteMany({ where: { id: { in: classIds } } });
     await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
@@ -216,9 +237,9 @@ describeIfDb('stripe-webhook-processing job', () => {
     expect(membershipCount).toBe(1);
   });
 
-  it('customer.subscription.deleted Expires the matching Active Membership', async () => {
+  it('customer.subscription.deleted Expires the matching Active Membership, cancels its future Bookings (Decision 122), and notifies the waitlist for each freed seat', async () => {
     const stripeSubscriptionId = `sub_fixture_${randomUUID()}`;
-    const { transaction, stripePaymentIntentId } = await seedPendingTransaction({ planType: 'SUBSCRIPTION', stripeSubscriptionId });
+    const { school, student, transaction, stripePaymentIntentId } = await seedPendingTransaction({ planType: 'SUBSCRIPTION', stripeSubscriptionId });
     const settleEventId = `evt_fixture_${randomUUID()}`;
     eventIds.push(settleEventId);
     await processor.process(fakeJob({ stripeEventId: settleEventId, eventType: 'payment_intent.succeeded', objectId: stripePaymentIntentId }));
@@ -229,12 +250,46 @@ describeIfDb('stripe-webhook-processing job', () => {
     expect(membershipBefore.status).toBe('ACTIVE');
     expect(membershipBefore.frequency).toBe('RECURRING');
 
+    // Decision 122 fixture — one future Booking this Membership funds (must be
+    // cancelled) and one already-Completed Booking it also funded (must be left
+    // alone: cancelFutureBookingsFundedByExpiredMembership() only ever touches
+    // status: 'UPCOMING', proven here rather than assumed).
+    const futureClass = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Fixture Future Class', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
+    });
+    classIds.push(futureClass.id);
+    const upcomingBooking = await superuser.booking.create({
+      data: { id: randomUUID(), studentId: student.id, classId: futureClass.id, schoolId: school.id, sourceMembershipId: membershipBefore.id, status: 'UPCOMING' },
+    });
+    bookingIds.push(upcomingBooking.id);
+    const pastClass = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Fixture Past Class', startDate: new Date(Date.now() - 90_000_000), endDate: new Date(Date.now() - 86_400_000) },
+    });
+    classIds.push(pastClass.id);
+    const completedBooking = await superuser.booking.create({
+      data: { id: randomUUID(), studentId: student.id, classId: pastClass.id, schoolId: school.id, sourceMembershipId: membershipBefore.id, status: 'COMPLETED' },
+    });
+    bookingIds.push(completedBooking.id);
+
     const cancelEventId = `evt_fixture_${randomUUID()}`;
     eventIds.push(cancelEventId);
     await processor.process(fakeJob({ stripeEventId: cancelEventId, eventType: 'customer.subscription.deleted', objectId: stripeSubscriptionId }));
 
     const membershipAfter = await superuser.membership.findUniqueOrThrow({ where: { id: membershipBefore.id } });
     expect(membershipAfter.status).toBe('EXPIRED');
+
+    const upcomingAfter = await superuser.booking.findUniqueOrThrow({ where: { id: upcomingBooking.id } });
+    expect(upcomingAfter.status).toBe('CANCELLED');
+    expect(upcomingAfter.refundResolution).toBe('WITHHELD');
+
+    const completedAfter = await superuser.booking.findUniqueOrThrow({ where: { id: completedBooking.id } });
+    expect(completedAfter.status).toBe('COMPLETED');
+    expect(completedAfter.refundResolution).toBeNull();
+
+    expect(fakeWaitlistCascadeQueue.addBulk).toHaveBeenCalledTimes(1);
+    const seatFreedJobs = fakeWaitlistCascadeQueue.addBulk.mock.calls[0][0] as Array<{ name: string; data: { classId: string } }>;
+    expect(seatFreedJobs).toHaveLength(1);
+    expect(seatFreedJobs[0]).toMatchObject({ name: 'seat-freed', data: { classId: futureClass.id } });
   });
 
   // ---------------------------------------------------------------------------
@@ -379,6 +434,10 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
   const transactionIds: string[] = [];
   const franchiseFeeChargeIds: string[] = [];
   const platformChargeIds: string[] = [];
+  // Decision 122 — deleted in afterAll before Membership/Class, same FK-ordering
+  // reasoning as the suite above.
+  const bookingIds: string[] = [];
+  const classIds: string[] = [];
 
   const fakeDisputeRetrieve = jest.fn();
   const fakeSubscriptionCancel = jest.fn().mockResolvedValue({});
@@ -388,6 +447,8 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
   };
   const fakeNotificationFanoutQueue = { addBulk: jest.fn().mockResolvedValue(undefined) };
   const fakeChargebackPatternRestrictionQueue = { addBulk: jest.fn().mockResolvedValue(undefined) };
+  // Decision 122 — same controllable-fake reasoning as the suite above.
+  const fakeWaitlistCascadeQueue = { addBulk: jest.fn().mockResolvedValue(undefined) };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -397,6 +458,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
         { provide: StripeClientService, useValue: fakeStripeClient },
         { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: fakeNotificationFanoutQueue },
         { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: fakeChargebackPatternRestrictionQueue },
+        { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: fakeWaitlistCascadeQueue },
       ],
     }).compile();
     processor = moduleRef.get(StripeWebhookProcessingProcessor);
@@ -410,10 +472,13 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
     fakeStripeClient.platformClient.mockClear();
     fakeNotificationFanoutQueue.addBulk.mockClear();
     fakeChargebackPatternRestrictionQueue.addBulk.mockClear();
+    fakeWaitlistCascadeQueue.addBulk.mockClear();
   });
 
   afterAll(async () => {
     await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
+    await superuser.booking.deleteMany({ where: { id: { in: bookingIds } } });
+    await superuser.class.deleteMany({ where: { id: { in: classIds } } });
     await superuser.franchiseFeeCharge.deleteMany({ where: { id: { in: franchiseFeeChargeIds } } });
     await superuser.platformCharge.deleteMany({ where: { id: { in: platformChargeIds } } });
     await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });
@@ -538,9 +603,21 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
     expect(jobs.map((j) => j.data.userId)).toContain(owner.id);
   });
 
-  it('a lost dispute force-Expires the ACTIVE Membership and cancels its Stripe Subscription on the School\'s own connected account', async () => {
+  it('a lost dispute force-Expires the ACTIVE Membership, cancels its Stripe Subscription on the School\'s own connected account, and cancels its future Bookings (Decision 122)', async () => {
     const stripeSubscriptionId = `sub_fixture_${randomUUID()}`;
-    const { transaction, stripePaymentIntentId, membershipId, paymentAccount } = await seedSuccessfulTransaction({ membership: true, stripeSubscriptionId });
+    const { school, student, transaction, stripePaymentIntentId, membershipId, paymentAccount } = await seedSuccessfulTransaction({ membership: true, stripeSubscriptionId });
+
+    // Decision 122 fixture — same "one future Booking to cancel, one already-Completed
+    // Booking to prove is left alone" shape as the subscription.deleted test above.
+    const futureClass = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: school.id, title: 'Fixture Future Class', startDate: new Date(Date.now() + 86_400_000), endDate: new Date(Date.now() + 90_000_000) },
+    });
+    classIds.push(futureClass.id);
+    const upcomingBooking = await superuser.booking.create({
+      data: { id: randomUUID(), studentId: student.id, classId: futureClass.id, schoolId: school.id, sourceMembershipId: membershipId!, status: 'UPCOMING' },
+    });
+    bookingIds.push(upcomingBooking.id);
+
     const stripeEventId = `evt_fixture_${randomUUID()}`;
     eventIds.push(stripeEventId);
     fakeDisputeRetrieve.mockResolvedValue(fakeDispute({ payment_intent: stripePaymentIntentId, status: 'lost', amount: 1000 }));
@@ -557,6 +634,15 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
 
     expect(fakeStripeClient.scopedClient).toHaveBeenCalledWith(paymentAccount.stripeConnectedAccountId);
     expect(fakeSubscriptionCancel).toHaveBeenCalledWith(stripeSubscriptionId);
+
+    const upcomingAfter = await superuser.booking.findUniqueOrThrow({ where: { id: upcomingBooking.id } });
+    expect(upcomingAfter.status).toBe('CANCELLED');
+    expect(upcomingAfter.refundResolution).toBe('WITHHELD');
+
+    expect(fakeWaitlistCascadeQueue.addBulk).toHaveBeenCalledTimes(1);
+    const seatFreedJobs = fakeWaitlistCascadeQueue.addBulk.mock.calls[0][0] as Array<{ name: string; data: { classId: string } }>;
+    expect(seatFreedJobs).toHaveLength(1);
+    expect(seatFreedJobs[0]).toMatchObject({ name: 'seat-freed', data: { classId: futureClass.id } });
 
     // Decision 112 — a newly-recorded lost dispute enqueues exactly one
     // chargeback-pattern-restriction check, for this Transaction's own Student.

@@ -70,6 +70,15 @@ import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-rest
  * — QueueModule already registers the new queue (added alongside the others),
  * and the new processor's own NOTIFICATION_FANOUT_QUEUE injection is covered by
  * the same QueueModule import already in this module.
+ *
+ * Decision 122 extends StripeWebhookProcessingProcessor once more, closing the
+ * "same-day sweep cancels the Student's own future Bookings" half of Spec 55
+ * §6.1's Membership-expiry rule (deferred since Phase 8 first wrote this file,
+ * before Booking existed) — it now also injects WAITLIST_CASCADE_PROCESSING_QUEUE
+ * to notify the waitlist for each seat a cancellation frees, the same
+ * cross-queue @InjectQueue pattern BookingNoShowProcessingProcessor already
+ * established for that exact queue. No new module import needed — QueueModule
+ * already registers WAITLIST_CASCADE_PROCESSING_QUEUE (confirmed above, Phase 11).
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
