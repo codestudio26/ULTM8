@@ -83,6 +83,18 @@ sync PR on purpose — see §2's own "Recommended next actions."
 PRs; Track B is merged and current with master as of PR #81's own base commit. See
 §1/§2's own updated status and the Snapshot table above.
 
+**Updated 2026-09-30 (Decision 122):** closed a real gap in an already-confirmed
+Spec 55 §6.1 rule — a Membership force-Expiry (Subscription final cancellation, or
+a lost Membership-purchase dispute) now also cancels the future Bookings it was
+funding and notifies the waitlist for each freed seat, instead of silently leaving
+them in place. Not itself a Track-status change (no phase completed, no PR count
+shifted) — logged here because it closes a specific, previously-flagged gap this
+doc's own history should reflect. See Decision 122 for the full account, including
+the one genuinely inferred scope choice (guest-seat Bookings are left untouched)
+and a related, still-open gap this fix does NOT cover (no sweep exists anywhere for
+a Membership expiring by its own `expiryDate`, only for the two force-Expiry sites
+that already existed).
+
 ---
 
 ## Snapshot

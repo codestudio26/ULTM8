@@ -102,7 +102,7 @@ describeIfDb('TenantLifecycleModule — close-account/reactivate + the archived-
       data: {
         id: randomUUID(),
         email: `tenant-lifecycle-owner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Owner',
         surname: 'Lifecycle',
         passcodeHash: 'x',
@@ -129,7 +129,7 @@ describeIfDb('TenantLifecycleModule — close-account/reactivate + the archived-
       data: {
         id: randomUUID(),
         email: `tenant-lifecycle-fowner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'FOwner',
         surname: 'Lifecycle',
         passcodeHash: 'x',

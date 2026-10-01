@@ -126,7 +126,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         data: {
           id: randomUUID(),
           email: `bookings-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -312,7 +312,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-revoked-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'revoked-student',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -359,7 +359,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-branch-b-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'branch-b-staff',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -432,7 +432,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-dual-grant-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'dual-grant-staff',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -611,7 +611,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         data: {
           id: randomUUID(),
           email: `bookings-http-race-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Racer',
           passcodeHash: 'x',
@@ -711,7 +711,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-revoked-waitlist-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'revoked-waitlist-student',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -758,7 +758,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-waitlist-branch-b-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'waitlist-branch-b-staff',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -803,7 +803,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-waitlist-dual-grant-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'waitlist-dual-grant-staff',
         surname: 'Tenant',
         passcodeHash: 'x',

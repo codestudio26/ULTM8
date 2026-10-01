@@ -55,9 +55,12 @@ export class WaitlistCascadeProcessingScheduler implements OnModuleInit {
  * next Waiting entry. An unclaimed window cascades to the next person in position
  * order." Handles two distinct job names on the same queue:
  *
- *  - `seat-freed` ({ classId }) — event-triggered by BookingsService.cancel() and by
- *    BookingNoShowProcessingProcessor after a No-Show; notifies the next Waiting
- *    entry for that Class, if any.
+ *  - `seat-freed` ({ classId }) — event-triggered by BookingsService.cancel(), by
+ *    BookingNoShowProcessingProcessor after a No-Show, and (Decision 122) by
+ *    StripeWebhookProcessingProcessor after cancelling a Booking whose funding
+ *    Membership just got force-Expired (a Subscription's final cancellation or a
+ *    lost Membership-purchase dispute); notifies the next Waiting entry for that
+ *    Class, if any.
  *  - `sweep-expired` ({}) — the recurring scheduled sweep (see
  *    WaitlistCascadeProcessingScheduler above); finds every Notified entry whose
  *    claimByDeadline has passed, expires it, and cascades to the next Waiting entry

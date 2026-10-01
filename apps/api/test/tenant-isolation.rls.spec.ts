@@ -67,7 +67,7 @@ describeIfDb('cross-tenant isolation (RLS)', () => {
       data: {
         id: randomUUID(),
         email: `rls-a-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'A',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -78,7 +78,7 @@ describeIfDb('cross-tenant isolation (RLS)', () => {
       data: {
         id: randomUUID(),
         email: `rls-b-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'B',
         surname: 'Tenant',
         passcodeHash: 'x',

@@ -6,11 +6,25 @@ import Stripe from 'stripe';
 import { randomUUID } from 'crypto';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../payments/stripe-client.service';
-import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE } from './queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
+
+/**
+ * Thrown by handlePaymentIntentSucceeded's own `tx.membership.create()` call when
+ * it collides with `Membership_one_active_general_access_per_school` — a signal to
+ * process()'s own catch block to run resolveMembershipCollision(), not a generic
+ * failure. A dedicated type, not a `P2002` + `err.meta?.target` inspection at the
+ * call site that needs to react to it — see that call site's own catch block for
+ * why `target` inspection specifically doesn't work for this one (it's reliable for
+ * the OTHER P2002 this file distinguishes, `isProcessedStripeEventConflict`'s own
+ * dedup-row conflict, just not for this one). Caught and re-thrown as this marker
+ * at the ONE place that can actually produce it, so process()'s own catch block can
+ * use a plain `instanceof` check instead.
+ */
+class MembershipCollisionError extends Error {}
 
 /**
  * Decision 111/112 — the three real, external-facing side effects a
@@ -21,11 +35,20 @@ type WebhookJobData = { stripeEventId: string; eventType: string; objectId: stri
  * carried out inline — see process()'s own comment for why these only ever run
  * AFTER the DB transaction they're derived from has actually committed, never
  * from inside it.
+ *
+ * Decision 122 extends this shape (name kept as-is rather than renamed, to keep
+ * that diff minimal) with `freedClassIds` — a waitlist-cascade 'seat-freed' job
+ * is BullMQ/Redis, same "doesn't participate in the Postgres transaction"
+ * reasoning as the other three fields, so it's deferred the same way. Populated
+ * by handleSubscriptionDeleted() and applyDisputeToTransaction() alike, the two
+ * places a Membership gets force-Expired — see
+ * cancelFutureBookingsFundedByExpiredMembership()'s own comment.
  */
 type DisputeSideEffects = {
   notifications: NotificationFanoutJobData[];
   subscriptionCancellations: { connectedAccountId: string; subscriptionId: string }[];
   chargebackPatternCheckStudentIds: string[];
+  freedClassIds: string[];
 };
 
 /**
@@ -77,6 +100,11 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     private readonly stripeClient: StripeClientService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
     @InjectQueue(CHARGEBACK_PATTERN_RESTRICTION_QUEUE) private readonly chargebackPatternRestrictionQueue: Queue,
+    // Decision 122 — same cross-queue @InjectQueue pattern this file already
+    // established for the two queues above; WAITLIST_CASCADE_PROCESSING_QUEUE is
+    // already registered by QueueModule (JobsModule imports it), same as every
+    // other queue this processor injects.
+    @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {
     super();
   }
@@ -138,7 +166,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       dispute = await client.disputes.retrieve(objectId);
     }
 
-    let sideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
+    let sideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     try {
       await this.prismaJobs.$transaction(async (tx) => {
         await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
@@ -147,6 +175,14 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
         this.logger.log(`Stripe event ${stripeEventId} (${eventType}) already processed — skipping (redelivery).`);
+        return;
+      }
+      // Spec 55 §6.1's confirmed collision handling — see resolveMembershipCollision's
+      // own comment for the full account of why this runs here, after the $transaction
+      // above has already rolled back, rather than from inside handlePaymentIntentSucceeded
+      // itself.
+      if (err instanceof MembershipCollisionError) {
+        await this.resolveMembershipCollision(stripeEventId, eventType, objectId);
         return;
       }
       throw err;
@@ -201,9 +237,25 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           })),
         );
       }
+      // Decision 122 — same deferred-to-post-commit reasoning as the three
+      // blocks above: cancelFutureBookingsFundedByExpiredMembership() already
+      // did the actual Booking writes inside the transaction; this only
+      // notifies the waitlist for each Class a cancellation just freed a seat
+      // on, same as BookingsService.cancelBooking()'s own 'seat-freed' enqueue.
+      // jobId keyed on (stripeEventId, classId) for the same redelivery-safety
+      // reason every other job in this file's own jobId convention uses.
+      if (sideEffects.freedClassIds.length > 0) {
+        await this.waitlistCascadeQueue.addBulk(
+          sideEffects.freedClassIds.map((classId) => ({
+            name: 'seat-freed',
+            data: { classId },
+            opts: { jobId: `seat-freed-${stripeEventId}-${classId}`, attempts: 3, backoff: { type: 'exponential' as const, delay: 5000 } },
+          })),
+        );
+      }
     } catch (err) {
       this.logger.error(
-        `Stripe event ${stripeEventId} (${eventType}) — DB write committed but a post-commit side effect (Subscription cancellation, notification fan-out, or chargeback-pattern check) failed and cannot be retried (the dedup row already committed). Needs manual follow-up.`,
+        `Stripe event ${stripeEventId} (${eventType}) — DB write committed but a post-commit side effect (Subscription cancellation, notification fan-out, chargeback-pattern check, or waitlist-cascade notify) failed and cannot be retried (the dedup row already committed). Needs manual follow-up.`,
         err as Error,
       );
     }
@@ -244,7 +296,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     invoice: Stripe.Invoice | undefined,
     dispute: Stripe.Dispute | undefined,
   ): Promise<DisputeSideEffects> {
-    const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
+    const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
       case 'payment_intent.succeeded':
         await this.handlePaymentIntentSucceeded(tx, objectId);
@@ -253,8 +305,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         await this.handlePaymentIntentFailed(tx, objectId);
         return noSideEffects;
       case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(tx, objectId);
-        return noSideEffects;
+        return { ...noSideEffects, freedClassIds: await this.handleSubscriptionDeleted(tx, objectId) };
       // Phase 16b-ii — real handlers, no longer safe-default no-ops. Decision
       // 6's own "invoice.paid does NOT create a Membership" reasoning (still
       // true, unchanged) was never a blanket "invoice.paid has no role" —
@@ -334,44 +385,156 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
 
     const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
 
-    // Deliberately NOT caught here. An earlier draft of this method wrapped this
-    // create() in its own try/catch to swallow a P2002 collision (Spec 55 §11.5's
-    // two-simultaneous-Active-Memberships constraint) and log-and-continue within
-    // the SAME transaction — that doesn't work: once any statement inside a
-    // Postgres transaction errors, the whole transaction is aborted at the
-    // database level regardless of a JS-level try/catch, so "catch and keep going"
-    // would have left the surrounding `tx.transaction.updateMany` above and the
-    // dedup INSERT in `process()` unable to commit either, throwing a confusing
-    // second error instead of the clean rollback this comment now documents.
-    // Letting it propagate is correct: the WHOLE transaction (dedup row + the
-    // Transaction status flip above + this create) rolls back together — the
-    // Transaction row stays PENDING (not falsely SUCCESSFUL-with-no-Membership),
-    // and since the dedup row never committed, BullMQ's retry sees a fresh event
-    // and tries the whole thing again. The business condition causing the
-    // collision won't have changed between retries, so this repeats until BullMQ's
-    // attempts exhaust and `onFailed` below logs it loudly and permanently — an
-    // honest, visible failure rather than a silently-swallowed one.
-    //
-    // Spec 55 §6.1's confirmed collision handling is a Stripe Refund API call (and,
-    // for a Subscription, cancelling it too) — NOT built here: this processor has
-    // no StripeClientService wired up this phase, and an unverified money-moving
-    // Stripe call inside this already-large phase risks shipping something
-    // untested. TODO(Phase 9 follow-up): inject StripeClientService here and issue
-    // the refund/cancel automatically instead of relying on `onFailed`'s log alone.
-    const membership = await tx.membership.create({
-      data: {
-        id: randomUUID(),
-        studentId: transaction.studentId,
-        membershipPlanId: transaction.membershipPlanId,
-        schoolId: transaction.schoolId,
-        frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
-        classesRemaining: plan.classesIncluded ?? undefined,
-        expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
-        scopedClassId: plan.scopedClassId,
-        stripeSubscriptionId: transaction.stripeSubscriptionId ?? undefined,
-      },
+    // The create() below is wrapped in its own try/catch, but — critically — NOT to
+    // swallow a P2002 collision (Spec 55 §11.5's two-simultaneous-Active-Memberships
+    // constraint) and keep going within the SAME transaction: once any statement
+    // inside a Postgres transaction errors, the whole transaction is aborted at the
+    // database level regardless of a JS-level try/catch, so issuing any further
+    // query against this same `tx` after catching would itself fail with "current
+    // transaction is aborted." This catch only RE-THROWS, as a different, typed
+    // error (MembershipCollisionError) that still propagates out and aborts the
+    // transaction exactly as an uncaught one would — the WHOLE transaction (dedup
+    // row + the Transaction status flip above + this create) still rolls back
+    // together, the Transaction row still stays PENDING (not falsely
+    // SUCCESSFUL-with-no-Membership). The only difference is that process()'s own
+    // catch block can now recognize this specific case by type and run
+    // resolveMembershipCollision() — Spec 55 §6.1's confirmed collision handling (a
+    // Stripe Refund API call, and for a Subscription, cancelling it too) — instead
+    // of only logging the collision permanently via `onFailed` once BullMQ's
+    // retries exhaust, which is what happened here before that method existed.
+    try {
+      const membership = await tx.membership.create({
+        data: {
+          id: randomUUID(),
+          studentId: transaction.studentId,
+          membershipPlanId: transaction.membershipPlanId,
+          schoolId: transaction.schoolId,
+          frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
+          classesRemaining: plan.classesIncluded ?? undefined,
+          expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
+          scopedClassId: plan.scopedClassId,
+          stripeSubscriptionId: transaction.stripeSubscriptionId ?? undefined,
+        },
+      });
+      await tx.transaction.update({ where: { id: transaction.id }, data: { membershipId: membership.id } });
+    } catch (err) {
+      // Deliberately NOT `err.meta?.target` column-name inspection here, unlike
+      // isProcessedStripeEventConflict above — verified empirically, not guessed:
+      // a manual collision run as the Postgres superuser DID report a clean
+      // `meta.target: ['studentId','schoolId']`, but the SAME collision run through
+      // `ultm8_jobs` (the real role this processor actually runs as,
+      // PrismaJobsService) instead reports `meta.target: null`. Root cause,
+      // confirmed against real Postgres behavior: Postgres suppresses a
+      // unique-violation error's DETAIL text (which is what Prisma parses `target`
+      // from) for any row-level-security-governed table, for any role that isn't
+      // the table owner/a superuser — regardless of that role's own GRANTs —
+      // specifically so a permitted-but-RLS-scoped role can't use a
+      // constraint-violation error to infer the existence of a row RLS would
+      // otherwise hide from it. Membership has RLS enabled (every tenant-scoped
+      // table in this schema does); ProcessedStripeEvent
+      // (isProcessedStripeEventConflict's own table) does not — confirmed by grep
+      // against its own migration (`GRANT SELECT, INSERT ON "ProcessedStripeEvent"
+      // TO ultm8_jobs`, no `ENABLE ROW LEVEL SECURITY`/policy anywhere) — exactly
+      // why that check's own `target` inspection reliably works while this one
+      // cannot. Treating ANY P2002 here as the collision is still safe, not a
+      // loosened check: this try/catch is scoped to ONLY the one `create()` call
+      // above, whose sole plausible P2002 source (besides an
+      // effectively-impossible fresh-`randomUUID()` `id` collision) is this one
+      // partial unique index — confirmed against `pg_indexes`, Membership carries
+      // exactly two: its own primary key and this one.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new MembershipCollisionError(
+          `Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) collided with Membership_one_active_general_access_per_school.`,
+        );
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Spec 55 §6.1's confirmed collision handling, closing the TODO
+   * handlePaymentIntentSucceeded's own comment used to leave open: a second
+   * concurrent Membership purchase that lost the
+   * Membership_one_active_general_access_per_school race gets its captured
+   * payment refunded automatically — and, for a Subscription, the Subscription
+   * cancelled too — rather than only a loud, permanent `onFailed` log once BullMQ's
+   * retries exhaust.
+   *
+   * Runs AFTER process()'s own `$transaction` has already rolled back (the
+   * collision is what aborted it) — so this does its own fresh, independent read
+   * via `this.prismaJobs` directly, and a brand-new, SEPARATE transaction for the
+   * dedup row + Transaction status write, never the poisoned `tx` from the aborted
+   * attempt (same "no further queries on an aborted transaction" constraint
+   * handlePaymentIntentSucceeded's own comment documents).
+   *
+   * Deliberately makes the Stripe calls BEFORE the DB write — the mirror image of
+   * FranchiseFeesService.refund()'s own established "Stripe call inside the
+   * transaction" pattern. That pattern fits an admin-initiated refund that already
+   * holds a row lock to extend across the call; this one starts from an ABORTED
+   * transaction with no lock left to hold, so there's nothing to extend anyway —
+   * same "an external API call and a DB transaction don't mix" reasoning
+   * process()'s own header comment already gives for every other Stripe fetch in
+   * this file, applied here for the identical reason, not a new or different gap.
+   * Idempotency keys (derived from `stripeEventId` + the Stripe id being acted on,
+   * same shape FranchiseFeesService.refund()'s own key already established) make a
+   * genuine retry of this exact event safe at Stripe's side regardless of ordering.
+   *
+   * If either Stripe call fails, this rethrows — the dedup row never commits, so
+   * BullMQ retries the whole `payment_intent.succeeded` delivery (which hits this
+   * exact same collision and attempts the exact same refund/cancel again — safe,
+   * not a double-refund, because of the idempotency keys) — until attempts exhaust
+   * and `onFailed`'s existing alarm fires, the same safety net as before this
+   * method existed, just now the LAST resort rather than the ONLY one.
+   */
+  private async resolveMembershipCollision(stripeEventId: string, eventType: string, paymentIntentId: string): Promise<void> {
+    const transaction = await this.prismaJobs.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (!transaction) {
+      // Shouldn't happen — handlePaymentIntentSucceeded already matched this exact
+      // Transaction moments ago, inside the attempt that then rolled back; the row
+      // itself is never deleted by that rollback. Fail loudly rather than silently
+      // drop a refund that's genuinely owed.
+      throw new Error(`resolveMembershipCollision: no Transaction found for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) — this should be unreachable.`);
+    }
+    if (transaction.status !== 'PENDING') {
+      // Already resolved by an earlier delivery of this same event (a BullMQ retry,
+      // or a genuine Stripe redelivery) — idempotent no-op.
+      this.logger.log(`Membership collision for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) already resolved (Transaction ${transaction.id} is ${transaction.status}) — skipping.`);
+      return;
+    }
+
+    const paymentAccount = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: transaction.schoolId } });
+    if (!paymentAccount?.stripeConnectedAccountId) {
+      throw new Error(`resolveMembershipCollision: School ${transaction.schoolId} has no PaymentAccount with a connected Stripe account — cannot refund PaymentIntent ${paymentIntentId}.`);
+    }
+    // scopedClient(), not platformClient() — same Direct-charge reasoning
+    // applyDisputeToTransaction's own comment already gives: this PaymentIntent (and
+    // Subscription, if any) was created on the School's own connected account.
+    const stripe = this.stripeClient.scopedClient(paymentAccount.stripeConnectedAccountId);
+
+    // Cancel the now-pointless Subscription FIRST — stop any further billing before
+    // refunding the one payment already captured. SUBSCRIPTION-type plans only;
+    // stripeSubscriptionId is null for a one-time purchase, so there is nothing to
+    // cancel.
+    if (transaction.stripeSubscriptionId) {
+      await stripe.subscriptions.cancel(transaction.stripeSubscriptionId, undefined, {
+        idempotencyKey: `membership-collision-cancel-${stripeEventId}-${transaction.stripeSubscriptionId}`,
+      });
+    }
+    await stripe.refunds.create(
+      { payment_intent: paymentIntentId },
+      { idempotencyKey: `membership-collision-refund-${stripeEventId}-${paymentIntentId}` },
+    );
+
+    await this.prismaJobs.$transaction(async (tx) => {
+      await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
+      await tx.transaction.updateMany({
+        where: { id: transaction.id, status: 'PENDING' },
+        data: { status: 'REFUNDED', refundedAmount: transaction.amount },
+      });
     });
-    await tx.transaction.update({ where: { id: transaction.id }, data: { membershipId: membership.id } });
+    this.logger.log(
+      `PaymentIntent ${paymentIntentId} (Transaction ${transaction.id}) refunded${transaction.stripeSubscriptionId ? ' and its Subscription cancelled' : ''} — lost the one-active-general-access-Membership race (event ${stripeEventId}).`,
+    );
   }
 
   /** payment_intent.payment_failed — flips a PENDING Transaction to FAILED. No
@@ -392,18 +555,23 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * fires exactly at that final-cancellation point (both voluntary cancellation and
    * exhausted-retries land here identically per that same confirmed text).
    *
-   * The "same-day sweep cancels the Student's own future Bookings" half of this
-   * rule is NOT built here — Booking doesn't exist in this codebase yet (Phase 11).
+   * Decision 122 — the "same-day sweep cancels the Student's own future Bookings"
+   * half of this same quoted rule is now built too (it wasn't when this handler was
+   * first written — Booking didn't exist yet, Phase 11 built it later, and nobody
+   * circled back until now). Returns the Class ids any cancelled Booking freed a
+   * seat on, so process() can notify the waitlist for each after the transaction
+   * commits — see cancelFutureBookingsFundedByExpiredMembership()'s own comment for
+   * the full account of scope and the WITHHELD-not-REFUNDED choice.
    */
-  private async handleSubscriptionDeleted(tx: Prisma.TransactionClient, subscriptionId: string): Promise<void> {
+  private async handleSubscriptionDeleted(tx: Prisma.TransactionClient, subscriptionId: string): Promise<string[]> {
     const membership = await tx.membership.findUnique({ where: { stripeSubscriptionId: subscriptionId } });
     if (membership && membership.status === 'ACTIVE') {
       await tx.membership.updateMany({ where: { id: membership.id, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
+      const freedClassIds = await this.cancelFutureBookingsFundedByExpiredMembership(tx, membership.id);
       this.logger.log(
-        `Membership ${membership.id} (Student ${membership.studentId}) Expired on subscription cancellation (${subscriptionId}). ` +
-          'Booking sweep NOT run — Booking does not exist in this codebase yet (Phase 11 scope).',
+        `Membership ${membership.id} (Student ${membership.studentId}) Expired on subscription cancellation (${subscriptionId}).`,
       );
-      return;
+      return freedClassIds;
     }
 
     // Phase 16b-ii — not every cancelled Subscription is a Membership's; a
@@ -421,7 +589,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     if (franchiseFeeSchool) {
       await tx.school.updateMany({ where: { id: franchiseFeeSchool.id }, data: { franchiseFeeSubscriptionStatus: 'CANCELED' } });
       this.logger.log(`School ${franchiseFeeSchool.id}'s franchise-fee Subscription (${subscriptionId}) Canceled.`);
-      return;
+      return [];
     }
 
     // Phase 54 — a third, genuinely different Subscription kind can reach
@@ -434,13 +602,78 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     if (platformSchool) {
       await tx.school.updateMany({ where: { id: platformSchool.id }, data: { platformSubscriptionStatus: 'CANCELED' } });
       this.logger.log(`School ${platformSchool.id}'s platform SubscriptionPlan Subscription (${subscriptionId}) Canceled — portal access now read-only.`);
-      return;
+      return [];
     }
     const platformFranchise = await tx.franchise.findUnique({ where: { stripePlatformSubscriptionId: subscriptionId } });
     if (platformFranchise) {
       await tx.franchise.updateMany({ where: { id: platformFranchise.id }, data: { platformSubscriptionStatus: 'CANCELED' } });
       this.logger.log(`Franchise ${platformFranchise.id}'s platform SubscriptionPlan Subscription (${subscriptionId}) Canceled.`);
     }
+    return [];
+  }
+
+  /**
+   * Decision 122 — Spec 55 §6.1's own confirmed "same-day sweep cancels the
+   * Student's own future Bookings" half of the Membership-expiry rule (see
+   * handleSubscriptionDeleted's own comment for the full quote). Called from
+   * every place in this file that force-Expires a Membership: a Subscription's
+   * final cancellation (handleSubscriptionDeleted, above) and a lost
+   * Membership-purchase dispute (applyDisputeToTransaction, Decision 55's own
+   * force-Expiry consequence) — there is no third site.
+   *
+   * Scope, inferred and flagged for Architect review (not itself a new
+   * SKILL.md-confirmed rule — it's this same already-confirmed Spec 55 §6.1
+   * sentence, finally built): only the Student's OWN seat
+   * (Booking.sourceMembershipId) is cancelled here. A BookingAttendee guest
+   * seat this Membership was funding for a DIFFERENT Student is deliberately
+   * left untouched — whether losing your own Membership should also bump a
+   * guest you invited off someone else's Booking is a materially different,
+   * undecided question this fix doesn't attempt to answer.
+   *
+   * refundResolution is WITHHELD, never REFUNDED: this is a forced
+   * cancellation because the funding Membership itself is gone (a failed
+   * renewal or a lost dispute), not the Student's own voluntary cancellation
+   * under the Class's own refund policy — there is no credit to hand back to a
+   * Membership that's being retired for good. restoreCredit() is deliberately
+   * NOT called for the same reason (and would be a no-op for a general-access
+   * Membership regardless — see that method's own comment).
+   *
+   * Runs inside the SAME transaction as the Membership-expiry write above it —
+   * unlike the notification/Subscription-cancellation/chargeback-check side
+   * effects elsewhere in this file, this is a plain DB write with no external
+   * call, so it belongs in the transaction, not deferred to process()'s
+   * post-commit block. Only the resulting waitlist-cascade 'seat-freed'
+   * enqueue is deferred (same reasoning BookingsService.cancelBooking()'s own
+   * header comment already established for its own cascade enqueue: BullMQ/
+   * Redis doesn't participate in the Postgres transaction).
+   *
+   * Uses `tx` (this file's own PrismaJobsService/ultm8_jobs-role transaction),
+   * not a per-Student tenant context — same reasoning
+   * BookingNoShowProcessingProcessor's own sweep and
+   * BookingsService.countOccupiedSeats() already established: this runs with
+   * no single caller/Student context of its own, and ultm8_jobs already holds
+   * SELECT/UPDATE on Booking (granted in the Phase 11 migration for the
+   * no-show sweep) — no new grant needed for this addition.
+   */
+  private async cancelFutureBookingsFundedByExpiredMembership(tx: Prisma.TransactionClient, membershipId: string): Promise<string[]> {
+    const affected = await tx.booking.findMany({
+      where: { sourceMembershipId: membershipId, status: 'UPCOMING' },
+      select: { id: true, classId: true },
+    });
+    if (affected.length === 0) {
+      return [];
+    }
+    // Optimistic-concurrency guard, same shape as every other status-transition
+    // in this codebase — re-filters on status: 'UPCOMING' at write time so a
+    // Booking that left UPCOMING between the read above and this write (e.g. the
+    // Student cancelled it themselves, or it was just marked No-Show) is left
+    // alone rather than double-resolved.
+    await tx.booking.updateMany({
+      where: { id: { in: affected.map((b) => b.id) }, status: 'UPCOMING' },
+      data: { status: 'CANCELLED', refundResolution: 'WITHHELD' },
+    });
+    this.logger.log(`Membership ${membershipId} Expired — cancelled ${affected.length} future Booking(s) it was funding.`);
+    return affected.map((b) => b.classId);
   }
 
   /**
@@ -711,7 +944,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * this method's own DB writes have actually committed.
    */
   private async handleChargeDispute(tx: Prisma.TransactionClient, dispute: Stripe.Dispute, stripeEventId: string): Promise<DisputeSideEffects> {
-    const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
+    const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     const paymentIntentId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id;
     if (!paymentIntentId) {
       this.logger.warn(`Dispute ${dispute.id} (status ${dispute.status}) has no payment_intent — cannot correlate to any charge. Ignoring.`);
@@ -773,10 +1006,15 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     await tx.transaction.update({ where: { id: transaction.id }, data: { status: outcome.status, disputedAmount: outcome.disputedAmount, disputeLostAt } });
 
     const subscriptionCancellations: DisputeSideEffects['subscriptionCancellations'] = [];
+    let freedClassIds: string[] = [];
     if (outcome.lost && transaction.membershipId) {
       const membershipUpdate = await tx.membership.updateMany({ where: { id: transaction.membershipId, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
       if (membershipUpdate.count > 0) {
         this.logger.log(`Dispute ${dispute.id} lost — Membership ${transaction.membershipId} force-Expired (Decision 55).`);
+        // Decision 122 — same "force-Expiry cancels the Membership's own future
+        // Bookings" fix as handleSubscriptionDeleted() above; see
+        // cancelFutureBookingsFundedByExpiredMembership()'s own comment.
+        freedClassIds = await this.cancelFutureBookingsFundedByExpiredMembership(tx, transaction.membershipId);
         const membership = await tx.membership.findUnique({ where: { id: transaction.membershipId }, select: { stripeSubscriptionId: true } });
         if (membership?.stripeSubscriptionId) {
           // scopedClient(), not platformClient() — this Subscription was created
@@ -808,6 +1046,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // dedup already guarantees this method runs at most once per real Stripe
       // event, so "newly recorded" and "this method ran" are the same thing here).
       chargebackPatternCheckStudentIds: outcome.lost ? [transaction.studentId] : [],
+      freedClassIds,
     };
   }
 
@@ -837,6 +1076,10 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // Decision 68/112 is Student-scoped (Membership purchase disputes only) —
       // a FranchiseFeeCharge dispute has no Student to check.
       chargebackPatternCheckStudentIds: [],
+      // Decision 122 is Membership-scoped (only a lost Membership-purchase
+      // dispute force-Expires anything) — a FranchiseFeeCharge dispute never
+      // touches a Membership, so there's nothing to free.
+      freedClassIds: [],
     };
   }
 
@@ -859,7 +1102,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       `PlatformCharge ${charge.id} (School ${charge.schoolId ?? '-'} / Franchise ${charge.franchiseId ?? '-'}) disputed — Stripe status ${dispute.status}, amount ${dispute.amount} ${dispute.currency}. ` +
         "No Platform Admin notification channel exists for this — see this method's own comment. Needs manual review.",
     );
-    return { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [] };
+    return { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
   }
 
   /** One notification per event per recipient, keyed by (stripeEventId, userId)
