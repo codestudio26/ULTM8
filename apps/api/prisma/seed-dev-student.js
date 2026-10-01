@@ -39,10 +39,20 @@ async function main() {
 
   const school = await prisma.school.upsert({
     where: { id: '00000000-0000-0000-0000-000000000011' },
-    update: {},
+    // `update` too, not just `create` — a School upserted by an earlier run of this
+    // script (before this field was added) would otherwise keep its empty default
+    // forever. `activities` deliberately matches the "Jiu Jitsu" Discipline/
+    // Class.activities string seeded below, so AcademiesListScreen's activity tags
+    // and AcademyDetailScreen's "Activities" section (both driven by
+    // School.activities, not Discipline) have something to render instead of
+    // silently hiding (apps/student/src/academies/{AcademiesListScreen,
+    // AcademyDetailScreen}.tsx: `{item/academy.activities.length ? ... : null}`).
+    update: { activities: ['Jiu Jitsu'], address: '123 Dojo Lane, Springfield' },
     create: {
       id: '00000000-0000-0000-0000-000000000011',
       name: 'Dev Test School (Student)',
+      activities: ['Jiu Jitsu'],
+      address: '123 Dojo Lane, Springfield',
     },
   });
 
