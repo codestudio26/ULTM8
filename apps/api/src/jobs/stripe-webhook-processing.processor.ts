@@ -13,6 +13,20 @@ import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restri
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
 /**
+ * Thrown by handlePaymentIntentSucceeded's own `tx.membership.create()` call when
+ * it collides with `Membership_one_active_general_access_per_school` — a signal to
+ * process()'s own catch block to run resolveMembershipCollision(), not a generic
+ * failure. A dedicated type, not a `P2002` + `err.meta?.target` inspection at the
+ * call site that needs to react to it — see that call site's own catch block for
+ * why `target` inspection specifically doesn't work for this one (it's reliable for
+ * the OTHER P2002 this file distinguishes, `isProcessedStripeEventConflict`'s own
+ * dedup-row conflict, just not for this one). Caught and re-thrown as this marker
+ * at the ONE place that can actually produce it, so process()'s own catch block can
+ * use a plain `instanceof` check instead.
+ */
+class MembershipCollisionError extends Error {}
+
+/**
  * Decision 111/112 — the three real, external-facing side effects a
  * `charge.dispute.*` webhook can produce: a School Owner/Manager or Franchise
  * Owner notification, a Membership Subscription cancellation on a lost dispute,
@@ -147,6 +161,14 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
         this.logger.log(`Stripe event ${stripeEventId} (${eventType}) already processed — skipping (redelivery).`);
+        return;
+      }
+      // Spec 55 §6.1's confirmed collision handling — see resolveMembershipCollision's
+      // own comment for the full account of why this runs here, after the $transaction
+      // above has already rolled back, rather than from inside handlePaymentIntentSucceeded
+      // itself.
+      if (err instanceof MembershipCollisionError) {
+        await this.resolveMembershipCollision(stripeEventId, eventType, objectId);
         return;
       }
       throw err;
@@ -334,44 +356,156 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
 
     const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
 
-    // Deliberately NOT caught here. An earlier draft of this method wrapped this
-    // create() in its own try/catch to swallow a P2002 collision (Spec 55 §11.5's
-    // two-simultaneous-Active-Memberships constraint) and log-and-continue within
-    // the SAME transaction — that doesn't work: once any statement inside a
-    // Postgres transaction errors, the whole transaction is aborted at the
-    // database level regardless of a JS-level try/catch, so "catch and keep going"
-    // would have left the surrounding `tx.transaction.updateMany` above and the
-    // dedup INSERT in `process()` unable to commit either, throwing a confusing
-    // second error instead of the clean rollback this comment now documents.
-    // Letting it propagate is correct: the WHOLE transaction (dedup row + the
-    // Transaction status flip above + this create) rolls back together — the
-    // Transaction row stays PENDING (not falsely SUCCESSFUL-with-no-Membership),
-    // and since the dedup row never committed, BullMQ's retry sees a fresh event
-    // and tries the whole thing again. The business condition causing the
-    // collision won't have changed between retries, so this repeats until BullMQ's
-    // attempts exhaust and `onFailed` below logs it loudly and permanently — an
-    // honest, visible failure rather than a silently-swallowed one.
-    //
-    // Spec 55 §6.1's confirmed collision handling is a Stripe Refund API call (and,
-    // for a Subscription, cancelling it too) — NOT built here: this processor has
-    // no StripeClientService wired up this phase, and an unverified money-moving
-    // Stripe call inside this already-large phase risks shipping something
-    // untested. TODO(Phase 9 follow-up): inject StripeClientService here and issue
-    // the refund/cancel automatically instead of relying on `onFailed`'s log alone.
-    const membership = await tx.membership.create({
-      data: {
-        id: randomUUID(),
-        studentId: transaction.studentId,
-        membershipPlanId: transaction.membershipPlanId,
-        schoolId: transaction.schoolId,
-        frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
-        classesRemaining: plan.classesIncluded ?? undefined,
-        expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
-        scopedClassId: plan.scopedClassId,
-        stripeSubscriptionId: transaction.stripeSubscriptionId ?? undefined,
-      },
+    // The create() below is wrapped in its own try/catch, but — critically — NOT to
+    // swallow a P2002 collision (Spec 55 §11.5's two-simultaneous-Active-Memberships
+    // constraint) and keep going within the SAME transaction: once any statement
+    // inside a Postgres transaction errors, the whole transaction is aborted at the
+    // database level regardless of a JS-level try/catch, so issuing any further
+    // query against this same `tx` after catching would itself fail with "current
+    // transaction is aborted." This catch only RE-THROWS, as a different, typed
+    // error (MembershipCollisionError) that still propagates out and aborts the
+    // transaction exactly as an uncaught one would — the WHOLE transaction (dedup
+    // row + the Transaction status flip above + this create) still rolls back
+    // together, the Transaction row still stays PENDING (not falsely
+    // SUCCESSFUL-with-no-Membership). The only difference is that process()'s own
+    // catch block can now recognize this specific case by type and run
+    // resolveMembershipCollision() — Spec 55 §6.1's confirmed collision handling (a
+    // Stripe Refund API call, and for a Subscription, cancelling it too) — instead
+    // of only logging the collision permanently via `onFailed` once BullMQ's
+    // retries exhaust, which is what happened here before that method existed.
+    try {
+      const membership = await tx.membership.create({
+        data: {
+          id: randomUUID(),
+          studentId: transaction.studentId,
+          membershipPlanId: transaction.membershipPlanId,
+          schoolId: transaction.schoolId,
+          frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
+          classesRemaining: plan.classesIncluded ?? undefined,
+          expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
+          scopedClassId: plan.scopedClassId,
+          stripeSubscriptionId: transaction.stripeSubscriptionId ?? undefined,
+        },
+      });
+      await tx.transaction.update({ where: { id: transaction.id }, data: { membershipId: membership.id } });
+    } catch (err) {
+      // Deliberately NOT `err.meta?.target` column-name inspection here, unlike
+      // isProcessedStripeEventConflict above — verified empirically, not guessed:
+      // a manual collision run as the Postgres superuser DID report a clean
+      // `meta.target: ['studentId','schoolId']`, but the SAME collision run through
+      // `ultm8_jobs` (the real role this processor actually runs as,
+      // PrismaJobsService) instead reports `meta.target: null`. Root cause,
+      // confirmed against real Postgres behavior: Postgres suppresses a
+      // unique-violation error's DETAIL text (which is what Prisma parses `target`
+      // from) for any row-level-security-governed table, for any role that isn't
+      // the table owner/a superuser — regardless of that role's own GRANTs —
+      // specifically so a permitted-but-RLS-scoped role can't use a
+      // constraint-violation error to infer the existence of a row RLS would
+      // otherwise hide from it. Membership has RLS enabled (every tenant-scoped
+      // table in this schema does); ProcessedStripeEvent
+      // (isProcessedStripeEventConflict's own table) does not — confirmed by grep
+      // against its own migration (`GRANT SELECT, INSERT ON "ProcessedStripeEvent"
+      // TO ultm8_jobs`, no `ENABLE ROW LEVEL SECURITY`/policy anywhere) — exactly
+      // why that check's own `target` inspection reliably works while this one
+      // cannot. Treating ANY P2002 here as the collision is still safe, not a
+      // loosened check: this try/catch is scoped to ONLY the one `create()` call
+      // above, whose sole plausible P2002 source (besides an
+      // effectively-impossible fresh-`randomUUID()` `id` collision) is this one
+      // partial unique index — confirmed against `pg_indexes`, Membership carries
+      // exactly two: its own primary key and this one.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new MembershipCollisionError(
+          `Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) collided with Membership_one_active_general_access_per_school.`,
+        );
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Spec 55 §6.1's confirmed collision handling, closing the TODO
+   * handlePaymentIntentSucceeded's own comment used to leave open: a second
+   * concurrent Membership purchase that lost the
+   * Membership_one_active_general_access_per_school race gets its captured
+   * payment refunded automatically — and, for a Subscription, the Subscription
+   * cancelled too — rather than only a loud, permanent `onFailed` log once BullMQ's
+   * retries exhaust.
+   *
+   * Runs AFTER process()'s own `$transaction` has already rolled back (the
+   * collision is what aborted it) — so this does its own fresh, independent read
+   * via `this.prismaJobs` directly, and a brand-new, SEPARATE transaction for the
+   * dedup row + Transaction status write, never the poisoned `tx` from the aborted
+   * attempt (same "no further queries on an aborted transaction" constraint
+   * handlePaymentIntentSucceeded's own comment documents).
+   *
+   * Deliberately makes the Stripe calls BEFORE the DB write — the mirror image of
+   * FranchiseFeesService.refund()'s own established "Stripe call inside the
+   * transaction" pattern. That pattern fits an admin-initiated refund that already
+   * holds a row lock to extend across the call; this one starts from an ABORTED
+   * transaction with no lock left to hold, so there's nothing to extend anyway —
+   * same "an external API call and a DB transaction don't mix" reasoning
+   * process()'s own header comment already gives for every other Stripe fetch in
+   * this file, applied here for the identical reason, not a new or different gap.
+   * Idempotency keys (derived from `stripeEventId` + the Stripe id being acted on,
+   * same shape FranchiseFeesService.refund()'s own key already established) make a
+   * genuine retry of this exact event safe at Stripe's side regardless of ordering.
+   *
+   * If either Stripe call fails, this rethrows — the dedup row never commits, so
+   * BullMQ retries the whole `payment_intent.succeeded` delivery (which hits this
+   * exact same collision and attempts the exact same refund/cancel again — safe,
+   * not a double-refund, because of the idempotency keys) — until attempts exhaust
+   * and `onFailed`'s existing alarm fires, the same safety net as before this
+   * method existed, just now the LAST resort rather than the ONLY one.
+   */
+  private async resolveMembershipCollision(stripeEventId: string, eventType: string, paymentIntentId: string): Promise<void> {
+    const transaction = await this.prismaJobs.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (!transaction) {
+      // Shouldn't happen — handlePaymentIntentSucceeded already matched this exact
+      // Transaction moments ago, inside the attempt that then rolled back; the row
+      // itself is never deleted by that rollback. Fail loudly rather than silently
+      // drop a refund that's genuinely owed.
+      throw new Error(`resolveMembershipCollision: no Transaction found for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) — this should be unreachable.`);
+    }
+    if (transaction.status !== 'PENDING') {
+      // Already resolved by an earlier delivery of this same event (a BullMQ retry,
+      // or a genuine Stripe redelivery) — idempotent no-op.
+      this.logger.log(`Membership collision for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) already resolved (Transaction ${transaction.id} is ${transaction.status}) — skipping.`);
+      return;
+    }
+
+    const paymentAccount = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: transaction.schoolId } });
+    if (!paymentAccount?.stripeConnectedAccountId) {
+      throw new Error(`resolveMembershipCollision: School ${transaction.schoolId} has no PaymentAccount with a connected Stripe account — cannot refund PaymentIntent ${paymentIntentId}.`);
+    }
+    // scopedClient(), not platformClient() — same Direct-charge reasoning
+    // applyDisputeToTransaction's own comment already gives: this PaymentIntent (and
+    // Subscription, if any) was created on the School's own connected account.
+    const stripe = this.stripeClient.scopedClient(paymentAccount.stripeConnectedAccountId);
+
+    // Cancel the now-pointless Subscription FIRST — stop any further billing before
+    // refunding the one payment already captured. SUBSCRIPTION-type plans only;
+    // stripeSubscriptionId is null for a one-time purchase, so there is nothing to
+    // cancel.
+    if (transaction.stripeSubscriptionId) {
+      await stripe.subscriptions.cancel(transaction.stripeSubscriptionId, undefined, {
+        idempotencyKey: `membership-collision-cancel-${stripeEventId}-${transaction.stripeSubscriptionId}`,
+      });
+    }
+    await stripe.refunds.create(
+      { payment_intent: paymentIntentId },
+      { idempotencyKey: `membership-collision-refund-${stripeEventId}-${paymentIntentId}` },
+    );
+
+    await this.prismaJobs.$transaction(async (tx) => {
+      await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
+      await tx.transaction.updateMany({
+        where: { id: transaction.id, status: 'PENDING' },
+        data: { status: 'REFUNDED', refundedAmount: transaction.amount },
+      });
     });
-    await tx.transaction.update({ where: { id: transaction.id }, data: { membershipId: membership.id } });
+    this.logger.log(
+      `PaymentIntent ${paymentIntentId} (Transaction ${transaction.id}) refunded${transaction.stripeSubscriptionId ? ' and its Subscription cancelled' : ''} — lost the one-active-general-access-Membership race (event ${stripeEventId}).`,
+    );
   }
 
   /** payment_intent.payment_failed — flips a PENDING Transaction to FAILED. No
