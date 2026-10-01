@@ -1354,3 +1354,32 @@ Social/OAuth login (sign in via Google, Facebook, Apple, Microsoft, Discord, or 
 ### Recorded by
 
 Stated directly by the user in response to being asked why social-login icons don't appear on the real Login page, 22 Sep 2026.
+
+---
+
+## Decision 122 — Membership force-Expiry now cancels its own future Bookings, closing a real gap in an already-confirmed rule
+
+**Date:** 30 Sep 2026
+**Status:** Developer-level fix, not a new product decision — this closes a gap in a rule Spec 55 §6.1 already confirmed; see "Decision" below for the one genuinely inferred piece of scope.
+**Resolves:** a gap found while explaining the payments/membership/booking flow to the user — `handleSubscriptionDeleted()`'s own header comment admitted: "The 'same-day sweep cancels the Student's own future Bookings' half of this rule is NOT built here — Booking doesn't exist in this codebase yet (Phase 11)." That comment was accurate when Phase 8 wrote it; it was never revisited once Phase 11 actually built Booking, so a Membership force-Expiry (a Subscription's final cancellation, or a lost Membership-purchase dispute, Decision 55) has been silently leaving the Student's already-made future Bookings in place ever since — the exact quoted Spec 55 §6.1 sentence this decision now finally honors.
+
+### Decision
+
+Both places `StripeWebhookProcessingProcessor` flips a `Membership` from `ACTIVE` to `EXPIRED` — `handleSubscriptionDeleted()` and `applyDisputeToTransaction()` (a lost dispute) — now also cancel every `UPCOMING` `Booking` that Membership was funding (`Booking.sourceMembershipId`), in the same database transaction as the Membership-expiry write itself. Each cancelled Booking's `refundResolution` is set to `WITHHELD`, and a `waitlist-cascade-processing` `'seat-freed'` job is enqueued (post-commit, same deferred-side-effect convention this file already uses for Stripe/BullMQ calls) so the next Waiting entry on that Class gets notified, exactly as a normal cancellation already does.
+
+**Scope, inferred (flagged for Architect review, not itself a new SKILL.md-confirmed rule):** only the Student's own seat is cancelled. A `BookingAttendee` guest seat this Membership was funding for a *different* Student is left untouched — whether losing your own Membership should also bump a guest you invited off someone else's Booking is a materially different, undecided question this fix doesn't attempt to answer.
+
+**`refundResolution: WITHHELD`, never `REFUNDED`:** this is a forced cancellation because the funding Membership itself is gone (a failed renewal or a lost dispute), not the Student's own voluntary cancellation under the Class's own refund policy — there is no credit to hand back to a Membership being retired for good. `restoreCredit()` is deliberately not called for the same reason (and would be a no-op for a general-access/Subscription Membership regardless, per that method's own comment).
+
+### What this does NOT resolve
+
+- Membership `EXPIRED` via `expiryDate` passing (a Class Pack/Trial simply running past its own expiry date) has no scheduled sweep anywhere in this codebase at all — a separate, larger gap this fix does not touch. This fix only covers the two sites that already exist and already force-Expire a Membership; it doesn't add a new expiry mechanism.
+- The `BookingAttendee` guest-seat question noted above.
+
+### Verification
+
+`tsc --noEmit` clean across `apps/api`. `nest build` clean. Actually run (not just compiled) against a real local Postgres 16 + Redis 7 in this sandbox — both the two new test cases and the full existing suite: `stripe-webhook-processing.e2e-spec.ts` (15/15 passed) and `bookings.e2e-spec.ts` (36/36 passed), plus the full `test:e2e` run across the whole repo (354 passed, 22 pre-existing skips for unrelated unconfigured integrations, 0 failures) — the cross-tenant-isolation gate CI depends on was exercised for real, not assumed.
+
+### Recorded by
+
+Found and fixed at the user's own request ("fix the future-bookings sweep gap") after they asked how Membership payment failure affects booking access and this gap was traced from the code, 30 Sep 2026.
