@@ -100,7 +100,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
         data: {
           id: randomUUID(),
           email: `memberships-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -469,7 +469,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
       data: {
         id: randomUUID(),
         email: `memberships-http-restricted-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Restricted',
         surname: 'Student',
         passcodeHash: 'x',
@@ -609,7 +609,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
       data: {
         id: randomUUID(),
         email: `memberships-http-revoked-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'revoked-student',
         surname: 'Tenant',
         passcodeHash: 'x',

@@ -133,7 +133,7 @@ describeIfDb('stripe-webhook-processing job', () => {
       data: {
         id: randomUUID(),
         email: `webhook-job-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Webhook',
         surname: 'Fixture',
         passcodeHash: 'x',
@@ -511,7 +511,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
       data: {
         id: randomUUID(),
         email: `dispute-owner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Dispute',
         surname: 'Owner',
         passcodeHash: 'x',
@@ -533,7 +533,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
       data: {
         id: randomUUID(),
         email: `dispute-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Dispute',
         surname: 'Student',
         passcodeHash: 'x',
@@ -755,5 +755,215 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
       processor.process(fakeJob({ stripeEventId, eventType: 'charge.dispute.created', objectId: 'dp_fixture', stripeAccountId: 'acct_fixture' })),
     ).resolves.not.toThrow();
     expect(fakeNotificationFanoutQueue.addBulk).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Spec 55 §6.1's confirmed Membership-purchase-collision handling
+ * (resolveMembershipCollision, closing the TODO handlePaymentIntentSucceeded's own
+ * comment used to leave open) — a SEPARATE describeIfDb block for the identical
+ * reason the charge.dispute.* block above is separate: this path calls
+ * StripeClientService.scopedClient().refunds.create()/subscriptions.cancel(), which
+ * needs faking, unlike the main suite above (which never touches Stripe at all).
+ */
+describeIfDb('stripe-webhook-processing job — Membership-purchase-collision auto-refund', () => {
+  const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
+  let processor: StripeWebhookProcessingProcessor;
+
+  const eventIds: string[] = [];
+  const schoolIds: string[] = [];
+  const userIds: string[] = [];
+  const paymentAccountIds: string[] = [];
+  const membershipPlanIds: string[] = [];
+  const membershipIds: string[] = [];
+  const transactionIds: string[] = [];
+
+  const fakeRefundsCreate = jest.fn().mockResolvedValue({ id: 're_fixture' });
+  const fakeSubscriptionsCancel = jest.fn().mockResolvedValue({});
+  const fakeStripeClient = {
+    scopedClient: jest.fn(() => ({ refunds: { create: fakeRefundsCreate }, subscriptions: { cancel: fakeSubscriptionsCancel } })),
+    platformClient: jest.fn(),
+  };
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        StripeWebhookProcessingProcessor,
+        PrismaJobsService,
+        { provide: StripeClientService, useValue: fakeStripeClient },
+        { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        // Decision 122 — the processor also injects WAITLIST_CASCADE_PROCESSING_QUEUE
+        // now (booking-cancellation-on-force-expiry's own waitlist notification) —
+        // none of this block's own tests exercise that path (no Membership ever
+        // force-Expires here), so a bare faked queue is enough, same reasoning the
+        // other two describe blocks above already apply to their own unrelated queues.
+        { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+      ],
+    }).compile();
+    processor = moduleRef.get(StripeWebhookProcessingProcessor);
+  });
+
+  afterEach(() => {
+    fakeRefundsCreate.mockClear();
+    fakeSubscriptionsCancel.mockClear();
+    fakeStripeClient.scopedClient.mockClear();
+  });
+
+  afterAll(async () => {
+    await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
+    await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });
+    await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
+    await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
+    await superuser.paymentAccount.deleteMany({ where: { id: { in: paymentAccountIds } } });
+    await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
+    await superuser.user.deleteMany({ where: { id: { in: userIds } } });
+    await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
+    await superuser.$disconnect();
+  });
+
+  function fakeJob(data: { stripeEventId: string; eventType: string; objectId: string }) {
+    return { data, attemptsMade: 1, opts: { attempts: 3 } } as never;
+  }
+
+  /** Seeds a School + connected-account PaymentAccount + Student who ALREADY holds
+   * an ACTIVE general-access Membership (classesRemaining null — the exact
+   * Membership_one_active_general_access_per_school condition), plus a NEW PENDING
+   * Transaction for the same Student/School that will collide with it the moment
+   * payment_intent.succeeded tries to create a second one. */
+  async function seedCollisionFixture(overrides: { withSubscription?: boolean } = {}) {
+    const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Collision Fixture School' } });
+    schoolIds.push(school.id);
+    const paymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+    });
+    paymentAccountIds.push(paymentAccount.id);
+    const student = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `collision-fixture-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Collision',
+        surname: 'Fixture',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    userIds.push(student.id);
+    const plan = await superuser.membershipPlan.create({
+      data: { id: randomUUID(), schoolId: school.id, type: 'SUBSCRIPTION', title: 'Collision Fixture Plan', price: 1000 },
+    });
+    membershipPlanIds.push(plan.id);
+
+    const existingMembership = await superuser.membership.create({
+      data: { id: randomUUID(), studentId: student.id, membershipPlanId: plan.id, schoolId: school.id, frequency: 'RECURRING', status: 'ACTIVE', classesRemaining: null },
+    });
+    membershipIds.push(existingMembership.id);
+
+    const stripePaymentIntentId = `pi_collision_fixture_${randomUUID()}`;
+    const stripeSubscriptionId = overrides.withSubscription ? `sub_collision_fixture_${randomUUID()}` : undefined;
+    const transaction = await superuser.transaction.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        studentId: student.id,
+        paymentAccountId: paymentAccount.id,
+        membershipPlanId: plan.id,
+        amount: 1000,
+        status: 'PENDING',
+        paymentMethod: 'STRIPE',
+        stripePaymentIntentId,
+        stripeSubscriptionId,
+      },
+    });
+    transactionIds.push(transaction.id);
+    return { school, student, paymentAccount, existingMembership, transaction, stripePaymentIntentId, stripeSubscriptionId };
+  }
+
+  it('a SUBSCRIPTION purchase that loses the race gets refunded AND its Subscription cancelled', async () => {
+    const { transaction, paymentAccount, stripePaymentIntentId, stripeSubscriptionId } = await seedCollisionFixture({ withSubscription: true });
+    const stripeEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(stripeEventId);
+
+    await processor.process(fakeJob({ stripeEventId, eventType: 'payment_intent.succeeded', objectId: stripePaymentIntentId }));
+
+    expect(fakeStripeClient.scopedClient).toHaveBeenCalledWith(paymentAccount.stripeConnectedAccountId);
+    expect(fakeSubscriptionsCancel).toHaveBeenCalledWith(stripeSubscriptionId, undefined, expect.objectContaining({ idempotencyKey: expect.stringContaining(stripeEventId) }));
+    expect(fakeRefundsCreate).toHaveBeenCalledWith({ payment_intent: stripePaymentIntentId }, expect.objectContaining({ idempotencyKey: expect.stringContaining(stripeEventId) }));
+
+    const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updated.status).toBe('REFUNDED');
+    expect(updated.refundedAmount).toBe(transaction.amount);
+    expect(updated.membershipId).toBeNull();
+
+    const membershipCount = await superuser.membership.count({ where: { studentId: transaction.studentId } });
+    expect(membershipCount).toBe(1); // still only the pre-existing one — no second Membership created
+
+    const dedupRow = await superuser.processedStripeEvent.findUnique({ where: { stripeEventId } });
+    expect(dedupRow).not.toBeNull(); // the event IS considered fully handled — no onFailed alarm, no retry
+  });
+
+  it('a one-time purchase that loses the race gets refunded with no Subscription to cancel', async () => {
+    const { transaction, stripePaymentIntentId } = await seedCollisionFixture({ withSubscription: false });
+    const stripeEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(stripeEventId);
+
+    await processor.process(fakeJob({ stripeEventId, eventType: 'payment_intent.succeeded', objectId: stripePaymentIntentId }));
+
+    expect(fakeSubscriptionsCancel).not.toHaveBeenCalled();
+    expect(fakeRefundsCreate).toHaveBeenCalledTimes(1);
+
+    const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updated.status).toBe('REFUNDED');
+    expect(updated.refundedAmount).toBe(transaction.amount);
+  });
+
+  it('a redelivered event (same id) is a safe no-op — refund/cancel are not called a second time', async () => {
+    const { transaction, stripePaymentIntentId } = await seedCollisionFixture({ withSubscription: true });
+    const stripeEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(stripeEventId);
+
+    await processor.process(fakeJob({ stripeEventId, eventType: 'payment_intent.succeeded', objectId: stripePaymentIntentId }));
+    expect(fakeRefundsCreate).toHaveBeenCalledTimes(1);
+    expect(fakeSubscriptionsCancel).toHaveBeenCalledTimes(1);
+
+    // Same event id again — the outer ProcessedStripeEvent dedup (process()'s own
+    // main $transaction) catches this before dispatch() is ever reached a second
+    // time, exactly as it already does for every other event type in this file.
+    await expect(
+      processor.process(fakeJob({ stripeEventId, eventType: 'payment_intent.succeeded', objectId: stripePaymentIntentId })),
+    ).resolves.not.toThrow();
+
+    expect(fakeRefundsCreate).toHaveBeenCalledTimes(1);
+    expect(fakeSubscriptionsCancel).toHaveBeenCalledTimes(1);
+    const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updated.status).toBe('REFUNDED');
+  });
+
+  it("a DIFFERENT event id for an already-REFUNDED Transaction is a clean no-op (handlePaymentIntentSucceeded's own PENDING guard, not a second collision)", async () => {
+    const { transaction, stripePaymentIntentId } = await seedCollisionFixture({ withSubscription: false });
+    const firstEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(firstEventId);
+    await processor.process(fakeJob({ stripeEventId: firstEventId, eventType: 'payment_intent.succeeded', objectId: stripePaymentIntentId }));
+    expect(fakeRefundsCreate).toHaveBeenCalledTimes(1);
+
+    // A second, genuinely different Stripe event for the SAME PaymentIntent —
+    // Stripe's own documented rare duplicate-with-a-different-id case
+    // (handlePaymentIntentSucceeded's own header comment already accounts for this
+    // for the ordinary, non-collision path; this proves it holds post-collision too).
+    const secondEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(secondEventId);
+    await expect(
+      processor.process(fakeJob({ stripeEventId: secondEventId, eventType: 'payment_intent.succeeded', objectId: stripePaymentIntentId })),
+    ).resolves.not.toThrow();
+
+    // No second attempt at either Stripe call — handlePaymentIntentSucceeded's own
+    // `transaction.status !== 'PENDING'` check returns early before ever reaching
+    // the collision again.
+    expect(fakeRefundsCreate).toHaveBeenCalledTimes(1);
+    const dedupRow = await superuser.processedStripeEvent.findUnique({ where: { stripeEventId: secondEventId } });
+    expect(dedupRow).not.toBeNull();
+    const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updated.status).toBe('REFUNDED');
   });
 });

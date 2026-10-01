@@ -32,7 +32,14 @@ import { SubscriptionPlansModule } from './subscription-plans/subscription-plans
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60_000, limit: 60 }], // generous default; auth endpoints override tighter
+      throttlers: [
+        { ttl: 60_000, limit: 60 }, // generous IP-keyed default; auth endpoints override tighter
+        // Per-user/per-IP throttling (Decision 17) — the "per-user" dimension. Generous
+        // here so every other route is unaffected; auth (Decision 12, decoupled from IP)
+        // and booking/waitlist/credit-restore (Decision 17) override this tighter via
+        // apps/api/src/common/throttle/identity-trackers.ts's trackers.
+        { name: 'identity', ttl: 60_000, limit: 1000 },
+      ],
     }),
     PrismaModule,
     AuthModule,
