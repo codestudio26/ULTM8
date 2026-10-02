@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — decouple auth/booking rate limiting from raw IP** (PR #88, `db9571c`,
+  Decision 12/17): `/auth/login`, `/auth/otp/*`, `/auth/forgot-password`, and
+  `/auth/reset-password` now throttle per-identity (email/phone) in addition
+  to a loosened per-IP backstop, so one caller's bad attempts on a shared IP
+  (office wifi, a school's front-desk device) no longer lock out every other
+  caller behind it. Class booking, booking cancellation, and waitlist-claim
+  gained a per-user throttle they previously had none at all. Fixes Round 1
+  stress-test Weakness #1/#2 (`docs/V1-STRESS-TEST-REPORT.md`).
+- **api — auto-refund a Membership purchase that loses the one-active-membership
+  race** (PR #88, `db9571c`): the Stripe webhook processor's Membership-purchase
+  collision (two concurrent purchases racing the
+  `Membership_one_active_general_access_per_school` unique constraint) now
+  automatically cancels the losing purchase's Subscription (if any) and
+  refunds its PaymentIntent via the Stripe Refund API, then marks the
+  Transaction `REFUNDED` — closing a previously-documented-but-unbuilt TODO in
+  `handlePaymentIntentSucceeded`.
 - **school-portal — Instructors page redesign** (PR #78, `af0ef5d`): table now
   shows Image (photo or initials avatar), Instructor, Specializations, Scope,
   Login/Status (placeholder "—", no backend field yet), Phone Number, Actions.
