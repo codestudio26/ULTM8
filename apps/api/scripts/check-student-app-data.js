@@ -53,7 +53,9 @@ async function main() {
     body: JSON.stringify({ email: EMAIL, passcode: PASSCODE }),
   });
   const loginBody = await loginRes.json();
-  if (loginRes.status !== 200 || !loginBody.accessToken) {
+  // NestJS defaults a POST route to 201 Created unless @HttpCode overrides it, and
+  // AuthController's login route doesn't override it — 201 here is success, not an error.
+  if (!loginBody.accessToken) {
     console.error(`Login failed (${loginRes.status}):`, loginBody);
     process.exit(1);
   }
