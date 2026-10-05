@@ -114,8 +114,15 @@ services:
       # dev-only dummy values, just real ones here instead).
       - key: JWT_ACCESS_SECRET
         generateValue: true
+      # Bumped from the spec-confirmed 15m (Spec §8.3) to 2h on this shared dev/test
+      # deploy only — testers were getting logged out mid-session with no refresh-token
+      # endpoint to silently renew (ultm8-nestjs-module §7, deliberately unresolved: a
+      # general refresh endpoint is a real security-surface addition needing its own
+      # scoping pass, not something to build as a side effect of this). This is a
+      # dev-environment convenience, not a reversal of that decision — revert to 15m
+      # before this render.yaml is ever used for a real production deploy.
       - key: JWT_ACCESS_TTL
-        value: 15m
+        value: 2h
       - key: PLATFORM_ADMIN_JWT_SECRET
         generateValue: true
       - key: PLATFORM_ADMIN_JWT_TTL
