@@ -31,7 +31,7 @@ export class MembershipsService {
   async createPlan(callerId: string, schoolId: string, dto: CreateMembershipPlanDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    this.assertValidPlanShape(dto.type, dto.price, dto.classesIncluded, dto.scopedClassId);
+    this.assertValidPlanShape(dto.type, dto.price, dto.classesIncluded, dto.scopedClassId, dto.expiryDurationDays);
 
     if (dto.scopedClassId) {
       const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -106,7 +106,8 @@ export class MembershipsService {
       dto.classesIncluded ?? existing.classesIncluded ?? undefined,
       nextScopedClassId ?? undefined,
     );
-    this.assertValidPlanShape(nextType, nextPrice, nextClassesIncluded, nextScopedClassId ?? undefined);
+    const nextExpiryDurationDays = dto.expiryDurationDays !== undefined ? dto.expiryDurationDays : existing.expiryDurationDays;
+    this.assertValidPlanShape(nextType, nextPrice, nextClassesIncluded, nextScopedClassId ?? undefined, nextExpiryDurationDays);
 
     if (dto.scopedClassId) {
       const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -152,6 +153,7 @@ export class MembershipsService {
     price: number,
     classesIncluded: number | undefined,
     scopedClassId: string | undefined,
+    expiryDurationDays: number | null | undefined,
   ) {
     if (type === 'FRIEND_PASS') {
       if (price !== 0) {
@@ -174,6 +176,21 @@ export class MembershipsService {
     }
     if (scopedClassId && classesIncluded !== undefined && classesIncluded > 1) {
       throw new BadRequestException('A plan scoped to one Class is capped at classesIncluded=1 — a one-off Class has only one occurrence.');
+    }
+    // FOUND ON SECURITY REVIEW: skills/ultm8-domain-rules/SKILL.md §6 confirms
+    // Trial Membership is "capped at a platform-enforced maximum of 30 days per
+    // individual Trial." expiryDurationDays is nullable on MembershipPlan — without
+    // requiring it here, a School could create a TRIAL_MEMBERSHIP plan with no
+    // duration at all, which createMembershipAndReturn would then grant with no
+    // expiryDate, leaving it ACTIVE forever (worse than the 30-day ceiling this is
+    // meant to enforce) and contributing nothing countable to the cumulative
+    // 12-month cap purchase() now also checks (see assertTrialEligible below) —
+    // that cap sums each past Trial's actual granted duration, which only exists if
+    // this is required at creation time.
+    if (type === 'TRIAL_MEMBERSHIP') {
+      if (!expiryDurationDays || expiryDurationDays < 1 || expiryDurationDays > 30) {
+        throw new BadRequestException('TRIAL_MEMBERSHIP plans must set expiryDurationDays between 1 and 30 (platform-enforced ceiling).');
+      }
     }
   }
 
@@ -203,6 +220,9 @@ export class MembershipsService {
     // block it here explicitly so the gap is loud, not silently wrong.
     if (plan.type === 'FRIEND_PASS') {
       throw new BadRequestException('FRIEND_PASS Memberships are School-gifted, not self-purchased — no staff-gifting endpoint exists yet (out of scope this phase).');
+    }
+    if (plan.type === 'TRIAL_MEMBERSHIP') {
+      await this.assertTrialEligible(callerId, plan);
     }
     const paymentAccount = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId: plan.schoolId } }),
@@ -391,6 +411,76 @@ export class MembershipsService {
     if (calculateAge(student.dateOfBirth) < 18) {
       throw new ForbiddenException(
         'Purchasing a membership requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
+      );
+    }
+  }
+
+  /**
+   * FOUND ON SECURITY REVIEW: skills/ultm8-domain-rules/SKILL.md §6 (Decision
+   * 54+64) confirms Trial Membership is "also capped cumulatively: total Trial
+   * days for a given Student–School pair cannot exceed 30 across a rolling
+   * 12-month window, closing a reissuance loophole where a School could chain
+   * back-to-back fresh Trials to dodge active-student billing indefinitely."
+   * Nothing enforced this before — a Student could let one 30-day Trial expire
+   * and immediately start a fresh one at the same School, indefinitely.
+   *
+   * Sums each past Trial's ACTUAL granted duration (this Membership row's own
+   * stored expiryDate - startDate), not the current MembershipPlan.
+   * expiryDurationDays — a School editing that plan later must not retroactively
+   * change what a past grant is counted as having cost. Every past Trial counts
+   * toward the sum regardless of its current status (ACTIVE or EXPIRED, Membership
+   * has no other states — §8) — an EXPIRED one still used up real days, which is
+   * the entire loophole this closes.
+   *
+   * Enforced here, at purchase() only — not duplicated in
+   * PaymentsService.confirmTransactionInner's Cash/Bank confirm step — because a
+   * Transaction can only exist if it already passed through this gated call.
+   *
+   * KNOWN LIMITATION, flagged not hidden: this is an application-level read-then-
+   * decide check, not a DB constraint — two simultaneous purchase attempts for the
+   * same Student+School could theoretically both read the same "days used so far"
+   * total before either's Membership row commits, both pass, and together exceed
+   * 30 days. A fully race-proof version would need a serializable transaction or
+   * advisory lock around this whole method. Not built here: this guards an
+   * anti-abuse business rule, not a security boundary, and the realistic exploit
+   * (racing two trial purchases in the same instant) is a low-value, low-likelihood
+   * case not worth the added complexity right now.
+   */
+  private async assertTrialEligible(
+    callerId: string,
+    plan: { schoolId: string; expiryDurationDays: number | null },
+  ): Promise<void> {
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setUTCFullYear(twelveMonthsAgo.getUTCFullYear() - 1);
+
+    const pastTrials = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membership.findMany({
+        where: {
+          studentId: callerId,
+          schoolId: plan.schoolId,
+          startDate: { gte: twelveMonthsAgo },
+          membershipPlan: { type: 'TRIAL_MEMBERSHIP' },
+        },
+        select: { startDate: true, expiryDate: true },
+      }),
+    );
+
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const PLATFORM_TRIAL_DAYS_CAP = 30;
+    const daysUsed = pastTrials.reduce((sum, m) => {
+      // Defensive, not expected: a Trial Membership predating assertValidPlanShape's
+      // now-required expiryDurationDays could in principle lack an expiryDate.
+      // Treat as 0 rather than throwing — this check exists to block new purchases,
+      // not to retroactively fail on old data it doesn't control.
+      if (!m.expiryDate) return sum;
+      const days = Math.round((m.expiryDate.getTime() - m.startDate.getTime()) / ONE_DAY_MS);
+      return sum + Math.max(days, 0);
+    }, 0);
+
+    const newTrialDays = plan.expiryDurationDays ?? 0;
+    if (daysUsed + newTrialDays > PLATFORM_TRIAL_DAYS_CAP) {
+      throw new ConflictException(
+        `This Student has already used ${daysUsed} of the ${PLATFORM_TRIAL_DAYS_CAP} Trial days allowed at this School in the past 12 months — this ${newTrialDays}-day Trial would exceed that limit.`,
       );
     }
   }

@@ -226,7 +226,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Free Trial', price: 0 });
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Free Trial', price: 0, expiryDurationDays: 1 });
     expect(planRes.status).toBe(201);
     membershipPlanIds.push(planRes.body.id);
 
@@ -250,7 +250,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Second Free Trial', price: 0 });
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Second Free Trial', price: 0, expiryDurationDays: 1 });
     expect(planRes.status).toBe(201);
     membershipPlanIds.push(planRes.body.id);
 
