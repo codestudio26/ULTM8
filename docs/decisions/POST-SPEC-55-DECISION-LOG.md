@@ -1383,3 +1383,46 @@ Both places `StripeWebhookProcessingProcessor` flips a `Membership` from `ACTIVE
 ### Recorded by
 
 Found and fixed at the user's own request ("fix the future-bookings sweep gap") after they asked how Membership payment failure affects booking access and this gap was traced from the code, 30 Sep 2026.
+
+---
+
+## Decision 123 — Guardian "Kid Mode" booking delegation: a minor may self-book against an existing paid credit, inside the Guardian's own session, never via a separate minor login
+
+**Date:** 6 Oct 2026
+**Status:** Product-owner decision, made directly with the user through a dedicated design/stress-test pass — not a Developer-level inference like 107/109/114/115
+**Resolves:** a genuinely new, previously-unaddressed question — not a `[CONFIRMED]`/`[UNRESOLVED]` item in SKILL.md §14 at all, since the age-13 limited-login mechanism SKILL.md does name is itself unbuilt (`GuardiansService.createMinor()`'s own comment: a minor's `phoneVerifiedAt` is permanently null, and `AuthService.login()` hard-rejects any account where that's null — there is no path for a minor to log in today, full stop). The user asked whether a Guardian could grant a linked minor the ability to book a class themselves; this closes that as a standalone mechanism, explicitly not a widening of the age-13 login.
+
+### Decision
+
+**No new minor login.** "Kid Mode" is a PIN-gated screen inside the *Guardian's own already-authenticated* `apps/student` session — never a separate account, credential, or JWT for the minor. The PIN's role is confirming a device handoff is happening (a UX gate), not authenticating the minor as a distinct identity.
+
+**The real security boundary is a scoped token, not the PIN.** Entering Kid Mode (PIN confirmed) calls a new endpoint — using the Guardian's own full session — that mints a second, short-lived JWT whose only capability is `POST /classes/:id/book`, and only for `studentId`s on that Guardian's own per-minor allow-list (read live from the database at mint time, never cached). Every other endpoint rejects this token outright; hiding buttons client-side is explicitly not treated as sufficient. The app swaps to this token while Kid Mode is on-screen and back to the Guardian's normal token the moment it's exited.
+
+**Zero new booking logic.** This reuses the already-built, already-verified Guardian-on-behalf-of booking path (`BookClassDto.studentId`, Phase 40) exactly as-is — the waiver gate, rank gate, capacity lock, and Membership-credit consumption are all unchanged.
+
+**New model**, shaped directly on the existing `ConsentRecord` precedent: `BookingDelegation { guardianId, studentId, status: ACTIVE | WITHDRAWN }` — **per-minor** (explicit user choice over a single account-wide toggle): a Guardian with two linked minors can enable this for one and not the other, and revoking one never touches the other.
+
+**Scope — confirmed, all explicit, none inferred:**
+- Book a class, consuming an existing Membership/class-pack credit — in scope.
+- Purchasing a new Membership/class-pack, cancelling a booking, joining a waitlist, signing a waiver, or touching payment/account settings — all explicitly out of scope. A `LIMITED_MINOR`-scoped token must be rejected by every endpoint except booking-create; this is a hard allow-list, not a default-permit list with exceptions carved out.
+
+**Revocation behavior:** turning off a minor's delegation does not auto-keep or auto-cancel their existing Kid-Mode bookings. They move into a new "needs Guardian review" state (a new marker on the Booking itself), surfaced in the Guardian's app with a Confirm/Cancel action per booking.
+
+**Guardian visibility:** every Kid-Mode booking is visible to the Guardian exactly the same way every other linked-minor booking already is — no silently-made bookings.
+
+**Check-in unaffected, no new gap:** a Kid-Mode-booked minor checks in exactly the way any Guardian-booked minor already does today — Decision 107's `INSTRUCTOR_MANUAL` path ("Staff confirms by name alone, zero camera involvement, for a Student whose device is dead/absent/a young minor with none") already covers this; verified against that decision's actual text before concluding there was no gap, not assumed.
+
+### Why
+
+Kid Mode over a real minor login: building a genuine credential-based login for a minor with no phone to OTP-verify is a large, separate, ground-up feature (new auth codepath, new rate-limiting/lockout surface, a new claim shape every downstream endpoint would need to explicitly trust) that the user's own "kid mode" framing sidesteps entirely by reusing the Guardian's existing, already-trusted session. A PIN screen alone was explicitly rejected as sufficient on its own — a PIN gates the UI, but the underlying JWT is unchanged by it, so without a genuinely scoped token the restriction would be cosmetic, not enforced; a technically curious minor (or a UI bug) could still reach the Guardian's full capabilities through the same token. The scoped-token design was chosen specifically so "book only" is a server-side guarantee regardless of what the client UI shows. Per-minor over one account-wide toggle: explicitly chosen by the user over the simpler global-switch alternative, for the realistic case of linked minors at different ages/trust levels (e.g. a 14-year-old vs. a 6-year-old) needing different answers.
+
+### What this does NOT resolve
+
+- No code has shipped by this decision — this closes the design/approval step only; the model, the token-minting endpoint, the allow-list guard, the booking-review-queue marker, and the Guardian-facing UI (per-minor toggle, PIN entry, Kid-Mode booking screen, review-queue screen) are all genuine follow-up build work.
+- The exact PIN length/storage mechanism (purely local/device-side vs. a lightweight server-side check) was not specified as a hard requirement — the PIN is explicitly not the security boundary (the scoped token is), so this is an implementation detail to settle during the build, not a reopened product question.
+- Whether a Kid-Mode token's TTL should be a fixed sitewide constant or configurable is not decided — "short, on the order of minutes" is the only constraint set here.
+- The age-13 limited-login mechanism itself remains entirely unbuilt and untouched by this decision — Kid Mode is explicitly a standalone mechanism, not a dependency on or a widening of that (still-unbuilt) feature.
+
+### Recorded by
+
+Proposed by the user ("what if parent grant them access to book a class for themselves... find the best solution"), designed and adversarially stress-tested by Claude across two passes (an initial design + 10-row stress-test table, then a kid-mode-specific second pass once the user's own "no separate login" framing simplified the credential problem), with the user resolving each of 7 explicit open questions directly (no separate login; booking-only scope, no purchase; per-minor granularity over a global toggle; standalone from the age-13 login; revoked bookings go to a Guardian review queue, not auto-kept/auto-cancelled; Guardian keeps full visibility) before approving the consolidated design, 6 Oct 2026.

@@ -6,7 +6,17 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GuardiansService } from './guardians.service';
 import { CreateMinorDto } from './dto/create-minor.dto';
 import { GrantConsentDto } from './dto/grant-consent.dto';
-import { MinorListResponseDto, MinorResponseDto, ConsentRecordListResponseDto, ConsentRecordResponseDto } from './dto/guardian-response.dto';
+import { ConfirmPendingReviewBookingDto } from './dto/confirm-pending-review-booking.dto';
+import {
+  MinorListResponseDto,
+  MinorResponseDto,
+  ConsentRecordListResponseDto,
+  ConsentRecordResponseDto,
+  BookingDelegationResponseDto,
+  BookingDelegationListResponseDto,
+  KidModeTokenResponseDto,
+  PendingReviewBookingListResponseDto,
+} from './dto/guardian-response.dto';
 
 // Phase 12 scope only: linking a minor + two-tier consent grant/withdraw. See
 // GuardiansService's own header comment for the full scoping rationale. All
@@ -49,5 +59,49 @@ export class GuardiansController {
   @Patch('consent/:id/withdraw')
   withdrawConsent(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.guardiansService.withdrawConsent(user.sub, id);
+  }
+
+  // Decision 123 — Guardian "Kid Mode" booking delegation. See
+  // GuardiansService's own method comments for the full mechanism; routes here
+  // deliberately mirror the consent grant/withdraw/list shape immediately above.
+
+  @ApiCreatedResponse({ type: BookingDelegationResponseDto })
+  @Post('minors/:studentId/booking-delegation')
+  grantBookingDelegation(@CurrentUser() user: JwtPayload, @Param('studentId') studentId: string) {
+    return this.guardiansService.grantBookingDelegation(user.sub, studentId);
+  }
+
+  @ApiOkResponse({ type: BookingDelegationResponseDto })
+  @Patch('booking-delegation/:id/withdraw')
+  withdrawBookingDelegation(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.guardiansService.withdrawBookingDelegation(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: BookingDelegationListResponseDto })
+  @Get('booking-delegation')
+  findMyBookingDelegations(@CurrentUser() user: JwtPayload) {
+    return this.guardiansService.findMyBookingDelegations(user.sub);
+  }
+
+  @ApiCreatedResponse({ type: KidModeTokenResponseDto })
+  @Post('minors/:studentId/kid-mode-token')
+  mintKidModeToken(@CurrentUser() user: JwtPayload, @Param('studentId') studentId: string) {
+    return this.guardiansService.mintKidModeToken(user.sub, studentId);
+  }
+
+  @ApiOkResponse({ type: PendingReviewBookingListResponseDto })
+  @Get('bookings-pending-review')
+  findPendingReviewBookings(@CurrentUser() user: JwtPayload) {
+    return this.guardiansService.findPendingReviewBookings(user.sub);
+  }
+
+  @ApiOkResponse()
+  @Patch('bookings-pending-review/:bookingId/confirm')
+  confirmPendingReviewBooking(
+    @CurrentUser() user: JwtPayload,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: ConfirmPendingReviewBookingDto,
+  ) {
+    return this.guardiansService.confirmPendingReviewBooking(user.sub, bookingId, dto.studentId);
   }
 }

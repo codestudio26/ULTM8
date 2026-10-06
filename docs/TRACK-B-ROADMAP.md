@@ -316,6 +316,40 @@ blocked half of the original combined gap) remains parked — Decision 74 flags 
 "still undesigned... for the Architect / design work before this can be built," and
 would need a `WaiverSignature` schema change besides.
 
+**Guardian "Kid Mode" booking delegation — proposed, stress-tested, approved, and
+shipped (Decision 123, 2026-10-06).** The user asked whether a Guardian could let a
+linked minor book a class themselves; proposed as a design (not inferred from any
+existing designs — a genuinely new question), adversarially stress-tested across two
+passes, and approved with 7 explicit open questions resolved directly by the user
+before any code was written. Full mechanism, scope, and the stress-test findings are
+in Decision 123 itself, not duplicated here.
+
+**What was built**: `BookingDelegation` (new model, per-minor, mirrors
+`ConsentRecord`'s grant/withdraw shape), a `kidMode` JWT claim + `JwtStrategy`
+route/body restriction (a Kid-Mode token may only call `POST /classes/:id/book`,
+only for the one studentId it was minted for), a live `BookingDelegation` re-check
+inside `BookingsController` (never trust the JWT claim alone — the same discipline
+`assertGuardianOfStudent()` already established), and `bookedViaKidMode`/
+`pendingGuardianReview` columns on `Booking` for the revoke→review-queue flow. On
+`apps/student`: `BookingDelegationRow` (off each minor's own settings screen,
+alongside `ConsentTierRow`), `KidModePinScreen` (a device-local handoff PIN —
+explicitly not the security boundary, see `kidModePinStore.ts`'s own comment),
+`KidModeBookingScreen` (a dedicated, isolated API client bound to the scoped
+token — never the shared `apiClient` singleton, see `kidModeClient.ts`), and
+`PendingReviewScreen` (the Guardian's Confirm/Cancel queue).
+
+**Verified**: `npx tsc --noEmit` and `nest build` clean on `apps/api`; the new
+`booking-delegation.e2e-spec.ts` (12/12) plus the full existing e2e suite
+(377 passed / 22 pre-existing unrelated skips / 0 failures) against a real local
+Postgres 16 — proving the live re-check, the route/body restriction, the
+revoke-flags-pendingGuardianReview flow, and RLS isolation between two Guardians'
+own delegations, not just reading the code. `apps/student`: `npx tsc --noEmit` and
+`npx expo export --platform web` both clean. No test infrastructure exists yet on
+this branch for `apps/student` (that's `feature/student-qr-checkin`'s own
+still-open, unmerged work) — this slice's frontend is typecheck/build-verified
+only, not unit-tested, same honestly-stated gap as every pre-Jest Track B slice
+before it.
+
 ---
 
 ## Slice 1 — Walking skeleton (DONE)
@@ -844,7 +878,8 @@ section and each item's own section above for the current, accurate status.
 
 **Shipped**: Slices 1, 2, 3, 4a, 5, 6a; the Guardian consent candidate (My Minors +
 consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read-only
-offline caching (Phase 7); the Membership authorization-check fix.
+offline caching (Phase 7); the Membership authorization-check fix; Guardian "Kid
+Mode" booking delegation (Decision 123).
 
 **Scoped, not yet built**: QR check-in (Phase 5) — the backend endpoint it needs
 already exists (`POST /attendance/scan`); what's left is a `apps/school-portal` QR

@@ -28,6 +28,10 @@ export function HomeScreen({ navigation }: Props) {
       <Button title="Waivers" onPress={() => navigation.navigate('Waivers')} />
       <Button title="Notifications" onPress={() => navigation.navigate('Notifications')} />
       {isGuardian ? <Button title="My minors" onPress={() => navigation.navigate('MyMinors')} /> : null}
+      {isGuardian ? <Button title="Kid Mode" onPress={() => navigation.navigate('KidModePin')} /> : null}
+      {isGuardian ? (
+        <Button title="Needs your review" variant="secondary" onPress={() => navigation.navigate('PendingReview')} />
+      ) : null}
       <Button title="Log out" variant="secondary" onPress={() => logout()} />
     </Screen>
   );

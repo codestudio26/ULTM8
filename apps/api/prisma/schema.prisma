@@ -332,6 +332,8 @@ model User {
   guardianLinksAsStudent   GuardianLink[]    @relation("GuardianLinkStudent")
   consentRecordsAsGuardian ConsentRecord[]   @relation("ConsentRecordGuardian")
   consentRecordsAsStudent  ConsentRecord[]   @relation("ConsentRecordStudent")
+  bookingDelegationsAsGuardian BookingDelegation[] @relation("BookingDelegationGuardian")
+  bookingDelegationsAsStudent  BookingDelegation[] @relation("BookingDelegationStudent")
   notifications            Notification[]
   deviceTokens             DeviceToken[]
 
@@ -2252,6 +2254,18 @@ model Booking {
   resolvedById     String?
   resolvedBy       User?             @relation("BookingResolvedBy", fields: [resolvedById], references: [id])
 
+  // Guardian Kid Mode (Decision 123). bookedViaKidMode marks a Booking created via
+  // a Kid-Mode-scoped token (BookingsController's live BookingDelegation check, not
+  // the ordinary Guardian-on-behalf-of path alone) — needed so withdrawing a
+  // BookingDelegation knows which of a minor's UPCOMING Bookings to flag, and so
+  // support/the Guardian's own review queue can tell a self-booked-by-the-minor
+  // Booking apart from one the Guardian booked directly. pendingGuardianReview is
+  // set true on exactly that flagging (never on creation) — the Guardian's app
+  // surfaces it as a Confirm/Cancel action; Confirm clears it, Cancel reuses the
+  // existing cancelBooking() on-behalf-of path unchanged.
+  bookedViaKidMode     Boolean @default(false)
+  pendingGuardianReview Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2459,6 +2473,42 @@ model ConsentRecord {
 
   @@unique([guardianId, studentId, tier])
   @@index([studentId, tier])
+}
+
+enum BookingDelegationStatus {
+  ACTIVE
+  WITHDRAWN
+}
+
+/// BookingDelegation (Decision 123) — Guardian "Kid Mode": a Guardian-controlled,
+/// per-minor, revocable grant letting a linked minor book a Class themselves
+/// (consuming an existing paid Membership/class-pack credit only — never a
+/// purchase, cancellation, waitlist-join, or waiver-signing) from inside the
+/// Guardian's own already-authenticated session, never via a separate minor
+/// login. Deliberately its own model, not folded into ConsentRecord — SKILL.md
+/// §16 is explicit that consent and Guardian authority are "a different legal
+/// concept entirely," and this is an authority delegation, not a data-consent
+/// grant. Same narrow self-only RLS shape as GuardianLink/ConsentRecord
+/// (Decision 92) — no ultm8_jobs bypass needed here, unlike ConsentRecord's own
+/// camera-tier check, because the only consumer (BookingsController's live
+/// pre-booking check) always runs under the Guardian's own already-authenticated
+/// context, never a different service's context.
+model BookingDelegation {
+  id String @id @default(uuid())
+
+  guardianId String
+  guardian   User   @relation("BookingDelegationGuardian", fields: [guardianId], references: [id])
+
+  studentId String
+  student   User   @relation("BookingDelegationStudent", fields: [studentId], references: [id])
+
+  status BookingDelegationStatus @default(ACTIVE)
+
+  grantedAt   DateTime  @default(now())
+  withdrawnAt DateTime?
+
+  @@unique([guardianId, studentId])
+  @@index([studentId])
 }
 
 /// Notification (Phase 15, Spec 55 §6.1, page 27) — confirmed field list (quoted,
