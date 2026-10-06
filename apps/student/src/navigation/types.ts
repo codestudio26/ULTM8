@@ -19,4 +19,5 @@ export type AppStackParamList = {
   KidModePin: undefined;
   KidModeBooking: undefined;
   PendingReview: undefined;
+  QrCheckIn: undefined;
 };

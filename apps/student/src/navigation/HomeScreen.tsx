@@ -23,6 +23,7 @@ export function HomeScreen({ navigation }: Props) {
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>ULTM8 Student</Text>
       <Button title="Browse academies" onPress={() => navigation.navigate('Academies')} />
+      <Button title="Check in" onPress={() => navigation.navigate('QrCheckIn')} />
       <Button title="My bookings" onPress={() => navigation.navigate('MyBookings')} />
       <Button title="My memberships" onPress={() => navigation.navigate('MyMemberships')} />
       <Button title="Waivers" onPress={() => navigation.navigate('Waivers')} />

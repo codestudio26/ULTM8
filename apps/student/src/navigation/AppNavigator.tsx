@@ -12,6 +12,7 @@ import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
 import { KidModePinScreen } from '../kidmode/KidModePinScreen';
 import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
 import { PendingReviewScreen } from '../kidmode/PendingReviewScreen';
+import { QrCheckInScreen } from '../attendance/QrCheckInScreen';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -35,6 +36,7 @@ export function AppNavigator() {
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: 'Kid Mode' }} />
       <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: 'Kid Mode' }} />
       <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: 'Needs Your Review' }} />
+      <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: 'Check In' }} />
     </Stack.Navigator>
   );
 }
