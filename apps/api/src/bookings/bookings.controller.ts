@@ -6,6 +6,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
+import { GuardiansService } from '../guardians/guardians.service';
 import { BookingsService } from './bookings.service';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
@@ -30,13 +31,29 @@ const BOOKING_ACTION_THROTTLE = { identity: { limit: 20, ttl: 60_000, getTracker
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(
+    private readonly bookingsService: BookingsService,
+    private readonly guardiansService: GuardiansService,
+  ) {}
 
+  /**
+   * Decision 123 — JwtStrategy.validate() already rejects a Kid-Mode token on
+   * every request shape except exactly this one (right path/method, body
+   * studentId matching the token's own kidMode.studentId, no overrideReason).
+   * That check alone is still only a claim-shape gate, not a live authorization
+   * decision — `await this.guardiansService.assertBookingDelegationActive(...)`
+   * here is the actual "never trust the JWT claim alone" re-check (same
+   * discipline assertGuardianOfStudent() already established), run fresh on
+   * every single call rather than cached from mint time.
+   */
   @ApiCreatedResponse({ type: BookingResponseDto })
   @Throttle(BOOKING_ACTION_THROTTLE)
   @Post('classes/:id/book')
-  bookClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: BookClassDto) {
-    return this.bookingsService.bookClass(user.sub, id, dto);
+  async bookClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: BookClassDto) {
+    if (user.kidMode) {
+      await this.guardiansService.assertBookingDelegationActive(user.sub, user.kidMode.studentId);
+    }
+    return this.bookingsService.bookClass(user.sub, id, dto, Boolean(user.kidMode));
   }
 
   @ApiOkResponse({ type: BookingResponseDto })

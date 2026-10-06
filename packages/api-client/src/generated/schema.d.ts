@@ -372,6 +372,102 @@ export interface paths {
         patch: operations["GuardiansController_withdrawConsent"];
         trace?: never;
     };
+    "/v1/guardians/me/minors/{studentId}/booking-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuardiansController_grantBookingDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/booking-delegation/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GuardiansController_withdrawBookingDelegation"];
+        trace?: never;
+    };
+    "/v1/guardians/me/booking-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardiansController_findMyBookingDelegations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/kid-mode-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuardiansController_mintKidModeToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/bookings-pending-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardiansController_findPendingReviewBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/bookings-pending-review/{bookingId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GuardiansController_confirmPendingReviewBooking"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/classes": {
         parameters: {
             query?: never;
@@ -2186,6 +2282,34 @@ export interface components {
         };
         ConsentRecordListResponseDto: {
             items: components["schemas"]["ConsentRecordResponseDto"][];
+        };
+        BookingDelegationResponseDto: {
+            id: string;
+            guardianId: string;
+            studentId: string;
+            status: string;
+            grantedAt: string;
+            withdrawnAt?: string | null;
+        };
+        BookingDelegationListResponseDto: {
+            items: components["schemas"]["BookingDelegationResponseDto"][];
+        };
+        KidModeTokenResponseDto: {
+            accessToken: string;
+            expiresAt: string;
+        };
+        PendingReviewBookingResponseDto: {
+            id: string;
+            studentId: string;
+            classId: string;
+            status: string;
+        };
+        PendingReviewBookingListResponseDto: {
+            items: components["schemas"]["PendingReviewBookingResponseDto"][];
+        };
+        ConfirmPendingReviewBookingDto: {
+            /** @description The linked minor Student this pending-review Booking belongs to. */
+            studentId: string;
         };
         CreateClassDto: {
             /** @description Branch to scope this Class to. Omit for a School-wide Class. */
@@ -4016,6 +4140,130 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConsentRecordResponseDto"];
                 };
+            };
+        };
+    };
+    GuardiansController_grantBookingDelegation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingDelegationResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_withdrawBookingDelegation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingDelegationResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_findMyBookingDelegations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingDelegationListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_mintKidModeToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KidModeTokenResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_findPendingReviewBookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingReviewBookingListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_confirmPendingReviewBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPendingReviewBookingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

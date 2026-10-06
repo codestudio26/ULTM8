@@ -78,7 +78,16 @@ export class BookingsService {
    * already effectively relies on the target being enrolled for anyway, so this
    * changes no existing behavior, only adds a fallback for the genuinely new case.
    */
-  async bookClass(callerId: string, classId: string, dto: BookClassDto) {
+  /**
+   * `viaKidMode` (Decision 123) — set by BookingsController only when the
+   * caller's JWT itself carried a `kidMode` claim, after its own live
+   * `GuardiansService.assertBookingDelegationActive()` re-check already passed.
+   * Threaded through as a plain flag rather than this method re-deriving it
+   * from `callerId` alone, since a Kid-Mode token's `sub` is indistinguishable
+   * from an ordinary Guardian token's `sub` — same guardianId either way,
+   * exactly the point of reusing the existing on-behalf-of path unchanged.
+   */
+  async bookClass(callerId: string, classId: string, dto: BookClassDto, viaKidMode = false) {
     const studentId = dto.studentId ?? callerId;
     const isOnBehalfOf = dto.studentId !== undefined && dto.studentId !== callerId;
 
@@ -180,6 +189,7 @@ export class BookingsService {
             sourceMembershipId: sourceMembership.id,
             overriddenById: dto.overrideReason ? callerId : null,
             overrideReason: dto.overrideReason ?? null,
+            bookedViaKidMode: viaKidMode,
           },
         });
       } catch (err) {

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { GuardiansController } from './guardians.controller';
 import { GuardiansService } from './guardians.service';
 
@@ -21,9 +22,26 @@ import { GuardiansService } from './guardians.service';
  * Exports GuardiansService so other modules can inject it for
  * assertGuardianOfStudent() — consumers: WaiversModule (Phase 37),
  * TenantsModule/SchoolsService (Phase 38), MembershipsModule (Phase 39),
- * BookingsModule/BookingsService+WaitlistService (Phase 40/41/42).
+ * BookingsModule/BookingsService+WaitlistService (Phase 40/41/42), plus
+ * assertBookingDelegationActive() (Decision 123, same consumer list entry
+ * point: BookingsController).
+ *
+ * Decision 123 — a second, independent `JwtModule.register(...)` (same secret/
+ * options AuthModule's own registration uses) so GuardiansService can sign a
+ * Kid-Mode token directly, without importing AuthModule — AuthModule already
+ * doesn't import GuardiansModule, but adding that edge here would create one
+ * the moment this module needed anything back from Auth; NestJS supports
+ * multiple modules independently registering the same dynamic module, so this
+ * costs nothing and keeps the dependency graph one-directional, matching this
+ * module's own existing "one-directional, not a cycle" note above.
  */
 @Module({
+  imports: [
+    JwtModule.register({
+      secret: process.env.JWT_ACCESS_SECRET,
+      signOptions: { expiresIn: process.env.JWT_ACCESS_TTL ?? '15m' },
+    }),
+  ],
   controllers: [GuardiansController],
   providers: [GuardiansService],
   exports: [GuardiansService],
