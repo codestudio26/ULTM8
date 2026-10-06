@@ -32,7 +32,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Transaction `REFUNDED` — closing a previously-documented-but-unbuilt TODO in
   `handlePaymentIntentSucceeded`.
 - **api — close two concurrent-write races found by V1 stress-test Round 3**
-  (PR #TBD, `docs/V1-STRESS-TEST-REPORT-ROUND3.md`): `TenantLifecycleService`'s
+  (PR #93, `35ffadf`, `docs/V1-STRESS-TEST-REPORT-ROUND3.md`): `TenantLifecycleService`'s
   `closeSchool()`/`closeFranchise()`/`reactivateSchool()`/
   `reactivateFranchise()` and `SubscriptionPlansService.subscribe()` each had a
   check-then-act TOCTOU window (a plain read, then a separate unconditional
