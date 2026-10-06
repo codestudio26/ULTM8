@@ -1,6 +1,7 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { calculateAge } from '../common/age';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -189,6 +190,7 @@ export class MembershipsService {
 
   async purchase(callerId: string, planId: string) {
     const plan = await this.findOnePlan(callerId, planId);
+    await this.assertSelfAttestedAdult(callerId);
     // FOUND ON REVIEW: skills/ultm8-domain-rules/SKILL.md §6/§15 confirms Friend
     // Pass is "School-gifted, not purchased" — always staff-attributed
     // (Membership.giftedById), never a Student self-service purchase. Routing it
@@ -229,6 +231,19 @@ export class MembershipsService {
 
     if (paymentAccount.provider === 'STRIPE') {
       const transactionId = randomUUID();
+      // FOUND ON SECURITY REVIEW: deliberately NOT randomUUID() like transactionId
+      // above — a fresh random value on every call would never actually dedupe a
+      // double-tap or client-side retry, since each is a brand-new HTTP request that
+      // would just generate its own new random key. Deterministic over (caller,
+      // plan, same 60s window) instead, so two requests for the same purchase within
+      // that window collapse onto the same Stripe idempotency key; a genuinely
+      // separate purchase of the same plan more than a minute later gets a new one.
+      // Known, accepted imprecision: two deliberate back-to-back purchases of the
+      // SAME plan within that window would also collapse — an edge case, not the
+      // double-charge risk this closes, and recoverable by waiting or the UI
+      // disabling the button while a purchase is in flight (already true today while
+      // awaiting this call's own response).
+      const idempotencyKey = `membership-purchase:${callerId}:${planId}:${Math.floor(Date.now() / 60_000)}`;
       if (plan.type === 'SUBSCRIPTION') {
         const { subscriptionId, paymentIntentId, clientSecret } = await this.paymentsService.subscribe(
           callerId,
@@ -237,6 +252,7 @@ export class MembershipsService {
           plan.price,
           currency,
           plan.title,
+          idempotencyKey,
         );
         await this.prismaApp.withTenantContext(callerId, (tx) =>
           tx.transaction.create({
@@ -261,7 +277,14 @@ export class MembershipsService {
         return { outcome: 'requires_payment' as const, clientSecret, transactionId };
       }
 
-      const { paymentIntentId, clientSecret } = await this.paymentsService.charge(callerId, plan.schoolId, plan.price, currency, plan.title);
+      const { paymentIntentId, clientSecret } = await this.paymentsService.charge(
+        callerId,
+        plan.schoolId,
+        plan.price,
+        currency,
+        plan.title,
+        idempotencyKey,
+      );
       await this.prismaApp.withTenantContext(callerId, (tx) =>
         tx.transaction.create({
           data: {
@@ -344,6 +367,32 @@ export class MembershipsService {
 
   private isUniqueConstraintViolation(err: unknown): boolean {
     return Boolean(err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002');
+  }
+
+  /**
+   * FOUND ON SECURITY REVIEW: skills/ultm8-domain-rules/SKILL.md §13 (Decision 67)
+   * confirms the age-of-majority/Guardian-consent gate is checked "at the first
+   * consequential action — a Membership purchase, a booking-triggered payment, or
+   * waiver-signing, whichever comes first." WaiversService.assertSelfAttestedAdult
+   * already builds this for waiver-signing (its own header comment cites the same
+   * Decision 67), but purchase() never called an equivalent — an under-18 account
+   * could complete a real, paid Stripe purchase with no gate at all. Same shared
+   * calculateAge() (common/age.ts) as WaiversService, same reasoning: no
+   * Guardian-linked redirect path exists yet (Guardian/ConsentRecord infrastructure
+   * isn't built), so this can only reject outright, not redirect — identical
+   * limitation to the waiver-signing gate, not a new one introduced here. Called
+   * before the FRIEND_PASS/£0-immediate branches below, not after, since both are
+   * still real Membership grants the confirmed rule doesn't exempt.
+   */
+  private async assertSelfAttestedAdult(callerId: string): Promise<void> {
+    const student = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
+    );
+    if (calculateAge(student.dateOfBirth) < 18) {
+      throw new ForbiddenException(
+        'Purchasing a membership requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------

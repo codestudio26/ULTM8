@@ -361,21 +361,34 @@ export class PaymentsService {
    * /payments/methods being out of scope this phase already implies — see the Phase
    * 9 kickoff prompt §3).
    */
+  /**
+   * `idempotencyKey` — FOUND ON SECURITY REVIEW: this call previously had no
+   * idempotency key at all, so a double-tap or client-side retry of
+   * MembershipsService.purchase() created two independent PaymentIntents (two real
+   * charges) for one logical purchase. The caller derives one key per purchase
+   * attempt (see purchase()'s own comment for exactly how) and passes it through;
+   * reusing it on a retry makes Stripe return the original PaymentIntent instead of
+   * creating a second one.
+   */
   async charge(
     callerId: string,
     schoolId: string,
     amount: number,
     currency: string,
     description: string,
+    idempotencyKey: string,
   ): Promise<{ paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const intent = await stripe.paymentIntents.create({
-      amount,
-      currency,
-      description,
-      automatic_payment_methods: { enabled: true },
-    });
+    const intent = await stripe.paymentIntents.create(
+      {
+        amount,
+        currency,
+        description,
+        automatic_payment_methods: { enabled: true },
+      },
+      { idempotencyKey: `${idempotencyKey}:payment_intent` },
+    );
     return { paymentIntentId: intent.id, clientSecret: intent.client_secret! };
   }
 
@@ -409,6 +422,15 @@ export class PaymentsService {
    * Product on its next subscription rather than updating one persisted Product.
    * Flagged, not hidden.
    */
+  /**
+   * `idempotencyKey` — same reasoning as charge()'s own comment above: this method
+   * makes THREE separate Stripe calls (Customer, Product, Subscription), so a
+   * single shared key can't just be reused verbatim across all three — Stripe scopes
+   * a key to one exact request body per endpoint, and replaying the same key against
+   * a different endpoint/body is itself an error. Each call gets the same base key
+   * with a distinct suffix instead, so a retry of this whole method reuses all three
+   * original Stripe objects rather than creating duplicates of each.
+   */
   async subscribe(
     callerId: string,
     schoolId: string,
@@ -416,27 +438,31 @@ export class PaymentsService {
     amount: number,
     currency: string,
     productName: string,
+    idempotencyKey: string,
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    const customer = await stripe.customers.create({ email: studentEmail });
-    const product = await stripe.products.create({ name: productName });
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [
-        {
-          price_data: {
-            currency,
-            unit_amount: amount,
-            recurring: { interval: 'month' },
-            product: product.id,
+    const customer = await stripe.customers.create({ email: studentEmail }, { idempotencyKey: `${idempotencyKey}:customer` });
+    const product = await stripe.products.create({ name: productName }, { idempotencyKey: `${idempotencyKey}:product` });
+    const subscription = await stripe.subscriptions.create(
+      {
+        customer: customer.id,
+        items: [
+          {
+            price_data: {
+              currency,
+              unit_amount: amount,
+              recurring: { interval: 'month' },
+              product: product.id,
+            },
           },
-        },
-      ],
-      payment_behavior: 'default_incomplete',
-      payment_settings: { save_default_payment_method: 'on_subscription' },
-      expand: ['latest_invoice.payment_intent'],
-    });
+        ],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+      },
+      { idempotencyKey: `${idempotencyKey}:subscription` },
+    );
     const invoice = subscription.latest_invoice as { payment_intent?: { id: string; client_secret: string } };
     const paymentIntent = invoice?.payment_intent;
     if (!paymentIntent) {

@@ -3,6 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { calculateAge } from '../common/age';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
@@ -169,20 +170,14 @@ export class WaiversService {
   }
 
   /** See sign()'s own header comment. Age-of-majority (18) computed from
-   * User.dateOfBirth — a plain calendar-based calculation, not a rolling
-   * 365.25-day approximation, so a Student who turns 18 today already passes. */
+   * User.dateOfBirth via the shared calculateAge() (common/age.ts) — also used by
+   * MembershipsService.purchase() for this same confirmed gate, kept as one
+   * implementation so the two call sites can't drift apart. */
   private async assertSelfAttestedAdult(callerId: string): Promise<void> {
     const student = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
     );
-    const today = new Date();
-    let age = today.getUTCFullYear() - student.dateOfBirth.getUTCFullYear();
-    const hasHadBirthdayThisYear =
-      today.getUTCMonth() > student.dateOfBirth.getUTCMonth() ||
-      (today.getUTCMonth() === student.dateOfBirth.getUTCMonth() && today.getUTCDate() >= student.dateOfBirth.getUTCDate());
-    if (!hasHadBirthdayThisYear) age -= 1;
-
-    if (age < 18) {
+    if (calculateAge(student.dateOfBirth) < 18) {
       throw new ForbiddenException(
         'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
       );
