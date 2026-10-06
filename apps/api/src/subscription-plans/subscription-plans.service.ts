@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AdminSubRole } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -192,11 +192,38 @@ export class SubscriptionPlansService {
       throw new Error('Stripe Subscription did not return an expandable latest_invoice.payment_intent');
     }
 
-    await this.updateTenantSubscriptionState(kind, callerId, tenantId, {
+    // FOUND ON REVIEW (V1 Stress Test Round 3) — the check above (`current.
+    // platformSubscriptionStatus === 'ACTIVE' || 'PAST_DUE'`) and this write are
+    // two separate, unsynchronized steps with a real Stripe network call in
+    // between: a genuine TOCTOU window. Two concurrent subscribe() calls for the
+    // SAME School/Franchise (a double-click, or two tabs) can both read
+    // `current` as not-yet-subscribed, both pass the guard, both reach this
+    // point having each created their OWN real Stripe Subscription, and both
+    // then try to write their own id onto the same row — plain last-write-wins
+    // would silently orphan the loser's Subscription (cancel() only ever looks
+    // at the ONE stripePlatformSubscriptionId column, so the loser's
+    // Subscription would have no code path that can ever cancel it again — a
+    // real, ongoing money leak, not a cosmetic race).
+    //
+    // Closed the same way Round 2 closed the analogous Membership-purchase
+    // collision (resolveMembershipCollision, stripe-webhook-processing.
+    // processor.ts): let the race reach Stripe (nothing here can prevent that
+    // without inventing a lock Spec 55 never asks for), then make the DB write
+    // itself atomic and conditional — `updateMany` with the identical
+    // not-ACTIVE/PAST_DUE guard the check above already uses, so only ONE of
+    // the two concurrent calls can ever claim the row — and clean up the
+    // loser's now-unreachable Stripe side effect instead of abandoning it.
+    const claimed = await this.claimTenantSubscriptionSlot(kind, callerId, tenantId, {
       subscriptionPlanId: plan.id,
       stripePlatformSubscriptionId: subscription.id,
       platformSubscriptionStatus: 'ACTIVE',
     });
+    if (!claimed) {
+      await stripe.subscriptions.cancel(subscription.id);
+      throw new ConflictException(
+        `This ${kind === 'SCHOOL' ? 'School' : 'Franchise'} already has an active platform subscription — plan changes are not supported yet.`,
+      );
+    }
 
     return { subscriptionId: subscription.id, clientSecret: paymentIntent.client_secret };
   }
@@ -237,16 +264,57 @@ export class SubscriptionPlansService {
     );
   }
 
-  private async updateTenantSubscriptionState(
+  /**
+   * V1 Stress Test Round 3 — the atomic, conditional half of the fix for the
+   * concurrent-subscribe race `subscribe()`'s own comment above describes in
+   * full. An `updateMany` with the SAME not-ACTIVE/PAST_DUE guard the earlier
+   * fast-path check used, re-checked here against whatever the row's CURRENT
+   * state actually is at write time (not the possibly-stale `current` read
+   * from before the Stripe call) — Postgres's own row-level locking inside this
+   * single UPDATE statement is what actually closes the window, the same
+   * mechanism PaymentsService.confirmTransaction()'s own header comment already
+   * documents using for its own "conditional update, not create+catch"
+   * idempotency guard. Returns whether THIS call's write actually landed
+   * (`count === 1`) — `false` means a concurrent call already claimed the slot
+   * first, and `subscribe()`'s own caller is responsible for cancelling the
+   * Stripe Subscription this call already created rather than leaving it
+   * orphaned.
+   *
+   * FOUND ON REVIEW while writing this: a first draft used a bare
+   * `platformSubscriptionStatus: { notIn: ['ACTIVE', 'PAST_DUE'] } }` filter —
+   * verified empirically against this sandbox's own real Postgres (not assumed
+   * from memory) to NOT match `NULL`, standard SQL three-valued-logic
+   * (`NULL NOT IN (...)` evaluates to `NULL`, not `TRUE`, and Prisma's `notIn`
+   * compiles directly to that, with no implicit `OR col IS NULL`). Since `null`
+   * is the ordinary, universal starting state for every School/Franchise that
+   * has never subscribed (the only rows this method is ever actually called
+   * for — `subscribe()`'s own fast-path check above already rejects an
+   * ACTIVE/PAST_DUE one before Stripe is ever called), that draft would have
+   * made every normal, non-racing subscribe() call spuriously lose its own
+   * "race" against nothing and get a 409 — worse than the bug being fixed.
+   * Guarded explicitly below instead.
+   */
+  private async claimTenantSubscriptionSlot(
     kind: TenantKind,
     callerId: string,
     tenantId: string,
     data: { subscriptionPlanId: string; stripePlatformSubscriptionId: string; platformSubscriptionStatus: 'ACTIVE' },
-  ) {
+  ): Promise<boolean> {
+    const notActiveOrPastDue = {
+      OR: [
+        { platformSubscriptionStatus: null },
+        { platformSubscriptionStatus: { notIn: ['ACTIVE' as const, 'PAST_DUE' as const] } },
+      ],
+    };
     if (kind === 'SCHOOL') {
-      await this.prismaApp.withTenantContext(callerId, (tx) => tx.school.update({ where: { id: tenantId }, data }));
-      return;
+      const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.school.updateMany({ where: { id: tenantId, ...notActiveOrPastDue }, data }),
+      );
+      return count === 1;
     }
-    await this.prismaApp.withTenantContext(callerId, (tx) => tx.franchise.update({ where: { id: tenantId }, data }));
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchise.updateMany({ where: { id: tenantId, ...notActiveOrPastDue }, data }),
+    );
+    return count === 1;
   }
 }

@@ -31,6 +31,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   refunds its PaymentIntent via the Stripe Refund API, then marks the
   Transaction `REFUNDED` — closing a previously-documented-but-unbuilt TODO in
   `handlePaymentIntentSucceeded`.
+- **api — close two concurrent-write races found by V1 stress-test Round 3**
+  (PR #93, `35ffadf`, `docs/V1-STRESS-TEST-REPORT-ROUND3.md`): `TenantLifecycleService`'s
+  `closeSchool()`/`closeFranchise()`/`reactivateSchool()`/
+  `reactivateFranchise()` and `SubscriptionPlansService.subscribe()` each had a
+  check-then-act TOCTOU window (a plain read, then a separate unconditional
+  write) — up to 4 concurrent close() calls for the same School all succeeded
+  with duplicate audit rows, and two concurrent subscribe() calls could both
+  create a real Stripe Subscription, silently orphaning the loser's with no
+  way to ever cancel it. Both now use a conditional `updateMany()` re-checked
+  at write time; `subscribe()`'s loser additionally has its Stripe Subscription
+  explicitly cancelled rather than orphaned.
 - **school-portal — Instructors page redesign** (PR #78, `af0ef5d`): table now
   shows Image (photo or initials avatar), Instructor, Specializations, Scope,
   Login/Status (placeholder "—", no backend field yet), Phone Number, Actions.
