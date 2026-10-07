@@ -4,6 +4,7 @@ import { type components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
 
 type Booking = components['schemas']['BookingResponseDto'];
@@ -44,15 +45,15 @@ function BookingRow({ booking }: { booking: Booking }) {
   }
 
   return (
-    <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontSize: 15, fontWeight: '600' }}>Class {booking.classId}</Text>
-      <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>Status: {booking.status}</Text>
+    <View style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
+      <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading }}>Class {booking.classId}</Text>
+      <Text style={{ color: theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>Status: {booking.status}</Text>
       {error ? <InlineError message={error} /> : null}
 
       {booking.status === 'UPCOMING' && confirming ? (
-        <View style={{ marginTop: 8 }}>
-          <Text style={{ color: '#C5221F', fontSize: 13 }}>Cancel booking? This cannot be undone.</Text>
-          <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+        <View style={{ marginTop: spacing[2] }}>
+          <Text style={{ color: theme.textDanger, fontSize: fontSize.caption }}>Cancel booking? This cannot be undone.</Text>
+          <View style={{ flexDirection: 'row', marginTop: spacing[2], gap: spacing[2] }}>
             <View style={{ flex: 1 }}>
               <Button title="Keep booking" variant="secondary" onPress={keepBooking} />
             </View>

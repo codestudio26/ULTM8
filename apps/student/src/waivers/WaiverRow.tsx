@@ -4,6 +4,7 @@ import type { components } from '@ultm8/api-client';
 import { Button, Field, InlineError, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useSignWaiver } from './waiverQueries';
 
 type Waiver = components['schemas']['WaiverResponseDto'];
@@ -38,16 +39,18 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
   const effectiveSignature = signature ?? (signWaiver.isSuccess ? signWaiver.data : undefined);
 
   return (
-    <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontWeight: '600' }}>{waiver.title}</Text>
-      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }} numberOfLines={3}>
+    <View style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
+      <Text style={{ fontWeight: fontWeight.heading }}>{waiver.title}</Text>
+      <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }} numberOfLines={3}>
         {waiver.body}
       </Text>
 
       {effectiveSignature ? (
-        <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>Signed {formatDate(effectiveSignature.signedDate)} ✓</Text>
+        <Text style={{ color: theme.textSuccess, fontSize: fontSize.caption, marginTop: spacing[1] }}>
+          Signed {formatDate(effectiveSignature.signedDate)} ✓
+        </Text>
       ) : signing ? (
-        <View style={{ marginTop: 8 }}>
+        <View style={{ marginTop: spacing[2] }}>
           <Field label="Full name">
             <TextField value={signerFullName} onChangeText={setSignerFullName} placeholder="Your full legal name" />
           </Field>

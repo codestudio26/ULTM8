@@ -4,6 +4,7 @@ import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatMoney } from '../lib/formatMoney';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { usePurchaseMembership } from './membershipQueries';
 
 type MembershipPlan = components['schemas']['AcademyMembershipPlanDto'];
@@ -40,9 +41,9 @@ export function MembershipPlanRow({ plan }: { plan: MembershipPlan }) {
   }
 
   return (
-    <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontWeight: '600' }}>{plan.title}</Text>
-      <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
+    <View style={{ paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: theme.border }}>
+      <Text style={{ fontWeight: fontWeight.heading }}>{plan.title}</Text>
+      <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>
         {formatMoney(plan.price, plan.currency)}
         {plan.classesIncluded != null ? ` · ${plan.classesIncluded} classes` : ''}
         {plan.expiryDurationDays != null ? ` · ${plan.expiryDurationDays} days` : ''}
@@ -56,19 +57,23 @@ export function MembershipPlanRow({ plan }: { plan: MembershipPlan }) {
           MembershipsService.purchase() 400s any Student attempt) — no button, since a
           working-looking "Purchase" action that always errors is worse than none. */}
       {isFriendPass ? (
-        <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 4 }}>Ask School staff for a Friend Pass.</Text>
+        <Text style={{ color: theme.textMuted, fontSize: fontSize.caption, marginTop: spacing[1] }}>Ask School staff for a Friend Pass.</Text>
       ) : outcome === null ? (
         <Button title="Purchase" onPress={handlePurchase} loading={purchase.isPending} />
       ) : null}
 
-      {outcome === 'active' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>You're enrolled ✓</Text> : null}
+      {outcome === 'active' ? (
+        <Text style={{ color: theme.textSuccess, fontSize: fontSize.caption, marginTop: spacing[1] }}>You're enrolled ✓</Text>
+      ) : null}
 
       {outcome === 'pending_confirmation' ? (
-        <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>Payment pending confirmation by the School.</Text>
+        <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>
+          Payment pending confirmation by the School.
+        </Text>
       ) : null}
 
       {outcome === 'requires_payment' ? (
-        <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
+        <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>
           Online payment for this plan isn't available in the app yet.
         </Text>
       ) : null}

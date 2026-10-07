@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useBookClass } from './bookingQueries';
 import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 
@@ -83,9 +84,9 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
   }
 
   return (
-    <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontWeight: '600' }}>{classItem.title}</Text>
-      <Text style={{ color: '#5F6368', fontSize: 12 }}>
+    <View style={{ paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: theme.border }}>
+      <Text style={{ fontWeight: fontWeight.heading }}>{classItem.title}</Text>
+      <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption }}>
         {formatDate(classItem.startDate)} – {formatDate(classItem.endDate)}
       </Text>
 
@@ -93,18 +94,22 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
 
       {state.kind === 'idle' ? <Button title="Book" onPress={handleBook} loading={bookClass.isPending} /> : null}
 
-      {state.kind === 'booked' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>Booked ✓</Text> : null}
+      {state.kind === 'booked' ? (
+        <Text style={{ color: theme.textSuccess, fontSize: fontSize.caption, marginTop: spacing[1] }}>Booked ✓</Text>
+      ) : null}
 
       {state.kind === 'full' ? (
         <>
-          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>This class is full.</Text>
+          <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>This class is full.</Text>
           <Button title="Join waitlist" variant="secondary" onPress={handleJoinWaitlist} loading={joinWaitlist.isPending} />
         </>
       ) : null}
 
       {state.kind === 'waitlisted' ? (
         <>
-          <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>You're #{state.position} on the waitlist.</Text>
+          <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>
+            You're #{state.position} on the waitlist.
+          </Text>
           <Button
             title="Leave waitlist"
             variant="secondary"

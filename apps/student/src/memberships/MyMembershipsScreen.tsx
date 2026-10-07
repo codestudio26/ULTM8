@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { formatDate } from '../lib/formatDate';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useMyMemberships } from './membershipQueries';
 import { getRememberedPlanName } from './planNameCache';
 
@@ -16,15 +17,19 @@ type Membership = components['schemas']['MembershipResponseDto'];
 function MembershipRow({ membership }: { membership: Membership }) {
   const planName = getRememberedPlanName(membership.membershipPlanId) ?? `Plan ${membership.membershipPlanId}`;
   return (
-    <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontSize: 15, fontWeight: '600' }}>{planName}</Text>
-      <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>
+    <View style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
+      <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading }}>{planName}</Text>
+      <Text style={{ color: theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>
         Status: {membership.status} · {membership.frequency === 'RECURRING' ? 'Recurring' : 'One time'}
       </Text>
       {membership.classesRemaining != null ? (
-        <Text style={{ color: '#5F6368', fontSize: 12 }}>{membership.classesRemaining} classes remaining</Text>
+        <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption }}>{membership.classesRemaining} classes remaining</Text>
       ) : null}
-      {membership.expiryDate ? <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 2 }}>Expires {formatDate(membership.expiryDate)}</Text> : null}
+      {membership.expiryDate ? (
+        <Text style={{ color: theme.textMuted, fontSize: fontSize.caption, marginTop: spacing[1] }}>
+          Expires {formatDate(membership.expiryDate)}
+        </Text>
+      ) : null}
     </View>
   );
 }

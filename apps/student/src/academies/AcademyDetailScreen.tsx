@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useAuth } from '../auth/AuthContext';
 import { ClassBookingRow } from '../bookings/ClassBookingRow';
 import { MembershipPlanRow } from '../memberships/MembershipPlanRow';
@@ -85,20 +86,20 @@ export function AcademyDetailScreen({ route }: Props) {
   return (
     <ScrollView>
       <Screen>
-        <Text style={{ fontSize: 22, fontWeight: '700' }}>{academy.name}</Text>
-        {academy.address ? <Text style={{ color: '#5F6368', marginTop: 4 }}>{academy.address}</Text> : null}
-        {academy.description ? <Text style={{ marginTop: 12 }}>{academy.description}</Text> : null}
+        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading }}>{academy.name}</Text>
+        {academy.address ? <Text style={{ color: theme.textSecondary, marginTop: spacing[1] }}>{academy.address}</Text> : null}
+        {academy.description ? <Text style={{ marginTop: spacing[3] }}>{academy.description}</Text> : null}
 
         {academy.activities.length ? (
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Activities</Text>
-            <Text style={{ color: '#5F6368' }}>{academy.activities.join(' · ')}</Text>
+          <View style={{ marginTop: spacing[4] }}>
+            <Text style={{ fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Activities</Text>
+            <Text style={{ color: theme.textSecondary }}>{academy.activities.join(' · ')}</Text>
           </View>
         ) : null}
 
         {academy.membershipPlans.length ? (
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Membership Plans</Text>
+          <View style={{ marginTop: spacing[4] }}>
+            <Text style={{ fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Membership Plans</Text>
             {academy.membershipPlans.map((plan) => (
               <MembershipPlanRow key={plan.id} plan={plan} />
             ))}
@@ -108,8 +109,8 @@ export function AcademyDetailScreen({ route }: Props) {
         <MyRankSection studentRanks={studentRanks} disciplines={disciplines} />
 
         {academy.upcomingClasses.length ? (
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Upcoming classes</Text>
+          <View style={{ marginTop: spacing[4] }}>
+            <Text style={{ fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Upcoming classes</Text>
             {academy.upcomingClasses.map((c) => (
               <ClassBookingRow key={c.id} classItem={c} />
             ))}
@@ -117,17 +118,17 @@ export function AcademyDetailScreen({ route }: Props) {
         ) : null}
 
         {slots.length ? (
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ fontWeight: '600', marginBottom: 6 }}>Timetable</Text>
+          <View style={{ marginTop: spacing[4] }}>
+            <Text style={{ fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Timetable</Text>
             {slots.map((slot) => (
-              <View key={slot.id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+              <View key={slot.id} style={{ paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: theme.border }}>
                 <Text>
                   {WEEKDAY_LABEL[slot.weekday] ?? slot.weekday} · {slot.startTime}–{slot.endTime}
                 </Text>
               </View>
             ))}
             {hasMoreTimetableSlots ? (
-              <View style={{ marginTop: 8 }}>
+              <View style={{ marginTop: spacing[2] }}>
                 <Button
                   title="Load more"
                   variant="secondary"

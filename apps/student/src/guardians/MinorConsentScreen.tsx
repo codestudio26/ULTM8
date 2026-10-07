@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { spacing, fontSize, fontWeight } from '../theme/tokens';
 import { ConsentTierRow } from './ConsentTierRow';
 import { useMyConsentRecords } from './guardianQueries';
 import type { AppStackParamList } from '../navigation/types';
@@ -44,7 +45,7 @@ export function MinorConsentScreen({ route }: Props) {
   return (
     <Screen>
       <ScrollView>
-        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16 }}>{name}</Text>
+        <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, marginBottom: spacing[4] }}>{name}</Text>
         <ConsentTierRow studentId={studentId} tier="BASELINE" record={activeByTier.get('BASELINE')} />
         <ConsentTierRow studentId={studentId} tier="CAMERA" record={activeByTier.get('CAMERA')} />
       </ScrollView>

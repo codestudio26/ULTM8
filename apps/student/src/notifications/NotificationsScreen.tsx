@@ -5,6 +5,7 @@ import { Button, InlineError } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateTime } from '../lib/formatDate';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useMarkNotificationRead, useNotifications } from './notificationQueries';
 
 type Notification = components['schemas']['NotificationResponseDto'];
@@ -30,20 +31,22 @@ function NotificationRow({ notification }: { notification: Notification }) {
 
   return (
     <View
-      style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
+      style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}
       accessibilityLabel={`${notification.title}, ${notification.read ? 'read' : 'unread'}`}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <Text style={{ fontWeight: notification.read ? '400' : '700', flex: 1, marginRight: 8 }}>{notification.title}</Text>
+        <Text style={{ fontWeight: notification.read ? fontWeight.body : fontWeight.heading, flex: 1, marginRight: spacing[2] }}>
+          {notification.title}
+        </Text>
         {!notification.read ? (
           <View
             accessibilityLabel="Unread"
-            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1F6FEB', marginTop: 6 }}
+            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.fillAccent, marginTop: spacing[1] }}
           />
         ) : null}
       </View>
-      <Text style={{ color: '#5F6368', marginTop: 2 }}>{notification.body}</Text>
-      <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 4 }}>{formatDateTime(notification.createdAt)}</Text>
+      <Text style={{ color: theme.textSecondary, marginTop: spacing[1] }}>{notification.body}</Text>
+      <Text style={{ color: theme.textMuted, fontSize: fontSize.caption, marginTop: spacing[1] }}>{formatDateTime(notification.createdAt)}</Text>
       {markRead.isError ? (
         <InlineError message={getApiErrorMessage(markRead.error, 'Could not mark this as read — please try again.')} />
       ) : null}

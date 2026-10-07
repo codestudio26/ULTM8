@@ -2,6 +2,7 @@ import React, { ReactElement } from 'react';
 import { ActivityIndicator, FlatList, Text } from 'react-native';
 import { ErrorBanner, Screen } from './ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme } from '../theme/tokens';
 
 /** Structural, not `UseInfiniteQueryResult` itself — every list screen's query hook
  * already satisfies this shape, and keeping it structural means this file doesn't
@@ -72,7 +73,7 @@ export function PaginatedListScreen<T extends { id: string }>({
         }}
         onEndReachedThreshold={0.4}
         ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator /> : null}
-        ListEmptyComponent={<Text style={{ color: '#5F6368' }}>{emptyMessage}</Text>}
+        ListEmptyComponent={<Text style={{ color: theme.textSecondary }}>{emptyMessage}</Text>}
         renderItem={({ item }) => renderItem(item)}
       />
     </Screen>

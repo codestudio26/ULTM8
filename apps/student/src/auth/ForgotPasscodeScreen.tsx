@@ -5,6 +5,7 @@ import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPasscode'>;
@@ -34,8 +35,8 @@ export function ForgotPasscodeScreen({ navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <Screen>
-        <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 4 }}>Reset your passcode</Text>
-        <Text style={{ fontSize: 14, color: '#5F6368', marginBottom: 20 }}>
+        <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Reset your passcode</Text>
+        <Text style={{ fontSize: fontSize.footnote, color: theme.textSecondary, marginBottom: spacing[6] }}>
           We'll text a verification code to your phone.
         </Text>
         {error ? <ErrorBanner message={error} /> : null}

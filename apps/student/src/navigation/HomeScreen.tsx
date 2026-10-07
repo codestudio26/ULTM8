@@ -2,6 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Screen } from '../components/ui';
+import { spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useAuth, useIsGuardian } from '../auth/AuthContext';
 import type { AppStackParamList } from './types';
 
@@ -21,7 +22,7 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>ULTM8 Student</Text>
+      <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: spacing[6] }}>ULTM8 Student</Text>
       <Button title="Browse academies" onPress={() => navigation.navigate('Academies')} />
       <Button title="My bookings" onPress={() => navigation.navigate('MyBookings')} />
       <Button title="My memberships" onPress={() => navigation.navigate('MyMemberships')} />

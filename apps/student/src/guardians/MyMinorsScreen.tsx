@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Field, InlineError, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateOnly } from '../lib/formatDate';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useAddMinor, useMyMinors } from './guardianQueries';
 import type { AppStackParamList } from '../navigation/types';
 
@@ -68,7 +69,9 @@ export function MyMinorsScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      {minors.length === 0 ? <Text style={{ color: '#5F6368', marginBottom: 12 }}>No linked minors yet.</Text> : null}
+      {minors.length === 0 ? (
+        <Text style={{ color: theme.textSecondary, marginBottom: spacing[3] }}>No linked minors yet.</Text>
+      ) : null}
 
       {minors.map((minor) => (
         <Pressable
@@ -76,17 +79,19 @@ export function MyMinorsScreen({ navigation }: Props) {
           onPress={() =>
             navigation.navigate('MinorConsent', { studentId: minor.studentId, name: `${minor.firstName} ${minor.surname}` })
           }
-          style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
+          style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '600' }}>
+          <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading }}>
             {minor.firstName} {minor.surname}
           </Text>
-          <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>Born {formatDateOnly(minor.dateOfBirth)}</Text>
+          <Text style={{ color: theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>
+            Born {formatDateOnly(minor.dateOfBirth)}
+          </Text>
         </Pressable>
       ))}
 
       {adding ? (
-        <View style={{ marginTop: 16 }}>
+        <View style={{ marginTop: spacing[4] }}>
           <Field label="First name">
             <TextField
               value={form.firstName}

@@ -4,6 +4,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import type { components } from '@ultm8/api-client';
 import { InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useRank } from './rankQueries';
 
 type StudentRank = components['schemas']['StudentRankResponseDto'];
@@ -21,26 +22,28 @@ function MyRankRow({ studentRank, disciplineName }: { studentRank: StudentRank; 
   const stripeTier = rank?.stripeTiers.find((t) => t.id === studentRank.currentStripeId) ?? null;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: theme.border }}>
       {rank ? (
         <View
           style={{
             width: 22,
             height: 22,
             borderRadius: 5,
+            // Real belt colours from the API (the Rank's own confirmed data), not a
+            // design token — deliberately not touched by the retrofit.
             backgroundColor: rank.primaryColour,
             borderWidth: rank.secondaryColour ? 3 : 0,
             borderColor: rank.secondaryColour ?? undefined,
-            marginRight: 12,
+            marginRight: spacing[3],
           }}
         />
       ) : null}
       <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: '600' }}>{disciplineName}</Text>
-        {isLoading ? <Text style={{ color: '#5F6368', fontSize: 12 }}>Loading rank…</Text> : null}
+        <Text style={{ fontWeight: fontWeight.heading }}>{disciplineName}</Text>
+        {isLoading ? <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption }}>Loading rank…</Text> : null}
         {isError ? <InlineError message={getApiErrorMessage(error, 'Could not load rank details.')} /> : null}
         {rank ? (
-          <Text style={{ color: '#5F6368', fontSize: 12 }}>
+          <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption }}>
             Rank {rank.order}
             {stripeTier ? ` · ${stripeTier.count} stripe${stripeTier.count === 1 ? '' : 's'}` : ''}
           </Text>
@@ -102,16 +105,16 @@ export function MyRankSection({
   // data" by rendering nothing at all).
   if (ranksIsError && ranks.length === 0) {
     return (
-      <View style={{ marginTop: 16 }}>
-        <Text style={{ fontWeight: '600', marginBottom: 6 }}>My Rank</Text>
+      <View style={{ marginTop: spacing[4] }}>
+        <Text style={{ fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>My Rank</Text>
         <InlineError message={getApiErrorMessage(ranksError, 'Failed to load your rank — please try again.')} />
       </View>
     );
   }
 
   return (
-    <View style={{ marginTop: 16 }}>
-      <Text style={{ fontWeight: '600', marginBottom: 6 }}>My Rank</Text>
+    <View style={{ marginTop: spacing[4] }}>
+      <Text style={{ fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>My Rank</Text>
       {disciplinesIsError ? (
         <InlineError message={getApiErrorMessage(disciplinesError, 'Could not load discipline names.')} />
       ) : null}

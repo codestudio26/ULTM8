@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useEnrolledSchoolIds } from '../auth/AuthContext';
 import { WaiverRow } from './WaiverRow';
 import { useAllEnrolledSchoolWaivers, useEnrolledSchoolNames, useMyWaiverSignatures } from './waiverQueries';
@@ -23,7 +24,7 @@ export function WaiversScreen() {
   if (schoolIds.length === 0) {
     return (
       <Screen>
-        <Text style={{ color: '#5F6368' }}>You're not enrolled at a School yet — waivers appear here once you are.</Text>
+        <Text style={{ color: theme.textSecondary }}>You're not enrolled at a School yet — waivers appear here once you are.</Text>
       </Screen>
     );
   }
@@ -67,7 +68,7 @@ export function WaiversScreen() {
   if (waivers.items.length === 0) {
     return (
       <Screen>
-        <Text style={{ color: '#5F6368' }}>No waivers to sign.</Text>
+        <Text style={{ color: theme.textSecondary }}>No waivers to sign.</Text>
       </Screen>
     );
   }
@@ -78,9 +79,9 @@ export function WaiversScreen() {
         {schoolIds
           .filter((schoolId) => waiversBySchool.has(schoolId))
           .map((schoolId) => (
-            <View key={schoolId} style={{ marginBottom: 20 }}>
+            <View key={schoolId} style={{ marginBottom: spacing[6] }}>
               {schoolIds.length > 1 ? (
-                <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 4 }}>
+                <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>
                   {schoolNames.get(schoolId) ?? schoolId}
                 </Text>
               ) : null}

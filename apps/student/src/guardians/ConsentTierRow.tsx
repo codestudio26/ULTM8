@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useGrantConsent, useWithdrawConsent } from './guardianQueries';
 
 type ConsentRecord = components['schemas']['ConsentRecordResponseDto'];
@@ -111,9 +112,9 @@ export function ConsentTierRow({
   }
 
   return (
-    <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontWeight: '600' }}>{copy.title}</Text>
-      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{copy.description}</Text>
+    <View style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
+      <Text style={{ fontWeight: fontWeight.heading }}>{copy.title}</Text>
+      <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>{copy.description}</Text>
 
       {grant.isError ? (
         <InlineError message={getApiErrorMessage(grant.error, 'Could not save consent — please try again.')} />
@@ -123,12 +124,12 @@ export function ConsentTierRow({
       ) : null}
 
       {granted && confirming ? (
-        <View style={{ marginTop: 8 }}>
-          <Text style={{ color: '#C5221F', fontSize: 13 }}>{copy.withdrawWarning}</Text>
+        <View style={{ marginTop: spacing[2] }}>
+          <Text style={{ color: theme.textDanger, fontSize: fontSize.caption }}>{copy.withdrawWarning}</Text>
           {tier === 'BASELINE' ? (
             <Pressable
               onPress={() => setAcknowledged((a) => !a)}
-              style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}
+              style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing[2] }}
             >
               <View
                 style={{
@@ -136,15 +137,15 @@ export function ConsentTierRow({
                   height: 20,
                   borderRadius: 4,
                   borderWidth: 1,
-                  borderColor: '#C5221F',
-                  backgroundColor: acknowledged ? '#C5221F' : 'transparent',
-                  marginRight: 8,
+                  borderColor: theme.textDanger,
+                  backgroundColor: acknowledged ? theme.textDanger : 'transparent',
+                  marginRight: spacing[2],
                 }}
               />
-              <Text style={{ fontSize: 13, flex: 1 }}>I understand this deactivates the account</Text>
+              <Text style={{ fontSize: fontSize.caption, flex: 1 }}>I understand this deactivates the account</Text>
             </Pressable>
           ) : null}
-          <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+          <View style={{ flexDirection: 'row', marginTop: spacing[2], gap: spacing[2] }}>
             <View style={{ flex: 1 }}>
               <Button title="Cancel" variant="secondary" onPress={cancelConfirm} />
             </View>
@@ -161,7 +162,7 @@ export function ConsentTierRow({
         </View>
       ) : granted ? (
         <>
-          <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>Active ✓</Text>
+          <Text style={{ color: theme.textSuccess, fontSize: fontSize.caption, marginTop: spacing[1] }}>Active ✓</Text>
           <Button title="Withdraw" variant="secondary" onPress={openConfirm} loading={withdraw.isPending} />
         </>
       ) : (
