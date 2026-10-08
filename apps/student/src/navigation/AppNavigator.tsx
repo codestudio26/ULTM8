@@ -9,6 +9,7 @@ import { NotificationsScreen } from '../notifications/NotificationsScreen';
 import { WaiversScreen } from '../waivers/WaiversScreen';
 import { MinorConsentScreen } from '../guardians/MinorConsentScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
+import { CheckInScreen } from '../attendance/CheckInScreen';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -29,6 +30,7 @@ export function AppNavigator() {
       <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
       <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: 'My Minors' }} />
       <Stack.Screen name="MinorConsent" component={MinorConsentScreen} options={({ route }) => ({ title: route.params.name })} />
+      <Stack.Screen name="CheckIn" component={CheckInScreen} options={{ title: 'Check In' }} />
     </Stack.Navigator>
   );
 }

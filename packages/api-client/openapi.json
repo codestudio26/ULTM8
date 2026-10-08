@@ -966,6 +966,33 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "instructorId",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes taught by this Instructor (a User holding an active INSTRUCTOR RoleGrant at this School).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDateFrom",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 date-time — only Classes whose endDate is at or after this instant.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDateTo",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 date-time — only Classes whose startDate is at or before this instant.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

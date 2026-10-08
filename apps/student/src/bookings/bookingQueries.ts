@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { usePaginatedQuery } from '../lib/usePaginatedQuery';
@@ -7,6 +7,19 @@ export function useMyBookings() {
   return usePaginatedQuery(['my-bookings'], (cursor) =>
     unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { cursor } } })),
   );
+}
+
+/** One wide page (limit: 100), not the cursor-paginated useMyBookings above — same
+ * "a Student realistically has far fewer than 100 of these" reasoning
+ * useMyWaiverSignatures already established. CheckInScreen needs to reliably find a
+ * match for a scanned classId among EVERY upcoming Booking, not just the first
+ * default-sized page — a false "no booking found" here would incorrectly block a
+ * legitimate check-in. */
+export function useMyUpcomingBookingsWide() {
+  return useQuery({
+    queryKey: ['my-bookings-upcoming-wide'],
+    queryFn: () => unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { limit: 100 } } })),
+  });
 }
 
 /** Self-booking only — an empty body. `studentId`/`overrideReason` on BookClassDto are

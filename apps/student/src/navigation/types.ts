@@ -16,4 +16,5 @@ export type AppStackParamList = {
   Waivers: undefined;
   MyMinors: undefined;
   MinorConsent: { studentId: string; name: string };
+  CheckIn: undefined;
 };

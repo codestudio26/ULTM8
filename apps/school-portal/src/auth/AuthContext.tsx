@@ -78,3 +78,15 @@ export function useOwnedSchoolId(): string | null {
   const grant = claims.grants.find((g) => g.role === 'SCHOOL_OWNER_MANAGER' && g.schoolId);
   return grant?.schoolId ?? null;
 }
+
+/** Mirrors apps/student's useEnrolledSchoolIds — an Instructor can hold an INSTRUCTOR
+ * grant at more than one School (ultm8-domain-rules §3), so this returns every School
+ * they teach at, deduplicated and sorted, rather than assuming just one like
+ * useOwnedSchoolId above. Display hint only, decoded client-side — see this file's own
+ * header comment on useOwnedSchoolId for why that's safe. */
+export function useInstructorSchoolIds(): string[] {
+  const { claims } = useAuth();
+  if (!claims) return [];
+  const schoolIds = new Set(claims.grants.filter((g) => g.role === 'INSTRUCTOR' && g.schoolId).map((g) => g.schoolId as string));
+  return Array.from(schoolIds).sort();
+}

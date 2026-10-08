@@ -64,16 +64,40 @@ export class ClassesService {
   /** Classes visible to the caller under one School — RLS restricts this to a School-
    * level grant (sees every Class, any Branch) or a Branch-scoped grant (their own
    * Branch's Classes plus School-wide ones — class_tenant_isolation, this phase's
-   * migration). */
+   * migration).
+   *
+   * `instructorId`/`startDateFrom`/`startDateTo` are additive filters (Track B Phase 5,
+   * Instructor Check-in) — each is a no-op when omitted, so this is unchanged for every
+   * existing caller. The date filter is an overlap check against startDate/endDate (not
+   * the nullable `occurrenceDate`), covering both TimetableSlot-materialized occurrences
+   * and one-off Classes uniformly. Not re-ordered by date: the filtered result set (one
+   * Instructor's Classes on one day) is small enough that the existing id-ordered
+   * cursor contract needs no change for this use case. */
   async findAllForSchool(
     callerId: string,
     schoolId: string,
     cursor?: string,
     limit?: number,
+    instructorId?: string,
+    startDateFrom?: string,
+    startDateTo?: string,
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.class.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) =>
+          tx.class.findMany({
+            ...args,
+            where: {
+              schoolId,
+              ...(instructorId ? { instructorId } : {}),
+              ...(startDateFrom ? { endDate: { gte: new Date(startDateFrom) } } : {}),
+              ...(startDateTo ? { startDate: { lte: new Date(startDateTo) } } : {}),
+            },
+          }),
+        cursor,
+        limit,
+      ),
     );
   }
 

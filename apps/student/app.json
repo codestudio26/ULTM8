@@ -28,7 +28,15 @@
       "apiBaseUrl": "https://ultm8-api.onrender.com"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ULTM8 needs camera access to scan a Class's check-in code.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ]
   }
 }

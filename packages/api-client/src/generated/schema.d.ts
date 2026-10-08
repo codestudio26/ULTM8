@@ -2867,6 +2867,12 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Only Classes taught by this Instructor (a User holding an active INSTRUCTOR RoleGrant at this School). */
+                instructorId?: string;
+                /** @description ISO 8601 date-time — only Classes whose endDate is at or after this instant. */
+                startDateFrom?: string;
+                /** @description ISO 8601 date-time — only Classes whose startDate is at or before this instant. */
+                startDateTo?: string;
             };
             header?: never;
             path: {

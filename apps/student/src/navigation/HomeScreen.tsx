@@ -24,6 +24,7 @@ export function HomeScreen({ navigation }: Props) {
     <Screen>
       <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading, marginBottom: spacing[6] }}>ULTM8 Student</Text>
       <Button title="Browse academies" onPress={() => navigation.navigate('Academies')} />
+      <Button title="Check in" onPress={() => navigation.navigate('CheckIn')} />
       <Button title="My bookings" onPress={() => navigation.navigate('MyBookings')} />
       <Button title="My memberships" onPress={() => navigation.navigate('MyMemberships')} />
       <Button title="Waivers" onPress={() => navigation.navigate('Waivers')} />

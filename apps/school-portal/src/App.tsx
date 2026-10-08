@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useOwnedSchoolId } from './auth/AuthContext';
+import { useInstructorSchoolIds, useOwnedSchoolId } from './auth/AuthContext';
 import { RequireAuth } from './auth/RequireAuth';
 import { LoginPage } from './auth/LoginPage';
 import { RegisterPage } from './auth/RegisterPage';
@@ -11,11 +11,20 @@ import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
 import { StaffPage } from './roleGrants/StaffPage';
+import { CheckInPage } from './checkin/CheckInPage';
 import { Shell } from './layout/Shell';
 
+// FOUND ON REVIEW (Track B Phase 5): this previously only ever checked
+// useOwnedSchoolId and fell back straight to /onboarding (CreateSchoolPage) for
+// anyone without a SCHOOL_OWNER_MANAGER grant -- including an Instructor, who holds
+// no such grant by design (ultm8-domain-rules §3) and would have been incorrectly
+// sent to "create a School" on their very first login.
 function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
-  return <Navigate to={schoolId ? '/school' : '/onboarding'} replace />;
+  const instructorSchoolIds = useInstructorSchoolIds();
+  if (schoolId) return <Navigate to="/school" replace />;
+  if (instructorSchoolIds.length > 0) return <Navigate to="/check-in" replace />;
+  return <Navigate to="/onboarding" replace />;
 }
 
 export function App() {
@@ -62,6 +71,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <StaffPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/check-in"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CheckInPage />
             </Shell>
           </RequireAuth>
         }
