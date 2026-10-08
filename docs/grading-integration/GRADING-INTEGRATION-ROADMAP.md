@@ -159,6 +159,23 @@ Each of these was verified in the code, not just reported.
 
 ---
 
+## 5a. Answers received from Gus (8 Oct 2026)
+
+Gus confirmed in this session that he is the author of the prototype and the owner of the grading rules.
+
+| Topic | Gus's answer | Effect on this plan |
+|---|---|---|
+| Whose logic wins for grading (D-B) | **"We will follow Gus logic for grading."** The prototype's grading works the way it should; the aim is to reuse that knowledge, not start from zero or change much. | Gus's rules (HANDOVER §6, prototype lines 316–541) become the reference for grading behaviour. **Still to settle:** CLAUDE.md says logged decisions can't override Spec 55 §§1–11, so each place where Gus's rules contradict the spec (L8, G3, G4 and others in §3) needs Gus's explicit sign-off as product owner, recorded as a decision that amends the spec. See the open question below. |
+| What the prototype is | A **standalone** grading system, not connected to attendance. (Its curriculum only links lessons to skills.) | In ULTM8 the class count comes from real attendance (QR check-in marks bookings Completed), not from Gus's manual counter. How the two fit together is an open question. |
+| Stripes (L1) | **"Each stripe is a step on the ladder, and a new grade."** | Confirmed: every stripe is its own grading step, with its own requirements, its own grade action and its own history entry. Matches Spec §2.3 "stripe-as-its-own-rung". **Still open:** how this is stored (see below). |
+| Is this the ULTM8 grading module (D-A) | Yes. Implement it in our system. | Build inside ULTM8's existing RanksModule and CurriculumModule. |
+
+### Open follow-ups from these answers
+
+1. **Spec override authority.** Confirm that, as product owner, you authorise your grading rules to override Spec 55 where they conflict. Each override is logged as Decision 124 onward and listed for a spec amendment.
+2. **Storage of rungs.** Either (A) keep ULTM8's Rank + stripe-tier tables and show them as Gus's flat ladder, or (B) restructure so every rung is its own Rank row exactly like the prototype.
+3. **Class count source.** QR attendance counts classes automatically. Should Gus's manual "Log a class" be kept as an extra staff action?
+
 ## 6. Decisions needed before building (Phase 0) — with recommendations
 
 Ask as a small number of rounds. Each answer becomes a numbered entry in `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (next number: **124**).
