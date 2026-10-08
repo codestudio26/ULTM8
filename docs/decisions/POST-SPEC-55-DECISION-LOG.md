@@ -750,3 +750,30 @@ Camera/QR-scanning native-module needs (still `[UNRESOLVED]` per the kickoff doc
 ### Recorded by
 
 Logged during a direct, live exchange with the user, 16 Sep 2026 — user asked "what's best? suggest me" on the Expo-vs-bare-RN question; the kickoff doc's own recommendation (Expo) was restated and accepted.
+
+---
+
+## Decision 99 — Track B, Phase 5: QR check-in's rotating-code payload, display location, and the Instructor Check-in screen's existence
+
+**Date:** 8 Oct 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** `skills/ultm8-domain-rules/SKILL.md` §12's `[UNRESOLVED]` item — "what the QR code itself actually displays, and who generates/shows it, is still unresolved as a **screen**" — within the binding constraint Decision 66 already fixed (time-boxed, rotating, never a single static code).
+
+### Decision
+
+Two genuinely open product questions were put to the user directly (not defaulted on) before any code was written, each with a recommendation and reasoning, and both were accepted as asked:
+
+1. **QR payload**: `{classId, nonce, issuedAt}`, regenerated on the display every ~20s. The nonce/issuedAt pair is a client-side-only freshness gate — confirmed directly against `AttendanceService.scan()` that nothing server-side ever inspects the QR's contents; all real enforcement (booking ownership, check-in time window, camera-tier consent) already happens via the Student's own `bookingId` on `POST /attendance/scan`. This satisfies Decision 66's "rotating, never static" constraint with the minimal design the constraint actually requires, with zero backend change.
+2. **Display location**: the Instructor's own device, as a new screen in `apps/school-portal` (not a fixed venue kiosk/tablet). Reasoning accepted: a kiosk would require real new infrastructure this decision deliberately avoids taking on silently — device procurement, kiosk-mode lockdown, per-venue mounting/power — matching the same category of standalone business decision the roadmap already parked separately for white-label branding (Phase 6), rather than defaulting into it mid-slice.
+
+### What was built against this decision
+
+`apps/school-portal/src/checkin/CheckInPage.tsx` (School picker if the Instructor teaches at more than one School, per `ultm8-domain-rules` §3 — then a today's-Classes picker, then the QR display) and `apps/student/src/attendance/CheckInScreen.tsx` (camera scan, client-side freshness check, cross-reference against the Student's own upcoming Bookings, then the existing `POST /attendance/scan` call). A small, additive backend filter (`instructorId`/`startDateFrom`/`startDateTo` on `GET /schools/{schoolId}/classes`) was also added — found necessary during a deep-dive pass before building, since that endpoint had no filter and was `id`-ordered, making a client-side "today's Classes" filter unreliable against a School's unbounded, ever-growing Class history.
+
+### What this does NOT resolve
+
+The Instructor roll-call scan (Decision 71) — its mechanics remain undesigned and this is a separate, still-unbuilt follow-up. Server-side QR payload validation was deliberately not added — the nonce is not, and was never intended to be, cryptographically verified.
+
+### Recorded by
+
+Logged after the fact, during a deep-dive review of the already-shipped implementation — the decision itself was made live with the user via two direct questions (QR payload, display location) before building began; this entry closes the gap where that live exchange was never appended to this log at the time, caught by this phase's own code-review pass.

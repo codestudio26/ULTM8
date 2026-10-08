@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { PrismaClient } from '@prisma/client';
+import { BookingStatus, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -233,11 +233,23 @@ export class BookingsService {
     );
   }
 
-  /** GET /bookings/me. */
-  async findMyBookings(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+  /** GET /bookings/me. `status` is an additive, optional filter (Track B Phase 5,
+   * Check-in's booking cross-reference) — a no-op when omitted, so this is unchanged
+   * for every existing caller (MyBookingsScreen's own unfiltered call included). */
+  async findMyBookings(
+    callerId: string,
+    cursor?: string,
+    limit?: number,
+    status?: BookingStatus,
+  ): Promise<CursorPage<{ id: string }>> {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
-        (args) => tx.booking.findMany({ ...args, where: { studentId: callerId }, include: { attendees: true } }),
+        (args) =>
+          tx.booking.findMany({
+            ...args,
+            where: { studentId: callerId, ...(status ? { status } : {}) },
+            include: { attendees: true },
+          }),
         cursor,
         limit,
       ),

@@ -9,16 +9,20 @@ export function useMyBookings() {
   );
 }
 
-/** One wide page (limit: 100), not the cursor-paginated useMyBookings above — same
- * "a Student realistically has far fewer than 100 of these" reasoning
- * useMyWaiverSignatures already established. CheckInScreen needs to reliably find a
- * match for a scanned classId among EVERY upcoming Booking, not just the first
- * default-sized page — a false "no booking found" here would incorrectly block a
- * legitimate check-in. */
+/** One wide page (limit: 100) of only UPCOMING Bookings, not the cursor-paginated
+ * useMyBookings above — same "a Student realistically has far fewer than 100 of
+ * these" reasoning useMyWaiverSignatures already established, but scoped with the
+ * additive `status` filter (FOUND ON REVIEW: without it, a frequently-attending
+ * Student's ever-growing COMPLETED/CANCELLED/NO_SHOW history could push a genuinely
+ * upcoming Booking past the first 100 id-ordered rows, since GET /bookings/me with
+ * no status filter returns every status, randomly ordered by UUID). CheckInScreen
+ * needs to reliably find a match for a scanned classId among EVERY upcoming
+ * Booking — a false "no booking found" here would incorrectly block a legitimate
+ * check-in. */
 export function useMyUpcomingBookingsWide() {
   return useQuery({
     queryKey: ['my-bookings-upcoming-wide'],
-    queryFn: () => unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { limit: 100 } } })),
+    queryFn: () => unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { limit: 100, status: 'UPCOMING' } } })),
   });
 }
 

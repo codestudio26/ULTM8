@@ -3355,6 +3355,21 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Only Bookings with this status.",
+            "schema": {
+              "enum": [
+                "UPCOMING",
+                "COMPLETED",
+                "CANCELLED",
+                "NO_SHOW"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {

@@ -3,10 +3,10 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nest
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { BookingsService } from './bookings.service';
 import { BookClassDto } from './dto/book-class.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
+import { FindMyBookingsQueryDto } from './dto/find-my-bookings-query.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
 
 // Booking creation/cancellation/override + the caller's own read. See
@@ -41,7 +41,7 @@ export class BookingsController {
 
   @ApiOkResponse({ type: BookingListResponseDto })
   @Get('bookings/me')
-  findMyBookings(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
-    return this.bookingsService.findMyBookings(user.sub, query.cursor, query.limit);
+  findMyBookings(@CurrentUser() user: JwtPayload, @Query() query: FindMyBookingsQueryDto) {
+    return this.bookingsService.findMyBookings(user.sub, query.cursor, query.limit, query.status);
   }
 }

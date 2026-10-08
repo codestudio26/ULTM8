@@ -110,6 +110,16 @@ export function CheckInScreen({ navigation }: Props) {
       <Screen>
         {upcomingBookings.isLoading ? (
           <ActivityIndicator />
+        ) : upcomingBookings.isError ? (
+          // FOUND ON REVIEW: previously fell through to the "no booking found" branch
+          // below on a fetch failure too, misleadingly telling an actually-booked
+          // Student they weren't booked when the real cause was a transient network/
+          // server error. Retries the query itself, not just the QR scan.
+          <>
+            <ErrorBanner message={getApiErrorMessage(upcomingBookings.error, 'Could not check your bookings — please try again.')} />
+            <Button title="Try again" onPress={() => upcomingBookings.refetch()} />
+            <Button title="Scan again" variant="secondary" onPress={handleScanAgain} />
+          </>
         ) : !matchedBooking ? (
           <>
             <ErrorBanner message="You don't have an upcoming booking for this Class." />

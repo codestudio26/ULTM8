@@ -4223,6 +4223,8 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Only Bookings with this status. */
+                status?: "UPCOMING" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
             };
             header?: never;
             path?: never;
