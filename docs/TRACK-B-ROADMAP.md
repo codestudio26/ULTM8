@@ -766,6 +766,15 @@ custom-dev-client workflow change** (losing the web-preview verification path th
 whole track has relied on) **right now**, versus shipping the non-Stripe
 `pending_confirmation` path first as a smaller, unblocking slice.
 
+**Timing reaffirmed, deferred (8 Oct 2026, Decision 100).** Put to the user directly
+after confirming the actual status of the live Render deployment: dev/testing use
+only, no real School or Student usage yet — so the V1 plan's own original gate below
+("ship Cash/Bank first, validate with real usage, add Stripe once the rest of the app
+is proven stable in production") genuinely hasn't been met, not a stale decision being
+re-litigated for no reason. No concrete, near-term Stripe-requiring School was
+identified either, which would have been the one thing to flip this. Revisit once
+either condition changes — not scheduled, no date attached.
+
 ## Slice 5 — Notifications — DONE, with a scope change from the original plan below
 
 `POST /notifications/device-tokens` (device token registration) and
@@ -851,9 +860,11 @@ section and each item's own section above for the current, accurate status.
 (My Minors + consent grant/withdraw); the shared `PaginatedListScreen` extraction;
 light read-only offline caching (Phase 7); the Membership authorization-check fix.
 
-**Blocked on your decision, not further research**: Slice 4b (Stripe/PaymentSheet) —
-the API shape and library choice are both settled; the open question is only whether
-to take on the native dev-client workflow change right now.
+**Decided, deferred (Decision 100)**: Slice 4b (Stripe/PaymentSheet) — API shape and
+library choice were already settled; the timing question itself is now resolved too
+(reaffirmed deferred, 8 Oct 2026) rather than left open. Revisit once real production
+usage exists or a specific Stripe-requiring School is confirmed — whichever comes
+first.
 
 **Genuinely blocked** (see the section above): the Waiver drawn-signature capture and
 per-School white-label branding.

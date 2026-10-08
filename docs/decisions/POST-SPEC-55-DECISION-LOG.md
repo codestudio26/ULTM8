@@ -777,3 +777,30 @@ The Instructor roll-call scan (Decision 71) — its mechanics remain undesigned 
 ### Recorded by
 
 Logged after the fact, during a deep-dive review of the already-shipped implementation — the decision itself was made live with the user via two direct questions (QR payload, display location) before building began; this entry closes the gap where that live exchange was never appended to this log at the time, caught by this phase's own code-review pass.
+
+---
+
+## Decision 100 — Slice 4b (Stripe/PaymentSheet): reaffirmed deferred, no real usage gate met yet
+
+**Date:** 8 Oct 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the Slice 4b section's own open timing question ("blocked on your decision, not further research — the open question is only whether to take on the native dev-client workflow change right now").
+
+### Decision
+
+Slice 4b stays deferred. The user confirmed directly that the existing live Render deployment (`ultm8-api.onrender.com`) has seen **dev/testing use only so far — no real School or Student usage**. The V1 plan's own original gate ("ship Cash/Bank first, validate with real usage, add Stripe once the rest of the app is proven stable in production," logged in `docs/TRACK-B-ROADMAP.md`) is therefore not yet met — this isn't a new judgment call, it's that gate's condition genuinely not having happened yet.
+
+### Reasoning put to the user and accepted
+
+- **Risk sequencing**: Stripe/PaymentSheet is the single highest-risk, money-touching code path in this app. Building and shipping it before any real Student/School has used the rest of the system means a first-real-usage bug anywhere upstream (auth, membership state, tenant isolation) would be impossible to cleanly distinguish from a payment-integration bug, debugging both at once.
+- **The dev-client cost is not scoped to this one feature**: once `@stripe/stripe-react-native`'s native module is added, Expo Go/web-preview testing stops working for the *entire* `apps/student` app from that point forward, not just the payment screen — a permanent, continuously-paid cost, not a one-time setup fee.
+- **Deferring costs nothing today**: Slice 4a (Cash/Bank) already fully covers every School's membership-purchase flow; no Student-facing gap exists that Stripe would close right now, and no specific Stripe-requiring School has been named as pending onboarding.
+- The one circumstance that would flip this — a concrete, known, near-term Stripe-only School already in the onboarding pipeline — was checked for and does not currently exist.
+
+### What this does NOT resolve
+
+When exactly to revisit: either real production usage (not just dev/testing) proves the rest of the app stable, or a specific Stripe-backed School is confirmed to actually be onboarding — whichever comes first. Neither has a date attached; this decision does not schedule a revisit, only states the condition for one.
+
+### Recorded by
+
+Logged during a direct, live exchange with the user, 8 Oct 2026 — asked to resolve the Stripe timing question explicitly; confirmed the Render deployment's real usage status first (dev/testing only), then asked for and received the user's explicit choice to reaffirm deferral after hearing the reasoning.
