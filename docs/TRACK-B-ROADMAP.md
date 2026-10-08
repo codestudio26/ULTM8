@@ -87,11 +87,15 @@ in-scope is deliberately deferred, not forgotten.
   reuses an already-proven pattern (`PaginatedListScreen`'s own identical
   fetchNextPage/hasNextPage/isFetchingNextPage usage, and `Button`'s already-used
   `loading` prop) rather than new logic. Flagged here rather than silently assumed.
-- A real staging deployment of `apps/api` + Postgres (+ Redis) on Railway, so V1 is
-  verified against the genuine backend, not indefinitely against throwaway mocks.
-  Pending: the user creating a Railway account and connecting the GitHub repo — this
-  can't be done on their behalf (account creation / payment details are always the
-  user's own action).
+- A real staging deployment of `apps/api`, so V1 is verified against the genuine
+  backend, not indefinitely against throwaway mocks. **Superseded (8 Oct 2026)**:
+  this is live today on **Render** (`ultm8-api.onrender.com`, `render.yaml` Blueprint
+  — Postgres on Supabase, Key Value/Redis and the API service on Render's free tier),
+  not Railway as originally planned here — confirmed with the user directly rather
+  than standing up a second platform for no reason. Still open as of that date: it's
+  only ever seen dev/testing use, not real School/Student usage (the actual condition
+  this line was written to satisfy) — see Decision 100 and this doc's own Slice 4b
+  section.
 - Offline (Phase 7) ✅ **DONE (2026-09-22)** — scoped to **light read-only caching**:
   previously-loaded screens stay viewable with no connection, including across an app
   restart (not just mid-session), via `@tanstack/react-query-persist-client` +
