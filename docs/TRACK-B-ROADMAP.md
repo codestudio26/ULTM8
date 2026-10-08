@@ -22,7 +22,7 @@ Detail for each Slice is in its own section below; this table is the map.
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
 | 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
 | 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b still blocked — needs a design pass + schema change; partially unblockable by syncing with `master` (see below) |
-| 5 | **Attendance** | 8 (QR check-in) | Scoped (2026-09-22), not yet built — the backend endpoint already exists (`POST /attendance/scan`); needs your call on 2 remaining product questions + a new `apps/school-portal` screen |
+| 5 | **Attendance** | 8 (QR check-in) | ✅ DONE (2026-10-08) |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
 | 7 | **Resilience** | 10 (offline behavior/caching) | ✅ DONE (light read-only caching via react-query persistence) |
 
@@ -179,13 +179,18 @@ QR-scanning capability in `apps/student` and a QR-display screen in
 `apps/school-portal`. The Instructor roll-call fallback (Decision 71) stays a
 separate, genuinely unbuilt follow-up, not a blocker for this.
 
-**Still open, needs your call before building**: exactly what the rotating code
-encodes (a `classId` + a short-lived nonce the client only uses to gate *when* a
-"Check in" action becomes available is the minimal design — the nonce need not reach
-the backend at all, given it doesn't validate one today) and where that display
-screen lives operationally (an Instructor's own phone running `apps/school-portal`
-during class vs. a fixed venue tablet/kiosk) are real product decisions, not
-technical ones this doc should guess at.
+**Both open questions above were put to the user directly and resolved (8 Oct 2026) — logged as Decision 99 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`).** `classId` + rotating nonce (regenerated ~20s), displayed on the Instructor's own device in `apps/school-portal`, not a fixed kiosk.
+
+**Slice 8 shipped (8 Oct 2026).** Built against a deep-dive pass, not the original plan verbatim — re-verifying the real code before building caught that `GET /schools/{schoolId}/classes` had no instructor/date filter and was `id`-ordered (a random UUID), which would have made a client-side "today's Classes" filter unreliable against a School's unbounded, ever-growing Class history. Added a small, additive `instructorId`/`startDateFrom`/`startDateTo` filter to that endpoint instead (no-op when omitted) — the only backend change this slice needed; `POST /attendance/scan` (Phase 13) already did everything else.
+
+- **`apps/school-portal`** — the first Instructor-facing screens in this app. Also fixed a real pre-existing bug found along the way: `HomeRedirect` only ever checked for a `SCHOOL_OWNER_MANAGER` grant and fell through to "create a School" onboarding for anyone without one — including an Instructor, who holds no such grant by design. `useInstructorSchoolIds()` (mirrors `apps/student`'s `useEnrolledSchoolIds` — an Instructor can teach at more than one School) feeds a School picker (shown only when >1), then a today's-Classes picker, then a full-screen QR display (`qrcode.react`) regenerating its payload on the ~20s cadence Decision 99 set.
+- **`apps/student`** — a new Check In screen using `expo-camera` (confirmed Expo Go-compatible — unlike Stripe/PaymentSheet, this does **not** require the custom-dev-client workflow change Slice 4b is blocked on). Scans the code, rejects a stale payload client-side, cross-references the scanned `classId` against the Student's own upcoming Bookings, then calls the existing `POST /attendance/scan` and surfaces its real response.
+
+**Found on this slice's own high-effort code-review pass, fixed before this note was written** (not before the first commit — see that commit's own follow-up): `GET /bookings/me` had the identical class of bug the Classes-endpoint fix above was added to prevent — no status filter, `id`-ordered — so the Check-in screen's own "does this Student have an upcoming Booking for this Class" lookup could miss a real match for any Student with more than 100 total Bookings across every status (not just upcoming ones, which only grows over time). Fixed the same way: an additive, optional `status` filter on `GET /bookings/me`. Also fixed: the same screen's booking-lookup failure state previously fell through to "you're not booked" on a network error too, rather than showing a real retry option.
+
+**Verified**: `npx tsc --noEmit` clean across `apps/api`, `apps/school-portal`, and `apps/student`. **Not** interactively click-tested — no mock backend/camera-capable preview exists in this checkout (same constraint as every prior slice's own notes). The existing `classes.e2e-spec.ts`/`bookings.e2e-spec.ts` suites don't pass any of the new optional params, so both are unaffected; confirmed by reading the where-clause logic directly rather than assumed, since neither suite is runnable in this sandbox (no live Postgres).
+
+**Deliberately not built, same as the original scoping**: the Instructor roll-call scan (Decision 71 — mechanics still undesigned) and a fixed venue kiosk.
 
 **Deferred past V1 (fast-follow candidates, not abandoned):**
 - Slice 4b (Stripe/PaymentSheet) — deferred to avoid shipping the highest-risk,
@@ -842,14 +847,9 @@ section and each item's own section above for the current, accurate status.
 
 ## Recommendation
 
-**Shipped**: Slices 1, 2, 3, 4a, 5, 6a; the Guardian consent candidate (My Minors +
-consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read-only
-offline caching (Phase 7); the Membership authorization-check fix.
-
-**Scoped, not yet built**: QR check-in (Phase 5) — the backend endpoint it needs
-already exists (`POST /attendance/scan`); what's left is a `apps/school-portal` QR
-display screen, a scanning capability in `apps/student`, and your call on the 2
-remaining product questions in that section above.
+**Shipped**: Slices 1, 2, 3, 4a, 5, 6a, 8 (QR check-in); the Guardian consent candidate
+(My Minors + consent grant/withdraw); the shared `PaginatedListScreen` extraction;
+light read-only offline caching (Phase 7); the Membership authorization-check fix.
 
 **Blocked on your decision, not further research**: Slice 4b (Stripe/PaymentSheet) —
 the API shape and library choice are both settled; the open question is only whether
