@@ -13,6 +13,16 @@
  * from a GitHub Codespace terminal, with DATABASE_URL set to the Supabase
  * superuser connection string): node prisma/seed-dev-student.js
  * Login with: student@ultm8.local / 123456
+ *
+ * Extended (Track B Phase 5, QR check-in manual testing) with a second account,
+ * instructor@ultm8.local / 123456, holding an INSTRUCTOR RoleGrant at the SAME
+ * School — needed to actually exercise the Check-in flow end-to-end: a new
+ * Class seeded to always start today (so it shows up in the Instructor's
+ * Check-in picker) and the Student's existing UPCOMING Booking repointed at it,
+ * so scanning its QR finds a real match. The RoleGrant is upserted directly
+ * here (not via the real invite endpoint, which needs an existing School Owner
+ * this seed doesn't otherwise create) — fine for seed data, since RoleGrant is
+ * the sole source of truth regardless of how it was created (ultm8-domain-rules §3).
  */
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
@@ -409,8 +419,71 @@ async function main() {
     },
   });
 
+  // --- 7. Instructor account, INSTRUCTOR-granted at the same School ---
+  const instructorPasscodeHash = await bcrypt.hash('123456', BCRYPT_ROUNDS);
+  const instructor = await prisma.user.upsert({
+    where: { email: 'instructor@ultm8.local' },
+    update: {},
+    create: {
+      email: 'instructor@ultm8.local',
+      phone: '+15550000003',
+      firstName: 'Dev',
+      surname: 'Instructor',
+      passcodeHash: instructorPasscodeHash,
+      phoneVerifiedAt: new Date(),
+      dateOfBirth: new Date('1990-01-01'),
+    },
+  });
+
+  await prisma.roleGrant.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000043' },
+    update: {},
+    create: {
+      id: '00000000-0000-0000-0000-000000000043',
+      role: 'INSTRUCTOR',
+      userId: instructor.id,
+      schoolId: school.id, // branchId left null — School-scoped, matches StaffPage's own invite shape
+    },
+  });
+
+  // classUpcoming's startDate is `now + 3 days`, not today — useTodaysClassesForInstructor's
+  // date-window filter would show nothing to pick in the Check-in screen against it. Seeds a
+  // separate Class that always starts today instead, and repoints the Student's existing
+  // UPCOMING Booking at it below, so there's a real, scannable match end-to-end. (To
+  // separately test the "no booking for this Class" honest-error path, scan classUpcoming's
+  // own QR by creating a second Booking against it manually — not seeded by default, since
+  // the happy path is what this seed is for.)
+  const todayStart = new Date(now);
+  todayStart.setHours(18, 0, 0, 0);
+  const todayEnd = new Date(now);
+  todayEnd.setHours(19, 0, 0, 0);
+  await prisma.class.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000044' },
+    update: { startDate: todayStart, endDate: todayEnd },
+    create: {
+      id: '00000000-0000-0000-0000-000000000044',
+      schoolId: school.id,
+      instructorId: instructor.id,
+      title: 'Jiu Jitsu Evening Class (Today)',
+      activities: ['Jiu Jitsu'],
+      description: 'Seeded to always start today, for Check-in manual testing.',
+      startDate: todayStart,
+      endDate: todayEnd,
+      capacity: 20,
+      membershipInclusion: true,
+    },
+  });
+
+  // The Student's actual UPCOMING Booking, repointed at TODAY's class instead of
+  // the +3-day one — so scanning today's seeded Class's QR finds a real match.
+  await prisma.booking.update({
+    where: { id: '00000000-0000-0000-0000-000000000037' },
+    data: { classId: '00000000-0000-0000-0000-000000000044' },
+  });
+
   console.log('Seeded dev student: student@ultm8.local / 123456 (enrolled at "Dev Test School (Student)")');
-  console.log('Also seeded: 1 Discipline (3 Ranks / 5 RankStripeTiers) + StudentRank, 1 MembershipPlan + Membership, 3 Classes, 2 Bookings, 3 Notifications, 1 Waiver + WaiverSignature.');
+  console.log('Seeded dev instructor: instructor@ultm8.local / 123456 (INSTRUCTOR at "Dev Test School (Student)")');
+  console.log('Also seeded: 1 Discipline (3 Ranks / 5 RankStripeTiers) + StudentRank, 1 MembershipPlan + Membership, 3 Classes (1 starting today) + 1 more today-only Class, 2 Bookings (the UPCOMING one now points at today\'s Class), 3 Notifications, 1 Waiver + WaiverSignature.');
 }
 
 main()
