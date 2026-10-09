@@ -322,6 +322,10 @@ model User {
   promotionEventsPerformed PromotionEvent[]  @relation("PromotionEventPerformedBy")
   promotionEventsVoided    PromotionEvent[]  @relation("PromotionEventVoidedBy")
   skillSignOffChanges      SkillSignOffLog[] @relation("SkillSignOffLogChangedBy")
+  homeBranches             StudentHomeBranch[] @relation("StudentHomeBranchStudent")
+  homeBranchesAssigned     StudentHomeBranch[] @relation("StudentHomeBranchAssignedBy")
+  gradingPermissions       GradingPermission[] @relation("GradingPermissionUser")
+  gradingPermissionsGiven  GradingPermission[] @relation("GradingPermissionGrantedBy")
   waiverSignatures         WaiverSignature[] @relation("WaiverSignatureStudent")
   waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
   bookings                 Booking[]         @relation("BookingStudent")
@@ -653,6 +657,8 @@ model School {
   franchiseFeeCharges FranchiseFeeCharge[]
   lessons             Lesson[]
   platformCharges     PlatformCharge[]
+  studentHomeBranches StudentHomeBranch[]
+  gradingPermissions  GradingPermission[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -687,6 +693,7 @@ model Branch {
   classes        Class[]
   timetableSlots TimetableSlot[]
   instructors    Instructor[]
+  homeStudents   StudentHomeBranch[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -1625,6 +1632,7 @@ model Discipline {
   ranks        Rank[]
   skills       Skill[]
   studentRanks StudentRank[]
+  gradingPermissions GradingPermission[]
 
   @@index([schoolId])
 }
@@ -2727,4 +2735,59 @@ model DeviceToken {
 enum DevicePlatform {
   IOS
   ANDROID
+}
+
+/// A student's home branch at a School (Decisions 139, 148, 168). One per
+/// (School, Student). Chosen when joining a School that has branches; the
+/// owner assigns or changes it. Kept apart from the STUDENT RoleGrant on
+/// purpose: a branch on that grant would also narrow which classes the
+/// student can see (Class RLS), and which branches a student may book stays a
+/// booking rule (Decision 148). RLS: the School Owner/Manager, or the Student.
+model StudentHomeBranch {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentHomeBranchStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  assignedById String?
+  assignedBy   User?   @relation("StudentHomeBranchAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, studentId])
+  @@index([branchId])
+  @@index([studentId])
+}
+
+/// Grading permission for one staff member in one discipline (Decision 138).
+/// The School owner always has it and needs no row. Anyone else grades only
+/// in the disciplines listed here, and only students of their own branches
+/// (Decision 168). RLS: the School Owner/Manager, or the user themselves.
+model GradingPermission {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("GradingPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  grantedById String?
+  grantedBy   User?   @relation("GradingPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, disciplineId])
+  @@index([schoolId])
+  @@index([disciplineId])
 }

@@ -24,4 +24,11 @@ export class JoinSchoolDto {
   @IsOptional()
   @IsUUID()
   studentId?: string;
+
+  @ApiPropertyOptional({
+    description: 'The student\'s home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none.',
+  })
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
 }

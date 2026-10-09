@@ -15,6 +15,25 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading foundation, PR 4: grading permission per style, and
+  branches** (Decisions 138, 139, 148, 168):
+  - **Who can grade:** the School owner always can. Anyone else (Instructor
+    or Branch Staff) can only grade in the styles the owner grants
+    (`GET /schools/{id}/grading-permissions`, `PUT
+    /schools/{id}/grading-permissions/{userId}`). Before, every staff member
+    could grade everything. This covers grading, downgrade, stripe award,
+    skill sign-off, void and edit rank date.
+  - **Branches:** each student has a home branch. In a School with branches,
+    joining (`POST /schools/{id}/join`) now requires a `branchId`. The owner
+    assigns or changes a home branch with `PUT
+    /schools/{id}/students/{studentId}/home-branch`.
+  - **Coverage:** staff see and grade only students whose home branch is one
+    of their branches. Coaches can be assigned to several branches. Students
+    with no home branch are visible to the owner only. A School with no
+    branches counts as one branch.
+  - **Viewing:** staff without grading permission can still view their
+    branches' students' grading.
+  - `packages/api-client` regenerated.
 - **api — grading foundation, PR 3: history fields, void, edit rank date and the
   sign-off log** (Decisions 128, 129, 141, 153, 156, 166):
   - **History entries** gain:

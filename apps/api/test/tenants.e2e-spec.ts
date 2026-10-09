@@ -370,7 +370,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const joinRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/join`)
       .set('Authorization', `Bearer ${studentToken}`)
-      .send();
+      .send({ branchId: branchA.id });
     expect(joinRes.status).toBe(201);
 
     const rosterRes = await request(app.getHttpServer())
@@ -460,14 +460,30 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     });
     const tokenFreshCaller = signAccessToken(freshCaller, []);
 
+    // School B has a branch, so a home branch must be chosen (Decisions 139,
+    // 168). Refused without one, or with another School's branch, and
+    // nothing is created.
+    for (const body of [{}, { branchId: branchA.id }]) {
+      const refused = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenFreshCaller}`)
+        .send(body);
+      expect({ body, status: refused.status }).toEqual({ body, status: 400 });
+    }
+    expect(await superuser.roleGrant.count({ where: { userId: freshCaller.id } })).toBe(0);
+
     const joinRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolB.id}/join`)
       .set('Authorization', `Bearer ${tokenFreshCaller}`)
-      .send();
+      .send({ branchId: branchB.id });
     expect(joinRes.status).toBe(201);
     expect(joinRes.body.role).toBe('STUDENT');
     expect(joinRes.body.schoolId).toBe(schoolB.id);
+    // The STUDENT grant stays School-wide; the home branch is kept apart.
     expect(joinRes.body.branchId).toBeNull();
+    const home = await superuser.studentHomeBranch.findUniqueOrThrow({ where: { schoolId_studentId: { schoolId: schoolB.id, studentId: freshCaller.id } } });
+    expect(home.branchId).toBe(branchB.id);
+    expect(home.assignedById).toBe(freshCaller.id);
 
     const grant = await superuser.roleGrant.findFirst({
       where: { userId: freshCaller.id, schoolId: schoolB.id, role: 'STUDENT', revokedAt: null },
@@ -544,8 +560,10 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       const joinRes = await request(app.getHttpServer())
         .post(`/v1/schools/${schoolB.id}/join`)
         .set('Authorization', `Bearer ${tokenGuardian}`)
-        .send({ studentId: minor.id });
+        .send({ studentId: minor.id, branchId: branchB.id });
       expect(joinRes.status).toBe(201);
+      const minorHome = await superuser.studentHomeBranch.findUniqueOrThrow({ where: { schoolId_studentId: { schoolId: schoolB.id, studentId: minor.id } } });
+      expect([minorHome.branchId, minorHome.assignedById]).toEqual([branchB.id, guardian.id]);
       expect(joinRes.body.role).toBe('STUDENT');
       expect(joinRes.body.userId).toBe(minor.id);
       expect(joinRes.body.schoolId).toBe(schoolB.id);

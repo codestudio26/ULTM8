@@ -1975,3 +1975,16 @@ Options considered: "no future, no earlier than the previous grading" (chosen), 
 **Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found while building grading foundation PR 3 (codestudio26/ULTM8#103)
 
 Every stripe is its own rung and its own grade (Decision 126). So a stripe award restarts the student's time-in-rank clock (`StudentRank.dateOfCurrentRank`) like any other rank change. This is how the prototype behaves: `applyRankChange` sets the rank date for every change. Before this, the stripe-award endpoint kept the belt's date, so the minimum-days count for the next stripe started from the belt grading. "Edit rank date" (Decisions 153, 166) then corrects the stripe's own date. Gus: *"Good catch, please make sure it's done"*.
+
+---
+
+## Decision 168 — Branches and grading: who covers which students
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** four points left open by Decisions 138, 139 and 148, raised while building grading foundation PR 4
+
+1. **A School with no branches:** the School is the branch. Anyone with grading permission (Decision 138) sees and grades all of its students, and joining asks for no branch. Gus: *"Than the branch is the school, that simple."*
+2. **Joining a School that has branches** requires choosing a home branch (Decision 139: "chosen when they join"). Gus: *"Required"*. Students enrolled before this keep no home branch until the owner assigns one (Decision 148). Until then, only the owner sees and grades them.
+3. **Coaches and staff are assigned per branch, and may be assigned to more than one.** A non-owner sees and grades only the students whose home branch is one of their branches. A staff assignment with no branch, in a School that has branches, covers no students for grading. The owner covers every student. Gus: *"Coaches will have to assigned per branch, which means can be assigned for more than one branch"*, and *"dan can not be with NO Branch or No school"*.
+4. **Viewing:** staff without grading permission for a style can still view (read only) the ranks and history of their own branches' students in it. Grading permission covers the actions. Gus: *"Yes, view only"*.
+
+Built as: a `StudentHomeBranch` row per (School, Student), kept separate from the STUDENT `RoleGrant`. A branch on that grant would also hide other branches' classes from the student, and which branches a student may book stays a booking rule (Decision 148). Each branch a coach covers is one INSTRUCTOR or BRANCH_STAFF `RoleGrant` with that branch.
