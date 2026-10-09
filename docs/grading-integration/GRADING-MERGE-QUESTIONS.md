@@ -21,6 +21,11 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Only the three IBJJF templates ship (Decision 131).
 - Guardians can see their child's rank and progress (Decision 132).
 - No direct membership rule (Decision 133); grading data follows account deletion (Decision 134); grading ships in v1.1 (Decision 135).
+- 33% / 66% board columns by default, editable per school (Decision 136).
+- Self-declared ranks at signup, verified by grading staff, white belts verified automatically (Decision 137).
+- Grading permission: owner always, others per discipline as granted (Decision 138).
+- Branches: one home branch per student, branch staff grade their own branch, one ladder per school (Decision 139).
+- Which classes count: any ticked type, or each type required as a per-rung option (Decision 140).
 
 ## How many need answering, and when
 
@@ -104,7 +109,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q14. Progress % and the three columns: what can each school configure (Decision 75), and what are the defaults?** · _Answer first_
 - Why it matters: ULTM8 decided these are per school, with no fixed platform rule. Your 33% and 66% would become the default.
 - Recommendation: Default: classes ÷ required, columns at 33% and 66%, adjustable per discipline.
-- Answer so far: The 33% and 66% only split the board into 3 columns. Asked: fixed for every school?
+- Answer so far: 33% / 66% by default, editable by each school (Decision 136).
 
 **Q15. Column names: Just Starting / Getting There / Ready to Grade (yours), or Not Ready / Almost Ready / Ready (Spec 55)?** · _Before screens_
 - Why it matters: Spec 55 uses both. One set must be chosen for the portal, the app and the translations.
@@ -114,12 +119,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q16. Does one attended class count toward every discipline the class lists, or only one?** · _Before API_
 - Why it matters: Today a class listing two disciplines adds a class to both of the student's progress counts.
 - Recommendation: Count it only for disciplines whose eligible class types include the class's type.
-- Answer so far: Your prototype: each rung lists which classes count and a weekly cap. “AND” meaning being confirmed.
+- Answer so far: Each rung ticks which class types count: any ticked type by default, or each type required as an option (Decision 140). Number per type still to confirm.
 
 **Q17. Does a class at any branch count, and should the board be filterable by branch?** · _Before screens_
 - Why it matters: Grading has no idea of branches. Instructors and staff can be branch-scoped.
 - Recommendation: Classes at any branch count. Add a branch filter to the board.
-- Answer so far: Each branch is responsible for its own grading. Details being confirmed.
+- Answer so far: One home branch per student; branch staff grade their own branch; one ladder per school (Decision 139). Classes at other branches still to confirm.
 
 **Q18. Keep your manual “Log a class” button next to QR attendance?** · _Before API_
 - Why it matters: Classes are counted automatically from QR check-in. A manual add with no record behind it can be abused.
@@ -133,7 +138,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q20. Does an expired or unpaid membership affect grading (hide from the board, block grading)?** · _Before screens_
 - Why it matters: Memberships and grading are not connected at all today.
 - Recommendation: No block. Show a badge on the card.
-- Answer so far: No direct rule: without a membership a student can't book, so they earn no attendance (Decision 133).
+- Answer so far: No direct rule: without an active membership a student can't book, so they earn no attendance (Decisions 133, 136).
 
 ### D. Grading actions and permissions
 
@@ -180,11 +185,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q29. Who can grade: Owner, Instructor, Branch Staff? Only their own branch? Per-discipline permission (your settings page)?** · _Answer first_
 - Why it matters: Today Branch Staff can grade any student in the school. Spec 55 says Instructors only.
 - Recommendation: Owner and Instructor, per discipline. Not Branch Staff.
-- Answer so far: Whoever is given permission to the grading area. Details being confirmed.
+- Answer so far: Owner always; others only for the disciplines the owner grants (Decision 138).
 
 **Q30. Do Downgrade and board adjustments need a higher permission than promoting?** · _Before API_
 - Why it matters: These change a student's record against their interest.
 - Recommendation: Owner, or an instructor with the discipline permission. No extra tier for now.
+- Answer so far: No higher permission: the same grading permission covers downgrade and adjustments (Decision 138).
 
 **Q31. Add an “edit rank date” correction action?** · _Before API_
 - Why it matters: Your direction: keep the date rule and add a correction that leaves a note. Not built anywhere.
@@ -195,11 +201,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q32. How does an existing student get their current rank when a school joins ULTM8?** · _Answer first_
 - Why it matters: A rank only exists after the first promote, and it always starts at the bottom. Placing a brown belt takes dozens of clicks and creates fake history.
 - Recommendation: A “set current rank” action with a start date, plus a CSV import for schools moving in.
-- Answer so far: Students enter their own rank at signup, shown as unverified until the school verifies it. Details being confirmed.
+- Answer so far: Students enter their own rank at signup; it stays unverified until grading staff verify it; unverified ranks can still book; staff get a notice; white belts are verified automatically (Decision 137). Correction and which rungs auto-verify still to confirm.
 
 **Q33. New student or new minor: does staff set the starting rank, or does everyone start at the first rung?** · _Before API_
 - Why it matters: Joining a school and creating a minor never touch rank.
 - Recommendation: Start at the first rung; staff can change it with “set current rank”.
+- Answer so far: Students enter their own rank at signup (Decision 137).
 
 ### F. Events, fees and notifications
 

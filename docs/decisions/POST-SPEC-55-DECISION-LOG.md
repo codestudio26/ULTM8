@@ -1660,3 +1660,60 @@ Grading data is kept or removed together with the rest of the account. Spec 55 D
 **Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q49 (in part)
 
 Grading (Track A: API and school portal) is part of the planned **v1.1** release. Version numbers are assigned by the product owner (CLAUDE.md, Versioning). This records his assignment; nothing is tagged until he says so. The Track B (student app) release was put back to Gus. Answer given: *"V1.1"*.
+
+---
+
+## Decision 136 — Confirmation of Decision 133, and board thresholds: 33% / 66% by default, editable per school
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q14; confirms the reading recorded in Decision 133
+
+- **Decision 133 confirmed.** A student without an active membership **cannot** book classes, so they earn no attendance. Gus: *"Yes correct"*.
+- **Board thresholds.** The Grading Board splits students into three columns at 33% and 66% progress (classes attended ÷ classes required; days ÷ required days for a time-only rung). These are the default for every school, and each school can edit them. Gus: *"Yes by default but they should be able to edit, in case they wish to change"*. This is consistent with Decision 75 (school-configurable, per discipline) and gives it its default. The progress formula itself stays the prototype's (`computeProgress`). Skills and minimum days are not part of the percentage.
+
+---
+
+## Decision 137 — Self-declared ranks at signup, verified by grading staff
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q32, Q33 (in part)
+
+1. **At signup**, a student (or a guardian for a minor) enters their current rank in each discipline they train at that school. It is stored as **unverified**.
+2. **Anyone with grading permission** for that discipline (Decision 138) can verify it in the school portal.
+3. **An unverified rank still allows booking** rank-restricted classes. Gus: *"yes they can book"*. This is an explicit exception to the booking rank gate for unverified ranks.
+4. **When anyone with grading permission logs in to the school portal**, a notice lists the students whose ranks are waiting to be verified.
+5. **White belts and beginners are verified automatically.** Gus: *"White belts and beginners should be auto verified by the school"*.
+
+Still open, put back to Gus: whether the verifier can correct a wrong rank, and exactly which rungs count as "white belt / beginner" for automatic verification.
+
+---
+
+## Decision 138 — Grading permission: owner always, others per discipline as granted
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q29, Q30
+
+The school owner always has grading permission. Anyone else (instructor or branch staff) has it only for the disciplines the owner grants, as in the prototype's Settings → "Instructor grading permissions" table. The permission covers: grade, downgrade, board adjustments, bulk promote, events, skill sign-off and verifying self-declared ranks. Downgrade and adjustments need no higher permission than promoting, per the prototype ("the right to promote or downgrade, per style"). Gus: *"Yes"*, and earlier *"Who ever is grant permission to the grading area"*.
+
+This replaces today's `assertStaffAtSchool` check, which admits all staff to every grading action; the code itself flags that check as [UNRESOLVED].
+
+---
+
+## Decision 139 — Branches: one home branch per student; branch staff grade their own branch; one ladder per school
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q17 (in part)
+
+1. Each student has **one home branch**, chosen when they join.
+2. Grading staff see and grade **only their own branch's students**. The owner sees and grades all branches.
+3. The school keeps **one ladder per style**, shared by all its branches.
+
+Gus: *"Each branch are responsible for their grading"*, then "yes" to each of the three points. Today `POST /schools/:id/join` creates a school-wide STUDENT RoleGrant with no branch, so join needs a branch choice.
+
+Still open, put back to Gus: whether a class attended at a different branch counts toward grading, and how existing students without a home branch get one.
+
+---
+
+## Decision 140 — "Which classes count": any ticked type by default, "each ticked type required" as an option
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q16 (in part)
+
+Each rung lists which class types count toward it, and a weekly cap (prototype). By default, a class of **any** ticked type counts toward the rung's class total (Gus: *"correct"*). Gus also said the alternative, where the student must attend **each** ticked type, *"also can be the case"*, so it is offered as a per-rung option. A class counts toward a discipline only if its type is ticked on the student's next rung. That also settles whether one class counts toward several disciplines.
+
+Still open, put back to Gus: in "each type required" mode, whether the school sets a number per type or "at least one of each" is enough. This depends on classes having a type (Q12).
