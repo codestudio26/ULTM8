@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading engine (roadmap Phase 2a; Decisions 127, 136, 149, 171).**
+  Gus's grading rules as pure functions in `apps/api/src/ranks/engine/`: the
+  flat ladder of rungs, what the next rung requires, which classes count
+  (ticked types, Monday–Sunday weekly cap), eligibility, progress % and the
+  board columns, and the back-dated grading-date check. Checked against the
+  prototype's own QA reference rules on every rung of an IBJJF-style ladder.
+  Not wired in yet, so nothing changes for users until Phases 2b and 2c.
 - **api + school-portal — instructor specialisations picked from the School's
   styles** (Decision 152, item 1): in a School with styles, an instructor's
   specialisations are chosen from its styles (`specializationStyleIds`). Free
