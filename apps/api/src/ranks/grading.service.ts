@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -8,6 +10,8 @@ import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
+import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
+import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
@@ -50,7 +54,59 @@ export class GradingService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly ranksService: RanksService,
     private readonly guardiansService: GuardiansService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
+
+  /**
+   * Closes a real gap found while auditing the user-journey inventory (Step
+   * 8, "get graded"): a Student was promoted/downgraded/stripe-awarded with
+   * no notification of any kind — confirmed by grep (zero Queue/Notification
+   * references anywhere in this file) and by the grading team's own
+   * merge-questions doc ("No grading notification exists," Decision-log-
+   * adjacent `docs/grading-integration/GRADING-MERGE-QUESTIONS.md`).
+   *
+   * Reuses the exact NotificationFanoutJobData shape/queue every other
+   * trigger in this codebase uses — no new notification mechanism invented.
+   * `notificationId` is derived from the PromotionEvent's own id
+   * (`grading-${promotionEvent.id}`), stable across a retried job attempt
+   * and across NotificationFanoutProcessor's own upsert — a PromotionEvent
+   * row is only ever created once (this file never updates one in place for
+   * a rank-change type), so the id is never reused across two different real
+   * notifications.
+   *
+   * Scoped deliberately narrow, matching exactly the gap that was flagged:
+   * PROMOTION, DOWNGRADE, and STRIPE_AWARD only — the three coach-initiated
+   * "you were graded" moments. SELF_DECLARED (the Student's own action — Phase
+   * 10b PR 6) and RANK_CORRECTION/ADJUSTMENT (administrative corrections, not
+   * grading moments) are deliberately NOT notified here; folding every
+   * PromotionEvent type into one blanket notification wasn't asked for and
+   * risks notifying a Student about their own self-declared action, or about
+   * a date correction nobody considers a "you got graded" event.
+   *
+   * Called after the triggering transaction has already committed (same
+   * "BullMQ doesn't participate in the Postgres transaction" reasoning every
+   * other producer in this codebase already follows) — every call site below
+   * awaits this only once its own `withTenantContext` call has resolved.
+   */
+  private async notifyStudentOfGradingAction(
+    studentId: string,
+    disciplineName: string,
+    promotionEventId: string,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    await this.notificationFanoutQueue.add(
+      'notify',
+      {
+        notificationId: `grading-${promotionEventId}`,
+        userId: studentId,
+        title,
+        body: `${body} (${disciplineName})`,
+        type: 'GRADING_RANK_CHANGE',
+      } satisfies NotificationFanoutJobData,
+      { jobId: `grading-${promotionEventId}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Reads
@@ -283,7 +339,7 @@ export class GradingService {
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
@@ -387,8 +443,20 @@ export class GradingService {
         },
       });
 
-      return { studentRank, promotionEvent };
+      return { studentRank, promotionEvent, targetRankName: targetRank.name };
     });
+
+    await this.notifyStudentOfGradingAction(
+      studentId,
+      discipline.name,
+      result.promotionEvent.id,
+      type === 'PROMOTION' ? 'Promoted!' : 'Rank updated',
+      type === 'PROMOTION'
+        ? `You've been promoted to ${result.targetRankName}.`
+        : `Your rank has been adjusted to ${result.targetRankName}.`,
+    );
+
+    return result;
   }
 
   /** Spec 55 §5 (quoted): "unavailable once the Student is at a belt's highest
@@ -402,7 +470,7 @@ export class GradingService {
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
@@ -457,8 +525,18 @@ export class GradingService {
         },
       });
 
-      return { studentRank, promotionEvent };
+      return { studentRank, promotionEvent, nextTierName: nextTier.name };
     });
+
+    await this.notifyStudentOfGradingAction(
+      studentId,
+      discipline.name,
+      result.promotionEvent.id,
+      'New stripe!',
+      `You've earned ${result.nextTierName}.`,
+    );
+
+    return result;
   }
 
   /** Spec 55 §5 (quoted): "grading is permitted even when a required skill isn't

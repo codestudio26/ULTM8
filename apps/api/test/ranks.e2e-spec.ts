@@ -66,6 +66,31 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     });
   }
 
+  // Promotion-notification wiring (grading foundation gap closed independently
+  // of this file's own PRs): GradingService enqueues onto the real
+  // NOTIFICATION_FANOUT_QUEUE, the same queue NotificationFanoutProcessor
+  // already consumes for real in this file's full-AppModule bootstrap — that
+  // queue's DI token cannot be overridden with a fake Queue here the way
+  // notifications.e2e-spec.ts does (FOUND ON REVIEW: doing so leaves
+  // NotificationFanoutProcessor's own Worker with no `.opts.connection` to
+  // read, since BullExplorer derives it from the very same token, and
+  // app.init() throws "Worker requires a connection" for every test in this
+  // file). notifications.e2e-spec.ts's own fake-queue convention is for
+  // testing a processor directly against a minimal module it fully controls,
+  // not a full-app HTTP gate with a live consumer already on that token. So:
+  // real worker, bounded poll for the resulting Notification row by its
+  // deterministic id (`grading-${promotionEventId}`, see
+  // NotificationFanoutProcessor's own upsert `where: { id: notificationId }`).
+  async function waitForNotification(notificationId: string, timeoutMs = 5000) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const row = await superuser.notification.findUnique({ where: { id: notificationId } });
+      if (row) return row;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return null;
+  }
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
@@ -121,6 +146,16 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     await superuser.discipline.deleteMany({ where: { id: { in: disciplineIds } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.guardianLink.deleteMany({ where: { guardian: { email: { contains: 'ranks-http-' } } } });
+    // FOUND ON REVIEW: GradingService now enqueues a real Notification row on
+    // promote/downgrade/stripe-award (the promotion-notification wiring) — this
+    // suite's own grading actions create several, and deleting Users before
+    // their Notification rows violates Notification_userId_fkey. Same
+    // lookup-then-delete-Notification-first convention waivers.e2e-spec.ts
+    // already established for its own WaiverSignature-triggered notifications.
+    const createdUserIds = (
+      await superuser.user.findMany({ where: { email: { contains: 'ranks-http-' } }, select: { id: true } })
+    ).map((u) => u.id);
+    await superuser.notification.deleteMany({ where: { userId: { in: createdUserIds } } });
     await superuser.user.deleteMany({ where: { email: { contains: 'ranks-http-' } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
@@ -322,6 +357,12 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(res.body.studentRank.currentRankId).toBe(whiteBeltRankId);
     expect(res.body.promotionEvent.fromRankId).toBeNull();
     expect(res.body.promotionEvent.toRankId).toBe(whiteBeltRankId);
+
+    // Promotion-notification wiring: promote() notifies the Student directly
+    // (GradingService injects NOTIFICATION_FANOUT_QUEUE, not an intermediate job).
+    const notification = await waitForNotification(`grading-${res.body.promotionEvent.id}`);
+    expect(notification).toMatchObject({ userId: studentA.id, title: 'Promoted!', type: 'GRADING_RANK_CHANGE' });
+    expect(notification!.body).toContain('Jiu Jitsu');
   });
 
   it('a required-skill-unsigned promotion is rejected without acknowledgment, accepted with it', async () => {
@@ -338,14 +379,22 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(accepted.status).toBe(201);
     expect(accepted.body.studentRank.currentRankId).toBe(blueBeltRankId);
     expect(accepted.body.promotionEvent.acknowledgedWithoutSkillSignoff).toBe(true);
+
+    // The rejected attempt above must not have notified; only the accepted one does.
+    const notification = await waitForNotification(`grading-${accepted.body.promotionEvent.id}`);
+    expect(notification).toMatchObject({ userId: studentA.id, title: 'Promoted!' });
   });
 
   it('promoting past the highest Rank is rejected — 400', async () => {
+    const notificationsBefore = await superuser.notification.count({ where: { userId: studentA.id } });
     const res = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/promote`)
       .set('Authorization', `Bearer ${tokenOwner}`)
       .send({ acknowledgeWithoutSkillSignoff: true });
     expect(res.status).toBe(400);
+    // Nothing further to wait for — a rejected request never enqueues, so there's
+    // no notificationId to poll for; a plain count comparison is enough here.
+    expect(await superuser.notification.count({ where: { userId: studentA.id } })).toBe(notificationsBefore);
   });
 
   it('stripe-award moves to the next tier and resets classesAttendedTowardCheckpoint', async () => {
@@ -364,6 +413,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(awardRes.body.studentRank.classesAttendedTowardCheckpoint).toBe(0);
     expect(awardRes.body.promotionEvent.type).toBe('STRIPE_AWARD');
     expect(awardRes.body.promotionEvent.toRankId).toBe(awardRes.body.promotionEvent.fromRankId); // rank unchanged
+
+    // stripe-award notifies too, with its own distinct copy (not "Promoted!").
+    const awardNotification = await waitForNotification(`grading-${awardRes.body.promotionEvent.id}`);
+    expect(awardNotification).toMatchObject({ userId: studentB.id, title: 'New stripe!', type: 'GRADING_RANK_CHANGE' });
 
     // Already at White's highest tier (order 1) now — a second award must reject.
     const secondAwardRes = await request(app.getHttpServer())
@@ -541,6 +594,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(res.body.promotionEvent.reason).toBe('Test downgrade');
     expect(res.body.promotionEvent.fromRankId).toBe(blueBeltRankId);
     expect(res.body.promotionEvent.toRankId).toBe(whiteBeltRankId);
+
+    // downgrade notifies too, with "Rank updated" rather than "Promoted!".
+    const downgradeNotification = await waitForNotification(`grading-${res.body.promotionEvent.id}`);
+    expect(downgradeNotification).toMatchObject({ userId: studentA.id, title: 'Rank updated', type: 'GRADING_RANK_CHANGE' });
 
     const belowLowest = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
@@ -1775,6 +1832,16 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect([res.body.studentRank.currentRankId, res.body.studentRank.currentStripeId]).toEqual([rungs[2].rankId, rungs[2].tierId]);
       expect(res.body.promotionEvent.type).toBe('SELF_DECLARED');
       expect(res.body.promotionEvent.performedById).toBe(user.id);
+
+      // Promotion-notification wiring is deliberately scoped to
+      // promote/downgrade/stripe-award only (Student-already-knows actions like
+      // a self-declaration don't get a "you were graded" notification). Give the
+      // real worker a beat to prove this is actually true, not just "too soon to
+      // tell" — waitForNotification would be the wrong tool for a negative
+      // assertion (it returns the instant it sees null once, not after
+      // confirming nothing ever shows up).
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(await superuser.notification.findUnique({ where: { id: `grading-${res.body.promotionEvent.id}` } })).toBeNull();
 
       expect((await declare(user.id, token, rungs[3])).status).toBe(409); // already has a rank here
       const history = await request(app.getHttpServer())
