@@ -1691,4 +1691,177 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(await withUser(ownerP.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(3);
     });
   });
+  // ---------------------------------------------------------------------------
+  // Phase 1 / PR 6 (grading foundation) — self-declared ranks (Decisions 137,
+  // 147): declared when joining, verified or corrected by grading staff; the
+  // style's first rung is verified automatically. Uses its own style.
+  // ---------------------------------------------------------------------------
+  describe('self-declared ranks (grading foundation PR 6)', () => {
+    let styleId: string;
+    let otherStyleTier: { rankId: string; tierId: string };
+    const rungs: Array<{ rankId: string; tierId: string }> = []; // [belt0 plain, belt0 1 stripe, belt1 plain, belt1 1 stripe]
+    let coach: { id: string; email: string };
+    let tokenCoach: string;
+
+    const declare = (studentId: string, token: string, rung: { rankId: string; tierId: string }, style = styleId) =>
+      request(app.getHttpServer())
+        .post(`/v1/students/${studentId}/ranks/${style}/declare`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rankId: rung.rankId, stripeTierId: rung.tierId });
+    const verify = (studentId: string, token: string, body: Record<string, unknown> = {}) =>
+      request(app.getHttpServer()).post(`/v1/students/${studentId}/ranks/${styleId}/verify`).set('Authorization', `Bearer ${token}`).send(body);
+    const mkStudent = async (label: string) => {
+      const u = await mkExtraUser(`declared-${label}`);
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id } });
+      return { user: u, token: signAccessToken(u, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]) };
+    };
+
+    beforeAll(async () => {
+      const mkStyle = async (name: string) => {
+        const disc = await request(app.getHttpServer())
+          .post(`/v1/schools/${school.id}/disciplines`)
+          .set('Authorization', `Bearer ${tokenOwner}`)
+          .send({ name });
+        expect(disc.status).toBe(201);
+        disciplineIds.push(disc.body.id);
+        const out: Array<{ rankId: string; tierId: string }> = [];
+        for (const order of [0, 1]) {
+          const rank = await request(app.getHttpServer())
+            .post(`/v1/styles/${disc.body.id}/ranks`)
+            .set('Authorization', `Bearer ${tokenOwner}`)
+            .send({
+              order,
+              primaryColour: '#FFFFFF',
+              stripeTiers: [
+                { order: 0, count: 0, colour: '#FFFFFF' },
+                { order: 1, count: 1, colour: '#FFFFFF' },
+              ],
+            });
+          expect(rank.status).toBe(201);
+          for (const t of rank.body.stripeTiers) out.push({ rankId: rank.body.id, tierId: t.id });
+        }
+        return { id: disc.body.id as string, rungs: out };
+      };
+      const main = await mkStyle('Declared BJJ');
+      styleId = main.id;
+      rungs.push(...main.rungs);
+      otherStyleTier = (await mkStyle('Declared Judo')).rungs[0];
+
+      coach = await mkExtraUser('declared-coach');
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: coach.id, schoolId: school.id } });
+      tokenCoach = signAccessToken(coach, [{ role: 'INSTRUCTOR', franchiseId: null, schoolId: school.id, branchId: null }]);
+      const granted = await request(app.getHttpServer())
+        .put(`/v1/schools/${school.id}/grading-permissions/${coach.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ disciplineIds: [styleId] });
+      expect(granted.status).toBe(200);
+    });
+
+    it('a student declares their rung when joining: unverified, on their history, once only; refused for another style\'s rung, a non-student, or someone else\'s rank (Decision 137)', async () => {
+      const { user, token } = await mkStudent('blue');
+      expect((await declare(user.id, token, { rankId: rungs[2].rankId, tierId: otherStyleTier.tierId })).status).toBe(400);
+      expect((await declare(user.id, tokenStudentB, rungs[2])).status).toBe(403); // a peer, not a guardian
+
+      const outsider = await mkExtraUser('declared-outsider');
+      // Not enrolled: the School's styles are hidden from them, and hidden looks
+      // the same as missing (404), the codebase's existing RLS convention.
+      expect((await declare(outsider.id, signAccessToken(outsider, []), rungs[2])).status).toBe(404);
+      expect(await superuser.studentRank.count({ where: { studentId: outsider.id } })).toBe(0);
+
+      const res = await declare(user.id, token, rungs[2]);
+      expect(res.status).toBe(201);
+      expect(res.body.studentRank.verificationStatus).toBe('UNVERIFIED');
+      expect(res.body.studentRank.verifiedAt).toBeNull();
+      expect([res.body.studentRank.currentRankId, res.body.studentRank.currentStripeId]).toEqual([rungs[2].rankId, rungs[2].tierId]);
+      expect(res.body.promotionEvent.type).toBe('SELF_DECLARED');
+      expect(res.body.promotionEvent.performedById).toBe(user.id);
+
+      expect((await declare(user.id, token, rungs[3])).status).toBe(409); // already has a rank here
+      const history = await request(app.getHttpServer())
+        .get(`/v1/students/${user.id}/rank-history`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${token}`);
+      expect(history.body.items.map((e: { type: string }) => e.type)).toEqual(['SELF_DECLARED']);
+    });
+
+    it('only the style\'s first rung (plain White Belt) is verified automatically; White Belt · 1 Stripe is not (Decision 147)', async () => {
+      const plain = await mkStudent('plain-white');
+      const res = await declare(plain.user.id, plain.token, rungs[0]);
+      expect(res.status).toBe(201);
+      expect(res.body.studentRank.verificationStatus).toBe('VERIFIED');
+      expect(res.body.studentRank.verifiedAt).not.toBeNull();
+      expect(res.body.studentRank.verifiedById).toBeNull();
+
+      const striped = await mkStudent('white-1-stripe');
+      const res2 = await declare(striped.user.id, striped.token, rungs[1]);
+      expect(res2.body.studentRank.verificationStatus).toBe('UNVERIFIED');
+    });
+
+    it('a guardian declares for their linked minor (Decision 137)', async () => {
+      const minor = await mkStudent('minor');
+      const guardian = await mkExtraUser('declared-guardian');
+      await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.user.id } });
+      const res = await declare(minor.user.id, signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]), rungs[2]);
+      expect(res.status).toBe(201);
+      expect(res.body.promotionEvent.performedById).toBe(guardian.id);
+    });
+
+    it('grading staff verify a rank as declared, or correct it while verifying; the correction goes on the history (Decisions 138, 147)', async () => {
+      const asDeclared = await mkStudent('verify-as-is');
+      expect((await declare(asDeclared.user.id, asDeclared.token, rungs[2])).status).toBe(201);
+      expect((await verify(asDeclared.user.id, asDeclared.token)).status).toBe(403); // the student
+      expect((await verify(asDeclared.user.id, tokenBranchStaff)).status).toBe(403); // staff without permission
+
+      const ok = await verify(asDeclared.user.id, tokenOwner);
+      expect(ok.status).toBe(201);
+      expect(ok.body.studentRank.verificationStatus).toBe('VERIFIED');
+      expect(ok.body.studentRank.verifiedById).toBe(owner.id);
+      expect(ok.body.promotionEvent).toBeNull(); // nothing changed, nothing to note
+      expect((await verify(asDeclared.user.id, tokenOwner)).status).toBe(409);
+
+      const wrong = await mkStudent('verify-corrected');
+      expect((await declare(wrong.user.id, wrong.token, rungs[3])).status).toBe(201);
+      expect((await verify(wrong.user.id, tokenCoach, { rankId: rungs[1].rankId })).status).toBe(400); // half a rung
+      expect((await verify(wrong.user.id, tokenCoach, { rankId: otherStyleTier.rankId, stripeTierId: otherStyleTier.tierId })).status).toBe(400);
+
+      const fixed = await verify(wrong.user.id, tokenCoach, { rankId: rungs[1].rankId, stripeTierId: rungs[1].tierId, note: 'Checked with previous coach' });
+      expect(fixed.status).toBe(201);
+      expect(fixed.body.studentRank.verificationStatus).toBe('VERIFIED');
+      expect(fixed.body.studentRank.verifiedById).toBe(coach.id);
+      expect([fixed.body.studentRank.currentRankId, fixed.body.studentRank.currentStripeId]).toEqual([rungs[1].rankId, rungs[1].tierId]);
+      expect(fixed.body.promotionEvent.type).toBe('RANK_CORRECTION');
+      expect([fixed.body.promotionEvent.fromStripeTierId, fixed.body.promotionEvent.toStripeTierId]).toEqual([rungs[3].tierId, rungs[1].tierId]);
+      expect(fixed.body.promotionEvent.performedById).toBe(coach.id);
+      expect(fixed.body.promotionEvent.note).toBe('Checked with previous coach');
+
+      const history = await request(app.getHttpServer())
+        .get(`/v1/students/${wrong.user.id}/rank-history`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${wrong.token}`);
+      expect(history.body.items.map((e: { type: string }) => e.type).sort()).toEqual(['RANK_CORRECTION', 'SELF_DECLARED']);
+    });
+
+    it('the owner lists ranks waiting to be verified; other staff cannot yet (Decision 137, item 4)', async () => {
+      const waiting = await mkStudent('pending');
+      expect((await declare(waiting.user.id, waiting.token, rungs[3])).status).toBe(201);
+
+      const res = await request(app.getHttpServer()).get(`/v1/schools/${school.id}/rank-verifications`).set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.items.every((r: { verificationStatus: string }) => r.verificationStatus === 'UNVERIFIED')).toBe(true);
+      expect(res.body.items.map((r: { studentId: string }) => r.studentId)).toContain(waiting.user.id);
+
+      expect((await request(app.getHttpServer()).get(`/v1/schools/${school.id}/rank-verifications`).set('Authorization', `Bearer ${tokenCoach}`)).status).toBe(403);
+    });
+
+    it('declaring is refused while the School has ranks switched off (Decision 87)', async () => {
+      const { user, token } = await mkStudent('ranks-off');
+      await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: false } });
+      try {
+        expect((await declare(user.id, token, rungs[2])).status).toBe(403);
+      } finally {
+        await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: true } });
+      }
+      expect(await superuser.studentRank.count({ where: { studentId: user.id } })).toBe(0);
+    });
+  });
 });

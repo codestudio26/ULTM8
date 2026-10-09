@@ -40,6 +40,15 @@ export class StudentRankResponseDto {
   @ApiProperty()
   classesAttendedTowardCheckpoint!: number;
 
+  @ApiProperty({ enum: ['VERIFIED', 'UNVERIFIED'], description: 'UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).' })
+  verificationStatus!: 'VERIFIED' | 'UNVERIFIED';
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  verifiedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Empty when verified automatically (the first rung) or the verifier\'s account was deleted.' })
+  verifiedById!: string | null;
+
   @ApiProperty({ type: [StudentRankSkillStatusResponseDto] })
   skillStatuses!: StudentRankSkillStatusResponseDto[];
 

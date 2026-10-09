@@ -1428,6 +1428,54 @@ export interface paths {
         patch: operations["GradingController_cycleSkillSignOff"];
         trace?: never;
     };
+    "/v1/students/{id}/ranks/{disciplineId}/declare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_declareRank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_verifyRank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rank-verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_findPendingVerifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/grading-permissions": {
         parameters: {
             query?: never;
@@ -3206,6 +3254,14 @@ export interface components {
             currentStripeId?: string | null;
             dateOfCurrentRank: string;
             classesAttendedTowardCheckpoint: number;
+            /**
+             * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
+             * @enum {string}
+             */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            verifiedAt?: string | null;
+            /** @description Empty when verified automatically (the first rung) or the verifier's account was deleted. */
+            verifiedById?: string | null;
             skillStatuses: components["schemas"]["StudentRankSkillStatusResponseDto"][];
             createdAt: string;
             updatedAt: string;
@@ -3276,6 +3332,20 @@ export interface components {
             note?: string;
             /** @description Why the student is being moved down. Required. */
             reason: string;
+        };
+        DeclareRankDto: {
+            /** @description The belt (Rank) of this style. */
+            rankId: string;
+            /** @description The rung (stripe tier) of that belt. */
+            stripeTierId: string;
+        };
+        VerifyRankDto: {
+            /** @description To correct the rank: the right belt. Send with stripeTierId. */
+            rankId?: string;
+            /** @description To correct the rank: the right rung of that belt. Send with rankId. */
+            stripeTierId?: string;
+            /** @description An optional note for the history. */
+            note?: string;
         };
         GradingPermissionResponseDto: {
             id: string;
@@ -6246,6 +6316,75 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GradingController_declareRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareRankDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_verifyRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyRankDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_findPendingVerifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                };
             };
         };
     };

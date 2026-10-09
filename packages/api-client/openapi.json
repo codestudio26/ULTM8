@@ -4488,6 +4488,133 @@
         ]
       }
     },
+    "/v1/students/{id}/ranks/{disciplineId}/declare": {
+      "post": {
+        "operationId": "GradingController_declareRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclareRankDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/verify": {
+      "post": {
+        "operationId": "GradingController_verifyRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRankDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/rank-verifications": {
+      "get": {
+        "operationId": "GradingController_findPendingVerifications",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentRankListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/grading-permissions": {
       "get": {
         "operationId": "GradingPermissionsController_findAll",
@@ -10219,6 +10346,23 @@
           "classesAttendedTowardCheckpoint": {
             "type": "number"
           },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ],
+            "description": "UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147)."
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedById": {
+            "type": "string",
+            "nullable": true,
+            "description": "Empty when verified automatically (the first rung) or the verifier's account was deleted."
+          },
           "skillStatuses": {
             "type": "array",
             "items": {
@@ -10240,6 +10384,7 @@
           "currentRankId",
           "dateOfCurrentRank",
           "classesAttendedTowardCheckpoint",
+          "verificationStatus",
           "skillStatuses",
           "createdAt",
           "updatedAt"
@@ -10447,6 +10592,40 @@
         "required": [
           "reason"
         ]
+      },
+      "DeclareRankDto": {
+        "type": "object",
+        "properties": {
+          "rankId": {
+            "type": "string",
+            "description": "The belt (Rank) of this style."
+          },
+          "stripeTierId": {
+            "type": "string",
+            "description": "The rung (stripe tier) of that belt."
+          }
+        },
+        "required": [
+          "rankId",
+          "stripeTierId"
+        ]
+      },
+      "VerifyRankDto": {
+        "type": "object",
+        "properties": {
+          "rankId": {
+            "type": "string",
+            "description": "To correct the rank: the right belt. Send with stripeTierId."
+          },
+          "stripeTierId": {
+            "type": "string",
+            "description": "To correct the rank: the right rung of that belt. Send with rankId."
+          },
+          "note": {
+            "type": "string",
+            "description": "An optional note for the history."
+          }
+        }
       },
       "GradingPermissionResponseDto": {
         "type": "object",
