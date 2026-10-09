@@ -14,6 +14,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Q2: you are the product owner and approve all grading decisions (Decision 125).
 - Q3: keep ULTM8's belt + stripe storage, with every per-rung setting from the prototype available per rung (Decision 126).
 - CLAUDE.md now carries the grading exception (Decision 124), so future sessions follow it.
+- Q4: requirements describe getting into a rung, your rule exactly (Decision 127).
 
 ## How many need answering, and when
 
@@ -49,6 +50,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q4. Which rung do requirements belong to: what it takes to get into a rung (yours), or to leave it (ULTM8 today)?** · _Answer first_
 - Why it matters: This is the single most important rule. Your bug B1 was this confusion. ULTM8 checks the skills on the student's current rank.
 - Recommendation: Pick one, write it down, and use it in the API, portal and app. If your way wins, the ULTM8 skill check must change.
+- Answer so far: Your rule exactly: requirements are for getting INTO a rung, with the time-only exceptions (Decision 127).
 
 **Q5. Each rung needs a name (“White Belt · 2 Stripes”). Is it typed by the school or generated from belt + stripe count?** · _Answer first_
 - Why it matters: ULTM8's Rank table has no name, although Spec 55 lists one. Every screen shows “Rank 3”.

@@ -1529,3 +1529,33 @@ Booking eligibility (`BookingsService.assertRankEligible`), waitlist, QR attenda
 ### Recorded by
 
 Asked as Q3 and answered directly by Gus on 9 Oct 2026. The per-rung field check was done by Claude against `apps/api/prisma/schema.prisma` and the prototype's `makeRank()`.
+
+---
+
+## Decision 127 — Requirement direction: Gus's rule, a rung's requirements are what it takes to be promoted INTO it
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision, given directly by Gus in this session. Overrides the existing RanksModule behaviour, as a grading override under Decision 124.
+**Resolves:** Q4 of `docs/grading-integration/GRADING-MERGE-QUESTIONS.md`: "Which rung do requirements belong to?"
+
+### Decision
+
+Gus's `gradingRequirement` rule (`prototype/index.html`, HANDOVER §6.3) is adopted exactly:
+
+| Student is at… | …next rung is… | Requirements come from |
+|---|---|---|
+| a normal rung | a normal rung | the **next** rung: its classes, minimum days and skills mean "what it takes to be promoted into it" |
+| a normal rung | a time-only rung (e.g. Brown · 4 → Black) | the **current** rung, because a time-only rung has no class or skill numbers |
+| a time-only rung | anything | the **current** rung's minimum days (the time spent at it); the next rung's skills are shown but optional |
+
+Answer given: *"yes"*.
+
+### Effect
+
+- `GradingService.assertSkillsSignedOffOrAcknowledged` currently checks the **current** rank's skills, and `cycleSkillSignOff` only allows skills of the current rank (`apps/api/src/ranks/grading.service.ts`). Both must change to use the rule above. The grading engine (roadmap Phase 2) owns this rule, and the API, portal and app all call it.
+- This is the rule the prototype's stress test (`refReq`, `refEligible`, `refPct`) was written against, so those scenarios can serve as ULTM8's acceptance tests without translation.
+- Spec 55 §6.1's wording ("skills required at the CURRENT checkpoint") is superseded for grading, and goes on the spec-amendment list.
+
+### Recorded by
+
+Asked as Q4 and answered directly by Gus on 9 Oct 2026. Recorded by Claude.
