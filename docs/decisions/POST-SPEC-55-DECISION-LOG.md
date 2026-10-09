@@ -1905,3 +1905,19 @@ Still open, put back to Gus: whether "their payment system" means the school's p
 **Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q45 (completes Decision 155)
 
 Students (and guardians, Decision 132) always see the whole progression of their grading in the app, including their progress toward the next rung and when they are "Ready to Grade". This is not a school setting for now. Gus: *"always on, for now"*.
+
+---
+
+## Decision 162 — Grading fee is paid inside ULTM8 as a single-event pass, set up by the school like a day pass
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q37 (completes Decisions 144, 159)
+
+**Option A: payment inside ULTM8.** The school owner sets up the grading in the school portal as a **day event**, similar to a day pass. Buying it grants the student access to, and permission to enter, that single event. The money goes to the school through its own payment setup (Stripe Connect card, or cash/bank confirmed by staff, exactly as for memberships). ULTM8 takes nothing (Decision 159). Gus: *"Via the portal, school owner will set up as day event, similar to a day pass. it will grant them access and permission to enter to that single event."*
+
+**Checked against the existing code before recording, not assumed.** ULTM8 can already express this with no new payment code:
+- A **one-off Class** (the grading day) plus a `MembershipPlan` of type `CLASS_PACK`, with `classesIncluded = 1` and `scopedClassId` set to that Class. The price is the fee. `schema.prisma` notes the 1-credit cap when `scopedClassId` is set.
+- Purchase runs through the existing card (Stripe Connect) and cash/bank flows, which create a `Transaction` and a `Membership`.
+- Booking enforces the scope: `bookings.service.ts` rejects a membership scoped to a different Class.
+- "Per rung" or "per style" fees (Decision 159) become separate passes for the same grading day, for example a kids fee and an adult fee.
+
+Still to confirm with Gus: whether v1.1 ships this using the existing one-off Class + scoped pass (no grading-events feature needed), with the Version 2 grading-events feature later linking each event to its pass; and whether the v1.1 "fee switch + amount" in grading settings (Decision 150, item 2) is replaced by this pass setup, or should create the pass automatically.

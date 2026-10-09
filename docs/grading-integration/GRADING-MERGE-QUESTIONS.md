@@ -38,6 +38,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Grading events move to Version 2 (Decision 158).
 - Fees: ULTM8 takes nothing; the school collects and chooses per event, per rung or per style (Decision 159).
 - Franchise ladders: franchise owner's switch, franchise-level edits, after v1.1 (Decision 160); students always see their progression (Decision 161).
+- Grading fee: paid inside ULTM8 as a single-event pass the school sets up, like a day pass (Decision 162).
 
 ## How many need answering, and when
 
@@ -246,7 +247,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q37. Grading fee: per event or per student, through Stripe, and does cash count?** · _Can wait_
 - Why it matters: ULTM8 payments only know membership purchases. A fee needs a new kind of charge.
 - Recommendation: Per student per event, through Stripe and cash, after events ship.
-- Answer so far: ULTM8 takes nothing; the school collects; the school picks per event (Version 2), per rung or per style (Decisions 144, 159). Inside or outside ULTM8's payments still to confirm.
+- Answer so far: Inside ULTM8: the school sets up a single-event pass, like a day pass, paid by card or cash to the school; ULTM8 takes nothing (Decisions 159, 162). This works with existing one-off classes and scoped passes.
 
 **Q38. Which grading notifications, to whom: eligible to grade (coach), promoted (student and guardian), event invitation?** · _Can wait_
 - Why it matters: No grading notification exists, and push sending is deferred (Decision 95).
