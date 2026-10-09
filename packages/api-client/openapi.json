@@ -9347,10 +9347,10 @@
           },
           "name": {
             "type": "string",
-            "description": "Rung name, e.g. \"Blue Belt · 2 Stripes\". Generated from the belt name and stripe count when omitted."
+            "description": "Rung name, e.g. \"Blue Belt · 2 Stripes\". When omitted: generated from the belt name and stripe count on a new rung; kept on an existing rung (a generated name is regenerated)."
           },
           "stripeSegments": {
-            "description": "Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted, one segment of `count` x `colour` is stored.",
+            "description": "Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StripeSegmentInputDto"
@@ -9362,10 +9362,10 @@
           },
           "timeOnly": {
             "type": "boolean",
-            "description": "\"Time in rank only\" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. Defaults to false."
+            "description": "\"Time in rank only\" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung."
           },
           "requiredSkillIds": {
-            "description": "Skills required to be promoted INTO this rung (Decision 127).",
+            "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
             "type": "array",
             "items": {
               "type": "string"

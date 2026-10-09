@@ -3,17 +3,25 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
+  ArrayUnique,
   Max,
   IsArray,
   IsBoolean,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   Min,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
+
+// Optional, but `null` is refused (400) rather than accepted: @IsOptional()
+// would let null through to the service, which reads `.length` on it (500) or
+// writes it to a NOT NULL column. Found on independent review (PR 2).
+const NotNullIfPresent = () => ValidateIf((_obj: unknown, value: unknown) => value !== undefined);
 
 /**
  * One RankStripeTier, nested inline under CreateRankDto/UpdateRankDto — no
@@ -61,15 +69,16 @@ export class RankStripeTierInputDto {
 
   // Grading foundation PR 2 — per-rung fields (Decisions 126, 128).
 
-  @ApiPropertyOptional({ description: 'Rung name, e.g. "Blue Belt · 2 Stripes". Generated from the belt name and stripe count when omitted.' })
-  @IsOptional()
+  @ApiPropertyOptional({ description: 'Rung name, e.g. "Blue Belt · 2 Stripes". When omitted: generated from the belt name and stripe count on a new rung; kept on an existing rung (a generated name is regenerated).' })
+  @NotNullIfPresent()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   name?: string;
 
   @ApiPropertyOptional({
     type: () => [StripeSegmentInputDto],
-    description: 'Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted, one segment of `count` x `colour` is stored.',
+    description: 'Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged.',
   })
   @IsOptional()
   @IsArray()
@@ -87,15 +96,16 @@ export class RankStripeTierInputDto {
   // No `default:` in the Swagger metadata on purpose: openapi-typescript would
   // then type this as required in packages/api-client and break existing
   // callers (the school portal's RankFormModal) that don't send it.
-  @ApiPropertyOptional({ description: '"Time in rank only" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. Defaults to false.' })
+  @ApiPropertyOptional({ description: '"Time in rank only" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung.' })
   @IsOptional()
   @IsBoolean()
   timeOnly?: boolean;
 
-  @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127).' })
-  @IsOptional()
+  @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.' })
+  @NotNullIfPresent()
   @IsArray()
   @ArrayMaxSize(100)
+  @ArrayUnique()
   @IsUUID('4', { each: true })
   requiredSkillIds?: string[];
 }
@@ -133,8 +143,9 @@ export class CreateRankDto {
   order!: number;
 
   @ApiPropertyOptional({ description: 'Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted.' })
-  @IsOptional()
+  @NotNullIfPresent()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   name?: string;
 
@@ -180,7 +191,7 @@ export class CreateRankDto {
   stripeTiers!: RankStripeTierInputDto[];
 
   @ApiPropertyOptional({ type: [String], description: 'Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.' })
-  @IsOptional()
+  @NotNullIfPresent()
   @IsArray()
   @ArrayMaxSize(100)
   @IsUUID('4', { each: true })

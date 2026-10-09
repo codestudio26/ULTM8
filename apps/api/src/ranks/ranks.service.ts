@@ -195,6 +195,13 @@ export class RanksService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
 
+    // UpdateRankDto's PartialType re-adds @IsOptional(), which lets `null`
+    // past validation; refused here so it is a 400, not a 500 (found on
+    // independent review, PR 2).
+    if (dto.name === null || dto.requiredSkillIds === null || dto.stripeTiers === null) {
+      throw new BadRequestException('name, requiredSkillIds and stripeTiers cannot be null; omit them to leave them unchanged.');
+    }
+
     if (dto.order !== undefined) {
       const siblingOrders = await this.prismaApp.withTenantContext(callerId, (tx) =>
         tx.rank.findMany({ where: { disciplineId: existing.disciplineId, id: { not: rankId } }, select: { order: true } }),
@@ -207,10 +214,7 @@ export class RanksService {
     if (dto.requiredSkillIds?.length) {
       await this.assertSkillsBelongToDiscipline(callerId, dto.requiredSkillIds, existing.disciplineId);
     }
-    // Rung names omitted in a stripeTiers PATCH are regenerated from the belt
-    // name (REPLACE semantics, same as every other tier field).
     const rankName = dto.name ?? existing.name;
-    const tierData = dto.stripeTiers?.map((tier) => this.tierFields(tier, rankName));
     if (dto.stripeTiers) {
       await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, existing.disciplineId);
     }
@@ -248,8 +252,11 @@ export class RanksService {
         // NULL for those — an unavoidable consequence of actually removing a
         // tier a Student is currently graded at), and only genuinely new
         // positions get a freshly generated id.
-        const existingTiers = await tx.rankStripeTier.findMany({ where: { rankId }, select: { id: true, order: true } });
-        const existingIdByOrder = new Map(existingTiers.map((t) => [t.order, t.id]));
+        const existingTiers = await tx.rankStripeTier.findMany({
+          where: { rankId },
+          select: { id: true, order: true, name: true, count: true, colour: true, stripeSegments: true, timeOnly: true },
+        });
+        const existingByOrder = new Map(existingTiers.map((t) => [t.order, t]));
         const newOrders = new Set(dto.stripeTiers.map((t) => t.order));
 
         const idsToDelete = existingTiers.filter((t) => !newOrders.has(t.order)).map((t) => t.id);
@@ -257,9 +264,14 @@ export class RanksService {
           await tx.rankStripeTier.deleteMany({ where: { id: { in: idsToDelete } } });
         }
 
-        for (const [i, tier] of dto.stripeTiers.entries()) {
-          const existingId = existingIdByOrder.get(tier.order);
-          const fields = tierData![i];
+        for (const tier of dto.stripeTiers) {
+          const previous = existingByOrder.get(tier.order);
+          // FOUND ON INDEPENDENT REVIEW (PR 2): the school portal's edit form
+          // sends stripeTiers without the per-rung fields, which used to reset
+          // a custom name, mixed stripe colours and timeOnly on every save.
+          // Omitted per-rung fields are now kept (see tierFields).
+          const fields = this.tierFields(tier, rankName, previous && { ...previous, rankName: existing.name });
+          const existingId = previous?.id;
           let tierId: string;
           if (existingId) {
             tierId = existingId;
@@ -279,6 +291,15 @@ export class RanksService {
                 data: tier.requiredSkillIds.map((skillId) => ({ stripeTierId: tierId, skillId })),
               });
             }
+          }
+        }
+      } else if (dto.name !== undefined && dto.name !== existing.name) {
+        // Belt renamed without sending rungs: rung names that were generated
+        // from the old belt name follow the new one; custom names are kept.
+        const tiers = await tx.rankStripeTier.findMany({ where: { rankId }, select: { id: true, name: true, count: true } });
+        for (const t of tiers) {
+          if (t.name === RanksService.generatedTierName(existing.name, t.count)) {
+            await tx.rankStripeTier.update({ where: { id: t.id }, data: { name: RanksService.generatedTierName(dto.name, t.count) } });
           }
         }
       }
@@ -410,31 +431,51 @@ export class RanksService {
     }
   }
 
+  /** "Blue Belt · 2 Stripes"; a rung with no stripes is just the belt name. */
+  private static generatedTierName(rankName: string, count: number): string {
+    return count === 0 ? rankName : `${rankName} · ${count} Stripe${count === 1 ? '' : 's'}`;
+  }
+
   /** Builds one rung's stored fields from its input (grading foundation PR 2,
-   * Decisions 126/128). A missing name is generated from the belt name and
-   * stripe count ("Blue Belt · 2 Stripes"); missing stripe segments become one
-   * segment of `count` x `colour`; segments that are sent must add up to
-   * `count`, so the drawn belt and the stripe count can never disagree. */
-  private tierFields(tier: RankStripeTierInputDto, rankName: string) {
-    const segments = tier.stripeSegments ?? (tier.count > 0 ? [{ count: tier.count, colour: tier.colour }] : []);
+   * Decisions 126/128). Segments that are sent must add up to `count`, so the
+   * drawn belt and the stripe count can never disagree.
+   *
+   * A new rung (no `previous`): a missing name is generated from the belt name
+   * and stripe count, missing segments become one segment of `count` x
+   * `colour`, and timeOnly defaults to false.
+   *
+   * An existing rung being updated (`previous`): an omitted field keeps its
+   * stored value — the name unless it was the generated one (then it is
+   * regenerated, so it follows a new belt name or count), the segments while
+   * `count` and `colour` are unchanged, and timeOnly. */
+  private tierFields(
+    tier: RankStripeTierInputDto,
+    rankName: string,
+    previous?: { name: string; count: number; colour: string; stripeSegments: Prisma.JsonValue; timeOnly: boolean; rankName: string },
+  ) {
+    const defaultSegments = tier.count > 0 ? [{ count: tier.count, colour: tier.colour }] : [];
+    const keepSegments = previous && previous.count === tier.count && previous.colour === tier.colour;
+    const segments =
+      tier.stripeSegments ??
+      (keepSegments ? (previous.stripeSegments as unknown as { count: number; colour: string }[]) : defaultSegments);
     const segmentTotal = segments.reduce((sum, s) => sum + s.count, 0);
     if (segmentTotal !== tier.count) {
       throw new BadRequestException(
         `stripeSegments for stripe tier ${tier.order} add up to ${segmentTotal} stripes, but count is ${tier.count}.`,
       );
     }
-    const generatedName =
-      tier.count === 0 ? rankName : `${rankName} · ${tier.count} Stripe${tier.count === 1 ? '' : 's'}`;
+    const generatedName = RanksService.generatedTierName(rankName, tier.count);
+    const keepName = previous && previous.name !== RanksService.generatedTierName(previous.rankName, previous.count);
     return {
       count: tier.count,
       colour: tier.colour,
       classesRequired: tier.classesRequired,
       minimumDaysInRank: tier.minimumDaysInRank,
       eligibleClassTypes: tier.eligibleClassTypes ?? [],
-      name: tier.name ?? generatedName,
+      name: tier.name ?? (keepName ? previous.name : generatedName),
       stripeSegments: segments.map((s) => ({ count: s.count, colour: s.colour })),
       weeklyClassCountCap: tier.weeklyClassCountCap,
-      timeOnly: tier.timeOnly ?? false,
+      timeOnly: tier.timeOnly ?? previous?.timeOnly ?? false,
     };
   }
 

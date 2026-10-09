@@ -83,3 +83,27 @@ JOIN "Rank" nxt ON nxt."disciplineId" = cur."disciplineId" AND nxt."order" = cur
 JOIN "RankStripeTier" next_tier ON next_tier."rankId" = nxt."id"
   AND next_tier."order" = (SELECT MIN(t2."order") FROM "RankStripeTier" t2 WHERE t2."rankId" = nxt."id")
 ON CONFLICT DO NOTHING;
+
+-- Found on independent review: a belt's Skills are not copied when the next
+-- belt has no rungs or the belt orders have a gap. RankRequiredSkill keeps
+-- them, but say so in the migration log rather than dropping them silently.
+DO $$
+DECLARE
+  not_moved INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO not_moved
+  FROM "RankRequiredSkill" rrs
+  JOIN "Rank" cur ON cur."id" = rrs."rankId"
+  WHERE EXISTS (
+      SELECT 1 FROM "Rank" higher
+      WHERE higher."disciplineId" = cur."disciplineId" AND higher."order" > cur."order"
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM "Rank" nxt
+      JOIN "RankStripeTier" t ON t."rankId" = nxt."id"
+      WHERE nxt."disciplineId" = cur."disciplineId" AND nxt."order" = cur."order" + 1
+    );
+  IF not_moved > 0 THEN
+    RAISE NOTICE 'Decision 164: % belt required-Skill row(s) had no next-belt rung to move to and were not copied (still in RankRequiredSkill).', not_moved;
+  END IF;
+END $$;
