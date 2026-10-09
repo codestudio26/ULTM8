@@ -1988,3 +1988,17 @@ Every stripe is its own rung and its own grade (Decision 126). So a stripe award
 4. **Viewing:** staff without grading permission for a style can still view (read only) the ranks and history of their own branches' students in it. Grading permission covers the actions. Gus: *"Yes, view only"*.
 
 Built as: a `StudentHomeBranch` row per (School, Student), kept separate from the STUDENT `RoleGrant`. A branch on that grant would also hide other branches' classes from the student, and which branches a student may book stays a booking rule (Decision 148). Each branch a coach covers is one INSTRUCTOR or BRANCH_STAFF `RoleGrant` with that branch.
+
+---
+
+## Decision 169 — An instructor always belongs to a branch, or to the School when it has no branches
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap left by Decision 168: an instructor could be added without a branch in a School that has branches, and then could grade no one
+
+When the owner adds an instructor:
+- **In a School with branches**, the instructor must be assigned to a branch. An instructor who teaches at several branches is assigned to each of them, one assignment per branch (Decision 168).
+- **In a School with no branches**, the School itself is the branch, and the instructor belongs to the School.
+
+So an instructor is always part of something: a branch, or the School. Branch Staff already required a branch. Gus: *"when we add an instructors is has to be part of branch if the school has more than one place or if is single the branch is the school. Meaning an instructor has to be part of something. Branch or school"*.
+
+Instructors added before this rule, without a branch in a School that has branches, are not changed. The owner reassigns them.

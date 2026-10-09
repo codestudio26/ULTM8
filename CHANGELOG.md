@@ -33,6 +33,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     branches counts as one branch.
   - **Viewing:** staff without grading permission can still view their
     branches' students' grading.
+  - **Adding an instructor** (Decision 169): in a School with branches, the
+    instructor must be assigned to a branch (`POST /users/{id}/role-grants`
+    refuses without one). An instructor who teaches at several branches gets
+    one assignment per branch. In a School with no branches, the instructor
+    belongs to the School. The school portal's Staff page now asks for the
+    branch for instructors too.
   - `packages/api-client` regenerated.
 - **api — grading foundation, PR 3: history fields, void, edit rank date and the
   sign-off log** (Decisions 128, 129, 141, 153, 156, 166):

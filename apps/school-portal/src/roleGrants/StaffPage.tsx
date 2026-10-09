@@ -53,6 +53,10 @@ export function StaffPage() {
 
   if (!schoolId) return null;
   const branches = branchData?.items ?? [];
+  // Branch Staff always need a branch. An Instructor needs one whenever the
+  // School has branches; with none, the School itself is the branch
+  // (Decisions 168, 169).
+  const needsBranch = role === 'BRANCH_STAFF' || branches.length > 0;
 
   async function handleFind(e: React.FormEvent) {
     e.preventDefault();
@@ -93,14 +97,14 @@ export function StaffPage() {
     e.preventDefault();
     setInviteError(null);
     setInviteSuccess(false);
-    if (role === 'BRANCH_STAFF' && !branchId) {
-      setInviteError('Select a Branch for Branch Staff.');
+    if (needsBranch && !branchId) {
+      setInviteError(role === 'BRANCH_STAFF' ? 'Select a Branch for Branch Staff.' : 'Select the Branch this Instructor belongs to.');
       return;
     }
     try {
       await inviteStaff.mutateAsync({
         targetUserId: candidate!.id!,
-        body: { role, schoolId: schoolId!, branchId: role === 'BRANCH_STAFF' ? branchId : undefined },
+        body: { role, schoolId: schoolId!, branchId: needsBranch ? branchId : undefined },
       });
       setInviteSuccess(true);
       resetInviteSearch();
@@ -171,8 +175,12 @@ export function StaffPage() {
                 ]}
               />
             </Field>
-            {role === 'BRANCH_STAFF' ? (
-              <Field label="Branch" htmlFor="invite-branch">
+            {needsBranch ? (
+              <Field
+                label="Branch"
+                htmlFor="invite-branch"
+                hint={role === 'INSTRUCTOR' ? 'For an instructor who teaches at several branches, invite them once per branch.' : undefined}
+              >
                 <SelectField
                   required
                   value={branchId}
