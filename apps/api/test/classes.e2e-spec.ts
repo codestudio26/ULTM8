@@ -75,6 +75,13 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     schoolB = await superuser.school.create({ data: { id: randomUUID(), name: 'Classes HTTP School B' } });
     branchA1 = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolA.id, name: 'Classes Branch A1' } });
     branchA2 = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolA.id, name: 'Classes Branch A2' } });
+    // ClassesService.create()/update() now validate activities against this
+    // School's own real Disciplines (closes Decision 90's silent-allow gap) —
+    // this file's whole suite is about tenant isolation/role gates, not that
+    // validation, so give schoolA a real Discipline matching classBody()'s
+    // default 'BJJ' entry. Deleted via Discipline's own ON DELETE CASCADE FK
+    // to School when schoolA is deleted in afterAll — no separate cleanup.
+    await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolA.id, name: 'BJJ' } });
 
     const mkUser = (label: string) =>
       superuser.user.create({

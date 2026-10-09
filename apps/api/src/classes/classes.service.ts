@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -7,6 +8,10 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+
+// Same alias BookingsService already established for a withTenantContext
+// transaction handle, reused here rather than redeclared differently.
+type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 @Injectable()
 export class ClassesService {
@@ -43,8 +48,9 @@ export class ClassesService {
     this.assertValidDateRange(startDate, endDate);
 
     const classId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.create({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await this.assertActivitiesMatchRealDisciplines(tx, schoolId, dto.activities);
+      return tx.class.create({
         data: {
           id: classId,
           schoolId,
@@ -64,8 +70,8 @@ export class ClassesService {
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
           membershipInclusion: dto.membershipInclusion ?? false,
         },
-      }),
-    );
+      });
+    });
   }
 
   /** Classes visible to the caller under one School — RLS restricts this to a School-
@@ -127,8 +133,15 @@ export class ClassesService {
       this.assertValidDateRange(nextStartDate, nextEndDate);
     }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.update({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Only re-validated when activities is actually part of this PATCH —
+      // matches every other "revalidate only what's changing" guard in this
+      // method (branchId/instructorId above); an untouched activities array
+      // was already valid when it was first written.
+      if (dto.activities) {
+        await this.assertActivitiesMatchRealDisciplines(tx, existing.schoolId, dto.activities);
+      }
+      return tx.class.update({
         where: { id: classId },
         data: {
           branchId: dto.branchId,
@@ -147,8 +160,8 @@ export class ClassesService {
           termsWaiverRequired: dto.termsWaiverRequired,
           membershipInclusion: dto.membershipInclusion,
         },
-      }),
-    );
+      });
+    });
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]
@@ -160,6 +173,34 @@ export class ClassesService {
   // time (after role-grants.service.ts's own original) was explicitly the wrong move
   // per Phase 4's code review. See TenantAuthorizationService.assertBranchBelongsToSchool
   // / assertValidInstructor.
+
+  /**
+   * Decision 90 confirmed the rank-gate's own bridge from a Class's free-text
+   * `activities` strings to a real `Discipline.name` is "fails silently/open
+   * when no match" — a Class naming a Discipline that doesn't exist (a typo,
+   * a renamed/deleted Discipline, a School that never created one) was
+   * previously allowed to save, and BookingsService.assertRankEligible()
+   * would then rank-gate NOTHING for that entry (nothing to check against),
+   * letting every Student through regardless of rank. That's still Decision
+   * 90's own accepted bridge mechanism (matching by name, not a real foreign
+   * key) — this doesn't replace it — but it closes the specific silent-allow
+   * failure mode by rejecting the write instead of saving a Class that can
+   * never be rank-gated as intended.
+   *
+   * Validated against this School's own Discipline rows only — a name that's
+   * real at a different School is not a match here (Discipline.name is
+   * school-scoped, same as every other per-School catalog in this codebase).
+   */
+  private async assertActivitiesMatchRealDisciplines(tx: TenantTx, schoolId: string, activities: string[]) {
+    const disciplines = await tx.discipline.findMany({ where: { schoolId, name: { in: activities } }, select: { name: true } });
+    const matched = new Set(disciplines.map((d) => d.name));
+    const unmatched = activities.filter((name) => !matched.has(name));
+    if (unmatched.length > 0) {
+      throw new BadRequestException(
+        `activities contains name(s) with no matching Discipline at this School: ${unmatched.join(', ')}. Create the Discipline first, or correct the spelling.`,
+      );
+    }
+  }
 
   private assertValidDateRange(startDate: Date, endDate: Date) {
     if (endDate <= startDate) {

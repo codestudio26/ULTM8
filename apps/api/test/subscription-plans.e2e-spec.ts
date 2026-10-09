@@ -359,6 +359,11 @@ describeIfDb('SubscriptionPlansModule — HTTP-level CRUD, subscribe/cancel gate
 
   it('a School that never subscribed (platformSubscriptionStatus null) is unaffected — Class creation still succeeds', async () => {
     const { school, token } = await seedSchoolWithOwner();
+    // ClassesService.create() now validates activities against this School's
+    // own real Disciplines (closes Decision 90's silent-allow gap) — this
+    // test is about the degraded-portal gate, not that validation, so give it
+    // a real Discipline to match classBody()'s 'BJJ' entry.
+    await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'BJJ' } });
     const res = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/classes`)
       .set('Authorization', `Bearer ${token}`)
@@ -369,6 +374,7 @@ describeIfDb('SubscriptionPlansModule — HTTP-level CRUD, subscribe/cancel gate
 
   it('a School with platformSubscriptionStatus PAST_DUE is unaffected — still inside Stripe\'s own retry grace period', async () => {
     const { school, token } = await seedSchoolWithOwner({ platformSubscriptionStatus: 'PAST_DUE' });
+    await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'BJJ' } });
     const res = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/classes`)
       .set('Authorization', `Bearer ${token}`)
