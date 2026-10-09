@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
+  Max,
   IsArray,
   IsBoolean,
   IsInt,
@@ -57,6 +58,61 @@ export class RankStripeTierInputDto {
   @ArrayMaxSize(50)
   @IsString({ each: true })
   eligibleClassTypes?: string[];
+
+  // Grading foundation PR 2 — per-rung fields (Decisions 126, 128).
+
+  @ApiPropertyOptional({ description: 'Rung name, e.g. "Blue Belt · 2 Stripes". Generated from the belt name and stripe count when omitted.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({
+    type: () => [StripeSegmentInputDto],
+    description: 'Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted, one segment of `count` x `colour` is stored.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => StripeSegmentInputDto)
+  stripeSegments?: StripeSegmentInputDto[];
+
+  @ApiPropertyOptional({ description: 'Max classes per week that count toward this rung.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  weeklyClassCountCap?: number;
+
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers (the school portal's RankFormModal) that don't send it.
+  @ApiPropertyOptional({ description: '"Time in rank only" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. Defaults to false.' })
+  @IsOptional()
+  @IsBoolean()
+  timeOnly?: boolean;
+
+  @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127).' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsUUID('4', { each: true })
+  requiredSkillIds?: string[];
+}
+
+/** One run of same-coloured stripes on a rung's tip (prototype `stripeTiers`
+ * entry). Drawing data only. */
+export class StripeSegmentInputDto {
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  count!: number;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(50)
+  colour!: string;
 }
 
 /**
@@ -76,6 +132,12 @@ export class CreateRankDto {
   @Min(0)
   order!: number;
 
+  @ApiPropertyOptional({ description: 'Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
   @ApiProperty()
   @IsString()
   @MaxLength(50)
@@ -86,6 +148,18 @@ export class CreateRankDto {
   @IsString()
   @MaxLength(50)
   secondaryColour?: string;
+
+  @ApiPropertyOptional({ description: 'Drawing only: colour of the tag sewn on the belt tip (e.g. red on Black Belt).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  tagColour?: string;
+
+  @ApiPropertyOptional({ description: 'Drawing only: silver/gold accent of the coral belts.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  coralAccent?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

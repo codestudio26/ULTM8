@@ -177,10 +177,10 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     discipline = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Judo' } });
     rank = await superuser.rank.create({
-      data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, primaryColour: 'white' },
+      data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, name: 'White Belt', primaryColour: 'white' },
     });
     stripeTier = await superuser.rankStripeTier.create({
-      data: { id: randomUUID(), rankId: rank.id, schoolId: school.id, order: 0, count: 1, colour: 'white', eligibleClassTypes: ['Judo'] },
+      data: { id: randomUUID(), rankId: rank.id, schoolId: school.id, order: 0, name: 'White Belt · 1 Stripe', count: 1, colour: 'white', eligibleClassTypes: ['Judo'] },
     });
 
     const future = new Date(Date.now() + 24 * 3_600_000);

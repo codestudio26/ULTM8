@@ -6,10 +6,17 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
-import { CreateRankDto } from './dto/create-rank.dto';
+import { CreateRankDto, RankStripeTierInputDto } from './dto/create-rank.dto';
 import { UpdateRankDto } from './dto/update-rank.dto';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
+
+/** The one include every Rank read uses, so shapeRankResponse() always gets
+ * stripe tiers (in ladder order) with their per-rung required Skills. */
+const RANK_INCLUDE = {
+  stripeTiers: { orderBy: { order: 'asc' as const }, include: { requiredSkills: true } },
+  requiredSkills: true,
+} satisfies Prisma.RankInclude;
 
 /**
  * Phase 10b scope only: Discipline/Rank/Skill catalog CRUD (School Owner/Manager
@@ -99,6 +106,9 @@ export class RanksService {
     if (dto.requiredSkillIds?.length) {
       await this.assertSkillsBelongToDiscipline(callerId, dto.requiredSkillIds, disciplineId);
     }
+    await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, disciplineId);
+    const rankName = dto.name ?? `Belt ${dto.order + 1}`;
+    const tierData = dto.stripeTiers.map((tier) => this.tierFields(tier, rankName));
 
     // FOUND ON REVIEW (self-check before this ever ran): withTenantContext
     // already wraps its own callback in one $transaction — its `tx` parameter's
@@ -115,25 +125,26 @@ export class RanksService {
           disciplineId,
           schoolId: discipline.schoolId,
           order: dto.order,
+          name: rankName,
           primaryColour: dto.primaryColour,
           secondaryColour: dto.secondaryColour,
+          tagColour: dto.tagColour,
+          coralAccent: dto.coralAccent,
           weeklyClassCountCap: dto.weeklyClassCountCap,
           yearsInRankFlag: dto.yearsInRankFlag ?? false,
         },
       });
-      await tx.rankStripeTier.createMany({
-        data: dto.stripeTiers.map((tier) => ({
-          id: randomUUID(),
-          rankId,
-          schoolId: discipline.schoolId,
-          order: tier.order,
-          count: tier.count,
-          colour: tier.colour,
-          classesRequired: tier.classesRequired,
-          minimumDaysInRank: tier.minimumDaysInRank,
-          eligibleClassTypes: tier.eligibleClassTypes ?? [],
-        })),
-      });
+      for (const [i, tier] of dto.stripeTiers.entries()) {
+        const tierId = randomUUID();
+        await tx.rankStripeTier.create({
+          data: { id: tierId, rankId, schoolId: discipline.schoolId, order: tier.order, ...tierData[i] },
+        });
+        if (tier.requiredSkillIds?.length) {
+          await tx.rankStripeTierRequiredSkill.createMany({
+            data: tier.requiredSkillIds.map((skillId) => ({ stripeTierId: tierId, skillId })),
+          });
+        }
+      }
       if (dto.requiredSkillIds?.length) {
         await tx.rankRequiredSkill.createMany({
           data: dto.requiredSkillIds.map((skillId) => ({ rankId, skillId })),
@@ -146,7 +157,7 @@ export class RanksService {
       // matches what RankResponseDto promises, not just the base columns.
       const full = await tx.rank.findUniqueOrThrow({
         where: { id: rankId },
-        include: { stripeTiers: { orderBy: { order: 'asc' } }, requiredSkills: true },
+        include: RANK_INCLUDE,
       });
       return this.shapeRankResponse(full);
     });
@@ -158,7 +169,7 @@ export class RanksService {
       tx.rank.findMany({
         where: { disciplineId: discipline.id },
         orderBy: { order: 'asc' },
-        include: { stripeTiers: { orderBy: { order: 'asc' } }, requiredSkills: true },
+        include: RANK_INCLUDE,
       }),
     );
     return ranks.map((r) => this.shapeRankResponse(r));
@@ -168,7 +179,7 @@ export class RanksService {
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.rank.findUnique({
         where: { id: rankId },
-        include: { stripeTiers: { orderBy: { order: 'asc' } }, requiredSkills: true },
+        include: RANK_INCLUDE,
       }),
     );
     if (!found) {
@@ -196,6 +207,13 @@ export class RanksService {
     if (dto.requiredSkillIds?.length) {
       await this.assertSkillsBelongToDiscipline(callerId, dto.requiredSkillIds, existing.disciplineId);
     }
+    // Rung names omitted in a stripeTiers PATCH are regenerated from the belt
+    // name (REPLACE semantics, same as every other tier field).
+    const rankName = dto.name ?? existing.name;
+    const tierData = dto.stripeTiers?.map((tier) => this.tierFields(tier, rankName));
+    if (dto.stripeTiers) {
+      await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, existing.disciplineId);
+    }
 
     // See createRank's own comment on why this is one flat withTenantContext
     // call (already one transaction), not a nested tx.$transaction — the same
@@ -205,8 +223,11 @@ export class RanksService {
         where: { id: rankId },
         data: {
           order: dto.order,
+          name: dto.name,
           primaryColour: dto.primaryColour,
           secondaryColour: dto.secondaryColour,
+          tagColour: dto.tagColour,
+          coralAccent: dto.coralAccent,
           weeklyClassCountCap: dto.weeklyClassCountCap,
           yearsInRankFlag: dto.yearsInRankFlag,
         },
@@ -236,33 +257,28 @@ export class RanksService {
           await tx.rankStripeTier.deleteMany({ where: { id: { in: idsToDelete } } });
         }
 
-        for (const tier of dto.stripeTiers) {
+        for (const [i, tier] of dto.stripeTiers.entries()) {
           const existingId = existingIdByOrder.get(tier.order);
+          const fields = tierData![i];
+          let tierId: string;
           if (existingId) {
-            await tx.rankStripeTier.update({
-              where: { id: existingId },
-              data: {
-                count: tier.count,
-                colour: tier.colour,
-                classesRequired: tier.classesRequired,
-                minimumDaysInRank: tier.minimumDaysInRank,
-                eligibleClassTypes: tier.eligibleClassTypes ?? [],
-              },
-            });
+            tierId = existingId;
+            await tx.rankStripeTier.update({ where: { id: existingId }, data: fields });
           } else {
+            tierId = randomUUID();
             await tx.rankStripeTier.create({
-              data: {
-                id: randomUUID(),
-                rankId,
-                schoolId: existing.schoolId,
-                order: tier.order,
-                count: tier.count,
-                colour: tier.colour,
-                classesRequired: tier.classesRequired,
-                minimumDaysInRank: tier.minimumDaysInRank,
-                eligibleClassTypes: tier.eligibleClassTypes ?? [],
-              },
+              data: { id: tierId, rankId, schoolId: existing.schoolId, order: tier.order, ...fields },
             });
+          }
+          // Per-rung required Skills: replaced when sent, left alone when
+          // omitted (same convention as the belt-level requiredSkillIds below).
+          if (tier.requiredSkillIds !== undefined) {
+            await tx.rankStripeTierRequiredSkill.deleteMany({ where: { stripeTierId: tierId } });
+            if (tier.requiredSkillIds.length) {
+              await tx.rankStripeTierRequiredSkill.createMany({
+                data: tier.requiredSkillIds.map((skillId) => ({ stripeTierId: tierId, skillId })),
+              });
+            }
           }
         }
       }
@@ -280,7 +296,7 @@ export class RanksService {
       // full include so the response reflects what was actually persisted.
       const full = await tx.rank.findUniqueOrThrow({
         where: { id: rankId },
-        include: { stripeTiers: { orderBy: { order: 'asc' } }, requiredSkills: true },
+        include: RANK_INCLUDE,
       });
       return this.shapeRankResponse(full);
     });
@@ -356,10 +372,17 @@ export class RanksService {
    * inconsistent partial ones.
    */
   private shapeRankResponse(
-    rank: Prisma.RankGetPayload<{ include: { stripeTiers: true; requiredSkills: true } }>,
+    rank: Prisma.RankGetPayload<{ include: typeof RANK_INCLUDE }>,
   ) {
-    const { requiredSkills, ...rest } = rank;
-    return { ...rest, requiredSkillIds: requiredSkills.map((s) => s.skillId) };
+    const { requiredSkills, stripeTiers, ...rest } = rank;
+    return {
+      ...rest,
+      requiredSkillIds: requiredSkills.map((s) => s.skillId),
+      stripeTiers: stripeTiers.map(({ requiredSkills: tierSkills, ...tier }) => ({
+        ...tier,
+        requiredSkillIds: tierSkills.map((s) => s.skillId),
+      })),
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -384,6 +407,41 @@ export class RanksService {
     );
     if (!school.ranksToggle) {
       throw new ForbiddenException('This School has ranks disabled (School.ranksToggle) — enable it before creating or modifying rank data.');
+    }
+  }
+
+  /** Builds one rung's stored fields from its input (grading foundation PR 2,
+   * Decisions 126/128). A missing name is generated from the belt name and
+   * stripe count ("Blue Belt · 2 Stripes"); missing stripe segments become one
+   * segment of `count` x `colour`; segments that are sent must add up to
+   * `count`, so the drawn belt and the stripe count can never disagree. */
+  private tierFields(tier: RankStripeTierInputDto, rankName: string) {
+    const segments = tier.stripeSegments ?? (tier.count > 0 ? [{ count: tier.count, colour: tier.colour }] : []);
+    const segmentTotal = segments.reduce((sum, s) => sum + s.count, 0);
+    if (segmentTotal !== tier.count) {
+      throw new BadRequestException(
+        `stripeSegments for stripe tier ${tier.order} add up to ${segmentTotal} stripes, but count is ${tier.count}.`,
+      );
+    }
+    const generatedName =
+      tier.count === 0 ? rankName : `${rankName} · ${tier.count} Stripe${tier.count === 1 ? '' : 's'}`;
+    return {
+      count: tier.count,
+      colour: tier.colour,
+      classesRequired: tier.classesRequired,
+      minimumDaysInRank: tier.minimumDaysInRank,
+      eligibleClassTypes: tier.eligibleClassTypes ?? [],
+      name: tier.name ?? generatedName,
+      stripeSegments: segments.map((s) => ({ count: s.count, colour: s.colour })),
+      weeklyClassCountCap: tier.weeklyClassCountCap,
+      timeOnly: tier.timeOnly ?? false,
+    };
+  }
+
+  private async assertTierSkillsBelongToDiscipline(callerId: string, tiers: RankStripeTierInputDto[], disciplineId: string): Promise<void> {
+    const skillIds = [...new Set(tiers.flatMap((t) => t.requiredSkillIds ?? []))];
+    if (skillIds.length) {
+      await this.assertSkillsBelongToDiscipline(callerId, skillIds, disciplineId);
     }
   }
 

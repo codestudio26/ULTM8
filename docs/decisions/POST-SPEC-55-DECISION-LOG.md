@@ -1930,3 +1930,11 @@ Still to confirm with Gus: whether v1.1 ships this using the existing one-off Cl
 
 1. **v1.1:** a school sets up a grading day as a one-off Class plus a 1-credit pass scoped to it (Decision 162), using features ULTM8 already has. **Version 2:** grading events are developed further as a **full module** (participants, Pass/Fail, promotions, Decisions 128 and 130), linked to each event's pass. Gus: *"Yes, V2, events are developed further, as full module."*
 2. **No separate "fee on/off + amount" setting in v1.1.** The single-event pass is the only way to set a grading fee. This supersedes Decision 150, item 2. Gus: *"Ok"*.
+
+---
+
+## Decision 164 — Moving existing belt-level required skills onto rungs: they go to the first rung of the next belt
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a data-migration question raised while building grading foundation PR 2 (per-rung fields, Decision 126)
+
+Existing `RankRequiredSkill` rows were written under the old meaning, "needed to **leave** this belt" (the current `GradingService` check). Under Decision 127, a rung's skills mean "needed to get **into** this rung". When they are copied onto rungs, each belt's required skills go to the **first rung of the next belt** in the same discipline. For example, Blue Belt's skills become "needed to get into Purple Belt". This keeps what each School meant. Skills on the top belt have no next rung and are not copied. The original `RankRequiredSkill` rows are kept unchanged until the grading engine (roadmap Phase 2) switches over, so nothing is lost. Gus: *"A"*, and ULTM8 is *"pre-launch"*, so no live School data is affected.
