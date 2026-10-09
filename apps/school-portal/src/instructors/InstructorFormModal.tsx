@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
 import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
@@ -17,6 +18,7 @@ export function InstructorFormModal({
   title,
   initial,
   branches,
+  disciplines,
   eligibleUsers,
   submitting,
   onSubmit,
@@ -25,6 +27,9 @@ export function InstructorFormModal({
   title: string;
   initial?: Partial<InstructorResponse>;
   branches: BranchResponse[];
+  /** The School's styles. With any, specialisations are picked from them
+   * instead of free text (Decision 152). */
+  disciplines: DisciplineResponse[];
   /** Only needed (and only rendered) on create — see the `isEdit` check below. */
   eligibleUsers?: EligibleInstructorUser[];
   submitting: boolean;
@@ -41,6 +46,7 @@ export function InstructorFormModal({
     photoUrl?: string | null;
     beltRanking?: string | null;
     specializations?: string[];
+    specializationStyleIds?: string[];
     phone?: string | null;
     yearsOfExperience?: number | null;
     bio?: string | null;
@@ -58,6 +64,8 @@ export function InstructorFormModal({
     yearsOfExperience: initial?.yearsOfExperience?.toString() ?? '',
     bio: initial?.bio ?? '',
   });
+  const [styleIds, setStyleIds] = useState<string[]>(initial?.specializationStyleIds ?? []);
+  const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,10 +77,14 @@ export function InstructorFormModal({
         branchId: form.branchId || null,
         photoUrl: form.photoUrl || null,
         beltRanking: form.beltRanking || null,
-        specializations: form.specializations
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
+        ...(usesStyles
+          ? { specializationStyleIds: styleIds }
+          : {
+              specializations: form.specializations
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean),
+            }),
         phone: form.phone || null,
         yearsOfExperience: form.yearsOfExperience ? Number(form.yearsOfExperience) : null,
         bio: form.bio || null,
@@ -119,12 +131,27 @@ export function InstructorFormModal({
         <Field label="Belt / ranking" htmlFor="instructor-belt" hint='Display text, e.g. "Black Belt, 3rd Dan".'>
           <TextField value={form.beltRanking} onChange={(e) => setForm((f) => ({ ...f, beltRanking: e.target.value }))} />
         </Field>
-        <Field label="Specializations" htmlFor="instructor-specializations" hint="Comma-separated">
-          <TextField
-            value={form.specializations}
-            onChange={(e) => setForm((f) => ({ ...f, specializations: e.target.value }))}
-          />
-        </Field>
+        {usesStyles ? (
+          <Field label="Specializations" htmlFor="instructor-specializations" hint="The styles this instructor teaches.">
+            <div id="instructor-specializations">
+              {disciplines.map((d) => (
+                <Checkbox
+                  key={d.id}
+                  label={d.name}
+                  checked={styleIds.includes(d.id)}
+                  onChange={(e) => setStyleIds((ids) => (e.target.checked ? [...ids, d.id] : ids.filter((id) => id !== d.id)))}
+                />
+              ))}
+            </div>
+          </Field>
+        ) : (
+          <Field label="Specializations" htmlFor="instructor-specializations" hint="Comma-separated">
+            <TextField
+              value={form.specializations}
+              onChange={(e) => setForm((f) => ({ ...f, specializations: e.target.value }))}
+            />
+          </Field>
+        )}
         <Field label="Phone" htmlFor="instructor-phone" hint="E.164 format, e.g. +14155551234">
           <TextField value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
         </Field>
