@@ -1005,6 +1005,10 @@ model Instructor {
   beltRanking String?
 
   specializations String[] @default([])
+  /// The School's styles this instructor specialises in (Decision 152, item 1).
+  /// In a School with styles they are picked here and `specializations` is
+  /// filled in from their names; a School with no styles keeps free text.
+  specializationStyleIds String[] @default([])
 
   /// Distinct, optional School-facing contact number — Spec 55 lists `phone` on
   /// Instructor's own entity row, separate from User.phone (the login/OTP number). Not

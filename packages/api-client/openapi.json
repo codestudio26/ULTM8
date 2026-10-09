@@ -8978,6 +8978,13 @@
               "type": "string"
             }
           },
+          "specializationStyleIds": {
+            "description": "The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "phone": {
             "type": "string",
             "description": "School-facing contact number, E.164 — distinct from this User's own login phone."
@@ -9030,6 +9037,13 @@
               "type": "string"
             }
           },
+          "specializationStyleIds": {
+            "description": "The School's styles this instructor specialises in (Decision 152).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "phone": {
             "type": "string",
             "nullable": true
@@ -9056,6 +9070,7 @@
           "surname",
           "schoolId",
           "specializations",
+          "specializationStyleIds",
           "createdAt",
           "updatedAt"
         ]
@@ -9120,6 +9135,13 @@
         "type": "object",
         "properties": {
           "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "specializationStyleIds": {
+            "description": "The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names.",
             "type": "array",
             "items": {
               "type": "string"
