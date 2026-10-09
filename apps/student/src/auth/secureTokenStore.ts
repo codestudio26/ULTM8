@@ -23,8 +23,15 @@
  * warning instead of a silent no-op indistinguishable from "everything's fine."
  */
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'ultm8.accessToken';
+
+// A plain boolean marker, NOT the token itself — AsyncStorage stays unencrypted-only
+// for a boolean "cleanup pending" flag, consistent with this file's own documented
+// reason for never putting the real JWT there. See finalizePendingLogout()'s own
+// comment for what this closes.
+const LOGOUT_PENDING_KEY = 'ultm8.logoutPending';
 
 export interface AsyncTokenStore {
   get(): Promise<string | null>;
@@ -66,10 +73,43 @@ export const secureTokenStore: AsyncTokenStore = {
     }
   },
   async clear() {
+    // Mark the delete as pending BEFORE attempting it: if the app is killed between
+    // the SecureStore call and this function returning (logout is fire-and-forget
+    // from most call sites — a nav reset follows immediately), a half-finished delete
+    // would otherwise leave no trace to retry on the next cold start.
+    try {
+      await AsyncStorage.setItem(LOGOUT_PENDING_KEY, '1');
+    } catch {
+      /* noop — if even this fails, fall through and still attempt the real delete */
+    }
     try {
       await SecureStore.deleteItemAsync(STORAGE_KEY);
+      await AsyncStorage.removeItem(LOGOUT_PENDING_KEY);
     } catch {
-      /* noop — nothing to clear if storage isn't available */
+      // Leave LOGOUT_PENDING_KEY set — finalizePendingLogout() retries on next launch.
     }
   },
 };
+
+/**
+ * Retries a logout's SecureStore delete that didn't finish last run (app killed
+ * mid-clear, or a transient Keychain/Keystore failure). Call once per cold start,
+ * before anything reads secureTokenStore — see AuthContext's init effect. Idempotent:
+ * deleteItemAsync on an already-absent key is a no-op, and a missing flag makes this
+ * whole function a no-op too, so calling it when nothing's pending is always safe.
+ */
+export async function finalizePendingLogout(): Promise<void> {
+  let pending: string | null;
+  try {
+    pending = await AsyncStorage.getItem(LOGOUT_PENDING_KEY);
+  } catch {
+    return;
+  }
+  if (!pending) return;
+  try {
+    await SecureStore.deleteItemAsync(STORAGE_KEY);
+    await AsyncStorage.removeItem(LOGOUT_PENDING_KEY);
+  } catch {
+    // Still couldn't clear it — leave the flag set, try again next cold start.
+  }
+}

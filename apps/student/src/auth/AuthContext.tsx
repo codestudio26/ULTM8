@@ -4,7 +4,7 @@ import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { asyncStoragePersister } from '../lib/queryPersister';
 import { decodeJwtPayload } from './decodeJwt';
-import { secureTokenStore } from './secureTokenStore';
+import { finalizePendingLogout, secureTokenStore } from './secureTokenStore';
 import { setCachedAccessToken } from './tokenCache';
 import type { JwtClaims } from './types';
 
@@ -37,12 +37,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    secureTokenStore.get().then((token) => {
-      if (cancelled) return;
-      setCachedAccessToken(token);
-      setAccessTokenState(token);
-      setLoading(false);
-    });
+    // Finish any SecureStore delete a previous logout didn't complete (app killed
+    // mid-clear) before reading the store — otherwise a half-cleared token could
+    // still be read back as a valid session. See secureTokenStore's own comment.
+    finalizePendingLogout()
+      .catch(() => {})
+      .then(() => secureTokenStore.get())
+      .then((token) => {
+        if (cancelled) return;
+        setCachedAccessToken(token);
+        setAccessTokenState(token);
+        setLoading(false);
+      });
     return () => {
       cancelled = true;
     };

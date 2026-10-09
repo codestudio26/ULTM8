@@ -7049,6 +7049,15 @@
           "classId": {
             "type": "string"
           },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartDate": {
+            "type": "string"
+          },
+          "classEndDate": {
+            "type": "string"
+          },
           "schoolId": {
             "type": "string"
           },
@@ -7095,6 +7104,9 @@
           "id",
           "studentId",
           "classId",
+          "classTitle",
+          "classStartDate",
+          "classEndDate",
           "schoolId",
           "status",
           "sourceMembershipId",

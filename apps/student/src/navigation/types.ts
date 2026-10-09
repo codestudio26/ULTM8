@@ -13,7 +13,10 @@ export type AppStackParamList = {
   MyBookings: undefined;
   Notifications: undefined;
   MyMemberships: undefined;
-  Waivers: undefined;
+  /** Optional schoolId deep-links to that School's section (ClassBookingRow's
+   * WAIVER_REQUIRED error) — undefined/omitted is the ordinary "browse everything"
+   * entry from Home. */
+  Waivers: { schoolId?: string } | undefined;
   MyMinors: undefined;
   MinorConsent: { studentId: string; name: string };
   CheckIn: undefined;

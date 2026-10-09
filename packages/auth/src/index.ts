@@ -112,6 +112,36 @@ export const sessionStorageTokenStore: TokenStore = {
  * apps/api/src/tenants/tenant-authorization.service.ts's fresh-DB-check pattern this
  * mirrors on the frontend: don't trust the cached claim, treat it as a display hint).
  */
+/**
+ * Mirrors apps/api/src/auth/interfaces/jwt-payload.interface.ts exactly. Previously
+ * hand-copied once per frontend app (apps/school-portal, apps/student) rather than
+ * living here — not because importing types from this package was unsafe, but
+ * because nobody had checked: apps/student explicitly avoided a runtime dependency
+ * on this package over `decodeJwtPayload`'s `atob` call (not available in the RN
+ * runtime, see that function's own comment below) without separately checking
+ * whether a TYPE-ONLY import carries the same risk. It doesn't — `atob` only
+ * executes inside `decodeJwtPayload`'s own function body when actually called, and
+ * `import type { JwtClaims } from '@ultm8/auth'` is erased entirely by TypeScript at
+ * compile time (zero runtime import), so apps/student can safely use these two
+ * interfaces from here with a compiler-enforced guarantee, not just an informal one.
+ * Re-verify against jwt-payload.interface.ts if AuthService.login() ever changes
+ * what it signs into the token.
+ */
+export interface RoleGrantClaim {
+  role: string;
+  franchiseId: string | null;
+  schoolId: string | null;
+  branchId: string | null;
+}
+
+export interface JwtClaims {
+  sub: string; // User.id
+  email: string;
+  grants: RoleGrantClaim[];
+  iat?: number;
+  exp?: number;
+}
+
 export function decodeJwtPayload<T = Record<string, unknown>>(token: string): T | null {
   try {
     const payload = token.split('.')[1];

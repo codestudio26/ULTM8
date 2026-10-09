@@ -4,6 +4,7 @@ import { type components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { formatDate } from '../lib/formatDate';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
 
@@ -46,7 +47,10 @@ function BookingRow({ booking }: { booking: Booking }) {
 
   return (
     <View style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
-      <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading }}>Class {booking.classId}</Text>
+      <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.heading }}>{booking.classTitle}</Text>
+      <Text style={{ color: theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>
+        {formatDate(booking.classStartDate)} – {formatDate(booking.classEndDate)}
+      </Text>
       <Text style={{ color: theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>Status: {booking.status}</Text>
       {error ? <InlineError message={error} /> : null}
 

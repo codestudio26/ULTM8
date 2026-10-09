@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
+import { DateOfBirthField } from '../components/DateOfBirthField';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import type { AuthStackParamList } from '../navigation/types';
@@ -111,11 +112,7 @@ export function RegisterScreen({ navigation }: Props) {
           />
         </Field>
         <Field label="Date of birth" hint="YYYY-MM-DD">
-          <TextField
-            placeholder="YYYY-MM-DD"
-            value={form.dateOfBirth}
-            onChangeText={(v) => set('dateOfBirth', v)}
-          />
+          <DateOfBirthField value={form.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} />
         </Field>
         <Button title="Create account" onPress={handleSubmit} loading={submitting} />
         <Button title="Already have an account? Log in" variant="secondary" onPress={() => navigation.navigate('Login')} />

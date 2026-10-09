@@ -2139,6 +2139,9 @@ export interface components {
             id: string;
             studentId: string;
             classId: string;
+            classTitle: string;
+            classStartDate: string;
+            classEndDate: string;
             schoolId: string;
             branchId?: string | null;
             status: string;

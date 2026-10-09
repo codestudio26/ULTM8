@@ -24,6 +24,20 @@ export class BookingResponseDto {
   @ApiProperty()
   classId!: string;
 
+  // Denormalized from the Booking's own Class relation (classId is a required FK,
+  // never null, so these are always resolvable — every Booking-returning endpoint
+  // populates them, not just GET /bookings/me). Added so MyBookingsScreen can show
+  // what/when a Booking is for without a second round-trip per row; previously this
+  // DTO carried only the raw classId.
+  @ApiProperty()
+  classTitle!: string;
+
+  @ApiProperty()
+  classStartDate!: string;
+
+  @ApiProperty()
+  classEndDate!: string;
+
   @ApiProperty()
   schoolId!: string;
 

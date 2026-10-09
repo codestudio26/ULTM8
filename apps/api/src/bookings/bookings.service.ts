@@ -73,7 +73,15 @@ export class BookingsService {
           select: { id: true },
         });
         if (!signed) {
-          throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
+          // A stable `code` (not just the free-text message) so the client can
+          // detect this specific case and deep-link to the Waivers screen, rather
+          // than the fragile text-matching this was previously left blocked on —
+          // HttpExceptionFilter already extracts `code` from an object exception
+          // body (extractCode()), so this needed no filter change, just this throw.
+          throw new BadRequestException({
+            code: 'WAIVER_REQUIRED',
+            message: 'This Student must hold a Signed Waiver for this School before booking a Class that requires one.',
+          });
         }
       }
 
@@ -147,7 +155,9 @@ export class BookingsService {
         });
       }
 
-      return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
+      const booking = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
+      // `cls` is already in scope from the gate checks above — no extra query needed.
+      return { ...booking, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate };
     });
   }
 
@@ -198,7 +208,9 @@ export class BookingsService {
         }
       }
 
-      return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
+      const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
+      // `cls` is already in scope from the refund-cutoff check above — no extra query needed.
+      return { ...updated, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate };
     });
 
     // Enqueued OUTSIDE the DB transaction, fire-and-logged rather than failing the
@@ -228,9 +240,15 @@ export class BookingsService {
       throw new BadRequestException('This Booking was not created via a rank-gate override — there is no override justification to amend.');
     }
 
-    return this.prismaApp.withTenantContext(existing.studentId, (tx) =>
-      tx.booking.update({ where: { id: bookingId }, data: { overrideReason: dto.overrideReason }, include: { attendees: true } }),
+    const booking = await this.prismaApp.withTenantContext(existing.studentId, (tx) =>
+      tx.booking.update({
+        where: { id: bookingId },
+        data: { overrideReason: dto.overrideReason },
+        include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
+      }),
     );
+    const { class: cls, ...rest } = booking;
+    return { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate };
   }
 
   /** GET /bookings/me. `status` is an additive, optional filter (Track B Phase 5,
@@ -242,18 +260,27 @@ export class BookingsService {
     limit?: number,
     status?: BookingStatus,
   ): Promise<CursorPage<{ id: string }>> {
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
         (args) =>
           tx.booking.findMany({
             ...args,
             where: { studentId: callerId, ...(status ? { status } : {}) },
-            include: { attendees: true },
+            include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
           }),
         cursor,
         limit,
       ),
     );
+    return {
+      ...page,
+      items: page.items.map(({ class: cls, ...booking }) => ({
+        ...booking,
+        classTitle: cls.title,
+        classStartDate: cls.startDate,
+        classEndDate: cls.endDate,
+      })),
+    };
   }
 
   // ---------------------------------------------------------------------------

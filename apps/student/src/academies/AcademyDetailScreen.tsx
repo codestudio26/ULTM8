@@ -25,7 +25,7 @@ const WEEKDAY_LABEL: Record<string, string> = {
   SUNDAY: 'Sun',
 };
 
-export function AcademyDetailScreen({ route }: Props) {
+export function AcademyDetailScreen({ route, navigation }: Props) {
   const { academyId } = route.params;
   const { claims } = useAuth();
   const { data: academy, isLoading, error } = useAcademy(academyId);
@@ -112,7 +112,7 @@ export function AcademyDetailScreen({ route }: Props) {
           <View style={{ marginTop: spacing[4] }}>
             <Text style={{ fontWeight: fontWeight.heading, marginBottom: spacing[1] }}>Upcoming classes</Text>
             {academy.upcomingClasses.map((c) => (
-              <ClassBookingRow key={c.id} classItem={c} />
+              <ClassBookingRow key={c.id} classItem={c} schoolId={academyId} navigation={navigation} />
             ))}
           </View>
         ) : null}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
@@ -7,6 +8,7 @@ import { formatDate } from '../lib/formatDate';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useBookClass } from './bookingQueries';
 import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
+import type { AppStackParamList } from '../navigation/types';
 
 interface ClassSummary {
   id: string;
@@ -21,16 +23,32 @@ interface ClassSummary {
  * failure leaving the waitlist threw away the entry's id — and since there's no
  * GET /waitlist/me (see waitlistMutations.ts), that id can never be recovered,
  * stranding the Student on the waitlist with no in-app way off it. */
-type RowState = { kind: 'idle' } | { kind: 'booked' } | { kind: 'full' } | { kind: 'waitlisted'; entryId: string; position: number };
+type RowState =
+  | { kind: 'idle' }
+  | { kind: 'booked' }
+  | { kind: 'full' }
+  | { kind: 'waitlisted'; entryId: string; position: number }
+  | { kind: 'waiverRequired' };
 
 /** Per-class booking action for AcademyDetailScreen's "Upcoming classes" list
  * (Slice 2). Three real, server-verified gates can reject a booking attempt
  * (apps/api/src/bookings/bookings.service.ts): an unsigned Waiver, rank
- * ineligibility, and a full Class — the first two have no in-app resolution this
- * slice (surfaced as-is via the real error message), the third gets a real "Join
- * waitlist" follow-up action, since apps/api's own error message for it literally
+ * ineligibility, and a full Class — the unsigned-Waiver case now gets a real
+ * "Sign waiver" deep-link to the Waivers screen (detected via the stable
+ * WAIVER_REQUIRED error code, not text-matching); rank ineligibility still has no
+ * in-app resolution (surfaced as-is via the real error message), and a full Class
+ * gets a real "Join waitlist" follow-up action, since apps/api's own error message
+ * for it literally
  * names that as the next step. */
-export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
+export function ClassBookingRow({
+  classItem,
+  schoolId,
+  navigation,
+}: {
+  classItem: ClassSummary;
+  schoolId: string;
+  navigation: NativeStackNavigationProp<AppStackParamList>;
+}) {
   const [state, setState] = useState<RowState>({ kind: 'idle' });
   const [actionError, setActionError] = useState<string | null>(null);
   const bookClass = useBookClass();
@@ -49,6 +67,12 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setState({ kind: 'full' });
+      } else if (err instanceof ApiError && err.code === 'WAIVER_REQUIRED') {
+        // Deep-link to the Waivers screen instead of the previous dead-end — the
+        // stable `code` (not the free-text message) is what makes this safe to
+        // detect; see bookings.service.ts's own comment on why text-matching was
+        // rejected earlier.
+        setState({ kind: 'waiverRequired' });
       } else {
         setActionError(getApiErrorMessage(err, 'Could not book this class — please try again.'));
       }
@@ -96,6 +120,19 @@ export function ClassBookingRow({ classItem }: { classItem: ClassSummary }) {
 
       {state.kind === 'booked' ? (
         <Text style={{ color: theme.textSuccess, fontSize: fontSize.caption, marginTop: spacing[1] }}>Booked ✓</Text>
+      ) : null}
+
+      {state.kind === 'waiverRequired' ? (
+        <>
+          <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[1] }}>
+            You need a signed waiver for this School before booking.
+          </Text>
+          <Button
+            title="Sign waiver"
+            variant="secondary"
+            onPress={() => navigation.navigate('Waivers', { schoolId })}
+          />
+        </>
       ) : null}
 
       {state.kind === 'full' ? (
