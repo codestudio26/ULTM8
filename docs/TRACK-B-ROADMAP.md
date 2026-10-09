@@ -878,13 +878,11 @@ chips in the session): the waitlist notification-dispatch backend gap, the
 StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
 gaps, and a deep-link from booking errors to the Waivers screen.
 
-**Note on the deep-link follow-up**: checked, not built this pass. `bookings.service.ts`'s
-unsigned-Waiver rejection is a plain `BadRequestException(message)` with no distinct
-error `code` (`HttpExceptionFilter` falls back to the generic `BAD_REQUEST` code
-shared by every other 400) — the only signal available client-side to detect "this
-specific error" is matching the free-text message, which is fragile and not something
-to build silently. Needs either a backend change (a stable error code) or an explicit
-decision to accept text-matching; left open rather than guessed at.
+**Note on the deep-link follow-up — ✅ CLOSED (9 Oct 2026)**: as of 2026-09-22,
+`bookings.service.ts`'s unsigned-Waiver rejection was a plain `BadRequestException(message)`
+with no distinct error `code`, leaving only fragile free-text matching as a way to
+detect this specific case client-side. Closed in the "Post-V1 polish pass" section
+below — a real `WAIVER_REQUIRED` code plus the deep-link itself.
 
 **Severity-proportional BASELINE withdrawal confirmation ✅ FIXED (2026-09-22).**
 Found something worse than "not severity-proportional" while looking at this:
@@ -979,3 +977,77 @@ untouched — confirmed as out of scope for this bug, not overlooked.
 **Verified**: `npx turbo run lint build --filter=@ultm8/student` (`tsc --noEmit`)
 clean, plus a standalone `node -e` check (above) proving the actual Intl output
 difference, not just that it typechecks.
+
+---
+
+## Post-V1 polish pass (9 Oct 2026) — 5 small gaps closed, plus real lint across all 3 apps
+
+Five small, previously-identified gaps, researched and built in one pass (deep-dive
+report delivered first, then built on explicit go-ahead):
+
+1. **My Bookings showed a raw `classId`, not what/when a Booking was for.**
+   `BookingResponseDto` now denormalizes `classTitle`/`classStartDate`/`classEndDate`
+   onto all 4 Booking-returning endpoints (`apps/api/src/bookings/bookings.service.ts`
+   — `cls` was already in scope at every call site, no extra query needed);
+   `MyBookingsScreen` renders them via the existing `formatDate` helper.
+2. **Register's date-of-birth field was a bare `YYYY-MM-DD` text input.** Replaced with
+   a native date picker (`@react-native-community/datetimepicker` — confirmed
+   Expo-Go-compatible, unlike Stripe) on iOS/Android, falling back to the original text
+   field on web. **Found and fixed on this pass's own deep-dive review**: the first cut
+   mixed UTC-anchored (`.toISOString()`/`Date.UTC`) and local-anchored Date semantics
+   around a native widget that reads/writes local calendar fields — the exact class of
+   bug `formatDateOnly` above was written to prevent, just on the write side this time.
+   Shifted the saved DOB by a day for roughly half the world's timezones until fixed to
+   use local Y/M/D components consistently on both ends.
+3. **The deep-link follow-up flagged above (Slice 2/6a) is now closed.** The
+   unsigned-Waiver rejection in `bookClass` now carries a stable `WAIVER_REQUIRED` error
+   code (`HttpExceptionFilter`'s existing `extractCode()` needed zero changes — this was
+   always supported, just never used) instead of being 400-text-matched. `ClassBookingRow`
+   detects it and deep-links to `WaiversScreen` with the relevant School pre-selected,
+   scrolled-to, and highlighted.
+4. **`JwtClaims`/`RoleGrantClaim` were hand-copied once per frontend app.** Moved to a
+   single canonical definition in `@ultm8/auth`; `apps/student`/`apps/school-portal` now
+   `import type` it instead — confirmed safe (type-only imports are erased at compile
+   time, carrying none of `decodeJwtPayload`'s `atob`-in-RN runtime risk apps/student
+   originally avoided this package for).
+5. **`secureTokenStore.clear()`'s SecureStore delete had no recovery if it failed
+   mid-flight.** Added an AsyncStorage "logout pending" boolean flag (never the token
+   itself) written before the delete and cleared on success; a new
+   `finalizePendingLogout()` retries any unfinished delete on the next cold start,
+   wired into `AuthContext`'s init effect.
+
+**Verified**: `tsc --noEmit` clean across `apps/api`/`apps/student`/`apps/school-portal`;
+a full `git diff` re-review; `nest build` and the `jest` suite (11/11) still pass.
+
+### Real ESLint wired up across all 3 frontend-adjacent apps (9–10 Oct 2026)
+
+Found during the above review: `apps/api`'s `lint` script had never actually run
+ESLint — the package was never installed, so `npm run lint` silently fell through to
+npx fetching a bare, uncached latest ESLint version each time, which ignores the
+repo's legacy `.eslintrc.json` entirely. `apps/student`/`apps/school-portal` had no
+ESLint config at all — their `lint` script was just `tsc --noEmit`.
+
+Fixed properly, not just patched: real `eslint`/`typescript-eslint` devDependencies
+and a flat `eslint.config.js` per app (`eslint-config-expo`, version-pinned to this
+app's Expo SDK, for `apps/student`; a standard Vite+React config for
+`apps/school-portal`). Had to standardize the whole repo on ESLint **v9** rather than
+the newer v10 — `eslint-config-expo`'s own transitive chain doesn't support v10 yet,
+and mixing majors across workspaces produced a genuinely invalid npm dependency tree.
+A first attempt at fixing this via a full `node_modules`/lockfile wipe silently
+reshuffled hoisting and broke `school-portal`'s typecheck (a React 18/19 `@types/react`
+identity clash) — caught before committing, fixed by restoring the last known-good
+lockfile and reinstalling incrementally on top of it instead.
+
+All three apps now lint clean (0 errors, 0 warnings), including one real pre-existing
+bug the new `school-portal` config surfaced and fixed: `SchoolPage.tsx` seeded its
+edit-form state from async-loaded data via `setState` inside a `useEffect` (a
+cascading-render risk `eslint-plugin-react-hooks` v7 now catches) — replaced with
+React's own documented fix, a child component mounted once the data loads, keyed by
+the School's id, computing its initial state in `useState`'s lazy initializer instead.
+
+**Verified**: `npm run lint` exits 0 for all three apps individually and via the root
+`turbo run lint`; `tsc`, `vite build`, and the `apps/api` `jest` suite all still pass;
+the `package-lock.json` diff was audited package-by-package to confirm it's scoped
+entirely to the ESLint ecosystem's own transitive dependencies, with `react`/
+`react-dom`/`react-router-dom`/`qrcode.react`/`@types/react` all byte-for-byte
+unchanged from the last known-good commit.
