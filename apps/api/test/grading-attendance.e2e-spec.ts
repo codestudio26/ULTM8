@@ -302,4 +302,84 @@ describeIfDb('Grading — attendance counted through the engine (Phase 2b)', () 
     expect(after).toMatchObject({ total: 0, byType: {} });
     expect(after.countingSince.getTime()).toBeGreaterThanOrEqual(before - 1000);
   });
+
+  describe('readiness from the engine — GET /students/{id}/eligibility (Phase 2c)', () => {
+    async function eligibility() {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${student.id}/eligibility?schoolId=${school.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      return res.body.items.find((i: { disciplineId: string }) => i.disciplineId === bjj.id).eligibility;
+    }
+    async function setCounts(total: number, byType: Record<string, number> = {}, daysAgo = 400) {
+      await superuser.studentRank.update({
+        where: { studentId_disciplineId: { studentId: student.id, disciplineId: bjj.id } },
+        data: { classesAttendedTowardCheckpoint: total, classesAttendedByType: byType, dateOfCurrentRank: new Date(Date.now() - daysAgo * 86_400_000) },
+      });
+    }
+
+    it('progress and board column follow the next rung\'s classes (22/30 = 73%, then 30/30 ready)', async () => {
+      await reset();
+      await setNextRung({});
+      await superuser.rankStripeTier.update({ where: { id: tier1.id }, data: { classesRequired: 30, minimumDaysInRank: 0 } });
+      await setCounts(22);
+      expect(await eligibility()).toMatchObject({
+        hasNext: true, nextRungId: tier1.id, requiredClasses: 30, countedClasses: 22, progressPercent: 73, boardColumn: 'READY_TO_GRADE', classesOk: false, eligible: false,
+      });
+      await setCounts(9);
+      expect(await eligibility()).toMatchObject({ progressPercent: 30, boardColumn: 'JUST_STARTING' });
+      await setCounts(30);
+      expect(await eligibility()).toMatchObject({ progressPercent: 100, classesOk: true, eligible: true });
+    });
+
+    it('"each type required": combined progress, each type capped at its own number (Decision 171)', async () => {
+      await reset();
+      await setNextRung({
+        eligibleClassTypes: ['Fundamentals', 'Sparring'],
+        classCountMode: 'EACH_TYPE',
+        classTypeRequirements: [
+          { classType: 'Fundamentals', classesRequired: 20 },
+          { classType: 'Sparring', classesRequired: 10 },
+        ],
+      });
+      await setCounts(22, { Fundamentals: 18, Sparring: 4 });
+      expect(await eligibility()).toMatchObject({
+        requiredClasses: 30,
+        progressPercent: 73,
+        classesOk: false,
+        byType: [
+          { classType: 'Fundamentals', required: 20, counted: 18 },
+          { classType: 'Sparring', required: 10, counted: 4 },
+        ],
+      });
+    });
+
+    it('minimum days are a gate but not part of the %', async () => {
+      await reset();
+      await setNextRung({});
+      await superuser.rankStripeTier.update({ where: { id: tier1.id }, data: { classesRequired: 30, minimumDaysInRank: 60 } });
+      await setCounts(30, {}, 10);
+      expect(await eligibility()).toMatchObject({ progressPercent: 100, requiredDays: 60, elapsedDays: 10, daysOk: false, eligible: false });
+    });
+
+    it('a required skill not signed off blocks eligibility and is listed', async () => {
+      await reset();
+      await setNextRung({});
+      await superuser.rankStripeTier.update({ where: { id: tier1.id }, data: { classesRequired: 0, minimumDaysInRank: 0 } });
+      const skill = await superuser.skill.create({ data: { id: randomUUID(), disciplineId: bjj.id, schoolId: school.id, name: 'Armbar' } });
+      await superuser.rankStripeTierRequiredSkill.create({ data: { stripeTierId: tier1.id, skillId: skill.id } });
+      try {
+        expect(await eligibility()).toMatchObject({ skillsOk: false, missingSkillIds: [skill.id], eligible: false });
+      } finally {
+        await superuser.rankStripeTierRequiredSkill.deleteMany({ where: { skillId: skill.id } });
+        await superuser.skill.delete({ where: { id: skill.id } });
+      }
+    });
+
+    it('a time-only current rung: days only, no classes', async () => {
+      await reset(timeOnlyTier.id);
+      await setCounts(0, {}, 400);
+      expect(await eligibility()).toMatchObject({ hasNext: true, timeOnly: true, requiredDays: 1095, requiredClasses: 0, progressPercent: 37, eligible: false });
+    });
+  });
 });

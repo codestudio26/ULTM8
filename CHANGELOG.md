@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading engine, Phase 2c (part 1): readiness from the engine**
+  (Decisions 127, 136, 149, 171, 172). `GET /students/{id}/eligibility` now
+  returns, for each style, the student's readiness for their next rung:
+  classes counted and required (per type for "each type required"), days in
+  rank and required, required/optional/missing skills, eligible, progress %
+  and the Grading Board column (33% / 66% defaults). Days are counted in the
+  student's local time (home branch, else school, else UTC). The rank fields
+  it already returned are unchanged. `packages/api-client` regenerated.
 - **api — grading engine, Phase 2b: attendance counted through the engine**
   (Decisions 140, 149, 170, 171, 172). A check-in now counts once toward each
   style the class lists, with that style's class type, and only when the type
