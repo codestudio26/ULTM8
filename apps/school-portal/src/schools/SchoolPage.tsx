@@ -23,6 +23,7 @@ export function SchoolPage() {
     ranksToggle: boolean;
     defaultLanguage: string;
     defaultCurrency: string;
+    timezone: string;
     description: string;
     classCancellationPolicy: 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT';
     waitlistClaimWindowMinutes: number;
@@ -42,6 +43,7 @@ export function SchoolPage() {
       ranksToggle: school.ranksToggle,
       defaultLanguage: school.defaultLanguage ?? '',
       defaultCurrency: school.defaultCurrency ?? '',
+      timezone: school.timezone ?? '',
       description: school.description ?? '',
       classCancellationPolicy: school.classCancellationPolicy,
       waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
@@ -74,6 +76,7 @@ export function SchoolPage() {
         ranksToggle: form.ranksToggle,
         defaultLanguage: form.defaultLanguage || null,
         defaultCurrency: form.defaultCurrency || null,
+        timezone: form.timezone || null,
         description: form.description || null,
         classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
@@ -117,6 +120,9 @@ export function SchoolPage() {
           </Field>
           <Field label="Default currency" htmlFor="edit-currency">
             <TextField value={form.defaultCurrency} onChange={(e) => set('defaultCurrency', e.target.value)} />
+          </Field>
+          <Field label="Timezone" htmlFor="edit-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
+            <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
           </Field>
           <Field label="Description" htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />

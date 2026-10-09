@@ -2155,6 +2155,8 @@ export interface components {
             defaultLanguage?: string;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
+            /** @description IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string;
             description?: string;
             logoUrl?: string;
             bannerUrl?: string;
@@ -2181,6 +2183,8 @@ export interface components {
             ranksToggle: boolean;
             defaultLanguage?: string | null;
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
@@ -2223,6 +2227,8 @@ export interface components {
             defaultLanguage?: string | null;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;

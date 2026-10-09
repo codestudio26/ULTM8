@@ -6681,6 +6681,10 @@
             "type": "string",
             "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
           },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172)."
+          },
           "description": {
             "type": "string"
           },
@@ -6756,6 +6760,11 @@
           "defaultCurrency": {
             "type": "string",
             "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "IANA timezone name."
           },
           "description": {
             "type": "string",
@@ -6897,6 +6906,11 @@
           "defaultCurrency": {
             "type": "string",
             "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone name. Same field as Branch.timezone (Decisions 76, 172).",
             "nullable": true
           },
           "description": {

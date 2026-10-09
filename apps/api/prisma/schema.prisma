@@ -666,6 +666,10 @@ model School {
 
   defaultLanguage String?
   defaultCurrency String?
+  /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
+  /// (Decision 76: a branch mirrors its school's profile fields; Decision 172).
+  /// Classes use their branch's zone, else this one, else UTC.
+  timezone        String?
   description     String?
   logoUrl         String?
   bannerUrl       String?

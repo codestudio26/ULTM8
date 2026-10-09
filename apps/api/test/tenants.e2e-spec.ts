@@ -265,6 +265,41 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(patchRes.body.description).toBe('Updated by owner A');
   });
 
+  it('a School has its own time zone, like a Branch: set on create, kept when omitted, cleared with null (Decision 172)', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/schools')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'TZ School', timezone: 'Europe/London' });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.timezone).toBe('Europe/London');
+    const tzSchoolId = createRes.body.id as string;
+    const token = createRes.body.accessToken as string;
+    try {
+      const patch = (body: object) =>
+        request(app.getHttpServer()).patch(`/v1/schools/${tzSchoolId}`).set('Authorization', `Bearer ${token}`).send(body);
+
+      const set = await patch({ timezone: 'Australia/Sydney' });
+      expect(set.status).toBe(200);
+      expect(set.body.timezone).toBe('Australia/Sydney');
+
+      const kept = await patch({ description: 'no timezone sent' });
+      expect(kept.body.timezone).toBe('Australia/Sydney');
+
+      const cleared = await patch({ timezone: null });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.timezone).toBeNull();
+
+      const tooLong = await patch({ timezone: 'x'.repeat(101) });
+      expect(tooLong.status).toBe(400);
+
+      const read = await request(app.getHttpServer()).get(`/v1/schools/${tzSchoolId}`).set('Authorization', `Bearer ${token}`);
+      expect(read.body.timezone).toBeNull();
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: tzSchoolId } });
+      await superuser.school.delete({ where: { id: tzSchoolId } });
+    }
+  });
+
   it('CAN create, grant, and revoke within its own School', async () => {
     const branchRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/branches`)
