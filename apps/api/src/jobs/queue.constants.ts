@@ -31,3 +31,12 @@ export const TENANT_LIFECYCLE_PURGE_QUEUE = 'tenant-lifecycle-purge';
 // Event-triggered (enqueued by stripe-webhook-processing on a newly-lost
 // dispute), not a periodic sweep — see Decision 112's own reasoning.
 export const CHARGEBACK_PATTERN_RESTRICTION_QUEUE = 'chargeback-pattern-restriction';
+// Closes the gap Decision 122's own "What this does NOT resolve" note flagged:
+// a Membership that EXPIRES only via its own expiryDate passing (no Stripe
+// event involved — a Class Pack/Trial/Weekly Pass simply running out) never
+// had its Student's own future Bookings swept the way the Stripe-driven
+// force-Expiry paths already are. Does NOT persist Membership.status —
+// Decision 26 confirms that stays live-computed-only; see
+// membership-expiry-sweep.processor.ts's own header comment for the full
+// account (including a real bug this caught before merge).
+export const MEMBERSHIP_EXPIRY_SWEEP_QUEUE = 'membership-expiry-sweep';
