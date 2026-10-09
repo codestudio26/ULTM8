@@ -43,7 +43,7 @@ export class RankStripeTierInputDto {
   @Min(0)
   count!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Stripe colour. When the rung has stripes, the stored value is the colour of the first entry in `stripeSegments` (Decision 165); this value is only used to build the segments when they are omitted on a new rung.' })
   @IsString()
   @MaxLength(50)
   colour!: string;
@@ -78,7 +78,7 @@ export class RankStripeTierInputDto {
 
   @ApiPropertyOptional({
     type: () => [StripeSegmentInputDto],
-    description: 'Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged.',
+    description: 'Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. The only place this rung\'s stripe colours are set; the `colour` field follows the first entry (Decision 165). When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged.',
   })
   @IsOptional()
   @IsArray()

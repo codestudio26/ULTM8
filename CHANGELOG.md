@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — a rung's colour follows its stripes** (Decision 165): a rung's
+  stripe list is now the only place its stripe colours are set. Its single
+  colour is filled in from the first stripe, the newest colour, which is the
+  one the rung is named after ("1 Yellow Stripe" = 1 yellow + 3 red, so
+  yellow), so the two can never disagree. Changing only the colour repaints a
+  one-colour rung. On a rung with mixed stripes it is refused with a clear
+  message, because the stripes must be changed in the list. A data migration
+  brings existing rungs into line. `packages/api-client` regenerated
+  (descriptions only).
 - **api — grading foundation, PR 2: every rung of a ladder carries its own
   settings** (Decisions 126, 128, 164): belts get a name (Spec 55 §6.1) and
   drawing fields (tag colour, coral accent). Each rung (stripe tier) gets a

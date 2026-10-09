@@ -993,6 +993,90 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(after.body.items).toEqual(ladder.body.items);
     });
 
+    it('Decision 165: a rung\'s colour follows the first stripe in its list; a colour-only edit repaints a one-colour rung and is refused on a mixed one', async () => {
+      const disc = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/disciplines`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ name: 'Rung Colour BJJ' });
+      expect(disc.status).toBe(201);
+      disciplineIds.push(disc.body.id);
+      const YELLOW = '#F0C419';
+      const RED = '#C23B3B';
+      const WHITE = '#FFFFFF';
+
+      // The prototype's "1 Yellow Stripe" rung: 1 yellow then 3 red. The
+      // colour sent (white) disagrees and is ignored: the list wins.
+      const created = await request(app.getHttpServer())
+        .post(`/v1/styles/${disc.body.id}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          order: 0,
+          name: 'Grey/White Belt',
+          primaryColour: '#9CA3AF',
+          stripeTiers: [
+            { order: 0, count: 0, colour: WHITE },
+            { order: 1, count: 4, colour: WHITE, stripeSegments: [{ count: 1, colour: YELLOW }, { count: 3, colour: RED }] },
+            { order: 2, count: 2, colour: RED },
+          ],
+        });
+      expect(created.status).toBe(201);
+      const [plain, mixed, oneColour] = created.body.stripeTiers;
+      expect(plain.colour).toBe(WHITE); // no stripes: kept as entered
+      expect(mixed.colour).toBe(YELLOW); // first stripe, not the majority (red)
+      expect(oneColour.colour).toBe(RED);
+      expect(oneColour.stripeSegments).toEqual([{ count: 2, colour: RED }]);
+
+      const tiersAsSent = (overrides: Record<number, { colour: string }>) =>
+        created.body.stripeTiers.map((t: { order: number; count: number; colour: string }) => ({
+          order: t.order,
+          count: t.count,
+          colour: overrides[t.order]?.colour ?? t.colour,
+        }));
+
+      // Round-tripping what was read (as the school portal form does) keeps everything.
+      const roundTrip = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${created.body.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ stripeTiers: tiersAsSent({}) });
+      expect(roundTrip.status).toBe(200);
+      expect(roundTrip.body.stripeTiers[1].stripeSegments).toEqual([{ count: 1, colour: YELLOW }, { count: 3, colour: RED }]);
+      expect(roundTrip.body.stripeTiers[1].colour).toBe(YELLOW);
+
+      // Colour-only edit of a mixed rung: refused, nothing changes.
+      const refused = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${created.body.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ stripeTiers: tiersAsSent({ 1: { colour: RED } }) });
+      expect(refused.status).toBe(400);
+      const unchanged = await request(app.getHttpServer())
+        .get(`/v1/ranks/${created.body.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(unchanged.body.stripeTiers).toEqual(roundTrip.body.stripeTiers);
+
+      // Colour-only edit of a one-colour rung repaints its stripes.
+      const repainted = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${created.body.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ stripeTiers: tiersAsSent({ 2: { colour: YELLOW } }) });
+      expect(repainted.status).toBe(200);
+      expect(repainted.body.stripeTiers[2].colour).toBe(YELLOW);
+      expect(repainted.body.stripeTiers[2].stripeSegments).toEqual([{ count: 2, colour: YELLOW }]);
+
+      // Sending a new list recolours a mixed rung, and the colour follows it.
+      const relisted = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${created.body.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          stripeTiers: [
+            ...tiersAsSent({}).slice(0, 1),
+            { order: 1, count: 4, colour: YELLOW, stripeSegments: [{ count: 2, colour: RED }, { count: 2, colour: WHITE }] },
+            { order: 2, count: 2, colour: YELLOW },
+          ],
+        });
+      expect(relisted.status).toBe(200);
+      expect(relisted.body.stripeTiers[1].colour).toBe(RED);
+    });
+
     it('RLS: per-rung required Skills are invisible to a user with no role at the School', async () => {
       const outsider = await mkExtraUser('rung-skills-outsider');
       const rows = await withUser(outsider.id, (tx) => tx.rankStripeTierRequiredSkill.findMany({ where: { skillId: skillSweep } }));
