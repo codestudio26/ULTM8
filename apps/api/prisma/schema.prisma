@@ -1258,6 +1258,18 @@ model Membership {
 
   expiryDate DateTime?
 
+  // membership-expiry-sweep.processor.ts's OWN bookkeeping only — set the first
+  // time that job cancels this Membership's funded future Bookings after its
+  // expiryDate passed. Deliberately NOT a status/liveness signal: Decision 26
+  // confirms date-based expiry is "a live-computed predicate... not a
+  // scheduled batch flip" (status above stays ACTIVE in storage forever for
+  // this path, by design — see that model's own comment). This field exists
+  // purely so the sweep doesn't re-scan the same already-handled Membership
+  // every 15 minutes forever; nothing else in the codebase reads it, and it
+  // must never be treated as a substitute for MembershipsService.getMembershipStatus()'s
+  // own live computation.
+  bookingCancellationSweptAt DateTime?
+
   // Inherited from MembershipPlan when it names one (Spec 55 §6.1) — restricts which
   // Class this Membership can book. Set once at creation from membershipPlan.scopedClassId.
   scopedClassId String?
