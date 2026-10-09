@@ -16,7 +16,15 @@ export class AuthMessageResponseDto {
   message!: string;
 }
 
+/**
+ * Shared by login() and refresh() — both mint the identical pair (a fresh
+ * 15-minute accessToken plus a fresh, rotated refreshToken), so one response
+ * shape covers both rather than two near-duplicate DTOs.
+ */
 export class LoginResponseDto {
   @ApiProperty()
   accessToken!: string;
+
+  @ApiProperty()
+  refreshToken!: string;
 }

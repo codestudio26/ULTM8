@@ -8,6 +8,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { RequestPasscodeResetDto } from './dto/request-passcode-reset.dto';
 import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthMessageResponseDto, LoginResponseDto } from './dto/auth-response.dto';
 import { bodyIdentityTracker } from '../common/throttle/identity-trackers';
 
@@ -60,6 +61,24 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  // No Throttle here, unlike every endpoint above — those all guess/verify a
+  // low-entropy, human-chosen value (a 6-digit passcode/OTP), which is exactly
+  // what rate limiting defends against. A refresh token is a 256-bit random
+  // value (AuthService's own issueRefreshToken() comment) — brute-forcing it
+  // is infeasible regardless of request rate, so there's nothing a throttle
+  // here would actually be defending.
+  @ApiCreatedResponse({ type: LoginResponseDto })
+  @Post('refresh')
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refresh(dto);
+  }
+
+  @ApiCreatedResponse({ type: AuthMessageResponseDto })
+  @Post('logout')
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.authService.logout(dto);
   }
 
   @ApiCreatedResponse({ type: AuthMessageResponseDto })
