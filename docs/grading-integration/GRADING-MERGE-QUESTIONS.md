@@ -10,6 +10,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Each stripe is its own step on the ladder and a new grade.
 - The prototype is standalone. In ULTM8, attendance and curriculum feed into it.
 - This is the ULTM8 grading module, built inside ULTM8's existing ranks and curriculum code.
+- Q1: your grading rules win over Spec 55 where they conflict, one logged decision per conflict (Decision 124).
 
 ## How many need answering, and when
 
@@ -28,7 +29,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q1. Do your grading rules override Spec 55 where they conflict?** · _Answer first_
 - Why it matters: The project rules say Spec 55 wins over later decisions. You said “follow Gus logic”, but each override must be recorded as a numbered decision, or the next developer will build to the spec instead.
 - Recommendation: Yes. Log one decision per override (124 onwards) and list them for a spec amendment.
-- Answer so far: “We will follow Gus logic for grading” (8 Oct). Needs formal sign-off per conflict.
+- Answer so far: Yes (9 Oct), recorded as Decision 124. Grading only; each conflict is confirmed and logged separately (125 onwards); ask when unsure.
 
 **Q2. Who approves grading decisions from now on: you alone, or you plus the ULTM8 product owner?** · _Answer first_
 - Why it matters: The decision log records who approved each change. If grading and the wider product have different owners, conflicts (payments, roles) need one person to settle them.

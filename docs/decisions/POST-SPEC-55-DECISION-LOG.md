@@ -1426,3 +1426,41 @@ Kid Mode over a real minor login: building a genuine credential-based login for 
 ### Recorded by
 
 Proposed by the user ("what if parent grant them access to book a class for themselves... find the best solution"), designed and adversarially stress-tested by Claude across two passes (an initial design + 10-row stress-test table, then a kid-mode-specific second pass once the user's own "no separate login" framing simplified the credential problem), with the user resolving each of 7 explicit open questions directly (no separate login; booking-only scope, no purchase; per-minor granularity over a global toggle; standalone from the age-13 login; revoked bookings go to a Guardian review queue, not auto-kept/auto-cancelled; Guardian keeps full visibility) before approving the consolidated design, 6 Oct 2026.
+
+---
+
+## Decision 124 — Grading: Gus's prototype rules take precedence over Spec 55 where they conflict, one logged decision per conflict
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision, given directly by Gus (author of the grading prototype and owner of the grading rules) in this session
+**Resolves:** Q1 of `docs/grading-integration/GRADING-MERGE-QUESTIONS.md`: "Do your grading rules override Spec 55 where they conflict?" Context: Gus's handover package (`dojohq-grading-handover.zip`, 7 Oct 2026) encodes grading rules that differ in places from Spec 55 §2.3/§6.1/§7 and from the RanksModule already built. The full comparison is in `docs/grading-integration/GRADING-INTEGRATION-ROADMAP.md` §3.
+
+### Decision
+
+For the **grading module only** (ladders, ranks and stripe rungs, requirements, eligibility, progress, grading actions, history, Grading Board, grading events, and the skill/lesson link), the rules in Gus's prototype (`HANDOVER.md` §6, `prototype/index.html` lines 316–541, and the decisions recorded in `CHANGES.md`) take precedence over Spec 55 where the two conflict.
+
+Answer given: *"yes, however always feel free to ask questions to verify."*
+
+**Conditions, part of the decision:**
+
+1. **One decision per conflict.** This entry does not settle any individual conflict by itself. Each place where Gus's rule replaces a Spec 55 rule is confirmed with Gus and logged as its own numbered decision (125 onward), citing the Spec 55 section it replaces. Nothing is built against an override until that entry exists.
+2. **Ask to verify.** Where Gus's prototype is silent, ambiguous, or only mocked (HANDOVER §8: notifications, fee, permissions, video), it is not treated as a rule. The question is put to Gus instead.
+3. **Scope is grading only.** Tenancy and Row-Level Security, the Platform Admin realm, payments, roles outside grading, and every other module stay under Spec 55 and the existing decisions. A grading rule that would touch one of those (for example a grading fee through Stripe, or who may grade) also needs the product owner's sign-off for that area.
+4. **Spec amendment list.** Every override is added to a list for a future Spec 55 amendment, the same way Decisions 70–76 were summarised into §15.
+
+### Why
+
+Gus built and stress-tested the grading rules: 105,303 checks and a 45-step click-through, both re-run and reproduced on 8 Oct 2026. Spec 55 §2.3 itself says the prototype "validates the grading/ranks data model and interaction flow … which the production RanksModule and Grading Board should implement as-is." Making his rules the reference avoids re-deriving them. Requiring one logged decision per conflict keeps the audit trail this log exists for, so a later developer reading Spec 55 alone is not misled.
+
+### Effect on existing documents
+
+- **`CLAUDE.md` source-of-truth hierarchy (item 3)** states that approved decisions "never override Spec 55 Sections 1–11". This decision is an explicit, product-owner-approved exception for grading. `CLAUDE.md` itself was **not** edited by this entry. Whether to add a one-line carve-out there is put to the product owner separately.
+- **`skills/ultm8-domain-rules/SKILL.md` §5** should be updated by the Architect as individual grading overrides (125+) are logged. It was not edited here.
+
+### What this does NOT resolve
+
+Every individual conflict listed in `GRADING-MERGE-QUESTIONS.md` remains open until answered, including: rung storage, which rung requirements belong to, skipping rungs, back-dating, starting classes, the skills hard-block switch, downgrade reasons, voiding vs deleting history, and who may grade.
+
+### Recorded by
+
+Asked as Q1 of the grading merge question list (published 8 Oct 2026) and answered directly by Gus on 9 Oct 2026. Recorded by Claude.
