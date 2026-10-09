@@ -334,4 +334,52 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
       .send({ endDate: '2026-09-01T00:00:00.000Z' }); // before classBody()'s default startDate
     expect(patchRes.status).toBe(400);
   });
+
+  // ---------------------------------------------------------------------------
+  // FOUND ON REVIEW (deep-dive pass before merge): this PR's own defining
+  // behavior change — rejecting an activities entry with no matching
+  // Discipline (closes Decision 90's silent-allow gap) — had zero direct test
+  // coverage. Every other test in this file only ever uses 'BJJ', which
+  // beforeAll's own fixture already makes valid, so none of them would have
+  // caught a broken assertActivitiesMatchRealDisciplines() guard (e.g. an
+  // inverted condition, or a broken Set lookup).
+  // ---------------------------------------------------------------------------
+
+  it('rejects creating a Class whose activities name no Discipline at this School', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Nonexistent discipline', activities: ['Not A Real Discipline'] }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/no matching Discipline/i);
+  });
+
+  it('rejects updating a Class to name a Discipline that does not exist, leaving the original activities unchanged', async () => {
+    const created = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Patch-target for bad activities' }));
+    expect(created.status).toBe(201);
+    classIds.push(created.body.id);
+
+    const patchRes = await request(app.getHttpServer())
+      .patch(`/v1/classes/${created.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ activities: ['Also Not Real'] });
+    expect(patchRes.status).toBe(400);
+
+    const unchanged = await superuser.class.findUniqueOrThrow({ where: { id: created.body.id } });
+    expect(unchanged.activities).toEqual(['BJJ']); // update was rejected, not partially applied
+  });
+
+  it('accepts a Class naming two real Disciplines, one of which has no bearing on the other', async () => {
+    const judo = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolA.id, name: 'Judo (Classes Fixture)' } });
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Mixed real disciplines', activities: ['BJJ', judo.name] }));
+    expect(res.status).toBe(201);
+    classIds.push(res.body.id);
+    await superuser.discipline.delete({ where: { id: judo.id } });
+  });
 });

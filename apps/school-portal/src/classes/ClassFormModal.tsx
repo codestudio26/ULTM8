@@ -49,9 +49,15 @@ export interface ClassFormValues {
  * RoleGrant", not the Instructor profile's own id — see that DTO's own
  * comment), labeled by the profile's resolved name (InstructorResponseDto's
  * firstName/surname, joined server-side via PrismaAuthService). `activities`
- * is comma-separated free text, same convention as School.activities and
- * Discipline.classTypesOffered — not a hard FK to Discipline (the DTO
- * validates it as free-form strings, not discipline ids). */
+ * is comma-separated free text at the DTO layer (not discipline ids), same
+ * convention as School.activities/Discipline.classTypesOffered — but
+ * ClassesService.create()/update() now validate each entry against this
+ * School's own real Discipline.name rows server-side (closes Decision 90's
+ * silent-allow rank-gate gap) and 400s on no match. Still not a hard FK — no
+ * dropdown/autocomplete sourced from this School's Disciplines exists here
+ * yet; a real backend 400 with an actionable message is this form's only
+ * feedback for a typo'd/nonexistent name, surfaced via the existing
+ * ApiError→setError path below. */
 export function ClassFormModal({
   title,
   initial,
@@ -145,7 +151,11 @@ export function ClassFormModal({
         <Field label="Title" htmlFor="class-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
-        <Field label="Activities" htmlFor="class-activities" hint="Comma-separated, at least one — e.g. Jiu Jitsu, Kids Fundamentals">
+        <Field
+          label="Activities"
+          htmlFor="class-activities"
+          hint="Comma-separated, at least one — must exactly match a Discipline name already set up at this School (see Disciplines)."
+        >
           <TextField
             required
             value={form.activities}
