@@ -8,6 +8,7 @@ import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
+import { studentEligibility, studentTimeZone } from './grading-eligibility';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
@@ -72,14 +73,21 @@ export class GradingService {
     );
   }
 
-  /** Currently identical to findRanksForStudent — see StudentRank's own Prisma
-   * model comment for why (Decision 75's readiness-bucket/progress-% formula is
-   * genuinely undesigned; this returns the same raw fields pending that). Kept as
-   * a separate method/route rather than aliased, since Spec 55 names it as its
-   * own confirmed endpoint and a future phase will make the two genuinely
-   * diverge once Decision 75 resolves. */
-  async findEligibilityForStudent(callerId: string, studentId: string, schoolId: string): Promise<CursorPage<{ id: string }>> {
-    return this.findRanksForStudent(callerId, studentId, schoolId);
+  /** The rank list plus each style's readiness for its next rung, from the
+   * grading engine: Gus's progress formula and the 33% / 66% board columns
+   * (Decisions 75, 136). Same readers as the rank list (Decision 132). */
+  async findEligibilityForStudent(callerId: string, studentId: string, schoolId: string) {
+    const page = await this.findRanksForStudent(callerId, studentId, schoolId);
+    // Readiness from the grading engine (roadmap Phase 2c): the same fields as
+    // the rank list, plus each style's eligibility for its next rung.
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const timeZone = await studentTimeZone(tx, studentId, schoolId);
+      const items: Array<Record<string, unknown>> = [];
+      for (const row of page.items as Array<Parameters<typeof studentEligibility>[1] & { id: string }>) {
+        items.push({ ...row, eligibility: await studentEligibility(tx, row, timeZone) });
+      }
+      return { items };
+    });
   }
 
   /** Voided entries are hidden from the normal history (Decision 129). Staff
@@ -345,6 +353,8 @@ export class GradingService {
             currentStripeId: targetFirstStripe?.id ?? null,
             dateOfCurrentRank: new Date(),
             classesAttendedTowardCheckpoint: 0,
+            classesAttendedByType: {},
+            countingSince: new Date(),
           },
         });
         if (updateResult.count === 0) {
@@ -432,7 +442,7 @@ export class GradingService {
       // prototype's applyRankChange sets `since` for every change).
       const updateResult = await tx.studentRank.updateMany({
         where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
-        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0, dateOfCurrentRank: new Date() },
+        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0, classesAttendedByType: {}, countingSince: new Date(), dateOfCurrentRank: new Date() },
       });
       if (updateResult.count === 0) {
         throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');

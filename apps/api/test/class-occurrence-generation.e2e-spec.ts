@@ -145,6 +145,40 @@ describeIfDb('class-occurrence-generation job', () => {
     }
   });
 
+  it('a slot with no branch time zone uses the School\'s time zone (Decision 172)', async () => {
+    // 18:00 in Tokyo (no DST, UTC+9) is always 09:00 UTC.
+    const tzSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Occurrence-Gen TZ School', timezone: 'Asia/Tokyo' } });
+    const noTzBranch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: tzSchool.id, name: 'No-TZ Branch' } });
+    const slotFields = {
+      schoolId: tzSchool.id,
+      weekday: 'MONDAY' as const,
+      startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
+      endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+      status: 'ON' as const,
+      title: 'Fixture TZ Class',
+      activities: ['BJJ'],
+    };
+    const schoolWide = await superuser.timetableSlot.create({ data: { id: randomUUID(), ...slotFields, branchId: null } });
+    const atNoTzBranch = await superuser.timetableSlot.create({ data: { id: randomUUID(), ...slotFields, branchId: noTzBranch.id } });
+    const slotIds = [schoolWide.id, atNoTzBranch.id];
+    try {
+      await processor.process({ id: 'test-run-school-tz', data: {} } as never);
+      for (const slotId of slotIds) {
+        const generated = await superuser.class.findMany({ where: { timetableSlotId: slotId } });
+        expect(generated.length).toBe(4);
+        for (const cls of generated) {
+          expect(cls.startDate.getUTCHours()).toBe(9);
+          expect(cls.startDate.getUTCMinutes()).toBe(0);
+        }
+      }
+    } finally {
+      await superuser.class.deleteMany({ where: { timetableSlotId: { in: slotIds } } });
+      await superuser.timetableSlot.deleteMany({ where: { id: { in: slotIds } } });
+      await superuser.branch.delete({ where: { id: noTzBranch.id } });
+      await superuser.school.delete({ where: { id: tzSchool.id } });
+    }
+  });
+
   it('bookingCutoffMinutesBeforeStart: 0 produces a real bookingEndAt, not null (regression: was treated as unset)', async () => {
     await processor.process({ id: 'test-run-zero-cutoff', data: {} } as never); // idempotent — don't rely on test order
     const generated = await superuser.class.findMany({

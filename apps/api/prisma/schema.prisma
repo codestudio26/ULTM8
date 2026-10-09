@@ -666,6 +666,10 @@ model School {
 
   defaultLanguage String?
   defaultCurrency String?
+  /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
+  /// (Decision 76: a branch mirrors its school's profile fields; Decision 172).
+  /// Classes use their branch's zone, else this one, else UTC.
+  timezone        String?
   description     String?
   logoUrl         String?
   bannerUrl       String?
@@ -1005,6 +1009,10 @@ model Instructor {
   beltRanking String?
 
   specializations String[] @default([])
+  /// The School's styles this instructor specialises in (Decision 152, item 1).
+  /// In a School with styles they are picked here and `specializations` is
+  /// filled in from their names; a School with no styles keeps free text.
+  specializationStyleIds String[] @default([])
 
   /// Distinct, optional School-facing contact number — Spec 55 lists `phone` on
   /// Instructor's own entity row, separate from User.phone (the login/OTP number). Not
@@ -2067,6 +2075,14 @@ model StudentRank {
   dateOfCurrentRank DateTime @default(now())
 
   classesAttendedTowardCheckpoint Int @default(0)
+  /// Classes counted toward the next rung, per class type (Decisions 149, 171):
+  /// {"Fundamentals": 18, "Sparring": 4}. Classes with no type are in the total
+  /// only. Reset with the total on every rank change.
+  classesAttendedByType Json @default("{}")
+  /// When counting toward the current rung started: the moment of the last rank
+  /// change (not the back-datable rank date). Classes before it belong to the
+  /// previous rung; the weekly cap only looks at classes after it.
+  countingSince DateTime @default(now())
 
   // Self-declared ranks (grading foundation PR 6, Decisions 137, 147).
   verificationStatus RankVerificationStatus @default(VERIFIED)

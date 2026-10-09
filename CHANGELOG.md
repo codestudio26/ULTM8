@@ -15,6 +15,49 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading engine, Phase 2c (part 1): readiness from the engine**
+  (Decisions 127, 136, 149, 171, 172). `GET /students/{id}/eligibility` now
+  returns, for each style, the student's readiness for their next rung:
+  classes counted and required (per type for "each type required"), days in
+  rank and required, required/optional/missing skills, eligible, progress %
+  and the Grading Board column (33% / 66% defaults). Days are counted in the
+  student's local time (home branch, else school, else UTC). The rank fields
+  it already returned are unchanged. `packages/api-client` regenerated.
+- **api — grading engine, Phase 2b: attendance counted through the engine**
+  (Decisions 140, 149, 170, 171, 172). A check-in now counts once toward each
+  style the class lists, with that style's class type, and only when the type
+  is ticked on the student's next rung (nothing ticked: every class). The
+  rung's weekly cap applies on Monday–Sunday weeks in the class's local time
+  (branch, else school, else UTC); a time-only rung counts no classes.
+  `StudentRank` gains a per-type tally (`classesAttendedByType`, for "each
+  type required") and `countingSince` (the moment of the last rank change;
+  classes before it belong to the previous rung). Replaces Decision 90's
+  activities ↔ style-name bridge for attendance; a class with no styles counts
+  toward nothing. Existing rows are backfilled from their last grade.
+  `packages/api-client` regenerated.
+- **api + school-portal — School time zone** (Decisions 76, 172): a School
+  has its own optional time zone, set like a Branch's in the create-school form
+  and school settings. Classes generated from the timetable use the Branch's
+  time zone, else the School's, else UTC (previously always UTC for a
+  School-wide slot). `packages/api-client` regenerated.
+- **api-client — regenerated for `POST /auth/refresh` and `POST /auth/logout`**
+  (added in #101 without a client regeneration), including the `refreshToken`
+  now returned on sign-in. No code change.
+- **api — grading engine (roadmap Phase 2a; Decisions 127, 136, 149, 171).**
+  Gus's grading rules as pure functions in `apps/api/src/ranks/engine/`: the
+  flat ladder of rungs, what the next rung requires, which classes count
+  (ticked types, Monday–Sunday weekly cap), eligibility, progress % and the
+  board columns, and the back-dated grading-date check. Checked against the
+  prototype's own QA reference rules on every rung of an IBJJF-style ladder.
+  Not wired in yet, so nothing changes for users until Phases 2b and 2c.
+- **api + school-portal — instructor specialisations picked from the School's
+  styles** (Decision 152, item 1): in a School with styles, an instructor's
+  specialisations are chosen from its styles (`specializationStyleIds`). Free
+  text is refused there, and the names are filled in for display. A School
+  with no styles keeps free text. Specialisations stay optional. Existing
+  instructors were mapped once wherever a specialisation named exactly one
+  style. The portal's instructor form shows a checkbox per style.
+  `packages/api-client` regenerated.
 - **api — grading foundation, PR 6: self-declared ranks** (Decisions 137,
   147):
   - **Declaring:** a student (or their guardian, for a minor) declares the
