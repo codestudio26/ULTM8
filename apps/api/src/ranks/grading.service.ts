@@ -345,6 +345,8 @@ export class GradingService {
             currentStripeId: targetFirstStripe?.id ?? null,
             dateOfCurrentRank: new Date(),
             classesAttendedTowardCheckpoint: 0,
+            classesAttendedByType: {},
+            countingSince: new Date(),
           },
         });
         if (updateResult.count === 0) {
@@ -432,7 +434,7 @@ export class GradingService {
       // prototype's applyRankChange sets `since` for every change).
       const updateResult = await tx.studentRank.updateMany({
         where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
-        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0, dateOfCurrentRank: new Date() },
+        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0, classesAttendedByType: {}, countingSince: new Date(), dateOfCurrentRank: new Date() },
       });
       if (updateResult.count === 0) {
         throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');
