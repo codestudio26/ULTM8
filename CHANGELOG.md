@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api + school-portal — grading Phase 2c (part 2): who may book is set per
+  rung** (Decision 173). Each rung gets an "Unlocks booking" list of class
+  types, open to that rung and every rung above; types no rung lists are open
+  to everyone. The booking and waitlist-claim rank gate now checks each style
+  on the class by its class type (replacing the activities ↔ style-name
+  bridge); staff override is unchanged. Existing rungs start with nothing
+  unlocked, so every class is open until the owner sets some. The portal's
+  rung editor has the new field. `packages/api-client` regenerated.
 - **api — grading engine, Phase 2c (part 1): readiness from the engine**
   (Decisions 127, 136, 149, 171, 172). `GET /students/{id}/eligibility` now
   returns, for each style, the student's readiness for their next rung:

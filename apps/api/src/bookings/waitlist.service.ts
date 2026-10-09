@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { assertBookingUnlocked } from '../ranks/booking-unlocks';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -312,50 +313,13 @@ export class WaitlistService {
   // ---------------------------------------------------------------------------
   // Private helpers — deliberately duplicated from BookingsService rather than
   // shared, given the two services' otherwise-different transaction shapes; see the
-  // Phase 11 kickoff prompt for the reasoning each one implements (rank-gate
-  // bridging inference, Decision 90; Membership spend-order, SKILL.md §10).
+  // Phase 11 kickoff prompt for the reasoning each one implements (Membership
+  // spend-order, SKILL.md §10). The rank gate itself is shared (Decision 173).
   // ---------------------------------------------------------------------------
 
-  private async assertRankEligible(
-    tx: TenantTx,
-    studentId: string,
-    cls: { schoolId: string; activities: string[] },
-  ): Promise<void> {
-    if (cls.activities.length === 0) return;
-
-    const disciplines = await tx.discipline.findMany({ where: { schoolId: cls.schoolId, name: { in: cls.activities } } });
-    if (disciplines.length === 0) return;
-
-    const cumulativeEligible = new Set<string>();
-    for (const discipline of disciplines) {
-      const studentRank = await tx.studentRank.findUnique({
-        where: { studentId_disciplineId: { studentId, disciplineId: discipline.id } },
-        include: { currentRank: true, currentStripe: true },
-      });
-      if (!studentRank) {
-        throw new ForbiddenException(`This Student has no Rank in the "${discipline.name}" Discipline required for this Class.`);
-      }
-
-      const tiers = await tx.rankStripeTier.findMany({
-        where: { rank: { disciplineId: discipline.id } },
-        include: { rank: true },
-      });
-      for (const tier of tiers) {
-        const passedLowerRank = tier.rank.order < studentRank.currentRank.order;
-        const passedCurrentRankTier =
-          tier.rank.order === studentRank.currentRank.order &&
-          studentRank.currentStripe !== null &&
-          tier.order <= studentRank.currentStripe.order;
-        if (passedLowerRank || passedCurrentRankTier) {
-          tier.eligibleClassTypes.forEach((t) => cumulativeEligible.add(t));
-        }
-      }
-    }
-
-    const uncovered = cls.activities.filter((a) => !cumulativeEligible.has(a));
-    if (uncovered.length > 0) {
-      throw new ForbiddenException(`This Student's current Rank does not permit booking a Class with activities: ${uncovered.join(', ')}.`);
-    }
+  // Same booking rank gate as BookingsService (Decision 173).
+  private async assertRankEligible(tx: TenantTx, studentId: string, cls: { styles: Prisma.JsonValue }): Promise<void> {
+    await assertBookingUnlocked(tx, studentId, cls);
   }
 
   private async selectAndConsumeMembership(
