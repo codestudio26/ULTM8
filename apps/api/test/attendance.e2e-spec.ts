@@ -175,7 +175,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       });
       const future = new Date(Date.now() + 3_600_000);
       const cls = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Judo Class', activities: ['Judo'], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
+        data: { id: randomUUID(), schoolId: school.id, title: 'Judo Class', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: null }], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
       });
       const membership = await mkActiveMembership(studentA.id);
       await mkBooking(studentA.id, cls.id, membership.id);

@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading engine, Phase 2b: attendance counted through the engine**
+  (Decisions 140, 149, 170, 171, 172). A check-in now counts once toward each
+  style the class lists, with that style's class type, and only when the type
+  is ticked on the student's next rung (nothing ticked: every class). The
+  rung's weekly cap applies on Monday–Sunday weeks in the class's local time
+  (branch, else school, else UTC); a time-only rung counts no classes.
+  `StudentRank` gains a per-type tally (`classesAttendedByType`, for "each
+  type required") and `countingSince` (the moment of the last rank change;
+  classes before it belong to the previous rung). Replaces Decision 90's
+  activities ↔ style-name bridge for attendance; a class with no styles counts
+  toward nothing. Existing rows are backfilled from their last grade.
+  `packages/api-client` regenerated.
 - **api + school-portal — School time zone** (Decisions 76, 172): a School
   has its own optional time zone, set like a Branch's in the create-school form
   and school settings. Classes generated from the timetable use the Branch's

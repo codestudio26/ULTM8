@@ -10459,6 +10459,17 @@
           "classesAttendedTowardCheckpoint": {
             "type": "number"
           },
+          "classesAttendedByType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Classes counted toward the next rung, per class type, e.g. {\"Fundamentals\": 18, \"Sparring\": 4} (Decisions 149, 171)."
+          },
+          "countingSince": {
+            "type": "string",
+            "description": "When counting toward the current rung began: the moment of the last rank change."
+          },
           "verificationStatus": {
             "type": "string",
             "enum": [
@@ -10497,6 +10508,8 @@
           "currentRankId",
           "dateOfCurrentRank",
           "classesAttendedTowardCheckpoint",
+          "classesAttendedByType",
+          "countingSince",
           "verificationStatus",
           "skillStatuses",
           "createdAt",

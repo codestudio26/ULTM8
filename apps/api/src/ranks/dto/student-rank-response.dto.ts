@@ -40,6 +40,16 @@ export class StudentRankResponseDto {
   @ApiProperty()
   classesAttendedTowardCheckpoint!: number;
 
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    description: 'Classes counted toward the next rung, per class type, e.g. {"Fundamentals": 18, "Sparring": 4} (Decisions 149, 171).',
+  })
+  classesAttendedByType!: Record<string, number>;
+
+  @ApiProperty({ description: 'When counting toward the current rung began: the moment of the last rank change.' })
+  countingSince!: string;
+
   @ApiProperty({ enum: ['VERIFIED', 'UNVERIFIED'], description: 'UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).' })
   verificationStatus!: 'VERIFIED' | 'UNVERIFIED';
 
