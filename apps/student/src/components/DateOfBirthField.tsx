@@ -21,6 +21,10 @@ import { colors, theme, spacing, fontSize, radius } from '../theme/tokens';
  * primary verification path) keeps a working input instead of the library's own
  * silent no-op.
  */
+function pad(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
 export function DateOfBirthField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [showPicker, setShowPicker] = useState(false);
 
@@ -28,7 +32,20 @@ export function DateOfBirthField({ value, onChange }: { value: string; onChange:
     return <TextField placeholder="YYYY-MM-DD" value={value} onChangeText={onChange} />;
   }
 
-  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00Z`) : undefined;
+  // FOUND ON REVIEW: both the native picker's `value` prop and its `onChange` date are
+  // plain JS Dates that the platform widget reads/writes using LOCAL calendar fields
+  // (year/month/day), never UTC — this is exactly the "@db.Date is calendar-only"
+  // mismatch formatDateOnly's own comment (lib/formatDate.ts) already warns about on
+  // the read side. An earlier version of this component built `parsed` with a
+  // `T00:00:00Z` suffix and read `onChange`'s date back out via `.toISOString()` —
+  // both UTC-anchored — which shifts the stored date of birth by one calendar day for
+  // any Student whose device timezone sits on the "wrong" side of UTC midnight (every
+  // UTC+ timezone on write, every UTC- timezone on the next read). Parsing/formatting
+  // via local Y/M/D components on both ends, never `Date.UTC`/`toISOString`, is what
+  // keeps the picker's displayed day and the saved "YYYY-MM-DD" string in agreement
+  // regardless of the viewer's timezone.
+  const dateParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const parsed = dateParts ? new Date(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3])) : undefined;
 
   return (
     <>
@@ -50,7 +67,7 @@ export function DateOfBirthField({ value, onChange }: { value: string; onChange:
           onChange={(_event: DateTimePickerEvent, selectedDate?: Date) => {
             setShowPicker(false);
             if (selectedDate) {
-              onChange(selectedDate.toISOString().slice(0, 10));
+              onChange(`${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}`);
             }
           }}
         />
