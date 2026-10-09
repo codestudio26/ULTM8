@@ -1655,9 +1655,22 @@ model Rank {
 
   order Int
 
+  /// Belt name, e.g. "Blue Belt" (Spec 55 §6.1 lists "Name"; grading
+  /// foundation PR 2). Existing rows were backfilled as "Belt {order+1}".
+  name String
+
   primaryColour   String
   secondaryColour String?
 
+  /// Drawing only (prototype `tagColor` / `coralAccent`): the tag sewn on the
+  /// belt tip (e.g. red on Black Belt) and the silver/gold accent of the coral
+  /// belts. No grading rule reads these.
+  tagColour   String?
+  coralAccent String?
+
+  /// Belt-level cap/flag kept during the transition to per-rung fields
+  /// (Decision 126 moved both onto RankStripeTier). Removed once the grading
+  /// engine (roadmap Phase 2) has switched over.
   weeklyClassCountCap Int?
   yearsInRankFlag     Boolean @default(false)
 
@@ -1701,6 +1714,22 @@ model RankStripeTier {
   minimumDaysInRank  Int?
   eligibleClassTypes String[] @default([])
 
+  /// Grading foundation PR 2 — every rung carries every prototype rung setting
+  /// (Decisions 126, 128). `name` e.g. "Blue Belt · 2 Stripes" (typed per rung,
+  /// generated from the belt name + stripe count when omitted).
+  name                String
+  /// Mixed stripe colours on one rung, in tip order, e.g.
+  /// [{"count":3,"colour":"#F0C419"},{"count":1,"colour":"#C23B3B"}]. The
+  /// segment counts always sum to `count`. Drawing data only, stored as JSON so
+  /// it needs no table/RLS policy of its own.
+  stripeSegments      Json    @default("[]")
+  weeklyClassCountCap Int?
+  /// "Time in rank only" (Decision 128 item 3): classes are not counted and
+  /// skills are optional; the years are held in `minimumDaysInRank`.
+  timeOnly            Boolean @default(false)
+
+  requiredSkills RankStripeTierRequiredSkill[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1736,6 +1765,7 @@ model Skill {
   updatedAt DateTime @updatedAt
 
   requiredByRanks      RankRequiredSkill[]
+  requiredByRungs      RankStripeTierRequiredSkill[]
   studentSkillStatuses StudentRankSkillStatus[]
   lessons              LessonSkill[]
 
@@ -1756,6 +1786,20 @@ model RankRequiredSkill {
   skill   Skill  @relation(fields: [skillId], references: [id])
 
   @@id([rankId, skillId])
+  @@index([skillId])
+}
+
+/// RankStripeTierRequiredSkill — per-rung required Skills (Decision 126):
+/// what it takes to be promoted INTO this rung (Decision 127). Same explicit
+/// join-table convention, and the same "no schoolId, RLS delegates to both
+/// parents" policy shape, as RankRequiredSkill above.
+model RankStripeTierRequiredSkill {
+  stripeTierId String
+  stripeTier   RankStripeTier @relation(fields: [stripeTierId], references: [id], onDelete: Cascade)
+  skillId      String
+  skill        Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([stripeTierId, skillId])
   @@index([skillId])
 }
 

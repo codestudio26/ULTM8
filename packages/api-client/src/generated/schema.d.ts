@@ -2929,6 +2929,10 @@ export interface components {
             /** @description e.g. "Kids Fundamentals", "Adult Sparring", "Competition Team". */
             classTypesOffered?: string[];
         };
+        StripeSegmentInputDto: {
+            count: number;
+            colour: string;
+        };
         RankStripeTierInputDto: {
             /** @description Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order: number;
@@ -2937,12 +2941,28 @@ export interface components {
             classesRequired?: number;
             minimumDaysInRank?: number;
             eligibleClassTypes?: string[];
+            /** @description Rung name, e.g. "Blue Belt · 2 Stripes". When omitted: generated from the belt name and stripe count on a new rung; kept on an existing rung (a generated name is regenerated). */
+            name?: string;
+            /** @description Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged. */
+            stripeSegments?: components["schemas"]["StripeSegmentInputDto"][];
+            /** @description Max classes per week that count toward this rung. */
+            weeklyClassCountCap?: number;
+            /** @description "Time in rank only" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung. */
+            timeOnly?: boolean;
+            /** @description Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted. */
+            requiredSkillIds?: string[];
         };
         CreateRankDto: {
             /** @description Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order: number;
+            /** @description Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted. */
+            name?: string;
             primaryColour: string;
             secondaryColour?: string;
+            /** @description Drawing only: colour of the tag sewn on the belt tip (e.g. red on Black Belt). */
+            tagColour?: string;
+            /** @description Drawing only: silver/gold accent of the coral belts. */
+            coralAccent?: string;
             weeklyClassCountCap?: number;
             /**
              * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
@@ -2953,6 +2973,10 @@ export interface components {
             /** @description Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements. */
             requiredSkillIds?: string[];
         };
+        StripeSegmentResponseDto: {
+            count: number;
+            colour: string;
+        };
         RankStripeTierResponseDto: {
             id: string;
             order: number;
@@ -2961,14 +2985,23 @@ export interface components {
             classesRequired?: number | null;
             minimumDaysInRank?: number | null;
             eligibleClassTypes: string[];
+            name: string;
+            stripeSegments: components["schemas"]["StripeSegmentResponseDto"][];
+            weeklyClassCountCap?: number | null;
+            timeOnly: boolean;
+            /** @description Skills required to be promoted INTO this rung. */
+            requiredSkillIds: string[];
         };
         RankResponseDto: {
             id: string;
             disciplineId: string;
             schoolId: string;
             order: number;
+            name: string;
             primaryColour: string;
             secondaryColour?: string | null;
+            tagColour?: string | null;
+            coralAccent?: string | null;
             weeklyClassCountCap?: number | null;
             yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
@@ -2983,6 +3016,8 @@ export interface components {
         UpdateRankDto: {
             /** @description Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order?: number;
+            /** @description Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted. */
+            name?: string;
             primaryColour?: string;
             /**
              * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
@@ -2994,6 +3029,8 @@ export interface components {
             requiredSkillIds?: string[];
             secondaryColour?: string | null;
             weeklyClassCountCap?: number | null;
+            tagColour?: string | null;
+            coralAccent?: string | null;
         };
         CreateSkillDto: {
             name: string;

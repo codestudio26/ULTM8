@@ -148,7 +148,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     subscriptionPlanId = plan.id;
 
     discipline = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Judo' } });
-    rank = await superuser.rank.create({ data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, primaryColour: 'white' } });
+    rank = await superuser.rank.create({ data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, name: 'White Belt', primaryColour: 'white' } });
   });
 
   afterAll(async () => {

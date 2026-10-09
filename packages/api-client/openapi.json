@@ -9305,6 +9305,21 @@
           }
         }
       },
+      "StripeSegmentInputDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number"
+          },
+          "colour": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "colour"
+        ]
+      },
       "RankStripeTierInputDto": {
         "type": "object",
         "properties": {
@@ -9329,6 +9344,32 @@
             "items": {
               "type": "string"
             }
+          },
+          "name": {
+            "type": "string",
+            "description": "Rung name, e.g. \"Blue Belt · 2 Stripes\". When omitted: generated from the belt name and stripe count on a new rung; kept on an existing rung (a generated name is regenerated)."
+          },
+          "stripeSegments": {
+            "description": "Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StripeSegmentInputDto"
+            }
+          },
+          "weeklyClassCountCap": {
+            "type": "number",
+            "description": "Max classes per week that count toward this rung."
+          },
+          "timeOnly": {
+            "type": "boolean",
+            "description": "\"Time in rank only\" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung."
+          },
+          "requiredSkillIds": {
+            "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -9344,11 +9385,23 @@
             "type": "number",
             "description": "Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5)."
           },
+          "name": {
+            "type": "string",
+            "description": "Belt name, e.g. \"Blue Belt\". Defaults to \"Belt {order+1}\" when omitted."
+          },
           "primaryColour": {
             "type": "string"
           },
           "secondaryColour": {
             "type": "string"
+          },
+          "tagColour": {
+            "type": "string",
+            "description": "Drawing only: colour of the tag sewn on the belt tip (e.g. red on Black Belt)."
+          },
+          "coralAccent": {
+            "type": "string",
+            "description": "Drawing only: silver/gold accent of the coral belts."
           },
           "weeklyClassCountCap": {
             "type": "number"
@@ -9379,6 +9432,21 @@
           "stripeTiers"
         ]
       },
+      "StripeSegmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number"
+          },
+          "colour": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "colour"
+        ]
+      },
       "RankStripeTierResponseDto": {
         "type": "object",
         "properties": {
@@ -9407,6 +9475,29 @@
             "items": {
               "type": "string"
             }
+          },
+          "name": {
+            "type": "string"
+          },
+          "stripeSegments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StripeSegmentResponseDto"
+            }
+          },
+          "weeklyClassCountCap": {
+            "type": "number",
+            "nullable": true
+          },
+          "timeOnly": {
+            "type": "boolean"
+          },
+          "requiredSkillIds": {
+            "description": "Skills required to be promoted INTO this rung.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -9414,7 +9505,11 @@
           "order",
           "count",
           "colour",
-          "eligibleClassTypes"
+          "eligibleClassTypes",
+          "name",
+          "stripeSegments",
+          "timeOnly",
+          "requiredSkillIds"
         ]
       },
       "RankResponseDto": {
@@ -9432,10 +9527,21 @@
           "order": {
             "type": "number"
           },
+          "name": {
+            "type": "string"
+          },
           "primaryColour": {
             "type": "string"
           },
           "secondaryColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "tagColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "coralAccent": {
             "type": "string",
             "nullable": true
           },
@@ -9471,6 +9577,7 @@
           "disciplineId",
           "schoolId",
           "order",
+          "name",
           "primaryColour",
           "yearsInRankFlag",
           "stripeTiers",
@@ -9500,6 +9607,10 @@
             "type": "number",
             "description": "Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5)."
           },
+          "name": {
+            "type": "string",
+            "description": "Belt name, e.g. \"Blue Belt\". Defaults to \"Belt {order+1}\" when omitted."
+          },
           "primaryColour": {
             "type": "string"
           },
@@ -9528,6 +9639,14 @@
           },
           "weeklyClassCountCap": {
             "type": "number",
+            "nullable": true
+          },
+          "tagColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "coralAccent": {
+            "type": "string",
             "nullable": true
           }
         }

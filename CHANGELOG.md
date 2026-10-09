@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading foundation, PR 2: every rung of a ladder carries its own
+  settings** (Decisions 126, 128, 164): belts get a name (Spec 55 §6.1) and
+  drawing fields (tag colour, coral accent). Each rung (stripe tier) gets a
+  name, mixed stripe colours (e.g. 3 yellow + 1 red), its own weekly class cap,
+  a "time in rank only" switch, and its own required skills. Missing names are
+  generated ("Blue Belt · 2 Stripes"). A migration fills in existing data and
+  moves each belt's required skills to the first rung of the next belt
+  (Decision 164). Nothing is removed: the belt-level cap, years flag and skills
+  stay until the grading engine switches over. `packages/api-client`
+  regenerated. **Fixes found on independent review:** editing a belt in the
+  school portal no longer wipes a rung's custom name, mixed stripe colours or
+  "time in rank only" setting. Fields left out of an edit are kept, and
+  renaming a belt also renames the rung names that were generated from it.
+  `null`, empty names and duplicate skills on a rung now get a clear 400
+  instead of a server error. The migration reports any belt skills it could
+  not move.
 - **api — grading foundation, PR 1: grading writes respect the ranks switch and
   closed Schools; Guardians can read their child's grading** (Decisions 87, 110,
   132; grading plan in `docs/grading-integration/`): promote, downgrade,

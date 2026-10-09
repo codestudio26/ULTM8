@@ -708,4 +708,298 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       .set('Authorization', `Bearer ${scopedHere}`);
     expect(allowed.status).toBe(200);
   });
+
+  // ---------------------------------------------------------------------------
+  // Phase 1 / PR 2 (grading foundation) — per-rung ladder fields
+  // (Decisions 126, 128): belt name and drawing fields; rung name, mixed stripe
+  // segments, weekly cap, time-in-rank-only switch and required Skills.
+  // Uses its own Discipline so the grading-flow tests above are unaffected.
+  // ---------------------------------------------------------------------------
+
+  describe('per-rung ladder fields (grading foundation PR 2)', () => {
+    let ladderDisciplineId: string;
+    let otherDisciplineId: string;
+    let skillRnc: string;
+    let skillSweep: string;
+    let foreignSkill: string;
+
+    beforeAll(async () => {
+      const mkDiscipline = async (name: string) => {
+        const res = await request(app.getHttpServer())
+          .post(`/v1/schools/${school.id}/disciplines`)
+          .set('Authorization', `Bearer ${tokenOwner}`)
+          .send({ name });
+        expect(res.status).toBe(201);
+        disciplineIds.push(res.body.id);
+        return res.body.id as string;
+      };
+      const mkSkill = async (discipline: string, name: string) => {
+        const res = await request(app.getHttpServer())
+          .post(`/v1/styles/${discipline}/skills`)
+          .set('Authorization', `Bearer ${tokenOwner}`)
+          .send({ name });
+        expect(res.status).toBe(201);
+        return res.body.id as string;
+      };
+      ladderDisciplineId = await mkDiscipline('Ladder Fields BJJ');
+      otherDisciplineId = await mkDiscipline('Ladder Fields Judo');
+      skillRnc = await mkSkill(ladderDisciplineId, 'Rear Naked Choke');
+      skillSweep = await mkSkill(ladderDisciplineId, 'Scissor Sweep');
+      foreignSkill = await mkSkill(otherDisciplineId, 'Osoto Gari');
+    });
+
+    it('creates a belt with a name and drawing fields, and rungs with every per-rung setting', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          order: 0,
+          name: 'Grey/White Belt',
+          primaryColour: '#9CA3AF',
+          secondaryColour: '#FFFFFF',
+          tagColour: '#17181A',
+          stripeTiers: [
+            { order: 0, count: 0, colour: '#FFFFFF', classesRequired: 8, minimumDaysInRank: 36, eligibleClassTypes: ['Kids Fundamentals'] },
+            {
+              order: 1,
+              name: 'Grey/White Belt · 3 Yellow + 1 Red',
+              count: 4,
+              colour: '#F0C419',
+              stripeSegments: [{ count: 3, colour: '#F0C419' }, { count: 1, colour: '#C23B3B' }],
+              classesRequired: 8,
+              minimumDaysInRank: 36,
+              weeklyClassCountCap: 3,
+              requiredSkillIds: [skillRnc, skillSweep],
+            },
+          ],
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.name).toBe('Grey/White Belt');
+      expect(res.body.tagColour).toBe('#17181A');
+      expect(res.body.coralAccent).toBeNull();
+
+      const [plain, mixed] = res.body.stripeTiers;
+      // Omitted name -> generated from the belt name; omitted segments -> none for 0 stripes.
+      expect(plain.name).toBe('Grey/White Belt');
+      expect(plain.stripeSegments).toEqual([]);
+      expect(plain.timeOnly).toBe(false);
+      expect(plain.weeklyClassCountCap).toBeNull();
+      expect(plain.requiredSkillIds).toEqual([]);
+
+      expect(mixed.name).toBe('Grey/White Belt · 3 Yellow + 1 Red');
+      expect(mixed.stripeSegments).toEqual([{ count: 3, colour: '#F0C419' }, { count: 1, colour: '#C23B3B' }]);
+      expect(mixed.weeklyClassCountCap).toBe(3);
+      expect([...mixed.requiredSkillIds].sort()).toEqual([skillRnc, skillSweep].sort());
+
+      // Persisted, not just echoed: GET returns the same per-rung fields.
+      const ladder = await request(app.getHttpServer())
+        .get(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(ladder.status).toBe(200);
+      expect(ladder.body.items[0].stripeTiers[1].stripeSegments).toHaveLength(2);
+      expect([...ladder.body.items[0].stripeTiers[1].requiredSkillIds].sort()).toEqual([skillRnc, skillSweep].sort());
+    });
+
+    it('generates belt and rung names when omitted, and a time-in-rank-only rung keeps its years in minimumDaysInRank', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          order: 1,
+          primaryColour: '#17181A',
+          stripeTiers: [
+            { order: 0, count: 0, colour: '#FFFFFF', minimumDaysInRank: 1095, timeOnly: true },
+            { order: 1, count: 1, colour: '#FFFFFF', minimumDaysInRank: 1095, timeOnly: true },
+            { order: 2, count: 2, colour: '#FFFFFF', minimumDaysInRank: 1095, timeOnly: true },
+          ],
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.name).toBe('Belt 2');
+      expect(res.body.stripeTiers.map((t: { name: string }) => t.name)).toEqual(['Belt 2', 'Belt 2 · 1 Stripe', 'Belt 2 · 2 Stripes']);
+      expect(res.body.stripeTiers[2].stripeSegments).toEqual([{ count: 2, colour: '#FFFFFF' }]);
+      expect(res.body.stripeTiers.every((t: { timeOnly: boolean; minimumDaysInRank: number }) => t.timeOnly && t.minimumDaysInRank === 1095)).toBe(true);
+    });
+
+    it('rejects stripe segments that do not add up to the stripe count — 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          order: 2,
+          primaryColour: '#3B5FCB',
+          stripeTiers: [{ order: 0, count: 4, colour: '#FFFFFF', stripeSegments: [{ count: 3, colour: '#FFFFFF' }] }],
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects a rung requiring a Skill from another Discipline — 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          order: 2,
+          primaryColour: '#3B5FCB',
+          stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF', requiredSkillIds: [foreignSkill] }],
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH: renames the belt, clears a drawing field, replaces a rung\'s Skills when sent, keeps them when omitted, and keeps rung ids', async () => {
+      const ladder = await request(app.getHttpServer())
+        .get(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      const greyWhite = ladder.body.items[0];
+      const [tier0, tier1] = greyWhite.stripeTiers;
+
+      // Send rung 0 with a new Skill list, rung 1 without one.
+      const res = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${greyWhite.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({
+          name: 'Grey & White Belt',
+          tagColour: null,
+          stripeTiers: [
+            { order: 0, count: 0, colour: '#FFFFFF', requiredSkillIds: [skillSweep] },
+            { order: 1, count: 4, colour: '#F0C419', stripeSegments: [{ count: 3, colour: '#F0C419' }, { count: 1, colour: '#C23B3B' }] },
+          ],
+        });
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe('Grey & White Belt');
+      expect(res.body.tagColour).toBeNull();
+
+      const [after0, after1] = res.body.stripeTiers;
+      expect(after0.id).toBe(tier0.id);
+      expect(after1.id).toBe(tier1.id);
+      expect(after0.requiredSkillIds).toEqual([skillSweep]);
+      expect([...after1.requiredSkillIds].sort()).toEqual([skillRnc, skillSweep].sort());
+      // An omitted generated name follows the new belt name; an omitted
+      // custom name is kept (independent review, PR 2).
+      expect(after0.name).toBe('Grey & White Belt');
+      expect(after1.name).toBe('Grey/White Belt · 3 Yellow + 1 Red');
+    });
+
+    it('PATCH with exactly what the school portal\'s RankFormModal sends keeps custom rung names, mixed stripes, timeOnly and rung Skills (independent review, PR 2)', async () => {
+      const ladder = await request(app.getHttpServer())
+        .get(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      const [greyWhite, belt2] = ladder.body.items;
+
+      // Same shape as RankFormModal.handleSubmit: no name, stripeSegments,
+      // timeOnly or per-rung requiredSkillIds.
+      type Tier = { order: number; count: number; colour: string; classesRequired: number | null; minimumDaysInRank: number | null; eligibleClassTypes: string[] };
+      const portalPayload = (rank: { primaryColour: string; stripeTiers: Tier[] }) => ({
+        primaryColour: rank.primaryColour,
+        secondaryColour: null,
+        weeklyClassCountCap: null,
+        yearsInRankFlag: false,
+        stripeTiers: rank.stripeTiers.map((t) => ({
+          order: t.order,
+          count: t.count,
+          colour: t.colour,
+          classesRequired: t.classesRequired ?? undefined,
+          minimumDaysInRank: t.minimumDaysInRank ?? undefined,
+          eligibleClassTypes: t.eligibleClassTypes,
+        })),
+        requiredSkillIds: [],
+      });
+
+      const res = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${greyWhite.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send(portalPayload(greyWhite));
+      expect(res.status).toBe(200);
+      const mixed = res.body.stripeTiers[1];
+      expect(mixed.name).toBe('Grey/White Belt · 3 Yellow + 1 Red');
+      expect(mixed.stripeSegments).toEqual([{ count: 3, colour: '#F0C419' }, { count: 1, colour: '#C23B3B' }]);
+      expect([...mixed.requiredSkillIds].sort()).toEqual([skillRnc, skillSweep].sort());
+      expect(res.body.stripeTiers[0].requiredSkillIds).toEqual([skillSweep]);
+
+      const res2 = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${belt2.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send(portalPayload(belt2));
+      expect(res2.status).toBe(200);
+      expect(res2.body.stripeTiers.map((t: { timeOnly: boolean }) => t.timeOnly)).toEqual([true, true, true]);
+      expect(res2.body.stripeTiers.map((t: { name: string }) => t.name)).toEqual(['Belt 2', 'Belt 2 · 1 Stripe', 'Belt 2 · 2 Stripes']);
+
+      // Changing a rung's stripe count without sending segments redraws it as
+      // one run of the new count (the old segments no longer add up).
+      const changed = portalPayload(greyWhite);
+      changed.stripeTiers[1].count = 2;
+      const res3 = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${greyWhite.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send(changed);
+      expect(res3.status).toBe(200);
+      expect(res3.body.stripeTiers[1].stripeSegments).toEqual([{ count: 2, colour: '#F0C419' }]);
+      expect(res3.body.stripeTiers[1].name).toBe('Grey/White Belt · 3 Yellow + 1 Red');
+    });
+
+    it('PATCH renaming a belt without sending rungs renames generated rung names and keeps custom ones (independent review, PR 2)', async () => {
+      const ladder = await request(app.getHttpServer())
+        .get(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      const [greyWhite, belt2] = ladder.body.items;
+
+      const res = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${belt2.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ name: 'Black Belt' });
+      expect(res.status).toBe(200);
+      expect(res.body.stripeTiers.map((t: { name: string }) => t.name)).toEqual(['Black Belt', 'Black Belt · 1 Stripe', 'Black Belt · 2 Stripes']);
+
+      const res2 = await request(app.getHttpServer())
+        .patch(`/v1/ranks/${greyWhite.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ name: 'Grey Belt' });
+      expect(res2.status).toBe(200);
+      expect(res2.body.stripeTiers.map((t: { name: string }) => t.name)).toEqual(['Grey Belt', 'Grey/White Belt · 3 Yellow + 1 Red']);
+    });
+
+    it('refuses null, empty names and duplicate rung Skills with 400, not 500/409, and changes nothing (independent review, PR 2)', async () => {
+      const ladder = await request(app.getHttpServer())
+        .get(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      const greyWhite = ladder.body.items[0];
+      const tiers = [
+        { order: 0, count: 0, colour: '#FFFFFF' },
+        { order: 1, count: 2, colour: '#F0C419' },
+      ];
+      const bad: Record<string, unknown>[] = [
+        { name: null },
+        { name: '' },
+        { requiredSkillIds: null },
+        { stripeTiers: null },
+        { stripeTiers: [tiers[0], { ...tiers[1], requiredSkillIds: null }] },
+        { stripeTiers: [tiers[0], { ...tiers[1], requiredSkillIds: [skillRnc, skillRnc] }] },
+        { stripeTiers: [tiers[0], { ...tiers[1], name: '' }] },
+      ];
+      for (const body of bad) {
+        const res = await request(app.getHttpServer())
+          .patch(`/v1/ranks/${greyWhite.id}`)
+          .set('Authorization', `Bearer ${tokenOwner}`)
+          .send(body);
+        expect({ body, status: res.status }).toEqual({ body, status: 400 });
+      }
+      const created = await request(app.getHttpServer())
+        .post(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ order: 2, name: '', primaryColour: '#3B5FCB', stripeTiers: [tiers[0]] });
+      expect(created.status).toBe(400);
+
+      const after = await request(app.getHttpServer())
+        .get(`/v1/styles/${ladderDisciplineId}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(after.body.items).toEqual(ladder.body.items);
+    });
+
+    it('RLS: per-rung required Skills are invisible to a user with no role at the School', async () => {
+      const outsider = await mkExtraUser('rung-skills-outsider');
+      const rows = await withUser(outsider.id, (tx) => tx.rankStripeTierRequiredSkill.findMany({ where: { skillId: skillSweep } }));
+      expect(rows).toHaveLength(0);
+
+      const asOwner = await withUser(owner.id, (tx) => tx.rankStripeTierRequiredSkill.findMany({ where: { skillId: skillSweep } }));
+      expect(asOwner.length).toBeGreaterThan(0);
+    });
+  });
 });
