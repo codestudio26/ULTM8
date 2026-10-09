@@ -1487,3 +1487,45 @@ Answer given: *"I am the product owner, so I decide."*
 ### Recorded by
 
 Asked as Q2 of the grading merge question list and answered directly by Gus on 9 Oct 2026. Recorded by Claude.
+
+---
+
+## Decision 126 — Rung storage: keep Rank + RankStripeTier, but every rung carries everything a prototype rung carries
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision, given directly by Gus in this session
+**Resolves:** Q3 of `docs/grading-integration/GRADING-MERGE-QUESTIONS.md`: "How are the rungs stored: belt + stripe tiers (ULTM8 today) or one row per rung (your prototype)?"
+
+### Decision
+
+**Option A.** Keep ULTM8's existing storage: a `Rank` (belt) with ordered `RankStripeTier` rows, and `StudentRank.currentRankId` + `currentStripeId`. Every (belt, stripe tier) pair is one rung of the ladder. Schools, coaches and students see and grade a single flat ladder exactly like the prototype. Each stripe is its own step with its own requirements, its own grade action and its own history entry, as Gus confirmed on 8 Oct ("each stripe is a step on the ladder, and a new grade").
+
+Answer given: *"A … MY prototype, but looks like your recommendation cover my prototype."*
+
+**Condition attached by Gus:** option A must cover the prototype's behaviour in full. Concretely, any setting a prototype rung has must be settable on each rung (stripe tier), not only on the belt:
+
+| Prototype rung field | ULTM8 today | Needed under this decision |
+|---|---|---|
+| classCount | `RankStripeTier.classesRequired` | already per rung |
+| minDays | `RankStripeTier.minimumDaysInRank` | already per rung |
+| scope (which classes count) | `RankStripeTier.eligibleClassTypes` | already per rung |
+| stripe count and colour | `RankStripeTier.count` / `colour` | per rung; mixed colours on one rung are Q6 |
+| skills (required skills) | `RankRequiredSkill` on the **belt** | **per rung**. Spec 55 §6.1 already says skills are required "at the CURRENT checkpoint — stripe or rank" |
+| weeklyCap | `Rank.weeklyClassCountCap` on the belt | per rung (Q8) |
+| timeOnly ("time in rank only") | `Rank.yearsInRankFlag` on the belt | per rung; scope is Q7 |
+| name | none | per rung (Q5) |
+| colour, secondaryColour | on the belt | stays on the belt |
+| tagColor, coralAccent (drawing only) | none | to be added for belt drawing |
+
+### Why
+
+Booking eligibility (`BookingsService.assertRankEligible`), waitlist, QR attendance credit and the student app's "My Rank" already read Rank + stripe tier. Option B would rewrite that working code to get the same on-screen ladder.
+
+### Effect / open follow-up
+
+- The schema changes in the table above belong to Phase 1 of `GRADING-INTEGRATION-ROADMAP.md`. The rows marked Q5, Q6, Q7 and Q8 still wait for their own answers. Moving required skills to the rung follows directly from this decision, because the prototype requires it.
+- A translation layer (the shared grading engine, roadmap Phase 2) flattens belt + tiers into the prototype's ladder, so Gus's rules and stress-test scenarios run unchanged against ULTM8 data.
+
+### Recorded by
+
+Asked as Q3 and answered directly by Gus on 9 Oct 2026. The per-rung field check was done by Claude against `apps/api/prisma/schema.prisma` and the prototype's `makeRank()`.

@@ -12,6 +12,8 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - This is the ULTM8 grading module, built inside ULTM8's existing ranks and curriculum code.
 - Q1: your grading rules win over Spec 55 where they conflict, one logged decision per conflict (Decision 124).
 - Q2: you are the product owner and approve all grading decisions (Decision 125).
+- Q3: keep ULTM8's belt + stripe storage, with every per-rung setting from the prototype available per rung (Decision 126).
+- CLAUDE.md now carries the grading exception (Decision 124), so future sessions follow it.
 
 ## How many need answering, and when
 
@@ -42,6 +44,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q3. How are the rungs stored: belt + stripe tiers (ULTM8 today) or one row per rung (your prototype)?** · _Answer first_
 - Why it matters: Bookings, attendance and the student app already use belt + stripe tiers. Changing the storage means rewriting working code.
 - Recommendation: Keep belt + stripe tiers, and show and grade them exactly like your flat ladder.
+- Answer so far: A: keep belt + stripe tiers, on condition that every rung can carry every setting a prototype rung has, including required skills, weekly cap and time-only (Decision 126).
 
 **Q4. Which rung do requirements belong to: what it takes to get into a rung (yours), or to leave it (ULTM8 today)?** · _Answer first_
 - Why it matters: This is the single most important rule. Your bug B1 was this confusion. ULTM8 checks the skills on the student's current rank.
