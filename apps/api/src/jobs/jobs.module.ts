@@ -90,13 +90,16 @@ import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from '
  *
  * Closes the other half of that same gap, flagged by Decision 122's own "What
  * this does NOT resolve" note: MembershipExpirySweepProcessor/Scheduler add the
- * missing scheduled sweep for a Membership that Expires by its own expiryDate
- * passing (no Stripe event involved) — the one Membership-expiry path Decision
- * 122 explicitly left untouched. Reuses the exact Booking-cancellation helper
- * Decision 122 wrote, now extracted to its own file
- * (membership-booking-cancellation.ts) so both the Stripe-driven and date-based
- * paths share one implementation. No new module import needed — same
- * PrismaJobsService/WAITLIST_CASCADE_PROCESSING_QUEUE dependencies every sweep
+ * missing Booking-cancellation sweep for a Membership that Expires by its own
+ * expiryDate passing (no Stripe event involved) — the one Membership-expiry
+ * path Decision 122 explicitly left untouched. Deliberately does NOT persist
+ * Membership.status for this path — Decision 26 confirms that stays
+ * live-computed-only, never a scheduled batch flip; see the processor's own
+ * header comment for a real bug this distinction caught before merge. Reuses
+ * the exact Booking-cancellation helper Decision 122 wrote, now extracted to
+ * its own file (membership-booking-cancellation.ts) so both the Stripe-driven
+ * and date-based paths share one implementation. No new module import needed
+ * — same PrismaJobsService/WAITLIST_CASCADE_PROCESSING_QUEUE dependencies every sweep
  * above it already uses.
  */
 @Module({

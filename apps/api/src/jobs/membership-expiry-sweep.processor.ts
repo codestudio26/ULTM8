@@ -44,56 +44,64 @@ export class MembershipExpirySweepScheduler implements OnModuleInit {
     }
     this.logger.error(
       'Failed to register the repeatable membership-expiry-sweep job after all retries — ' +
-        'a Membership past its own expiryDate will never be Expired, and its Student\'s stale future ' +
-        'Bookings will never be cancelled, until this succeeds.',
+        'a Student\'s stale future Bookings, still funded by a Membership that already expired ' +
+        'by date, will never be cancelled until this succeeds.',
     );
   }
 }
 
 /**
  * Consumes the membership-expiry-sweep queue — closes the gap Decision 122's
- * own "What this does NOT resolve" note flagged by name: Spec 55 §6.1/Decision
- * 26 confirm Membership.status expiry-by-date is "a live-computed predicate
- * evaluated at every access/booking check against the stored expiry date, not
- * a scheduled batch flip" (see the 20260912000000_memberships_transactions_module
- * migration's own KNOWN LIMITATION comment, and MembershipsService.getMembershipStatus(),
- * which computes this same predicate live for its one caller but never persists
- * it). That's still true and unchanged by this job for the ACTIVE/EXPIRED
- * status Students/Staff are shown — this job does not touch that live-computed
- * read path or its contract.
+ * own "What this does NOT resolve" note flagged by name: a Membership whose
+ * EXPIRED-by-date is confirmed [CONFIRMED] by Decision 26 to be purely a
+ * live-computed predicate — "evaluated at every access/booking check against
+ * the stored expiry date, not a scheduled batch flip" (see the
+ * 20260912000000_memberships_transactions_module migration's own KNOWN
+ * LIMITATION comment, and MembershipsService.getMembershipStatus(), which
+ * computes this same predicate live for its one caller but never persists
+ * it) — never had its Student's own future Bookings swept the way the
+ * Stripe-driven force-Expiry paths already are (Decision 122).
  *
- * What WAS missing, and is what this job actually fixes: nothing in the
- * codebase ever persisted the EXPIRED flip for a date-based expiry, so nothing
- * ever cancelled the Student's own future Bookings still funded by that
- * Membership — the exact "same-day sweep cancels the Student's own future
- * Bookings" half of Spec 55 §6.1's rule Decision 122 already built for the
- * Stripe-driven force-Expiry paths (subscription cancellation, lost dispute),
- * left undone here. This job is that same rule, applied to the date-based
- * path, reusing the identical cancelFutureBookingsFundedByExpiredMembership()
- * helper Decision 122 already wrote (now shared, not duplicated — see that
- * file's own header comment) so the WITHHELD-not-REFUNDED/guest-seat-scope
- * reasoning stays in exactly one place.
+ * FOUND ON REVIEW, before merge: an earlier draft of this job persisted
+ * Membership.status = EXPIRED to make that sweep possible. That is exactly
+ * the "scheduled batch flip" Decision 26 prohibits, and it wasn't inert —
+ * franchise-fee-usage-reporting.processor.ts's countActiveStudents() reads
+ * status: 'ACTIVE' directly to compute a Franchise's monthly per-headcount
+ * bill (Decision 54); flipping it would have silently dropped any Student
+ * whose Class Pack/Weekly Pass merely expired-by-date since the last report,
+ * an undiscussed side effect in direct tension with a named, confirmed
+ * decision. Fixed: this job now NEVER reads or writes Membership.status.
+ * Status stays exactly what Decision 26 already says it must stay — ACTIVE
+ * in storage, forever, for this path — and every existing consumer of that
+ * column (franchise-fee billing, BookingsService/WaitlistService's own
+ * membership-selection reads) is completely unaffected by this job's
+ * existence.
  *
- * Persisting Membership.status = EXPIRED here (rather than leaving it live-
- * computed-only forever) is a deliberate, narrow addition: it's what makes a
- * funded Booking's cancellation possible at all — nothing can react to an
- * expiry that only ever exists as an ephemeral return value of one read
- * method. Scope is intentionally the mirror of the Stripe-driven paths: only
- * flips status and cancels Bookings, no refund, no notification beyond the
+ * What this job actually does: finds every ACTIVE Membership whose
+ * `expiryDate` has passed (the identical live-computed predicate
+ * getMembershipStatus() already uses, read-only, never persisted) and not yet
+ * swept (`bookingCancellationSweptAt` still null — this job's OWN private
+ * bookkeeping column, carrying no ACTIVE/EXPIRED meaning at all; see its own
+ * schema comment), cancels the Student's own still-UPCOMING Bookings it was
+ * funding (reusing the identical cancelFutureBookingsFundedByExpiredMembership()
+ * helper Decision 122 already wrote, now shared rather than duplicated — see
+ * that file's own header comment), and stamps `bookingCancellationSweptAt` so
+ * the next run doesn't re-scan it. Scope is intentionally the mirror of the
+ * Stripe-driven paths otherwise: no refund, no notification beyond the
  * existing waitlist-cascade 'seat-freed' cascade every other freed-seat path
  * in this codebase already triggers.
  *
  * Runs via PrismaJobsService (ultm8_jobs role) — same reasoning as every other
  * scheduled/cross-tenant job in this codebase; that role already holds
  * unrestricted SELECT/UPDATE on Membership (granted for stripe-webhook-processing,
- * Phase 9) and SELECT/UPDATE on Booking (granted for the Phase 11 no-show
+ * Phase 9 — covers the new column too, an ADD COLUMN on an already-granted
+ * table) and SELECT/UPDATE on Booking (granted for the Phase 11 no-show
  * sweep) — no new grant needed for this addition.
  *
- * Each overdue Membership is flipped + swept inside its OWN `$transaction` —
- * not one big transaction for the whole sweep — so one Membership's failure
- * (or a losing optimistic-concurrency race against a concurrent Stripe webhook
- * force-Expiring the same row) can't roll back every other Membership this
- * sweep already handled.
+ * Each overdue Membership is swept inside its OWN `$transaction` — not one big
+ * transaction for the whole sweep — so one Membership's failure (or a losing
+ * optimistic-concurrency race against a concurrent run of this same sweep)
+ * can't roll back every other Membership this sweep already handled.
  *
  * One 'seat-freed' job is enqueued PER freed Class (not deduped across
  * Memberships/Bookings) — the same bug BookingNoShowProcessingProcessor's own
@@ -116,34 +124,39 @@ export class MembershipExpirySweepProcessor extends WorkerHost {
   async process(_job: Job): Promise<void> {
     const now = new Date();
 
+    // status: 'ACTIVE' here is a READ against the same live-computed
+    // predicate getMembershipStatus() uses — never written back (see this
+    // class's own header comment). bookingCancellationSweptAt: null excludes
+    // whatever this job already handled on a prior run, so a Membership
+    // that's been expired-by-date for months isn't re-scanned forever.
     const overdue = await this.prismaJobs.membership.findMany({
-      where: { status: 'ACTIVE', expiryDate: { not: null, lt: now } },
+      where: { status: 'ACTIVE', expiryDate: { not: null, lt: now }, bookingCancellationSweptAt: null },
       select: { id: true },
     });
 
-    let expired = 0;
+    let swept = 0;
     const freedClassIds: string[] = [];
 
     for (const { id: membershipId } of overdue) {
       try {
-        const { flipped, classIds } = await this.prismaJobs.$transaction(async (tx) => {
+        const { won, classIds } = await this.prismaJobs.$transaction(async (tx) => {
           // Optimistic-concurrency guard, same shape as every other
-          // status-transition in this codebase — if a concurrent Stripe
-          // webhook (or a previous, still-finishing run of this same sweep)
-          // already force-Expired this Membership between the read above and
-          // this write, this is a silent no-op for that row rather than
-          // double-sweeping its Bookings.
-          const result = await tx.membership.updateMany({ where: { id: membershipId, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
-          if (result.count === 0) return { flipped: false, classIds: [] as string[] };
+          // status-transition in this codebase — if a previous, still-
+          // finishing run of this same sweep already stamped this Membership
+          // between the read above and this write, this is a silent no-op
+          // for that row rather than double-sweeping its Bookings. Guards on
+          // bookingCancellationSweptAt, NOT status — status is never written
+          // by this job at all.
+          const result = await tx.membership.updateMany({
+            where: { id: membershipId, bookingCancellationSweptAt: null },
+            data: { bookingCancellationSweptAt: now },
+          });
+          if (result.count === 0) return { won: false, classIds: [] as string[] };
           const classIds = await cancelFutureBookingsFundedByExpiredMembership(tx, membershipId, this.logger);
-          return { flipped: true, classIds };
+          return { won: true, classIds };
         });
-        // `flipped` tracks the status transition itself (this run actually won
-        // the ACTIVE->EXPIRED race) — independent of whether that Membership
-        // happened to be funding any still-UPCOMING Booking. A Membership with
-        // nothing to cancel still counts as a real Expiry here.
-        if (flipped) {
-          expired += 1;
+        if (won) {
+          swept += 1;
         }
         freedClassIds.push(...classIds);
       } catch (err) {
@@ -159,6 +172,6 @@ export class MembershipExpirySweepProcessor extends WorkerHost {
       }
     }
 
-    this.logger.log(`membership-expiry-sweep: ${overdue.length} overdue Membership(s) found, ${expired} Expired, ${freedClassIds.length} seat-freed job(s) enqueued.`);
+    this.logger.log(`membership-expiry-sweep: ${overdue.length} overdue Membership(s) found, ${swept} swept, ${freedClassIds.length} seat-freed job(s) enqueued.`);
   }
 }

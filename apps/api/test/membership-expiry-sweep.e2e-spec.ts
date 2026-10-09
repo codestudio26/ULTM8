@@ -1,13 +1,20 @@
 /**
  * Proves the membership-expiry-sweep job actually closes the gap Decision 122's
  * own "What this does NOT resolve" note flagged by name: a Membership whose
- * status Expires only by its own expiryDate passing (no Stripe event involved)
- * never got persisted as EXPIRED, and its Student's still-UPCOMING Bookings
- * were never cancelled — unlike the Stripe-driven force-Expiry paths Decision
- * 122 already fixed. Triggers the processor directly (calling .process()
+ * EXPIRED-by-date is live-computed-only (Decision 26) never had its Student's
+ * still-UPCOMING Bookings cancelled the way the Stripe-driven force-Expiry
+ * paths already are. Triggers the processor directly (calling .process()
  * against a fake Job) against a real Postgres, with WAITLIST_CASCADE_PROCESSING_QUEUE
  * faked and controllable — same approach stripe-webhook-processing.e2e-spec.ts
  * and waitlist-cascade-processing.e2e-spec.ts already established.
+ *
+ * FOUND ON REVIEW, before merge: an earlier draft of this job persisted
+ * Membership.status = EXPIRED, directly contradicting Decision 26's confirmed
+ * "live-computed predicate... not a scheduled batch flip" rule, and silently
+ * changing what franchise-fee-usage-reporting bills Franchises for monthly.
+ * Every assertion below now explicitly proves `status` stays 'ACTIVE' — this
+ * job touches only its own private `bookingCancellationSweptAt` bookkeeping
+ * column and the funded Booking rows, never the live-computed status itself.
  *
  * Requires DATABASE_URL and DATABASE_URL_JOBS. Skips with a warning if either is unset.
  */
@@ -33,7 +40,7 @@ if (!hasDb) {
   );
 }
 
-describeIfDb('membership-expiry-sweep job — closes the date-based Membership-expiry gap (Decision 122 follow-up)', () => {
+describeIfDb('membership-expiry-sweep job — closes the date-based Membership-expiry gap (Decision 122 follow-up), without violating Decision 26', () => {
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   let processor: MembershipExpirySweepProcessor;
   const fakeWaitlistCascadeQueue = { add: jest.fn().mockResolvedValue(undefined) };
@@ -95,7 +102,10 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
     return student;
   }
 
-  async function mkMembership(studentId: string, overrides: { expiryDate?: Date | null; status?: 'ACTIVE' | 'EXPIRED' } = {}) {
+  async function mkMembership(
+    studentId: string,
+    overrides: { expiryDate?: Date | null; status?: 'ACTIVE' | 'EXPIRED'; bookingCancellationSweptAt?: Date | null } = {},
+  ) {
     // `'expiryDate' in overrides`, not `overrides.expiryDate ?? default` — the
     // latter would treat an explicitly-passed `null` (the no-expiry-date case
     // this test suite needs to express) identically to "not provided," since
@@ -110,6 +120,7 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
         frequency: 'ONE_TIME',
         status: overrides.status ?? 'ACTIVE',
         expiryDate,
+        bookingCancellationSweptAt: overrides.bookingCancellationSweptAt,
       },
     });
     membershipIds.push(membership.id);
@@ -128,7 +139,7 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
     return { cls, booking };
   }
 
-  it('an Active Membership past its own expiryDate gets Expired, its future Booking cancelled, and a seat-freed job enqueued', async () => {
+  it('an Active Membership past its own expiryDate has its future Booking cancelled and a seat-freed job enqueued, with status left exactly ACTIVE', async () => {
     const student = await mkStudent('overdue');
     const membership = await mkMembership(student.id);
     const { cls, booking } = await mkFutureBooking(student.id, membership.id);
@@ -136,7 +147,9 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
     await processor.process(fakeJob());
 
     const membershipAfter = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
-    expect(membershipAfter.status).toBe('EXPIRED');
+    // The core Decision 26 assertion — this job must NEVER touch status.
+    expect(membershipAfter.status).toBe('ACTIVE');
+    expect(membershipAfter.bookingCancellationSweptAt).not.toBeNull();
 
     const bookingAfter = await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } });
     expect(bookingAfter.status).toBe('CANCELLED');
@@ -153,6 +166,7 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
 
     const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
     expect(after.status).toBe('ACTIVE');
+    expect(after.bookingCancellationSweptAt).toBeNull();
   });
 
   it('an Active Membership with no expiryDate at all (e.g. a Subscription) is left untouched', async () => {
@@ -163,16 +177,32 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
 
     const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
     expect(after.status).toBe('ACTIVE');
+    expect(after.bookingCancellationSweptAt).toBeNull();
   });
 
-  it('an Active Membership past expiry with no Bookings still flips to Expired, with no seat-freed job enqueued for it', async () => {
+  it('an Active Membership past expiry with no Bookings is still stamped swept, status still ACTIVE, with no seat-freed job enqueued for it', async () => {
     const student = await mkStudent('no-bookings');
     const membership = await mkMembership(student.id);
 
     await processor.process(fakeJob());
 
     const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
-    expect(after.status).toBe('EXPIRED');
+    expect(after.status).toBe('ACTIVE');
+    expect(after.bookingCancellationSweptAt).not.toBeNull();
+    expect(fakeWaitlistCascadeQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('a Membership already swept on a prior run is skipped entirely — no re-processing, no duplicate seat-freed job', async () => {
+    const student = await mkStudent('already-swept');
+    const membership = await mkMembership(student.id, { bookingCancellationSweptAt: new Date(Date.now() - 60_000) });
+    // A Booking created AFTER the prior sweep already ran — if this job
+    // re-scanned an already-swept Membership, this would wrongly get cancelled.
+    const { booking } = await mkFutureBooking(student.id, membership.id);
+
+    await processor.process(fakeJob());
+
+    const bookingAfter = await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(bookingAfter.status).toBe('UPCOMING');
     expect(fakeWaitlistCascadeQueue.add).not.toHaveBeenCalled();
   });
 
@@ -182,6 +212,9 @@ describeIfDb('membership-expiry-sweep job — closes the date-based Membership-e
     const { cls, booking } = await mkFutureBooking(student.id, membership.id);
 
     await Promise.all([processor.process(fakeJob()), processor.process(fakeJob())]);
+
+    const membershipAfter = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(membershipAfter.status).toBe('ACTIVE');
 
     const bookingAfter = await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } });
     expect(bookingAfter.status).toBe('CANCELLED');
