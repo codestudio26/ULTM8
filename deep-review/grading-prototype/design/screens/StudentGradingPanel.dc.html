@@ -1,0 +1,312 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Work+Sans:wght@400;500;600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Work Sans", ui-sans-serif, system-ui, sans-serif; background: oklch(98% 0.004 95); color: oklch(22% 0.01 95); }
+    h1, h2, h3 { font-family: "Manrope", ui-sans-serif, system-ui, sans-serif; margin: 0; }
+    button { font-family: inherit; cursor: pointer; }
+    textarea, input { font-family: inherit; }
+  </style>
+</helmet>
+
+<div style="display:flex; width:1440px; min-height:1220px; background:oklch(98% 0.004 95); position:relative;">
+
+  <div style="width:236px; flex:0 0 236px; background:oklch(19% 0.02 265); display:flex; flex-direction:column; padding:20px 14px; gap:2px;">
+    <div style="display:flex; align-items:center; gap:10px; padding:6px 10px 22px 10px;">
+      <div style="width:30px; height:30px; border-radius:8px; background:{{accent}}; display:flex; align-items:center; justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(19% 0.02 265)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>
+      </div>
+      <div style="font-family:'Manrope'; font-weight:800; font-size:16px; color:oklch(96% 0.01 265); letter-spacing:-0.01em;">Dojo<span style="color:{{accent}};">HQ</span></div>
+    </div>
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:oklch(50% 0.02 265); text-transform:uppercase; padding:12px 10px 6px;">Workspace</div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Dashboard</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; background:oklch(27% 0.03 265); color:oklch(97% 0.01 265);"><span style="font-size:13.5px; font-weight:600;">Students</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Attendance</span></div>
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:oklch(50% 0.02 265); text-transform:uppercase; padding:16px 10px 6px;">Grading</div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Styles &amp; Ranks</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Skill Library</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Grading Events</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Settings</span></div>
+  </div>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; flex:0 0 60px; border-bottom:1px solid oklch(90% 0.006 95); display:flex; align-items:center; padding:0 28px; background:oklch(100% 0 0);">
+      <div style="font-size:13px; color:oklch(48% 0.012 95); display:flex; align-items:center; gap:6px;">
+        <span>Students</span><span style="opacity:0.5;">/</span><span style="color:oklch(22% 0.01 95); font-weight:600;">Alex Chen</span>
+      </div>
+    </div>
+
+    <div style="padding:28px; display:flex; flex-direction:column; gap:18px; flex:1;">
+
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div style="width:56px; height:56px; border-radius:999px; background:oklch(45% 0.03 265);"></div>
+        <div>
+          <h1 style="font-size:20px; font-weight:800;">Alex Chen</h1>
+          <div style="font-size:12.5px; color:oklch(48% 0.012 95); margin-top:2px;">Member since Jan 2024 · alex.chen@email.com</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:2px; border-bottom:1px solid oklch(90% 0.006 95);">
+        <div style="padding:10px 16px; font-size:13.5px; font-weight:500; color:oklch(48% 0.012 95);">Profile</div>
+        <div style="padding:10px 16px; font-size:13.5px; font-weight:500; color:oklch(48% 0.012 95);">Attendance</div>
+        <div style="padding:10px 16px; font-size:13.5px; font-weight:500; color:oklch(48% 0.012 95);">Billing</div>
+        <div style="padding:10px 16px; font-size:13.5px; font-weight:700; color:oklch(22% 0.01 95); border-bottom:2.5px solid {{accent}}; margin-bottom:-1px;">Grading</div>
+        <div style="padding:10px 16px; font-size:13.5px; font-weight:500; color:oklch(48% 0.012 95);">Notes</div>
+      </div>
+
+      <div style="display:flex; gap:4px; background:oklch(96% 0.005 95); padding:4px; border-radius:9px; width:fit-content;">
+        <sc-for list="{{styleTabs}}" as="st" hint-placeholder-count="2">
+          <button onClick="{{st.select}}" style="border:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; background:{{st.bg}}; color:{{st.color}};">{{st.label}}</button>
+        </sc-for>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 320px 1fr; gap:16px; align-items:start;">
+
+        <!-- CURRENT RANK CARD -->
+        <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; border-radius:10px; background:{{currentRank.color}}; border:1px solid oklch(85% 0.01 95); flex:0 0 auto;"></div>
+            <div>
+              <div style="font-size:15px; font-weight:700;">{{currentRank.name}}</div>
+              <div style="font-size:12px; color:oklch(48% 0.012 95);">{{currentRank.since}}</div>
+            </div>
+          </div>
+          <sc-if value="{{currentRank.showEligible}}" hint-placeholder-val="{{true}}">
+          <div style="display:inline-flex; align-items:center; gap:6px; background:oklch(94% 0.04 148); color:oklch(32% 0.1 148); font-size:12px; font-weight:700; padding:6px 10px; border-radius:8px; width:fit-content;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Eligible to grade
+          </div>
+          </sc-if>
+          <div style="font-size:11.5px; color:oklch(48% 0.012 95);">{{currentRank.note}}</div>
+
+          <div style="height:1px; background:oklch(93% 0.006 95);"></div>
+
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; font-size:12.5px;"><span style="color:oklch(40% 0.012 95); font-weight:600;">Attendance</span><span style="font-weight:700;">104 / 100 classes</span></div>
+            <div style="height:7px; border-radius:4px; background:oklch(93% 0.006 95); overflow:hidden;"><div style="width:100%; height:100%; background:oklch(64% 0.15 148);"></div></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;">
+              <span style="font-size:11px; font-weight:600; background:oklch(96% 0.006 95); padding:3px 8px; border-radius:999px;">Fundamentals 68</span>
+              <span style="font-size:11px; font-weight:600; background:oklch(96% 0.006 95); padding:3px 8px; border-radius:999px;">Advanced 36</span>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; font-size:12.5px;"><span style="color:oklch(40% 0.012 95); font-weight:600;">Skills signed off</span><span style="font-weight:700;">5 / 5</span></div>
+            <div style="height:7px; border-radius:4px; background:oklch(93% 0.006 95); overflow:hidden;"><div style="width:100%; height:100%; background:oklch(64% 0.15 148);"></div></div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+            <button onClick="{{openGrade}}" style="background:{{accent}}; border:none; color:oklch(19% 0.02 265); font-weight:700; font-size:13.5px; padding:11px; border-radius:9px;">Grade student</button>
+            <button onClick="{{openDowngrade}}" style="background:none; border:1px solid oklch(85% 0.008 95); color:oklch(45% 0.16 25); font-weight:600; font-size:13px; padding:10px; border-radius:9px;">Downgrade</button>
+          </div>
+        </div>
+
+        <!-- SKILLS + HISTORY -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:12px; padding:18px;">
+            <div style="font-family:'Manrope'; font-weight:700; font-size:14px; margin-bottom:12px;">Skills for Blue Belt</div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <sc-for list="{{skills}}" as="sk" hint-placeholder-count="5">
+                <div style="display:flex; align-items:center; gap:12px; padding:9px 4px; border-bottom:1px solid oklch(95% 0.006 95);">
+                  <div style="flex:1; font-size:13px; font-weight:500;">{{sk.name}}</div>
+                  <div style="font-size:11px; color:oklch(48% 0.012 95);">{{sk.meta}}</div>
+                  <span style="font-size:11px; font-weight:700; padding:4px 9px; border-radius:999px; background:{{sk.badgeBg}}; color:{{sk.badgeColor}};">{{sk.status}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:12px; padding:18px;">
+            <div style="font-family:'Manrope'; font-weight:700; font-size:14px; margin-bottom:14px;">Rank history</div>
+            <div style="display:flex; flex-direction:column; gap:0;">
+              <sc-for list="{{history}}" as="h" hint-placeholder-count="4">
+                <div style="display:flex; gap:14px; padding-bottom:18px; position:relative;">
+                  <div style="display:flex; flex-direction:column; align-items:center; flex:0 0 auto;">
+                    <div style="width:11px; height:11px; border-radius:999px; background:{{h.dotColor}}; border:2px solid oklch(100% 0 0); box-shadow:0 0 0 1.5px {{h.dotColor}};"></div>
+                    <div style="width:1.5px; flex:1; background:oklch(92% 0.006 95); margin-top:2px;"></div>
+                  </div>
+                  <div style="flex:1; padding-bottom:2px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:13.5px; font-weight:700;">{{h.rank}}</span>
+                      <span style="font-size:10.5px; font-weight:700; background:{{h.tagBg}}; color:{{h.tagColor}}; padding:2px 7px; border-radius:999px;">{{h.type}}</span>
+                    </div>
+                    <div style="font-size:11.5px; color:oklch(48% 0.012 95); margin-top:2px;">{{h.date}} · {{h.by}}</div>
+                    <sc-if value="{{h.hasNote}}" hint-placeholder-val="{{false}}">
+                    <div style="font-size:12px; color:oklch(40% 0.012 95); margin-top:5px; background:oklch(97% 0.004 95); border-radius:6px; padding:8px 10px; max-width:520px;">{{h.note}}</div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRADE MODAL -->
+  <sc-if value="{{gradeOpen}}" hint-placeholder-val="{{false}}">
+  <div style="position:absolute; inset:0; background:oklch(20% 0.01 95 / 0.45); display:flex; align-items:center; justify-content:center;">
+    <div style="width:460px; background:oklch(100% 0 0); border-radius:14px; padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 20px 50px oklch(20% 0.02 95 / 0.25);">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <h3 style="font-size:16px; font-weight:700;">Grade Alex Chen</h3>
+        <button onClick="{{closeModals}}" style="background:none; border:none; color:oklch(48% 0.012 95);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div style="font-size:12.5px; color:oklch(48% 0.012 95);">Pick any rank — you're not limited to the next one in line. Skipping ranks is allowed.</div>
+      <div style="display:flex; flex-direction:column; gap:2px; max-height:280px; overflow:auto; border:1px solid oklch(92% 0.006 95); border-radius:10px;">
+        <sc-for list="{{gradeRanks}}" as="gr" hint-placeholder-count="7">
+          <button onClick="{{gr.pick}}" style="display:flex; align-items:center; gap:12px; border:none; background:{{gr.bg}}; padding:11px 14px; text-align:left; border-bottom:1px solid oklch(95% 0.006 95);">
+            <div style="width:20px; height:20px; border-radius:6px; background:{{gr.color}}; border:1px solid oklch(85% 0.01 95); flex:0 0 auto;"></div>
+            <span style="font-size:13.5px; font-weight:600; flex:1;">{{gr.name}}</span>
+            <sc-if value="{{gr.isCurrent}}" hint-placeholder-val="{{false}}">
+            <span style="font-size:10.5px; font-weight:700; color:oklch(48% 0.012 95);">CURRENT</span>
+            </sc-if>
+            <sc-if value="{{gr.picked}}" hint-placeholder-val="{{false}}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{accent}}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button onClick="{{closeModals}}" style="background:none; border:1px solid oklch(85% 0.008 95); color:oklch(30% 0.012 95); font-weight:600; font-size:13px; padding:9px 16px; border-radius:9px;">Cancel</button>
+        <button onClick="{{confirmGrade}}" style="background:{{accent}}; border:none; color:oklch(19% 0.02 265); font-weight:700; font-size:13px; padding:9px 18px; border-radius:9px;">Confirm grading to {{gradePickedName}}</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- DOWNGRADE MODAL -->
+  <sc-if value="{{downgradeOpen}}" hint-placeholder-val="{{false}}">
+  <div style="position:absolute; inset:0; background:oklch(20% 0.01 95 / 0.45); display:flex; align-items:center; justify-content:center;">
+    <div style="width:460px; background:oklch(100% 0 0); border-radius:14px; padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 20px 50px oklch(20% 0.02 95 / 0.25);">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <h3 style="font-size:16px; font-weight:700; color:oklch(45% 0.16 25);">Downgrade Alex Chen</h3>
+        <button onClick="{{closeModals}}" style="background:none; border:none; color:oklch(48% 0.012 95);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div>
+        <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">New rank</div>
+        <div style="border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:10px 12px; font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:10px;">
+          <div style="width:18px; height:18px; border-radius:5px; background:oklch(96% 0.01 95); border:1px solid oklch(85% 0.01 95);"></div>
+          White Belt · 4 Stripes
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">Reason <span style="color:oklch(50% 0.18 25);">— required, kept on the student's history</span></div>
+        <textarea oninput="{{setReason}}" placeholder="e.g. Requested by student to refocus on fundamentals after injury layoff" style="width:100%; min-height:70px; border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:10px 12px; font-size:13px; resize:none;"></textarea>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button onClick="{{closeModals}}" style="background:none; border:1px solid oklch(85% 0.008 95); color:oklch(30% 0.012 95); font-weight:600; font-size:13px; padding:9px 16px; border-radius:9px;">Cancel</button>
+        <button disabled="{{confirmDisabled}}" style="background:{{downgradeBtnBg}}; border:none; color:oklch(98% 0.01 25); font-weight:700; font-size:13px; padding:9px 18px; border-radius:9px;">Confirm downgrade</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"oklch(72% 0.15 75)","options":["oklch(72% 0.15 75)","oklch(70% 0.13 200)","oklch(64% 0.15 148)","oklch(60% 0.15 300)"]}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      activeStyle: 'bjj',
+      gradeOpen: false,
+      downgradeOpen: false,
+      gradePickedId: 'purple',
+      reasonLength: 0
+    };
+  }
+
+  openGrade = () => this.setState({ gradeOpen: true, downgradeOpen: false });
+  openDowngrade = () => this.setState({ downgradeOpen: true, gradeOpen: false });
+  closeModals = () => this.setState({ gradeOpen: false, downgradeOpen: false });
+  setReason = (e) => this.setState({ reasonLength: (e && e.target && e.target.value ? e.target.value.trim().length : 0) });
+  confirmGrade = () => this.setState({ gradeOpen: false, confirmedRankId: this.state.gradePickedId });
+
+  renderVals() {
+    const accent = this.props.accent ?? 'oklch(72% 0.15 75)';
+
+    const styleTabDefs = [{ id: 'bjj', label: 'Brazilian Jiu-Jitsu' }, { id: 'kb', label: 'Kickboxing' }];
+    const styleTabs = styleTabDefs.map(s => {
+      const on = s.id === this.state.activeStyle;
+      return { ...s, bg: on ? 'oklch(100% 0 0)' : 'transparent', color: on ? 'oklch(22% 0.01 95)' : 'oklch(48% 0.012 95)', select: () => this.setState({ activeStyle: s.id }) };
+    });
+
+    const skillDefs = [
+      { name: 'Rear Naked Choke', status: 'Signed off', meta: 'by Coach Marco · 2 Feb', badgeBg: 'oklch(94% 0.04 148)', badgeColor: 'oklch(32% 0.1 148)' },
+      { name: 'Scissor Sweep', status: 'Signed off', meta: 'by Coach Marco · 18 Jan', badgeBg: 'oklch(94% 0.04 148)', badgeColor: 'oklch(32% 0.1 148)' },
+      { name: 'Guard Retention', status: 'Signed off', meta: 'by Coach Priya · 5 Jan', badgeBg: 'oklch(94% 0.04 148)', badgeColor: 'oklch(32% 0.1 148)' },
+      { name: 'Armbar from Guard', status: 'Signed off', meta: 'by Coach Marco · 22 Dec', badgeBg: 'oklch(94% 0.04 148)', badgeColor: 'oklch(32% 0.1 148)' },
+      { name: 'Takedown Defense', status: 'Signed off', meta: 'by Coach Priya · 10 Dec', badgeBg: 'oklch(94% 0.04 148)', badgeColor: 'oklch(32% 0.1 148)' }
+    ];
+
+    const rankLadder = [
+      { id: 'white', name: 'White Belt', color: 'oklch(96% 0.01 95)' },
+      { id: 'white4', name: 'White Belt · 4 Stripes', color: 'oklch(96% 0.01 95)' },
+      { id: 'blue', name: 'Blue Belt · 2 Stripes', color: 'oklch(55% 0.16 260)' },
+      { id: 'blue4', name: 'Blue Belt · 4 Stripes', color: 'oklch(55% 0.16 260)' },
+      { id: 'purple', name: 'Purple Belt', color: 'oklch(48% 0.12 300)' },
+      { id: 'brown', name: 'Brown Belt', color: 'oklch(38% 0.1 50)' },
+      { id: 'black', name: 'Black Belt', color: 'oklch(15% 0.01 95)' }
+    ];
+    const gradeRanks = rankLadder.map(r => {
+      const picked = r.id === this.state.gradePickedId;
+      const isCurrent = r.id === 'blue';
+      return { ...r, isCurrent, picked, bg: picked ? 'oklch(98% 0.03 75)' : 'oklch(100% 0 0)', pick: () => this.setState({ gradePickedId: r.id }) };
+    });
+    const gradePickedName = (rankLadder.find(r => r.id === this.state.gradePickedId) || rankLadder[0]).name;
+
+    const justGraded = !!this.state.confirmedRankId;
+    const currentRankDef = rankLadder.find(r => r.id === (this.state.confirmedRankId || 'blue')) || rankLadder[2];
+    const currentRank = {
+      name: currentRankDef.name,
+      color: currentRankDef.color,
+      since: justGraded ? 'Since today' : 'Since 12 Mar 2026',
+      showEligible: !justGraded,
+      note: justGraded ? `Graded by Gus (Owner) just now — this may have skipped ranks.` : 'You were notified 2 days ago.'
+    };
+
+    const history = [
+      { rank: 'Blue Belt · 2 Stripes', type: 'PROMOTION', date: '12 Mar 2026', by: 'Graded by Gus (Owner)', dotColor: 'oklch(64% 0.15 148)', tagBg: 'oklch(94% 0.04 148)', tagColor: 'oklch(32% 0.1 148)', hasNote: true, note: 'Skipped Blue Belt · 1 Stripe and · 3 Stripes — strong performance across both fundamentals and advanced classes.' },
+      { rank: 'White Belt · 4 Stripes', type: 'PROMOTION', date: '4 Sep 2025', by: 'Grading Event · Autumn Grading Day', dotColor: 'oklch(70% 0.13 200)', tagBg: 'oklch(95% 0.02 200)', tagColor: 'oklch(38% 0.1 200)', hasNote: false, note: '' },
+      { rank: 'White Belt · 2 Stripes', type: 'DOWNGRADE', date: '2 Jun 2025', by: 'Graded by Gus (Owner)', dotColor: 'oklch(58% 0.19 25)', tagBg: 'oklch(94% 0.05 25)', tagColor: 'oklch(45% 0.16 25)', hasNote: true, note: 'Reason: promoted early by mistake during a busy grading day — corrected after review.' },
+      { rank: 'White Belt · 3 Stripes', type: 'PROMOTION', date: '20 Mar 2025', by: 'Graded by Coach Marco', dotColor: 'oklch(64% 0.15 148)', tagBg: 'oklch(94% 0.04 148)', tagColor: 'oklch(32% 0.1 148)', hasNote: false, note: '' }
+    ];
+
+    const reasonFilled = this.state.reasonLength > 0;
+
+    return {
+      accent,
+      styleTabs,
+      skills: skillDefs,
+      history,
+      gradeOpen: this.state.gradeOpen,
+      downgradeOpen: this.state.downgradeOpen,
+      openGrade: this.openGrade,
+      openDowngrade: this.openDowngrade,
+      closeModals: this.closeModals,
+      setReason: this.setReason,
+      confirmGrade: this.confirmGrade,
+      gradeRanks,
+      gradePickedName,
+      currentRank,
+      confirmDisabled: !reasonFilled,
+      downgradeBtnBg: reasonFilled ? 'oklch(56% 0.19 25)' : 'oklch(85% 0.02 25)'
+    };
+  }
+}
+</script>
+</body>
+</html>
