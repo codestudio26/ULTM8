@@ -53,11 +53,11 @@ When sources disagree, resolve in this order, highest first:
 
 ## Current phase
 
-**Updated 25 Sep 2026** (verified against the repository, not assumed):
+**Updated 25 Sep 2026; Track B line updated 9 Oct 2026** (verified against the repository, not assumed):
 
 - **Track A — V1 frozen** as `v1.0.0` (see "Versioning" above): `apps/api` (NestJS + Prisma + Postgres RLS, covering tenancy, auth, Students/Instructors/Guardians, grading, classes/bookings/waitlist, memberships/payments, waivers, QR attendance, notifications, and Platform Admin), `apps/school-portal` (School Owner/Staff web app), and `apps/platform-admin`. Post-Spec-55 decisions run 70–121 as of V1 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`).
 - **Post-V1 work on `master`:** page-by-page redesign of `apps/school-portal` plus new features, starting with the Instructors page and app-shell header — planned as **v1.1** (the user decides which pages complete it; nothing is tagged until they say so). See `CHANGELOG.md` → Unreleased.
-- **Track B — `apps/student`** (Student/Guardian React Native app): in active development, not part of V1. A partial copy is on `master` (PR #81); later work is on `track-b-student-app-pka8oo` / PR #82. See `docs/TRACK-B-ROADMAP.md` on that branch for its own status.
+- **Track B — `apps/student`** (Student/Guardian React Native app): in active development, not part of V1. It now lives on `master`: PR #89 (merged 2 Oct 2026) brought in the `track-b-student-app-pka8oo` work and superseded PR #82, which was closed unmerged. Later Track B work lands through normal PRs (e.g. #92 QR check-in, #94 Guardian Kid Mode). See `docs/TRACK-B-ROADMAP.md` for its own status.
 - Known V1 gaps and deliberately deferred items are listed in `CHANGELOG.md` under v1.0.0.
 
 Treat git history, the decision log, and each app's own code as the source of truth for what's built — not a static status paragraph. Still applies: don't begin work in an area without checking the actual current code first, and don't assume a feature is unbuilt (or built) without verifying.
