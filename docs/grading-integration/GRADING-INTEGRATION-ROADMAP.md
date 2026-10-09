@@ -366,3 +366,50 @@ New `GradingEvent` + `GradingEventParticipant` tables with RLS, endpoints, porta
 - Don't allow hard deletion of `PromotionEvent`.
 - Don't let Branch Staff grade.
 - Don't build the fee, notifications or events without their own decisions.
+
+---
+
+## 10. Decisions 124–157 applied to the plan (9 Oct 2026)
+
+Gus answered the merge questions as product owner. Each answer is a numbered entry in `docs/decisions/POST-SPEC-55-DECISION-LOG.md`. Where this section and the earlier sections of this file disagree, **this section wins**.
+
+### What changes in the plan
+
+| Area | Decision | Change to the roadmap |
+|---|---|---|
+| Source of truth | 124, 125 | Gus's prototype rules override Spec 55 for grading, one decision per conflict. Gus approves everything. CLAUDE.md updated. |
+| Storage | 126 | Keep Rank + RankStripeTier. Move required skills, weekly cap and time-only to **each rung**. Add rung name, stripe colour segments, and tag/coral drawing fields. |
+| Requirement direction | 127 | A rung's requirements = what it takes to get **into** it (prototype `gradingRequirement`). The current skill check and sign-off in `grading.service.ts` must change. |
+| Prototype rules | 128 | Skip rungs, back-date, starting classes, per-style skills hard-block switch, downgrade reason, notes, board ADJUSTMENT, Log a class, Pass promotes one rung, lesson categories with order, sign-offs wiped. |
+| History | 129 | Void with a reason, never delete. |
+| Bulk and events | 130 | Per-student acknowledgement in one quick "Needs a look" step; 200 cap. |
+| Templates | 131 | Three IBJJF ladders only. |
+| Guardians | 132 | Guardians can read their child's rank, progress, skills and history. |
+| Membership | 133, 136, 152 | No direct rule. "Currently attending" comes from an active membership, with a manual override. |
+| Board | 136 | 33% / 66% by default, editable per school. Prototype column names. |
+| Starting ranks | 137, 147 | Students self-declare their rank at signup; it stays unverified until grading staff verify or correct it; unverified ranks can still book; staff get a notice; plain White Belt is verified automatically. |
+| Permissions | 138 | Owner always; others per discipline as granted. Replaces `assertStaffAtSchool` for grading. |
+| Branches | 139, 148 | One home branch per student, chosen at join (owner assigns existing students). Branch staff grade their own branch. One ladder per school. Classes at other branches count if bookable. |
+| Class counting | 140, 143, 149 | Classes get a **class type**. Each rung ticks which types count: any ticked type (one total), or each type with its own number. Weekly cap per rung. |
+| Disciplines | 152 | Classes, timetable and instructors pick from the school's discipline list (replaces Decision 90's string match). |
+| Deletion | 134, 141 | Grading data goes with the account (Spec Decision 44). A deleted instructor shows as "Former instructor". `PromotionEvent.performedById` can no longer be RESTRICT. |
+| Notifications | 145 | v1.1: "ready to grade" to grading staff; "you've been promoted" to the student or guardian. |
+| Names | 146 | Typed once by the school, not translated. |
+| Events | **150** | **Grading events move into v1.1** (previously Phase 6, optional). |
+| Fee | 144, **150** | v1.1: fee switch plus fee amount; the school charges its own students. How it is collected is still open. |
+| Franchise ladders | 151 | Shared ladder behind an on/off switch. Design and release still open. |
+| Rank date fix | 153 | "Edit rank date" correction action. |
+| Lessons | 154 | Only students and guardians with a paid membership for that activity. Video pricing later. |
+| Student app | 142, 155 | Next release: rank by name, progress, skills needed, history (read-only). Lessons once video exists. |
+| Audit | 156 | Skill sign-off log. |
+| Reference | 157 | Handover package stored at `deep-review/grading-prototype/`. |
+
+### Revised v1.1 scope (Track A)
+
+Phase 1 (foundation and schema) → Phase 2 (rules engine with Gus's scenarios as tests) → Phase 3 (API) → Phase 4 (portal screens), now including **grading events, the fee setting, self-declared rank verification, class types and branch scoping**. Track B follows in the app's next release (Decisions 142, 155).
+
+### Still open before building the affected parts
+
+1. Fee: does v1.1 collect the money, or only record the amount? Is it set per school, per discipline or per event? (Decision 150)
+2. Franchise ladders: who controls the switch, can schools edit a shared ladder, what happens to students when it changes, and which release. (Decision 151)
+3. Students seeing "Ready to Grade": always shown, or a school setting? (Decision 155)

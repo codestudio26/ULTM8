@@ -32,6 +32,9 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Self-declared ranks can be corrected; only plain White Belt is verified automatically (Decision 147).
 - Classes at another branch count if the student may book them; owner assigns home branches (Decision 148).
 - “Each type required” sets a number per class type (Decision 149).
+- Grading events and a fee switch with an amount ship in v1.1 (Decision 150); franchise-wide ladders behind a switch (Decision 151).
+- Discipline list, rung reordering, attendance from membership (Decision 152); edit rank date (Decision 153).
+- Lessons for paid members and guardians (Decision 154); app history (Decision 155); sign-off log (Decision 156); package stored in the repo (Decision 157).
 
 ## How many need answering, and when
 
@@ -97,10 +100,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q10. Can a franchise share one ladder across all its schools, or does each school keep its own?** · _Can wait_
 - Why it matters: A discipline belongs to one school today. Franchises often want one standard syllabus.
 - Recommendation: Each school keeps its own for now. A franchise template is a later feature.
+- Answer so far: Yes, franchise-wide ladders behind an on/off switch (Decision 151). Design details still to confirm.
 
 **Q11. Are “discipline”, the class's activities and the instructor's specialisations one shared list?** · _Before data model_
 - Why it matters: Today they are three unconnected text fields, matched by exact spelling. A typo stops attendance counting and breaks the booking gate.
 - Recommendation: Yes. Classes and instructors pick from the school's disciplines.
+- Answer so far: Yes: classes, timetable and instructors pick from the school's discipline list (Decision 152).
 
 **Q12. Should classes get a real class type (Kids Fundamentals, Adult Sparring…) separate from the discipline?** · _Before data model_
 - Why it matters: “Which classes count” and the weekly cap need it. Today the discipline name doubles as the class type.
@@ -110,6 +115,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q13. Deleting or reordering a rung that students hold: block it (yours), or ask where to move them?** · _Before API_
 - Why it matters: The database already refuses to delete a rank a student holds. Reordering changes what counts as “next”.
 - Recommendation: Block deleting. Allow reordering only with a confirmation that lists the affected students.
+- Answer so far: Reordering allowed with a confirmation listing affected students; deleting stays blocked (Decision 152).
 
 ### C. Progress and attendance
 
@@ -141,6 +147,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q19. What makes a student “currently attending” for the board's filter?** · _Before screens_
 - Why it matters: ULTM8 has no active flag on a student. The options are an active membership, an un-revoked school role, or recent attendance.
 - Recommendation: Active membership or a class attended in the last 60 days.
+- Answer so far: Automatic from an active membership, with a manual override (Decision 152).
 
 **Q20. Does an expired or unpaid membership affect grading (hide from the board, block grading)?** · _Before screens_
 - Why it matters: Memberships and grading are not connected at all today.
@@ -202,6 +209,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q31. Add an “edit rank date” correction action?** · _Before API_
 - Why it matters: Your direction: keep the date rule and add a correction that leaves a note. Not built anywhere.
 - Recommendation: Yes, Owner only, logged.
+- Answer so far: Yes, for anyone with grading permission, logged (Decision 153).
 
 ### E. Getting students onto the ladder
 
@@ -220,6 +228,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q34. Are grading events part of ULTM8, and in which release?** · _Can wait_
 - Why it matters: Spec 55 has no event entity. It is the largest piece of new work.
 - Recommendation: Yes, as phase 2, after the board and bulk promote.
+- Answer so far: Yes, grading events ship in v1.1 (Decision 150).
 
 **Q35. What happens after a fail at an event? (The mockup showed a 45-day window and 20 classes.)** · _Can wait_
 - Why it matters: Nothing is implemented. Your prototype keeps progress and changes nothing.
@@ -234,7 +243,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q37. Grading fee: per event or per student, through Stripe, and does cash count?** · _Can wait_
 - Why it matters: ULTM8 payments only know membership purchases. A fee needs a new kind of charge.
 - Recommendation: Per student per event, through Stripe and cash, after events ship.
-- Answer so far: The school charges its own students, if it chooses to (Decision 144). Release, payment methods and how the fee is set still to confirm.
+- Answer so far: The school charges its own students; v1.1 adds a fee switch and an amount (Decisions 144, 150). Collection and where it's set still to confirm.
 
 **Q38. Which grading notifications, to whom: eligible to grade (coach), promoted (student and guardian), event invitation?** · _Can wait_
 - Why it matters: No grading notification exists, and push sending is deferred (Decision 95).
@@ -251,10 +260,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q40. Who can watch lessons: every student, only those who need the skill, or paid?** · _Can wait_
 - Why it matters: Every student at the school can read every lesson today, and there is no pricing.
 - Recommendation: Every student at the school. Decide pricing with the video rollout.
+- Answer so far: Students and guardians with a paid membership for that activity (Decision 154).
 
 **Q41. Video pricing for schools: a flat add-on or per student?** · _Can wait_
 - Why it matters: Cloudflare Stream is already chosen (Decision 101). The price model is open item 13 in your notes.
 - Recommendation: A flat add-on per school.
+- Answer so far: Decided later, with video (Decision 154).
 
 **Q42. Should skills keep their sign-off when a student moves up (signed at Blue, still counts at Purple)?** · _Before API_
 - Why it matters: Both systems wipe sign-offs on every rank change. This is open item 11 in your notes.
@@ -266,7 +277,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q43. What does the student see in the app: progress %, skills needed, lessons, history, next grading date?** · _Before screens_
 - Why it matters: The app shows only belt and stripes today. Spec 55 sketches a ranking screen with readiness and %.
 - Recommendation: All of these except the date, until events exist.
-- Answer so far: Rank by name, progress and skills needed, read-only (Decision 142). Lessons and history in the app still to confirm.
+- Answer so far: Rank by name, progress, skills and history in the next release; lessons once video exists (Decisions 142, 155).
 
 **Q44. Can a guardian see their child's rank and progress?** · _Before API_
 - Why it matters: Today a guardian is refused: only staff or the student themselves can read ranks.
@@ -276,6 +287,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q45. Should students see that they're “Ready to Grade” before the coach decides?** · _Before screens_
 - Why it matters: It can create pressure on coaches. Some schools prefer to keep it private.
 - Recommendation: A per-school setting, off by default.
+- Answer so far: “Students see the whole progression of their grading.” Always on or a school setting still to confirm.
 
 ### I. Data, privacy and audit
 
@@ -287,6 +299,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q47. Should skill sign-offs be audited (who signed, when)?** · _Before data model_
 - Why it matters: Today a sign-off overwrites the previous status with no trace.
 - Recommendation: Yes, a small sign-off log.
+- Answer so far: Yes, every sign-off change is logged (Decision 156).
 
 **Q48. Are rank, skill and discipline names translated into the 4 languages, or typed once by the school?** · _Before screens_
 - Why it matters: Neither app has translation support yet, and Arabic needs right-to-left layout.
@@ -303,6 +316,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q50. Store your handover package (prototype, tests, screenshots) in the repo as read-only reference?** · _Answer first_
 - Why it matters: Your tests become the acceptance tests. Kept outside the repo, they get lost.
 - Recommendation: Yes, in deep-review/grading-prototype/ (about 9 MB).
+- Answer so far: Done: stored at deep-review/grading-prototype/ (Decision 157).
 
 ## How grading connects to the rest of ULTM8 (checked in code)
 

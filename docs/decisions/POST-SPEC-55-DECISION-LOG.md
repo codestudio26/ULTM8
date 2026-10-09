@@ -1798,3 +1798,73 @@ Names a school types (disciplines, rung names, skills, lesson titles) are stored
 **Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the open point of Decision 140 (Q16)
 
 When a rung uses "each ticked type required", the school sets a required number of classes for each ticked type (for example 20 Fundamentals + 10 Sparring). Progress for that rung counts each type separately and is complete only when every type's number is met. In the default "any ticked type" mode, the rung keeps a single total. Gus: *"yes"*.
+
+---
+
+## Decision 150 — Grading events and the grading-fee setting ship in v1.1
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q34; adds to Decision 144 (Q37)
+
+1. **Grading events** (prototype: schedule, participants, Pass/Fail, complete; Decisions 128 and 130) are part of **v1.1**. Asked "Do grading events ship in v1.1, or after it?", Gus answered *"yes it does"*. This replaces the roadmap's earlier "after v1.1" plan.
+2. **Grading fee in v1.1:** the grading system gets a **fee switch**; when it is on, a **fee amount** field is shown. Gus: *"On this version, we need to add to the grading system, a toggle for fee, if it is on, we will need a field for fee."* The fee is the school's own charge to its students (Decision 144).
+
+Still open, put back to Gus: whether v1.1 actually collects the fee (card or cash through the school's payment account) or only records the amount owed; whether the switch and amount are set per school, per discipline or per event.
+
+---
+
+## Decision 151 — Franchise-wide ladders, behind an on/off switch
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q10
+
+A franchise can share one ladder across its schools, controlled by an on/off switch. Gus: *"yes, we need a toggle to switch this on and off."* Today a Discipline belongs to one School only, and nothing is shared across a franchise. The tenancy design is not yet decided: who controls the switch, whether schools can edit a shared ladder, what happens to students when it is switched on or off, and the release. Those were put back to Gus. Any design must keep Franchise → School isolation and RLS intact (CLAUDE.md, standing rules).
+
+---
+
+## Decision 152 — Disciplines picked from the school's list; rung reordering allowed with confirmation; "currently attending" from membership
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q11, Q13, Q19
+
+1. **Classes, timetable slots and instructor specialisations pick their discipline from the school's Discipline list** instead of free text (Gus: *"yes"*). This replaces Decision 90's exact-string bridge once built. Existing free-text values need a one-time mapping.
+2. **Rungs can be reordered by drag even when students hold them**, after a confirmation that lists the students affected. Deleting a rung students hold stays blocked (Gus: *"yes"*).
+3. **"Currently attending only" on the Grading Board** is decided automatically by an active membership, and a manual Active/Inactive switch per student overrides it. Gus: *"Automatic from membership, with the manual switch as an override."*
+
+---
+
+## Decision 153 — "Edit rank date" correction action
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q31 (HANDOVER §9 open item 6)
+
+Anyone with grading permission can correct the date a student reached their current rung. A note goes on the history recording the old date, the new date, who changed it and when. The grading-date rule (Decision 128, item 8) is unchanged. Gus: *"correct"*.
+
+---
+
+## Decision 154 — Lessons: watchable by students and guardians with a paid membership for that activity
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q40, Q41
+
+1. **Who can watch:** students and guardians with an account and an **active paid membership for that activity** (discipline). Gus: *"Yes and guardian, any one with an account and paid membership to the activity."* Today every role holder at the school can read every lesson (`lesson_tenant_isolation`), so reads must be narrowed. How a membership maps to an activity needs checking against `MembershipPlan` during design.
+2. **Video pricing for schools** is decided later, when video is built (Gus: *"yes"*).
+
+---
+
+## Decision 155 — Student app: rank history in the next release, lessons once video exists
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q43
+
+Adds to Decision 142: the app also shows **rank history** in its next release, and **lessons** once video hosting is built. Gus: *"yes"*. Asked whether students should see "Ready to Grade" before the coach decides, Gus answered *"yes, students will [see] the whole progression of their grading."* Whether that is always on or a school setting was put back to Gus (Q45).
+
+---
+
+## Decision 156 — Skill sign-offs are logged
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q47
+
+Every skill sign-off change (Not started / Learning / Signed off) is logged with who, when, the old status and the new status. Today `cycleSkillSignOff` overwrites the status with no trace. Gus: *"yes"*.
+
+---
+
+## Decision 157 — Gus's handover package stored in the repo as read-only reference
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q50
+
+The complete `dojohq-grading-handover` package (prototype, stress-test harness, click-through test, tools, screenshots, design canvas, notes) is stored unchanged at `deep-review/grading-prototype/` as read-only reference. Its scenarios are the acceptance tests for the grading engine (roadmap Phase 2). Gus: *"yes"*.
