@@ -461,6 +461,8 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
   }
 
   it('ranksToggle=false blocks every grading WRITE (promote, downgrade, stripe-award, skill sign-off) but not grading reads — Decision 87', async () => {
+    const eventsBefore = await superuser.promotionEvent.count({ where: { schoolId: school.id } });
+    const statusesBefore = await superuser.studentRankSkillStatus.findMany({ where: { schoolId: school.id }, select: { id: true, status: true } });
     await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: false } });
     try {
       const writes = [
@@ -479,9 +481,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
         .set('Authorization', `Bearer ${tokenOwner}`);
       expect(read.status).toBe(200);
 
-      // Nothing was written while the gate was closed.
-      const events = await superuser.promotionEvent.count({ where: { schoolId: school.id, type: 'DOWNGRADE' } });
-      expect(events).toBe(0);
+      // Nothing was written while the gate was closed: no grading event of any
+      // type, and no skill sign-off change.
+      expect(await superuser.promotionEvent.count({ where: { schoolId: school.id } })).toBe(eventsBefore);
+      expect(await superuser.studentRankSkillStatus.findMany({ where: { schoolId: school.id }, select: { id: true, status: true } })).toEqual(statusesBefore);
     } finally {
       await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: true } });
     }
@@ -571,12 +574,22 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
 
   it('an active Guardian CAN read a linked Student\'s ranks, eligibility and rank history, but cannot grade them — Decision 132', async () => {
     const guardian = await mkExtraUser('guardian');
-    await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: studentA.id } });
+    const minor = await superuser.user.update({
+      where: { id: (await mkExtraUser('minor')).id },
+      data: { dateOfBirth: new Date('2016-05-01'), phoneVerifiedAt: null },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: school.id } });
+    const graded = await request(app.getHttpServer())
+      .post(`/v1/students/${minor.id}/ranks/${disciplineId}/promote`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({});
+    expect(graded.status).toBe(201);
+    await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
     const tokenGuardian = signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
 
     for (const path of ['ranks', 'eligibility', 'rank-history']) {
       const res = await request(app.getHttpServer())
-        .get(`/v1/students/${studentA.id}/${path}`)
+        .get(`/v1/students/${minor.id}/${path}`)
         .query({ schoolId: school.id })
         .set('Authorization', `Bearer ${tokenGuardian}`);
       expect(res.status).toBe(200);
@@ -584,7 +597,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     }
 
     const grade = await request(app.getHttpServer())
-      .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/promote`)
+      .post(`/v1/students/${minor.id}/ranks/${disciplineId}/promote`)
       .set('Authorization', `Bearer ${tokenGuardian}`)
       .send({ acknowledgeWithoutSkillSignoff: true });
     // Refused before any write. 404, not 403: a Guardian holds no RoleGrant at
@@ -627,6 +640,73 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       .query({ schoolId: school.id })
       .set('Authorization', `Bearer ${tokenStudentB}`);
     expect(peer.status).toBe(403);
+  });
+
+  it('grading reads require a valid schoolId: staff at another School cannot read a Student across tenants (independent review, PR 1)', async () => {
+    const otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Ranks HTTP Other School', ranksToggle: true } });
+    const otherOwner = await mkExtraUser('other-owner');
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: otherOwner.id, schoolId: otherSchool.id } });
+    const tokenOtherOwner = signAccessToken(otherOwner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: otherSchool.id, branchId: null }]);
+    try {
+      for (const path of ['ranks', 'eligibility', 'rank-history']) {
+        // No schoolId: previously matched ANY staff grant and returned the
+        // Student's rows from every School (200 with data). Now refused.
+        const noSchool = await request(app.getHttpServer())
+          .get(`/v1/students/${studentA.id}/${path}`)
+          .set('Authorization', `Bearer ${tokenOtherOwner}`);
+        expect(noSchool.status).toBe(400);
+
+        // The Student's real School: the other School's owner holds no grant there.
+        const wrongSchool = await request(app.getHttpServer())
+          .get(`/v1/students/${studentA.id}/${path}`)
+          .query({ schoolId: school.id })
+          .set('Authorization', `Bearer ${tokenOtherOwner}`);
+        expect(wrongSchool.status).toBe(403);
+        expect(wrongSchool.body.error.message).not.toMatch(/Guardian/);
+      }
+
+      const malformed = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/ranks`)
+        .query({ schoolId: 'not-a-uuid' })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(malformed.status).toBe(400);
+
+      // The Student themselves must name a School too.
+      const selfNoSchool = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/ranks`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(selfNoSchool.status).toBe(400);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: otherSchool.id } });
+      await superuser.school.delete({ where: { id: otherSchool.id } });
+    }
+  });
+
+  it('an impersonation session scoped to another School cannot read grading at this School (Decision 102 / Spec 55 Decision 39)', async () => {
+    const elsewhere = randomUUID();
+    const scopedElsewhere = jwt.sign({
+      sub: studentA.id,
+      email: studentA.email,
+      grants: [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }],
+      impersonation: { adminUserId: randomUUID(), startedAt: new Date().toISOString(), schoolId: elsewhere },
+    });
+    const refused = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/ranks`)
+      .query({ schoolId: school.id })
+      .set('Authorization', `Bearer ${scopedElsewhere}`);
+    expect(refused.status).toBe(403);
+
+    const scopedHere = jwt.sign({
+      sub: studentA.id,
+      email: studentA.email,
+      grants: [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }],
+      impersonation: { adminUserId: randomUUID(), startedAt: new Date().toISOString(), schoolId: school.id },
+    });
+    const allowed = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/ranks`)
+      .query({ schoolId: school.id })
+      .set('Authorization', `Bearer ${scopedHere}`);
+    expect(allowed.status).toBe(200);
   });
 
   // ---------------------------------------------------------------------------

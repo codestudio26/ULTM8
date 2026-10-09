@@ -7,10 +7,14 @@ import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { GradingActionDto } from './dto/grading-action.dto';
+import { RequestContext } from '../common/request-context';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
+// Same pattern MembershipsService.getMembershipStatus() uses for its :id check.
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Phase 10b scope only: single-Student grading actions (promote/downgrade/
@@ -91,8 +95,31 @@ export class GradingService {
    * (every caller of this method does so), so StudentRank's narrow RLS shape
    * (Decision 88) is unchanged — nothing is broadened at the database level.
    * Only a ForbiddenException from the staff check falls through to the
-   * Guardian check; any other error propagates as-is. */
+   * Guardian check; any other error propagates as-is.
+   *
+   * FOUND ON INDEPENDENT REVIEW (grading foundation PR 1), pre-existing: with
+   * no `schoolId`, assertStaffAtSchool() matched ANY staff grant (Prisma drops
+   * an `undefined` filter) and the read below then returned the Student's rows
+   * from EVERY School — a cross-tenant read for any Student id a staff member
+   * knew. Now required, with the same explicit schoolId/UUID checks GET
+   * /students/{id}/membership-status already applies.
+   *
+   * Impersonation (Decision 102 / Spec 55 Decision 39): a Support session is
+   * scoped to one School. The Student/Guardian paths below read under the
+   * Student's own tenant context, which the RoleGrant-based impersonation RLS
+   * narrowing does not reach, so a session scoped to School A is refused for
+   * any other schoolId here, explicitly. */
   private async assertCallerCanReadStudent(callerId: string, studentId: string, schoolId: string): Promise<void> {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('id path parameter and schoolId must be valid UUIDs');
+    }
+    const impersonationSchoolId = RequestContext.getImpersonationSchoolId();
+    if (impersonationSchoolId && impersonationSchoolId !== schoolId) {
+      throw new ForbiddenException('This impersonation session is scoped to a different School.');
+    }
     if (callerId === studentId) return;
     try {
       await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
@@ -100,7 +127,14 @@ export class GradingService {
     } catch (err) {
       if (!(err instanceof ForbiddenException)) throw err;
     }
-    await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    try {
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+      // Neutral wording: the caller may be a peer Student, staff at another
+      // School or an outsider, not necessarily a would-be Guardian.
+      throw new ForbiddenException('You may not view this Student\'s grading.');
+    }
   }
 
   /** Every grading WRITE (promote, downgrade, stripe award, skill sign-off)
