@@ -534,4 +534,63 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       .set('Authorization', `Bearer ${tokenOwnerB}`);
     expect(res.status).toBe(404);
   });
+  it('specialisations are picked from the School\'s styles when it has any; free text otherwise (Decision 152)', async () => {
+    const schoolS = await superuser.school.create({ data: { id: randomUUID(), name: 'Instructors HTTP Styles School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: schoolS.id } });
+    const tokenOwnerS = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolS.id, branchId: null }]);
+    const bjj = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'BJJ' } });
+    const judo = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'Judo' } });
+    const foreign = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolB.id, name: 'Other BJJ' } });
+    const coachUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-styles-coach-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Styles',
+        surname: 'Coach',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1990-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: coachUser.id, schoolId: schoolS.id } });
+    try {
+      const create = (body: Record<string, unknown>) =>
+        request(app.getHttpServer()).post(`/v1/schools/${schoolS.id}/instructors`).set('Authorization', `Bearer ${tokenOwnerS}`).send(profileBody(coachUser.id, body));
+
+      expect((await create({ specializations: ['BJJ'] })).status).toBe(400); // free text in a School with styles
+      expect((await create({ specializationStyleIds: [foreign.id] })).status).toBe(400); // another School's style
+      expect((await create({ specializationStyleIds: [bjj.id, bjj.id] })).status).toBe(400); // listed twice
+      expect(await superuser.instructor.count({ where: { schoolId: schoolS.id } })).toBe(0);
+
+      const created = await create({ specializationStyleIds: [bjj.id, judo.id] });
+      expect(created.status).toBe(201);
+      expect(created.body.specializationStyleIds).toEqual([bjj.id, judo.id]);
+      expect(created.body.specializations).toEqual(['BJJ', 'Judo']); // names, for display
+
+      const patch = (body: Record<string, unknown>) =>
+        request(app.getHttpServer()).patch(`/v1/instructors/${created.body.id}`).set('Authorization', `Bearer ${tokenOwnerS}`).send(body);
+      const kept = await patch({ bio: 'Updated' });
+      expect(kept.status).toBe(200);
+      expect(kept.body.specializationStyleIds).toEqual([bjj.id, judo.id]);
+      expect((await patch({ specializationStyleIds: null })).status).toBe(400);
+      const narrowed = await patch({ specializationStyleIds: [judo.id] });
+      expect(narrowed.status).toBe(200);
+      expect([narrowed.body.specializationStyleIds, narrowed.body.specializations]).toEqual([[judo.id], ['Judo']]);
+      const cleared = await patch({ specializationStyleIds: [] });
+      expect([cleared.body.specializationStyleIds, cleared.body.specializations]).toEqual([[], []]);
+
+      // School A has no styles: free text as before, style ids refused.
+      const noStyles = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolA.id}/instructors`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`)
+        .send(profileBody(coachUser.id, { specializationStyleIds: [bjj.id] }));
+      expect(noStyles.status).toBe(400);
+    } finally {
+      await superuser.instructor.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.discipline.deleteMany({ where: { id: { in: [bjj.id, judo.id, foreign.id] } } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.school.delete({ where: { id: schoolS.id } });
+    }
+  });
 });

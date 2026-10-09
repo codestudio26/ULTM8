@@ -78,6 +78,16 @@ export class CreateInstructorDto {
   @IsString({ each: true })
   specializations?: string[];
 
+  @ApiPropertyOptional({
+    type: [String],
+    description: "The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names.",
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('4', { each: true })
+  specializationStyleIds?: string[];
+
   @ApiPropertyOptional({ description: 'School-facing contact number, E.164 — distinct from this User\'s own login phone.' })
   @IsOptional()
   @IsPhoneNumber(undefined, { message: 'phone must be a valid E.164 number' })
