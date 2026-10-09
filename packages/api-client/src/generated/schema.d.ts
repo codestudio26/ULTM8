@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/students/{studentId}/home-branch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SchoolsController_setStudentHomeBranch"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/join": {
         parameters: {
             query?: never;
@@ -1412,6 +1428,38 @@ export interface paths {
         patch: operations["GradingController_cycleSkillSignOff"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/grading-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingPermissionsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/grading-permissions/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingPermissionsController_setForUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/waivers": {
         parameters: {
             query?: never;
@@ -2105,9 +2153,24 @@ export interface components {
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
         };
+        SetHomeBranchDto: {
+            /** @description A branch of this School. */
+            branchId: string;
+        };
+        StudentHomeBranchResponseDto: {
+            id: string;
+            schoolId: string;
+            studentId: string;
+            branchId: string;
+            assignedById: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
         JoinSchoolDto: {
             /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
             studentId?: string;
+            /** @description The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none. */
+            branchId?: string;
         };
         JoinSchoolResponseDto: {
             id: string;
@@ -3169,6 +3232,21 @@ export interface components {
             /** @description Why the student is being moved down. Required. */
             reason: string;
         };
+        GradingPermissionResponseDto: {
+            id: string;
+            schoolId: string;
+            userId: string;
+            disciplineId: string;
+            grantedById: string | null;
+            createdAt: string;
+        };
+        GradingPermissionListResponseDto: {
+            items: components["schemas"]["GradingPermissionResponseDto"][];
+        };
+        SetGradingPermissionsDto: {
+            /** @description Disciplines (styles) this staff member may grade in. Replaces the current list. */
+            disciplineIds: string[];
+        };
         CreateWaiverDto: {
             title: string;
             /** @description The waiver document body text. */
@@ -3788,6 +3866,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentListResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_setStudentHomeBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetHomeBranchDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentHomeBranchResponseDto"];
                 };
             };
         };
@@ -6097,6 +6201,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GradingPermissionsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingPermissionListResponseDto"];
+                };
+            };
+        };
+    };
+    GradingPermissionsController_setForUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetGradingPermissionsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingPermissionListResponseDto"];
+                };
             };
         };
     };

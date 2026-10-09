@@ -381,6 +381,59 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/{studentId}/home-branch": {
+      "put": {
+        "operationId": "SchoolsController_setStudentHomeBranch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetHomeBranchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentHomeBranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/join": {
       "post": {
         "operationId": "SchoolsController_join",
@@ -4435,6 +4488,94 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/grading-permissions": {
+      "get": {
+        "operationId": "GradingPermissionsController_findAll",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingPermissionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/grading-permissions/{userId}": {
+      "put": {
+        "operationId": "GradingPermissionsController_setForUser",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetGradingPermissionsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingPermissionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/waivers": {
       "post": {
         "operationId": "WaiversController_createWaiver",
@@ -6609,12 +6750,64 @@
           "items"
         ]
       },
+      "SetHomeBranchDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "A branch of this School."
+          }
+        },
+        "required": [
+          "branchId"
+        ]
+      },
+      "StudentHomeBranchResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "assignedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "branchId",
+          "assignedById",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "JoinSchoolDto": {
         "type": "object",
         "properties": {
           "studentId": {
             "type": "string",
             "description": "Guardian-only: enroll this linked minor Student at the School instead of the caller."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none."
           }
         }
       },
@@ -10120,6 +10313,67 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "GradingPermissionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "userId",
+          "disciplineId",
+          "grantedById",
+          "createdAt"
+        ]
+      },
+      "GradingPermissionListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingPermissionResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SetGradingPermissionsDto": {
+        "type": "object",
+        "properties": {
+          "disciplineIds": {
+            "description": "Disciplines (styles) this staff member may grade in. Replaces the current list.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "disciplineIds"
         ]
       },
       "CreateWaiverDto": {

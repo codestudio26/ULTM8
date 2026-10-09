@@ -146,7 +146,7 @@ export class GradingService {
     }
     if (callerId === studentId) return 'self';
     try {
-      await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+      await this.assertStaffCanSeeStudent(callerId, schoolId, studentId);
       return 'staff';
     } catch (err) {
       if (!(err instanceof ForbiddenException)) throw err;
@@ -160,6 +160,81 @@ export class GradingService {
       throw new ForbiddenException('You may not view this Student\'s grading.');
     }
     return 'guardian';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Who may grade, and whose grading staff may see (grading foundation PR 4,
+  // Decisions 138, 139, 148, 168)
+  // ---------------------------------------------------------------------------
+
+  private async isSchoolOwner(callerId: string, schoolId: string): Promise<boolean> {
+    try {
+      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+      return true;
+    } catch (err) {
+      if (err instanceof ForbiddenException) return false;
+      throw err;
+    }
+  }
+
+  /** Decision 138: the School owner always may grade. Anyone else must be
+   * School staff (Instructor or Branch Staff) holding grading permission for
+   * this discipline, and the student must be in one of their branches
+   * (Decision 168). Covers every grading write: grade, downgrade, stripe
+   * award, skill sign-off, void and edit rank date. Replaces the plain
+   * assertStaffAtSchool() check, which admitted all staff to every grading
+   * action and was flagged [UNRESOLVED] in this file. */
+  async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string): Promise<void> {
+    if (await this.isSchoolOwner(callerId, schoolId)) return;
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } }, select: { schoolId: true } }),
+    );
+    if (!permission || permission.schoolId !== schoolId) {
+      throw new ForbiddenException('You do not have grading permission for this style. The School owner grants it.');
+    }
+    await this.assertBranchCoversStudent(callerId, schoolId, studentId);
+  }
+
+  /** Reads: the owner sees every student; other staff see the students of
+   * their own branches, with or without grading permission (Decision 168). */
+  private async assertStaffCanSeeStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
+    if (await this.isSchoolOwner(callerId, schoolId)) return;
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.assertBranchCoversStudent(callerId, schoolId, studentId);
+  }
+
+  /** Decision 168 (with 139 and 148):
+   * - A School with no branches is one branch: every staff member covers
+   *   every student.
+   * - In a School with branches, staff cover the students whose home branch
+   *   is one of the branches they are assigned to (one staff RoleGrant per
+   *   branch; a coach may hold several). A staff grant with no branch covers
+   *   no students there, and a student with no home branch yet is the
+   *   owner's alone until the owner assigns one. */
+  private async assertBranchCoversStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
+    // Under the caller's context, Branch RLS shows a staff member at least
+    // their own branch, so any row means the School has branches.
+    const anyBranch = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.branch.findFirst({ where: { schoolId }, select: { id: true } }),
+    );
+    if (!anyBranch) return;
+
+    const home = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.studentHomeBranch.findUnique({ where: { schoolId_studentId: { schoolId, studentId } }, select: { branchId: true } }),
+    );
+    if (!home) {
+      throw new ForbiddenException('This student has no home branch yet. Only the School owner can see or grade them until one is assigned.');
+    }
+    const assignment = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findFirst({
+        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: home.branchId },
+        select: { id: true },
+      }),
+    );
+    if (!assignment) {
+      throw new ForbiddenException('This student belongs to a branch you are not assigned to.');
+    }
   }
 
   /** Every grading WRITE (promote, downgrade, stripe award, skill sign-off)
@@ -177,20 +252,12 @@ export class GradingService {
   }
 
   // ---------------------------------------------------------------------------
-  // Grading actions — Instructor/Staff-initiated only (Spec 55 §5: "grading is
-  // always coach-initiated, never automatic"). Reuses assertStaffAtSchool — a
-  // Student may never grade themselves.
-  //
-  // [UNRESOLVED, flagged on review, not yet confirmed] assertStaffAtSchool
-  // admits SCHOOL_OWNER_MANAGER, BRANCH_STAFF, and INSTRUCTOR alike (see its
-  // own doc comment in tenant-authorization.service.ts) — but that method's
-  // stated justification was written for a READ-only computed signal (GET
-  // /students/{id}/membership-status, Phase 9), not a mutating grading action.
-  // Spec 55 §5's "coach-initiated" language may or may not have meant to admit
-  // generic BRANCH_STAFF (front-desk/admin staff, not necessarily a coach) to
-  // promote/downgrade/stripe-award a Student. Reused as-is here rather than
-  // narrowed, since narrowing it would be an equally unconfirmed guess in the
-  // other direction — surfaced for product-owner confirmation, not resolved.
+  // Grading actions — coach-initiated only (Spec 55 §5: "grading is always
+  // coach-initiated, never automatic"). Who may grade is assertCanGrade()
+  // above: the owner always, anyone else per discipline as the owner grants,
+  // for the students of their own branches (Decisions 138, 168). This
+  // resolves the [UNRESOLVED] note that used to stand here about
+  // assertStaffAtSchool() admitting every staff member to every action.
   // ---------------------------------------------------------------------------
 
   async promote(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
@@ -213,7 +280,7 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -332,7 +399,7 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -439,7 +506,7 @@ export class GradingService {
     if (!skill) {
       throw new NotFoundException('Skill not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, skill.schoolId);
+    await this.assertCanGrade(callerId, skill.schoolId, skill.disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, skill.schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -521,7 +588,16 @@ export class GradingService {
     if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(eventId)) {
       throw new BadRequestException('id, eventId and schoolId must be valid UUIDs');
     }
+    // Staff first, so an outsider learns nothing about which entries exist;
+    // then the full grading check for the entry's own discipline.
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const found = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.promotionEvent.findFirst({ where: { id: eventId, studentId, schoolId }, select: { studentRank: { select: { disciplineId: true } } } }),
+    );
+    if (!found) {
+      throw new NotFoundException('History entry not found');
+    }
+    await this.assertCanGrade(callerId, schoolId, found.studentRank.disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -553,7 +629,7 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
     const newDate = new Date(`${dto.date}T00:00:00.000Z`);

@@ -1348,6 +1348,12 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       const instructor = await mkExtraUser('former-instructor');
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: instructor.id, schoolId: school.id } });
       const tokenInstructor = signAccessToken(instructor, [{ role: 'INSTRUCTOR', franchiseId: null, schoolId: school.id, branchId: null }]);
+      // Grading permission for this style, from the owner (Decision 138).
+      const granted = await request(app.getHttpServer())
+        .put(`/v1/schools/${school.id}/grading-permissions/${instructor.id}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ disciplineIds: [histDisciplineId] });
+      expect(granted.status).toBe(200);
 
       const graded = await promote(user.id, tokenInstructor);
       expect(graded.status).toBe(201);
@@ -1385,6 +1391,243 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       await expect(withUser(owner.id, (tx) => tx.skillSignOffLog.deleteMany({ where: { studentId: user.id } }))).rejects.toThrow();
       await expect(withUser(owner.id, (tx) => tx.skillSignOffLog.updateMany({ where: { studentId: user.id }, data: { toStatus: 'SIGNED_OFF' } }))).rejects.toThrow();
       expect(await superuser.skillSignOffLog.count({ where: { studentId: user.id, toStatus: 'LEARNING' } })).toBe(1);
+    });
+  });
+  // ---------------------------------------------------------------------------
+  // Phase 1 / PR 4 (grading foundation) — grading permission per discipline
+  // and branch scoping (Decisions 138, 139, 148, 168). Its own School with two
+  // branches, so the tests above (a School with no branches) are unaffected.
+  // ---------------------------------------------------------------------------
+  describe('grading permission and branches (grading foundation PR 4)', () => {
+    let schoolP: { id: string };
+    let downtown: { id: string };
+    let riverside: { id: string };
+    let ownerP: { id: string; email: string };
+    let tokenOwnerP: string;
+    let bjjId: string;
+    let judoId: string;
+    let judoSkillId: string;
+    const people: Record<string, { user: { id: string; email: string }; token: string }> = {};
+
+    const staffToken = (user: { id: string; email: string }, grants: Array<{ role: string; branchId: string | null }>) =>
+      signAccessToken(user, grants.map((g) => ({ role: g.role, franchiseId: null, schoolId: schoolP.id, branchId: g.branchId })));
+    const grade = (studentId: string, disciplineId: string, token: string) =>
+      request(app.getHttpServer())
+        .post(`/v1/students/${studentId}/ranks/${disciplineId}/promote`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ acknowledgeWithoutSkillSignoff: true });
+    const viewRanks = (studentId: string, token: string) =>
+      request(app.getHttpServer()).get(`/v1/students/${studentId}/ranks`).query({ schoolId: schoolP.id }).set('Authorization', `Bearer ${token}`);
+    const setPermissions = (userId: string, disciplineIds: string[], token = tokenOwnerP) =>
+      request(app.getHttpServer())
+        .put(`/v1/schools/${schoolP.id}/grading-permissions/${userId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ disciplineIds });
+
+    beforeAll(async () => {
+      schoolP = await superuser.school.create({ data: { id: randomUUID(), name: 'Ranks HTTP Branches School', ranksToggle: true } });
+      downtown = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolP.id, name: 'Downtown' } });
+      riverside = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolP.id, name: 'Riverside' } });
+      ownerP = await mkExtraUser('branches-owner');
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerP.id, schoolId: schoolP.id } });
+      tokenOwnerP = staffToken(ownerP, [{ role: 'SCHOOL_OWNER_MANAGER', branchId: null }]);
+
+      const mkDiscipline = async (name: string, beltCount: number) => {
+        const disc = await request(app.getHttpServer())
+          .post(`/v1/schools/${schoolP.id}/disciplines`)
+          .set('Authorization', `Bearer ${tokenOwnerP}`)
+          .send({ name });
+        expect(disc.status).toBe(201);
+        for (let order = 0; order < beltCount; order++) {
+          const rank = await request(app.getHttpServer())
+            .post(`/v1/styles/${disc.body.id}/ranks`)
+            .set('Authorization', `Bearer ${tokenOwnerP}`)
+            .send({ order, primaryColour: '#FFFFFF', stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF' }] });
+          expect(rank.status).toBe(201);
+        }
+        return disc.body.id as string;
+      };
+      bjjId = await mkDiscipline('Branches BJJ', 4);
+      judoId = await mkDiscipline('Branches Judo', 3);
+      const skill = await request(app.getHttpServer())
+        .post(`/v1/styles/${judoId}/skills`)
+        .set('Authorization', `Bearer ${tokenOwnerP}`)
+        .send({ name: 'Osoto Gari' });
+      expect(skill.status).toBe(201);
+      judoSkillId = skill.body.id;
+      const firstJudoRank = await superuser.rank.findFirstOrThrow({ where: { disciplineId: judoId, order: 0 } });
+      await superuser.rankRequiredSkill.create({ data: { rankId: firstJudoRank.id, skillId: judoSkillId } });
+
+      // Coaches and staff: Carla at Downtown, Max at both branches, Wes with
+      // no branch, Rita (Branch Staff) at Riverside.
+      const staff: Array<[string, Array<{ role: string; branchId: string | null }>]> = [
+        ['carla', [{ role: 'INSTRUCTOR', branchId: downtown.id }]],
+        ['max', [{ role: 'INSTRUCTOR', branchId: downtown.id }, { role: 'INSTRUCTOR', branchId: riverside.id }]],
+        ['wes', [{ role: 'INSTRUCTOR', branchId: null }]],
+        ['rita', [{ role: 'BRANCH_STAFF', branchId: riverside.id }]],
+      ];
+      for (const [label, grants] of staff) {
+        const u = await mkExtraUser(`branches-${label}`);
+        for (const g of grants) {
+          await superuser.roleGrant.create({ data: { id: randomUUID(), role: g.role as 'INSTRUCTOR' | 'BRANCH_STAFF', userId: u.id, schoolId: schoolP.id, branchId: g.branchId } });
+        }
+        people[label] = { user: u, token: staffToken(u, grants) };
+      }
+
+      // Students: Ana joins Downtown, Ben joins Riverside (through the real
+      // join endpoint); Noor was enrolled before branches, with no home branch.
+      for (const [label, branchId] of [['ana', downtown.id], ['ben', riverside.id]] as const) {
+        const u = await mkExtraUser(`branches-${label}`);
+        const t = signAccessToken(u, []);
+        const joined = await request(app.getHttpServer()).post(`/v1/schools/${schoolP.id}/join`).set('Authorization', `Bearer ${t}`).send({ branchId });
+        expect(joined.status).toBe(201);
+        people[label] = { user: u, token: joined.body.accessToken };
+      }
+      const noor = await mkExtraUser('branches-noor');
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: noor.id, schoolId: schoolP.id } });
+      people.noor = { user: noor, token: signAccessToken(noor, [{ role: 'STUDENT', franchiseId: null, schoolId: schoolP.id, branchId: null }]) };
+    });
+
+    afterAll(async () => {
+      await superuser.promotionEvent.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.studentRankSkillStatus.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.studentRank.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.rankRequiredSkill.deleteMany({ where: { rank: { schoolId: schoolP.id } } });
+      await superuser.skill.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.rankStripeTier.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.rank.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.gradingPermission.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.discipline.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.studentHomeBranch.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.branch.deleteMany({ where: { schoolId: schoolP.id } });
+      await superuser.school.delete({ where: { id: schoolP.id } });
+    });
+
+    it('only the owner manages grading permission; only Instructors/Branch Staff of this School can hold it, for this School\'s styles (Decision 138)', async () => {
+      const { carla, ana } = people;
+      expect((await request(app.getHttpServer()).get(`/v1/schools/${schoolP.id}/grading-permissions`).set('Authorization', `Bearer ${carla.token}`)).status).toBe(403);
+      expect((await setPermissions(carla.user.id, [bjjId], carla.token)).status).toBe(403);
+      expect((await setPermissions(ana.user.id, [bjjId])).status).toBe(400); // a student, not staff
+      expect((await setPermissions(carla.user.id, [disciplineId])).status).toBe(400); // another School's style
+      expect((await setPermissions(carla.user.id, [bjjId, bjjId])).status).toBe(400); // duplicates
+
+      const res = await setPermissions(carla.user.id, [bjjId]);
+      expect(res.status).toBe(200);
+      expect(res.body.items.map((p: { disciplineId: string; grantedById: string }) => [p.disciplineId, p.grantedById])).toEqual([[bjjId, ownerP.id]]);
+      const list = await request(app.getHttpServer()).get(`/v1/schools/${schoolP.id}/grading-permissions`).set('Authorization', `Bearer ${tokenOwnerP}`);
+      expect(list.status).toBe(200);
+      expect(list.body.items.filter((p: { userId: string }) => p.userId === carla.user.id)).toHaveLength(1);
+
+      // Replacing with [] removes it.
+      expect((await setPermissions(carla.user.id, [])).body.items).toEqual([]);
+    });
+
+    it('a coach grades only in the styles granted to them, and only students of their own branches (Decisions 138, 168)', async () => {
+      const { carla, ana, ben, noor } = people;
+      // No permission yet: refused, nothing written.
+      expect((await grade(ana.user.id, bjjId, carla.token)).status).toBe(403);
+      expect(await superuser.promotionEvent.count({ where: { schoolId: schoolP.id } })).toBe(0);
+
+      expect((await setPermissions(carla.user.id, [bjjId])).status).toBe(200);
+      expect((await grade(ana.user.id, bjjId, carla.token)).status).toBe(201); // Downtown student, BJJ
+      expect((await grade(ana.user.id, judoId, carla.token)).status).toBe(403); // no Judo permission
+      expect((await grade(ben.user.id, bjjId, carla.token)).status).toBe(403); // Riverside student
+      expect((await grade(noor.user.id, bjjId, carla.token)).status).toBe(403); // no home branch yet
+
+      // Viewing: Carla sees her branch's student without needing permission
+      // for that style, but not another branch's student (Decision 168).
+      expect((await viewRanks(ana.user.id, carla.token)).status).toBe(200);
+      expect((await viewRanks(ben.user.id, carla.token)).status).toBe(403);
+      expect((await viewRanks(noor.user.id, carla.token)).status).toBe(403);
+    });
+
+    it('a coach assigned to two branches grades both; staff with no branch, in a School that has branches, grade no one (Decision 168)', async () => {
+      const { max, wes, rita, ana, ben } = people;
+      for (const who of [max, wes, rita]) {
+        expect((await setPermissions(who.user.id, [bjjId])).status).toBe(200);
+      }
+      expect((await grade(ana.user.id, bjjId, max.token)).status).toBe(201);
+      expect((await grade(ben.user.id, bjjId, max.token)).status).toBe(201);
+      expect((await grade(ana.user.id, bjjId, wes.token)).status).toBe(403);
+      expect((await viewRanks(ana.user.id, wes.token)).status).toBe(403);
+      expect((await grade(ben.user.id, bjjId, rita.token)).status).toBe(201); // Branch Staff at Riverside
+      expect((await grade(ana.user.id, bjjId, rita.token)).status).toBe(403);
+    });
+
+    it('the owner grades everyone, including students with no home branch, and assigns home branches (Decisions 138, 148)', async () => {
+      const { rita, noor, carla, ana } = people;
+      expect((await grade(noor.user.id, bjjId, tokenOwnerP)).status).toBe(201);
+      expect((await viewRanks(noor.user.id, tokenOwnerP)).status).toBe(200);
+      expect((await grade(noor.user.id, bjjId, rita.token)).status).toBe(403);
+
+      const assign = (studentId: string, branchId: string, token = tokenOwnerP) =>
+        request(app.getHttpServer())
+          .put(`/v1/schools/${schoolP.id}/students/${studentId}/home-branch`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ branchId });
+      expect((await assign(noor.user.id, riverside.id, carla.token)).status).toBe(403); // owner only
+      expect((await assign(noor.user.id, randomUUID())).status).toBe(400); // not a branch of this School
+      expect((await assign(carla.user.id, riverside.id)).status).toBe(404); // not a student here
+
+      const res = await assign(noor.user.id, riverside.id);
+      expect(res.status).toBe(200);
+      expect([res.body.branchId, res.body.assignedById]).toEqual([riverside.id, ownerP.id]);
+      expect((await grade(noor.user.id, bjjId, rita.token)).status).toBe(201);
+
+      // The owner can move a student; their coach changes with them.
+      expect((await assign(ana.user.id, riverside.id)).status).toBe(200);
+      expect((await grade(ana.user.id, bjjId, carla.token)).status).toBe(403);
+      expect((await assign(ana.user.id, downtown.id)).status).toBe(200);
+    });
+
+    it('skill sign-off, void and edit rank date need the same grading permission (Decision 138)', async () => {
+      const { carla, ana } = people;
+      // The owner grades Ana in Judo (first rung, which requires a skill).
+      const judo = await grade(ana.user.id, judoId, tokenOwnerP);
+      expect(judo.status).toBe(201);
+
+      const signOff = () => request(app.getHttpServer()).patch(`/v1/students/${ana.user.id}/skills/${judoSkillId}`).set('Authorization', `Bearer ${carla.token}`);
+      const voidIt = () =>
+        request(app.getHttpServer())
+          .post(`/v1/students/${ana.user.id}/rank-history/${judo.body.promotionEvent.id}/void`)
+          .query({ schoolId: schoolP.id })
+          .set('Authorization', `Bearer ${carla.token}`)
+          .send({ reason: 'test' });
+      const editDate = () =>
+        request(app.getHttpServer())
+          .patch(`/v1/students/${ana.user.id}/ranks/${judoId}/rank-date`)
+          .set('Authorization', `Bearer ${carla.token}`)
+          .send({ date: new Date(Date.now() - 86_400_000).toISOString().slice(0, 10) });
+
+      for (const call of [signOff, voidIt, editDate]) {
+        expect((await call()).status).toBe(403);
+      }
+      expect(await superuser.skillSignOffLog.count({ where: { studentId: ana.user.id } })).toBe(0);
+
+      expect((await setPermissions(carla.user.id, [bjjId, judoId])).status).toBe(200);
+      expect((await signOff()).status).toBe(200);
+      expect((await editDate()).status).toBe(200);
+      expect((await voidIt()).status).toBe(201);
+    });
+
+    it('RLS: grading permissions and home branches are visible only to the owner and the person themselves; staff cannot grant themselves permission', async () => {
+      const { carla, max, ana, ben } = people;
+      expect(await withUser(carla.user.id, (tx) => tx.gradingPermission.count({ where: { schoolId: schoolP.id } }))).toBe(
+        await superuser.gradingPermission.count({ where: { schoolId: schoolP.id, userId: carla.user.id } }),
+      );
+      expect(await withUser(max.user.id, (tx) => tx.gradingPermission.count({ where: { userId: carla.user.id } }))).toBe(0);
+      expect(await withUser(ownerP.id, (tx) => tx.gradingPermission.count({ where: { schoolId: schoolP.id } }))).toBe(
+        await superuser.gradingPermission.count({ where: { schoolId: schoolP.id } }),
+      );
+      await expect(
+        withUser(carla.user.id, (tx) => tx.gradingPermission.create({ data: { id: randomUUID(), schoolId: schoolP.id, userId: carla.user.id, disciplineId: judoId } })),
+      ).rejects.toThrow();
+
+      expect(await withUser(ana.user.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(1);
+      expect(await withUser(ben.user.id, (tx) => tx.studentHomeBranch.count({ where: { studentId: ana.user.id } }))).toBe(0);
+      expect(await withUser(carla.user.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(0);
+      expect(await withUser(ownerP.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(3);
     });
   });
 });
