@@ -1938,3 +1938,17 @@ Still to confirm with Gus: whether v1.1 ships this using the existing one-off Cl
 **Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a data-migration question raised while building grading foundation PR 2 (per-rung fields, Decision 126)
 
 Existing `RankRequiredSkill` rows were written under the old meaning, "needed to **leave** this belt" (the current `GradingService` check). Under Decision 127, a rung's skills mean "needed to get **into** this rung". When they are copied onto rungs, each belt's required skills go to the **first rung of the next belt** in the same discipline. For example, Blue Belt's skills become "needed to get into Purple Belt". This keeps what each School meant. Skills on the top belt have no next rung and are not copied. The original `RankRequiredSkill` rows are kept unchanged until the grading engine (roadmap Phase 2) switches over, so nothing is lost. Gus: *"A"*, and ULTM8 is *"pre-launch"*, so no live School data is affected.
+
+---
+
+## Decision 165 — A rung's stripe colours are set only in its stripe list; its single colour follows the first stripe
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found on the independent review of grading foundation PR 2 (codestudio26/ULTM8#98): a rung's single `colour` was not checked against its `stripeSegments`
+
+A rung stores its stripe colours twice: the single `RankStripeTier.colour` from V1, and the stripe list `stripeSegments` (Decision 128). From now on:
+
+1. The **stripe list is the only place a rung's stripe colours are set.**
+2. The single colour is **filled in automatically from the first stripe in the list**. That is the newest colour the student earned, and the colour the rung is named after. For example, "Grey/White Belt · 1 Yellow Stripe" is 1 yellow then 3 red, so its colour is yellow, not red (the majority). This is how the prototype builds and names rungs (`prototype/index.html`, `redRungs`/`yellowRungs`). The two can never disagree.
+3. A rung with no stripes has an empty list; its single colour stays as entered.
+
+Options considered: the stripe list wins (chosen); refuse saves where they disagree; the single colour wins and repaints the stripes. For mixed stripes, "first stripe" was chosen over "the colour with the most stripes", after Gus pointed to the prototype's rung list. Gus: *"A"*, then *"yes"*.

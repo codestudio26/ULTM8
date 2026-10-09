@@ -5,7 +5,7 @@ description: Canonical domain and business-rule reference for the ULTM8 martial-
 
 # ULTM8 Domain Rules
 
-**Derived from:** `deep-review/ULTM8-Dev-Handover-v55/ULTM8_Technical_Specification_55.docx` — the current source of truth as of Pass 8, Round 4 sign-off (decisions through Decision 69 and the accompanying Pass 8.4 logic-review completions, dated through 27 Aug 2026), cross-checked directly against the underlying Figma audit and the working grading-system prototype (spec §2.3). This supersedes an earlier version of this skill drawn from the pre-review draft dated 21 Aug 2026. Updated 2 Sep 2026 to reflect `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 71, 72, 74, 75, 76, 77, and 78. **Updated 9 Oct 2026 for grading: Decisions 124–163** (see §5A). Edited with the product owner's explicit approval, as Architect-level maintenance.
+**Derived from:** `deep-review/ULTM8-Dev-Handover-v55/ULTM8_Technical_Specification_55.docx` — the current source of truth as of Pass 8, Round 4 sign-off (decisions through Decision 69 and the accompanying Pass 8.4 logic-review completions, dated through 27 Aug 2026), cross-checked directly against the underlying Figma audit and the working grading-system prototype (spec §2.3). This supersedes an earlier version of this skill drawn from the pre-review draft dated 21 Aug 2026. Updated 2 Sep 2026 to reflect `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 71, 72, 74, 75, 76, 77, and 78. **Updated 9 Oct 2026 for grading: Decisions 124–165** (see §5A). Edited with the product owner's explicit approval, as Architect-level maintenance.
 **Maintained by:** the Architect agent only. If this skill and the current spec ever disagree, the spec wins — flag the mismatch to the Architect rather than trusting whichever one you read first.
 **Status:** living reference. Re-verify against the spec every time the spec is updated; do not assume this file is current.
 
@@ -78,6 +78,7 @@ Source: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 124–163, and G
 **Ladder**
 - Every belt and every stripe is its own rung and its own grade. Stored as `Rank` + `RankStripeTier`; each (belt, tier) is one rung (Decision 126).
 - Each rung carries: name, stripe count and colour segments (mixed colours allowed), classes required, minimum days, which class types count, weekly cap, required skills, and the "time in rank only" switch with its years stored as minimum days (Decisions 126, 128).
+- A rung's stripe colours are set only in its stripe list; its single colour is filled in from the **first** stripe in the list (the newest colour, the one the rung is named after), so the two never disagree (Decision 165).
 - Rungs can be reordered by drag with a confirmation listing affected students; a rung students hold cannot be deleted (Decision 152).
 - Styles are created from the three IBJJF templates only (90 / 139 / 175 rungs), built from scratch, or duplicated with their skills (Decision 131).
 

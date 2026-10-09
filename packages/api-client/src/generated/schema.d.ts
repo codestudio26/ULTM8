@@ -2937,13 +2937,14 @@ export interface components {
             /** @description Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order: number;
             count: number;
+            /** @description Stripe colour. When the rung has stripes, the stored value is the colour of the first entry in `stripeSegments` (Decision 165); this value is only used to build the segments when they are omitted on a new rung. */
             colour: string;
             classesRequired?: number;
             minimumDaysInRank?: number;
             eligibleClassTypes?: string[];
             /** @description Rung name, e.g. "Blue Belt · 2 Stripes". When omitted: generated from the belt name and stripe count on a new rung; kept on an existing rung (a generated name is regenerated). */
             name?: string;
-            /** @description Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged. */
+            /** @description Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. The only place this rung's stripe colours are set; the `colour` field follows the first entry (Decision 165). When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged. */
             stripeSegments?: components["schemas"]["StripeSegmentInputDto"][];
             /** @description Max classes per week that count toward this rung. */
             weeklyClassCountCap?: number;

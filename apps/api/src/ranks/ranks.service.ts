@@ -447,7 +447,14 @@ export class RanksService {
    * An existing rung being updated (`previous`): an omitted field keeps its
    * stored value — the name unless it was the generated one (then it is
    * regenerated, so it follows a new belt name or count), the segments while
-   * `count` and `colour` are unchanged, and timeOnly. */
+   * `count` and `colour` are unchanged, and timeOnly.
+   *
+   * Decision 165: the stripe list is the only place a rung's stripe colours
+   * are set, and the single `colour` is filled in from its FIRST segment (the
+   * newest colour, the one the rung is named after), so the two can never
+   * disagree. A rung with no stripes keeps the `colour` sent. Changing
+   * `colour` alone on a rung with MIXED stripes is refused (400): there is no
+   * single colour to repaint them with — the stripe list must be sent. */
   private tierFields(
     tier: RankStripeTierInputDto,
     rankName: string,
@@ -455,9 +462,13 @@ export class RanksService {
   ) {
     const defaultSegments = tier.count > 0 ? [{ count: tier.count, colour: tier.colour }] : [];
     const keepSegments = previous && previous.count === tier.count && previous.colour === tier.colour;
-    const segments =
-      tier.stripeSegments ??
-      (keepSegments ? (previous.stripeSegments as unknown as { count: number; colour: string }[]) : defaultSegments);
+    const previousSegments = (previous?.stripeSegments ?? []) as unknown as { count: number; colour: string }[];
+    if (!tier.stripeSegments && previous && previous.count === tier.count && previous.colour !== tier.colour && previousSegments.length > 1) {
+      throw new BadRequestException(
+        `Stripe tier ${tier.order} has mixed stripe colours; change them in its stripeSegments, not its single colour (Decision 165).`,
+      );
+    }
+    const segments = tier.stripeSegments ?? (keepSegments ? previousSegments : defaultSegments);
     const segmentTotal = segments.reduce((sum, s) => sum + s.count, 0);
     if (segmentTotal !== tier.count) {
       throw new BadRequestException(
@@ -468,7 +479,7 @@ export class RanksService {
     const keepName = previous && previous.name !== RanksService.generatedTierName(previous.rankName, previous.count);
     return {
       count: tier.count,
-      colour: tier.colour,
+      colour: segments.length ? segments[0].colour : tier.colour,
       classesRequired: tier.classesRequired,
       minimumDaysInRank: tier.minimumDaysInRank,
       eligibleClassTypes: tier.eligibleClassTypes ?? [],
