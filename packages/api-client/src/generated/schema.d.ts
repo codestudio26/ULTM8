@@ -2406,14 +2406,22 @@ export interface components {
             /** @description The linked minor Student this pending-review Booking belongs to. */
             studentId: string;
         };
+        ClassStyleInputDto: {
+            /** @description A style (Discipline) of this School. */
+            disciplineId: string;
+            /** @description A class type from this style's classTypesOffered. Required when the style lists class types; not allowed when it lists none. */
+            classType?: string | null;
+        };
         CreateClassDto: {
             /** @description Branch to scope this Class to. Omit for a School-wide Class. */
             branchId?: string;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. */
             instructorId?: string;
             title: string;
-            /** @description At least one activity/discipline this Class covers. */
-            activities: string[];
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
+            activities?: string[];
+            /** @description The styles this Class belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed Class lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             bannerUrl?: string;
             description?: string;
             /** @description ISO 8601 date-time. */
@@ -2438,6 +2446,10 @@ export interface components {
              */
             membershipInclusion: boolean;
         };
+        ClassStyleResponseDto: {
+            disciplineId: string;
+            classType: string | null;
+        };
         ClassResponseDto: {
             id: string;
             schoolId: string;
@@ -2445,6 +2457,8 @@ export interface components {
             instructorId?: string | null;
             title: string;
             activities: string[];
+            /** @description Styles with their class types (Decisions 143, 152, 170). */
+            styles: components["schemas"]["ClassStyleResponseDto"][];
             bannerUrl?: string | null;
             description?: string | null;
             startDate: string;
@@ -2468,8 +2482,10 @@ export interface components {
         };
         UpdateClassDto: {
             title?: string;
-            /** @description At least one activity/discipline this Class covers. */
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
             activities?: string[];
+            /** @description The styles this Class belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed Class lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             /** @description ISO 8601 date-time. */
             startDate?: string;
             /** @description ISO 8601 date-time. */
@@ -2667,8 +2683,10 @@ export interface components {
              */
             status: "ON" | "OFF";
             title: string;
-            /** @description At least one activity/discipline this slot covers. */
-            activities: string[];
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
+            activities?: string[];
+            /** @description The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             /** @description Nullable/omitted = unlimited. */
             capacity?: number;
             description?: string;
@@ -2706,6 +2724,8 @@ export interface components {
             status: "ON" | "OFF";
             title: string;
             activities: string[];
+            /** @description Styles with their class types (Decisions 143, 152, 170). */
+            styles: components["schemas"]["ClassStyleResponseDto"][];
             capacity?: number | null;
             description?: string | null;
             bannerUrl?: string | null;
@@ -2746,8 +2766,10 @@ export interface components {
              */
             status: "ON" | "OFF";
             title?: string;
-            /** @description At least one activity/discipline this slot covers. */
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
             activities?: string[];
+            /** @description The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             /** @default false */
             termsWaiverRequired: boolean;
             /**
@@ -3028,6 +3050,12 @@ export interface components {
             count: number;
             colour: string;
         };
+        ClassTypeRequirementInputDto: {
+            /** @description A class type ticked in this rung's eligibleClassTypes. */
+            classType: string;
+            /** @description Classes of this type needed for this rung. */
+            classesRequired: number;
+        };
         RankStripeTierInputDto: {
             /** @description Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order: number;
@@ -3045,6 +3073,13 @@ export interface components {
             weeklyClassCountCap?: number;
             /** @description "Time in rank only" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung. */
             timeOnly?: boolean;
+            /**
+             * @description ANY_TYPE (the default): a class of any ticked type counts toward classesRequired. EACH_TYPE: each ticked type has its own number in classTypeRequirements. When omitted: ANY_TYPE on a new rung; kept on an existing rung.
+             * @enum {string}
+             */
+            classCountMode?: "ANY_TYPE" | "EACH_TYPE";
+            /** @description EACH_TYPE only: one entry per ticked class type in eligibleClassTypes, with its number. Must be empty for ANY_TYPE. When omitted: empty on a new rung; kept on an existing rung. */
+            classTypeRequirements?: components["schemas"]["ClassTypeRequirementInputDto"][];
             /** @description Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted. */
             requiredSkillIds?: string[];
         };
@@ -3081,6 +3116,16 @@ export interface components {
             classesRequired?: number | null;
             minimumDaysInRank?: number | null;
             eligibleClassTypes: string[];
+            /**
+             * @description Which classes count (Decisions 140, 149).
+             * @enum {string}
+             */
+            classCountMode: "ANY_TYPE" | "EACH_TYPE";
+            /** @description EACH_TYPE: [{ classType, classesRequired }] per ticked type (Decision 149). */
+            classTypeRequirements: {
+                classType?: string;
+                classesRequired?: number;
+            }[];
             name: string;
             stripeSegments: components["schemas"]["StripeSegmentResponseDto"][];
             weeklyClassCountCap?: number | null;

@@ -7,6 +7,7 @@ import {
   Max,
   IsArray,
   IsBoolean,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -22,6 +23,20 @@ import {
 // would let null through to the service, which reads `.length` on it (500) or
 // writes it to a NOT NULL column. Found on independent review (PR 2).
 const NotNullIfPresent = () => ValidateIf((_obj: unknown, value: unknown) => value !== undefined);
+
+/** One ticked class type's own number, for a rung in EACH_TYPE mode
+ * (Decision 149: e.g. 20 Fundamentals + 10 Sparring). */
+export class ClassTypeRequirementInputDto {
+  @ApiProperty({ description: 'A class type ticked in this rung\'s eligibleClassTypes.' })
+  @IsString()
+  @MaxLength(100)
+  classType!: string;
+
+  @ApiProperty({ description: 'Classes of this type needed for this rung.', minimum: 0 })
+  @IsInt()
+  @Min(0)
+  classesRequired!: number;
+}
 
 /**
  * One RankStripeTier, nested inline under CreateRankDto/UpdateRankDto — no
@@ -100,6 +115,27 @@ export class RankStripeTierInputDto {
   @IsOptional()
   @IsBoolean()
   timeOnly?: boolean;
+
+  // Grading foundation PR 5 — which classes count (Decisions 140, 149). No
+  // `default:` in the Swagger metadata, for the same reason as timeOnly.
+  @ApiPropertyOptional({
+    enum: ['ANY_TYPE', 'EACH_TYPE'],
+    description: 'ANY_TYPE (the default): a class of any ticked type counts toward classesRequired. EACH_TYPE: each ticked type has its own number in classTypeRequirements. When omitted: ANY_TYPE on a new rung; kept on an existing rung.',
+  })
+  @IsOptional()
+  @IsEnum(['ANY_TYPE', 'EACH_TYPE'])
+  classCountMode?: 'ANY_TYPE' | 'EACH_TYPE';
+
+  @ApiPropertyOptional({
+    type: () => [ClassTypeRequirementInputDto],
+    description: 'EACH_TYPE only: one entry per ticked class type in eligibleClassTypes, with its number. Must be empty for ANY_TYPE. When omitted: empty on a new rung; kept on an existing rung.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => ClassTypeRequirementInputDto)
+  classTypeRequirements?: ClassTypeRequirementInputDto[];
 
   @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.' })
   @NotNullIfPresent()

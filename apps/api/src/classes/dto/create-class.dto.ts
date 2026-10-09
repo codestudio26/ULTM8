@@ -10,9 +10,12 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  ValidateNested,
   Min,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ClassStyleInputDto } from './class-style.dto';
 
 /**
  * Field list verified directly against domain-rules §9's confirmed Class row (not
@@ -60,12 +63,27 @@ export class CreateClassDto {
   @MaxLength(100)
   title!: string;
 
-  @ApiProperty({ type: [String], description: 'At least one activity/discipline this Class covers.' })
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles\' names when omitted.',
+  })
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(20)
   @IsString({ each: true })
-  activities!: string[];
+  activities?: string[];
+
+  @ApiPropertyOptional({
+    type: () => [ClassStyleInputDto],
+    description: 'The styles this Class belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed Class lists several.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => ClassStyleInputDto)
+  styles?: ClassStyleInputDto[];
 
   @ApiPropertyOptional()
   @IsOptional()

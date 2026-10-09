@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ClassStyleResponseDto } from './class-style.dto';
 
 /**
  * Response shape — see school-response.dto.ts's header comment (including why every
@@ -24,6 +25,9 @@ export class ClassResponseDto {
 
   @ApiProperty({ type: [String] })
   activities!: string[];
+
+  @ApiProperty({ type: () => [ClassStyleResponseDto], description: 'Styles with their class types (Decisions 143, 152, 170).' })
+  styles!: ClassStyleResponseDto[];
 
   @ApiPropertyOptional({ type: String, nullable: true })
   bannerUrl!: string | null;

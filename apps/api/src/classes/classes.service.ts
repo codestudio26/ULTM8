@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { resolveClassStyles } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -43,15 +44,17 @@ export class ClassesService {
     this.assertValidDateRange(startDate, endDate);
 
     const classId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.create({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const { styles, activities } = await resolveClassStyles(tx, schoolId, dto.styles, dto.activities);
+      return tx.class.create({
         data: {
           id: classId,
           schoolId,
           branchId: dto.branchId,
           instructorId: dto.instructorId,
           title: dto.title,
-          activities: dto.activities,
+          activities,
+          styles,
           bannerUrl: dto.bannerUrl,
           description: dto.description,
           startDate,
@@ -64,8 +67,8 @@ export class ClassesService {
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
           membershipInclusion: dto.membershipInclusion ?? false,
         },
-      }),
-    );
+      });
+    });
   }
 
   /** Classes visible to the caller under one School — RLS restricts this to a School-
@@ -127,14 +130,21 @@ export class ClassesService {
       this.assertValidDateRange(nextStartDate, nextEndDate);
     }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.update({
+    if ((dto as { styles?: unknown }).styles === null) {
+      throw new BadRequestException('styles cannot be null; omit it to leave the styles unchanged.');
+    }
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Styles are replaced when sent and kept when omitted (Decision 170).
+      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities) : null;
+      return tx.class.update({
         where: { id: classId },
         data: {
           branchId: dto.branchId,
           instructorId: dto.instructorId,
           title: dto.title,
-          activities: dto.activities,
+          activities: resolved ? resolved.activities : dto.activities,
+          styles: resolved ? resolved.styles : undefined,
           bannerUrl: dto.bannerUrl,
           description: dto.description,
           startDate: dto.startDate ? nextStartDate : undefined,
@@ -147,8 +157,8 @@ export class ClassesService {
           termsWaiverRequired: dto.termsWaiverRequired,
           membershipInclusion: dto.membershipInclusion,
         },
-      }),
-    );
+      });
+    });
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]

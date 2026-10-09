@@ -20,6 +20,9 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_JOBS = process.env.DATABASE_URL_JOBS;
 const hasDb = Boolean(DATABASE_URL && DATABASE_URL_JOBS);
 
+// Stored as JSON (not a foreign key), so a fixed id is enough here.
+const SLOT_STYLES = [{ disciplineId: '00000000-0000-4000-8000-000000000001', classType: 'Open Mat' }];
+
 const describeIfDb = hasDb ? describe : describe.skip;
 
 if (!hasDb) {
@@ -65,6 +68,7 @@ describeIfDb('class-occurrence-generation job', () => {
         status: 'ON',
         title: 'Fixture Occurrence Class',
         activities: ['BJJ'],
+        styles: SLOT_STYLES,
         capacity: 20,
         bookingCutoffMinutesBeforeStart: 60,
       },
@@ -108,6 +112,8 @@ describeIfDb('class-occurrence-generation job', () => {
     for (const cls of generated) {
       expect(cls.title).toBe('Fixture Occurrence Class');
       expect(cls.activities).toEqual(['BJJ']);
+      // Styles and class types copy onto every generated Class (Decision 170).
+      expect(cls.styles).toEqual(SLOT_STYLES);
       expect(cls.capacity).toBe(20);
       expect(cls.schoolId).toBe(school.id);
       expect(cls.branchId).toBe(branch.id);

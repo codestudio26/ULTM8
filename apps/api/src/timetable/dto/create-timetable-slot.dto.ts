@@ -10,10 +10,13 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  ValidateNested,
   Matches,
   Min,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ClassStyleInputDto } from '../../classes/dto/class-style.dto';
 
 /**
  * Field list per the Phase 5 kickoff prompt — confirmed six (Spec 55 §6.1, quoted
@@ -96,12 +99,27 @@ export class CreateTimetableSlotDto {
   @MaxLength(100)
   title!: string;
 
-  @ApiProperty({ type: [String], description: 'At least one activity/discipline this slot covers.' })
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles\' names when omitted.',
+  })
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(20)
   @IsString({ each: true })
-  activities!: string[];
+  activities?: string[];
+
+  @ApiPropertyOptional({
+    type: () => [ClassStyleInputDto],
+    description: 'The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => ClassStyleInputDto)
+  styles?: ClassStyleInputDto[];
 
   @ApiPropertyOptional({ description: 'Nullable/omitted = unlimited.', minimum: 1 })
   @IsOptional()

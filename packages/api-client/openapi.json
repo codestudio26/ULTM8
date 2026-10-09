@@ -7661,6 +7661,23 @@
           "studentId"
         ]
       },
+      "ClassStyleInputDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string",
+            "description": "A style (Discipline) of this School."
+          },
+          "classType": {
+            "type": "string",
+            "nullable": true,
+            "description": "A class type from this style's classTypesOffered. Required when the style lists class types; not allowed when it lists none."
+          }
+        },
+        "required": [
+          "disciplineId"
+        ]
+      },
       "CreateClassDto": {
         "type": "object",
         "properties": {
@@ -7676,10 +7693,17 @@
             "type": "string"
           },
           "activities": {
-            "description": "At least one activity/discipline this Class covers.",
+            "description": "Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted.",
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "styles": {
+            "description": "The styles this Class belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed Class lists several.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleInputDto"
             }
           },
           "bannerUrl": {
@@ -7729,9 +7753,24 @@
         },
         "required": [
           "title",
-          "activities",
           "startDate",
           "endDate"
+        ]
+      },
+      "ClassStyleResponseDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "classType": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "disciplineId",
+          "classType"
         ]
       },
       "ClassResponseDto": {
@@ -7758,6 +7797,13 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "styles": {
+            "description": "Styles with their class types (Decisions 143, 152, 170).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleResponseDto"
             }
           },
           "bannerUrl": {
@@ -7814,6 +7860,7 @@
           "schoolId",
           "title",
           "activities",
+          "styles",
           "startDate",
           "endDate",
           "termsWaiverRequired",
@@ -7848,10 +7895,17 @@
             "type": "string"
           },
           "activities": {
-            "description": "At least one activity/discipline this Class covers.",
+            "description": "Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted.",
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "styles": {
+            "description": "The styles this Class belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed Class lists several.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleInputDto"
             }
           },
           "startDate": {
@@ -8459,10 +8513,17 @@
             "type": "string"
           },
           "activities": {
-            "description": "At least one activity/discipline this slot covers.",
+            "description": "Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted.",
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "styles": {
+            "description": "The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleInputDto"
             }
           },
           "capacity": {
@@ -8506,8 +8567,7 @@
           "weekday",
           "startTime",
           "endTime",
-          "title",
-          "activities"
+          "title"
         ]
       },
       "TimetableSlotResponseDto": {
@@ -8571,6 +8631,13 @@
               "type": "string"
             }
           },
+          "styles": {
+            "description": "Styles with their class types (Decisions 143, 152, 170).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleResponseDto"
+            }
+          },
           "capacity": {
             "type": "number",
             "nullable": true
@@ -8621,6 +8688,7 @@
           "status",
           "title",
           "activities",
+          "styles",
           "termsWaiverRequired",
           "membershipInclusion",
           "createdAt",
@@ -8691,10 +8759,17 @@
             "type": "string"
           },
           "activities": {
-            "description": "At least one activity/discipline this slot covers.",
+            "description": "Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted.",
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "styles": {
+            "description": "The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleInputDto"
             }
           },
           "termsWaiverRequired": {
@@ -9636,6 +9711,24 @@
           "colour"
         ]
       },
+      "ClassTypeRequirementInputDto": {
+        "type": "object",
+        "properties": {
+          "classType": {
+            "type": "string",
+            "description": "A class type ticked in this rung's eligibleClassTypes."
+          },
+          "classesRequired": {
+            "type": "number",
+            "description": "Classes of this type needed for this rung.",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "classType",
+          "classesRequired"
+        ]
+      },
       "RankStripeTierInputDto": {
         "type": "object",
         "properties": {
@@ -9680,6 +9773,21 @@
           "timeOnly": {
             "type": "boolean",
             "description": "\"Time in rank only\" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung."
+          },
+          "classCountMode": {
+            "type": "string",
+            "enum": [
+              "ANY_TYPE",
+              "EACH_TYPE"
+            ],
+            "description": "ANY_TYPE (the default): a class of any ticked type counts toward classesRequired. EACH_TYPE: each ticked type has its own number in classTypeRequirements. When omitted: ANY_TYPE on a new rung; kept on an existing rung."
+          },
+          "classTypeRequirements": {
+            "description": "EACH_TYPE only: one entry per ticked class type in eligibleClassTypes, with its number. Must be empty for ANY_TYPE. When omitted: empty on a new rung; kept on an existing rung.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassTypeRequirementInputDto"
+            }
           },
           "requiredSkillIds": {
             "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
@@ -9793,6 +9901,29 @@
               "type": "string"
             }
           },
+          "classCountMode": {
+            "type": "string",
+            "enum": [
+              "ANY_TYPE",
+              "EACH_TYPE"
+            ],
+            "description": "Which classes count (Decisions 140, 149)."
+          },
+          "classTypeRequirements": {
+            "type": "array",
+            "description": "EACH_TYPE: [{ classType, classesRequired }] per ticked type (Decision 149).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "classType": {
+                  "type": "string"
+                },
+                "classesRequired": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
           "name": {
             "type": "string"
           },
@@ -9823,6 +9954,8 @@
           "count",
           "colour",
           "eligibleClassTypes",
+          "classCountMode",
+          "classTypeRequirements",
           "name",
           "stripeSegments",
           "timeOnly",

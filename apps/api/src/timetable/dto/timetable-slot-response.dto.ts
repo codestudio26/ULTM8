@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ClassStyleResponseDto } from '../../classes/dto/class-style.dto';
 
 /**
  * Response shape — see school-response.dto.ts's header comment (including why every
@@ -43,6 +44,9 @@ export class TimetableSlotResponseDto {
 
   @ApiProperty({ type: [String] })
   activities!: string[];
+
+  @ApiProperty({ type: () => [ClassStyleResponseDto], description: 'Styles with their class types (Decisions 143, 152, 170).' })
+  styles!: ClassStyleResponseDto[];
 
   @ApiPropertyOptional({ type: Number, nullable: true })
   capacity!: number | null;

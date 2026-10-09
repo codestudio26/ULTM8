@@ -327,4 +327,114 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
       .send({ endDate: '2026-09-01T00:00:00.000Z' }); // before classBody()'s default startDate
     expect(patchRes.status).toBe(400);
   });
+  // ---------------------------------------------------------------------------
+  // Grading foundation PR 5 — styles and class types on classes (Decisions 143,
+  // 152, 170). Its own School with styles; School A above has none, so its
+  // classes keep using free-text activities, as before.
+  // ---------------------------------------------------------------------------
+  describe('styles and class types (grading foundation PR 5)', () => {
+    let schoolS: { id: string };
+    let tokenOwnerS: string;
+    let bjj: { id: string };
+    let judo: { id: string };
+    let yoga: { id: string };
+    let foreignStyle: { id: string };
+    const create = (body: Record<string, unknown>) =>
+      request(app.getHttpServer()).post(`/v1/schools/${schoolS.id}/classes`).set('Authorization', `Bearer ${tokenOwnerS}`).send(classBody(body));
+
+    beforeAll(async () => {
+      schoolS = await superuser.school.create({ data: { id: randomUUID(), name: 'Classes HTTP Styles School' } });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: schoolS.id } });
+      tokenOwnerS = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolS.id, branchId: null }]);
+      bjj = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'BJJ', classTypesOffered: ['Fundamentals', 'Open Mat'] } });
+      judo = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'Judo', classTypesOffered: ['Open Mat'] } });
+      yoga = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'Yoga' } });
+      foreignStyle = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolB.id, name: 'Other School BJJ' } });
+    });
+
+    afterAll(async () => {
+      await superuser.class.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.discipline.deleteMany({ where: { id: { in: [bjj.id, judo.id, yoga.id, foreignStyle.id] } } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.school.delete({ where: { id: schoolS.id } });
+    });
+
+    it('a School with styles: every class picks at least one style, with a class type from that style\'s list (Decision 170)', async () => {
+      const refused: Array<[string, Record<string, unknown>]> = [
+        ['no styles', { activities: ['BJJ'] }],
+        ['empty styles', { styles: [] }],
+        ['another School\'s style', { styles: [{ disciplineId: foreignStyle.id }] }],
+        ['style twice', { styles: [{ disciplineId: bjj.id, classType: 'Fundamentals' }, { disciplineId: bjj.id, classType: 'Open Mat' }] }],
+        ['missing class type', { styles: [{ disciplineId: bjj.id }] }],
+        ['class type not on the list', { styles: [{ disciplineId: bjj.id, classType: 'Sparring' }] }],
+        ['class type on a style with none', { styles: [{ disciplineId: yoga.id, classType: 'Flow' }] }],
+      ];
+      for (const [label, body] of refused) {
+        const res = await create({ activities: undefined, ...body });
+        expect({ label, status: res.status }).toEqual({ label, status: 400 });
+      }
+      expect(await superuser.class.count({ where: { schoolId: schoolS.id } })).toBe(0);
+
+      const single = await create({ activities: undefined, styles: [{ disciplineId: yoga.id }] });
+      expect(single.status).toBe(201);
+      expect(single.body.styles).toEqual([{ disciplineId: yoga.id, classType: null }]);
+      // Filled in from the styles' names for Decision 90's bridge.
+      expect(single.body.activities).toEqual(['Yoga']);
+    });
+
+    it('a mixed class (Open Mat for BJJ and Judo) lists both styles; styles are replaced when sent, kept when omitted, and null is refused (Decision 170)', async () => {
+      const openMat = await create({
+        title: 'Open Mat',
+        activities: undefined,
+        styles: [
+          { disciplineId: bjj.id, classType: 'Open Mat' },
+          { disciplineId: judo.id, classType: 'Open Mat' },
+        ],
+      });
+      expect(openMat.status).toBe(201);
+      expect(openMat.body.styles).toEqual([
+        { disciplineId: bjj.id, classType: 'Open Mat' },
+        { disciplineId: judo.id, classType: 'Open Mat' },
+      ]);
+      expect(openMat.body.activities).toEqual(['BJJ', 'Judo']);
+
+      const patch = (body: Record<string, unknown>) =>
+        request(app.getHttpServer()).patch(`/v1/classes/${openMat.body.id}`).set('Authorization', `Bearer ${tokenOwnerS}`).send(body);
+
+      const renamed = await patch({ title: 'Open Mat (all levels)' });
+      expect(renamed.status).toBe(200);
+      expect(renamed.body.styles).toHaveLength(2);
+
+      expect((await patch({ styles: null })).status).toBe(400);
+      expect((await patch({ styles: [{ disciplineId: bjj.id }] })).status).toBe(400);
+
+      const narrowed = await patch({ styles: [{ disciplineId: bjj.id, classType: 'Fundamentals' }] });
+      expect(narrowed.status).toBe(200);
+      expect(narrowed.body.styles).toEqual([{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
+      expect(narrowed.body.activities).toEqual(['BJJ']);
+    });
+
+    it('a School with no styles keeps free-text activities, and cannot be given styles', async () => {
+      // School A has no styles.
+      const noActivities = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolA.id}/classes`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`)
+        .send(classBody({ activities: undefined }));
+      expect(noActivities.status).toBe(400);
+
+      const withStyles = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolA.id}/classes`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`)
+        .send(classBody({ styles: [{ disciplineId: bjj.id }] }));
+      expect(withStyles.status).toBe(400);
+
+      const plain = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolA.id}/classes`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`)
+        .send(classBody());
+      expect(plain.status).toBe(201);
+      expect(plain.body.styles).toEqual([]);
+      classIds.push(plain.body.id);
+    });
+  });
 });
