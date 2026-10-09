@@ -15,6 +15,9 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api-client — regenerated for `POST /auth/refresh` and `POST /auth/logout`**
+  (added in #101 without a client regeneration), including the `refreshToken`
+  now returned on sign-in. No code change.
 - **api — grading engine (roadmap Phase 2a; Decisions 127, 136, 149, 171).**
   Gus's grading rules as pure functions in `apps/api/src/ranks/engine/`: the
   flat ladder of rungs, what the next rung requires, which classes count
