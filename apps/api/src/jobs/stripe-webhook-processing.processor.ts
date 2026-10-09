@@ -9,6 +9,7 @@ import { StripeClientService } from '../payments/stripe-client.service';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
+import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
@@ -567,7 +568,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     const membership = await tx.membership.findUnique({ where: { stripeSubscriptionId: subscriptionId } });
     if (membership && membership.status === 'ACTIVE') {
       await tx.membership.updateMany({ where: { id: membership.id, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
-      const freedClassIds = await this.cancelFutureBookingsFundedByExpiredMembership(tx, membership.id);
+      const freedClassIds = await cancelFutureBookingsFundedByExpiredMembership(tx, membership.id, this.logger);
       this.logger.log(
         `Membership ${membership.id} (Student ${membership.studentId}) Expired on subscription cancellation (${subscriptionId}).`,
       );
@@ -610,70 +611,6 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       this.logger.log(`Franchise ${platformFranchise.id}'s platform SubscriptionPlan Subscription (${subscriptionId}) Canceled.`);
     }
     return [];
-  }
-
-  /**
-   * Decision 122 — Spec 55 §6.1's own confirmed "same-day sweep cancels the
-   * Student's own future Bookings" half of the Membership-expiry rule (see
-   * handleSubscriptionDeleted's own comment for the full quote). Called from
-   * every place in this file that force-Expires a Membership: a Subscription's
-   * final cancellation (handleSubscriptionDeleted, above) and a lost
-   * Membership-purchase dispute (applyDisputeToTransaction, Decision 55's own
-   * force-Expiry consequence) — there is no third site.
-   *
-   * Scope, inferred and flagged for Architect review (not itself a new
-   * SKILL.md-confirmed rule — it's this same already-confirmed Spec 55 §6.1
-   * sentence, finally built): only the Student's OWN seat
-   * (Booking.sourceMembershipId) is cancelled here. A BookingAttendee guest
-   * seat this Membership was funding for a DIFFERENT Student is deliberately
-   * left untouched — whether losing your own Membership should also bump a
-   * guest you invited off someone else's Booking is a materially different,
-   * undecided question this fix doesn't attempt to answer.
-   *
-   * refundResolution is WITHHELD, never REFUNDED: this is a forced
-   * cancellation because the funding Membership itself is gone (a failed
-   * renewal or a lost dispute), not the Student's own voluntary cancellation
-   * under the Class's own refund policy — there is no credit to hand back to a
-   * Membership that's being retired for good. restoreCredit() is deliberately
-   * NOT called for the same reason (and would be a no-op for a general-access
-   * Membership regardless — see that method's own comment).
-   *
-   * Runs inside the SAME transaction as the Membership-expiry write above it —
-   * unlike the notification/Subscription-cancellation/chargeback-check side
-   * effects elsewhere in this file, this is a plain DB write with no external
-   * call, so it belongs in the transaction, not deferred to process()'s
-   * post-commit block. Only the resulting waitlist-cascade 'seat-freed'
-   * enqueue is deferred (same reasoning BookingsService.cancelBooking()'s own
-   * header comment already established for its own cascade enqueue: BullMQ/
-   * Redis doesn't participate in the Postgres transaction).
-   *
-   * Uses `tx` (this file's own PrismaJobsService/ultm8_jobs-role transaction),
-   * not a per-Student tenant context — same reasoning
-   * BookingNoShowProcessingProcessor's own sweep and
-   * BookingsService.countOccupiedSeats() already established: this runs with
-   * no single caller/Student context of its own, and ultm8_jobs already holds
-   * SELECT/UPDATE on Booking (granted in the Phase 11 migration for the
-   * no-show sweep) — no new grant needed for this addition.
-   */
-  private async cancelFutureBookingsFundedByExpiredMembership(tx: Prisma.TransactionClient, membershipId: string): Promise<string[]> {
-    const affected = await tx.booking.findMany({
-      where: { sourceMembershipId: membershipId, status: 'UPCOMING' },
-      select: { id: true, classId: true },
-    });
-    if (affected.length === 0) {
-      return [];
-    }
-    // Optimistic-concurrency guard, same shape as every other status-transition
-    // in this codebase — re-filters on status: 'UPCOMING' at write time so a
-    // Booking that left UPCOMING between the read above and this write (e.g. the
-    // Student cancelled it themselves, or it was just marked No-Show) is left
-    // alone rather than double-resolved.
-    await tx.booking.updateMany({
-      where: { id: { in: affected.map((b) => b.id) }, status: 'UPCOMING' },
-      data: { status: 'CANCELLED', refundResolution: 'WITHHELD' },
-    });
-    this.logger.log(`Membership ${membershipId} Expired — cancelled ${affected.length} future Booking(s) it was funding.`);
-    return affected.map((b) => b.classId);
   }
 
   /**
@@ -1014,7 +951,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         // Decision 122 — same "force-Expiry cancels the Membership's own future
         // Bookings" fix as handleSubscriptionDeleted() above; see
         // cancelFutureBookingsFundedByExpiredMembership()'s own comment.
-        freedClassIds = await this.cancelFutureBookingsFundedByExpiredMembership(tx, transaction.membershipId);
+        freedClassIds = await cancelFutureBookingsFundedByExpiredMembership(tx, transaction.membershipId, this.logger);
         const membership = await tx.membership.findUnique({ where: { id: transaction.membershipId }, select: { stripeSubscriptionId: true } });
         if (membership?.stripeSubscriptionId) {
           // scopedClient(), not platformClient() — this Subscription was created
