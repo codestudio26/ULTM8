@@ -24,7 +24,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   now read a linked minor's ranks, eligibility and rank history (read-only);
   before, Guardians were refused. Adds tests for both gates, downgrade, two
   coaches grading the same student at once, and the Guardian read and refusal
-  paths.
+  paths. **Security fix found on independent review:** grading reads (ranks,
+  eligibility, rank history) now require a valid `schoolId`. Before, a staff
+  member who left it out could read a Student's grading from every School
+  (pre-existing since Phase 10b). An impersonation session scoped to one School
+  is now refused at another.
 - **api — decouple auth/booking rate limiting from raw IP** (PR #88, `db9571c`,
   Decision 12/17): `/auth/login`, `/auth/otp/*`, `/auth/forgot-password`, and
   `/auth/reset-password` now throttle per-identity (email/phone) in addition
