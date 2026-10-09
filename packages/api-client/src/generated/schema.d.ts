@@ -68,6 +68,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/forgot-password": {
         parameters: {
             query?: never;
@@ -2094,6 +2126,10 @@ export interface components {
         };
         LoginResponseDto: {
             accessToken: string;
+            refreshToken: string;
+        };
+        RefreshTokenDto: {
+            refreshToken: string;
         };
         RequestPasscodeResetDto: {
             /** @description E.164 format */
@@ -2119,6 +2155,8 @@ export interface components {
             defaultLanguage?: string;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
+            /** @description IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string;
             description?: string;
             logoUrl?: string;
             bannerUrl?: string;
@@ -2145,6 +2183,8 @@ export interface components {
             ranksToggle: boolean;
             defaultLanguage?: string | null;
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
@@ -2187,6 +2227,8 @@ export interface components {
             defaultLanguage?: string | null;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
@@ -3828,6 +3870,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthMessageResponseDto"];
                 };
             };
         };
