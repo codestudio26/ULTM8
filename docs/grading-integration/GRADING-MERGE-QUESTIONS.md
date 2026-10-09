@@ -15,6 +15,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Q3: keep ULTM8's belt + stripe storage, with every per-rung setting from the prototype available per rung (Decision 126).
 - CLAUDE.md now carries the grading exception (Decision 124), so future sessions follow it.
 - Q4: requirements describe getting into a rung, your rule exactly (Decision 127).
+- Q5–Q8, Q15, Q18, Q21–Q25, Q27, Q35, Q36, Q39, Q42: your prototype's rules as written (Decision 128).
+- History entries are voided with a reason, never deleted (Decision 129).
+- Bulk and events ask for the skills acknowledgement per student, in one quick step (Decision 130).
+- Only the three IBJJF templates ship (Decision 131).
+- Guardians can see their child's rank and progress (Decision 132).
+- No direct membership rule (Decision 133); grading data follows account deletion (Decision 134); grading ships in v1.1 (Decision 135).
 
 ## How many need answering, and when
 
@@ -55,22 +61,27 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q5. Each rung needs a name (“White Belt · 2 Stripes”). Is it typed by the school or generated from belt + stripe count?** · _Answer first_
 - Why it matters: ULTM8's Rank table has no name, although Spec 55 lists one. Every screen shows “Rank 3”.
 - Recommendation: Add a name to the belt, generate the stripe part automatically, and allow an override.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q6. Kids red and yellow stripes: one rung can show mixed colours (3 yellow + 1 red). Keep this?** · _Before data model_
 - Why it matters: ULTM8 allows one colour per stripe tier, so your 139- and 175-rung ladders can't be stored today.
 - Recommendation: Keep it: add a list of colour segments to a stripe tier.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q7. “Time in rank only”: on any rank (yours) or only Black Belt and above (Spec 55)? Where is the number of years stored?** · _Before data model_
 - Why it matters: ULTM8 has a yes/no flag with no years figure and enforces nothing. Your prototype stores years as minimum days.
 - Recommendation: Any rank. Store the years as minimum days on that rung.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q8. Is the weekly class cap set per rung (yours) or per belt (ULTM8)?** · _Before data model_
 - Why it matters: It decides where the field lives and how attendance credit is limited.
 - Recommendation: Per rung, to match your ladder.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q9. Which templates ship: IBJJF only, or also Karate, Taekwondo, Judo, Muay Thai, Kids BJJ and MMA?** · _Before API_
 - Why it matters: Your own notes say the non-IBJJF numbers look illustrative. A template is a promise to schools.
 - Recommendation: Ship the three IBJJF ladders. Add others once you confirm real numbers.
+- Answer so far: The three IBJJF ladders only, others once you confirm real numbers (Decision 131).
 
 **Q10. Can a franchise share one ladder across all its schools, or does each school keep its own?** · _Can wait_
 - Why it matters: A discipline belongs to one school today. Franchises often want one standard syllabus.
@@ -93,22 +104,27 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q14. Progress % and the three columns: what can each school configure (Decision 75), and what are the defaults?** · _Answer first_
 - Why it matters: ULTM8 decided these are per school, with no fixed platform rule. Your 33% and 66% would become the default.
 - Recommendation: Default: classes ÷ required, columns at 33% and 66%, adjustable per discipline.
+- Answer so far: The 33% and 66% only split the board into 3 columns. Asked: fixed for every school?
 
 **Q15. Column names: Just Starting / Getting There / Ready to Grade (yours), or Not Ready / Almost Ready / Ready (Spec 55)?** · _Before screens_
 - Why it matters: Spec 55 uses both. One set must be chosen for the portal, the app and the translations.
 - Recommendation: Your labels.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q16. Does one attended class count toward every discipline the class lists, or only one?** · _Before API_
 - Why it matters: Today a class listing two disciplines adds a class to both of the student's progress counts.
 - Recommendation: Count it only for disciplines whose eligible class types include the class's type.
+- Answer so far: Your prototype: each rung lists which classes count and a weekly cap. “AND” meaning being confirmed.
 
 **Q17. Does a class at any branch count, and should the board be filterable by branch?** · _Before screens_
 - Why it matters: Grading has no idea of branches. Instructors and staff can be branch-scoped.
 - Recommendation: Classes at any branch count. Add a branch filter to the board.
+- Answer so far: Each branch is responsible for its own grading. Details being confirmed.
 
 **Q18. Keep your manual “Log a class” button next to QR attendance?** · _Before API_
 - Why it matters: Classes are counted automatically from QR check-in. A manual add with no record behind it can be abused.
 - Recommendation: Keep it for staff only, and log every manual add on the student's history.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q19. What makes a student “currently attending” for the board's filter?** · _Before screens_
 - Why it matters: ULTM8 has no active flag on a student. The options are an active membership, an un-revoked school role, or recent attendance.
@@ -117,44 +133,54 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q20. Does an expired or unpaid membership affect grading (hide from the board, block grading)?** · _Before screens_
 - Why it matters: Memberships and grading are not connected at all today.
 - Recommendation: No block. Show a badge on the card.
+- Answer so far: No direct rule: without a membership a student can't book, so they earn no attendance (Decision 133).
 
 ### D. Grading actions and permissions
 
 **Q21. Can a grade skip rungs (yours), or only move to the next one (ULTM8 today)?** · _Before API_
 - Why it matters: The ULTM8 promote endpoint can only go one step.
 - Recommendation: Allow skipping, with the skipped rungs noted on the history.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q22. Can a grading be back-dated (yours: not in the future, not before the current rank date)?** · _Before API_
 - Why it matters: ULTM8 always uses today and has no date field on the history record.
 - Recommendation: Yes, exactly your rule. Add an effective date to the history.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q23. Keep “starting classes” when grading?** · _Before API_
 - Why it matters: Spec 55 says the count always resets to zero.
 - Recommendation: Your call. If kept, log it on the history.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q24. Keep the per-style switch that blocks grading when skills are missing?** · _Before API_
 - Why it matters: Spec 55 says the system warns and never blocks.
 - Recommendation: Your call. It is the one rule that flatly contradicts the spec.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q25. Downgrade needs a written reason, and history entries carry notes. Confirmed?** · _Before data model_
 - Why it matters: ULTM8 stores neither a reason nor notes today.
 - Recommendation: Yes. Add reason and note fields.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q26. Can history entries be deleted (yours), or only voided with a reason?** · _Before data model_
 - Why it matters: It is an audit trail. Deleting a promotion leaves no trace of who changed what.
 - Recommendation: Void with a reason. Hide voided entries by default.
+- Answer so far: Void with a reason, never delete (Decision 129).
 
 **Q27. Grade only moves up, Downgrade only moves down. Confirmed?** · _Before API_
 - Why it matters: Your notes list this as still awaiting your yes.
 - Recommendation: Yes.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q28. Bulk promote and events: should they ask for the missing-skills acknowledgement and warn about minimum days, per student?** · _Before API_
 - Why it matters: A single grade asks; bulk and events don't. This is open item 5 in your notes.
 - Recommendation: Yes, per student, with a cap of 200 per request (Spec 55).
+- Answer so far: Yes, per student, with one quick “acknowledge these N” step (Decision 130).
 
 **Q29. Who can grade: Owner, Instructor, Branch Staff? Only their own branch? Per-discipline permission (your settings page)?** · _Answer first_
 - Why it matters: Today Branch Staff can grade any student in the school. Spec 55 says Instructors only.
 - Recommendation: Owner and Instructor, per discipline. Not Branch Staff.
+- Answer so far: Whoever is given permission to the grading area. Details being confirmed.
 
 **Q30. Do Downgrade and board adjustments need a higher permission than promoting?** · _Before API_
 - Why it matters: These change a student's record against their interest.
@@ -169,6 +195,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q32. How does an existing student get their current rank when a school joins ULTM8?** · _Answer first_
 - Why it matters: A rank only exists after the first promote, and it always starts at the bottom. Placing a brown belt takes dozens of clicks and creates fake history.
 - Recommendation: A “set current rank” action with a start date, plus a CSV import for schools moving in.
+- Answer so far: Students enter their own rank at signup, shown as unverified until the school verifies it. Details being confirmed.
 
 **Q33. New student or new minor: does staff set the starting rank, or does everyone start at the first rung?** · _Before API_
 - Why it matters: Joining a school and creating a minor never touch rank.
@@ -183,10 +210,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q35. What happens after a fail at an event? (The mockup showed a 45-day window and 20 classes.)** · _Can wait_
 - Why it matters: Nothing is implemented. Your prototype keeps progress and changes nothing.
 - Recommendation: Keep progress, no special window, for v1.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q36. Can a pass at an event promote more than one rung?** · _Can wait_
 - Why it matters: Today it is always one.
 - Recommendation: One rung. A coach can grade further by hand.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q37. Grading fee: per event or per student, through Stripe, and does cash count?** · _Can wait_
 - Why it matters: ULTM8 payments only know membership purchases. A fee needs a new kind of charge.
@@ -201,6 +230,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q39. Lesson categories: a real list with ordering (yours), or free text (ULTM8)?** · _Before data model_
 - Why it matters: Your curriculum screens sort and group by category. ULTM8 has neither the table nor the ordering.
 - Recommendation: A real category list with ordering.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 **Q40. Who can watch lessons: every student, only those who need the skill, or paid?** · _Can wait_
 - Why it matters: Every student at the school can read every lesson today, and there is no pricing.
@@ -213,6 +243,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q42. Should skills keep their sign-off when a student moves up (signed at Blue, still counts at Purple)?** · _Before API_
 - Why it matters: Both systems wipe sign-offs on every rank change. This is open item 11 in your notes.
 - Recommendation: Keep wiping. Each rung asks for its own sign-off.
+- Answer so far: Your prototype's rule, as written (Decision 128).
 
 ### H. Student app and guardians
 
@@ -223,6 +254,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q44. Can a guardian see their child's rank and progress?** · _Before API_
 - Why it matters: Today a guardian is refused: only staff or the student themselves can read ranks.
 - Recommendation: Yes, read-only.
+- Answer so far: Yes, read-only (Decision 132).
 
 **Q45. Should students see that they're “Ready to Grade” before the coach decides?** · _Before screens_
 - Why it matters: It can create pressure on coaches. Some schools prefer to keep it private.
@@ -233,6 +265,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q46. When a student deletes their account, is grading history erased, or kept anonymised for the school?** · _Before data model_
 - Why it matters: Account deletion isn't built yet. A grading record also names the instructor, and that link blocks deleting an instructor's account.
 - Recommendation: Erase the student's rank data. Anonymise the instructor on history records.
+- Answer so far: Grading data goes with the account (Decision 134, matches Spec Decision 44). Instructor name on other students' history still to confirm.
 
 **Q47. Should skill sign-offs be audited (who signed, when)?** · _Before data model_
 - Why it matters: Today a sign-off overwrites the previous status with no trace.
@@ -247,6 +280,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q49. Which release carries grading for the website (Track A) and for the app (Track B)?** · _Answer first_
 - Why it matters: Version numbers are yours to assign. It decides what goes in first.
 - Recommendation: Track A: foundation fixes, engine, API, board and student panel. Track B follows one release later.
+- Answer so far: v1.1 for the website (Decision 135). App release still to confirm.
 
 **Q50. Store your handover package (prototype, tests, screenshots) in the repo as read-only reference?** · _Answer first_
 - Why it matters: Your tests become the acceptance tests. Kept outside the repo, they get lost.

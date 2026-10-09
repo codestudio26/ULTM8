@@ -1559,3 +1559,104 @@ Answer given: *"yes"*.
 ### Recorded by
 
 Asked as Q4 and answered directly by Gus on 9 Oct 2026. Recorded by Claude.
+
+---
+
+## Decision 128 — Prototype grading rules adopted as written (batch)
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision (Gus). A grading override under Decision 124 wherever it differs from Spec 55 or the existing RanksModule.
+**Resolves:** Q5–Q8, Q15, Q18, Q21–Q25 (in part), Q27, Q35, Q36, Q39 and Q42 of `docs/grading-integration/GRADING-MERGE-QUESTIONS.md`. Gus agreed to adopt every rule his prototype already implements, recorded as one list.
+
+### Decision
+
+Each rule below is built exactly as `prototype/index.html` implements it (references are to HANDOVER.md §6 and CHANGES.md):
+
+1. **Rung names** are typed per rung by the school (Q5).
+2. **Mixed stripe colours on one rung** are supported (for example 3 yellow + 1 red), as in the kids red and yellow templates (Q6).
+3. **"Time in rank only"** is a switch on any rung in any style. The years are stored per rung as minimum days. Classes are not counted and skills are optional (Q7). This supersedes Spec 55's "Black Belt and above" limit for grading.
+4. **Weekly class cap is per rung** (Q8).
+5. **Board column names:** Just Starting / Getting There / Ready to Grade (Q15). The thresholds are settled separately.
+6. **"Log a class"** stays as a staff action next to QR attendance (Q18).
+7. **Grade can skip rungs.** The skipped rungs are recorded on the history ("Skipped N ranks in between") (Q21).
+8. **Back-dated grading date:** never in the future, and never before the date the student reached their current rank (Q22, already decided by Gus on 7 Oct).
+9. **"Starting classes"** can be entered when grading (Q23). This supersedes Spec 55's reset-to-zero for grading.
+10. **Per-style "skills required" switch:** off means warn and require an acknowledgement; on means grading is blocked with no override (Q24). This supersedes Spec 55's "warns, never blocks" for grading.
+11. **Downgrade requires a written reason.** History entries carry a system note and a user note (Q25).
+12. **Grade only moves up, Downgrade only moves down** (Q27). This closes the item that was waiting for Gus's confirmation in HANDOVER §9.
+13. **Board drag** rewrites the class count (or the rank date for a time-only rung) and writes an ADJUSTMENT entry to the history (already decided 7 Oct).
+14. **Grading events:** a Pass promotes one rung; a Fail keeps progress with no special window; an event is read-only once completed (Q35, Q36).
+15. **Lesson categories** are a real list with ordering, and lessons are ordered within a category (Q39).
+16. **Skill sign-offs are wiped** on every rank change (Q42).
+
+Answer given: *"i agree"*.
+
+### Effect
+
+Schema and API changes are needed for: rung name, colour segments, per-rung time-only, weekly cap and skills (see Decision 126); effective date, reason and notes on history; skip-rung target; starting classes; the per-discipline skills-required switch; the ADJUSTMENT event type; and a LessonCategory table with ordering. Each goes on the Spec 55 amendment list.
+
+---
+
+## Decision 129 — Grading history entries are voided with a reason, never deleted
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q26
+
+The prototype's "delete history entry" becomes **void with a reason**. The entry is hidden from the normal history view but kept in the database with who voided it, when and why. Voiding never changes the student's current rank, which matches the prototype. Answer given: *"Go ahead"*.
+
+---
+
+## Decision 130 — Bulk promote and events ask for the skills acknowledgement per student, in one fast step
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q28 (HANDOVER §9 open item 5)
+
+Bulk promote and event completion apply the same checks as a single grade (missing required skills, minimum days not yet served), judged per student. Gus's condition: *"yes, but try to make a list or an easy flow. The idea to bulk promote is the speed of action."*
+
+Flow, designed to keep bulk promote quick:
+
+- Students with nothing missing need no extra step.
+- The confirm window shows a short "Needs a look" list at the top with only the flagged students, each with the reason: "2 skills not signed off" or "12 days short".
+- One tick, "I acknowledge these N students", covers the whole list. Any student can be removed from the batch with one click instead.
+- Students blocked by the per-style "skills required" switch are listed as "can't be promoted" and are skipped automatically, as the prototype already does.
+- Each student's history records that their promotion was acknowledged.
+
+Requests are capped at 200 students each, per Spec 55.
+
+---
+
+## Decision 131 — Templates: ship the three IBJJF ladders only
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q9
+
+The IBJJF Adult & Kids ladder (White Stripes, 90 rungs), the White & Red Stripes variant (139) and the Yellow Stripes variant (175) ship as templates. Karate, Taekwondo, Judo, Muay Thai, Kids BJJ and MMA are not shipped until Gus confirms real numbers. Schools can still build any style from scratch. Answer given: *"correct"*.
+
+---
+
+## Decision 132 — Guardians can see their linked children's rank and progress
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q44
+
+A Guardian can read, but not change, each linked minor's ranks, progress, skills for the next grade and rank history. Today `GradingService.assertCallerCanReadStudent` refuses Guardians. It must also admit a caller holding an active GuardianLink to that student. Answer given: *"yes they can"*.
+
+---
+
+## Decision 133 — Membership status has no direct grading rule
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q20 (in part)
+
+There is no separate grading rule for memberships. A student without an active membership cannot book classes, so they earn no attendance toward their next grade; that is how membership affects grading. Answer given: *"if membership is not active, they can[not] book into the classes, so it affects grading"*. The word "can" in the original reply is read as "cannot" from the second half of the sentence. This reading was put back to Gus for confirmation.
+
+---
+
+## Decision 134 — Grading history follows the account-deletion rule
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q46 (in part)
+
+Grading data is kept or removed together with the rest of the account. Spec 55 Decision 44 already specifies that `account-deletion-processing` hard-deletes a deleted account's StudentRank rows (and with them its history and skill sign-offs). That stays as is. Answer given: *"if we keep the records on our system we will keep grading record, if not it will be gone"*. Still open: what other students' history shows when an **instructor's** account is deleted (put back to Gus).
+
+---
+
+## Decision 135 — Grading ships in v1.1
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q49 (in part)
+
+Grading (Track A: API and school portal) is part of the planned **v1.1** release. Version numbers are assigned by the product owner (CLAUDE.md, Versioning). This records his assignment; nothing is tagged until he says so. The Track B (student app) release was put back to Gus. Answer given: *"V1.1"*.
