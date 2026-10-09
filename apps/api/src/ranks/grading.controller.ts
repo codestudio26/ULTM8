@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
-import { GradingActionDto } from './dto/grading-action.dto';
+import { DowngradeActionDto, EditRankDateDto, GradingActionDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 
@@ -38,6 +38,7 @@ export class GradingController {
   }
 
   @ApiOkResponse({ type: PromotionEventListResponseDto })
+  @ApiQuery({ name: 'includeVoided', required: false, type: Boolean, description: 'Staff only: also return voided entries (Decision 129).' })
   @Get('students/:id/rank-history')
   findRankHistoryForStudent(
     @CurrentUser() user: JwtPayload,
@@ -45,8 +46,32 @@ export class GradingController {
     @Query('schoolId') schoolId: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Query('includeVoided') includeVoided?: string,
   ) {
-    return this.gradingService.findRankHistoryForStudent(user.sub, id, schoolId, cursor, limit);
+    return this.gradingService.findRankHistoryForStudent(user.sub, id, schoolId, cursor, limit, includeVoided === 'true');
+  }
+
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Post('students/:id/rank-history/:eventId/void')
+  voidPromotionEvent(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+    @Query('schoolId') schoolId: string,
+    @Body() dto: VoidPromotionEventDto,
+  ) {
+    return this.gradingService.voidPromotionEvent(user.sub, id, schoolId, eventId, dto);
+  }
+
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Patch('students/:id/ranks/:disciplineId/rank-date')
+  editRankDate(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('disciplineId') disciplineId: string,
+    @Body() dto: EditRankDateDto,
+  ) {
+    return this.gradingService.editRankDate(user.sub, id, disciplineId, dto);
   }
 
   @ApiOkResponse({ type: PromotionEventResponseDto })
@@ -66,7 +91,7 @@ export class GradingController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
     @Param('disciplineId') disciplineId: string,
-    @Body() dto: GradingActionDto,
+    @Body() dto: DowngradeActionDto,
   ) {
     return this.gradingService.downgrade(user.sub, id, disciplineId, dto);
   }

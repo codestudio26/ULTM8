@@ -6,12 +6,20 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
-import { GradingActionDto } from './dto/grading-action.dto';
+import { DowngradeActionDto, EditRankDateDto, GradingActionDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
+// History entries that move a student to a different rung. ADJUSTMENT entries
+// (board drags, rank-date corrections) do not.
+const RANK_CHANGE_TYPES = ['PROMOTION', 'DOWNGRADE', 'STRIPE_AWARD', 'BULK_PROMOTION', 'BULK_STRIPE_AWARD'] as const;
+
+/** The UTC calendar day of a date, as YYYY-MM-DD. Grading dates are whole days
+ * (the prototype's dayNumber()). */
+const dayOf = (d: Date): string => d.toISOString().slice(0, 10);
 
 // Same pattern MembershipsService.getMembershipStatus() uses for its :id check.
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,10 +82,26 @@ export class GradingService {
     return this.findRanksForStudent(callerId, studentId, schoolId);
   }
 
-  async findRankHistoryForStudent(callerId: string, studentId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    await this.assertCallerCanReadStudent(callerId, studentId, schoolId);
+  /** Voided entries are hidden from the normal history (Decision 129). Staff
+   * may ask for them with `includeVoided`; a Student or Guardian may not. */
+  async findRankHistoryForStudent(
+    callerId: string,
+    studentId: string,
+    schoolId: string,
+    cursor?: string,
+    limit?: number,
+    includeVoided = false,
+  ): Promise<CursorPage<{ id: string }>> {
+    const relation = await this.assertCallerCanReadStudent(callerId, studentId, schoolId);
+    if (includeVoided && relation !== 'staff') {
+      throw new ForbiddenException('Only School staff can see voided history entries.');
+    }
     return this.prismaApp.withTenantContext(studentId, (tx) =>
-      cursorPaginate((args) => tx.promotionEvent.findMany({ ...args, where: { studentId, schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) => tx.promotionEvent.findMany({ ...args, where: { studentId, schoolId, ...(includeVoided ? {} : { voidedAt: null }) } }),
+        cursor,
+        limit,
+      ),
     );
   }
 
@@ -109,7 +133,7 @@ export class GradingService {
    * Student's own tenant context, which the RoleGrant-based impersonation RLS
    * narrowing does not reach, so a session scoped to School A is refused for
    * any other schoolId here, explicitly. */
-  private async assertCallerCanReadStudent(callerId: string, studentId: string, schoolId: string): Promise<void> {
+  private async assertCallerCanReadStudent(callerId: string, studentId: string, schoolId: string): Promise<'self' | 'staff' | 'guardian'> {
     if (!schoolId) {
       throw new BadRequestException('schoolId query parameter is required');
     }
@@ -120,10 +144,10 @@ export class GradingService {
     if (impersonationSchoolId && impersonationSchoolId !== schoolId) {
       throw new ForbiddenException('This impersonation session is scoped to a different School.');
     }
-    if (callerId === studentId) return;
+    if (callerId === studentId) return 'self';
     try {
       await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
-      return;
+      return 'staff';
     } catch (err) {
       if (!(err instanceof ForbiddenException)) throw err;
     }
@@ -135,6 +159,7 @@ export class GradingService {
       // School or an outsider, not necessarily a would-be Guardian.
       throw new ForbiddenException('You may not view this Student\'s grading.');
     }
+    return 'guardian';
   }
 
   /** Every grading WRITE (promote, downgrade, stripe award, skill sign-off)
@@ -172,7 +197,7 @@ export class GradingService {
     return this.gradeRankChange(callerId, studentId, disciplineId, dto, 'PROMOTION', 1);
   }
 
-  async downgrade(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
+  async downgrade(callerId: string, studentId: string, disciplineId: string, dto: DowngradeActionDto) {
     return this.gradeRankChange(callerId, studentId, disciplineId, dto, 'DOWNGRADE', -1);
   }
 
@@ -180,7 +205,7 @@ export class GradingService {
     callerId: string,
     studentId: string,
     disciplineId: string,
-    dto: GradingActionDto,
+    dto: GradingActionDto & { reason?: string },
     type: 'PROMOTION' | 'DOWNGRADE',
     direction: 1 | -1,
   ) {
@@ -289,6 +314,9 @@ export class GradingService {
           fromStripeTierId,
           toStripeTierId: targetFirstStripe?.id ?? null,
           acknowledgedWithoutSkillSignoff: dto.acknowledgeWithoutSkillSignoff ?? false,
+          // Required on a downgrade by DowngradeActionDto (Decision 128, item 11).
+          reason: type === 'DOWNGRADE' ? dto.reason : null,
+          note: dto.note ?? null,
         },
       });
 
@@ -354,6 +382,7 @@ export class GradingService {
           fromStripeTierId: currentTier.id,
           toStripeTierId: nextTier.id,
           acknowledgedWithoutSkillSignoff: dto.acknowledgeWithoutSkillSignoff ?? false,
+          note: dto.note ?? null,
         },
       });
 
@@ -434,10 +463,31 @@ export class GradingService {
       const existing = await tx.studentRankSkillStatus.findUnique({
         where: { studentRankId_skillId: { studentRankId: studentRank.id, skillId } },
       });
-      const next = this.nextSkillStatus(existing?.status ?? 'NOT_STARTED');
+      const previous = existing?.status ?? 'NOT_STARTED';
+      const next = this.nextSkillStatus(previous);
+
+      // Decision 156: every change is logged with who, when, old and new status.
+      await tx.skillSignOffLog.create({
+        data: {
+          id: randomUUID(),
+          studentRankId: studentRank.id,
+          schoolId: studentRank.schoolId,
+          studentId,
+          skillId,
+          fromStatus: previous,
+          toStatus: next,
+          changedById: callerId,
+        },
+      });
 
       if (existing) {
-        return tx.studentRankSkillStatus.update({ where: { id: existing.id }, data: { status: next } });
+        // Conditional on the status read above, so two concurrent clicks can't
+        // both log the same change.
+        const updated = await tx.studentRankSkillStatus.updateMany({ where: { id: existing.id, status: existing.status }, data: { status: next } });
+        if (updated.count === 0) {
+          throw new ConflictException('This sign-off was changed at the same time by someone else — please retry.');
+        }
+        return tx.studentRankSkillStatus.findUniqueOrThrow({ where: { id: existing.id } });
       }
       return tx.studentRankSkillStatus.create({
         data: {
@@ -449,6 +499,126 @@ export class GradingService {
           status: next,
         },
       });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // History corrections (grading foundation PR 3)
+  // ---------------------------------------------------------------------------
+
+  /** Void a history entry with a reason (Decision 129): hidden from the normal
+   * history, kept in the database with who voided it, when and why, and never
+   * changes the student's current rank. Same staff check and School gates as
+   * every other grading write. */
+  async voidPromotionEvent(callerId: string, studentId: string, schoolId: string, eventId: string, dto: VoidPromotionEventDto) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(eventId)) {
+      throw new BadRequestException('id, eventId and schoolId must be valid UUIDs');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const entry = await tx.promotionEvent.findFirst({ where: { id: eventId, studentId, schoolId } });
+      if (!entry) {
+        throw new NotFoundException('History entry not found');
+      }
+      // Conditional on voidedAt still being empty: a second void (or two at
+      // once) gets a 409, and the first reason is never overwritten.
+      const result = await tx.promotionEvent.updateMany({
+        where: { id: entry.id, voidedAt: null },
+        data: { voidedAt: new Date(), voidedById: callerId, voidReason: dto.reason },
+      });
+      if (result.count === 0) {
+        throw new ConflictException('This history entry has already been voided.');
+      }
+      return tx.promotionEvent.findUniqueOrThrow({ where: { id: entry.id } });
+    });
+  }
+
+  /** Correct the date a student reached their current rung (Decision 153).
+   * The new date may not be in the future, nor before the student's previous
+   * grading on their (non-voided) history, so the history never runs
+   * backwards (Decision 166). Updates StudentRank.dateOfCurrentRank and the
+   * effective date of the entry that put the student on this rung, and writes
+   * an ADJUSTMENT entry recording the old date, the new date, who and when. */
+  async editRankDate(callerId: string, studentId: string, disciplineId: string, dto: EditRankDateDto) {
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+
+    const newDate = new Date(`${dto.date}T00:00:00.000Z`);
+    if (Number.isNaN(newDate.getTime()) || dayOf(newDate) !== dto.date) {
+      throw new BadRequestException('date must be a real calendar date, as YYYY-MM-DD.');
+    }
+    if (dto.date > dayOf(new Date())) {
+      throw new BadRequestException('The rank date can\'t be in the future.');
+    }
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
+      if (!existing) {
+        throw new BadRequestException('This Student has no rank in this Discipline.');
+      }
+      const oldDay = dayOf(existing.dateOfCurrentRank);
+      if (oldDay === dto.date) {
+        throw new BadRequestException('That is already the student\'s rank date.');
+      }
+
+      const recent = await tx.promotionEvent.findMany({
+        where: { studentRankId: existing.id, voidedAt: null, type: { in: [...RANK_CHANGE_TYPES] } },
+        orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }],
+        take: 2,
+      });
+      const currentEntry =
+        recent[0] && recent[0].toRankId === existing.currentRankId && recent[0].toStripeTierId === existing.currentStripeId ? recent[0] : null;
+      const previousEntry = currentEntry ? recent[1] : recent[0];
+      if (previousEntry && dto.date < dayOf(previousEntry.effectiveDate)) {
+        throw new BadRequestException(
+          `The rank date can't be before the student's previous grading on ${dayOf(previousEntry.effectiveDate)} (Decision 166).`,
+        );
+      }
+
+      // Same optimistic-concurrency shape as the grading actions above: a
+      // grading or another correction in between gets a 409, not a silent overwrite.
+      const updated = await tx.studentRank.updateMany({
+        where: {
+          id: existing.id,
+          currentRankId: existing.currentRankId,
+          currentStripeId: existing.currentStripeId,
+          dateOfCurrentRank: existing.dateOfCurrentRank,
+        },
+        data: { dateOfCurrentRank: newDate },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This Student\'s rank was changed at the same time — please retry.');
+      }
+      if (currentEntry) {
+        await tx.promotionEvent.update({ where: { id: currentEntry.id }, data: { effectiveDate: newDate } });
+      }
+      const promotionEvent = await tx.promotionEvent.create({
+        data: {
+          id: randomUUID(),
+          studentRankId: existing.id,
+          schoolId: existing.schoolId,
+          studentId,
+          type: 'ADJUSTMENT',
+          performedById: callerId,
+          fromRankId: existing.currentRankId,
+          toRankId: existing.currentRankId,
+          fromStripeTierId: existing.currentStripeId,
+          toStripeTierId: existing.currentStripeId,
+          systemNote: `Rank date corrected from ${oldDay} to ${dto.date}.`,
+          note: dto.note ?? null,
+        },
+      });
+      const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
+      return { studentRank, promotionEvent };
     });
   }
 

@@ -467,7 +467,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     try {
       const writes = [
         request(app.getHttpServer()).post(`/v1/students/${studentB.id}/ranks/${disciplineId}/promote`).set('Authorization', `Bearer ${tokenOwner}`).send({ acknowledgeWithoutSkillSignoff: true }),
-        request(app.getHttpServer()).post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`).set('Authorization', `Bearer ${tokenOwner}`).send({}),
+        request(app.getHttpServer()).post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`).set('Authorization', `Bearer ${tokenOwner}`).send({ reason: 'Test downgrade' }),
         request(app.getHttpServer()).post(`/v1/students/${studentB.id}/ranks/${disciplineId}/stripe-award`).set('Authorization', `Bearer ${tokenOwner}`).send({ acknowledgeWithoutSkillSignoff: true }),
         request(app.getHttpServer()).patch(`/v1/students/${studentB.id}/skills/${requiredSkillId}`).set('Authorization', `Bearer ${tokenOwner}`),
       ];
@@ -495,7 +495,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     try {
       const writes = [
         request(app.getHttpServer()).post(`/v1/students/${studentB.id}/ranks/${disciplineId}/promote`).set('Authorization', `Bearer ${tokenOwner}`).send({ acknowledgeWithoutSkillSignoff: true }),
-        request(app.getHttpServer()).post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`).set('Authorization', `Bearer ${tokenOwner}`).send({}),
+        request(app.getHttpServer()).post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`).set('Authorization', `Bearer ${tokenOwner}`).send({ reason: 'Test downgrade' }),
         request(app.getHttpServer()).post(`/v1/students/${studentB.id}/ranks/${disciplineId}/stripe-award`).set('Authorization', `Bearer ${tokenOwner}`).send({ acknowledgeWithoutSkillSignoff: true }),
         request(app.getHttpServer()).patch(`/v1/students/${studentB.id}/skills/${requiredSkillId}`).set('Authorization', `Bearer ${tokenOwner}`),
       ];
@@ -518,24 +518,34 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     const selfDowngrade = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
       .set('Authorization', `Bearer ${tokenStudentA}`)
-      .send({});
+      .send({ reason: 'Test downgrade' });
     expect(selfDowngrade.status).toBe(403);
+
+    // A written reason is required (Decision 128, item 11).
+    for (const body of [{}, { reason: '' }, { reason: '   ' }]) {
+      const noReason = await request(app.getHttpServer())
+        .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send(body);
+      expect({ body, status: noReason.status }).toEqual({ body, status: 400 });
+    }
 
     const res = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({});
+      .send({ reason: 'Test downgrade' });
     expect(res.status).toBe(201);
     expect(res.body.studentRank.currentRankId).toBe(whiteBeltRankId);
     expect(res.body.studentRank.classesAttendedTowardCheckpoint).toBe(0);
     expect(res.body.promotionEvent.type).toBe('DOWNGRADE');
+    expect(res.body.promotionEvent.reason).toBe('Test downgrade');
     expect(res.body.promotionEvent.fromRankId).toBe(blueBeltRankId);
     expect(res.body.promotionEvent.toRankId).toBe(whiteBeltRankId);
 
     const belowLowest = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({});
+      .send({ reason: 'Test downgrade' });
     expect(belowLowest.status).toBe(400);
 
     const unranked = await mkExtraUser('unranked');
@@ -543,7 +553,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     const noRank = await request(app.getHttpServer())
       .post(`/v1/students/${unranked.id}/ranks/${disciplineId}/downgrade`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({});
+      .send({ reason: 'Test downgrade' });
     expect(noRank.status).toBe(400);
   });
 
@@ -1084,6 +1094,251 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
 
       const asOwner = await withUser(owner.id, (tx) => tx.rankStripeTierRequiredSkill.findMany({ where: { skillId: skillSweep } }));
       expect(asOwner.length).toBeGreaterThan(0);
+    });
+  });
+  // ---------------------------------------------------------------------------
+  // Phase 1 / PR 3 (grading foundation) — history fields: downgrade reason and
+  // notes (Decision 128, item 11), the skill sign-off log (Decision 156), void
+  // with a reason (Decision 129), edit rank date (Decisions 153, 166), and
+  // "Former instructor" (Decision 141). Uses its own Discipline and Students.
+  // ---------------------------------------------------------------------------
+  describe('history fields (grading foundation PR 3)', () => {
+    let histDisciplineId: string;
+    let histSkillId: string;
+    const beltIds: string[] = [];
+    const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+
+    const promote = (studentId: string, token: string, body: Record<string, unknown> = {}) =>
+      request(app.getHttpServer())
+        .post(`/v1/students/${studentId}/ranks/${histDisciplineId}/promote`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ acknowledgeWithoutSkillSignoff: true, ...body });
+    const history = (studentId: string, token: string, query: Record<string, string> = {}) =>
+      request(app.getHttpServer())
+        .get(`/v1/students/${studentId}/rank-history`)
+        .query({ schoolId: school.id, ...query })
+        .set('Authorization', `Bearer ${token}`);
+    const voidEntry = (studentId: string, eventId: string, token: string, body: Record<string, unknown>) =>
+      request(app.getHttpServer())
+        .post(`/v1/students/${studentId}/rank-history/${eventId}/void`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${token}`)
+        .send(body);
+    const editDate = (studentId: string, token: string, body: Record<string, unknown>) =>
+      request(app.getHttpServer())
+        .patch(`/v1/students/${studentId}/ranks/${histDisciplineId}/rank-date`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(body);
+    const mkStudent = async (label: string) => {
+      const u = await mkExtraUser(label);
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id } });
+      return { user: u, token: signAccessToken(u, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]) };
+    };
+
+    beforeAll(async () => {
+      const disc = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/disciplines`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ name: 'History Fields BJJ' });
+      expect(disc.status).toBe(201);
+      histDisciplineId = disc.body.id;
+      disciplineIds.push(histDisciplineId);
+      const skill = await request(app.getHttpServer())
+        .post(`/v1/styles/${histDisciplineId}/skills`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ name: 'Armbar' });
+      expect(skill.status).toBe(201);
+      histSkillId = skill.body.id;
+      for (const order of [0, 1, 2]) {
+        const rank = await request(app.getHttpServer())
+          .post(`/v1/styles/${histDisciplineId}/ranks`)
+          .set('Authorization', `Bearer ${tokenOwner}`)
+          .send({
+            order,
+            primaryColour: '#FFFFFF',
+            stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF' }],
+            requiredSkillIds: order === 0 ? [histSkillId] : [],
+          });
+        expect(rank.status).toBe(201);
+        beltIds.push(rank.body.id);
+      }
+    });
+
+    it('logs every skill sign-off change with who, the old and the new status, and keeps the log when a grading wipes the statuses (Decision 156)', async () => {
+      const { user } = await mkStudent('signoff-log');
+      expect((await promote(user.id, tokenOwner)).status).toBe(201);
+
+      for (let i = 0; i < 2; i++) {
+        const res = await request(app.getHttpServer())
+          .patch(`/v1/students/${user.id}/skills/${histSkillId}`)
+          .set('Authorization', `Bearer ${tokenOwner}`);
+        expect(res.status).toBe(200);
+      }
+      const log = await superuser.skillSignOffLog.findMany({ where: { studentId: user.id }, orderBy: { createdAt: 'asc' } });
+      expect(log.map((l) => [l.fromStatus, l.toStatus, l.changedById, l.skillId])).toEqual([
+        ['NOT_STARTED', 'LEARNING', owner.id, histSkillId],
+        ['LEARNING', 'SIGNED_OFF', owner.id, histSkillId],
+      ]);
+
+      // A refused change logs nothing.
+      await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: false } });
+      try {
+        const refused = await request(app.getHttpServer())
+          .patch(`/v1/students/${user.id}/skills/${histSkillId}`)
+          .set('Authorization', `Bearer ${tokenOwner}`);
+        expect(refused.status).toBe(403);
+      } finally {
+        await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: true } });
+      }
+      expect(await superuser.skillSignOffLog.count({ where: { studentId: user.id } })).toBe(2);
+
+      // Grading wipes the statuses (Decision 128, item 16) but not the log.
+      expect((await promote(user.id, tokenOwner)).status).toBe(201);
+      expect(await superuser.studentRankSkillStatus.count({ where: { studentId: user.id } })).toBe(0);
+      expect(await superuser.skillSignOffLog.count({ where: { studentId: user.id } })).toBe(2);
+    });
+
+    it('a grader\'s note is stored on the history entry (Decision 128, item 11)', async () => {
+      const { user } = await mkStudent('note');
+      const res = await promote(user.id, tokenOwner, { note: 'Great first class' });
+      expect(res.status).toBe(201);
+      expect(res.body.promotionEvent.note).toBe('Great first class');
+      expect(res.body.promotionEvent.reason).toBeNull();
+      expect(res.body.promotionEvent.rungsSkipped).toBe(0);
+      expect(new Date(res.body.promotionEvent.effectiveDate).getTime()).toBeLessThanOrEqual(Date.now());
+    });
+
+    it('voids a history entry with a reason: hidden from the normal history, kept for staff, never changes the rank, and cannot be voided twice (Decision 129)', async () => {
+      const { user, token } = await mkStudent('void');
+      const first = await promote(user.id, tokenOwner);
+      const second = await promote(user.id, tokenOwner);
+      expect(second.status).toBe(201);
+      const firstId = first.body.promotionEvent.id;
+      const rankBefore = await superuser.studentRank.findFirstOrThrow({ where: { studentId: user.id } });
+
+      // Refused: no reason, a blank reason, the student themselves, and a peer.
+      expect((await voidEntry(user.id, firstId, tokenOwner, {})).status).toBe(400);
+      expect((await voidEntry(user.id, firstId, tokenOwner, { reason: '  ' })).status).toBe(400);
+      expect((await voidEntry(user.id, firstId, token, { reason: 'mine' })).status).toBe(403);
+      expect((await voidEntry(user.id, firstId, tokenStudentB, { reason: 'peer' })).status).toBe(403);
+      expect((await voidEntry(user.id, randomUUID(), tokenOwner, { reason: 'missing' })).status).toBe(404);
+
+      const res = await voidEntry(user.id, firstId, tokenOwner, { reason: 'Entered by mistake' });
+      expect(res.status).toBe(201);
+      expect(res.body.voidedById).toBe(owner.id);
+      expect(res.body.voidReason).toBe('Entered by mistake');
+      expect(res.body.voidedAt).not.toBeNull();
+
+      const again = await voidEntry(user.id, firstId, tokenOwner, { reason: 'Second try' });
+      expect(again.status).toBe(409);
+      expect((await superuser.promotionEvent.findUniqueOrThrow({ where: { id: firstId } })).voidReason).toBe('Entered by mistake');
+
+      // Hidden from the normal history (student and staff); staff can ask for it.
+      for (const t of [token, tokenOwner]) {
+        const normal = await history(user.id, t);
+        expect(normal.status).toBe(200);
+        expect(normal.body.items.map((e: { id: string }) => e.id)).toEqual([second.body.promotionEvent.id]);
+      }
+      const withVoided = await history(user.id, tokenOwner, { includeVoided: 'true' });
+      expect(withVoided.body.items.map((e: { id: string }) => e.id).sort()).toEqual([firstId, second.body.promotionEvent.id].sort());
+      expect((await history(user.id, token, { includeVoided: 'true' })).status).toBe(403);
+
+      // Never deleted, and the rank is unchanged.
+      expect(await superuser.promotionEvent.count({ where: { studentId: user.id } })).toBe(2);
+      const rankAfter = await superuser.studentRank.findFirstOrThrow({ where: { studentId: user.id } });
+      expect([rankAfter.currentRankId, rankAfter.currentStripeId, rankAfter.dateOfCurrentRank]).toEqual([
+        rankBefore.currentRankId,
+        rankBefore.currentStripeId,
+        rankBefore.dateOfCurrentRank,
+      ]);
+    });
+
+    it('edit rank date: not in the future, not before the previous grading; corrects the rank and its entry and writes an ADJUSTMENT note (Decisions 153, 166)', async () => {
+      const { user, token } = await mkStudent('rank-date');
+      const first = await promote(user.id, tokenOwner);
+      const second = await promote(user.id, tokenOwner);
+      expect(second.status).toBe(201);
+      // History: reached belt 0 200 days ago, belt 1 100 days ago.
+      await superuser.promotionEvent.update({ where: { id: first.body.promotionEvent.id }, data: { effectiveDate: new Date(`${daysAgo(200)}T00:00:00.000Z`) } });
+      await superuser.promotionEvent.update({ where: { id: second.body.promotionEvent.id }, data: { effectiveDate: new Date(`${daysAgo(100)}T00:00:00.000Z`) } });
+      await superuser.studentRank.updateMany({ where: { studentId: user.id }, data: { dateOfCurrentRank: new Date(`${daysAgo(100)}T00:00:00.000Z`) } });
+
+      const refused: Array<[Record<string, unknown>, string, number]> = [
+        [{ date: daysAgo(-1) }, tokenOwner, 400], // future
+        [{ date: daysAgo(201) }, tokenOwner, 400], // before the previous grading
+        [{ date: daysAgo(100) }, tokenOwner, 400], // unchanged
+        [{ date: '2026-02-30' }, tokenOwner, 400], // not a real date
+        [{ date: `${daysAgo(150)}T00:00:00Z` }, tokenOwner, 400], // not date-only
+        [{}, tokenOwner, 400],
+        [{ date: daysAgo(150) }, token, 403], // the student themselves
+      ];
+      for (const [body, t, status] of refused) {
+        const res = await editDate(user.id, t, body);
+        expect({ body, status: res.status }).toEqual({ body, status });
+      }
+      expect(await superuser.promotionEvent.count({ where: { studentId: user.id, type: 'ADJUSTMENT' } })).toBe(0);
+
+      // The previous grading's own day is allowed (boundary).
+      const res = await editDate(user.id, tokenOwner, { date: daysAgo(200), note: 'Paper records' });
+      expect(res.status).toBe(200);
+      expect(res.body.studentRank.dateOfCurrentRank.slice(0, 10)).toBe(daysAgo(200));
+      expect(res.body.promotionEvent.type).toBe('ADJUSTMENT');
+      expect(res.body.promotionEvent.performedById).toBe(owner.id);
+      expect(res.body.promotionEvent.systemNote).toBe(`Rank date corrected from ${daysAgo(100)} to ${daysAgo(200)}.`);
+      expect(res.body.promotionEvent.note).toBe('Paper records');
+      expect(res.body.promotionEvent.toRankId).toBe(res.body.studentRank.currentRankId);
+      // The entry that put the student on this rung now shows the corrected date.
+      const corrected = await superuser.promotionEvent.findUniqueOrThrow({ where: { id: second.body.promotionEvent.id } });
+      expect(corrected.effectiveDate.toISOString().slice(0, 10)).toBe(daysAgo(200));
+
+      // Voiding the previous grading moves the lower bound with it.
+      expect((await editDate(user.id, tokenOwner, { date: daysAgo(300) })).status).toBe(400);
+      expect((await voidEntry(user.id, first.body.promotionEvent.id, tokenOwner, { reason: 'Wrong student' })).status).toBe(201);
+      expect((await editDate(user.id, tokenOwner, { date: daysAgo(300) })).status).toBe(200);
+    });
+
+    it('deleting an instructor\'s account keeps the students\' history and sign-off log; "graded by" becomes empty (Former instructor, Decision 141)', async () => {
+      const { user } = await mkStudent('former-graded');
+      const instructor = await mkExtraUser('former-instructor');
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: instructor.id, schoolId: school.id } });
+      const tokenInstructor = signAccessToken(instructor, [{ role: 'INSTRUCTOR', franchiseId: null, schoolId: school.id, branchId: null }]);
+
+      const graded = await promote(user.id, tokenInstructor);
+      expect(graded.status).toBe(201);
+      expect(graded.body.promotionEvent.performedById).toBe(instructor.id);
+      const cycled = await request(app.getHttpServer())
+        .patch(`/v1/students/${user.id}/skills/${histSkillId}`)
+        .set('Authorization', `Bearer ${tokenInstructor}`);
+      expect(cycled.status).toBe(200);
+
+      // Before Decision 141 this delete was blocked (ON DELETE RESTRICT).
+      await superuser.roleGrant.deleteMany({ where: { userId: instructor.id } });
+      await superuser.user.delete({ where: { id: instructor.id } });
+
+      const entry = await superuser.promotionEvent.findUniqueOrThrow({ where: { id: graded.body.promotionEvent.id } });
+      expect(entry.performedById).toBeNull();
+      const log = await superuser.skillSignOffLog.findFirstOrThrow({ where: { studentId: user.id } });
+      expect(log.changedById).toBeNull();
+      const res = await history(user.id, tokenOwner);
+      expect(res.body.items[0].performedById).toBeNull();
+    });
+
+    it('RLS: the sign-off log is visible only to the School Owner/Manager and the Student, and the app role cannot change or delete it', async () => {
+      const { user } = await mkStudent('signoff-rls');
+      expect((await promote(user.id, tokenOwner)).status).toBe(201);
+      expect(
+        (await request(app.getHttpServer()).patch(`/v1/students/${user.id}/skills/${histSkillId}`).set('Authorization', `Bearer ${tokenOwner}`)).status,
+      ).toBe(200);
+
+      const outsider = await mkExtraUser('signoff-outsider');
+      expect(await withUser(outsider.id, (tx) => tx.skillSignOffLog.count({ where: { studentId: user.id } }))).toBe(0);
+      expect(await withUser(studentB.id, (tx) => tx.skillSignOffLog.count({ where: { studentId: user.id } }))).toBe(0);
+      expect(await withUser(user.id, (tx) => tx.skillSignOffLog.count({ where: { studentId: user.id } }))).toBe(1);
+      expect(await withUser(owner.id, (tx) => tx.skillSignOffLog.count({ where: { studentId: user.id } }))).toBe(1);
+
+      await expect(withUser(owner.id, (tx) => tx.skillSignOffLog.deleteMany({ where: { studentId: user.id } }))).rejects.toThrow();
+      await expect(withUser(owner.id, (tx) => tx.skillSignOffLog.updateMany({ where: { studentId: user.id }, data: { toStatus: 'SIGNED_OFF' } }))).rejects.toThrow();
+      expect(await superuser.skillSignOffLog.count({ where: { studentId: user.id, toStatus: 'LEARNING' } })).toBe(1);
     });
   });
 });

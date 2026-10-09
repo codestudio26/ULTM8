@@ -15,6 +15,19 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading foundation, PR 3: history fields, void, edit rank date and the
+  sign-off log** (Decisions 128, 129, 141, 153, 156, 166):
+  - **History entries** gain:
+    - a grading date (`effectiveDate`, which can differ from when the entry was written);
+    - a downgrade reason, a system note and the grader's own note;
+    - the rungs skipped and the "starting classes" (stored now, set by the grading engine later);
+    - void details.
+  - **Downgrade now needs a written reason**; a missing or blank reason gets a 400.
+  - **Void an entry** (`POST /students/{id}/rank-history/{eventId}/void`, staff, with a reason): it is hidden from the normal history, kept with who, when and why, and the student's rank doesn't change. Staff can still see voided entries with `includeVoided=true`.
+  - **Edit rank date** (`PATCH /students/{id}/ranks/{disciplineId}/rank-date`, staff): corrects the date a student reached their current rung. The date can't be in the future or before their previous grading (Decision 166). It also corrects that grading's entry and adds an `ADJUSTMENT` note with the old and new dates.
+  - **Skill sign-off log**: every sign-off change is logged with who, when, and the old and new status. The log is kept when a grading resets the sign-offs.
+  - **Former instructor**: deleting a grader's account no longer fails; their history entries and log rows stay, and "graded by" becomes empty (shown as "Former instructor").
+  - `packages/api-client` regenerated.
 - **api — a rung's colour follows its stripes** (Decision 165): a rung's
   stripe list is now the only place its stripe colours are set. Its single
   colour is filled in from the first stripe, the newest colour, which is the

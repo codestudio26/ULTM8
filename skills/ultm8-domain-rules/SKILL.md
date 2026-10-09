@@ -5,7 +5,7 @@ description: Canonical domain and business-rule reference for the ULTM8 martial-
 
 # ULTM8 Domain Rules
 
-**Derived from:** `deep-review/ULTM8-Dev-Handover-v55/ULTM8_Technical_Specification_55.docx` — the current source of truth as of Pass 8, Round 4 sign-off (decisions through Decision 69 and the accompanying Pass 8.4 logic-review completions, dated through 27 Aug 2026), cross-checked directly against the underlying Figma audit and the working grading-system prototype (spec §2.3). This supersedes an earlier version of this skill drawn from the pre-review draft dated 21 Aug 2026. Updated 2 Sep 2026 to reflect `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 71, 72, 74, 75, 76, 77, and 78. **Updated 9 Oct 2026 for grading: Decisions 124–165** (see §5A). Edited with the product owner's explicit approval, as Architect-level maintenance.
+**Derived from:** `deep-review/ULTM8-Dev-Handover-v55/ULTM8_Technical_Specification_55.docx` — the current source of truth as of Pass 8, Round 4 sign-off (decisions through Decision 69 and the accompanying Pass 8.4 logic-review completions, dated through 27 Aug 2026), cross-checked directly against the underlying Figma audit and the working grading-system prototype (spec §2.3). This supersedes an earlier version of this skill drawn from the pre-review draft dated 21 Aug 2026. Updated 2 Sep 2026 to reflect `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 71, 72, 74, 75, 76, 77, and 78. **Updated 9 Oct 2026 for grading: Decisions 124–166** (see §5A). Edited with the product owner's explicit approval, as Architect-level maintenance.
 **Maintained by:** the Architect agent only. If this skill and the current spec ever disagree, the spec wins — flag the mismatch to the Architect rather than trusting whichever one you read first.
 **Status:** living reference. Re-verify against the spec every time the spec is updated; do not assume this file is current.
 
@@ -90,7 +90,7 @@ Source: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 124–163, and G
 
 **Grading actions**
 - Grade moves up only, and may skip rungs (recorded); Downgrade moves down only and needs a written reason (Decision 128).
-- Grading date may be back-dated, never in the future and never before the current rank date; "edit rank date" correction exists (Decisions 128, 153).
+- Grading date may be back-dated, never in the future and never before the current rank date; "edit rank date" correction exists (Decisions 128, 153). A corrected rank date can't be in the future or before the student's previous (non-voided) grading, and leaves an ADJUSTMENT entry with the old and new dates (Decision 166).
 - A grade may set "starting classes". Skill sign-offs are wiped on every rank change (Decision 128).
 - Missing skills: warn plus acknowledgement by default; a per-style switch can block grading with no override (Decision 128).
 - Bulk promote judges each student and asks for one quick acknowledgement covering the flagged students; 200 per request (Decision 130).
