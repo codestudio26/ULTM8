@@ -1316,6 +1316,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/rank-history/{eventId}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_voidPromotionEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/rank-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GradingController_editRankDate"];
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/promote": {
         parameters: {
             query?: never;
@@ -3078,22 +3110,64 @@ export interface components {
             studentRankId: string;
             studentId: string;
             schoolId: string;
+            /** @description PROMOTION, DOWNGRADE, STRIPE_AWARD, BULK_PROMOTION, BULK_STRIPE_AWARD, or ADJUSTMENT (a correction; the rank does not change). */
             type: string;
-            performedById: string;
+            /** @description Who graded. Empty when that account has been deleted: show "Former instructor" (Decision 141). */
+            performedById: string | null;
             fromRankId?: string | null;
             toRankId?: string | null;
             fromStripeTierId?: string | null;
             toStripeTierId?: string | null;
             acknowledgedWithoutSkillSignoff: boolean;
+            /** @description The grading date shown on the history; may be earlier than createdAt (Decision 128, item 8). */
+            effectiveDate: string;
+            /** @description Downgrade reason (Decision 128, item 11). */
+            reason: string | null;
+            /** @description Note written by the system, e.g. a rank-date correction. */
+            systemNote: string | null;
+            /** @description The grader's own note. */
+            note: string | null;
+            /** @description Rungs skipped by this grade (Decision 128, item 7). */
+            rungsSkipped: number;
+            /** @description "Starting classes" entered when grading (Decision 128, item 9). */
+            startingClasses: number | null;
+            /** @description Set when the entry has been voided (Decision 129). */
+            voidedAt: string | null;
+            voidedById: string | null;
+            voidReason: string | null;
+            /** @description When the entry was written (audit timestamp). */
             createdAt: string;
         };
         PromotionEventListResponseDto: {
             items: components["schemas"]["PromotionEventResponseDto"][];
             nextCursor?: string | null;
         };
+        VoidPromotionEventDto: {
+            /** @description Why this entry is being voided. Required. */
+            reason: string;
+        };
+        EditRankDateDto: {
+            /**
+             * @description The corrected date, as YYYY-MM-DD. Not in the future, and not before the student's previous grading on their history (Decision 166).
+             * @example 2026-03-01
+             */
+            date: string;
+            /** @description An optional note for the history entry. */
+            note?: string;
+        };
         GradingActionDto: {
             /** @default false */
             acknowledgeWithoutSkillSignoff: boolean;
+            /** @description The grader's own note on this history entry (Decision 128, item 11). */
+            note?: string;
+        };
+        DowngradeActionDto: {
+            /** @default false */
+            acknowledgeWithoutSkillSignoff: boolean;
+            /** @description The grader's own note on this history entry (Decision 128, item 11). */
+            note?: string;
+            /** @description Why the student is being moved down. Required. */
+            reason: string;
         };
         CreateWaiverDto: {
             title: string;
@@ -5853,6 +5927,8 @@ export interface operations {
                 schoolId: string;
                 cursor: string;
                 limit: number;
+                /** @description Staff only: also return voided entries (Decision 129). */
+                includeVoided?: boolean;
             };
             header?: never;
             path: {
@@ -5868,6 +5944,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotionEventListResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_voidPromotionEvent: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidPromotionEventDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_editRankDate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditRankDateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
                 };
             };
         };
@@ -5910,7 +6040,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GradingActionDto"];
+                "application/json": components["schemas"]["DowngradeActionDto"];
             };
         };
         responses: {

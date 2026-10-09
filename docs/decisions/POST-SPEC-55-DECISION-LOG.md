@@ -1952,3 +1952,26 @@ A rung stores its stripe colours twice: the single `RankStripeTier.colour` from 
 3. A rung with no stripes has an empty list; its single colour stays as entered.
 
 Options considered: the stripe list wins (chosen); refuse saves where they disagree; the single colour wins and repaints the stripes. For mixed stripes, "first stripe" was chosen over "the colour with the most stripes", after Gus pointed to the prototype's rung list. Gus: *"A"*, then *"yes"*.
+
+---
+
+## Decision 166 — "Edit rank date": the new date can't be in the future or before the student's previous grading
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the date bounds of the "edit rank date" correction (Decision 153), raised while building grading foundation PR 3
+
+When staff correct the date a student reached their current rung, the new date:
+
+1. **can't be in the future**, the same as a grading date (Decision 128, item 8); and
+2. **can't be before the student's previous grading** on their history, so the history always stays in date order. Voided entries (Decision 129) don't count.
+
+Any day from the previous grading's own day up to today is accepted. The correction also updates the date on the history entry that put the student on this rung, and adds an `ADJUSTMENT` entry recording the old date, the new date, who changed it and when (Decision 153).
+
+Options considered: "no future, no earlier than the previous grading" (chosen), or "no future only", which allows history out of order. Gus chose the first.
+
+---
+
+## Decision 167 — A stripe award restarts the time-in-rank clock
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found while building grading foundation PR 3 (codestudio26/ULTM8#103)
+
+Every stripe is its own rung and its own grade (Decision 126). So a stripe award restarts the student's time-in-rank clock (`StudentRank.dateOfCurrentRank`) like any other rank change. This is how the prototype behaves: `applyRankChange` sets the rank date for every change. Before this, the stripe-award endpoint kept the belt's date, so the minimum-days count for the next stripe started from the belt grading. "Edit rank date" (Decisions 153, 166) then corrects the stripe's own date. Gus: *"Good catch, please make sure it's done"*.

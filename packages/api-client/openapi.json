@@ -4093,6 +4093,15 @@
             "schema": {
               "type": "number"
             }
+          },
+          {
+            "name": "includeVoided",
+            "required": false,
+            "in": "query",
+            "description": "Staff only: also return voided entries (Decision 129).",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -4102,6 +4111,120 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PromotionEventListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/rank-history/{eventId}/void": {
+      "post": {
+        "operationId": "GradingController_voidPromotionEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidPromotionEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/rank-date": {
+      "patch": {
+        "operationId": "GradingController_editRankDate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditRankDateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
                 }
               }
             }
@@ -4196,7 +4319,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GradingActionDto"
+                "$ref": "#/components/schemas/DowngradeActionDto"
               }
             }
           }
@@ -9826,10 +9949,13 @@
             "type": "string"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "description": "PROMOTION, DOWNGRADE, STRIPE_AWARD, BULK_PROMOTION, BULK_STRIPE_AWARD, or ADJUSTMENT (a correction; the rank does not change)."
           },
           "performedById": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Who graded. Empty when that account has been deleted: show \"Former instructor\" (Decision 141)."
           },
           "fromRankId": {
             "type": "string",
@@ -9850,8 +9976,50 @@
           "acknowledgedWithoutSkillSignoff": {
             "type": "boolean"
           },
+          "effectiveDate": {
+            "type": "string",
+            "description": "The grading date shown on the history; may be earlier than createdAt (Decision 128, item 8)."
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Downgrade reason (Decision 128, item 11)."
+          },
+          "systemNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Note written by the system, e.g. a rank-date correction."
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "description": "The grader's own note."
+          },
+          "rungsSkipped": {
+            "type": "number",
+            "description": "Rungs skipped by this grade (Decision 128, item 7)."
+          },
+          "startingClasses": {
+            "type": "number",
+            "nullable": true,
+            "description": "\"Starting classes\" entered when grading (Decision 128, item 9)."
+          },
+          "voidedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the entry has been voided (Decision 129)."
+          },
+          "voidedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "voidReason": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
-            "type": "string"
+            "type": "string",
+            "description": "When the entry was written (audit timestamp)."
           }
         },
         "required": [
@@ -9862,6 +10030,15 @@
           "type",
           "performedById",
           "acknowledgedWithoutSkillSignoff",
+          "effectiveDate",
+          "reason",
+          "systemNote",
+          "note",
+          "rungsSkipped",
+          "startingClasses",
+          "voidedAt",
+          "voidedById",
+          "voidReason",
           "createdAt"
         ]
       },
@@ -9883,14 +10060,67 @@
           "items"
         ]
       },
+      "VoidPromotionEventDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Why this entry is being voided. Required."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "EditRankDateDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "The corrected date, as YYYY-MM-DD. Not in the future, and not before the student's previous grading on their history (Decision 166).",
+            "example": "2026-03-01"
+          },
+          "note": {
+            "type": "string",
+            "description": "An optional note for the history entry."
+          }
+        },
+        "required": [
+          "date"
+        ]
+      },
       "GradingActionDto": {
         "type": "object",
         "properties": {
           "acknowledgeWithoutSkillSignoff": {
             "type": "boolean",
             "default": false
+          },
+          "note": {
+            "type": "string",
+            "description": "The grader's own note on this history entry (Decision 128, item 11)."
           }
         }
+      },
+      "DowngradeActionDto": {
+        "type": "object",
+        "properties": {
+          "acknowledgeWithoutSkillSignoff": {
+            "type": "boolean",
+            "default": false
+          },
+          "note": {
+            "type": "string",
+            "description": "The grader's own note on this history entry (Decision 128, item 11)."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the student is being moved down. Required."
+          }
+        },
+        "required": [
+          "reason"
+        ]
       },
       "CreateWaiverDto": {
         "type": "object",

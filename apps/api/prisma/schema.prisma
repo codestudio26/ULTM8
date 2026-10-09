@@ -320,6 +320,8 @@ model User {
   transactionsPaid         Transaction[]     @relation("TransactionPayer")
   studentRanks             StudentRank[]
   promotionEventsPerformed PromotionEvent[]  @relation("PromotionEventPerformedBy")
+  promotionEventsVoided    PromotionEvent[]  @relation("PromotionEventVoidedBy")
+  skillSignOffChanges      SkillSignOffLog[] @relation("SkillSignOffLogChangedBy")
   waiverSignatures         WaiverSignature[] @relation("WaiverSignatureStudent")
   waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
   bookings                 Booking[]         @relation("BookingStudent")
@@ -1580,6 +1582,9 @@ enum PromotionEventType {
   STRIPE_AWARD
   BULK_PROMOTION
   BULK_STRIPE_AWARD
+  /// A correction that is not a grading: a board drag (Decision 128, item
+  /// 13) or an "edit rank date" (Decisions 153, 166). The rank does not change.
+  ADJUSTMENT
 }
 
 /// StudentRank per-skill sign-off status. Confirmed field (SKILL.md §5, quoted):
@@ -1767,6 +1772,7 @@ model Skill {
   requiredByRanks      RankRequiredSkill[]
   requiredByRungs      RankStripeTierRequiredSkill[]
   studentSkillStatuses StudentRankSkillStatus[]
+  signOffLog           SkillSignOffLog[]
   lessons              LessonSkill[]
 
   @@index([schoolId])
@@ -1948,6 +1954,7 @@ model StudentRank {
 
   skillStatuses   StudentRankSkillStatus[]
   promotionEvents PromotionEvent[]
+  skillSignOffLog SkillSignOffLog[]
 
   @@unique([studentId, disciplineId])
   @@index([schoolId])
@@ -2010,8 +2017,10 @@ model PromotionEvent {
 
   type PromotionEventType
 
-  performedById String
-  performedBy   User   @relation("PromotionEventPerformedBy", fields: [performedById], references: [id])
+  // Nullable, ON DELETE SET NULL (Decision 141): deleting an instructor's
+  // account keeps the students' history; a null here reads "Former instructor".
+  performedById String?
+  performedBy   User?   @relation("PromotionEventPerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
 
   fromRankId String?
   fromRank   Rank?   @relation("PromotionEventFromRank", fields: [fromRankId], references: [id])
@@ -2024,6 +2033,56 @@ model PromotionEvent {
   toStripeTier     RankStripeTier? @relation("PromotionEventToStripeTier", fields: [toStripeTierId], references: [id])
 
   acknowledgedWithoutSkillSignoff Boolean @default(false)
+
+  // Grading foundation PR 3 — history fields (Decisions 128, 129, 153, 166).
+  // effectiveDate: the grading date shown on the history, which may be
+  // back-dated (Decision 128, item 8); createdAt stays the audit timestamp.
+  effectiveDate   DateTime @default(now())
+  // Downgrade reason, required on a downgrade (Decision 128, item 11).
+  reason          String?
+  // System note, e.g. "Skipped 2 ranks in between", and the user's own note
+  // (Decision 128, item 11).
+  systemNote      String?
+  note            String?
+  // Rungs skipped by a grade (Decision 128, item 7); 0 for a normal grade.
+  rungsSkipped    Int      @default(0)
+  // "Starting classes" entered when grading (Decision 128, item 9).
+  startingClasses Int?
+  // Void with a reason, never delete (Decision 129).
+  voidedAt        DateTime?
+  voidedById      String?
+  voidedBy        User?     @relation("PromotionEventVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+  voidReason      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([studentRankId])
+}
+
+/// Every skill sign-off change, with who, when, the old status and the new
+/// status (Decision 156). Same narrow "School Owner/Manager or the Student"
+/// RLS shape as StudentRankSkillStatus. Kept across rank changes, which wipe
+/// the statuses themselves (Decision 128, item 16).
+model SkillSignOffLog {
+  id String @id @default(uuid())
+
+  studentRankId String
+  studentRank   StudentRank @relation(fields: [studentRankId], references: [id], onDelete: Cascade)
+
+  schoolId  String
+  studentId String
+
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  fromStatus SkillSignOffStatus
+  toStatus   SkillSignOffStatus
+
+  // Nullable, ON DELETE SET NULL, same as PromotionEvent.performedById (Decision 141).
+  changedById String?
+  changedBy   User?   @relation("SkillSignOffLogChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
