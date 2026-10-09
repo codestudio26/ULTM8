@@ -428,7 +428,7 @@ These supersede §10 where they differ.
 All 50 merge questions are answered. This section supersedes §10 and §11 where they differ.
 
 **v1.1 (Track A: API and school portal)**
-- Ladder: rung names, colour segments, per-rung skills, weekly cap and time-only, drag reorder with confirmation, IBJJF templates (3).
+- Ladder: rung names, colour segments, per-rung skills, weekly cap and time-only, drag reorder with confirmation; create a style from the IBJJF templates (3), **build from scratch** (empty, or starting from a template), or duplicate a style with its skills (Decision 131 and the prototype's "Create a Style" panel).
 - Rules engine: Gus's `gradingRequirement` / eligibility / progress, with his stress-test scenarios as tests.
 - Grading Board: 33% / 66% (editable per school), "currently attending" from membership, branch scoping.
 - Grading: single grade (skip, back-date, starting classes, skills warning or per-style block), downgrade with reason, void history, edit rank date, bulk promote with the quick acknowledgement step.
