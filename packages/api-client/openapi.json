@@ -10029,6 +10029,13 @@
               "$ref": "#/components/schemas/ClassTypeRequirementInputDto"
             }
           },
+          "bookingUnlocksClassTypes": {
+            "description": "Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "requiredSkillIds": {
             "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
             "type": "array",
@@ -10141,6 +10148,13 @@
               "type": "string"
             }
           },
+          "bookingUnlocksClassTypes": {
+            "description": "Class types this rung unlocks for booking, for it and every rung above (Decision 173).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "classCountMode": {
             "type": "string",
             "enum": [
@@ -10194,6 +10208,7 @@
           "count",
           "colour",
           "eligibleClassTypes",
+          "bookingUnlocksClassTypes",
           "classCountMode",
           "classTypeRequirements",
           "name",

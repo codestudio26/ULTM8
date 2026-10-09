@@ -34,6 +34,9 @@ export interface Rung {
   /** Null or 0 means no weekly limit (Decision 171). */
   weeklyClassCountCap: number | null;
   requiredSkillIds: string[];
+  /** Class types this rung unlocks for booking, for it and every rung above
+   * (Decision 173). */
+  bookingUnlocksClassTypes: string[];
 }
 
 /** The shape the engine reads a belt in. Callers map Prisma rows onto it. */
@@ -52,6 +55,7 @@ export interface LadderRank {
     classTypeRequirements: ClassTypeRequirement[];
     weeklyClassCountCap: number | null;
     requiredSkillIds: string[];
+    bookingUnlocksClassTypes?: string[];
   }>;
 }
 
@@ -77,6 +81,7 @@ export function flattenLadder(ranks: LadderRank[]): Rung[] {
           classTypeRequirements: tier.classTypeRequirements.map((r) => ({ ...r })),
           weeklyClassCountCap: tier.weeklyClassCountCap,
           requiredSkillIds: [...tier.requiredSkillIds],
+          bookingUnlocksClassTypes: [...(tier.bookingUnlocksClassTypes ?? [])],
         })),
     );
 }

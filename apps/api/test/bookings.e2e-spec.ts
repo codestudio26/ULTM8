@@ -175,12 +175,12 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability', body: 'Risks acknowledged.' } });
 
-    discipline = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Judo' } });
+    discipline = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Judo', classTypesOffered: ['Fundamentals'] } });
     rank = await superuser.rank.create({
       data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, name: 'White Belt', primaryColour: 'white' },
     });
     stripeTier = await superuser.rankStripeTier.create({
-      data: { id: randomUUID(), rankId: rank.id, schoolId: school.id, order: 0, name: 'White Belt · 1 Stripe', count: 1, colour: 'white', eligibleClassTypes: ['Judo'] },
+      data: { id: randomUUID(), rankId: rank.id, schoolId: school.id, order: 0, name: 'White Belt · 1 Stripe', count: 1, colour: 'white', bookingUnlocksClassTypes: ['Fundamentals'] },
     });
 
     const future = new Date(Date.now() + 24 * 3_600_000);
@@ -193,7 +193,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: { id: randomUUID(), schoolId: school.id, title: 'Sparring', startDate: future, endDate: new Date(future.getTime() + 3_600_000), termsWaiverRequired: true },
     });
     classRankGated = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Judo Fundamentals', activities: ['Judo'], startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      data: { id: randomUUID(), schoolId: school.id, title: 'Judo Fundamentals', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: 'Fundamentals' }], startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
     });
     classFull = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Small Group', capacity: 1, startDate: future, endDate: new Date(future.getTime() + 3_600_000) },

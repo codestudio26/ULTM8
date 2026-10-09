@@ -1859,6 +1859,11 @@ model RankStripeTier {
   // [{ classType, classesRequired }], e.g. 20 Fundamentals + 10 Sparring.
   classCountMode        ClassCountMode @default(ANY_TYPE)
   classTypeRequirements Json           @default("[]")
+  /// Who may book (Decision 173, set by the school owner): class types this
+  /// rung unlocks for booking, for it and every rung above. A type no rung
+  /// unlocks is open to everyone. Separate from eligibleClassTypes, which
+  /// says which classes count toward reaching this rung.
+  bookingUnlocksClassTypes String[] @default([])
 
   requiredSkills RankStripeTierRequiredSkill[]
 

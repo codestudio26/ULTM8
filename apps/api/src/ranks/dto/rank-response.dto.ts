@@ -22,6 +22,9 @@ export class RankStripeTierResponseDto {
   @ApiProperty({ type: [String] })
   eligibleClassTypes!: string[];
 
+  @ApiProperty({ type: [String], description: 'Class types this rung unlocks for booking, for it and every rung above (Decision 173).' })
+  bookingUnlocksClassTypes!: string[];
+
   @ApiProperty({ enum: ['ANY_TYPE', 'EACH_TYPE'], description: 'Which classes count (Decisions 140, 149).' })
   classCountMode!: 'ANY_TYPE' | 'EACH_TYPE';
 

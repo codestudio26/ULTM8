@@ -2041,3 +2041,20 @@ Decision 76 says a Branch mirrors its School's profile fields, time zone include
 2. **Which time zone applies.** A class uses its Branch's time zone; when it has no Branch, or its Branch has none, the School's; when neither is set, UTC (today's behaviour). This applies to generating classes from the timetable now, and to the grading engine's days and weeks in roadmap Phase 2b.
 
 Existing Schools start with no time zone, so nothing changes until an owner sets one. Like a Branch's, the value is free text (validated as an IANA name by neither form today).
+
+---
+
+## Decision 173 — Who may book: each rung unlocks class types for booking, set by the school owner
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus). A grading override under Decision 124 where it differs from Spec 55 §6.1 (`eligibleClassTypes` as the booking gate). **Resolves:** how the booking rank gate works once Decision 127 made a rung's ticked class types mean "classes that count toward reaching this rung", raised while building roadmap Phase 2c
+
+Asked whether a student may book the class types up to their current rung or up to their next one, Gus said neither is fixed: *"this decision is for the school owner, for example a lot of academies across the world will allow white 3 stripes and above to join the blue belt and open mats. This is particular to each place, school owner must decide."*
+
+1. **A separate per-rung list, "Unlocks booking".** It is separate from "which classes count" (Decisions 140, 149). The class types a rung lists may be booked by students on that rung and on every rung above it.
+2. **Types no rung lists are open to everyone,** so the owner only marks the classes they want to restrict. Fundamentals, listed nowhere, stays open even to a student with no rank yet. A style where nothing is set is open throughout. Gus: *"Yes, any class"*.
+3. **Refused otherwise.** A restricted type is refused for a student below the unlocking rung, or with no rank in that style. Staff can still override per booking, recorded as before (SKILL.md §9).
+4. **A class with no class type is open.** A class listing several styles must pass for each style.
+
+Gus confirmed the worked example (White · 3 Stripes unlocks Advanced and Open Mat, Purple Belt unlocks Competition): *"yes"*.
+
+Built as `RankStripeTier.bookingUnlocksClassTypes` (kept when omitted on an edit, like the other rung settings), the engine's `bookingAccess`, and one gate shared by booking and the waitlist claim. This replaces Decision 90's activities ↔ style-name bridge for booking. Existing rungs start with nothing unlocked, so every class is open until the owner sets some. The old gate never worked as designed in practice: it compared style names against class types.
