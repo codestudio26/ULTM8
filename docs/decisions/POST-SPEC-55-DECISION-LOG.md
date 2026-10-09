@@ -1921,3 +1921,12 @@ Students (and guardians, Decision 132) always see the whole progression of their
 - "Per rung" or "per style" fees (Decision 159) become separate passes for the same grading day, for example a kids fee and an adult fee.
 
 Still to confirm with Gus: whether v1.1 ships this using the existing one-off Class + scoped pass (no grading-events feature needed), with the Version 2 grading-events feature later linking each event to its pass; and whether the v1.1 "fee switch + amount" in grading settings (Decision 150, item 2) is replaced by this pass setup, or should create the pass automatically.
+
+---
+
+## Decision 163 — Grading fee in v1.1 uses the existing single-event pass; no separate fee switch; events become a full module in Version 2
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the two open points of Decision 162; supersedes Decision 150, item 2
+
+1. **v1.1:** a school sets up a grading day as a one-off Class plus a 1-credit pass scoped to it (Decision 162), using features ULTM8 already has. **Version 2:** grading events are developed further as a **full module** (participants, Pass/Fail, promotions, Decisions 128 and 130), linked to each event's pass. Gus: *"Yes, V2, events are developed further, as full module."*
+2. **No separate "fee on/off + amount" setting in v1.1.** The single-event pass is the only way to set a grading fee. This supersedes Decision 150, item 2. Gus: *"Ok"*.

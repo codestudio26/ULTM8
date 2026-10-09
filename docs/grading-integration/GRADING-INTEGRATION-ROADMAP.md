@@ -422,3 +422,23 @@ These supersede §10 where they differ.
 - **Fees** (Decision 159): ULTM8 takes nothing; the school collects. The school picks how the fee is set: per rung or per style in v1.1, and per event from Version 2. Still open: whether collection runs through the school's payment account inside ULTM8 or outside it.
 - **Franchise-wide ladders** (Decision 160): franchise owner's switch, edited at franchise level only, after v1.1, with its own tenancy design.
 - **Students always see their full progression** (Decision 161).
+
+## 12. Final v1.1 scope (Decisions 124–163, 9 Oct 2026)
+
+All 50 merge questions are answered. This section supersedes §10 and §11 where they differ.
+
+**v1.1 (Track A: API and school portal)**
+- Ladder: rung names, colour segments, per-rung skills, weekly cap and time-only, drag reorder with confirmation, IBJJF templates (3).
+- Rules engine: Gus's `gradingRequirement` / eligibility / progress, with his stress-test scenarios as tests.
+- Grading Board: 33% / 66% (editable per school), "currently attending" from membership, branch scoping.
+- Grading: single grade (skip, back-date, starting classes, skills warning or per-style block), downgrade with reason, void history, edit rank date, bulk promote with the quick acknowledgement step.
+- Attendance: class types on classes, "which classes count" (any type, or a number per type), weekly cap, disciplines picked from the school's list.
+- Students: self-declared rank at signup with verification (auto for plain White Belt), home branch, guardians can read.
+- Permissions: owner always; others per discipline as granted.
+- Notifications: "ready to grade" and "you've been promoted".
+- Audit: skill sign-off log; deleted instructor shows as "Former instructor".
+- Grading fee: set up by the school as a one-off Grading Day class plus a 1-credit pass (existing features; no new payment code).
+
+**Track B (app), its next release:** rank by name, full progression, skills needed, history (read-only), for students and guardians.
+
+**Version 2:** grading events as a full module, linked to their passes; per-event fee choice. **Later:** franchise-wide ladders, lessons in the app once video exists, video pricing.
