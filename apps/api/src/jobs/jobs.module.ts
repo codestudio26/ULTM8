@@ -71,6 +71,13 @@ import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-rest
  * and the new processor's own NOTIFICATION_FANOUT_QUEUE injection is covered by
  * the same QueueModule import already in this module.
  *
+ * Closes a real gap flagged since Phase 11/15: WaitlistCascadeProcessingProcessor
+ * now also injects NOTIFICATION_FANOUT_QUEUE, the same cross-queue @InjectQueue
+ * pattern every prior addition above already established, so a freed seat
+ * actually notifies the Student (in-app + email) instead of only flipping the
+ * WaitlistEntry's own status. No new module import needed — QueueModule already
+ * registers NOTIFICATION_FANOUT_QUEUE from the Phase 15 wiring above.
+ *
  * Decision 122 extends StripeWebhookProcessingProcessor once more, closing the
  * "same-day sweep cancels the Student's own future Bookings" half of Spec 55
  * §6.1's Membership-expiry rule (deferred since Phase 8 first wrote this file,

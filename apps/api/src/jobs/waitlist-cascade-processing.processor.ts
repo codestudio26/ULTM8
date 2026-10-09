@@ -2,7 +2,8 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
+import { NotificationFanoutJobData } from './notification-fanout.types';
 
 /** How often the claim-deadline sweep runs — same Developer-level-choice caveat as
  * booking-no-show-processing's own CRON constant; a shorter interval here since a
@@ -76,12 +77,28 @@ export class WaitlistCascadeProcessingScheduler implements OnModuleInit {
  * `POST /waitlist/{id}/claim` endpoint (WaitlistService.claim()), which re-runs the
  * rank/capacity checks at claim time (kickoff prompt §1.d) — this job has no
  * authority to create Bookings on a Student's behalf.
+ *
+ * Closes a real, previously-flagged gap: flipping a WaitlistEntry to NOTIFIED used to
+ * be the only observable effect of a freed seat — no Notification row, no email, no
+ * push, nothing the Student could ever see short of reopening the app and re-checking.
+ * Now fans out through NOTIFICATION_FANOUT_QUEUE, the exact same queue/shape every
+ * other real trigger in this codebase uses (WaiverSignatureRequestsProcessor,
+ * StripeWebhookProcessingProcessor's dispute/Membership-expiry paths) — no new
+ * notification mechanism invented here. `notificationId` is derived from the
+ * WaitlistEntry's own id (`waitlist-notified-${entry.id}`), stable across a retried
+ * job attempt (BullMQ dedup by jobId) and across NotificationFanoutProcessor's own
+ * upsert (a retried fan-out re-writes the identical row, not a duplicate) — an entry
+ * only ever makes this WAITING→NOTIFIED transition once in its lifecycle, so the id
+ * is never reused across two different real notifications.
  */
 @Processor(WAITLIST_CASCADE_PROCESSING_QUEUE)
 export class WaitlistCascadeProcessingProcessor extends WorkerHost {
   private readonly logger = new Logger(WaitlistCascadeProcessingProcessor.name);
 
-  constructor(private readonly prismaJobs: PrismaJobsService) {
+  constructor(
+    private readonly prismaJobs: PrismaJobsService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
+  ) {
     super();
   }
 
@@ -141,7 +158,7 @@ export class WaitlistCascadeProcessingProcessor extends WorkerHost {
     const next = await this.prismaJobs.waitlistEntry.findFirst({
       where: { classId, status: 'WAITING' },
       orderBy: { position: 'asc' },
-      include: { class: { select: { startDate: true, school: { select: { waitlistClaimWindowMinutes: true } } } } },
+      include: { class: { select: { title: true, startDate: true, school: { select: { waitlistClaimWindowMinutes: true } } } } },
     });
     if (!next) return false;
 
@@ -153,6 +170,27 @@ export class WaitlistCascadeProcessingProcessor extends WorkerHost {
       where: { id: next.id, status: 'WAITING' },
       data: { status: 'NOTIFIED', notifiedAt: now, claimByDeadline },
     });
-    return result.count > 0;
+    if (result.count === 0) return false;
+
+    // Lost a race against a concurrent run already notifying this same entry
+    // (the updateMany guard above already made that a no-op) — only enqueue
+    // the fan-out once, for the attempt that actually won the flip.
+    await this.notificationFanoutQueue.add(
+      'notify',
+      {
+        notificationId: `waitlist-notified-${next.id}`,
+        userId: next.studentId,
+        title: 'A spot opened up',
+        body: `A spot opened up in ${next.class.title}. Claim it soon — it goes to the next person on the waitlist if you don't.`,
+        type: 'WAITLIST_SPOT_OPENED',
+      } satisfies NotificationFanoutJobData,
+      {
+        jobId: `waitlist-notified-${next.id}`,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+      },
+    );
+
+    return true;
   }
 }
