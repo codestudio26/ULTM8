@@ -29,6 +29,9 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Deleted instructors show as “Former instructor” (Decision 141); the student app gets read-only grading in its next release (Decision 142).
 - Classes carry a class type (Decision 143); grading fees are charged by the school, optionally (Decision 144).
 - v1.1 notifications: ready to grade, and promoted (Decision 145); names typed once, not translated (Decision 146).
+- Self-declared ranks can be corrected; only plain White Belt is verified automatically (Decision 147).
+- Classes at another branch count if the student may book them; owner assigns home branches (Decision 148).
+- “Each type required” sets a number per class type (Decision 149).
 
 ## How many need answering, and when
 
@@ -123,12 +126,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q16. Does one attended class count toward every discipline the class lists, or only one?** · _Before API_
 - Why it matters: Today a class listing two disciplines adds a class to both of the student's progress counts.
 - Recommendation: Count it only for disciplines whose eligible class types include the class's type.
-- Answer so far: Each rung ticks which class types count: any ticked type by default, or each type required as an option (Decision 140). Number per type still to confirm.
+- Answer so far: Each rung ticks which class types count: any ticked type (one total), or each type with its own number (Decisions 140, 149).
 
 **Q17. Does a class at any branch count, and should the board be filterable by branch?** · _Before screens_
 - Why it matters: Grading has no idea of branches. Instructors and staff can be branch-scoped.
 - Recommendation: Classes at any branch count. Add a branch filter to the board.
-- Answer so far: One home branch per student; branch staff grade their own branch; one ladder per school (Decision 139). Classes at other branches still to confirm.
+- Answer so far: One home branch each; branch staff grade their own branch; classes at another branch count if the student may book them; owner assigns missing home branches (Decisions 139, 148).
 
 **Q18. Keep your manual “Log a class” button next to QR attendance?** · _Before API_
 - Why it matters: Classes are counted automatically from QR check-in. A manual add with no record behind it can be abused.
@@ -205,12 +208,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q32. How does an existing student get their current rank when a school joins ULTM8?** · _Answer first_
 - Why it matters: A rank only exists after the first promote, and it always starts at the bottom. Placing a brown belt takes dozens of clicks and creates fake history.
 - Recommendation: A “set current rank” action with a start date, plus a CSV import for schools moving in.
-- Answer so far: Students enter their own rank at signup; it stays unverified until grading staff verify it; unverified ranks can still book; staff get a notice; white belts are verified automatically (Decision 137). Correction and which rungs auto-verify still to confirm.
+- Answer so far: Self-declared at signup and verified by grading staff, who can correct it; only plain White Belt is verified automatically (Decisions 137, 147).
 
 **Q33. New student or new minor: does staff set the starting rank, or does everyone start at the first rung?** · _Before API_
 - Why it matters: Joining a school and creating a minor never touch rank.
 - Recommendation: Start at the first rung; staff can change it with “set current rank”.
-- Answer so far: Students enter their own rank at signup (Decision 137).
+- Answer so far: Students declare their rank at signup; a brand-new student starts at White Belt, verified automatically (Decisions 137, 147).
 
 ### F. Events, fees and notifications
 

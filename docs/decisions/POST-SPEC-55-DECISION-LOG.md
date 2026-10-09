@@ -1772,3 +1772,29 @@ Gus: *"yes for now"*. More can be added later. Push delivery depends on the defe
 **Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q48
 
 Names a school types (disciplines, rung names, skills, lesson titles) are stored once, in the school's own words, and not translated. Only the app's and portal's own buttons and labels are translated into the four supported languages. Gus: *"yes"*. The portal and the app have no translation support yet; that is separate i18n work.
+
+---
+
+## Decision 147 — Self-declared ranks: the verifier can correct them; only plain White Belt is verified automatically
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the open points of Decision 137 (Q32, Q33)
+
+1. **Correction.** While verifying, anyone with grading permission can change a self-declared rank to the correct rung. The correction is noted on the student's history (who changed it, from what, to what, when). Gus: *"yes"*.
+2. **Automatic verification applies to the first rung only**, White Belt with no stripes, which means a person with no ranking yet. Any rung above it, including White Belt · 1 Stripe, means someone graded the student at some point, so it must be verified by staff. Gus: *"each belt and each stripe are a ladder, so a white belt is not a white belt 4 stripes. So white belt only … 1 stripe it means this person has been graded by someone at some point and it must be verified."* In general terms: the discipline's first rung (lowest belt, no stripe) is verified automatically.
+
+---
+
+## Decision 148 — Classes at another branch count when the student may book them; owner assigns home branches
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the open points of Decision 139 (Q17)
+
+1. **Attendance at another branch counts** toward grading whenever the student was allowed to book that class. Booking decides: if booking lets a Riverside student into a Downtown class, the attended class counts like any other (subject to Decision 140's class-type rules and the weekly cap). Gus: *"if students is allowed to book at the second branch it will means it counts."* Today attendance credit already ignores branch, so no new restriction is added. Which other branches a student may book stays a booking rule.
+2. **Existing students without a home branch** are assigned one by the school owner. Until then, the Grading Board shows them under "No branch". Only the owner sees that group, since branch staff see only their own branch (Decision 139). Gus: *"the owner"*.
+
+---
+
+## Decision 149 — "Each ticked type required": the school sets a number per class type
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the open point of Decision 140 (Q16)
+
+When a rung uses "each ticked type required", the school sets a required number of classes for each ticked type (for example 20 Fundamentals + 10 Sparring). Progress for that rung counts each type separately and is complete only when every type's number is met. In the default "any ticked type" mode, the rung keeps a single total. Gus: *"yes"*.
