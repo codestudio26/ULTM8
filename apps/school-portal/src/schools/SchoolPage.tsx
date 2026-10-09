@@ -1,8 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button, Card, Checkbox, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useSchool, useUpdateSchool } from './schoolQueries';
+import { useSchool, useUpdateSchool, type SchoolResponse } from './schoolQueries';
+
+type FormState = {
+  name: string;
+  mobileNumber: string;
+  address: string;
+  businessType: string;
+  activities: string;
+  facilities: string;
+  ranksToggle: boolean;
+  defaultLanguage: string;
+  defaultCurrency: string;
+  description: string;
+  classCancellationPolicy: 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT';
+  waitlistClaimWindowMinutes: number;
+};
+
+function formFromSchool(school: SchoolResponse): FormState {
+  return {
+    name: school.name,
+    mobileNumber: school.mobileNumber ?? '',
+    address: school.address ?? '',
+    businessType: school.businessType ?? '',
+    activities: school.activities.join(', '),
+    facilities: school.facilities.join(', '),
+    ranksToggle: school.ranksToggle,
+    defaultLanguage: school.defaultLanguage ?? '',
+    defaultCurrency: school.defaultCurrency ?? '',
+    description: school.description ?? '',
+    classCancellationPolicy: school.classCancellationPolicy,
+    waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
+  };
+}
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
  * their own School"). Field list matches UpdateSchoolDto exactly, same as
@@ -11,50 +43,35 @@ import { useSchool, useUpdateSchool } from './schoolQueries';
 export function SchoolPage() {
   const schoolId = useOwnedSchoolId();
   const { data: school, isLoading, error: loadError } = useSchool(schoolId);
+
+  if (isLoading) return <Spinner />;
+  if (loadError) return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : 'Could not load your School.'} />;
+  if (!school) return <Spinner />;
+
+  // Keyed by school.id: the edit form's local state is seeded from `school` once,
+  // in useState's own lazy initializer below — not synced via a useEffect (FOUND ON
+  // REVIEW: the previous version called setForm from inside a useEffect keyed on
+  // `school`, which eslint-plugin-react-hooks's set-state-in-effect rule correctly
+  // flags as a cascading-render risk). Remounting via `key` is React's own
+  // documented fix for "seed editable state from async-loaded data" — if the
+  // underlying School row the query resolves to ever changes identity, this form
+  // remounts with fresh initial state instead of a second render pass patching it.
+  return <SchoolProfileForm key={school.id} school={school} schoolId={schoolId} />;
+}
+
+function SchoolProfileForm({ school, schoolId }: { school: SchoolResponse; schoolId: string | null }) {
   const updateSchool = useUpdateSchool(schoolId ?? '');
 
-  const [form, setForm] = useState<{
-    name: string;
-    mobileNumber: string;
-    address: string;
-    businessType: string;
-    activities: string;
-    facilities: string;
-    ranksToggle: boolean;
-    defaultLanguage: string;
-    defaultCurrency: string;
-    description: string;
-    classCancellationPolicy: 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT';
-    waitlistClaimWindowMinutes: number;
-  } | null>(null);
+  const [form, setForm] = useState<FormState>(() => formFromSchool(school));
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (!school) return;
-    setForm({
-      name: school.name,
-      mobileNumber: school.mobileNumber ?? '',
-      address: school.address ?? '',
-      businessType: school.businessType ?? '',
-      activities: school.activities.join(', '),
-      facilities: school.facilities.join(', '),
-      ranksToggle: school.ranksToggle,
-      defaultLanguage: school.defaultLanguage ?? '',
-      defaultCurrency: school.defaultCurrency ?? '',
-      description: school.description ?? '',
-      classCancellationPolicy: school.classCancellationPolicy,
-      waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
-    });
-  }, [school]);
-
-  function set<K extends keyof NonNullable<typeof form>>(key: K, value: NonNullable<typeof form>[K]) {
-    setForm((f) => (f ? { ...f, [key]: value } : f));
+  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form) return;
     setSaveError(null);
     setSaved(false);
     try {
@@ -78,12 +95,9 @@ export function SchoolPage() {
     }
   }
 
-  if (isLoading || !form) return <Spinner />;
-  if (loadError) return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : 'Could not load your School.'} />;
-
   return (
     <>
-      <PageHeader title="School profile" subtitle={school?.name} />
+      <PageHeader title="School profile" subtitle={school.name} />
       <Card>
         <form onSubmit={handleSubmit}>
           {saveError ? <ErrorBanner message={saveError} /> : null}
