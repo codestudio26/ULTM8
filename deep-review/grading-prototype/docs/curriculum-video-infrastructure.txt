@@ -1,0 +1,100 @@
+Curriculum Video Infrastructure 
+ DojoHQ · Product / Engineering Memo
+ Hosting and charging for curriculum video
+ A recommendation for the video backend behind the Curriculum feature, how to price it for dojo owners, and how it plugs into the grading system that's already built.
+ Prepared 25 Aug 2026 · Scope: video infrastructure + monetization + data model
+ Recommendation
+ Use Cloudflare Stream as the video backend, not a turnkey platform like Uscreen. Uscreen is the wrong category — it's a branded storefront for solo creators, not something you embed inside a product you already built. Its pricing model is worth copying, though: a base fee plus a per-member charge.
+ Charge dojos a small base fee plus a per-active-student fee — mirroring how DojoHQ already counts students on the Grading Board, and matching how the underlying hosting cost actually scales.
+ 01 Two separate decisions
+ "Build it like Uscreen" is really two different questions, and they have different answers.
+ Where do the bytes live?
+ Encoding, storage, and streaming delivery. This is an infrastructure choice — a video API you integrate, not a product you resell as-is.
+ How do we charge for it?
+ The business model layered on top: what a dojo owner pays DojoHQ to unlock curriculum video for their students.
+ Uscreen answers the second question well — it's a mature, tested pricing shape for exactly this kind of video-hosting-as-a-feature business. It answers the first question badly for DojoHQ's situation, because it is the whole product: a branded website, a checkout flow, its own member accounts. There's no clean way to drop "a Uscreen" inside a page that already belongs to the Grading Board. What DojoHQ needs there is a video API — something that takes an upload, encodes it, stores it, and hands back a player and a bill by the minute.
+ 02 Comparing the video APIs
+ Four real options, ordered from best developer experience to most control. Figures are current list pricing, pulled today.
+ Vendor
+ Storage
+ Delivery
+ Notes
+ Mux 
+ $0.0024–0.0096
+/min/mo
+ $0.0008/min
+after 100k free/mo
+ Best analytics and DX of the four. Encoding above basic quality is billed separately ($0.025–0.038/min). DRM is a $100/mo add-on. Priciest at small scale.
+ Cloudflare Stream Pick 
+ $5 / 1,000 min
+stored (prepaid)
+ $1 / 1,000 min
+delivered
+ Encoding is free. Two numbers, no separate CDN or egress line. Signed URLs and access tokens built in — exactly what's needed to gate video to paying members.
+ Bunny.net Stream 
+ $0.01/GB/mo
+ $0.01/GB (US/EU)
+down to $0.002/GB at volume
+ Cheapest at real scale, especially once delivery volume climbs past a few hundred TB/month. Smaller company, thinner analytics, less battle-tested support.
+ Build on AWS 
+(S3 + MediaConvert + CloudFront)
+ ~$0.023/GB/mo
+ ~$0.085/GB
+(first 10TB)
+ Full control, cheapest only at massive scale. Means building your own encoding pipeline, adaptive bitrate packaging, player, and access control from scratch. Not an MVP move.
+ Uscreen and Vimeo OTT sit outside this table on purpose — both are turnkey storefronts (from $49/mo and up, plus 5–10% transaction fees and per-subscriber charges), not APIs you embed. They're the right shape to study for pricing, wrong shape to build on.
+ Why Cloudflare Stream
+ Curriculum video for a martial arts gym is low-traffic, high-value content — a few dozen students rewatching technique breakdowns before grading, not a viral audience. At that profile, the difference between Cloudflare's and Bunny's raw bill is a few dollars a month per dojo; it doesn't move the decision. What does: Cloudflare ships signed playback URLs and time-limited tokens natively, so "only this dojo's active students can watch this video" is a few lines of code, not a project. Two pricing lines instead of four make it trivial to build a clean markup on top for the add-on tier below. And it's already a mature, boring, reliable platform — boring is good for something billing customers depend on.
+ Worth revisiting Bunny.net once a handful of large dojo chains push delivery volume into the hundreds of TB/month — that's the point its per-GB pricing pulls meaningfully ahead. Worth revisiting Mux if the analytics (completion rates, engagement by video) become a selling point of Curriculum itself rather than a nice-to-have.
+ 03 Charging dojo owners
+ The instinct to charge "for the display of the video" is right, but billing a dojo owner directly in GB or minutes would be a bad experience — nobody running a gym thinks in bandwidth. Uscreen's model translates well here: a modest base fee that unlocks the feature and covers typical storage, plus a small per-member charge that scales with the thing that actually drives DojoHQ's cost — how many students are watching. DojoHQ already counts active students for the Grading Board, so this reuses data that exists rather than inventing a new metric.
+ Worked example — a mid-size dojo
+ Active students 80 
+ Avg. curriculum viewing 20 min / student / mo 
+ Total delivered 1,600 min / mo 
+ Delivery cost (Cloudflare, $1/1,000 min) $1.60 
+ Curriculum library (10 hrs, 1080p) 600 min stored 
+ Storage cost ($5 / 1,000 min block) $3.00 
+ DojoHQ's raw hosting cost ≈ $4.60 / mo 
+ At roughly $5/month in raw cost for a fairly active dojo, there's wide room to price a Curriculum add-on well above cost and still land far below what Uscreen or Vimeo OTT would charge for the same gym to run standalone. Two shapes worth prototyping:
+ Flat add-on: a fixed monthly fee (e.g. in the $19–39 range) that unlocks Curriculum for the whole gym, storage included up to a generous cap. Simple to sell, simple to bill, and the margin absorbs normal usage swings.
+ Base + per-student: a lower base fee plus a small per-active-student charge (well under $1/student), closer to Uscreen's Growth tier shape. Scales fairly for a 20-student garage dojo versus a 300-student chain, and ties the price directly to the value delivered.
+ Either is comfortably above the ~90% gross margin video-hosting businesses typically run at this usage profile. The per-student shape is the better long-term fit given DojoHQ's existing data model, but the flat add-on is the faster thing to ship and test pricing sensitivity with first.
+ 04 How it plugs into grading
+ The part that matters most for this app specifically: curriculum content shouldn't live as a separate, disconnected video library. It should attach directly to the Skills and Ranks that already exist in DB.skills and each style's rank ladder, so a video is something a student watches because it's required for their next grade, not something they browse to on their own.
+[MERMAID]
+flowchart LR
+ A["Instructor uploads video
+(Curriculum → Lesson)"] --> B["Cloudflare Stream
+encode + store"]
+ B --> C["DojoHQ DB
+Lesson row: playback id,
+title, text, linked skillId"]
+ C --> D["Skill Library
+skill card shows attached lesson"]
+ C --> E["Student grading flow
+Grade/Skill modal shows 'Watch'"]
+ D --> F["Signed, time-limited URL
+issued per session"]
+ E --> F
+ F --> G["Cloudflare Stream
+delivers to player"]
+[/MERMAID]
+ Shape of the data model
+ Category
+ A curriculum section — likely one per Style to start (e.g. "IBJJF Adult & Kid"), matching the structure Styles & Ranks already uses.
+ Lesson
+ Title, text/description, one video (playback id from Cloudflare), and an optional link to one or more skillId s or a specific rank.
+ With that link in place, two places in the existing app get richer for free: the Skill Library can show a "has video" badge and an inline player on a skill's detail, and the Grade modal's skills-required warning can carry a direct "watch the technique" link instead of just naming the skill.
+ 05 Suggested next step
+ 1 Mock up the Curriculum tab and a Lesson card in the same prototype file, reusing the app's existing card/modal patterns — no real video yet, just the shape and the skill-link UI, shown as a JPG before anything gets wired up.
+ 2 Once the UI is approved, wire a single real upload → Cloudflare Stream → playback round trip for one test video, to confirm signed-URL gating actually behaves the way this memo assumes.
+ 3 Decide flat-add-on vs. base-plus-per-student pricing by sketching both as an actual settings-page mockup and picking the one that's easier to explain to a dojo owner in one sentence.
+ Open question
+ This assumes each dojo uploads and owns its own curriculum footage. If DojoHQ ever wants to sell a pre-built curriculum library (professionally filmed, licensed across dojos), that's a different content and rights model layered on the same video backend — worth flagging now, not worth designing until this first version ships.
+ Sources
+ Mux — Pricing 
+ Cloudflare Stream — Pricing 
+ bunny.net — Stream Pricing 
+ Uscreen — Pricing 
+ AWS — Video on Demand Foundation, Cost
