@@ -15,6 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading foundation, PR 1: grading writes respect the ranks switch and
+  closed Schools; Guardians can read their child's grading** (Decisions 87, 110,
+  132; grading plan in `docs/grading-integration/`): promote, downgrade,
+  stripe-award and skill sign-off now refuse (403) when the School has ranks
+  switched off (`School.ranksToggle`) or has been closed. Before, only catalog
+  edits checked these. Grading reads stay available. An active Guardian can
+  now read a linked minor's ranks, eligibility and rank history (read-only);
+  before, Guardians were refused. Adds tests for both gates, downgrade, two
+  coaches grading the same student at once, and the Guardian read and refusal
+  paths. **Security fix found on independent review:** grading reads (ranks,
+  eligibility, rank history) now require a valid `schoolId`. Before, a staff
+  member who left it out could read a Student's grading from every School
+  (pre-existing since Phase 10b). An impersonation session scoped to one School
+  is now refused at another.
 - **api — decouple auth/booking rate limiting from raw IP** (PR #88, `db9571c`,
   Decision 12/17): `/auth/login`, `/auth/otp/*`, `/auth/forgot-password`, and
   `/auth/reset-password` now throttle per-identity (email/phone) in addition
