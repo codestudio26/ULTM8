@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
+import { GuardiansModule } from '../guardians/guardians.module';
 import { RanksController } from './ranks.controller';
 import { RanksService } from './ranks.service';
 import { GradingController } from './grading.controller';
@@ -13,7 +14,9 @@ import { GradingService } from './grading.service';
  * own header comments for the full scoping rationale.
  */
 @Module({
-  imports: [TenantsModule],
+  // GuardiansModule: GuardiansService.assertGuardianOfStudent() for Guardian
+  // read access to a linked minor's grading (Decision 132).
+  imports: [TenantsModule, GuardiansModule],
   controllers: [RanksController, GradingController],
   providers: [RanksService, GradingService],
 })

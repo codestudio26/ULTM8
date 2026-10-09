@@ -373,8 +373,12 @@ export class RanksService {
    * calls this first — reads are deliberately unaffected (see the kickoff
    * prompt's own reasoning: existing grading history shouldn't become
    * inaccessible just because a School toggles ranks off today).
+   *
+   * Public so GradingService can apply the same gate to promote/downgrade/
+   * stripe-award/skill sign-off: Decision 87 names those writes explicitly,
+   * but until now only the catalog writes above called this.
    */
-  private async assertRanksEnabled(callerId: string, schoolId: string): Promise<void> {
+  async assertRanksEnabled(callerId: string, schoolId: string): Promise<void> {
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.findUniqueOrThrow({ where: { id: schoolId }, select: { ranksToggle: true } }),
     );
