@@ -336,9 +336,77 @@ model User {
   bookingDelegationsAsStudent  BookingDelegation[] @relation("BookingDelegationStudent")
   notifications            Notification[]
   deviceTokens             DeviceToken[]
+  refreshTokens            RefreshToken[]
 
   @@index([email])
   @@index([phone])
+}
+
+/// ultm8-nestjs-module §7's own confirmed refresh-token gap, now built: closes the
+/// "forced re-login every 15 minutes" staleness window Spec §8.3 describes, without
+/// widening that section's own httpOnly-cookie design (deliberately deferred there —
+/// needs CORS/credentials config apps/api doesn't have yet) — delivered the same way
+/// the existing accessToken already is, as a plain JSON response field.
+///
+/// `tokenHash` stores a SHA-256 hex digest of the raw token, never the raw token
+/// itself — deliberately NOT bcrypt: the raw token already carries 256 bits of
+/// its own entropy (crypto.randomBytes, AuthService's own issueRefreshToken()), so
+/// there's nothing for a slow, salted hash to defend against that a fast,
+/// deterministic one doesn't already cover just as well, and a deterministic hash
+/// is what makes an exact-match DB lookup possible at all for the presented token
+/// (bcrypt's per-hash salt means it can never be looked up by equality). Same
+/// "entropy carries the security, not the hash" reasoning session/API-key tokens
+/// use industry-wide — never apply this reasoning to passcodeHash, which protects
+/// a low-entropy, human-chosen value instead.
+///
+/// Rotation (AuthService.refresh()): every refresh consumes the presented row
+/// (revokedAt + rotatedOut set) and creates a brand-new row — never updates
+/// tokenHash in place. Reuse detection: a presented token whose row is already
+/// revoked AND rotatedOut is treated as a compromise signal and revokes every
+/// OTHER still-active RefreshToken for that User too, not just the one
+/// presented — forcing a full re-login everywhere, the standard
+/// OWASP-documented response to a replayed refresh token.
+///
+/// `rotatedOut` is what makes that signal specific to an actual replay —
+/// FOUND ON REVIEW (this phase's own e2e pass): without it, logout() and
+/// rotation both looked identical (revokedAt set, nothing else), so refreshing
+/// an already-logged-out token — an ordinary, harmless case, not evidence of
+/// theft — wrongly triggered the same mass-revoke-every-session reaction a
+/// genuine replay deserves, logging a User out of OTHER devices just because
+/// one device retried a stale request after its own logout. Only
+/// AuthService.refresh()'s own rotation step ever sets this true; logout() and
+/// confirmPasscodeReset()'s mass-revoke both leave it false (an ordinary
+/// revoke, not a replay signal) — a revoked-but-not-rotatedOut token presented
+/// again is just a plain 401, no cascade.
+///
+/// Deliberately does NOT track the full rotation chain (e.g. a
+/// replacedByTokenId pointer to the specific successor) — this one boolean is
+/// sufficient for the reuse-detection property itself; a forensic "show me the
+/// whole chain" capability is flagged as a future nice-to-have, not built here.
+///
+/// No DELETE anywhere — same "flip status, don't delete" convention this codebase
+/// already follows for every other audit-relevant row (Transaction, PromotionEvent,
+/// ...). An expired/revoked row is left in place, not purged by this phase; a
+/// retention/cleanup sweep is a separate, later concern (same category as
+/// TenantLifecyclePurgeProcessor, not built here).
+model RefreshToken {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String @unique
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  // true only when revokedAt was set by AuthService.refresh()'s own rotation
+  // step (this token had a legitimate successor minted) — the actual
+  // replay-attack signal. false for every other revocation (logout, the
+  // passcode-reset mass-revoke) — see this model's own header comment.
+  rotatedOut Boolean @default(false)
+
+  @@index([userId])
 }
 
 /// Platform Admin identity — wholly separate from User, never joined to it

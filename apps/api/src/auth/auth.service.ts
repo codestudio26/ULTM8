@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes, createHash } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { TwilioVerifyService } from './otp/twilio-verify.service';
@@ -19,9 +19,21 @@ import { SendOtpDto } from './dto/send-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { RequestPasscodeResetDto } from './dto/request-passcode-reset.dto';
 import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 
 const BCRYPT_ROUNDS = 12;
+
+// ultm8-nestjs-module §7's own confirmed gap, now built. 32 random bytes (256
+// bits) — the token's entropy is what resists guessing, not a slow hash (see
+// RefreshToken's own Prisma model comment for why tokenHash is plain SHA-256,
+// not bcrypt). Default 30 days: Developer-level choice, flagged for Architect
+// review same as every other *_TTL constant in this codebase; a rotated token
+// always gets a fresh 30-day window from its own issuance time, so a client
+// that refreshes at least once a month never sees a forced re-login, while an
+// abandoned session's blast radius is still bounded.
+const REFRESH_TOKEN_BYTES = 32;
+const REFRESH_TOKEN_TTL_DAYS = Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30);
 
 /**
  * A real bcrypt hash (not an eyeballed string) of a value nobody will ever type as a
@@ -185,7 +197,8 @@ export class AuthService {
     this.loginAttempts.recordSuccess(dto.email);
 
     const accessToken = await this.issueAccessToken(user.id);
-    return { accessToken };
+    const refreshToken = await this.issueRefreshToken(user.id);
+    return { accessToken, refreshToken };
   }
 
   /**
@@ -229,6 +242,113 @@ export class AuthService {
 
     const payload: JwtPayload = { sub: userId, email: user.email, grants: claims };
     return this.jwt.sign(payload);
+  }
+
+  private hashRefreshToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  /**
+   * Mints and persists a new RefreshToken row, returning the raw token (the
+   * only time it's ever available in the clear — only tokenHash is stored).
+   * Runs via `prismaAuth` (ultm8_auth role), not `prismaApp.withTenantContext`
+   * — this is credential-realm bookkeeping tied to a userId we already trust
+   * (just-verified login, or a refresh() call that already re-validated the
+   * presented token), not a tenant-RLS-scoped read/write, so there's no
+   * app.current_user_id to set and no reason to route it through that path.
+   */
+  private async issueRefreshToken(userId: string): Promise<string> {
+    const token = randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
+    await this.prismaAuth.refreshToken.create({
+      data: {
+        id: randomUUID(),
+        userId,
+        tokenHash: this.hashRefreshToken(token),
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000),
+      },
+    });
+    return token;
+  }
+
+  /**
+   * Closes ultm8-nestjs-module §7's own confirmed gap — the first real
+   * implementation of Spec §8.3's refresh token. Exchanges a still-valid,
+   * not-yet-revoked, not-yet-expired RefreshToken for a brand-new
+   * accessToken + refreshToken pair; the presented token is revoked in the
+   * same step (rotation), never reused.
+   *
+   * REUSE DETECTION (the standard OWASP-documented response to a replayed
+   * refresh token): a presented token that hashes to a row found but already
+   * revoked BY A PRIOR ROTATION (`rotatedOut`, RefreshToken's own model
+   * comment) is treated as a compromise signal — an attacker replaying a
+   * token that was already exchanged for a successor out from under them,
+   * exactly what this must catch. Every OTHER still-active RefreshToken for
+   * that User is revoked too, forcing a full re-login everywhere rather than
+   * trusting the rest of that User's session family.
+   *
+   * A revoked-but-NOT-rotatedOut token (logout(), or the passcode-reset
+   * mass-revoke) is deliberately NOT treated as a reuse signal — see
+   * `rotatedOut`'s own model comment for the real bug this distinction fixes
+   * (an ordinary logged-out token being refreshed again used to wrongly burn
+   * every other device's session too). It's simply a 401, same as a token
+   * that's unknown (bad hash, typo, fabricated) or expired — none of those
+   * are evidence anything legitimate was replayed.
+   */
+  async refresh(dto: RefreshTokenDto): Promise<{ accessToken: string; refreshToken: string }> {
+    const tokenHash = this.hashRefreshToken(dto.refreshToken);
+    const existing = await this.prismaAuth.refreshToken.findUnique({ where: { tokenHash } });
+    if (!existing) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (existing.revokedAt) {
+      if (existing.rotatedOut) {
+        await this.prismaAuth.refreshToken.updateMany({
+          where: { userId: existing.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        throw new UnauthorizedException('This refresh token was already used — every session for this account has been signed out as a precaution.');
+      }
+      throw new UnauthorizedException('This refresh token has been revoked — please log in again.');
+    }
+
+    if (existing.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token expired — please log in again.');
+    }
+
+    // Optimistic-concurrency guard, same shape as every other status-transition
+    // in this codebase — if a concurrent refresh() call already rotated this
+    // exact token between the read above and this write, this call loses the
+    // race and its write is a no-op; the loser still must not mint a second
+    // valid token pair for the same presented token.
+    const result = await this.prismaAuth.refreshToken.updateMany({
+      where: { id: existing.id, revokedAt: null },
+      data: { revokedAt: new Date(), rotatedOut: true },
+    });
+    if (result.count === 0) {
+      throw new UnauthorizedException('This refresh token was already used — every session for this account has been signed out as a precaution.');
+    }
+
+    const accessToken = await this.issueAccessToken(existing.userId);
+    const refreshToken = await this.issueRefreshToken(existing.userId);
+    return { accessToken, refreshToken };
+  }
+
+  /**
+   * Revokes exactly the one presented RefreshToken — the minimal companion
+   * every refresh-token system needs to ship responsibly (without it, a
+   * leaked token lives until its own 30-day expiry with no way to cut it
+   * short). Deliberately NOT "log out everywhere": that's the reuse-detection
+   * path in refresh() above, a reaction to a detected compromise, not an
+   * ordinary user-initiated action — logging out one device shouldn't also
+   * sign out every other device the same account is using elsewhere.
+   * Silently succeeds for an already-revoked/unknown token — logging out is
+   * idempotent by nature, not an error to report twice.
+   */
+  async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
+    const tokenHash = this.hashRefreshToken(dto.refreshToken);
+    await this.prismaAuth.refreshToken.updateMany({ where: { tokenHash, revokedAt: null }, data: { revokedAt: new Date() } });
+    return { message: 'Logged out' };
   }
 
   /**
@@ -376,6 +496,12 @@ export class AuthService {
     // which was a silent no-op against a different key and never actually cleared the
     // lockout a successful passcode reset is clearly meant to clear.
     this.loginAttempts.recordSuccess(user.email);
+    // Standard security hygiene, same framing as the comment above — a passcode
+    // reset is frequently how an account recovers from a suspected compromise,
+    // so every refresh token issued under the OLD passcode is revoked here too.
+    // Without this, a stolen refresh token would simply outlive the reset meant
+    // to lock the attacker out, right up to its own 30-day expiry.
+    await this.prismaAuth.refreshToken.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } });
 
     return { message: 'Passcode updated — you can now log in with your new passcode.' };
   }

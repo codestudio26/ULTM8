@@ -134,3 +134,137 @@ describeIfDb('AuthController — /auth/login + per-user/per-IP throttling (Decis
     expect(statuses[5]).toBe(429);
   });
 });
+
+/**
+ * ultm8-nestjs-module §7's own confirmed gap, now built — /auth/refresh and
+ * /auth/logout. A SEPARATE describeIfDb block with its own dedicated users:
+ * the block above already spends part of the 5/60s-per-email identity
+ * throttle bucket on `user.email` (one successful login, one wrong-passcode
+ * attempt), and these tests mint several logins per user — sharing that email
+ * would make this block's pass/fail depend on execution order and timing
+ * against that unrelated throttle, not on the refresh-token logic itself.
+ */
+describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
+  let app: INestApplication;
+  const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
+  const userIds: string[] = [];
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    app.setGlobalPrefix('v1');
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalFilters(new HttpExceptionFilter());
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await superuser.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
+    await superuser.user.deleteMany({ where: { id: { in: userIds } } });
+    await superuser.$disconnect();
+    await app.close();
+  });
+
+  async function mkLoggedInUser(label: string) {
+    const passcodeHash = await bcrypt.hash(PASSCODE, 12);
+    const user = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        // "rt-" not "auth-http-refresh-" — IsEmail enforces RFC 5321's 64-char
+        // local-part limit, and the longer prefix plus a 36-char uuid plus a
+        // longer label (e.g. "logout-idempotent") blew past it, which is what
+        // this exact bug looked like before it was caught here: a 400 from
+        // AuthController itself, not from AuthService's own logic at all.
+        email: `rt-${label}-${randomUUID()}@example.test`,
+        phone: randomPhone(),
+        firstName: 'Auth',
+        surname: 'Refresh',
+        passcodeHash,
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    userIds.push(user.id);
+    const loginRes = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: PASSCODE });
+    return { user, refreshToken: loginRes.body.refreshToken as string };
+  }
+
+  it('POST /auth/login returns a refreshToken alongside the accessToken', async () => {
+    const { refreshToken } = await mkLoggedInUser('login-shape');
+    expect(typeof refreshToken).toBe('string');
+    expect(refreshToken.length).toBeGreaterThan(20);
+  });
+
+  it('POST /auth/refresh exchanges a valid refreshToken for a brand-new pair', async () => {
+    const { refreshToken } = await mkLoggedInUser('rotate');
+    const res = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken });
+    expect(res.status).toBe(201);
+    expect(typeof res.body.accessToken).toBe('string');
+    expect(typeof res.body.refreshToken).toBe('string');
+    expect(res.body.refreshToken).not.toBe(refreshToken);
+  });
+
+  it('POST /auth/refresh rejects an unknown/fabricated token — 401', async () => {
+    const res = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: 'not-a-real-token' });
+    expect(res.status).toBe(401);
+  });
+
+  it('REUSE DETECTION: replaying an already-rotated token is rejected AND invalidates the token that replaced it too', async () => {
+    const { refreshToken: tokenA } = await mkLoggedInUser('reuse');
+
+    const rotateRes = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: tokenA });
+    expect(rotateRes.status).toBe(201);
+    const tokenB = rotateRes.body.refreshToken as string;
+
+    // Replaying the now-rotated-out tokenA is the attack signal.
+    const replayRes = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: tokenA });
+    expect(replayRes.status).toBe(401);
+
+    // The whole session family is burned as a precaution — tokenB (the
+    // legitimate successor, never itself compromised) must also now fail,
+    // proving this isn't a no-op revoke of tokenA alone.
+    const tokenBRes = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: tokenB });
+    expect(tokenBRes.status).toBe(401);
+  });
+
+  it('POST /auth/logout revokes exactly the presented token, leaving a sibling session (a second login) untouched', async () => {
+    const passcodeHash = await bcrypt.hash(PASSCODE, 12);
+    const user = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `rt-logout-${randomUUID()}@example.test`,
+        phone: randomPhone(),
+        firstName: 'Auth',
+        surname: 'Logout',
+        passcodeHash,
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    userIds.push(user.id);
+
+    const sessionA = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: PASSCODE });
+    const sessionB = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: PASSCODE });
+
+    const logoutRes = await request(app.getHttpServer()).post('/v1/auth/logout').send({ refreshToken: sessionA.body.refreshToken });
+    expect(logoutRes.status).toBe(201);
+
+    const refreshAfterLogoutA = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: sessionA.body.refreshToken });
+    expect(refreshAfterLogoutA.status).toBe(401);
+
+    // Logging out device A must not be a mass revoke — device B's own session
+    // (a different login, for the same User) is untouched.
+    const refreshB = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: sessionB.body.refreshToken });
+    expect(refreshB.status).toBe(201);
+  });
+
+  it('POST /auth/logout is idempotent — logging out twice (or an unknown token) is not an error', async () => {
+    const { refreshToken } = await mkLoggedInUser('logout-idempotent');
+    const first = await request(app.getHttpServer()).post('/v1/auth/logout').send({ refreshToken });
+    expect(first.status).toBe(201);
+    const second = await request(app.getHttpServer()).post('/v1/auth/logout').send({ refreshToken });
+    expect(second.status).toBe(201);
+    const unknown = await request(app.getHttpServer()).post('/v1/auth/logout').send({ refreshToken: 'never-issued' });
+    expect(unknown.status).toBe(201);
+  });
+});
