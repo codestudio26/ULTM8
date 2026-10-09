@@ -5,6 +5,8 @@ import type { BranchResponse } from '../branches/branchQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import { isoToLocalInput, localInputToIso } from '../lib/datetime';
 import type { ClassResponse } from './classQueries';
+import type { DisciplineResponse } from '../disciplines/disciplineQueries';
+import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
 
 export interface ClassFormValues {
   /**
@@ -22,7 +24,11 @@ export interface ClassFormValues {
   branchId?: string | null;
   instructorId?: string | null;
   title: string;
-  activities: string[];
+  /** Free text, for a School with no styles. Omitted when styles are picked
+   * (the API fills it in from the styles' names). */
+  activities?: string[];
+  /** For a School with styles (Decision 170). */
+  styles?: StyleSelection[];
   bannerUrl?: string | null;
   description?: string | null;
   startDate: string;
@@ -57,6 +63,7 @@ export function ClassFormModal({
   initial,
   branches,
   instructors,
+  disciplines,
   submitting,
   onSubmit,
   onClose,
@@ -65,6 +72,9 @@ export function ClassFormModal({
   initial?: Partial<ClassResponse>;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
+  /** The School's styles. With any, the class picks styles and class types
+   * instead of free-text activities (Decisions 143, 152, 170). */
+  disciplines: DisciplineResponse[];
   submitting: boolean;
   onSubmit: (values: ClassFormValues) => Promise<void>;
   onClose: () => void;
@@ -86,6 +96,10 @@ export function ClassFormModal({
     termsWaiverRequired: initial?.termsWaiverRequired ?? false,
     membershipInclusion: initial?.membershipInclusion ?? false,
   });
+  const [styles, setStyles] = useState<StyleSelection[]>(
+    initial?.styles?.length ? initial.styles.map((s) => ({ disciplineId: s.disciplineId, classType: s.classType ?? null })) : [{ disciplineId: '', classType: null }],
+  );
+  const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -104,7 +118,13 @@ export function ClassFormModal({
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    if (activities.length === 0) {
+    if (usesStyles) {
+      const problem = styleSelectionProblem(disciplines, styles);
+      if (problem) {
+        setError(problem);
+        return;
+      }
+    } else if (activities.length === 0) {
       setError('At least one activity is required.');
       return;
     }
@@ -120,7 +140,7 @@ export function ClassFormModal({
         branchId: form.branchId || null,
         instructorId: form.instructorId || null,
         title: form.title,
-        activities,
+        ...(usesStyles ? { styles } : { activities }),
         bannerUrl: form.bannerUrl || null,
         description: form.description || null,
         startDate,
@@ -145,13 +165,17 @@ export function ClassFormModal({
         <Field label="Title" htmlFor="class-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
-        <Field label="Activities" htmlFor="class-activities" hint="Comma-separated, at least one — e.g. Jiu Jitsu, Kids Fundamentals">
-          <TextField
-            required
-            value={form.activities}
-            onChange={(e) => setForm((f) => ({ ...f, activities: e.target.value }))}
-          />
-        </Field>
+        {usesStyles ? (
+          <StylePicker idPrefix="class" disciplines={disciplines} value={styles} onChange={setStyles} />
+        ) : (
+          <Field label="Activities" htmlFor="class-activities" hint="Comma-separated, at least one — e.g. Jiu Jitsu, Kids Fundamentals">
+            <TextField
+              required
+              value={form.activities}
+              onChange={(e) => setForm((f) => ({ ...f, activities: e.target.value }))}
+            />
+          </Field>
+        )}
         <Field label="Branch" htmlFor="class-branch" hint="Leave unselected for a School-wide Class.">
           <SelectField
             value={form.branchId}

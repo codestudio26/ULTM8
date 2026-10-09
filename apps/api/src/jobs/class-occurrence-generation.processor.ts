@@ -188,6 +188,8 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
           occurrenceDate,
           title: slot.title,
           activities: slot.activities,
+          // Styles and class types copy onto every generated Class (Decision 170).
+          styles: slot.styles ?? [],
           bannerUrl: slot.bannerUrl,
           description: slot.description,
           startDate,

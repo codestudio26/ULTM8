@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
+import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { titleCase } from '../lib/text';
 import {
@@ -27,6 +28,7 @@ export function TimetablePage() {
   const { data, isLoading, error } = useTimetableSlots(schoolId);
   const { data: branchData } = useBranches(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
+  const { data: disciplineData } = useDisciplines(schoolId);
   const createSlot = useCreateTimetableSlot(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<TimetableSlotResponse | null>(null);
@@ -54,6 +56,7 @@ export function TimetablePage() {
 
   const branches = branchData?.items ?? [];
   const instructors = instructorData?.items ?? [];
+  const disciplines = disciplineData?.items ?? [];
 
   return (
     <>
@@ -115,6 +118,7 @@ export function TimetablePage() {
           title="Add timetable slot"
           branches={branches}
           instructors={instructors}
+          disciplines={disciplines}
           submitting={createSlot.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to
@@ -128,7 +132,7 @@ export function TimetablePage() {
       ) : null}
 
       {editing ? (
-        <EditSlotModal schoolId={schoolId} branches={branches} instructors={instructors} slot={editing} onClose={() => setEditing(null)} />
+        <EditSlotModal schoolId={schoolId} branches={branches} instructors={instructors} disciplines={disciplines} slot={editing} onClose={() => setEditing(null)} />
       ) : null}
     </>
   );
@@ -138,12 +142,14 @@ function EditSlotModal({
   schoolId,
   branches,
   instructors,
+  disciplines,
   slot,
   onClose,
 }: {
   schoolId: string;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
+  disciplines: DisciplineResponse[];
   slot: TimetableSlotResponse;
   onClose: () => void;
 }) {
@@ -154,6 +160,7 @@ function EditSlotModal({
       initial={slot}
       branches={branches}
       instructors={instructors}
+      disciplines={disciplines}
       submitting={updateSlot.isPending}
       onSubmit={async (values) => {
         // Passed straight through, nulls included — UpdateTimetableSlotDto

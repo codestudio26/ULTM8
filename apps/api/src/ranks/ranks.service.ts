@@ -254,7 +254,7 @@ export class RanksService {
         // positions get a freshly generated id.
         const existingTiers = await tx.rankStripeTier.findMany({
           where: { rankId },
-          select: { id: true, order: true, name: true, count: true, colour: true, stripeSegments: true, timeOnly: true },
+          select: { id: true, order: true, name: true, count: true, colour: true, stripeSegments: true, timeOnly: true, classCountMode: true, classTypeRequirements: true },
         });
         const existingByOrder = new Map(existingTiers.map((t) => [t.order, t]));
         const newOrders = new Set(dto.stripeTiers.map((t) => t.order));
@@ -458,7 +458,16 @@ export class RanksService {
   private tierFields(
     tier: RankStripeTierInputDto,
     rankName: string,
-    previous?: { name: string; count: number; colour: string; stripeSegments: Prisma.JsonValue; timeOnly: boolean; rankName: string },
+    previous?: {
+      name: string;
+      count: number;
+      colour: string;
+      stripeSegments: Prisma.JsonValue;
+      timeOnly: boolean;
+      classCountMode: 'ANY_TYPE' | 'EACH_TYPE';
+      classTypeRequirements: Prisma.JsonValue;
+      rankName: string;
+    },
   ) {
     const defaultSegments = tier.count > 0 ? [{ count: tier.count, colour: tier.colour }] : [];
     const keepSegments = previous && previous.count === tier.count && previous.colour === tier.colour;
@@ -475,6 +484,30 @@ export class RanksService {
         `stripeSegments for stripe tier ${tier.order} add up to ${segmentTotal} stripes, but count is ${tier.count}.`,
       );
     }
+    // Which classes count (Decisions 140, 149). Omitted on an existing rung:
+    // kept, like the other per-rung fields.
+    const eligibleClassTypes = tier.eligibleClassTypes ?? [];
+    const classCountMode = tier.classCountMode ?? previous?.classCountMode ?? 'ANY_TYPE';
+    const classTypeRequirements =
+      tier.classTypeRequirements ??
+      ((previous?.classTypeRequirements ?? []) as unknown as { classType: string; classesRequired: number }[]);
+    if (classCountMode === 'ANY_TYPE') {
+      if (classTypeRequirements.length) {
+        throw new BadRequestException(`Stripe tier ${tier.order}: classTypeRequirements are only used with classCountMode EACH_TYPE.`);
+      }
+    } else {
+      const required = classTypeRequirements.map((r) => r.classType);
+      const sameSet =
+        eligibleClassTypes.length > 0 &&
+        new Set(required).size === required.length &&
+        required.length === eligibleClassTypes.length &&
+        required.every((t) => eligibleClassTypes.includes(t));
+      if (!sameSet) {
+        throw new BadRequestException(
+          `Stripe tier ${tier.order}: with classCountMode EACH_TYPE, give one number in classTypeRequirements for each ticked class type in eligibleClassTypes (Decision 149).`,
+        );
+      }
+    }
     const generatedName = RanksService.generatedTierName(rankName, tier.count);
     const keepName = previous && previous.name !== RanksService.generatedTierName(previous.rankName, previous.count);
     return {
@@ -482,7 +515,9 @@ export class RanksService {
       colour: segments.length ? segments[0].colour : tier.colour,
       classesRequired: tier.classesRequired,
       minimumDaysInRank: tier.minimumDaysInRank,
-      eligibleClassTypes: tier.eligibleClassTypes ?? [],
+      eligibleClassTypes,
+      classCountMode,
+      classTypeRequirements: classTypeRequirements.map((r) => ({ classType: r.classType, classesRequired: r.classesRequired })),
       name: tier.name ?? (keepName ? previous.name : generatedName),
       stripeSegments: segments.map((s) => ({ count: s.count, colour: s.colour })),
       weeklyClassCountCap: tier.weeklyClassCountCap,

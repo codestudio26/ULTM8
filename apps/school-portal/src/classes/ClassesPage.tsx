@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
+import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useClasses, useCreateClass, useUpdateClass, type ClassResponse } from './classQueries';
 import { ClassFormModal } from './ClassFormModal';
@@ -15,6 +16,7 @@ export function ClassesPage() {
   const { data, isLoading, error } = useClasses(schoolId);
   const { data: branchData } = useBranches(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
+  const { data: disciplineData } = useDisciplines(schoolId);
   const createClass = useCreateClass(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<ClassResponse | null>(null);
@@ -26,6 +28,7 @@ export function ClassesPage() {
   const classes = data?.items ?? [];
   const branches = branchData?.items ?? [];
   const instructors = instructorData?.items ?? [];
+  const disciplines = disciplineData?.items ?? [];
 
   return (
     <>
@@ -96,6 +99,7 @@ export function ClassesPage() {
           title="Add class"
           branches={branches}
           instructors={instructors}
+          disciplines={disciplines}
           submitting={createClass.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to
@@ -112,6 +116,7 @@ export function ClassesPage() {
           schoolId={schoolId}
           branches={branches}
           instructors={instructors}
+          disciplines={disciplines}
           classItem={editing}
           onClose={() => setEditing(null)}
         />
@@ -124,12 +129,14 @@ function EditClassModal({
   schoolId,
   branches,
   instructors,
+  disciplines,
   classItem,
   onClose,
 }: {
   schoolId: string;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
+  disciplines: DisciplineResponse[];
   classItem: ClassResponse;
   onClose: () => void;
 }) {
@@ -140,6 +147,7 @@ function EditClassModal({
       initial={classItem}
       branches={branches}
       instructors={instructors}
+      disciplines={disciplines}
       submitting={updateClass.isPending}
       onSubmit={async (values) => {
         // Passed straight through, nulls included — UpdateClassDto accepts

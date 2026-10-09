@@ -15,6 +15,25 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api + school-portal — grading foundation, PR 5: styles and class types
+  on classes, and how classes count toward a rung** (Decisions 140, 143, 149,
+  152, 170):
+  - **Classes and timetable slots** list one or more styles, each with a class
+    type from that style's list. A mixed class (e.g. an Open Mat for BJJ and
+    Judo) lists several. Styles are required when the School has any; a School
+    with none keeps free-text activities. Generated classes copy their slot's
+    styles.
+  - **School portal:** the class and timetable forms pick styles and class
+    types instead of free text, when the School has styles.
+  - **Each rung** records how classes count: any ticked type toward one total
+    (the default), or a number for each ticked type (e.g. 20 Fundamentals + 10
+    Sparring).
+  - **Existing classes** were mapped once from their free text wherever it
+    named exactly one style.
+  - **Unchanged until the grading engine (Phase 2):** the booking rank check and
+    attendance credit still read the free-text list, which is now filled in
+    from the chosen styles.
+  - `packages/api-client` regenerated.
 - **api — grading foundation, PR 4: grading permission per style, and
   branches** (Decisions 138, 139, 148, 168):
   - **Who can grade:** the School owner always can. Anyone else (Instructor

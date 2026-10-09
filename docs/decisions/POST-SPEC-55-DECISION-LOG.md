@@ -2002,3 +2002,14 @@ When the owner adds an instructor:
 So an instructor is always part of something: a branch, or the School. Branch Staff already required a branch. Gus: *"when we add an instructors is has to be part of branch if the school has more than one place or if is single the branch is the school. Meaning an instructor has to be part of something. Branch or school"*.
 
 Instructors added before this rule, without a branch in a School that has branches, are not changed. The owner reassigns them.
+
+---
+
+## Decision 170 — Classes pick their styles from the School's list: required when the School has styles; one or more per class
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** two points left open by Decisions 143 and 152, raised while building grading foundation PR 5
+
+1. **Required when the School has styles.** Every class and timetable slot picks at least one style from the School's list. When that style lists class types, it also picks one of them. A School with no styles set up creates classes without one, using free text as before. Gus: *"Required if styles exist"*.
+2. **One or more styles per class.** A class lists one or more styles, each with its own class type. Most classes list one. A mixed class, for example an Open Mat for BJJ and Judo, lists both ("BJJ · Open Mat" and "Judo · Open Mat"), and attending counts once toward each listed style whose type is ticked on the student's next rung in that style (Decision 140). Gus asked for the best solution, and chose it: *"Yes, one or more"*.
+
+Built as: a `styles` list (`[{disciplineId, classType}]`) on Class and TimetableSlot. Classes generated from a timetable slot copy it. Existing classes were mapped once from their free text wherever an entry named exactly one style (Decision 152). Until the grading engine switches over (roadmap Phase 2), the booking rank check and attendance credit keep reading the free-text `activities`, which the API now fills in from the chosen styles' names.

@@ -1087,6 +1087,67 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(relisted.body.stripeTiers[1].colour).toBe(RED);
     });
 
+    it('which classes count: ANY_TYPE by default; EACH_TYPE needs one number per ticked class type; kept when omitted (Decisions 140, 149)', async () => {
+      const disc = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/disciplines`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ name: 'Class Count BJJ', classTypesOffered: ['Fundamentals', 'Sparring'] });
+      expect(disc.status).toBe(201);
+      disciplineIds.push(disc.body.id);
+      const tier = (extra: Record<string, unknown>) => ({ order: 0, count: 0, colour: '#FFFFFF', eligibleClassTypes: ['Fundamentals', 'Sparring'], ...extra });
+      const createRank = (order: number, extra: Record<string, unknown>) =>
+        request(app.getHttpServer())
+          .post(`/v1/styles/${disc.body.id}/ranks`)
+          .set('Authorization', `Bearer ${tokenOwner}`)
+          .send({ order, primaryColour: '#FFFFFF', stripeTiers: [tier(extra)] });
+
+      const refused: Array<[string, Record<string, unknown>]> = [
+        ['numbers in ANY_TYPE', { classTypeRequirements: [{ classType: 'Fundamentals', classesRequired: 20 }] }],
+        ['EACH_TYPE with a type missing', { classCountMode: 'EACH_TYPE', classTypeRequirements: [{ classType: 'Fundamentals', classesRequired: 20 }] }],
+        ['EACH_TYPE with an unticked type', { classCountMode: 'EACH_TYPE', classTypeRequirements: [{ classType: 'Fundamentals', classesRequired: 20 }, { classType: 'Kids', classesRequired: 5 }] }],
+        ['EACH_TYPE with a type twice', { classCountMode: 'EACH_TYPE', classTypeRequirements: [{ classType: 'Fundamentals', classesRequired: 20 }, { classType: 'Fundamentals', classesRequired: 10 }] }],
+        ['EACH_TYPE with nothing ticked', { classCountMode: 'EACH_TYPE', eligibleClassTypes: [], classTypeRequirements: [] }],
+        ['an unknown mode', { classCountMode: 'SOME' }],
+      ];
+      for (const [label, extra] of refused) {
+        const res = await createRank(0, extra);
+        expect({ label, status: res.status }).toEqual({ label, status: 400 });
+      }
+
+      const plain = await createRank(0, {});
+      expect(plain.status).toBe(201);
+      expect(plain.body.stripeTiers[0].classCountMode).toBe('ANY_TYPE');
+      expect(plain.body.stripeTiers[0].classTypeRequirements).toEqual([]);
+
+      const each = await createRank(1, {
+        classCountMode: 'EACH_TYPE',
+        classTypeRequirements: [
+          { classType: 'Fundamentals', classesRequired: 20 },
+          { classType: 'Sparring', classesRequired: 10 },
+        ],
+      });
+      expect(each.status).toBe(201);
+      expect(each.body.stripeTiers[0].classCountMode).toBe('EACH_TYPE');
+      expect(each.body.stripeTiers[0].classTypeRequirements).toEqual([
+        { classType: 'Fundamentals', classesRequired: 20 },
+        { classType: 'Sparring', classesRequired: 10 },
+      ]);
+
+      // The school portal's form sends rungs without these fields: kept.
+      const patch = (stripeTiers: unknown[]) =>
+        request(app.getHttpServer()).patch(`/v1/ranks/${each.body.id}`).set('Authorization', `Bearer ${tokenOwner}`).send({ stripeTiers });
+      const kept = await patch([{ order: 0, count: 0, colour: '#FFFFFF', eligibleClassTypes: ['Fundamentals', 'Sparring'] }]);
+      expect(kept.status).toBe(200);
+      expect(kept.body.stripeTiers[0].classCountMode).toBe('EACH_TYPE');
+      expect(kept.body.stripeTiers[0].classTypeRequirements).toHaveLength(2);
+
+      // Changing the ticked types in EACH_TYPE needs new numbers to match.
+      expect((await patch([{ order: 0, count: 0, colour: '#FFFFFF', eligibleClassTypes: ['Fundamentals'] }])).status).toBe(400);
+      const back = await patch([{ order: 0, count: 0, colour: '#FFFFFF', eligibleClassTypes: ['Fundamentals'], classCountMode: 'ANY_TYPE', classTypeRequirements: [] }]);
+      expect(back.status).toBe(200);
+      expect(back.body.stripeTiers[0].classCountMode).toBe('ANY_TYPE');
+    });
+
     it('RLS: per-rung required Skills are invisible to a user with no role at the School', async () => {
       const outsider = await mkExtraUser('rung-skills-outsider');
       const rows = await withUser(outsider.id, (tx) => tx.rankStripeTierRequiredSkill.findMany({ where: { skillId: skillSweep } }));

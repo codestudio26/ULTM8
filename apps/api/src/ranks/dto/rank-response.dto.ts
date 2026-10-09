@@ -22,6 +22,12 @@ export class RankStripeTierResponseDto {
   @ApiProperty({ type: [String] })
   eligibleClassTypes!: string[];
 
+  @ApiProperty({ enum: ['ANY_TYPE', 'EACH_TYPE'], description: 'Which classes count (Decisions 140, 149).' })
+  classCountMode!: 'ANY_TYPE' | 'EACH_TYPE';
+
+  @ApiProperty({ description: 'EACH_TYPE: [{ classType, classesRequired }] per ticked type (Decision 149).', type: 'array', items: { type: 'object', properties: { classType: { type: 'string' }, classesRequired: { type: 'integer' } } } })
+  classTypeRequirements!: Array<{ classType: string; classesRequired: number }>;
+
   @ApiProperty()
   name!: string;
 

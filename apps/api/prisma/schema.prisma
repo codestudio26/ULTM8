@@ -743,7 +743,15 @@ model Class {
   title       String
   // Cardinality (required, at least one) is an inferred design choice, not stated by
   // §9 — flagged for Architect review same as branchId above.
+  // Grading foundation PR 5: when the School has styles, filled in from the
+  // styles' names (Decision 90's bridge keeps reading it until the grading
+  // engine switches to `styles`).
   activities  String[] @default([])
+  // The styles this class belongs to, each with a class type from that style's
+  // list: [{ disciplineId, classType }] (Decisions 143, 152, 170). One or more
+  // when the School has styles; a mixed class (e.g. an Open Mat for BJJ and
+  // Judo) lists several and counts once toward each.
+  styles      Json     @default("[]")
   bannerUrl   String?
   description String?
 
@@ -852,6 +860,9 @@ model TimetableSlot {
   // header comment above for why these exist beyond Spec 55's confirmed six.
   title       String
   activities  String[] @default([])
+  // Same shape and rules as Class.styles (Decisions 143, 152, 170); copied
+  // onto every generated Class.
+  styles      Json     @default("[]")
   capacity    Int?
   description String?
   bannerUrl   String?
@@ -1740,6 +1751,12 @@ model RankStripeTier {
   /// "Time in rank only" (Decision 128 item 3): classes are not counted and
   /// skills are optional; the years are held in `minimumDaysInRank`.
   timeOnly            Boolean @default(false)
+  // Which classes count (Decisions 140, 149): ANY_TYPE — a class of any type in
+  // eligibleClassTypes counts toward classesRequired (the default); EACH_TYPE —
+  // each ticked type has its own number in classTypeRequirements,
+  // [{ classType, classesRequired }], e.g. 20 Fundamentals + 10 Sparring.
+  classCountMode        ClassCountMode @default(ANY_TYPE)
+  classTypeRequirements Json           @default("[]")
 
   requiredSkills RankStripeTierRequiredSkill[]
 
@@ -2531,6 +2548,12 @@ enum ConsentTier {
 
 /// ConsentRecord.status — SKILL.md §14 (quoted): "status (Active / Withdrawn,
 /// with its own withdrawal timestamp)."
+/// How classes count toward a rung (Decisions 140, 149).
+enum ClassCountMode {
+  ANY_TYPE
+  EACH_TYPE
+}
+
 enum ConsentStatus {
   ACTIVE
   WITHDRAWN
