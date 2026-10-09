@@ -1464,3 +1464,26 @@ Every individual conflict listed in `GRADING-MERGE-QUESTIONS.md` remains open un
 ### Recorded by
 
 Asked as Q1 of the grading merge question list (published 8 Oct 2026) and answered directly by Gus on 9 Oct 2026. Recorded by Claude.
+
+---
+
+## Decision 125 — Grading decisions are approved by Gus as ULTM8 product owner
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision, given directly by Gus in this session
+**Resolves:** Q2 of `docs/grading-integration/GRADING-MERGE-QUESTIONS.md`: "Who approves grading decisions from now on: you alone, or you plus the ULTM8 product owner?"
+
+### Decision
+
+Gus is the ULTM8 product owner, and he approves all grading decisions. That includes those that touch payments, roles or tenancy, such as a grading fee or who may grade.
+
+Answer given: *"I am the product owner, so I decide."*
+
+### Effect
+
+- **Decision 124, condition 3** ("also needs the product owner's sign-off for that area") is satisfied by Gus's own sign-off. No second approver is needed.
+- Every override is still logged as its own decision (Decision 124, condition 1). Tenancy isolation, Row-Level Security and the Platform Admin realm still follow Spec 55 unless Gus explicitly decides otherwise for a named case.
+
+### Recorded by
+
+Asked as Q2 of the grading merge question list and answered directly by Gus on 9 Oct 2026. Recorded by Claude.

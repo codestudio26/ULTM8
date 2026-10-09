@@ -11,6 +11,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - The prototype is standalone. In ULTM8, attendance and curriculum feed into it.
 - This is the ULTM8 grading module, built inside ULTM8's existing ranks and curriculum code.
 - Q1: your grading rules win over Spec 55 where they conflict, one logged decision per conflict (Decision 124).
+- Q2: you are the product owner and approve all grading decisions (Decision 125).
 
 ## How many need answering, and when
 
@@ -34,6 +35,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q2. Who approves grading decisions from now on: you alone, or you plus the ULTM8 product owner?** · _Answer first_
 - Why it matters: The decision log records who approved each change. If grading and the wider product have different owners, conflicts (payments, roles) need one person to settle them.
 - Recommendation: You approve grading rules; anything touching payments, roles or tenancy also needs the product owner.
+- Answer so far: Gus is the ULTM8 product owner and decides everything, including payments, roles and tenancy (Decision 125).
 
 ### B. Ladder and data model
 
