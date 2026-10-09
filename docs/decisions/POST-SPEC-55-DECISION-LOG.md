@@ -1717,3 +1717,58 @@ Still open, put back to Gus: whether a class attended at a different branch coun
 Each rung lists which class types count toward it, and a weekly cap (prototype). By default, a class of **any** ticked type counts toward the rung's class total (Gus: *"correct"*). Gus also said the alternative, where the student must attend **each** ticked type, *"also can be the case"*, so it is offered as a per-rung option. A class counts toward a discipline only if its type is ticked on the student's next rung. That also settles whether one class counts toward several disciplines.
 
 Still open, put back to Gus: in "each type required" mode, whether the school sets a number per type or "at least one of each" is enough. This depends on classes having a type (Q12).
+
+---
+
+## Decision 141 — A deleted instructor shows as "Former instructor" on students' grading history
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q46 (remainder)
+
+When an instructor's account is deleted, the grading history of the students they graded is kept intact. The "graded by" name on those entries shows **"Former instructor"**. Today `PromotionEvent.performedById` is `ON DELETE RESTRICT` to User, which would block deleting the instructor's account. It must become nullable with a stored display label (or `SET NULL` plus the label), as part of the account-deletion work (Spec 55 Decision 44). Gus: *"yes"*.
+
+---
+
+## Decision 142 — The student app gets read-only grading in its next release
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q49 (Track B), Q43 (in part)
+
+Track B (`apps/student`) shows each student, and each guardian for their linked minors (Decision 132), their rank per discipline by name, their progress toward the next grade, and the skills needed for it. All of it is read-only. It ships in the app's next release; the version number is the product owner's to assign. Gus: *"yes"*. Whether the app also shows lessons and rank history is left to a later question.
+
+---
+
+## Decision 143 — Classes carry a class type chosen from the discipline's list
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q12
+
+When a school creates a class or timetable slot, it picks the class's **type** (for example Kids Fundamentals or Adult Sparring) from that discipline's class-type list (`Discipline.classTypesOffered`). Attendance credit (Decision 140), the weekly cap and the booking rank gate use this type. Today they rely on the discipline name in `Class.activities` (Decision 90's bridge). Gus: *"yes"*.
+
+---
+
+## Decision 144 — Grading fees are charged by the school to its students, optionally
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q37 (in part)
+
+The prototype's "Charge a grading fee" switch is a **school's** choice to charge **its own students** for a grading. It is not a ULTM8 platform charge. Gus: *"Not ULTM8, these charge [are] for the school to charge the students if they choose to charge per grade."* The money goes to the school's own payment account (Stripe Connect, Decision 86), like membership sales. `Transaction` currently requires a `membershipPlanId`, so a grading-fee charge needs its own transaction kind.
+
+Still open, put back to Gus: which release it ships in, the payment methods (card, cash, bank), and whether the fee is set per event, per rung or per discipline.
+
+---
+
+## Decision 145 — Grading notifications in v1.1: "ready to grade" and "you've been promoted"
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q38
+
+For v1.1, two grading notifications are real:
+
+1. **"Ready to grade"**: sent in-app to the owner and to staff with grading permission for that discipline (and branch, per Decision 139), when a student becomes eligible.
+2. **"You've been promoted"**: sent to the student, or to the guardian for a minor.
+
+Gus: *"yes for now"*. More can be added later. Push delivery depends on the deferred push dispatch (Decision 95). Until then, delivery uses the channels that already work (in-app and email).
+
+---
+
+## Decision 146 — Rank, skill and discipline names are typed once by the school
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q48
+
+Names a school types (disciplines, rung names, skills, lesson titles) are stored once, in the school's own words, and not translated. Only the app's and portal's own buttons and labels are translated into the four supported languages. Gus: *"yes"*. The portal and the app have no translation support yet; that is separate i18n work.

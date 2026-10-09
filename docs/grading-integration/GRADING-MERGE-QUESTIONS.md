@@ -26,6 +26,9 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Grading permission: owner always, others per discipline as granted (Decision 138).
 - Branches: one home branch per student, branch staff grade their own branch, one ladder per school (Decision 139).
 - Which classes count: any ticked type, or each type required as a per-rung option (Decision 140).
+- Deleted instructors show as “Former instructor” (Decision 141); the student app gets read-only grading in its next release (Decision 142).
+- Classes carry a class type (Decision 143); grading fees are charged by the school, optionally (Decision 144).
+- v1.1 notifications: ready to grade, and promoted (Decision 145); names typed once, not translated (Decision 146).
 
 ## How many need answering, and when
 
@@ -99,6 +102,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q12. Should classes get a real class type (Kids Fundamentals, Adult Sparring…) separate from the discipline?** · _Before data model_
 - Why it matters: “Which classes count” and the weekly cap need it. Today the discipline name doubles as the class type.
 - Recommendation: Yes. Add a class type to the timetable slot and the class, chosen from the discipline's class types.
+- Answer so far: Yes: each class picks its type from the discipline's list (Decision 143).
 
 **Q13. Deleting or reordering a rung that students hold: block it (yours), or ask where to move them?** · _Before API_
 - Why it matters: The database already refuses to delete a rank a student holds. Reordering changes what counts as “next”.
@@ -227,10 +231,12 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q37. Grading fee: per event or per student, through Stripe, and does cash count?** · _Can wait_
 - Why it matters: ULTM8 payments only know membership purchases. A fee needs a new kind of charge.
 - Recommendation: Per student per event, through Stripe and cash, after events ship.
+- Answer so far: The school charges its own students, if it chooses to (Decision 144). Release, payment methods and how the fee is set still to confirm.
 
 **Q38. Which grading notifications, to whom: eligible to grade (coach), promoted (student and guardian), event invitation?** · _Can wait_
 - Why it matters: No grading notification exists, and push sending is deferred (Decision 95).
 - Recommendation: Eligible (coach, in-app) and promoted (student, email or in-app) first.
+- Answer so far: v1.1: “ready to grade” to grading staff, “you've been promoted” to the student or guardian (Decision 145).
 
 ### G. Curriculum and skills
 
@@ -257,6 +263,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q43. What does the student see in the app: progress %, skills needed, lessons, history, next grading date?** · _Before screens_
 - Why it matters: The app shows only belt and stripes today. Spec 55 sketches a ranking screen with readiness and %.
 - Recommendation: All of these except the date, until events exist.
+- Answer so far: Rank by name, progress and skills needed, read-only (Decision 142). Lessons and history in the app still to confirm.
 
 **Q44. Can a guardian see their child's rank and progress?** · _Before API_
 - Why it matters: Today a guardian is refused: only staff or the student themselves can read ranks.
@@ -272,7 +279,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q46. When a student deletes their account, is grading history erased, or kept anonymised for the school?** · _Before data model_
 - Why it matters: Account deletion isn't built yet. A grading record also names the instructor, and that link blocks deleting an instructor's account.
 - Recommendation: Erase the student's rank data. Anonymise the instructor on history records.
-- Answer so far: Grading data goes with the account (Decision 134, matches Spec Decision 44). Instructor name on other students' history still to confirm.
+- Answer so far: Grading data goes with the account (Decision 134); a deleted instructor shows as “Former instructor” on other students' history (Decision 141).
 
 **Q47. Should skill sign-offs be audited (who signed, when)?** · _Before data model_
 - Why it matters: Today a sign-off overwrites the previous status with no trace.
@@ -281,13 +288,14 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q48. Are rank, skill and discipline names translated into the 4 languages, or typed once by the school?** · _Before screens_
 - Why it matters: Neither app has translation support yet, and Arabic needs right-to-left layout.
 - Recommendation: Typed once by the school. Screen labels translated when i18n arrives.
+- Answer so far: Typed once by the school; only buttons and labels are translated (Decision 146).
 
 ### J. Delivery
 
 **Q49. Which release carries grading for the website (Track A) and for the app (Track B)?** · _Answer first_
 - Why it matters: Version numbers are yours to assign. It decides what goes in first.
 - Recommendation: Track A: foundation fixes, engine, API, board and student panel. Track B follows one release later.
-- Answer so far: v1.1 for the website (Decision 135). App release still to confirm.
+- Answer so far: Website: v1.1 (Decision 135). App: read-only grading in its next release (Decision 142).
 
 **Q50. Store your handover package (prototype, tests, screenshots) in the repo as read-only reference?** · _Answer first_
 - Why it matters: Your tests become the acceptance tests. Kept outside the repo, they get lost.
