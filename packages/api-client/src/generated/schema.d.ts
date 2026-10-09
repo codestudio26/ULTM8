@@ -3176,6 +3176,8 @@ export interface components {
             classCountMode?: "ANY_TYPE" | "EACH_TYPE";
             /** @description EACH_TYPE only: one entry per ticked class type in eligibleClassTypes, with its number. Must be empty for ANY_TYPE. When omitted: empty on a new rung; kept on an existing rung. */
             classTypeRequirements?: components["schemas"]["ClassTypeRequirementInputDto"][];
+            /** @description Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung. */
+            bookingUnlocksClassTypes?: string[];
             /** @description Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted. */
             requiredSkillIds?: string[];
         };
@@ -3212,6 +3214,8 @@ export interface components {
             classesRequired?: number | null;
             minimumDaysInRank?: number | null;
             eligibleClassTypes: string[];
+            /** @description Class types this rung unlocks for booking, for it and every rung above (Decision 173). */
+            bookingUnlocksClassTypes: string[];
             /**
              * @description Which classes count (Decisions 140, 149).
              * @enum {string}

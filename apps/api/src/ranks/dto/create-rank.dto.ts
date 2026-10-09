@@ -137,6 +137,17 @@ export class RankStripeTierInputDto {
   @Type(() => ClassTypeRequirementInputDto)
   classTypeRequirements?: ClassTypeRequirementInputDto[];
 
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung.',
+  })
+  @NotNullIfPresent()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  bookingUnlocksClassTypes?: string[];
+
   @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.' })
   @NotNullIfPresent()
   @IsArray()

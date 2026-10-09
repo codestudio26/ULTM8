@@ -40,6 +40,7 @@ export async function loadLadder(tx: TenantTx, disciplineId: string): Promise<Ru
         classTypeRequirements: t.classTypeRequirements as unknown as ClassTypeRequirement[],
         weeklyClassCountCap: t.weeklyClassCountCap,
         requiredSkillIds: t.requiredSkills.map((s) => s.skillId),
+        bookingUnlocksClassTypes: t.bookingUnlocksClassTypes,
       })),
     })),
   );
