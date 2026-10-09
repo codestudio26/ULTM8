@@ -166,10 +166,27 @@ describe('AuthService', () => {
 
     it('a losing concurrent rotation attempt (updateMany count 0) is rejected, not treated as success', async () => {
       prismaAuth.refreshToken.findUnique.mockResolvedValue({
-        id: 'rt1', userId: 'u1', revokedAt: null, expiresAt: new Date(Date.now() + 1000),
+        id: 'rt1', userId: 'u1', revokedAt: null, rotatedOut: false, expiresAt: new Date(Date.now() + 1000),
       });
-      prismaAuth.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+      prismaAuth.refreshToken.updateMany.mockResolvedValueOnce({ count: 0 });
       await expect(service.refresh({ refreshToken: 'valid' })).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('FOUND ON REVIEW: a losing concurrent rotation attempt triggers the same mass-revoke reuse-detection as a sequential replay, not a silent no-op that merely claims it did', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt1', userId: 'u1', revokedAt: null, rotatedOut: false, expiresAt: new Date(Date.now() + 1000),
+      });
+      // First updateMany call is the rotation attempt itself (loses the
+      // race); the second is the mass-revoke this test proves now actually
+      // runs, not just a message claiming it did.
+      prismaAuth.refreshToken.updateMany.mockResolvedValueOnce({ count: 0 });
+      prismaAuth.refreshToken.updateMany.mockResolvedValueOnce({ count: 1 });
+      await expect(service.refresh({ refreshToken: 'valid' })).rejects.toThrow(UnauthorizedException);
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenCalledTimes(2);
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { userId: 'u1', revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
     });
   });
 

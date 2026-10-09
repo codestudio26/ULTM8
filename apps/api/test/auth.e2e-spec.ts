@@ -227,6 +227,32 @@ describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
     expect(tokenBRes.status).toBe(401);
   });
 
+  it('FOUND ON REVIEW: a genuinely CONCURRENT replay of the same token (not just a sequential one) also burns the whole session family, not a silent no-op', async () => {
+    const { refreshToken: raced } = await mkLoggedInUser('race');
+    // A completely different, unrelated User — must stay untouched by
+    // whatever mass-revoke the race below triggers; that reaction is scoped
+    // to the raced token's own User, never a platform-wide one.
+    const unrelated = await mkLoggedInUser('race-other');
+
+    const [first, second] = await Promise.all([
+      request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: raced }),
+      request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: raced }),
+    ]);
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([201, 401]); // exactly one winner, one loser — never both succeed
+
+    // Confirm the loser's own mass-revoke burned the winner's brand-new
+    // successor token too (the already-accepted, already-tested "burn the
+    // whole family" tradeoff this codebase uses uniformly for any replay of
+    // the same token, sequential or concurrent).
+    const winner = first.status === 201 ? first : second;
+    const successorRes = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: winner.body.refreshToken });
+    expect(successorRes.status).toBe(401);
+
+    const unrelatedRes = await request(app.getHttpServer()).post('/v1/auth/refresh').send({ refreshToken: unrelated.refreshToken });
+    expect(unrelatedRes.status).toBe(201);
+  });
+
   it('POST /auth/logout revokes exactly the presented token, leaving a sibling session (a second login) untouched', async () => {
     const passcodeHash = await bcrypt.hash(PASSCODE, 12);
     const user = await superuser.user.create({
