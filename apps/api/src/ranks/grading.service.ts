@@ -1,12 +1,12 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
-import { DowngradeActionDto, EditRankDateDto, GradingActionDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
@@ -15,7 +15,7 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
 
 // History entries that move a student to a different rung. ADJUSTMENT entries
 // (board drags, rank-date corrections) do not.
-const RANK_CHANGE_TYPES = ['PROMOTION', 'DOWNGRADE', 'STRIPE_AWARD', 'BULK_PROMOTION', 'BULK_STRIPE_AWARD'] as const;
+const RANK_CHANGE_TYPES = ['PROMOTION', 'DOWNGRADE', 'STRIPE_AWARD', 'BULK_PROMOTION', 'BULK_STRIPE_AWARD', 'SELF_DECLARED', 'RANK_CORRECTION'] as const;
 
 /** The UTC calendar day of a date, as YYYY-MM-DD. Grading dates are whole days
  * (the prototype's dayNumber()). */
@@ -706,5 +706,204 @@ export class GradingService {
     if (current === 'NOT_STARTED') return 'LEARNING';
     if (current === 'LEARNING') return 'SIGNED_OFF';
     return 'NOT_STARTED';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Self-declared ranks (grading foundation PR 6, Decisions 137, 147)
+  // ---------------------------------------------------------------------------
+
+  /** A student (or their guardian, for a minor) declares the rung they hold in
+   * a style when joining the School (Decision 137). Stored UNVERIFIED, except
+   * the style's first rung (lowest belt, no stripe), which is verified
+   * automatically (Decision 147). Only for a style where the student has no
+   * rank yet. Written under the student's own tenant context, like every
+   * other StudentRank write. An unverified rank still counts as the student's
+   * rank for booking (Decision 137, item 3), which the booking rank gate
+   * already does: it does not look at verification. */
+  async declareRank(callerId: string, studentId: string, disciplineId: string, dto: DeclareRankDto) {
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(disciplineId)) {
+      throw new BadRequestException('id and disciplineId must be valid UUIDs');
+    }
+    if (callerId !== studentId) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    }
+    const discipline = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.discipline.findUnique({ where: { id: disciplineId }, select: { id: true, schoolId: true } }),
+    );
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    const enrolled = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId: discipline.schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      }),
+    );
+    if (!enrolled) {
+      throw new ForbiddenException('Only a Student of this School can declare a rank here.');
+    }
+    await this.assertSchoolAcceptsGradingWrites(studentId, discipline.schoolId);
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const tier = await tx.rankStripeTier.findFirst({
+        where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId } },
+        select: { id: true, rankId: true },
+      });
+      if (!tier) {
+        throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+      }
+      if (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } }, select: { id: true } })) {
+        throw new ConflictException('This student already has a rank in this style; only staff can change it.');
+      }
+
+      // The style's first rung: its lowest belt's lowest rung.
+      const firstRank = await tx.rank.findFirst({ where: { disciplineId }, orderBy: { order: 'asc' }, select: { id: true } });
+      const firstTier = firstRank
+        ? await tx.rankStripeTier.findFirst({ where: { rankId: firstRank.id }, orderBy: { order: 'asc' }, select: { id: true } })
+        : null;
+      const autoVerified = tier.id === firstTier?.id;
+      const now = new Date();
+
+      let studentRank;
+      try {
+        studentRank = await tx.studentRank.create({
+          data: {
+            id: randomUUID(),
+            studentId,
+            disciplineId,
+            schoolId: discipline.schoolId,
+            currentRankId: tier.rankId,
+            currentStripeId: tier.id,
+            verificationStatus: autoVerified ? 'VERIFIED' : 'UNVERIFIED',
+            verifiedAt: autoVerified ? now : null,
+          },
+        });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ConflictException('This student already has a rank in this style; only staff can change it.');
+        }
+        throw err;
+      }
+      const promotionEvent = await tx.promotionEvent.create({
+        data: {
+          id: randomUUID(),
+          studentRankId: studentRank.id,
+          schoolId: discipline.schoolId,
+          studentId,
+          type: 'SELF_DECLARED',
+          performedById: callerId,
+          toRankId: tier.rankId,
+          toStripeTierId: tier.id,
+          systemNote: autoVerified
+            ? 'Declared when joining: the first rung, verified automatically (Decision 147).'
+            : 'Declared when joining: waiting to be verified by the School (Decision 137).',
+        },
+      });
+      return { studentRank, promotionEvent };
+    });
+  }
+
+  /** Verify a self-declared rank, or correct it to the right rung while
+   * verifying (Decision 147). Same permission as grading: the owner, or staff
+   * with grading permission for this style and the student's branch
+   * (Decisions 138, 168). A correction is written to the history with who,
+   * from what, to what and when. */
+  async verifyRank(callerId: string, studentId: string, disciplineId: string, dto: VerifyRankDto) {
+    if ((dto.rankId === undefined) !== (dto.stripeTierId === undefined)) {
+      throw new BadRequestException('To correct the rank, send both rankId and stripeTierId.');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
+      if (!existing) {
+        throw new BadRequestException('This student has no rank in this style to verify.');
+      }
+      if (existing.verificationStatus === 'VERIFIED') {
+        throw new ConflictException('This rank is already verified.');
+      }
+
+      let target = { rankId: existing.currentRankId, stripeTierId: existing.currentStripeId };
+      if (dto.rankId && dto.stripeTierId) {
+        const tier = await tx.rankStripeTier.findFirst({
+          where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId } },
+          select: { id: true, rankId: true },
+        });
+        if (!tier) {
+          throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+        }
+        target = { rankId: tier.rankId, stripeTierId: tier.id };
+      }
+      const corrected = target.rankId !== existing.currentRankId || target.stripeTierId !== existing.currentStripeId;
+
+      // Conditional on what was read, like every grading write: a concurrent
+      // verification or grading gets a 409, not a silent overwrite.
+      const updated = await tx.studentRank.updateMany({
+        where: {
+          id: existing.id,
+          currentRankId: existing.currentRankId,
+          currentStripeId: existing.currentStripeId,
+          verificationStatus: 'UNVERIFIED',
+        },
+        data: {
+          verificationStatus: 'VERIFIED',
+          verifiedAt: new Date(),
+          verifiedById: callerId,
+          currentRankId: target.rankId,
+          currentStripeId: target.stripeTierId,
+        },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This rank was changed at the same time — please retry.');
+      }
+
+      let promotionEvent: Prisma.PromotionEventGetPayload<object> | null = null;
+      if (corrected) {
+        // A different rung: sign-offs belong to the old one (Decision 128, item 16).
+        await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: existing.id } });
+        promotionEvent = await tx.promotionEvent.create({
+          data: {
+            id: randomUUID(),
+            studentRankId: existing.id,
+            schoolId: existing.schoolId,
+            studentId,
+            type: 'RANK_CORRECTION',
+            performedById: callerId,
+            fromRankId: existing.currentRankId,
+            toRankId: target.rankId,
+            fromStripeTierId: existing.currentStripeId,
+            toStripeTierId: target.stripeTierId,
+            systemNote: 'Self-declared rank corrected while verifying (Decision 147).',
+            note: dto.note ?? null,
+          },
+        });
+      }
+      const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
+      return { studentRank, promotionEvent };
+    });
+  }
+
+  /** Ranks waiting to be verified at a School, for the notice shown at login
+   * (Decision 137, item 4). Owner only for now: StudentRank's RLS (Decision
+   * 88) lets only the owner list other students' ranks. Permitted coaches get
+   * their branches' list with the Grading Board's read path (roadmap Phase 3). */
+  async findPendingVerifications(callerId: string, schoolId: string) {
+    if (!UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('schoolId must be a valid UUID');
+    }
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const items = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentRank.findMany({
+        where: { schoolId, verificationStatus: 'UNVERIFIED' },
+        orderBy: { createdAt: 'asc' },
+        include: { skillStatuses: { select: { skillId: true, status: true } } },
+      }),
+    );
+    return { items };
   }
 }

@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
-import { DowngradeActionDto, EditRankDateDto, GradingActionDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 
@@ -110,5 +110,36 @@ export class GradingController {
   @Patch('students/:id/skills/:skillId')
   cycleSkillSignOff(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('skillId') skillId: string) {
     return this.gradingService.cycleSkillSignOff(user.sub, id, skillId);
+  }
+
+  /** The student (or their guardian) declares their current rung when joining
+   * (Decision 137). UNVERIFIED unless it is the style's first rung (Decision 147). */
+  @Post('students/:id/ranks/:disciplineId/declare')
+  declareRank(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('disciplineId') disciplineId: string,
+    @Body() dto: DeclareRankDto,
+  ) {
+    return this.gradingService.declareRank(user.sub, id, disciplineId, dto);
+  }
+
+  /** Staff with grading permission verify a self-declared rank, optionally
+   * correcting it (Decision 147). */
+  @Post('students/:id/ranks/:disciplineId/verify')
+  verifyRank(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('disciplineId') disciplineId: string,
+    @Body() dto: VerifyRankDto,
+  ) {
+    return this.gradingService.verifyRank(user.sub, id, disciplineId, dto);
+  }
+
+  /** Owner only for now: ranks waiting to be verified (Decision 137, item 4). */
+  @ApiOkResponse({ type: StudentRankListResponseDto })
+  @Get('schools/:schoolId/rank-verifications')
+  findPendingVerifications(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.gradingService.findPendingVerifications(user.sub, schoolId);
   }
 }

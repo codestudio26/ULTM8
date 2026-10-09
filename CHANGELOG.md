@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading foundation, PR 6: self-declared ranks** (Decisions 137,
+  147):
+  - **Declaring:** a student (or their guardian, for a minor) declares the
+    rung they hold in a style when joining
+    (`POST /students/{id}/ranks/{styleId}/declare`). It is stored as
+    unverified and goes on their history. The style's first rung (plain White
+    Belt, no stripes) is verified automatically.
+  - **Verifying:** staff with grading permission for that style and the
+    student's branch verify it, or correct it to the right rung
+    (`POST …/verify`). A correction goes on the history with who, from what,
+    to what and when.
+  - **Pending list:** the owner sees ranks waiting to be verified
+    (`GET /schools/{id}/rank-verifications`). Permitted coaches get their
+    branches' list with the Grading Board (Phase 3).
+  - **Booking:** an unverified rank still counts for booking, as before.
+  - `packages/api-client` regenerated.
 - **api + school-portal — grading foundation, PR 5: styles and class types
   on classes, and how classes count toward a rung** (Decisions 140, 143, 149,
   152, 170):

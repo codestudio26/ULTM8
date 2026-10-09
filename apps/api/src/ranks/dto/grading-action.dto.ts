@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsISO8601, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 
 /**
  * Shared body for promote/downgrade/stripe-award. `acknowledgeWithoutSkillSignoff`
@@ -58,6 +58,37 @@ export class EditRankDateDto {
   date!: string;
 
   @ApiPropertyOptional({ description: 'An optional note for the history entry.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+}
+
+/** A student's own current rung, declared when joining (Decision 137). */
+export class DeclareRankDto {
+  @ApiProperty({ description: 'The belt (Rank) of this style.' })
+  @IsUUID()
+  rankId!: string;
+
+  @ApiProperty({ description: 'The rung (stripe tier) of that belt.' })
+  @IsUUID()
+  stripeTierId!: string;
+}
+
+/** Verify a self-declared rank, optionally correcting it to the right rung
+ * (Decision 147). Send rankId and stripeTierId together to correct it. */
+export class VerifyRankDto {
+  @ApiPropertyOptional({ description: 'To correct the rank: the right belt. Send with stripeTierId.' })
+  @IsOptional()
+  @IsUUID()
+  rankId?: string;
+
+  @ApiPropertyOptional({ description: 'To correct the rank: the right rung of that belt. Send with rankId.' })
+  @IsOptional()
+  @IsUUID()
+  stripeTierId?: string;
+
+  @ApiPropertyOptional({ description: 'An optional note for the history.' })
   @IsOptional()
   @IsString()
   @MaxLength(1000)
