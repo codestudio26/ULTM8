@@ -1868,3 +1868,40 @@ Every skill sign-off change (Not started / Learning / Signed off) is logged with
 **Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q50
 
 The complete `dojohq-grading-handover` package (prototype, stress-test harness, click-through test, tools, screenshots, design canvas, notes) is stored unchanged at `deep-review/grading-prototype/` as read-only reference. Its scenarios are the acceptance tests for the grading engine (roadmap Phase 2). Gus: *"yes"*.
+
+---
+
+## Decision 158 — Grading events move to Version 2 (supersedes Decision 150, item 1)
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q34 (revised)
+
+Grading events (schedule, participants, Pass/Fail, complete) are **not** in v1.1. They move to **Version 2**. Gus: *"I think event should be on Version 2, after thinking better."* This supersedes item 1 of Decision 150. The event rules already decided (Decision 128 items 14, Decision 130) stay valid for when events are built. v1.1 keeps the Grading Board, single grading, bulk promote (with Decision 130's acknowledgement step), and the rest of the v1.1 scope. Version numbers are the product owner's (CLAUDE.md, Versioning).
+
+---
+
+## Decision 159 — Grading fees: ULTM8 takes nothing; the school collects; the school chooses how the fee is set
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q37 (in part); adds to Decisions 144 and 150
+
+1. **ULTM8 takes no money from grading fees.** The school collects the fee through its own payment system. Gus: *"ULTM8 does not take, school does it, via their payment system."*
+2. **The school chooses how its fee is set:** per event, per rung, or one amount per style. Gus: *"fees can be set per event, per rung or one amount per style, they can choose it."* "Per event" only becomes usable once events exist (Version 2, Decision 158). In v1.1 the choice is per rung or per style.
+
+Still open, put back to Gus: whether "their payment system" means the school's payment account **inside** ULTM8 (Stripe Connect / cash, as with memberships, so the fee appears as a transaction in the portal) or a system **outside** ULTM8 (ULTM8 only shows the amount owed).
+
+---
+
+## Decision 160 — Franchise-wide ladders: franchise owner controls the switch, edits at franchise level only, after v1.1
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q10 (completes Decision 151)
+
+1. The **franchise owner** turns the shared ladder on or off. Gus: *"Yes"*.
+2. When on, the ladder is **edited only at franchise level**. Member schools use it but cannot change it. Gus: *"Yes at franchise level"*.
+3. It ships **after v1.1**. Gus: *"Later"*. It touches Franchise → School data separation and gets its own design, which must keep RLS and tenant isolation intact. That design must also settle what happens to existing school ladders and students when the switch changes.
+
+---
+
+## Decision 161 — Students always see their full grading progression
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** Q45 (completes Decision 155)
+
+Students (and guardians, Decision 132) always see the whole progression of their grading in the app, including their progress toward the next rung and when they are "Ready to Grade". This is not a school setting for now. Gus: *"always on, for now"*.

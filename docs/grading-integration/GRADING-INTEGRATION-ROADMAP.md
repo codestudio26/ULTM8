@@ -413,3 +413,12 @@ Phase 1 (foundation and schema) → Phase 2 (rules engine with Gus's scenarios a
 1. Fee: does v1.1 collect the money, or only record the amount? Is it set per school, per discipline or per event? (Decision 150)
 2. Franchise ladders: who controls the switch, can schools edit a shared ladder, what happens to students when it changes, and which release. (Decision 151)
 3. Students seeing "Ready to Grade": always shown, or a school setting? (Decision 155)
+
+## 11. Changes after §10 (Decisions 158–161, 9 Oct 2026)
+
+These supersede §10 where they differ.
+
+- **Grading events move to Version 2** (Decision 158). v1.1 no longer includes events. It keeps the board, single grading, bulk promote, self-declared rank verification, class types, branch scoping, the fee setting and the two notifications.
+- **Fees** (Decision 159): ULTM8 takes nothing; the school collects. The school picks how the fee is set: per rung or per style in v1.1, and per event from Version 2. Still open: whether collection runs through the school's payment account inside ULTM8 or outside it.
+- **Franchise-wide ladders** (Decision 160): franchise owner's switch, edited at franchise level only, after v1.1, with its own tenancy design.
+- **Students always see their full progression** (Decision 161).

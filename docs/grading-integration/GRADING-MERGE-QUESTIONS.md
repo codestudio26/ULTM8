@@ -35,6 +35,9 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 - Grading events and a fee switch with an amount ship in v1.1 (Decision 150); franchise-wide ladders behind a switch (Decision 151).
 - Discipline list, rung reordering, attendance from membership (Decision 152); edit rank date (Decision 153).
 - Lessons for paid members and guardians (Decision 154); app history (Decision 155); sign-off log (Decision 156); package stored in the repo (Decision 157).
+- Grading events move to Version 2 (Decision 158).
+- Fees: ULTM8 takes nothing; the school collects and chooses per event, per rung or per style (Decision 159).
+- Franchise ladders: franchise owner's switch, franchise-level edits, after v1.1 (Decision 160); students always see their progression (Decision 161).
 
 ## How many need answering, and when
 
@@ -100,7 +103,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q10. Can a franchise share one ladder across all its schools, or does each school keep its own?** · _Can wait_
 - Why it matters: A discipline belongs to one school today. Franchises often want one standard syllabus.
 - Recommendation: Each school keeps its own for now. A franchise template is a later feature.
-- Answer so far: Yes, franchise-wide ladders behind an on/off switch (Decision 151). Design details still to confirm.
+- Answer so far: Yes: the franchise owner's switch, edited at franchise level only, after v1.1 (Decisions 151, 160).
 
 **Q11. Are “discipline”, the class's activities and the instructor's specialisations one shared list?** · _Before data model_
 - Why it matters: Today they are three unconnected text fields, matched by exact spelling. A typo stops attendance counting and breaks the booking gate.
@@ -228,7 +231,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q34. Are grading events part of ULTM8, and in which release?** · _Can wait_
 - Why it matters: Spec 55 has no event entity. It is the largest piece of new work.
 - Recommendation: Yes, as phase 2, after the board and bulk promote.
-- Answer so far: Yes, grading events ship in v1.1 (Decision 150).
+- Answer so far: Moved to Version 2 (Decision 158, replacing Decision 150).
 
 **Q35. What happens after a fail at an event? (The mockup showed a 45-day window and 20 classes.)** · _Can wait_
 - Why it matters: Nothing is implemented. Your prototype keeps progress and changes nothing.
@@ -243,7 +246,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q37. Grading fee: per event or per student, through Stripe, and does cash count?** · _Can wait_
 - Why it matters: ULTM8 payments only know membership purchases. A fee needs a new kind of charge.
 - Recommendation: Per student per event, through Stripe and cash, after events ship.
-- Answer so far: The school charges its own students; v1.1 adds a fee switch and an amount (Decisions 144, 150). Collection and where it's set still to confirm.
+- Answer so far: ULTM8 takes nothing; the school collects; the school picks per event (Version 2), per rung or per style (Decisions 144, 159). Inside or outside ULTM8's payments still to confirm.
 
 **Q38. Which grading notifications, to whom: eligible to grade (coach), promoted (student and guardian), event invitation?** · _Can wait_
 - Why it matters: No grading notification exists, and push sending is deferred (Decision 95).
@@ -287,7 +290,7 @@ Each question has a recommendation; the decision is Gus's. Every answer becomes 
 **Q45. Should students see that they're “Ready to Grade” before the coach decides?** · _Before screens_
 - Why it matters: It can create pressure on coaches. Some schools prefer to keep it private.
 - Recommendation: A per-school setting, off by default.
-- Answer so far: “Students see the whole progression of their grading.” Always on or a school setting still to confirm.
+- Answer so far: Always on, for now: students see their whole progression (Decision 161).
 
 ### I. Data, privacy and audit
 
