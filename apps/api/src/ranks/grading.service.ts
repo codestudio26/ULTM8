@@ -359,9 +359,13 @@ export class GradingService {
       // comment. updateMany + affected-row-count check instead of a bare
       // update-by-id, so a losing concurrent call gets a clean 409 instead of
       // silently clobbering another grading action's result.
+      //
+      // Every stripe is its own rung (Decision 126), so a stripe award restarts
+      // the time-in-rank clock like any other rank change (Decision 167; the
+      // prototype's applyRankChange sets `since` for every change).
       const updateResult = await tx.studentRank.updateMany({
         where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
-        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0 },
+        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0, dateOfCurrentRank: new Date() },
       });
       if (updateResult.count === 0) {
         throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');

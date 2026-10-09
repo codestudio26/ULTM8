@@ -1297,6 +1297,52 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect((await editDate(user.id, tokenOwner, { date: daysAgo(300) })).status).toBe(200);
     });
 
+    it('a stripe award restarts the time-in-rank clock, and edit rank date then corrects the stripe\'s own date (Decisions 126, 166, 167)', async () => {
+      const disc = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/disciplines`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ name: 'Stripe Clock BJJ' });
+      expect(disc.status).toBe(201);
+      disciplineIds.push(disc.body.id);
+      const rank = await request(app.getHttpServer())
+        .post(`/v1/styles/${disc.body.id}/ranks`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ order: 0, primaryColour: '#FFFFFF', stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF' }, { order: 1, count: 1, colour: '#FFFFFF' }] });
+      expect(rank.status).toBe(201);
+
+      const { user } = await mkStudent('stripe-clock');
+      const first = await request(app.getHttpServer())
+        .post(`/v1/students/${user.id}/ranks/${disc.body.id}/promote`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({});
+      expect(first.status).toBe(201);
+      // Reached the belt 100 days ago.
+      const hundredDaysAgo = new Date(`${daysAgo(100)}T00:00:00.000Z`);
+      await superuser.promotionEvent.update({ where: { id: first.body.promotionEvent.id }, data: { effectiveDate: hundredDaysAgo } });
+      await superuser.studentRank.updateMany({ where: { studentId: user.id }, data: { dateOfCurrentRank: hundredDaysAgo } });
+
+      const before = Date.now();
+      const stripe = await request(app.getHttpServer())
+        .post(`/v1/students/${user.id}/ranks/${disc.body.id}/stripe-award`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({});
+      expect(stripe.status).toBe(201);
+      expect(new Date(stripe.body.studentRank.dateOfCurrentRank).getTime()).toBeGreaterThanOrEqual(before - 1000);
+
+      // The stripe is now the current rung: its date can be corrected, but
+      // not to before the belt grading.
+      const editStripeDate = (date: string) =>
+        request(app.getHttpServer())
+          .patch(`/v1/students/${user.id}/ranks/${disc.body.id}/rank-date`)
+          .set('Authorization', `Bearer ${tokenOwner}`)
+          .send({ date });
+      expect((await editStripeDate(daysAgo(101))).status).toBe(400);
+      const corrected = await editStripeDate(daysAgo(50));
+      expect(corrected.status).toBe(200);
+      const stripeEntry = await superuser.promotionEvent.findUniqueOrThrow({ where: { id: stripe.body.promotionEvent.id } });
+      expect(stripeEntry.effectiveDate.toISOString().slice(0, 10)).toBe(daysAgo(50));
+    });
+
     it('deleting an instructor\'s account keeps the students\' history and sign-off log; "graded by" becomes empty (Former instructor, Decision 141)', async () => {
       const { user } = await mkStudent('former-graded');
       const instructor = await mkExtraUser('former-instructor');
