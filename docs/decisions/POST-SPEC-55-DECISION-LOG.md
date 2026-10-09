@@ -2013,3 +2013,31 @@ Instructors added before this rule, without a branch in a School that has branch
 2. **One or more styles per class.** A class lists one or more styles, each with its own class type. Most classes list one. A mixed class, for example an Open Mat for BJJ and Judo, lists both ("BJJ · Open Mat" and "Judo · Open Mat"), and attending counts once toward each listed style whose type is ticked on the student's next rung in that style (Decision 140). Gus asked for the best solution, and chose it: *"Yes, one or more"*.
 
 Built as: a `styles` list (`[{disciplineId, classType}]`) on Class and TimetableSlot. Classes generated from a timetable slot copy it. Existing classes were mapped once from their free text wherever an entry named exactly one style (Decision 152). Until the grading engine switches over (roadmap Phase 2), the booking rank check and attendance credit keep reading the free-text `activities`, which the API now fills in from the chosen styles' names.
+
+---
+
+## Decision 171 — Counting classes toward a rung: Monday–Sunday weekly cap, combined progress for "each type", nothing ticked counts everything
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** four points the prototype leaves open (it stores `weeklyCap` and `scope` but never applies them), raised while building the grading engine (roadmap Phase 2)
+
+1. **Weekly cap.** Weeks run Monday to Sunday, in the school's local time. Within a week, the first classes up to the cap count, in date order; extra classes that week are ignored, not carried over to the next week. Gus: *"Mon–Sun, extras ignored"*.
+2. **Progress in "each ticked type required" mode (Decision 149).** One combined figure, with each type capped at its own number. For 20 Fundamentals + 10 Sparring, a student with 18 and 4 is at 22 of 30 = 73%. Extra classes of one type never make up for another. Gus: *"Combined: 22 of 30 = 73%"*.
+3. **A rung with no class types ticked** counts every class. Gus: *"Every class counts"*.
+4. **A rung with no weekly cap, or a cap of 0,** has no weekly limit. Gus: *"No limit"*.
+
+Built as: the grading engine, `apps/api/src/ranks/engine/` (pure functions with unit tests; the API, portal and app all get their numbers from it). It is not wired in yet: attendance counting moves onto it in roadmap Phase 2b, and eligibility and the booking check in Phase 2c.
+
+**Confirmed by Gus (9 Oct 2026).** When the next rung is time-only (Brown Belt · 4 Stripes → Black Belt), Decision 127 takes the class number from the **current** rung, and the engine also takes that rung's ticked class types, count mode and weekly cap. So Brown 4 → Black counts exactly as Brown 3 → Brown 4 did: both read Brown · 4 Stripes' settings. Time-only counting starts at Black Belt (Black → Black · 1 Stripe). Gus: *"brown 4 to black, it is the same as brown 3 to brown 4 nothing has changes"*. Decision 140's wording ("ticked on the student's next rung") describes the normal case, where the two readings agree.
+
+---
+
+## Decision 172 — A School has its own time zone, set up the same way as a Branch's
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the School-wide time zone gap flagged in `class-occurrence-generation.processor.ts`, raised again for the grading engine's Monday–Sunday week (Decision 171)
+
+Decision 76 says a Branch mirrors its School's profile fields, time zone included, but the School never got the field. Gus: *"we need to add the time on school, the set up from branches and schools should be mirrored"* and *"need to add time zone to the set up"*.
+
+1. **School time zone.** A School has an optional time zone (an IANA name such as `Europe/London`), entered the same way as a Branch's: in the create-school form and in school settings.
+2. **Which time zone applies.** A class uses its Branch's time zone; when it has no Branch, or its Branch has none, the School's; when neither is set, UTC (today's behaviour). This applies to generating classes from the timetable now, and to the grading engine's days and weeks in roadmap Phase 2b.
+
+Existing Schools start with no time zone, so nothing changes until an owner sets one. Like a Branch's, the value is free text (validated as an IANA name by neither form today).

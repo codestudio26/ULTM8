@@ -68,6 +68,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/forgot-password": {
         parameters: {
             query?: never;
@@ -2094,6 +2126,10 @@ export interface components {
         };
         LoginResponseDto: {
             accessToken: string;
+            refreshToken: string;
+        };
+        RefreshTokenDto: {
+            refreshToken: string;
         };
         RequestPasscodeResetDto: {
             /** @description E.164 format */
@@ -2119,6 +2155,8 @@ export interface components {
             defaultLanguage?: string;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
+            /** @description IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string;
             description?: string;
             logoUrl?: string;
             bannerUrl?: string;
@@ -2145,6 +2183,8 @@ export interface components {
             ranksToggle: boolean;
             defaultLanguage?: string | null;
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
@@ -2187,6 +2227,8 @@ export interface components {
             defaultLanguage?: string | null;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
@@ -3260,6 +3302,12 @@ export interface components {
             currentStripeId?: string | null;
             dateOfCurrentRank: string;
             classesAttendedTowardCheckpoint: number;
+            /** @description Classes counted toward the next rung, per class type, e.g. {"Fundamentals": 18, "Sparring": 4} (Decisions 149, 171). */
+            classesAttendedByType: {
+                [key: string]: number;
+            };
+            /** @description When counting toward the current rung began: the moment of the last rank change. */
+            countingSince: string;
             /**
              * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
              * @enum {string}
@@ -3274,6 +3322,73 @@ export interface components {
         };
         StudentRankListResponseDto: {
             items: components["schemas"]["StudentRankResponseDto"][];
+        };
+        TypeProgressResponseDto: {
+            classType: string;
+            required: number;
+            counted: number;
+        };
+        EligibilityResponseDto: {
+            hasNext: boolean;
+            /** @description The student's rung could not be found on the ladder (bad data), as opposed to the top of the ladder. */
+            dataError?: boolean;
+            /** @description The next rung (stripe tier id). */
+            nextRungId?: string;
+            /** @description The current rung is time-only: days are the only gate (Decision 128, item 3). */
+            timeOnly?: boolean;
+            elapsedDays?: number;
+            requiredDays?: number;
+            requiredClasses?: number;
+            countedClasses?: number;
+            /** @description "Each ticked type required" rungs only (Decision 149). */
+            byType?: components["schemas"]["TypeProgressResponseDto"][];
+            classesOk?: boolean;
+            daysOk?: boolean;
+            skillsOk?: boolean;
+            /** @description Classes, days and skills all met. */
+            eligible?: boolean;
+            requiredSkillIds?: string[];
+            /** @description Shown but optional: the next rung's skills when the current rung is time-only. */
+            optionalSkillIds?: string[];
+            missingSkillIds?: string[];
+            /** @description 0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136). */
+            progressPercent?: number;
+            /**
+             * @description Grading Board column at the default 33% / 66% (Decision 136).
+             * @enum {string}
+             */
+            boardColumn?: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
+        };
+        StudentEligibilityResponseDto: {
+            id: string;
+            studentId: string;
+            disciplineId: string;
+            schoolId: string;
+            currentRankId: string;
+            currentStripeId?: string | null;
+            dateOfCurrentRank: string;
+            classesAttendedTowardCheckpoint: number;
+            /** @description Classes counted toward the next rung, per class type, e.g. {"Fundamentals": 18, "Sparring": 4} (Decisions 149, 171). */
+            classesAttendedByType: {
+                [key: string]: number;
+            };
+            /** @description When counting toward the current rung began: the moment of the last rank change. */
+            countingSince: string;
+            /**
+             * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
+             * @enum {string}
+             */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            verifiedAt?: string | null;
+            /** @description Empty when verified automatically (the first rung) or the verifier's account was deleted. */
+            verifiedById?: string | null;
+            skillStatuses: components["schemas"]["StudentRankSkillStatusResponseDto"][];
+            createdAt: string;
+            updatedAt: string;
+            eligibility: components["schemas"]["EligibilityResponseDto"];
+        };
+        StudentEligibilityListResponseDto: {
+            items: components["schemas"]["StudentEligibilityResponseDto"][];
         };
         PromotionEventResponseDto: {
             id: string;
@@ -3828,6 +3943,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthMessageResponseDto"];
                 };
             };
         };
@@ -6141,7 +6302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                    "application/json": components["schemas"]["StudentEligibilityListResponseDto"];
                 };
             };
         };

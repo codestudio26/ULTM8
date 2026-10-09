@@ -31,6 +31,7 @@ export function CreateSchoolPage() {
     ranksToggle: false,
     defaultLanguage: '',
     defaultCurrency: '',
+    timezone: '',
     description: '',
     classCancellationPolicy: 'MANUAL' as 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT',
     waitlistClaimWindowMinutes: 120,
@@ -56,6 +57,7 @@ export function CreateSchoolPage() {
         ranksToggle: form.ranksToggle,
         defaultLanguage: form.defaultLanguage || undefined,
         defaultCurrency: form.defaultCurrency || undefined,
+        timezone: form.timezone || undefined,
         description: form.description || undefined,
         classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
@@ -118,6 +120,9 @@ export function CreateSchoolPage() {
         </Field>
         <Field label="Default currency" htmlFor="school-currency">
           <TextField value={form.defaultCurrency} onChange={(e) => set('defaultCurrency', e.target.value)} />
+        </Field>
+        <Field label="Timezone" htmlFor="school-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
+          <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
         </Field>
         <Field label="Description" htmlFor="school-description">
           <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />

@@ -9,11 +9,8 @@ export class StudentRankSkillStatusResponseDto {
 }
 
 /**
- * GET /students/{id}/ranks and GET /students/{id}/eligibility response — raw
- * StudentRank fields only. Deliberately NO readiness bucket or progress %
- * (Decision 75 — the formula/thresholds are School-configurable with no
- * confirmed configuration schema yet; see StudentRank's own Prisma model
- * comment). A future phase adds those once Decision 75's own follow-up lands.
+ * GET /students/{id}/ranks response — raw StudentRank fields. GET
+ * /students/{id}/eligibility returns the same plus `eligibility` (below).
  */
 export class StudentRankResponseDto {
   @ApiProperty()
@@ -40,6 +37,16 @@ export class StudentRankResponseDto {
   @ApiProperty()
   classesAttendedTowardCheckpoint!: number;
 
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    description: 'Classes counted toward the next rung, per class type, e.g. {"Fundamentals": 18, "Sparring": 4} (Decisions 149, 171).',
+  })
+  classesAttendedByType!: Record<string, number>;
+
+  @ApiProperty({ description: 'When counting toward the current rung began: the moment of the last rank change.' })
+  countingSince!: string;
+
   @ApiProperty({ enum: ['VERIFIED', 'UNVERIFIED'], description: 'UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).' })
   verificationStatus!: 'VERIFIED' | 'UNVERIFIED';
 
@@ -62,4 +69,84 @@ export class StudentRankResponseDto {
 export class StudentRankListResponseDto {
   @ApiProperty({ type: [StudentRankResponseDto] })
   items!: StudentRankResponseDto[];
+}
+
+export class TypeProgressResponseDto {
+  @ApiProperty()
+  classType!: string;
+
+  @ApiProperty()
+  required!: number;
+
+  @ApiProperty()
+  counted!: number;
+}
+
+/** Readiness for the next rung, from the grading engine (roadmap Phase 2c).
+ * With `hasNext` false only `hasNext` and `dataError` are set: the top of the
+ * ladder, or (dataError) a rung that can't be found. */
+export class EligibilityResponseDto {
+  @ApiProperty()
+  hasNext!: boolean;
+
+  @ApiPropertyOptional({ description: 'The student\'s rung could not be found on the ladder (bad data), as opposed to the top of the ladder.' })
+  dataError?: boolean;
+
+  @ApiPropertyOptional({ description: 'The next rung (stripe tier id).' })
+  nextRungId?: string;
+
+  @ApiPropertyOptional({ description: 'The current rung is time-only: days are the only gate (Decision 128, item 3).' })
+  timeOnly?: boolean;
+
+  @ApiPropertyOptional()
+  elapsedDays?: number;
+
+  @ApiPropertyOptional()
+  requiredDays?: number;
+
+  @ApiPropertyOptional()
+  requiredClasses?: number;
+
+  @ApiPropertyOptional()
+  countedClasses?: number;
+
+  @ApiPropertyOptional({ type: [TypeProgressResponseDto], description: '"Each ticked type required" rungs only (Decision 149).' })
+  byType?: TypeProgressResponseDto[];
+
+  @ApiPropertyOptional()
+  classesOk?: boolean;
+
+  @ApiPropertyOptional()
+  daysOk?: boolean;
+
+  @ApiPropertyOptional()
+  skillsOk?: boolean;
+
+  @ApiPropertyOptional({ description: 'Classes, days and skills all met.' })
+  eligible?: boolean;
+
+  @ApiPropertyOptional({ type: [String] })
+  requiredSkillIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Shown but optional: the next rung\'s skills when the current rung is time-only.' })
+  optionalSkillIds?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  missingSkillIds?: string[];
+
+  @ApiPropertyOptional({ description: '0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136).' })
+  progressPercent?: number;
+
+  @ApiPropertyOptional({ enum: ['JUST_STARTING', 'GETTING_THERE', 'READY_TO_GRADE'], description: 'Grading Board column at the default 33% / 66% (Decision 136).' })
+  boardColumn?: 'JUST_STARTING' | 'GETTING_THERE' | 'READY_TO_GRADE';
+}
+
+export class StudentEligibilityResponseDto extends StudentRankResponseDto {
+  @ApiProperty({ type: EligibilityResponseDto })
+  eligibility!: EligibilityResponseDto;
+}
+
+export class StudentEligibilityListResponseDto {
+  @ApiProperty({ type: [StudentEligibilityResponseDto] })
+  items!: StudentEligibilityResponseDto[];
 }
