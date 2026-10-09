@@ -5,7 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
-import { StudentRankListResponseDto } from './dto/student-rank-response.dto';
+import { StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 
 // StudentRank reads + grading actions. `schoolId` is a required query param on
@@ -31,10 +31,10 @@ export class GradingController {
     return { items: (await this.gradingService.findRanksForStudent(user.sub, id, schoolId)).items };
   }
 
-  @ApiOkResponse({ type: StudentRankListResponseDto })
+  @ApiOkResponse({ type: StudentEligibilityListResponseDto })
   @Get('students/:id/eligibility')
-  async findEligibilityForStudent(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query('schoolId') schoolId: string) {
-    return { items: (await this.gradingService.findEligibilityForStudent(user.sub, id, schoolId)).items };
+  findEligibilityForStudent(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query('schoolId') schoolId: string) {
+    return this.gradingService.findEligibilityForStudent(user.sub, id, schoolId);
   }
 
   @ApiOkResponse({ type: PromotionEventListResponseDto })

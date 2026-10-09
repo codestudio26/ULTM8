@@ -3323,6 +3323,73 @@ export interface components {
         StudentRankListResponseDto: {
             items: components["schemas"]["StudentRankResponseDto"][];
         };
+        TypeProgressResponseDto: {
+            classType: string;
+            required: number;
+            counted: number;
+        };
+        EligibilityResponseDto: {
+            hasNext: boolean;
+            /** @description The student's rung could not be found on the ladder (bad data), as opposed to the top of the ladder. */
+            dataError?: boolean;
+            /** @description The next rung (stripe tier id). */
+            nextRungId?: string;
+            /** @description The current rung is time-only: days are the only gate (Decision 128, item 3). */
+            timeOnly?: boolean;
+            elapsedDays?: number;
+            requiredDays?: number;
+            requiredClasses?: number;
+            countedClasses?: number;
+            /** @description "Each ticked type required" rungs only (Decision 149). */
+            byType?: components["schemas"]["TypeProgressResponseDto"][];
+            classesOk?: boolean;
+            daysOk?: boolean;
+            skillsOk?: boolean;
+            /** @description Classes, days and skills all met. */
+            eligible?: boolean;
+            requiredSkillIds?: string[];
+            /** @description Shown but optional: the next rung's skills when the current rung is time-only. */
+            optionalSkillIds?: string[];
+            missingSkillIds?: string[];
+            /** @description 0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136). */
+            progressPercent?: number;
+            /**
+             * @description Grading Board column at the default 33% / 66% (Decision 136).
+             * @enum {string}
+             */
+            boardColumn?: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
+        };
+        StudentEligibilityResponseDto: {
+            id: string;
+            studentId: string;
+            disciplineId: string;
+            schoolId: string;
+            currentRankId: string;
+            currentStripeId?: string | null;
+            dateOfCurrentRank: string;
+            classesAttendedTowardCheckpoint: number;
+            /** @description Classes counted toward the next rung, per class type, e.g. {"Fundamentals": 18, "Sparring": 4} (Decisions 149, 171). */
+            classesAttendedByType: {
+                [key: string]: number;
+            };
+            /** @description When counting toward the current rung began: the moment of the last rank change. */
+            countingSince: string;
+            /**
+             * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
+             * @enum {string}
+             */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            verifiedAt?: string | null;
+            /** @description Empty when verified automatically (the first rung) or the verifier's account was deleted. */
+            verifiedById?: string | null;
+            skillStatuses: components["schemas"]["StudentRankSkillStatusResponseDto"][];
+            createdAt: string;
+            updatedAt: string;
+            eligibility: components["schemas"]["EligibilityResponseDto"];
+        };
+        StudentEligibilityListResponseDto: {
+            items: components["schemas"]["StudentEligibilityResponseDto"][];
+        };
         PromotionEventResponseDto: {
             id: string;
             studentRankId: string;
@@ -6235,7 +6302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                    "application/json": components["schemas"]["StudentEligibilityListResponseDto"];
                 };
             };
         };

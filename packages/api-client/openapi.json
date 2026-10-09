@@ -4157,7 +4157,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StudentRankListResponseDto"
+                  "$ref": "#/components/schemas/StudentEligibilityListResponseDto"
                 }
               }
             }
@@ -10523,6 +10523,215 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StudentRankResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "TypeProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "classType": {
+            "type": "string"
+          },
+          "required": {
+            "type": "number"
+          },
+          "counted": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "classType",
+          "required",
+          "counted"
+        ]
+      },
+      "EligibilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "hasNext": {
+            "type": "boolean"
+          },
+          "dataError": {
+            "type": "boolean",
+            "description": "The student's rung could not be found on the ladder (bad data), as opposed to the top of the ladder."
+          },
+          "nextRungId": {
+            "type": "string",
+            "description": "The next rung (stripe tier id)."
+          },
+          "timeOnly": {
+            "type": "boolean",
+            "description": "The current rung is time-only: days are the only gate (Decision 128, item 3)."
+          },
+          "elapsedDays": {
+            "type": "number"
+          },
+          "requiredDays": {
+            "type": "number"
+          },
+          "requiredClasses": {
+            "type": "number"
+          },
+          "countedClasses": {
+            "type": "number"
+          },
+          "byType": {
+            "description": "\"Each ticked type required\" rungs only (Decision 149).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeProgressResponseDto"
+            }
+          },
+          "classesOk": {
+            "type": "boolean"
+          },
+          "daysOk": {
+            "type": "boolean"
+          },
+          "skillsOk": {
+            "type": "boolean"
+          },
+          "eligible": {
+            "type": "boolean",
+            "description": "Classes, days and skills all met."
+          },
+          "requiredSkillIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optionalSkillIds": {
+            "description": "Shown but optional: the next rung's skills when the current rung is time-only.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "missingSkillIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "progressPercent": {
+            "type": "number",
+            "description": "0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136)."
+          },
+          "boardColumn": {
+            "type": "string",
+            "enum": [
+              "JUST_STARTING",
+              "GETTING_THERE",
+              "READY_TO_GRADE"
+            ],
+            "description": "Grading Board column at the default 33% / 66% (Decision 136)."
+          }
+        },
+        "required": [
+          "hasNext"
+        ]
+      },
+      "StudentEligibilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "currentRankId": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfCurrentRank": {
+            "type": "string"
+          },
+          "classesAttendedTowardCheckpoint": {
+            "type": "number"
+          },
+          "classesAttendedByType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Classes counted toward the next rung, per class type, e.g. {\"Fundamentals\": 18, \"Sparring\": 4} (Decisions 149, 171)."
+          },
+          "countingSince": {
+            "type": "string",
+            "description": "When counting toward the current rung began: the moment of the last rank change."
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ],
+            "description": "UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147)."
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedById": {
+            "type": "string",
+            "nullable": true,
+            "description": "Empty when verified automatically (the first rung) or the verifier's account was deleted."
+          },
+          "skillStatuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentRankSkillStatusResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "disciplineId",
+          "schoolId",
+          "currentRankId",
+          "dateOfCurrentRank",
+          "classesAttendedTowardCheckpoint",
+          "classesAttendedByType",
+          "countingSince",
+          "verificationStatus",
+          "skillStatuses",
+          "createdAt",
+          "updatedAt",
+          "eligibility"
+        ]
+      },
+      "StudentEligibilityListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentEligibilityResponseDto"
             }
           }
         },
