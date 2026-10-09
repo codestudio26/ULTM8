@@ -15,6 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api + school-portal — grading Phase 3a: grade actions** (Decisions 127,
+  128, 174). Promote can target any higher rung (skipped rungs recorded:
+  "Skipped N ranks in between"); downgrade any lower rung (with a reason, dated
+  today); promote and stripe award take a back-dated `effectiveDate` (local
+  day, not in the future or before the current rank date) and starting classes
+  — one number, or `startingClassesByType` when the new next rung counts each
+  type. The skills check uses the engine's requirement for the next rung, and
+  a new per-style switch (`skillsRequiredToGrade`, in the portal's style form)
+  blocks grading until they are signed off instead of allowing it with an
+  acknowledgement; downgrades no longer need skills. Skill sign-off is limited
+  to the next rung's skills. Fixed: dates typed by a coach (edit rank date,
+  back-dated grade) are stored as the start of that day in the student's time
+  zone, so they no longer read back a day early west of UTC.
+  `packages/api-client` regenerated.
 - **api + school-portal — grading Phase 2c (part 2): who may book is set per
   rung** (Decision 173). Each rung gets an "Unlocks booking" list of class
   types, open to that rung and every rung above; types no rung lists are open

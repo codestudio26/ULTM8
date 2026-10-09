@@ -184,9 +184,11 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       .send({
         order: 0,
         primaryColour: 'White',
+        // Skills belong to the rung being reached (Decision 127): White · 1
+        // needs the skill, so it gates leaving White · 0.
         stripeTiers: [
           { order: 0, count: 0, colour: 'White' },
-          { order: 1, count: 1, colour: 'White' },
+          { order: 1, count: 1, colour: 'White', requiredSkillIds: [requiredSkillId] },
         ],
         requiredSkillIds: [requiredSkillId],
       });
@@ -207,7 +209,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     const blueBeltRes = await request(app.getHttpServer())
       .post(`/v1/styles/${disciplineId}/ranks`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ order: 1, primaryColour: 'Blue', stripeTiers: [{ order: 0, count: 0, colour: 'Blue' }] });
+      .send({ order: 1, primaryColour: 'Blue', stripeTiers: [{ order: 0, count: 0, colour: 'Blue', requiredSkillIds: [requiredSkillId] }] });
     expect(blueBeltRes.status).toBe(201);
     blueBeltRankId = blueBeltRes.body.id;
   });
@@ -1217,7 +1219,9 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
           .send({
             order,
             primaryColour: '#FFFFFF',
-            stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF' }],
+            // The skill is needed to reach the second belt (Decision 127), so
+            // a student on the first belt can sign it off.
+            stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF', requiredSkillIds: order === 1 ? [histSkillId] : [] }],
             requiredSkillIds: order === 0 ? [histSkillId] : [],
           });
         expect(rank.status).toBe(201);
@@ -1518,6 +1522,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       judoSkillId = skill.body.id;
       const firstJudoRank = await superuser.rank.findFirstOrThrow({ where: { disciplineId: judoId, order: 0 } });
       await superuser.rankRequiredSkill.create({ data: { rankId: firstJudoRank.id, skillId: judoSkillId } });
+      // Needed to reach Judo's second belt (Decision 127), so it can be signed
+      // off by a student on the first.
+      const secondJudoTier = await superuser.rankStripeTier.findFirstOrThrow({ where: { rank: { disciplineId: judoId, order: 1 } } });
+      await superuser.rankStripeTierRequiredSkill.create({ data: { stripeTierId: secondJudoTier.id, skillId: judoSkillId } });
 
       // Coaches and staff: Carla at Downtown, Max at both branches, Wes with
       // no branch, Rita (Branch Staff) at Riverside.

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
 
 /**
  * FOUND DURING BUILD: Spec 55's own confirmed RanksModule endpoint table nests
@@ -24,4 +24,13 @@ export class CreateDisciplineDto {
   @ArrayMaxSize(50)
   @IsString({ each: true })
   classTypesOffered?: string[];
+
+  // No `default:` in the Swagger metadata, so existing callers that don't send
+  // it stay valid in the generated client.
+  @ApiPropertyOptional({
+    description: '"Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined)
+  @IsBoolean()
+  skillsRequiredToGrade?: boolean;
 }
