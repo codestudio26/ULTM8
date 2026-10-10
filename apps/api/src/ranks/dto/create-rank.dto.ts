@@ -183,7 +183,8 @@ export class StripeSegmentInputDto {
 /**
  * Field list verified against skills/ultm8-domain-rules/SKILL.md §5's confirmed
  * Rank row: "primary belt colour and an optional secondary colour..., a weekly
- * class-count cap, a set of required Skills, and a years-in-rank flag." disciplineId
+ * class-count cap, a set of required Skills, and a years-in-rank flag." The cap
+ * and Skills now belong to each stripe (Decisions 126, 199). disciplineId
  * is a route param (`/styles/:disciplineId/ranks`), not a body field.
  *
  * `stripeTiers` requires at least one tier — Spec 55's own examples (§5: "White
@@ -227,12 +228,6 @@ export class CreateRankDto {
   @MaxLength(50)
   coralAccent?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  weeklyClassCountCap?: number;
-
   @ApiPropertyOptional({ default: false, description: 'Black Belt and above — see the schema\'s own comment on why this is a boolean only, no numeric threshold.' })
   @IsOptional()
   @IsBoolean()
@@ -245,10 +240,6 @@ export class CreateRankDto {
   @Type(() => RankStripeTierInputDto)
   stripeTiers!: RankStripeTierInputDto[];
 
-  @ApiPropertyOptional({ type: [String], description: 'Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.' })
-  @NotNullIfPresent()
-  @IsArray()
-  @ArrayMaxSize(100)
-  @IsUUID('4', { each: true })
-  requiredSkillIds?: string[];
+  // No belt-level weekly cap or required skills: they live on each stripe,
+  // the plain belt's own stripe included (Decisions 126, 164, 199).
 }

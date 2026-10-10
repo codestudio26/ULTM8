@@ -3838,15 +3838,12 @@ export interface components {
             tagColour?: string;
             /** @description Drawing only: silver/gold accent of the coral belts. */
             coralAccent?: string;
-            weeklyClassCountCap?: number;
             /**
              * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
              * @default false
              */
             yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierInputDto"][];
-            /** @description Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements. */
-            requiredSkillIds?: string[];
         };
         StripeSegmentResponseDto: {
             count: number;
@@ -3889,11 +3886,8 @@ export interface components {
             secondaryColour?: string | null;
             tagColour?: string | null;
             coralAccent?: string | null;
-            weeklyClassCountCap?: number | null;
             yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
-            /** @description Required Skill ids. */
-            requiredSkillIds: string[];
             createdAt: string;
             updatedAt: string;
         };
@@ -3930,10 +3924,7 @@ export interface components {
              */
             yearsInRankFlag: boolean;
             stripeTiers?: components["schemas"]["RankStripeTierInputDto"][];
-            /** @description Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements. */
-            requiredSkillIds?: string[];
             secondaryColour?: string | null;
-            weeklyClassCountCap?: number | null;
             tagColour?: string | null;
             coralAccent?: string | null;
         };

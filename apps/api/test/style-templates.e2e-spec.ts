@@ -57,7 +57,7 @@ describeIfDb('Style templates and duplicate (Decisions 131, 182)', () => {
     superuser.rank.findMany({
       where: { disciplineId },
       orderBy: { order: 'asc' },
-      include: { stripeTiers: { orderBy: { order: 'asc' }, include: { requiredSkills: true } }, requiredSkills: true },
+      include: { stripeTiers: { orderBy: { order: 'asc' }, include: { requiredSkills: true } } },
     });
 
   beforeAll(async () => {
@@ -84,7 +84,6 @@ describeIfDb('Style templates and duplicate (Decisions 131, 182)', () => {
   afterAll(async () => {
     await superuser.studentRank.deleteMany({ where: { schoolId: school.id } });
     await superuser.rankStripeTierRequiredSkill.deleteMany({ where: { stripeTier: { schoolId: school.id } } });
-    await superuser.rankRequiredSkill.deleteMany({ where: { rank: { schoolId: school.id } } });
     await superuser.rankStripeTier.deleteMany({ where: { schoolId: school.id } });
     await superuser.rank.deleteMany({ where: { schoolId: school.id } });
     await superuser.skill.deleteMany({ where: { schoolId: school.id } });
@@ -162,9 +161,8 @@ describeIfDb('Style templates and duplicate (Decisions 131, 182)', () => {
     const throwSkill = await superuser.skill.create({ data: { id: randomUUID(), disciplineId: src.id, schoolId: school.id, name: 'O-goshi', description: 'Hip throw' } });
     const pinSkill = await superuser.skill.create({ data: { id: randomUUID(), disciplineId: src.id, schoolId: school.id, name: 'Kesa-gatame' } });
     const rank = await superuser.rank.create({
-      data: { id: randomUUID(), disciplineId: src.id, schoolId: school.id, order: 0, name: 'White', primaryColour: '#FFFFFF', weeklyClassCountCap: 2 },
+      data: { id: randomUUID(), disciplineId: src.id, schoolId: school.id, order: 0, name: 'White', primaryColour: '#FFFFFF' },
     });
-    await superuser.rankRequiredSkill.create({ data: { rankId: rank.id, skillId: pinSkill.id } });
     const tier = await superuser.rankStripeTier.create({
       data: {
         id: randomUUID(),
@@ -177,10 +175,11 @@ describeIfDb('Style templates and duplicate (Decisions 131, 182)', () => {
         stripeSegments: [{ count: 1, colour: '#C23B3B' }],
         classesRequired: 12,
         minimumDaysInRank: 30,
+        weeklyClassCountCap: 2,
         eligibleClassTypes: ['Randori'],
       },
     });
-    await superuser.rankStripeTierRequiredSkill.create({ data: { stripeTierId: tier.id, skillId: throwSkill.id } });
+    await superuser.rankStripeTierRequiredSkill.createMany({ data: [throwSkill.id, pinSkill.id].map((skillId) => ({ stripeTierId: tier.id, skillId })) });
     const student = await mkUser('student');
     await superuser.studentRank.create({
       data: { id: randomUUID(), studentId: student.id, disciplineId: src.id, schoolId: school.id, currentRankId: rank.id, currentStripeId: tier.id },
@@ -202,18 +201,18 @@ describeIfDb('Style templates and duplicate (Decisions 131, 182)', () => {
     const byName = Object.fromEntries(skills.map((s) => [s.name, s.id]));
 
     const [belt] = await ladder(copyId);
-    expect(belt).toMatchObject({ name: 'White', primaryColour: '#FFFFFF', weeklyClassCountCap: 2, schoolId: school.id });
+    expect(belt).toMatchObject({ name: 'White', primaryColour: '#FFFFFF', schoolId: school.id });
     expect(belt.id).not.toBe(rank.id);
-    expect(belt.requiredSkills.map((r) => r.skillId)).toEqual([byName['Kesa-gatame']]);
     expect(belt.stripeTiers).toHaveLength(1);
     expect(belt.stripeTiers[0]).toMatchObject({
       name: 'White · 1',
       classesRequired: 12,
       minimumDaysInRank: 30,
+      weeklyClassCountCap: 2,
       eligibleClassTypes: ['Randori'],
       stripeSegments: [{ count: 1, colour: '#C23B3B' }],
     });
-    expect(belt.stripeTiers[0].requiredSkills.map((r) => r.skillId)).toEqual([byName['O-goshi']]);
+    expect(belt.stripeTiers[0].requiredSkills.map((r) => r.skillId).sort()).toEqual([byName['O-goshi'], byName['Kesa-gatame']].sort());
 
     // No students come across; the original is untouched.
     expect(await superuser.studentRank.count({ where: { disciplineId: copyId } })).toBe(0);

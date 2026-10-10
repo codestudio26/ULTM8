@@ -83,17 +83,11 @@ export class RankResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   coralAccent!: string | null;
 
-  @ApiPropertyOptional({ type: Number, nullable: true })
-  weeklyClassCountCap!: number | null;
-
   @ApiProperty()
   yearsInRankFlag!: boolean;
 
   @ApiProperty({ type: [RankStripeTierResponseDto] })
   stripeTiers!: RankStripeTierResponseDto[];
-
-  @ApiProperty({ type: [String], description: 'Required Skill ids.' })
-  requiredSkillIds!: string[];
 
   @ApiProperty()
   createdAt!: string;

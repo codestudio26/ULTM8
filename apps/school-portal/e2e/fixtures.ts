@@ -202,7 +202,6 @@ export async function cleanup() {
   await db.lessonSkill.deleteMany({ where: { lesson: { schoolId: { in: schoolIds } } } });
   await db.lesson.deleteMany({ where });
   await db.rankStripeTierRequiredSkill.deleteMany({ where: { skill: { schoolId: { in: schoolIds } } } });
-  await db.rankRequiredSkill.deleteMany({ where: { skill: { schoolId: { in: schoolIds } } } });
   await db.rankStripeTier.deleteMany({ where });
   await db.rank.deleteMany({ where });
   await db.skill.deleteMany({ where });

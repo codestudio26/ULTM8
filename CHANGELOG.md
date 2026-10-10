@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Belt-level weekly cap and required skills removed** (Decision 199). They
+  live on each stripe, the plain belt's own (e.g. "Brown Belt", no stripes)
+  included, and grading reads only those, so no student's requirements
+  change. **api:** `Rank.weeklyClassCountCap` and `RankRequiredSkill`
+  dropped (migration `20261102000000`); a belt no longer takes or returns
+  `weeklyClassCountCap` / `requiredSkillIds` (sending them is a 400).
+  `packages/api-client` regenerated.
+
 - **Deleting** (Decision 198). The owner can delete a lesson, and a skill,
   belt or style that has never been used: **Delete** on the Curriculum,
   Disciplines and style pages, with a confirmation. Anything a student's
