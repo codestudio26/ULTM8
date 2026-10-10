@@ -12,8 +12,8 @@ import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, 
 import { RequestContext } from '../common/request-context';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
-import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
-import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
+import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone, thresholdsOf } from './grading-eligibility';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
 import { PermissionToggle } from './dto/grading-permission.dto';
 
@@ -101,9 +101,12 @@ export class GradingService {
     // the rank list, plus each style's eligibility for its next rung.
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       const timeZone = await studentTimeZone(tx, studentId, schoolId);
+      // Each style's own board columns (Decisions 75, 136, 181).
+      const styles = await tx.discipline.findMany({ where: { schoolId }, select: { id: true, boardGettingThere: true, boardReadyToGrade: true } });
       const items: Array<Record<string, unknown>> = [];
       for (const row of page.items as Array<Parameters<typeof studentEligibility>[1] & { id: string }>) {
-        items.push({ ...row, eligibility: await studentEligibility(tx, row, timeZone) });
+        const style = styles.find((d) => d.id === row.disciplineId);
+        items.push({ ...row, eligibility: await studentEligibility(tx, row, timeZone, undefined, style ? thresholdsOf(style) : undefined) });
       }
       return { items };
     });
@@ -838,7 +841,7 @@ export class GradingService {
     for (const row of rows) {
       const { student, studentRank: sr } = row;
       if (needle && !`${student.firstName} ${student.surname}`.toLowerCase().includes(needle)) continue;
-      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now);
+      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now, thresholdsOf(discipline));
       if (!eligibility.hasNext) continue; // nothing to progress toward: not on the board (prototype)
       const hasActiveMembership = row.memberships.some((m) => isMembershipLive(m, now));
       const active = sr.boardActiveOverride ?? hasActiveMembership;
@@ -879,7 +882,7 @@ export class GradingService {
     fn: (
       tx: TenantTx,
       ctx: {
-        discipline: { id: string; schoolId: string; classTypesOffered: string[] };
+        discipline: { id: string; schoolId: string; classTypesOffered: string[]; boardGettingThere: number; boardReadyToGrade: number };
         studentRank: Prisma.StudentRankGetPayload<{ include: { skillStatuses: true } }>;
         ladder: Rung[];
         timeZone: string;
@@ -929,17 +932,47 @@ export class GradingService {
     });
   }
 
+  /** A style's Grading Board columns (Decisions 75, 136, 181): the owner, or
+   * a coach with the "Change board %" toggle for this style. Not tied to a
+   * student, so the branch rule doesn't apply. */
+  async setBoardThresholds(callerId: string, disciplineId: string, dto: BoardThresholdsDto) {
+    if (!UUID_PATTERN.test(disciplineId)) {
+      throw new BadRequestException('disciplineId must be a valid UUID');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    if (!(await this.isSchoolOwner(callerId, discipline.schoolId))) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
+      const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } } }),
+      );
+      if (!permission || permission.schoolId !== discipline.schoolId || !permission.canChangeBoardThresholds) {
+        throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS.canChangeBoardThresholds}. The School owner can turn it on.`);
+      }
+    }
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    if (dto.gettingThere >= dto.readyToGrade) {
+      throw new BadRequestException('"Getting There" must start below "Ready to Grade".');
+    }
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.update({ where: { id: disciplineId }, data: { boardGettingThere: dto.gettingThere, boardReadyToGrade: dto.readyToGrade } }),
+    );
+  }
+
   /** Board drag (Decision 128, item 13; prototype dropOnBand): rewrites the
    * class count — on an "each type" rung every type to the column's % of its
    * own number (Decision 174) — or, on a time-only rung, the rank date, and
    * records an ADJUSTMENT entry. */
   async moveOnBoard(callerId: string, studentId: string, disciplineId: string, dto: BoardMoveDto) {
-    return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { studentRank: sr, ladder, timeZone }) => {
-      const current = eligibilityOnLadder(ladder, sr, timeZone);
+    return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder, timeZone }) => {
+      const thresholds = thresholdsOf(discipline);
+      const current = eligibilityOnLadder(ladder, sr, timeZone, undefined, thresholds);
       if (current.hasNext && current.boardColumn === dto.column) {
         throw new BadRequestException('This student is already in that column.');
       }
-      const move = boardMove(requirementFor(ladder, sr.currentStripeId ?? ''), dto.column);
+      const move = boardMove(requirementFor(ladder, sr.currentStripeId ?? ''), dto.column, thresholds);
       if (move.kind === 'NOT_MOVABLE') {
         throw new BadRequestException('This student can\'t be moved: there is no next rank, or nothing required to split into columns.');
       }

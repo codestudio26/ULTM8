@@ -1742,6 +1742,10 @@ model Discipline {
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
   skillsRequiredToGrade Boolean @default(false)
+  /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
+  /// There from this %, Ready to Grade from that %. 33 / 66 by default.
+  boardGettingThere Int @default(33)
+  boardReadyToGrade Int @default(66)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

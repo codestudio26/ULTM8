@@ -4819,6 +4819,51 @@
         ]
       }
     },
+    "/v1/disciplines/{id}/board-thresholds": {
+      "put": {
+        "operationId": "GradingController_setBoardThresholds",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardThresholdsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style, with its new board columns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/board-move": {
       "post": {
         "operationId": "GradingController_moveOnBoard",
@@ -10234,6 +10279,14 @@
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10)."
           },
+          "boardGettingThere": {
+            "type": "number",
+            "description": "Grading Board: \"Getting There\" from this % (Decisions 75, 136). Default 33."
+          },
+          "boardReadyToGrade": {
+            "type": "number",
+            "description": "Grading Board: \"Ready to Grade\" from this % (Decisions 75, 136). Default 66."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -10247,6 +10300,8 @@
           "name",
           "classTypesOffered",
           "skillsRequiredToGrade",
+          "boardGettingThere",
+          "boardReadyToGrade",
           "createdAt",
           "updatedAt"
         ]
@@ -11546,6 +11601,28 @@
         "required": [
           "items",
           "hiddenInactive"
+        ]
+      },
+      "BoardThresholdsDto": {
+        "type": "object",
+        "properties": {
+          "gettingThere": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 98,
+            "example": 33
+          },
+          "readyToGrade": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 99,
+            "example": 66,
+            "description": "Must be above gettingThere."
+          }
+        },
+        "required": [
+          "gettingThere",
+          "readyToGrade"
         ]
       },
       "BoardMoveDto": {
