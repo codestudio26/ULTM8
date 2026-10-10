@@ -3719,14 +3719,49 @@ export interface components {
             userId: string;
             disciplineId: string;
             grantedById: string | null;
+            canPromote: boolean;
+            canDowngrade: boolean;
+            canSignOffSkills: boolean;
+            canAdjustProgress: boolean;
+            canVerifyRanks: boolean;
+            canVoidHistory: boolean;
+            canChangeBoardThresholds: boolean;
             createdAt: string;
+        };
+        GradingStaffDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            /** @description INSTRUCTOR and/or BRANCH_STAFF. */
+            roles: string[];
         };
         GradingPermissionListResponseDto: {
             items: components["schemas"]["GradingPermissionResponseDto"][];
+            /** @description The School's active Instructors and Branch Staff, who can be given grading permission (Decision 181). */
+            staff: components["schemas"]["GradingStaffDto"][];
+        };
+        StylePermissionInputDto: {
+            disciplineId: string;
+            /** @description Promote: grade up, stripe award, bulk promote, give a first rank. */
+            canPromote: boolean;
+            /** @description Move down (downgrade), with a reason. */
+            canDowngrade: boolean;
+            /** @description Sign off skills. */
+            canSignOffSkills: boolean;
+            /** @description Adjust progress: move a student on the Grading Board, log a class, correct the rank date, the Active switch. */
+            canAdjustProgress: boolean;
+            /** @description Verify (or correct) self-declared ranks. */
+            canVerifyRanks: boolean;
+            /** @description Void history entries. */
+            canVoidHistory: boolean;
+            /** @description Change the style's Grading Board percentages. */
+            canChangeBoardThresholds: boolean;
         };
         SetGradingPermissionsDto: {
-            /** @description Disciplines (styles) this staff member may grade in. Replaces the current list. */
-            disciplineIds: string[];
+            /** @description Each style this staff member may grade in, with its toggles (Decision 181). */
+            styles?: components["schemas"]["StylePermissionInputDto"][];
+            /** @description Older form: styles with every toggle on. Use `styles` instead. */
+            disciplineIds?: string[];
         };
         CreateWaiverDto: {
             title: string;

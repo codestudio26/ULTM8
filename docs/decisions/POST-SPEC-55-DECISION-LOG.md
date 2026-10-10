@@ -2153,3 +2153,24 @@ Delivery is in-app and email, as for every notification until push is built (Dec
 3. **A rung students hold can't be removed** (Decision 152). The API refuses and names the students; move them to another rank first. This also closes a gap: before, removing a held rung left its students with no rung.
 
 Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT /styles/{id}/ranks/order` for belts, and `GET /styles/{id}/rung-holders` (owner only) for the confirmation.
+
+---
+
+## Decision 181 — Grading permission becomes seven toggles per coach per style; board % editable by the owner and coaches given it
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** who may change a style's Grading Board percentages (Decisions 75, 136), and refines Decision 138's single grading permission. Raised while planning the grading settings screen.
+
+1. **Seven toggles, per coach, per style.** The owner always may do everything. For each Instructor or Branch Staff member and each style, the owner sets:
+   - **Promote:** grade up, stripe award, bulk promote, give a first rank;
+   - **Move down:** downgrade, with a reason;
+   - **Sign off skills;**
+   - **Adjust progress:** move a student on the Grading Board (e.g. to Ready to Grade), log a class, correct the rank date, and the board's Active/Inactive switch;
+   - **Verify self-declared ranks** (or correct them);
+   - **Void history entries;**
+   - **Change board %:** this style's Grading Board split.
+
+   Each grading action needs its own toggle. The branch rule is unchanged: coaches grade only their own branches' students (Decision 168). Gus: the 7-toggle list, *"Per person, per style"*.
+2. **Board percentages are per style** (Decision 75), 33% / 66% by default (Decision 136), changed by the owner or a coach with **Change board %** for that style. Gus: *"The owner + who ever is granted the permission to the grading area"*. The settings screen itself is built separately.
+3. **"Ready to grade" notifications** (Decisions 145, 178) go to coaches who may **Promote** in that style.
+4. **Existing grants keep every toggle on.** Nobody uses the system live yet (Gus).
+5. **A Grading permissions page** in the School Portal lists the school's Instructors and Branch Staff, with "May grade" per style and the seven toggles. The API's permission list includes that staff list (owner only), since no staff roster endpoint existed.

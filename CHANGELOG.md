@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading permissions: seven toggles per coach per style** (Decision 181).
+  New **Grading Permissions** page in the School Portal: for each Instructor
+  and Branch Staff member, the styles they may grade in and, per style,
+  Promote, Move down, Sign off skills, Adjust progress, Verify ranks, Void
+  history and Change board %. **api:** `GradingPermission` gains the seven
+  toggles (all on by default; migration `20261023000000`); every grading
+  action now checks its own toggle and says which one is missing;
+  `PUT /schools/{id}/grading-permissions/{userId}` takes `styles` with toggles
+  (the older `disciplineIds` still works, all toggles on); the list includes
+  the school's staff. "Ready to grade" goes to coaches who may promote.
+  `packages/api-client` regenerated.
 - **school-portal — ladder editor** (roadmap Phase 4, item 1; Decisions 127,
   128, 149, 152, 165, 173, 180). A style's Ranks table is replaced by a
   **Ladder**: belts in order with their rungs and requirements, reordered with
