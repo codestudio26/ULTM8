@@ -13,13 +13,20 @@ import { KidModePinScreen } from '../kidmode/KidModePinScreen';
 import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
 import { PendingReviewScreen } from '../kidmode/PendingReviewScreen';
 import { QrCheckInScreen } from '../attendance/QrCheckInScreen';
+import { CoachDashboardScreen } from '../coach/CoachDashboardScreen';
+import { GradingBoardScreen } from '../coach/GradingBoardScreen';
+import { CoachStudentScreen } from '../coach/CoachStudentScreen';
+import { useCoachSchoolId } from '../auth/AuthContext';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
+/** Coaches (Instructors and Branch Staff) land on their dashboard; everyone
+ * else on the student home (Decision 184 item 4). */
 export function AppNavigator() {
+  const coachSchoolId = useCoachSchoolId();
   return (
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName={coachSchoolId ? 'CoachDashboard' : 'Home'}>
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'ULTM8 Student' }} />
       <Stack.Screen name="Academies" component={AcademiesListScreen} options={{ title: 'Academies' }} />
       <Stack.Screen
@@ -37,6 +44,9 @@ export function AppNavigator() {
       <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: 'Kid Mode' }} />
       <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: 'Needs Your Review' }} />
       <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: 'Check In' }} />
+      <Stack.Screen name="CoachDashboard" component={CoachDashboardScreen} options={{ title: 'Coach' }} />
+      <Stack.Screen name="GradingBoard" component={GradingBoardScreen} options={({ route }) => ({ title: `Grading Board — ${route.params.name}` })} />
+      <Stack.Screen name="CoachStudent" component={CoachStudentScreen} options={({ route }) => ({ title: route.params.name })} />
     </Stack.Navigator>
   );
 }
