@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading hardening, security** (Phase 7 security review). A coach invite
+  is checked again when accepted: it no longer works once the person who sent
+  it may no longer invite there (their "Can invite coaches" turned off or
+  their Branch Staff role removed — those also cancel their open invites) or
+  once the School is closed; the link page then shows it as cancelled.
+  Cancelling an invite while it's being accepted is a clean 409, not a 500.
+  Sending invites is limited to 20 an hour per account. Database rules
+  narrowed: a student can read but no longer change their own home branch
+  (the owner assigns it, Decision 148); a sent invite's email, branch and
+  token can't be changed, only its outcome; coaches at a School without
+  branches see current students only (migration `20261026000000`).
 - **Grading hardening, correctness** (Phase 7; Decision 185). From the
   hardening round: a promote or downgrade with no target now moves one rung
   (was a whole belt); a downgrade no longer notifies the student; grading

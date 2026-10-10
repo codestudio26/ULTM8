@@ -186,11 +186,22 @@ export class CoachInvitesService {
     if (!invite) throw new NotFoundException('Invite not found');
     await this.assertMayInvite(callerId, invite.schoolId, invite.branchId);
     if (invite.acceptedAt) throw new ConflictException('This invite has already been accepted. Remove the coach role on the Staff page instead.');
-    const updated = invite.cancelledAt
-      ? invite
-      : await this.prismaApp.withTenantContext(callerId, (tx) =>
-          tx.coachInvite.update({ where: { id: inviteId }, data: { cancelledAt: new Date(), cancelledById: callerId } }),
-        );
+    let updated = invite;
+    if (!invite.cancelledAt) {
+      // Only a still-open invite is cancelled: one accepted at this very
+      // moment is a 409, not a 500 (stress round, finding 7).
+      updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        const done = await tx.coachInvite.updateMany({
+          where: { id: inviteId, acceptedAt: null, cancelledAt: null },
+          data: { cancelledAt: new Date(), cancelledById: callerId },
+        });
+        const now = await tx.coachInvite.findUniqueOrThrow({ where: { id: inviteId } });
+        if (done.count === 0 && now.acceptedAt) {
+          throw new ConflictException('This invite has just been accepted. Remove the coach role on the Staff page instead.');
+        }
+        return now;
+      });
+    }
     const branch = updated.branchId
       ? await this.prismaApp.withTenantContext(callerId, (tx) => tx.branch.findUnique({ where: { id: updated.branchId! }, select: { name: true } }))
       : null;
@@ -199,7 +210,7 @@ export class CoachInvitesService {
 
   private async findByToken(token: string) {
     const rows = await this.prismaApp.$queryRaw<
-      Array<InviteRow & { schoolName: string; branchName: string | null }>
+      Array<InviteRow & { schoolName: string; schoolArchived: boolean; branchName: string | null; inviterMayInvite: boolean }>
     >`SELECT * FROM coach_invite_by_token(${hashToken(token)})`;
     return rows[0] ?? null;
   }
@@ -208,7 +219,10 @@ export class CoachInvitesService {
   async preview(token: string) {
     const invite = await this.findByToken(token);
     if (!invite) throw new NotFoundException('This invite link is not valid.');
-    return { schoolName: invite.schoolName, branchName: invite.branchName, email: invite.email, status: statusOf(invite), expiresAt: invite.expiresAt };
+    // An invite from someone who may no longer invite, or to a closed School,
+    // can't be accepted: shown as cancelled.
+    const status = statusOf(invite) === 'PENDING' && !this.stillValid(invite) ? 'CANCELLED' : statusOf(invite);
+    return { schoolName: invite.schoolName, branchName: invite.branchName, email: invite.email, status, expiresAt: invite.expiresAt };
   }
 
   /** Accept, signed in with the invited email: the account gets the coach
@@ -220,6 +234,9 @@ export class CoachInvitesService {
     if (status === 'ACCEPTED') throw new ConflictException('This invite has already been used.');
     if (status === 'CANCELLED') throw new GoneException('This invite was cancelled. Ask the school for a new one.');
     if (status === 'EXPIRED') throw new GoneException('This invite has expired. Ask the school for a new one.');
+    // Still good at the moment of accepting (security review M1): the School
+    // isn't closed, and whoever sent it may still invite to that branch.
+    if (!this.stillValid(invite)) throw new GoneException('This invite is no longer valid. Ask the school for a new one.');
 
     const tokenHash = hashToken(token);
     const grant = await this.prismaApp.withCoachInviteToken(callerId, tokenHash, async (tx) => {
@@ -295,7 +312,25 @@ export class CoachInvitesService {
         update: { canInviteCoaches, grantedById: callerId },
       }),
     );
+    if (!canInviteCoaches) await this.cancelOpenInvitesFrom(callerId, schoolId, userId);
     return (await this.listStaffPermissions(callerId, schoolId)).items.find((i) => i.userId === userId)!;
+  }
+
+  private stillValid(invite: { schoolArchived: boolean; inviterMayInvite: boolean }): boolean {
+    return !invite.schoolArchived && invite.inviterMayInvite;
+  }
+
+  /** Cancel the open invites a staff member sent once they may no longer
+   * invite (their "Can invite coaches" turned off, or their Branch Staff role
+   * at that branch removed), so the owner's list matches what still works.
+   * Runs as the owner. */
+  async cancelOpenInvitesFrom(callerId: string, schoolId: string, inviterId: string, branchId?: string | null) {
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.coachInvite.updateMany({
+        where: { schoolId, invitedById: inviterId, acceptedAt: null, cancelledAt: null, ...(branchId !== undefined ? { branchId } : {}) },
+        data: { cancelledAt: new Date(), cancelledById: callerId },
+      }),
+    );
   }
 
   private toResponse(invite: InviteRow, branchName: string | null, invitedByName: string | null) {
