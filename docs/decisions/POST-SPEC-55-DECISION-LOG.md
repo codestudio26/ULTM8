@@ -2141,3 +2141,24 @@ Delivery is in-app and email, as for every notification until push is built (Dec
 1. The grading screens in the School Portal (student grading panel, Grading Board, ladder editor, grading settings) are built **in English now**. Translation is its own piece of work afterwards. Gus: *"Ok"*.
 2. Translations will cover **more than the four languages** named so far, including Asian languages. Which languages, and how, is to be decided then. Gus: *"also the translations will be for more languages, like asian languages, but we will look into this after"*.
 3. Browser tests: each screen is tested in Chromium here (desktop and tablet widths, keyboard-only). Firefox and WebKit runs are left to an environment that has those browsers. Gus: *"ok"*.
+
+---
+
+## Decision 181 — Grading permission becomes seven toggles per coach per style; board % editable by the owner and coaches given it
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** who may change a style's Grading Board percentages (Decisions 75, 136), and refines Decision 138's single grading permission. Raised while planning the grading settings screen.
+
+1. **Seven toggles, per coach, per style.** The owner always may do everything. For each Instructor or Branch Staff member and each style, the owner sets:
+   - **Promote:** grade up, stripe award, bulk promote, give a first rank;
+   - **Move down:** downgrade, with a reason;
+   - **Sign off skills;**
+   - **Adjust progress:** move a student on the Grading Board (e.g. to Ready to Grade), log a class, correct the rank date, and the board's Active/Inactive switch;
+   - **Verify self-declared ranks** (or correct them);
+   - **Void history entries;**
+   - **Change board %:** this style's Grading Board split.
+
+   Each grading action needs its own toggle. The branch rule is unchanged: coaches grade only their own branches' students (Decision 168). Gus: the 7-toggle list, *"Per person, per style"*.
+2. **Board percentages are per style** (Decision 75), 33% / 66% by default (Decision 136), changed by the owner or a coach with **Change board %** for that style. Gus: *"The owner + who ever is granted the permission to the grading area"*. The settings screen itself is built separately.
+3. **"Ready to grade" notifications** (Decisions 145, 178) go to coaches who may **Promote** in that style.
+4. **Existing grants keep every toggle on.** Nobody uses the system live yet (Gus).
+5. **A Grading permissions page** in the School Portal lists the school's Instructors and Branch Staff, with "May grade" per style and the seven toggles. The API's permission list includes that staff list (owner only), since no staff roster endpoint existed.

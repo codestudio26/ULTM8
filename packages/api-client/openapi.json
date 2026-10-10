@@ -11555,6 +11555,27 @@
             "type": "string",
             "nullable": true
           },
+          "canPromote": {
+            "type": "boolean"
+          },
+          "canDowngrade": {
+            "type": "boolean"
+          },
+          "canSignOffSkills": {
+            "type": "boolean"
+          },
+          "canAdjustProgress": {
+            "type": "boolean"
+          },
+          "canVerifyRanks": {
+            "type": "boolean"
+          },
+          "canVoidHistory": {
+            "type": "boolean"
+          },
+          "canChangeBoardThresholds": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "string"
           }
@@ -11565,7 +11586,41 @@
           "userId",
           "disciplineId",
           "grantedById",
+          "canPromote",
+          "canDowngrade",
+          "canSignOffSkills",
+          "canAdjustProgress",
+          "canVerifyRanks",
+          "canVoidHistory",
+          "canChangeBoardThresholds",
           "createdAt"
+        ]
+      },
+      "GradingStaffDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "roles": {
+            "description": "INSTRUCTOR and/or BRANCH_STAFF.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "roles"
         ]
       },
       "GradingPermissionListResponseDto": {
@@ -11576,26 +11631,84 @@
             "items": {
               "$ref": "#/components/schemas/GradingPermissionResponseDto"
             }
+          },
+          "staff": {
+            "description": "The School's active Instructors and Branch Staff, who can be given grading permission (Decision 181).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingStaffDto"
+            }
           }
         },
         "required": [
-          "items"
+          "items",
+          "staff"
+        ]
+      },
+      "StylePermissionInputDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "canPromote": {
+            "type": "boolean",
+            "description": "Promote: grade up, stripe award, bulk promote, give a first rank."
+          },
+          "canDowngrade": {
+            "type": "boolean",
+            "description": "Move down (downgrade), with a reason."
+          },
+          "canSignOffSkills": {
+            "type": "boolean",
+            "description": "Sign off skills."
+          },
+          "canAdjustProgress": {
+            "type": "boolean",
+            "description": "Adjust progress: move a student on the Grading Board, log a class, correct the rank date, the Active switch."
+          },
+          "canVerifyRanks": {
+            "type": "boolean",
+            "description": "Verify (or correct) self-declared ranks."
+          },
+          "canVoidHistory": {
+            "type": "boolean",
+            "description": "Void history entries."
+          },
+          "canChangeBoardThresholds": {
+            "type": "boolean",
+            "description": "Change the style's Grading Board percentages."
+          }
+        },
+        "required": [
+          "disciplineId",
+          "canPromote",
+          "canDowngrade",
+          "canSignOffSkills",
+          "canAdjustProgress",
+          "canVerifyRanks",
+          "canVoidHistory",
+          "canChangeBoardThresholds"
         ]
       },
       "SetGradingPermissionsDto": {
         "type": "object",
         "properties": {
+          "styles": {
+            "description": "Each style this staff member may grade in, with its toggles (Decision 181).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StylePermissionInputDto"
+            }
+          },
           "disciplineIds": {
-            "description": "Disciplines (styles) this staff member may grade in. Replaces the current list.",
+            "description": "Older form: styles with every toggle on. Use `styles` instead.",
             "type": "array",
             "items": {
               "type": "string"
             }
           }
-        },
-        "required": [
-          "disciplineIds"
-        ]
+        }
       },
       "CreateWaiverDto": {
         "type": "object",

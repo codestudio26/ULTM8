@@ -15,6 +15,18 @@ import { GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notific
 import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
 import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
+import { PermissionToggle } from './dto/grading-permission.dto';
+
+/** How each toggle reads in an error message (Decision 181). */
+const TOGGLE_LABELS: Record<PermissionToggle, string> = {
+  canPromote: 'Promote',
+  canDowngrade: 'Move down',
+  canSignOffSkills: 'Sign off skills',
+  canAdjustProgress: 'Adjust progress',
+  canVerifyRanks: 'Verify self-declared ranks',
+  canVoidHistory: 'Void history entries',
+  canChangeBoardThresholds: 'Change board %',
+};
 import { DateTime } from 'luxon';
 import { loadLadder } from './grading-attendance';
 import { boardMove, dayNumber, gradingDateProblem, localDay, requirementFor, Rung, rungIndex } from './engine';
@@ -195,18 +207,24 @@ export class GradingService {
   /** Decision 138: the School owner always may grade. Anyone else must be
    * School staff (Instructor or Branch Staff) holding grading permission for
    * this discipline, and the student must be in one of their branches
-   * (Decision 168). Covers every grading write: grade, downgrade, stripe
-   * award, skill sign-off, void and edit rank date. Replaces the plain
+   * (Decision 168). Covers every grading write; each needs its own toggle of
+   * that permission (Decision 181): promote (grade, stripe award, bulk),
+   * downgrade, skill sign-off, adjust progress (board move, log a class, rank
+   * date, Active switch), verify, void. Replaces the plain
    * assertStaffAtSchool() check, which admitted all staff to every grading
    * action and was flagged [UNRESOLVED] in this file. */
-  async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string): Promise<void> {
+  async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string, toggle: PermissionToggle): Promise<void> {
     if (await this.isSchoolOwner(callerId, schoolId)) return;
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } }, select: { schoolId: true } }),
+      tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } } }),
     );
     if (!permission || permission.schoolId !== schoolId) {
       throw new ForbiddenException('You do not have grading permission for this style. The School owner grants it.');
+    }
+    // Decision 181: each action needs its own toggle.
+    if (!permission[toggle]) {
+      throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS[toggle]}. The School owner can turn it on.`);
     }
     await this.assertBranchCoversStudent(callerId, schoolId, studentId);
   }
@@ -332,7 +350,7 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' ? 'canDowngrade' : 'canPromote');
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
     if (type === 'DOWNGRADE' && (dto.effectiveDate !== undefined || dto.startingClasses !== undefined || dto.startingClassesByType !== undefined)) {
@@ -610,7 +628,7 @@ export class GradingService {
 
     for (const studentId of dto.studentIds) {
       try {
-        await this.assertCanGrade(callerId, schoolId, dto.disciplineId, studentId);
+        await this.assertCanGrade(callerId, schoolId, dto.disciplineId, studentId, 'canPromote');
       } catch (err) {
         if (err instanceof ForbiddenException) {
           cannotPromote.push({ studentId, reasons: ['not a student you can grade in this style'] });
@@ -872,7 +890,7 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canAdjustProgress');
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       const studentRank = await tx.studentRank.findUnique({
@@ -1006,7 +1024,7 @@ export class GradingService {
     if (!skill) {
       throw new NotFoundException('Skill not found');
     }
-    await this.assertCanGrade(callerId, skill.schoolId, skill.disciplineId, studentId);
+    await this.assertCanGrade(callerId, skill.schoolId, skill.disciplineId, studentId, 'canSignOffSkills');
     await this.assertSchoolAcceptsGradingWrites(callerId, skill.schoolId);
 
     return this.thenCheckReady(studentId, skill.disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -1093,7 +1111,7 @@ export class GradingService {
     if (!found) {
       throw new NotFoundException('History entry not found');
     }
-    await this.assertCanGrade(callerId, schoolId, found.studentRank.disciplineId, studentId);
+    await this.assertCanGrade(callerId, schoolId, found.studentRank.disciplineId, studentId, 'canVoidHistory');
     await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -1125,7 +1143,7 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canAdjustProgress');
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
     if (dayNumber(dto.date) === null) {
@@ -1316,7 +1334,7 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canVerifyRanks');
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
     return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {

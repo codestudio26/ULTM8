@@ -139,6 +139,13 @@ export async function addStudent(
   return { id: u.id, name: `${first} ${last}` };
 }
 
+/** An Instructor at this School (no branch), who can be given grading permission. */
+export async function addCoach(s: GradingSchool, first: string, last: string) {
+  const u = await mkUser(first, last);
+  await db.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: u.id, schoolId: s.schoolId } });
+  return { id: u.id, name: `${first} ${last}` };
+}
+
 /** Signs the page in as this token's user (the portal keeps the token in sessionStorage). */
 export async function signIn(page: Page, token: string) {
   await page.addInitScript((t) => sessionStorage.setItem('ultm8.accessToken', t), token);
@@ -150,6 +157,7 @@ export async function cleanup() {
   await db.notification.deleteMany({ where: { userId: { in: userIds } } });
   await db.skillSignOffLog.deleteMany({ where });
   await db.studentRankSkillStatus.deleteMany({ where });
+  await db.gradingPermission.deleteMany({ where });
   await db.promotionEvent.deleteMany({ where });
   await db.studentRank.deleteMany({ where });
   await db.lessonSkill.deleteMany({ where: { lesson: { schoolId: { in: schoolIds } } } });
