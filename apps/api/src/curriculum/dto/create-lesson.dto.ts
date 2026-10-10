@@ -32,11 +32,10 @@ export class CreateLessonDto {
   @MaxLength(200)
   title!: string;
 
-  @ApiPropertyOptional({ description: 'Plain field only — Spec 55\'s own "Belongs to a Category" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation.' })
+  @ApiPropertyOptional({ description: 'One of this School\'s lesson categories (Decisions 128.15, 191); the lesson goes to the end of it.' })
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  category?: string;
+  @IsUUID()
+  categoryId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

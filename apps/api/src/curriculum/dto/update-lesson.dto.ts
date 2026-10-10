@@ -22,11 +22,10 @@ export class UpdateLessonDto {
   @MaxLength(200)
   title?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Move it to another of this School\'s categories (to the end), or null for none.' })
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  category?: string;
+  @IsUUID()
+  categoryId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -7,6 +7,13 @@ import { CurriculumService } from './curriculum.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { LessonListResponseDto, LessonResponseDto } from './dto/lesson-response.dto';
+import {
+  LessonCategoryListResponseDto,
+  LessonCategoryNameDto,
+  LessonCategoryResponseDto,
+  OrderCategoryLessonsDto,
+  OrderLessonCategoriesDto,
+} from './dto/lesson-category.dto';
 
 /**
  * `/schools/:schoolId/curriculum/lessons` for create+list is a Developer-level
@@ -54,5 +61,37 @@ export class CurriculumController {
   @Patch('lessons/:id')
   updateLesson(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateLessonDto) {
     return this.curriculumService.updateLesson(user.sub, id, dto);
+  }
+
+  // Lesson categories (Decisions 128.15, 191).
+
+  @ApiOkResponse({ type: LessonCategoryListResponseDto })
+  @Get('schools/:schoolId/curriculum/categories')
+  findCategories(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.curriculumService.findCategories(user.sub, schoolId);
+  }
+
+  @ApiCreatedResponse({ type: LessonCategoryResponseDto })
+  @Post('schools/:schoolId/curriculum/categories')
+  createCategory(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: LessonCategoryNameDto) {
+    return this.curriculumService.createCategory(user.sub, schoolId, dto.name);
+  }
+
+  @ApiOkResponse({ type: LessonCategoryResponseDto })
+  @Patch('curriculum/categories/:id')
+  renameCategory(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: LessonCategoryNameDto) {
+    return this.curriculumService.renameCategory(user.sub, id, dto.name);
+  }
+
+  @ApiOkResponse({ type: LessonCategoryListResponseDto })
+  @Put('schools/:schoolId/curriculum/categories/order')
+  orderCategories(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: OrderLessonCategoriesDto) {
+    return this.curriculumService.orderCategories(user.sub, schoolId, dto);
+  }
+
+  @ApiOkResponse({ type: LessonListResponseDto })
+  @Put('curriculum/categories/:id/lessons/order')
+  orderCategoryLessons(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: OrderCategoryLessonsDto) {
+    return this.curriculumService.orderCategoryLessons(user.sub, id, dto);
   }
 }
