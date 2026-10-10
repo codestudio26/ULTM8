@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Belts and stripes, not "rungs"** (Decision 187). Screens and messages now
+  say belt and stripe: the belt editor lists a belt's **Stripes** ("Stripe name",
+  "Add stripe", "Reorder stripes?"), the ladder shows each belt's number of
+  stripes, the style templates count "grades (each belt and each stripe)", and
+  the API's grading and ladder error messages use the same words.
 - **Grading hardening, performance** (Phase 7 stress round). The Grading
   Board for coaches and staff loads in one query instead of one per student:
   a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a

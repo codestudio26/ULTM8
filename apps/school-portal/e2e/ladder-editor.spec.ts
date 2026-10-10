@@ -53,7 +53,7 @@ test('editing a rung: name, "each type" numbers and time in rank only', async ({
   const dialog = page.getByRole('dialog', { name: 'Edit White' });
 
   await dialog.getByRole('button', { name: 'Edit White 2' }).click();
-  await dialog.getByLabel('Rung name').fill('White · 2 stripes');
+  await dialog.getByLabel('Stripe name').fill('White · 2 stripes');
   await dialog.getByLabel('Which classes count').selectOption('EACH_TYPE');
   await dialog.getByLabel('Fundamentals').first().check();
   await dialog.getByLabel('Sparring').first().check();
@@ -99,7 +99,7 @@ test('reordering rungs names the students affected, and they keep their rung', a
   await dialog.getByRole('button', { name: 'Move White 1 down' }).click();
   await dialog.getByRole('button', { name: 'Save' }).click();
 
-  const confirm = page.getByRole('dialog', { name: 'Reorder rungs?' });
+  const confirm = page.getByRole('dialog', { name: 'Reorder stripes?' });
   await expect(confirm.getByText('Sam Lee')).toBeVisible();
   await confirm.getByRole('button', { name: 'Save' }).click();
   await expect(confirm).toBeHidden();

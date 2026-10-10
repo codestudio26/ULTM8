@@ -7,6 +7,8 @@ import { BeltChip } from '../grading/BeltChip';
 import { BeltEditorModal, type BeltValues } from './BeltEditorModal';
 import { type RankResponse, useCreateRank, useReorderRanks, useRungHolders, useUpdateRank } from './rankQueries';
 
+const stripesLabel = (n: number) => (n === 0 ? 'No stripes' : n === 1 ? '1 stripe' : `${n} stripes`);
+
 type Holder = { studentId: string; firstName: string; surname: string };
 
 /**
@@ -73,7 +75,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
           <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 4 }}>
             Ladder
           </h2>
-          <p style={{ margin: 0 }}>The belts in order, lowest first, each with its rungs and what it takes to be promoted into them.</p>
+          <p style={{ margin: 0 }}>The belts in order, lowest first, each with its stripes and what it takes to be promoted into them.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {changed ? (
@@ -92,7 +94,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
       {error ? <ErrorBanner message={error} /> : null}
 
       {shown.length === 0 ? (
-        <EmptyState title="No ranks yet" description="Add your first rank (belt), with its rungs, to start the ladder." />
+        <EmptyState title="No ranks yet" description="Add your first rank (belt), with its stripes, to start the ladder." />
       ) : (
         <ol aria-label="Ladder" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {shown.map((rank, i) => {
@@ -105,7 +107,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                   {tiers[0] ? <BeltChip rung={{ id: tiers[0].id, rankId: rank.id, rank, tier: tiers[0], index: 0, name: tiers[0].name }} /> : null}
                   <strong style={{ flex: 1, minWidth: 120 }}>{rank.name}</strong>
                   <span className="ultm8-field__hint">
-                    {tiers.length} rung{tiers.length === 1 ? '' : 's'}
+                    {stripesLabel(Math.max(0, ...tiers.map((t) => t.count)))}
                   </span>
                   {onBelt > 0 ? <Badge>{onBelt === 1 ? '1 student' : `${onBelt} students`}</Badge> : null}
                   <Button variant="secondary" onClick={() => setEditing(rank)} aria-label={`Edit ${rank.name}`}>
@@ -142,7 +144,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
 
       {confirming ? (
         <Modal title="Reorder belts?" onClose={() => setConfirming(null)}>
-          <p>These students stay on their rung, but its place in the ladder changes, so their next rank may change ({confirming.length}):</p>
+          <p>These students stay on their stripe, but its place in the ladder changes, so their next rank may change ({confirming.length}):</p>
           <ul>
             {confirming.map((h) => (
               <li key={h.studentId}>{`${h.firstName} ${h.surname}`.trim()}</li>
