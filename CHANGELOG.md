@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — "ready to grade" notification** (Decisions 145, 178). The School
+  owner and the coaches with grading permission for the style who cover the
+  student's branch are told, in-app and by email, when a student meets
+  everything for their next rung (classes, minimum days, required skills).
+  Checked right after grading actions and check-ins, and in a daily sweep; sent
+  once per rank (`StudentRank.readyNotifiedAt`, cleared on every rank change).
+  **"You've been promoted" now goes to a minor's guardians** instead of the
+  minor's own profile, which has no login. Security: the background-job role
+  can now read grading data and guardian links (read-only; its only write is
+  `readyNotifiedAt`), in `20261022000000_grading_ready_notification`.
 - **api — grading Phase 3c: bulk promote** (Decision 130).
   `POST /schools/{id}/grading/bulk-promote` moves up to 200 students one rung
   each on one date, with an optional note. `dryRun` returns three lists for the
