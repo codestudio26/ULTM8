@@ -96,7 +96,8 @@ export function GradeModal({
     e.preventDefault();
     if (!target) return;
     setError(null);
-    const body: Parameters<typeof promote.mutateAsync>[0] = { acknowledgeWithoutSkillSignoff: needsAck };
+    // The rung the coach is looking at: refused if someone else graded first (Decision 185).
+    const body: Parameters<typeof promote.mutateAsync>[0] = { acknowledgeWithoutSkillSignoff: needsAck, expectedCurrentRungId: current?.id ?? null };
     if (date && date !== todayLocal()) body.effectiveDate = date;
     if (note.trim()) body.note = note.trim();
     if (starting.kind === 'TOTAL' && startingTotal !== '') body.startingClasses = Number(startingTotal);
@@ -222,7 +223,13 @@ export function DowngradeModal({
     e.preventDefault();
     setError(null);
     try {
-      await downgrade.mutateAsync({ acknowledgeWithoutSkillSignoff: false, targetRungId: targetId, reason: reason.trim(), ...(note.trim() ? { note: note.trim() } : {}) });
+      await downgrade.mutateAsync({
+        acknowledgeWithoutSkillSignoff: false,
+        targetRungId: targetId,
+        expectedCurrentRungId: current.id,
+        reason: reason.trim(),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      });
       onClose();
     } catch (err) {
       setError(errorText(err));

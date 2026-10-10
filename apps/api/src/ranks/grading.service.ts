@@ -8,7 +8,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
-import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
@@ -128,7 +128,13 @@ export class GradingService {
     }
     return this.prismaApp.withTenantContext(studentId, (tx) =>
       cursorPaginate(
-        (args) => tx.promotionEvent.findMany({ ...args, where: { studentId, schoolId, ...(includeVoided ? {} : { voidedAt: null }) } }),
+        // Newest first by grading date, as the prototype (the cursor stays the id).
+        (args) =>
+          tx.promotionEvent.findMany({
+            ...args,
+            where: { studentId, schoolId, ...(includeVoided ? {} : { voidedAt: null }) },
+            orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+          }),
         cursor,
         limit,
       ),
@@ -217,7 +223,10 @@ export class GradingService {
    * assertStaffAtSchool() check, which admitted all staff to every grading
    * action and was flagged [UNRESOLVED] in this file. */
   async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string, toggle: PermissionToggle): Promise<void> {
-    if (await this.isSchoolOwner(callerId, schoolId)) return;
+    if (await this.isSchoolOwner(callerId, schoolId)) {
+      await this.assertEnrolledStudent(studentId, schoolId);
+      return;
+    }
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } } }),
@@ -230,6 +239,18 @@ export class GradingService {
       throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS[toggle]}. The School owner can turn it on.`);
     }
     await this.assertBranchCoversStudent(callerId, schoolId, studentId);
+    await this.assertEnrolledStudent(studentId, schoolId);
+  }
+
+  /** Grading is for the School's own students (stress round, finding 8): an
+   * active STUDENT grant here, read under the student's own context. Checked
+   * after the caller's own rights, so it tells an outsider nothing. */
+  private async assertEnrolledStudent(studentId: string, schoolId: string): Promise<void> {
+    if (!UUID_PATTERN.test(studentId)) throw new BadRequestException('studentId must be a valid UUID');
+    const grant = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+    );
+    if (!grant) throw new NotFoundException('This person isn\'t a student at this School.');
   }
 
   /** Reads: the owner sees every student; other staff see the students of
@@ -319,10 +340,13 @@ export class GradingService {
    * per-type tally, when counting began, and the skill sign-offs.
    *
    * - Promote: up only, to any higher rung (skipped rungs are recorded,
-   *   "Skipped N ranks in between"); default the next belt's first rung, as
-   *   before. Downgrade: down only, to any lower rung, with a reason, dated
-   *   today; default the previous belt's first rung. Stripe award: the next
+   *   "Skipped N ranks in between"); default the next rung. Downgrade: down
+   *   only, to any lower rung, with a reason, dated today; default the rung
+   *   just below (Decision 185, as the prototype). Stripe award: the next
    *   stripe tier of the same belt.
+   * - expectedCurrentRungId (Decision 185): when sent, refused with 409 if the
+   *   student is no longer on that rung, so a second coach (or a bulk batch
+   *   planned earlier) can't apply the same step twice or undo a change.
    * - Skills (Decision 127): the engine's requirement for the student's next
    *   rung. Not all signed off: blocked when the style's "skills required"
    *   switch is on, otherwise allowed with the written acknowledgement
@@ -388,6 +412,9 @@ export class GradingService {
         );
       }
       const from = existing ? ladder[fromIndex] : null;
+      if (dto.expectedCurrentRungId !== undefined && (from?.id ?? null) !== dto.expectedCurrentRungId) {
+        throw new ConflictException('This student\'s rank has changed since you opened it. Reload and try again.');
+      }
       let toIndex: number;
       if (dto.targetRungId !== undefined) {
         toIndex = rungIndex(ladder, dto.targetRungId);
@@ -406,11 +433,9 @@ export class GradingService {
           throw new BadRequestException('This Student is already at the highest configured stripe tier for this Rank.');
         }
       } else {
-        // Default: the first rung of the next (or previous) belt, as before.
-        const step = type === 'PROMOTION' ? 1 : -1;
-        const targetRankOrder = from.rankOrder + step;
-        toIndex = ladder.findIndex((r) => r.rankOrder === targetRankOrder);
-        if (toIndex < 0) {
+        // Default: the next rung up, or the rung just below (Decision 185).
+        toIndex = fromIndex + (type === 'PROMOTION' ? 1 : -1);
+        if (!ladder[toIndex]) {
           throw new BadRequestException(
             type === 'PROMOTION' ? 'This Student is already at the highest Rank in this Discipline.' : 'This Student is already at the lowest Rank in this Discipline.',
           );
@@ -518,14 +543,18 @@ export class GradingService {
       return { studentRank, promotionEvent, toRungName: to.name };
     });
 
-    const isStripe = type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD';
-    await this.notifyOfGradingAction({
-      promotionEventId: result.promotionEvent.id,
-      studentId,
-      disciplineName: discipline.name,
-      toRungName: result.toRungName,
-      kind: isStripe ? 'STRIPE' : type === 'PROMOTION' ? 'PROMOTED' : 'ADJUSTED',
-    });
+    // Only "promoted" and "new stripe" reach the student (Decision 145); a
+    // downgrade shows in their history, with no notification (Decision 185).
+    if (type !== 'DOWNGRADE') {
+      const isStripe = type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD';
+      await this.notifyOfGradingAction({
+        promotionEventId: result.promotionEvent.id,
+        studentId,
+        disciplineName: discipline.name,
+        toRungName: result.toRungName,
+        kind: isStripe ? 'STRIPE' : 'PROMOTED',
+      });
+    }
     await queueReadyCheck(this.gradingNotificationsQueue, studentId, disciplineId);
 
     return result;
@@ -555,8 +584,8 @@ export class GradingService {
         if (!types.includes(classType)) {
           throw new BadRequestException(`"${classType}" is not one of the next rank's class types: ${types.join(', ')}.`);
         }
-        if (!Number.isInteger(n) || n < 0) {
-          throw new BadRequestException('Each starting class number must be a whole number, 0 or more.');
+        if (!Number.isInteger(n) || n < 0 || n > MAX_STARTING_CLASSES) {
+          throw new BadRequestException(`Each starting class number must be a whole number from 0 to ${MAX_STARTING_CLASSES}.`);
         }
         if (n > 0) byType[classType] = n;
       }
@@ -633,7 +662,7 @@ export class GradingService {
       try {
         await this.assertCanGrade(callerId, schoolId, dto.disciplineId, studentId, 'canPromote');
       } catch (err) {
-        if (err instanceof ForbiddenException) {
+        if (err instanceof ForbiddenException || err instanceof NotFoundException || err instanceof BadRequestException) {
           cannotPromote.push({ studentId, reasons: ['not a student you can grade in this style'] });
           continue;
         }
@@ -704,7 +733,14 @@ export class GradingService {
           callerId,
           row.studentId,
           dto.disciplineId,
-          { targetRungId: row.toRungId, effectiveDate: dto.effectiveDate, note: dto.note, acknowledgeWithoutSkillSignoff: row.missingSkills },
+          {
+            targetRungId: row.toRungId,
+            // Refused if they moved since the plan (Decision 185): one rung each.
+            expectedCurrentRungId: row.fromRungId ?? null,
+            effectiveDate: dto.effectiveDate,
+            note: dto.note,
+            acknowledgeWithoutSkillSignoff: row.missingSkills,
+          },
           'PROMOTION',
           { eventType: row.sameBelt ? 'BULK_STRIPE_AWARD' : 'BULK_PROMOTION', systemNote },
         );
@@ -840,15 +876,17 @@ export class GradingService {
     }> = [];
     for (const row of rows) {
       const { student, studentRank: sr } = row;
-      if (needle && !`${student.firstName} ${student.surname}`.toLowerCase().includes(needle)) continue;
-      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now, thresholdsOf(discipline));
-      if (!eligibility.hasNext) continue; // nothing to progress toward: not on the board (prototype)
       const hasActiveMembership = row.memberships.some((m) => isMembershipLive(m, now));
       const active = sr.boardActiveOverride ?? hasActiveMembership;
+      // "N inactive hidden" counts every inactive student in the style, the
+      // search aside, as the prototype (Gus's 7 Oct fix).
       if (opts.activeOnly && !active) {
         hiddenInactive++;
         continue;
       }
+      if (needle && !`${student.firstName} ${student.surname}`.toLowerCase().includes(needle)) continue;
+      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now, thresholdsOf(discipline));
+      if (!eligibility.hasNext) continue; // nothing to progress toward: not on the board (prototype)
       items.push({
         studentId: student.id,
         firstName: student.firstName,

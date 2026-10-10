@@ -16,6 +16,14 @@ import { UpdateSkillDto } from './dto/update-skill.dto';
 
 /** The one include every Rank read uses, so shapeRankResponse() always gets
  * stripe tiers (in ladder order) with their per-rung required Skills. */
+/** Ladder edits of one style take turns (stress round, finding 4): two edits
+ * listing the same belts or rungs in different orders otherwise lock rows in
+ * opposite orders and deadlock. Locks the style's row until the transaction
+ * ends. */
+async function lockLadder(tx: Pick<Prisma.TransactionClient, '$queryRaw'>, disciplineId: string): Promise<void> {
+  await tx.$queryRaw`SELECT "id" FROM "Discipline" WHERE "id" = ${disciplineId} FOR UPDATE`;
+}
+
 const RANK_INCLUDE = {
   stripeTiers: { orderBy: { order: 'asc' as const }, include: { requiredSkills: true } },
   requiredSkills: true,
@@ -342,6 +350,7 @@ export class RanksService {
     // call (already one transaction), not a nested tx.$transaction — the same
     // fix applies here.
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, existing.disciplineId);
       const rank = await tx.rank.update({
         where: { id: rankId },
         data: {
@@ -486,6 +495,7 @@ export class RanksService {
     await this.assertRanksEnabled(callerId, discipline.schoolId);
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, disciplineId);
       const ranks = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
       const ids = new Set(ranks.map((r) => r.id));
       if (dto.rankIds.length !== ids.size || dto.rankIds.some((id) => !ids.has(id))) {
