@@ -207,8 +207,57 @@ export class RanksService {
     );
   }
 
-  // No delete method — same reasoning ClassesModule/School/Branch/MembershipPlan/
-  // Waiver already established (general tenant offboarding is [UNRESOLVED]).
+  /** Deleting (Decision 198): only what has never been used. A style goes only
+   * when nobody has ever held a rank in it, no instructor has declared a belt
+   * in it, and no class, timetable slot or lesson uses it; its belts, skills
+   * and coach permissions go with it, and it is taken off membership plans and
+   * instructors' styles. Owner only. */
+  async deleteDiscipline(callerId: string, disciplineId: string): Promise<void> {
+    const discipline = await this.findOneDiscipline(callerId, disciplineId);
+    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
+    await this.assertRanksEnabled(callerId, discipline.schoolId);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, disciplineId);
+      const students = await tx.studentRank.count({ where: { disciplineId } });
+      if (students > 0) throw new ConflictException(`${students} student${students === 1 ? ' has' : 's have'} a rank in this style, so it can't be deleted.`);
+      const instructors = await tx.instructorBelt.count({ where: { disciplineId } });
+      if (instructors > 0) throw new ConflictException('An instructor has declared their belt in this style, so it can\'t be deleted.');
+      const styleJson = JSON.stringify([{ disciplineId }]);
+      const [{ n: classes }] = await tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM "Class" WHERE "schoolId" = ${discipline.schoolId} AND "styles" @> ${styleJson}::jsonb`;
+      const [{ n: slots }] = await tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM "TimetableSlot" WHERE "schoolId" = ${discipline.schoolId} AND "styles" @> ${styleJson}::jsonb`;
+      if (classes + slots > 0) throw new ConflictException('Classes or timetable slots use this style. Change or remove them first.');
+      const skills = await tx.skill.findMany({ where: { disciplineId }, select: { id: true } });
+      const skillIds = skills.map((sk) => sk.id);
+      const lessons = await tx.lessonSkill.count({ where: { skillId: { in: skillIds } } });
+      if (lessons > 0) throw new ConflictException('Lessons use this style\'s skills. Change or delete those lessons first.');
+
+      await tx.gradingPermission.deleteMany({ where: { disciplineId } });
+      await tx.rankRequiredSkill.deleteMany({ where: { skillId: { in: skillIds } } });
+      await tx.rankStripeTierRequiredSkill.deleteMany({ where: { skillId: { in: skillIds } } });
+      await tx.skill.deleteMany({ where: { disciplineId } });
+      const belts = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
+      await tx.rankRequiredSkill.deleteMany({ where: { rankId: { in: belts.map((b) => b.id) } } });
+      await tx.rankStripeTier.deleteMany({ where: { rankId: { in: belts.map((b) => b.id) } } });
+      await tx.rank.deleteMany({ where: { disciplineId } });
+      // Taken off the plans and instructors that listed it (an unticked box).
+      const plans = await tx.membershipPlan.findMany({ where: { schoolId: discipline.schoolId, disciplineIds: { has: disciplineId } }, select: { id: true, disciplineIds: true } });
+      for (const plan of plans) {
+        await tx.membershipPlan.update({ where: { id: plan.id }, data: { disciplineIds: plan.disciplineIds.filter((d) => d !== disciplineId) } });
+      }
+      const instructorRows = await tx.instructor.findMany({
+        where: { schoolId: discipline.schoolId, specializationStyleIds: { has: disciplineId } },
+        select: { id: true, specializationStyleIds: true, specializations: true },
+      });
+      for (const ins of instructorRows) {
+        await tx.instructor.update({
+          where: { id: ins.id },
+          data: { specializationStyleIds: ins.specializationStyleIds.filter((d) => d !== disciplineId), specializations: ins.specializations.filter((n) => n !== discipline.name) },
+        });
+      }
+      await tx.discipline.delete({ where: { id: disciplineId } });
+    });
+  }
 
   // ---------------------------------------------------------------------------
   // Rank CRUD (with nested stripe tiers) — School Owner/Manager only.
@@ -513,6 +562,37 @@ export class RanksService {
     });
   }
 
+  /** Deleting a belt (Decision 198): only when nobody holds it or any of its
+   * stripes now, it isn't in anyone's grading history, and no instructor has
+   * declared it. The belts after it move up one place. Owner only. */
+  async deleteRank(callerId: string, rankId: string): Promise<void> {
+    const rank = await this.prismaApp.withTenantContext(callerId, (tx) => tx.rank.findUnique({ where: { id: rankId }, include: { stripeTiers: { select: { id: true } } } }));
+    if (!rank) throw new NotFoundException('Rank not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, rank.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, rank.schoolId);
+    await this.assertRanksEnabled(callerId, rank.schoolId);
+    const tierIds = rank.stripeTiers.map((t) => t.id);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, rank.disciplineId);
+      const holders = await tx.studentRank.count({ where: { OR: [{ currentRankId: rankId }, { currentStripeId: { in: tierIds } }] } });
+      if (holders > 0) throw new ConflictException(`${holders} student${holders === 1 ? ' holds' : 's hold'} this belt, so it can't be deleted.`);
+      const history = await tx.promotionEvent.count({
+        where: { OR: [{ fromRankId: rankId }, { toRankId: rankId }, { fromStripeTierId: { in: tierIds } }, { toStripeTierId: { in: tierIds } }] },
+      });
+      if (history > 0) throw new ConflictException('This belt is in students\' grading history, so it can\'t be deleted.');
+      const declared = await tx.instructorBelt.count({ where: { OR: [{ rankId }, { stripeTierId: { in: tierIds } }] } });
+      if (declared > 0) throw new ConflictException('An instructor has declared this belt, so it can\'t be deleted.');
+
+      await tx.rankRequiredSkill.deleteMany({ where: { rankId } });
+      await tx.rankStripeTier.deleteMany({ where: { rankId } });
+      await tx.rank.delete({ where: { id: rankId } });
+      // Close the gap: positions stay 0..N-1 (park first, they're unique per style).
+      const rest = await tx.rank.findMany({ where: { disciplineId: rank.disciplineId }, orderBy: { order: 'asc' }, select: { id: true } });
+      for (const [i, r] of rest.entries()) await tx.rank.update({ where: { id: r.id }, data: { order: -1 - i } });
+      for (const [i, r] of rest.entries()) await tx.rank.update({ where: { id: r.id }, data: { order: i } });
+    });
+  }
+
   /** Who holds each rung of a style, for the ladder editor's confirmations
    * (Decision 152): before a reorder, and to explain why a rung can't be
    * removed. Owner only, like every ladder edit. */
@@ -534,11 +614,6 @@ export class RanksService {
     }
     return { items: [...byRung.entries()].map(([rungId, students]) => ({ rungId, students })) };
   }
-
-  // No delete method — same reasoning as Discipline above, doubly so here:
-  // deleting a Rank Students currently hold is blocked at the DB level anyway
-  // (StudentRank.currentRankId is ON DELETE RESTRICT — see the migration's own
-  // comment).
 
   // ---------------------------------------------------------------------------
   // Skill CRUD — School Owner/Manager only.
@@ -578,6 +653,33 @@ export class RanksService {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.skill.update({ where: { id: skillId }, data: { name: dto.name, description: dto.description } }),
     );
+  }
+
+  /** Deleting a skill (Decision 198): only when no student has ever had it
+   * marked (Learning or Signed off, now or in the sign-off log). It comes off
+   * the stripes that required it and the lessons that list it, unless it is a
+   * lesson's only skill. Owner only. */
+  async deleteSkill(callerId: string, skillId: string): Promise<void> {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.skill.findUnique({ where: { id: skillId } }));
+    if (!existing) throw new NotFoundException('Skill not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    await this.assertRanksEnabled(callerId, existing.schoolId);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, existing.disciplineId);
+      const marked = (await tx.studentRankSkillStatus.count({ where: { skillId } })) + (await tx.skillSignOffLog.count({ where: { skillId } }));
+      if (marked > 0) throw new ConflictException('Students have been marked on this skill, so it can\'t be deleted.');
+      const links = await tx.lessonSkill.findMany({ where: { skillId }, select: { lessonId: true } });
+      for (const { lessonId } of links) {
+        if ((await tx.lessonSkill.count({ where: { lessonId } })) === 1) {
+          throw new ConflictException('A lesson has this as its only skill. Give that lesson another skill, or delete it, first.');
+        }
+      }
+      await tx.lessonSkill.deleteMany({ where: { skillId } });
+      await tx.rankRequiredSkill.deleteMany({ where: { skillId } });
+      await tx.rankStripeTierRequiredSkill.deleteMany({ where: { skillId } });
+      await tx.skill.delete({ where: { id: skillId } });
+    });
   }
 
   // ---------------------------------------------------------------------------

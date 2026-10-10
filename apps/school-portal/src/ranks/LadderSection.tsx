@@ -5,7 +5,8 @@ import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import type { SkillResponse } from '../skills/skillQueries';
 import { BeltChip } from '../grading/BeltChip';
 import { BeltEditorModal, type BeltValues } from './BeltEditorModal';
-import { type RankResponse, useCreateRank, useReorderRanks, useRungHolders, useUpdateRank } from './rankQueries';
+import { type RankResponse, useCreateRank, useDeleteRank, useReorderRanks, useRungHolders, useUpdateRank } from './rankQueries';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 
 const stripesLabel = (n: number) => (n === 0 ? 'No stripes' : n === 1 ? '1 stripe' : `${n} stripes`);
 
@@ -27,6 +28,8 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
   const [confirming, setConfirming] = useState<Holder[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<RankResponse | null>(null);
+  const [deleting, setDeleting] = useState<RankResponse | null>(null);
+  const deleteRank = useDeleteRank(discipline.id);
   const [error, setError] = useState<string | null>(null);
 
   const holders = useMemo(() => {
@@ -119,6 +122,9 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                   <Button variant="secondary" onClick={() => move(i, 1)} disabled={i === shown.length - 1} aria-label={`Move ${rank.name} down`}>
                     ↓
                   </Button>
+                  <Button variant="secondary" onClick={() => setDeleting(rank)} disabled={changed} aria-label={`Delete ${rank.name}`}>
+                    Delete
+                  </Button>
                 </div>
                 <ul style={{ listStyle: 'none', padding: '6px 0 0 30px', margin: 0, display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
                   {tiers.map((t) => (
@@ -141,6 +147,19 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
         </ol>
       )}
       {changed ? <p className="ultm8-field__hint">The new order isn't saved yet.</p> : null}
+
+      {deleting ? (
+        <ConfirmDeleteModal
+          title={`Delete ${deleting.name}?`}
+          description={
+            holdersOfBelt(deleting).length > 0
+              ? `${holdersOfBelt(deleting).length} student(s) hold this belt, so it can't be deleted.`
+              : 'Its stripes are deleted with it and the belts after it move up. A belt can only be deleted while nobody holds it and it isn\'t in anyone\'s grading history.'
+          }
+          onConfirm={() => deleteRank.mutateAsync(deleting.id)}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
 
       {confirming ? (
         <Modal title="Reorder belts?" onClose={() => setConfirming(null)}>

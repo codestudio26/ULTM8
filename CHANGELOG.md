@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Deleting** (Decision 198). The owner can delete a lesson, and a skill,
+  belt or style that has never been used: **Delete** on the Curriculum,
+  Disciplines and style pages, with a confirmation. Anything a student's
+  record uses is kept and the window says why (someone holds the belt, it's
+  in grading history, students were marked on the skill, a class or lesson
+  uses the style). A deleted belt's stripes go with it and the belts after it
+  move up; a deleted style takes its belts, skills and coach permissions and
+  comes off membership plans and instructors. **api:** `DELETE
+  /disciplines/{id}`, `/ranks/{id}`, `/skills/{id}`, `/lessons/{id}` (owner
+  only; 204, or 409 with the reason). `packages/api-client` regenerated.
+
 - **Grading for the student app** (Decisions 132, 142, 155, 161). **api:**
   `GET /students/{id}/grading` gives the student, or a guardian of theirs,
   every style they hold a rank in at every School they're a student at,

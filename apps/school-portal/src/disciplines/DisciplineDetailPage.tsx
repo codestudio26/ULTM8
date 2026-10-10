@@ -4,7 +4,8 @@ import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } fro
 import { ApiError } from '@ultm8/api-client';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useDiscipline } from './disciplineQueries';
-import { useCreateSkill, useSkills, useUpdateSkill, type SkillResponse } from '../skills/skillQueries';
+import { useCreateSkill, useDeleteSkill, useSkills, useUpdateSkill, type SkillResponse } from '../skills/skillQueries';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { SkillFormModal } from '../skills/SkillFormModal';
 import { useRanks } from '../ranks/rankQueries';
 import { LadderSection } from '../ranks/LadderSection';
@@ -23,6 +24,8 @@ export function DisciplineDetailPage() {
   const createSkill = useCreateSkill(disciplineId ?? '');
   const [creatingSkill, setCreatingSkill] = useState(false);
   const [editingSkill, setEditingSkill] = useState<SkillResponse | null>(null);
+  const [deletingSkill, setDeletingSkill] = useState<SkillResponse | null>(null);
+  const deleteSkill = useDeleteSkill(disciplineId ?? '');
 
   if (!disciplineId) return null;
   if (disciplineLoading || skillsLoading || ranksLoading) return <Spinner />;
@@ -69,9 +72,14 @@ export function DisciplineDetailPage() {
                   key: 'actions',
                   header: '',
                   render: (s) => (
-                    <Button variant="secondary" onClick={() => setEditingSkill(s)}>
-                      Edit
-                    </Button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Button variant="secondary" onClick={() => setEditingSkill(s)}>
+                        Edit
+                      </Button>
+                      <Button variant="secondary" onClick={() => setDeletingSkill(s)} aria-label={`Delete ${s.name}`}>
+                        Delete
+                      </Button>
+                    </div>
                   ),
                 },
               ]}
@@ -93,6 +101,15 @@ export function DisciplineDetailPage() {
             setCreatingSkill(false);
           }}
           onClose={() => setCreatingSkill(false)}
+        />
+      ) : null}
+
+      {deletingSkill ? (
+        <ConfirmDeleteModal
+          title={`Delete ${deletingSkill.name}?`}
+          description="It comes off the stripes and lessons that list it. A skill can only be deleted while no student has been marked on it."
+          onConfirm={() => deleteSkill.mutateAsync(deletingSkill.id)}
+          onClose={() => setDeletingSkill(null)}
         />
       ) : null}
 

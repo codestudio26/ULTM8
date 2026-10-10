@@ -43,7 +43,7 @@ test('duplicate a style: ladder and skills, no students', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Duplicate' }).click();
 
   await expect(page.getByRole('heading', { name: 'BJJ (Copy)' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Armbar' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Armbar', exact: true })).toBeVisible();
 
   const copy = await db.discipline.findFirstOrThrow({ where: { schoolId: s.schoolId, name: 'BJJ (Copy)' } });
   expect(await db.rankStripeTier.count({ where: { rank: { disciplineId: copy.id } } })).toBe(

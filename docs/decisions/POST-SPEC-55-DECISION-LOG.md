@@ -2342,3 +2342,20 @@ Instructors choose their own belt per style (Decision 188), so the owner's free-
 **Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** the reading of Decision 192 built in PR #145. Gus: *"yes"*.
 
 "Anyone who may grade that student in that style" means the School Owner, or a coach with "Promote" or "Move down" for that style who covers the student's branch.
+
+---
+
+## Decision 198 — Deleting: only what has never been used
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the acceptance pass's Q2 (Gus's prototype can delete a style, a belt, a skill and a lesson; ULTM8 could not). Asked what fits best, Gus chose the recommended rule: *"Delete if never used"*.
+
+The School owner can delete what no student's record uses; anything that is part of a record stays, and the portal says why. Owner only, with a confirmation.
+
+1. **Lesson:** always (nothing in a student's record points to a lesson).
+2. **Skill:** when no student has ever been marked on it (Learning or Signed off, now or in the sign-off log). It comes off the stripes that required it and the lessons that list it; refused if it is a lesson's only skill.
+3. **Belt:** when nobody holds it or any of its stripes, it is not in anyone's grading history, and no instructor has declared it (Decision 188). Its stripes go with it and the belts after it move up one place. (Decision 152: a stripe a student holds still can't be removed.)
+4. **Style:** when nobody has ever held a rank in it, no instructor has declared a belt in it, and no class, timetable slot or lesson uses it. Its belts, skills and coach grading permissions go with it, and it is taken off membership plans (Decision 195) and instructors' styles.
+
+Not in this decision: archiving a used style or belt (hide it, keep the records). Offered and not chosen for now.
+
+Built as `DELETE /disciplines/{id}`, `/ranks/{id}`, `/skills/{id}`, `/lessons/{id}` (204, or 409 with the reason), with **Delete** buttons on the Disciplines, style and Curriculum pages.

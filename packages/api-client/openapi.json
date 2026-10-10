@@ -4359,6 +4359,35 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "RanksController_deleteDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198)."
+          },
+          "409": {
+            "description": "The style is in use: someone holds a rank in it, or classes, slots or lessons use it."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/styles/{disciplineId}/ranks": {
@@ -4595,6 +4624,35 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "RanksController_deleteRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198)."
+          },
+          "409": {
+            "description": "Someone holds the belt, or it is in grading history."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/styles/{disciplineId}/skills": {
@@ -4708,6 +4766,35 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "RanksController_deleteSkill",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198)."
+          },
+          "409": {
+            "description": "Students have been marked on the skill, or it is a lesson's only skill."
           }
         },
         "tags": [
@@ -7383,6 +7470,32 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deleteLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198). Owner only."
           }
         },
         "tags": [
