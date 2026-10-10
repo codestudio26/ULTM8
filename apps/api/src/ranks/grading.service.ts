@@ -213,6 +213,69 @@ export class GradingService {
     return { items };
   }
 
+  /** The styles a student can still declare a belt in at one School, each
+   * with its ladder, for the "your current belt" step when joining
+   * (Decisions 137, 147). For the student and their guardians. Read under the
+   * student's own context: a guardian holds no role at the School, so can't
+   * read its styles and belts themselves. Styles the student already has a
+   * rank in are left out (only staff change those); none at all while the
+   * School has ranks switched off. */
+  async findDeclareOptions(callerId: string, studentId: string, schoolId: string) {
+    if (!UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('schoolId must be a valid UUID');
+    }
+    if (callerId !== studentId) {
+      try {
+        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        throw new ForbiddenException('You may not declare a belt for this Student.');
+      }
+    }
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const enrolled = await tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      if (!enrolled) {
+        throw new ForbiddenException('Only a Student of this School can declare a belt here.');
+      }
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { ranksToggle: true } });
+      if (!school?.ranksToggle) {
+        return { items: [] };
+      }
+      const [styles, belts, held] = await Promise.all([
+        tx.discipline.findMany({ where: { schoolId }, orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } }),
+        tx.rank.findMany({ where: { schoolId }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
+        tx.studentRank.findMany({ where: { studentId, schoolId }, select: { disciplineId: true } }),
+      ]);
+      const heldIds = new Set(held.map((h) => h.disciplineId));
+      const items = styles
+        .filter((d) => !heldIds.has(d.id))
+        .map((d) => ({
+          disciplineId: d.id,
+          disciplineName: d.name,
+          ladder: belts
+            .filter((b) => b.disciplineId === d.id)
+            .flatMap((b) =>
+              b.stripeTiers.map((t) => ({
+                id: t.id,
+                rankId: b.id,
+                name: t.name,
+                beltName: b.name,
+                primaryColour: b.primaryColour,
+                secondaryColour: b.secondaryColour,
+                stripeColour: t.colour,
+                stripeCount: t.count,
+                timeOnly: t.timeOnly,
+              })),
+            ),
+        }))
+        .filter((d) => d.ladder.length > 0);
+      return { items };
+    });
+  }
+
   /** Voided entries are hidden from the normal history (Decision 129). Staff
    * may ask for them with `includeVoided`; a Student or Guardian may not. */
   async findRankHistoryForStudent(

@@ -2628,3 +2628,18 @@ Gus: *"yes add the database check"*.
 3. **Why.** A second layer: if a future server change forgot the check, the database would still not hand out a locked lesson's content. When the two disagree, the database wins.
 
 Built in migration `20261104000000_lesson_content_access` (`can_view_lesson_content`, `is_lesson_staff`); existing content is copied into the new table.
+
+---
+
+## Decision 209 — A School's branch names are shown to people browsing it, so they can choose a home branch when joining
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found building the app's join screen for Decision 137.1. Joining a School with branches needs a home branch (Decisions 139, 168), but someone who hasn't joined can't read the School's branches: the database only shows them to people with a role there.
+
+Gus chose *"Show branch names"* over letting people join without a branch.
+
+1. **What is shown.** The School's page in the app (`GET /academies/{id}`) lists its branches by **name only**, to anyone signed in, the same way the School's own name and address are already shown (Decision 94). A branch's address, phone and other details stay visible to the School's own people only.
+2. **How.** Through the separate discovery database role, like the rest of the School's public page, with a column-level grant on the branch's id, School and name only. The database refuses that role anything else about a branch.
+3. **What it enables.** The app's **Join this School** screen: who is joining (oneself or a guardian's child), the home branch, then the current belt in each style (Decisions 137, 147). The belts come from a new `GET /students/{id}/ranks/declare-options`, read through the student so a guardian can use it too.
+
+Built in migration `20261105000000_branch_discovery`.
+

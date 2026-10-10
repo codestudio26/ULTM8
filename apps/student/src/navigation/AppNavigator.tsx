@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from './HomeScreen';
 import { AcademiesListScreen } from '../academies/AcademiesListScreen';
+import { JoinSchoolScreen } from '../academies/JoinSchoolScreen';
 import { AcademyDetailScreen } from '../academies/AcademyDetailScreen';
 import { MyBookingsScreen } from '../bookings/MyBookingsScreen';
 import { MyMembershipsScreen } from '../memberships/MyMembershipsScreen';
@@ -36,6 +37,7 @@ export function AppNavigator() {
         component={AcademyDetailScreen}
         options={({ route }) => ({ title: route.params.name })}
       />
+      <Stack.Screen name="JoinSchool" component={JoinSchoolScreen} options={({ route }) => ({ title: route.params.beltsFor ? 'Add a belt' : `Join ${route.params.name}` })} />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: 'My Memberships' }} />
