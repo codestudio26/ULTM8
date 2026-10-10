@@ -1785,7 +1785,7 @@ model Discipline {
 /// The weekly cap, required Skills and years-in-rank flag now live on each
 /// rung (RankStripeTier: weeklyClassCountCap, requiredSkills, and "time in rank
 /// only" with its years stored as minimum days; Decisions 126, 128 item 3); the
-/// belt-level copies were removed (Decisions 199, 200).
+/// belt-level copies were removed (Decisions 199, 207).
 model Rank {
   id String @id @default(uuid())
 

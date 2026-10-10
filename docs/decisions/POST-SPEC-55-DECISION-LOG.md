@@ -2377,7 +2377,239 @@ Built in migration `20261102000000_remove_belt_level_settings`.
 
 ---
 
-## Decision 200 — The belt-level "years in rank" flag is removed too
+## Decision 200 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
+
+**Date:** 26 Sep 2026
+**Status:** Developer-level finding, escalated — **not resolved**, flagged for Architect decision before any backend work starts
+**Resolves:** why the Timetable design-canvas mockup's new "Book" action (added to every slot across Daily/Weekly/Monthly, per the user's request to make booking a class easier straight from the Timetable) is a review-only preview and not a real booking flow
+
+### What was built
+
+Every rendered slot on the Timetable mockup (`https://claude.ai/artifact/MbCT5h6Nq23yeZY8Sf7myu`, `Timetable.dc.html`) now has a "Book" affordance — a pill button on Daily/Weekly's agenda cards, a small icon button on Monthly's dots. Clicking it opens a confirmation preview (Class, Instructor, Day-or-Date, Time, Branch, then Cancel/Confirm) matching Spec §3.2's own confirmed booking-flow field set. Confirm only closes the preview — there is nothing to submit to yet.
+
+### Why this can't be more than a preview today
+
+`skills/ultm8-domain-rules/SKILL.md` §9 already carried this as an `[UNRESOLVED]` citation before this session touched Timetable at all: *"How `TimetableSlot` and `Class` actually relate... do not assume one Class row is auto-spawned per TimetableSlot occurrence without this being confirmed."* The real `Booking` entity belongs to `Class` (§10, §16: `Class *—* Booking`), never to `TimetableSlot` — and the Timetable page's own subtitle already states it renders "the recurring weekly slot template — not the bookable Classes list." Adding a Book button to the Timetable therefore reproduces the exact citation the skill already flags, except now against a concrete, user-requested UI feature instead of an abstract data-model question — worth its own decision-log entry so it doesn't stay buried only inside a skill citation and a mockup tooltip.
+
+### What actually needs deciding (Architect, not a Developer inference)
+
+1. Does selecting a Timetable slot resolve to an **existing, already-dated** `Class` occurrence (i.e. is a `Class` row auto-spawned per `TimetableSlot` × calendar date somewhere already, or by some job not yet built)? Or does one need to be **created/looked up on demand** at the moment of booking?
+2. If on-demand: what identifies "the same" `Class` occurrence across repeat visits (so two Students booking the same Monday 6pm slot land on one shared `Class`, not two separate ones each capped at their own capacity)?
+3. Only once (1)/(2) are answered does a real `POST /timetable-slots/:id/book`-shaped endpoint (or whatever shape falls out of the answer) make sense to design — building one against a guessed answer risks the same class of mistake Decision 105 already warned against (building speculatively ahead of a named, confirmed use case).
+
+### What does NOT need deciding again
+
+The confirmation preview's field set (Class, Instructor, Class Timings, Class Date) is already right — it's a direct match to Spec §3.2's own confirmed booking flow (browse → select → confirm → pay if required). Whatever the Architect decides above, the UI shape built here likely doesn't need to change, only what it's wired to.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Timetable page (mockup — click-to-book preview, Daily/Weekly/Monthly)") and `docs/ULTM8-MASTER-ROADMAP.md` §4 (cross-track open-decisions view), and as `note7` on the canvas artifact itself, so it's discoverable from all three places a future session might look, not just one.
+
+### Recorded by
+
+Surfaced while implementing the user's explicit request to add a click-to-book function to the Timetable page (Daily/Weekly/Monthly) — escalated per this project's standing rule (never fill an `[UNRESOLVED]` domain gap with a plausible-sounding guess), 26 Sep 2026.
+
+## Decision 201 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
+
+**Date:** 26 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts; the codegen finding is a Developer-level workaround, not an Architect ruling
+**Resolves:** turning the "Membership Plans — 5 concepts" exploration (`https://claude.ai/artifact/UibYczF3pRDdHXcJAsQRnm`) into real code — the user picked Concept 5 (Stats Ribbon + List) and asked to build what's real now, with anything not backend-ready logged for the dev/backend team instead of faked
+
+### What was built (real, in `MembershipPlansPage.tsx`/`membershipPlanQueries.ts`)
+
+- A stats ribbon above the existing plans table: **Total plans / Visible / Hidden** — real, computed client-side from the same `plans` list the table already renders, no new endpoint.
+- **Active members** — the ribbon's 4th tile, shown as a visibly muted/dashed placeholder ("—") with an explanatory `title`/`aria-label`, same "not built yet, not broken" convention `TopBar.tsx`'s disabled search input already established. No per-plan membership-count endpoint exists (`MembershipsController` only has Student-scoped `findMyMemberships`/`getMembershipStatus`) — logged in `docs/v1.2-backend-backlog.md` rather than guessed at.
+- **Visibility made an inline, real toggle** — replaced the static Visible/Hidden `Badge` with a `Checkbox` wired to a new `useUpdateMembershipPlanVisibility(schoolId)` hook, sending a partial `PATCH /v1/membership-plans/{id}` body of just `{ visible }`. Confirmed safe by reading `MembershipsService.updatePlan()` directly: every field it doesn't receive is left `undefined` in the Prisma `update()` call, so this never touches a FRIEND_PASS plan's forced `price=0`/`classesIncluded=1` or any other cross-field rule — it only ever changes the one field the user actually toggled.
+
+### What was deliberately NOT built
+
+- **Colour-coded Type badges / a toggle-switch visual** — the mockup concepts used a 5-colour categorical palette and a toggle-switch control that don't exist in `@ultm8/ui` today (`Badge` only supports `'default' | 'accent' | 'success' | 'danger'`; no Toggle/Switch component exists at all). Adding either would be a shared-design-system change affecting every consumer of `@ultm8/ui`, not something to invent unilaterally for one page — the real Visibility toggle above reuses the existing `Checkbox` component instead, keeping the same underlying capability without a new design-system primitive. Left for a future, separate design-system decision if the colour/toggle-switch treatment is still wanted.
+- **Duplicate / Archive actions** — present in the mockup's kebab menu as explicitly-flagged proposed items; not carried into real code since no backend endpoint exists for either and this page's real Actions column has only ever had Edit.
+
+### Codegen gap found while wiring the Visibility toggle (not Membership-Plans-specific)
+
+`UpdateMembershipPlanDto`'s generated TS type marks `visible`/`termsWaiverRequired` as non-optional, but a fresh `export:openapi` off the current backend source shows this DTO's OpenAPI schema has **no `required` array at all** — both fields are genuinely optional, matching `updatePlan()`'s own undefined-tolerant handling. `openapi-typescript` appears to render any `@ApiPropertyOptional({ default })` field as non-optional regardless. Grepped the whole schema for the same shape (a `default`-having property absent from its DTO's `required[]`) and found ~10 more affected DTOs: `CreateSchoolDto`/`UpdateSchoolDto`, `CreateFranchiseDto`/`UpdateFranchiseDto`, `CreateClassDto`/`UpdateClassDto`, `CreateTimetableSlotDto`/`UpdateTimetableSlotDto`, `CreateRankDto`/`UpdateRankDto`, `GradingActionDto` — see `docs/v1.2-backend-backlog.md` for the exact field list. Worked around here with one documented type cast in `membershipPlanQueries.ts` rather than widened ad hoc per call site; the real fix (an `openapi-typescript` config/version change, or dropping `default` from the affected Swagger metadata) is a one-time tooling change, logged once rather than repeated per affected page.
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `packages/api-client` and `apps/school-portal`. `export:openapi` re-run and diffed against the committed `packages/api-client/openapi.json` (byte-identical — confirms the DTO source and the committed schema JSON already agree; the gap is purely in the JSON→TS codegen step). No backend files changed — this decision is frontend-only plus documentation.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Membership Plans page") and as `note2` on the "Membership Plans — 5 concepts" canvas artifact.
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 5 and instruction to "build [what's real], and... anything that is not on the back end now... to a list with notes to be done by the dev team back end team," 26 Sep 2026.
+
+## Decision 202 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 201, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
+**Resolves:** the user picked Concept 2 (Stats Ribbon + List) and asked for the same "build what's real, log the rest" treatment as Membership Plans
+
+### What was built (real, in `TransactionsPage.tsx`)
+
+A stats ribbon above the existing table: **Total transactions / Successful / Failed+disputed / Total revenue** — all four real and client-computed from the same `transactions` list the table already renders. Unlike Membership Plans' Concept 5, this concept needed no scope decision and produced no backend-backlog entry: `Transaction` already carries `status` and `amount`, so every tile is genuinely real with zero new endpoints and zero proposed placeholders.
+
+One correctness detail worth recording: **Total revenue is grouped by currency, not summed flat.** `Transaction.currency` is per-row and nullable (inherited from `MembershipPlan.currency`, itself an optional, School-chosen field per plan — see `MembershipPlanFormModal`'s own "Your School's own choice, no conversion applied" hint), so a School running plans in more than one currency could have genuinely mixed-currency Transactions. Summing raw minor units across currencies and labeling the result with one currency code would be silently wrong. Implemented as a `Map<currency, sum>` instead, rendering one revenue figure per currency present (almost always just one, in practice) rather than a single figure that assumes a school-wide currency constant that doesn't actually exist in the schema.
+
+### What was deliberately not built
+
+Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 201's same reasoning for why a real read-only page shouldn't grow dead action buttons).
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`. No backend or `packages/api-client` files touched — this decision is frontend-only.
+
+### Tracking
+
+Logged as `note2` on the "Transactions — 5 concepts" canvas artifact. No `docs/v1.2-backend-backlog.md` entry — there is no backend gap to track.
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 201, 27 Sep 2026.
+
+## Decision 203 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decisions 123/124: `https://claude.ai/artifact/MctvsgBry9WEkEK2Fqq5QL`); the signature-status finding below is a Developer-level investigation, escalated — not resolved here
+**Resolves:** the user picked Concept 3 (Split-Pane Reader) and, separately, asked for a "signature field... show[ing] if it has been signed or not" to be added — this entry covers both: what was built for real, and why the signature request could not be
+
+### What was built (real, in `WaiversPage.tsx`)
+
+Replaced the flat table with a list-plus-reader split pane, matching the chosen Concept 3: a compact left-hand list (Title, a truncated preview, and a real reading-time/word-count estimate) beside a right-hand reader pane showing the selected Waiver's **full** `body` text (`white-space: pre-line`, preserving paragraph breaks, capped at `70ch` for readability). This directly closes a gap the shipped code's own `bodyPreview()` comment already admitted: `Waiver.body` can run up to 20,000 characters (`CreateWaiverDto`'s own `MaxLength`) — "far too long for a table cell." Staff can now actually read a waiver's full text without opening the Edit form. Title/preview/reading-time/Last-updated/Edit are all real fields or client-computed values requiring no backend change, same as Concept 1's own real columns.
+
+### What was asked for and why it can't be built today — a deeper gap than this session's own earlier note assumed
+
+Asked via AskUserQuestion which shape to show ("rollup count", "full per-student roster", or "both") and whether to build it for real now or flag it as a mockup placeholder first. The user deferred the shape choice ("which would you pick") and asked to build what's real and log the rest for the backend team ("Just as before"). Recommended shape: **both** — a rollup count, expandable to the full per-student roster — since that's the most useful presentation once the data exists. It doesn't today, for three independently-blocking reasons found by re-reading the actual current backend source (not assumed from this session's own earlier canvas note, which only flagged the first of these three):
+
+1. **No staff-facing endpoint exists at all.** `WaiversController` (verified directly) exposes only `POST /waivers/:id/sign` (a Student/Guardian signs), `POST /waivers/:id/signature-upload-url`, and `GET /waivers/me` (a Student's own signatures, self-scoped). There is no `GET .../waivers/:id/signatures` or equivalent for a School Owner. This was already known from this session's earlier Waivers-concepts research.
+2. **New finding — even if that endpoint existed, `WaiverSignature` rows don't model "unsigned."** `WaiversService.sign()` is the *only* code path anywhere that creates a `WaiverSignature` row, and `schema.prisma`'s own model declares `status WaiverSignatureStatus @default(SIGNED)` — grepped the whole backend for any write of `UNSIGNED`/`PENDING`/`EXPIRED` on this model and found none. So a `WaiverSignature` row existing *means* signed; there is no row representing "assigned, not yet signed" despite those being real enum values on `WaiverSignatureStatus`. "Who hasn't signed" can't be read off this table alone — it would have to be computed as (all Students who should sign) minus (Students with a SIGNED row), which needs a Student roster to diff against.
+3. **New finding — that Student roster doesn't exist for real in production either.** `WaiverSignatureRequestsProcessor`'s own header comment (the `waiver-signature-requests` job, confirmed by reading it directly) documents a pre-existing, separate, larger gap: no endpoint anywhere in this codebase ever creates a `STUDENT` RoleGrant through the real API — every e2e test seeds one directly with a superuser Prisma client. In a real deployment today this job's own Student-lookup query would return empty, and so would any "how many Students are there to sign this" denominator. This is already tracked elsewhere (the processor's comment cites Decision 95 and the project roadmap) — not a new gap, but a real blocking dependency for this feature specifically, worth stating plainly here rather than leaving it implicit in a job's code comment.
+
+Given all three, nothing under "signature status" could be shown as genuinely real today — not even a partial figure (e.g. a bare SIGNED count with no denominator) without materially misrepresenting what's known. Built instead as a single, visibly inert "Signatures" panel in the reader pane (dashed border, muted text, explanatory `title` tooltip pointing at the backlog) — the same "not built yet, not broken" convention `StatTile`'s `proposed` mode already established for Membership Plans' Active Members tile, adapted here to a panel rather than a numeric tile since there is no honest number to show at all, not even a placeholder "—" metric with a real (if incomplete) count behind it.
+
+### A related, newly-confirmed real behavior worth flagging to the Architect
+
+While tracing this, confirmed that `skills/ultm8-domain-rules/SKILL.md` §13's `[UNRESOLVED]` item — "where `Class.terms/waiver-required` is actually enforced" — **is resolved in code**, just never updated in the skill: `BookingsService` (verified directly) checks, at booking time, whether the Student holds *any* `WaiverSignature` with `status: 'SIGNED'` at that School — not scoped to a specific required Waiver, since `Class` has no field linking it to one particular `Waiver` row (only the boolean `termsWaiverRequired`). This is a reasonable reading of the schema as it stands, but it does mean "requires a waiver" currently means "requires having signed *some* waiver for this School," which may or may not be the intended rule — flagged for the Architect to confirm or correct, not silently treated as settled by this entry.
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`. No backend or `packages/api-client` files touched — this decision is frontend-only plus documentation; the signature-status feature itself is not implemented anywhere, real or placeholder-wired, beyond the inert panel described above.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Waivers page") with the full three-layer gap above, spelled out for the dev team, and referenced from the "Waivers — 5 concepts" canvas artifact's own `note1` (already recorded there before this page was built for real).
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concept 3") plus a follow-up request for a signature/signed-status field; shape and build-scope confirmed via AskUserQuestion, then built per the user's "build and create the notes for the dev team" answer, continuing the same policy established in Decisions 123/124, 27 Sep 2026.
+
+## Decision 204 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level finding, escalated — the backlog below is logged for the dev/backend team; no real code was changed as part of this entry (design/documentation only)
+**Resolves:** the user's request for 5 Notifications concept directions (same research-first process as Decisions 123/124/125), recommended Concept 3, and asked for every non-real element found across the 5 boards to be logged for the backend team
+
+### What was found (verified directly against `NotificationsController`/`NotificationsService`/`schema.prisma`, not assumed)
+
+The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 203): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
+
+Two smaller, independent gaps were also found: `Notification` has no snoozed/deferred state of any kind (only `read`, a plain boolean), and no delete endpoint exists. Push notification delivery itself is real only at the registration step — `DeviceToken` registration works, but actual push SEND is, per that model's own header comment, "deliberately NOT built this phase," so no delivery-rate or read-time metric can be computed even in principle from what the schema stores today (`Notification.read` has no timestamp — no `readAt` column).
+
+### The 5 concepts
+
+1. Refined Table and 2. Grouped Timeline carry no proposed elements at all — both are 100% real fields (`Notification.title`/`body`/`read`/`type`/`createdAt`) or client-side computations over them (a Type label, a relative-time display, day-grouping), same standard Concepts 1/2 met on Transactions/Waivers.
+3. Priority Inbox (Linear-style, **the recommended and user-favored direction**) — Unread/All tabs and Mark read are both real; Snooze and Delete are shown, explicitly flagged proposed, and — per a follow-up request — consolidated into a single "⋮" row-actions menu rather than three separate icon buttons.
+4. Broadcast Center (ClassDojo/Bloomz-style) — an entirely proposed "Compose announcement" panel above the same real inbox list, built specifically to make the missing-broadcast-capability gap concrete rather than leave it only as prose.
+5. Delivery Ribbon — Total/Unread are real but page-scoped (no count endpoint exists to total across every page); Push delivery rate and Read within 24h are explicitly flagged proposed placeholders.
+
+### Tracking
+
+Full backend requirements (a new broadcast/compose endpoint and its open product questions, a snooze data-model decision, a delete endpoint, push SEND + a delivery-status field, a `readAt` column for time-to-read metrics, and a dedicated count endpoint) logged in `docs/v1.2-backend-backlog.md` ("Notifications page"), and recorded as `note1` on the "Notifications — 5 concepts" canvas artifact (`https://claude.ai/artifact/Vi4uogt6Kpiq166NSR9GHm`).
+
+### Recorded by
+
+Requested directly by the user ("Give 5 great ideas... look at other softwares ideas" pattern, continuing Decisions 123/124/125's process), recommendation given via AskUserQuestion-free direct comparison, then the full non-real inventory logged per the user's explicit "any that is not real add to the note for the dev... to do the back end" instruction, 27 Sep 2026.
+
+## Decision 205 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level correction of an earlier overstated finding (Decision 200), verified directly against `BookingsService`/`SchoolsService` before changing anything
+**Resolves:** the user's own second-guess on the Timetable mockup's "Book" action ("this is the school view, not the students... does not make sense for academies") — investigated rather than agreed with by default, since the premise turned out to be wrong
+
+### What was found (verified directly, not assumed)
+
+`BookingsService.bookClass()` (`apps/api/src/bookings/bookings.service.ts:81-119`) already has a real, shipped **Staff-on-behalf-of** booking path: when `BookClassDto.studentId` names someone other than the caller, `isStaffAction` is set true and the write is gated by `TenantAuthorizationService.assertStaffAtSchool()` — a School Owner/Staff member can, today, book a named Student into a `Class` for real. So "Book" is not inherently wrong for the School Portal audience — a front-desk/walk-in booking is a legitimate, already-designed capability, not something invented for this mockup. The user's instinct that *something* was wrong with the Book action was still correct, just for a narrower reason than "wrong audience": the confirmation preview never asked which Student it was for at all — no student picker existed anywhere in it, despite that being the one piece of information every real booking action absolutely requires.
+
+Also verified before building the fix: `GET /schools/:id/students` is real (`apps/api/src/tenants/schools/schools.controller.ts`, `SchoolsService.findAllStudentsForSchool`), Staff-gated, returns `id`/`firstName`/`surname`/`email`/`enrolledAt`, full unpaginated list — same "small bounded roster, client-side filter" convention every other picker in this app already follows (confirmed via `apps/school-portal/src/students/StudentsPage.tsx`/`studentQueries.ts`, and cross-checked against the near-identical `instructors/eligible-users` endpoint built for the same reason in Fix 3 earlier this session).
+
+### What was built (mockup only — `Timetable.dc.html`)
+
+Added a required "Student" field to the Book confirmation dialog (all three views share one modal), populated from real-shaped sample data matching `StudentSummaryResponseDto`'s actual fields, with "Confirm booking" disabled until a Student is selected — matching what a real submission would require. Updated the board's own inline comments and the backend backlog to state the corrected finding plainly, including retracting the overstated "no backend booking capability exists for a Timetable slot at all" line from the earlier note.
+
+### What's still not real, and why that hasn't changed
+
+Decision 200's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s existing "Timetable page" section rewritten in place (not appended past) to correct the overstated claim and separate the two gaps clearly, rather than leaving a known-inaccurate note live alongside the correct one.
+
+### Recorded by
+
+Investigated in response to the user questioning the Book action's fit for the School Portal audience ("what do you think?"); the premise was checked against the real code rather than accepted, found materially wrong, and the actual narrower gap fixed per the user's follow-up "lets fix it make sense, any thing that we dont have on the back end please add to the back end to do list," 27 Sep 2026.
+
+---
+
+## Decision 206 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
+
+**Date:** 28 Sep 2026
+**Status:** Developer-level proposed design, **not approved, not built** — flagged for Architect/product-owner confirmation before any of this is implemented. Recorded because the user asked directly for the logic to be worked out and written down, not because it's been signed off.
+**Resolves:** the open question left by "Add Manually" on the Add Instructor mockup (`InstructorAdd.dc.html`) — that mode collects First Name/Surname/Email for a person who has no ULTM8 account at all, but nothing was ever built to say how that person subsequently gets in. Also generalizes the identical, previously-flagged gap on `StaffPage.tsx`'s invite form ("If a true from-zero invite... is wanted, that's a new capability" — logged in `docs/v1.2-backend-backlog.md`'s Instructors section) so the same mechanism can serve both, rather than building it twice.
+
+### What was checked before designing anything
+
+- `RegisterDto` (`apps/api/src/auth/dto/register.dto.ts`) requires **email, phone, firstName, surname, passcode+passcodeConfirm, dateOfBirth** — all mandatory. "Add Manually" only collects name + email. Even a full self-registration can't be synthesized from what Staff enters today; phone and date of birth are missing, and passcode is explicitly "the account's sole login credential" (Decision 72) — nothing in the confirmed model suggests an admin should be the one setting it on someone else's behalf.
+- The only credential-recovery flow that exists (`RequestPasscodeResetDto`/`ConfirmPasscodeResetDto`) is **phone + Twilio Verify OTP**, not an email link or token of any kind. There is no email-based claim/magic-link mechanism anywhere in this codebase to build on — this would be new.
+- No `Invitation`-shaped entity exists in `schema.prisma` today. `RoleGrant` requires a `userId` that already exists (`RoleGrantsService.create()`'s `PrismaAuthService` existence check, Decision 80/81) — there's no "grant a role to someone who doesn't have an account yet" path anywhere, confirmed by re-reading that service directly rather than assumed.
+- Email delivery is real and already wired (`NotificationDeliveryService`, Postmark primary/SES fallback, Spec 55 §11.4) — usable as-is for whatever this sends.
+
+### Proposed design
+
+A new, generic **account-claim invitation**, not an Instructor-specific mechanism (so it also closes the identical gap on Staff's invite form later, without a second design):
+
+1. **New entity — `AccountInvitation`** (name indicative, Architect's call): `id`, `email`, `firstName`, `surname`, `schoolId`, `intendedRole` (`INSTRUCTOR` | `BRANCH_STAFF`), `branchId?`, a cryptographically random single-use `token` (hashed at rest, like the OTP codes already are), `expiresAt` (proposed 7 days), `createdByUserId`, `status` (`PENDING` | `CLAIMED` | `EXPIRED` | `REVOKED`), `draftProfile` (JSON — the rest of what Staff already entered on Add Instructor: branch, phone, beltRanking, specializations, yearsOfExperience, bio, photoUrl; empty for a future Branch Staff use of the same mechanism).
+2. **On Add Instructor's "Add Manually" submit:** server first checks whether `email` already belongs to an existing `User` (via `PrismaAuthService`, same lookup Decision 116 already uses). If it does, **reject** and point Staff at "Invite to Instructor Role" instead — that page already exists precisely for an existing account, and this keeps the two flows from overlapping or ever creating a duplicate account for the same person. If it doesn't, create the `AccountInvitation` row (status `PENDING`) and enqueue an email — reusing `NotificationDeliveryService` — with a claim link (`https://.../claim-invitation?token=...`). No `User`, `RoleGrant`, or `Instructor` row is created yet.
+3. **New unauthenticated, token-gated endpoints:** `GET /invitations/:token` (validates not expired/claimed/revoked, returns `firstName`/`surname`/`email` to prefill a screen — never anything from `draftProfile`, which is internal); `POST /invitations/:token/claim` (body: the same required fields `RegisterDto` already needs minus name/email, which come from the invitation — phone, passcode+confirm, dateOfBirth, plus the existing optional fields). On success, in one transaction: create the `User` row (same path `AuthService.register()` already uses), create the `RoleGrant` (`RoleGrantsService.create()`'s existing logic, `role=intendedRole`), create the `Instructor` row from `draftProfile` (`InstructorsService.create()`'s existing logic), mark the invitation `CLAIMED`. A token that's expired or already claimed fails with a clear error, same as an already-used OTP does today.
+4. **New frontend screen — "Complete Your Registration":** effectively the existing Register screen, pre-filled with the invitation's name/email (email shown read-only — it's what the invite was sent to) and gated by the token in the URL instead of being open self-registration. No new field vocabulary — same fields `RegisterDto` already requires.
+5. **Expiry/resend/revoke:** an expired or revoked invitation should be resendable/revocable by the School Owner (same authorization gate as the invite itself) — not designed further here; flagged as part of the same follow-up work, not a separate gap.
+
+### Why this shape, not a simpler one
+
+- **Not admin-set passcodes** — nothing in the confirmed model treats passcode as something anyone but the account holder sets; this preserves that without needing a new decision to violate it.
+- **Not reusing the phone-OTP reset flow** — that flow authenticates *an existing* User by proving phone ownership; there's no User yet here to attach an OTP challenge to, so it doesn't fit.
+- **Generic, not Instructor-only** — costs nothing extra to design this way now, and avoids building the identical mechanism twice when Staff's own from-zero invite gap (already flagged) gets picked up.
+- **Server-side existing-email check before creating an invitation** — closes the risk of two divergent paths (Add Manually vs. Invite to Instructor Role) ever producing two accounts for one person, which neither page's design considered in isolation.
+
+### What this does NOT resolve
+
+- Whether 7 days is the right expiry, whether resend should be rate-limited, and exact copy/branding for the claim email — left to whoever builds this.
+- Whether `AccountInvitation` should also become the mechanism for Guardian/minor account creation or any other "someone else creates this account" flow elsewhere in the product — out of scope, not evaluated here.
+- This is still unbuilt. `InstructorAdd.dc.html`'s "Add Manually" mode stays tagged Proposed/Placeholder exactly as before; nothing in this decision changes what's real today.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s "Add Manually" note (under "Add / Update Instructor pages") updated to point here instead of carrying the design inline.
+
+### Recorded by
+
+Written up directly at the user's request ("we need to send the new user a log in. How are we going to do that, write the logic and add to the back end notes"), 28 Sep 2026 — a proposed design, not a product decision; needs Architect/product-owner confirmation before anything here is built.
+
+---
+
+## Decision 207 — The belt-level "years in rank" flag is removed too
 
 **Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Completes:** Decision 199, which left this flag out because it wasn't part of that question.
 

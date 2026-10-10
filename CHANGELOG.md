@@ -15,7 +15,7 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Belt-level "years in rank" flag removed** (Decision 200). Each stripe
+- **Belt-level "years in rank" flag removed** (Decision 207). Each stripe
   has its own "time in rank only" switch, which grading uses; nothing changes
   for students. **api:** `Rank.yearsInRankFlag` dropped (migration
   `20261103000000`); a belt no longer takes or returns it.

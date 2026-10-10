@@ -184,7 +184,7 @@ export class StripeSegmentInputDto {
  * Field list verified against skills/ultm8-domain-rules/SKILL.md §5's confirmed
  * Rank row: "primary belt colour and an optional secondary colour..., a weekly
  * class-count cap, a set of required Skills, and a years-in-rank flag." All three
- * now belong to each stripe (Decisions 126, 128 item 3, 199, 200). disciplineId
+ * now belong to each stripe (Decisions 126, 128 item 3, 199, 207). disciplineId
  * is a route param (`/styles/:disciplineId/ranks`), not a body field.
  *
  * `stripeTiers` requires at least one tier — Spec 55's own examples (§5: "White
@@ -236,5 +236,5 @@ export class CreateRankDto {
   stripeTiers!: RankStripeTierInputDto[];
 
   // No belt-level weekly cap, required skills or years-in-rank flag: they live
-  // on each stripe, the plain belt's own stripe included (Decisions 126, 164, 199, 200).
+  // on each stripe, the plain belt's own stripe included (Decisions 126, 164, 199, 207).
 }

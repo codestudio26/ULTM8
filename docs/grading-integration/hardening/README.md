@@ -52,6 +52,6 @@ afterwards.
 | CHANGELOG entries that claimed more than was built | Corrected with this page (the Branch Staff ones by #135). |
 | 142, 155 — the student app shows progress, skills and history | Built: the app's **My grading** screen and `GET /students/{id}/grading`. |
 | 184 — the coach dashboard in the mobile app | Built in #150. |
-| 164 — belt-level skills, weekly cap and years flag still written by the API, ignored by grading | Decisions 199, 200: belt-level skills, weekly cap and years flag removed (the plain belt's rung keeps its own). |
+| 164 — belt-level skills, weekly cap and years flag still written by the API, ignored by grading | Decisions 199, 207: belt-level skills, weekly cap and years flag removed (the plain belt's rung keeps its own). |
 | IMPLEMENTED-UNTESTED rows (16) | Unchanged; each names the missing test. |
 | One pending invite per School, branch and email, not per person | Unchanged; behaves as built. |
