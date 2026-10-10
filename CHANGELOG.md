@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fix: a replayed sign-in token always signs out every session.** When the
+  same refresh token was used twice at the same moment, the sweep that signs
+  out every session could run before the winning request had saved its new
+  token, leaving that one valid (about 1 run in 12 of the test). **api:** the
+  rotation and the new token are now written in one transaction, so the sweep
+  always sees it.
 - **Grading hardening, performance** (Phase 7 stress round). The Grading
   Board for coaches and staff loads in one query instead of one per student:
   a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a
