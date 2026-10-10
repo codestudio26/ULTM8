@@ -574,6 +574,10 @@
   padding: var(--space-6);
   width: 100%;
   max-width: 480px;
+  /* A form taller than the screen scrolls inside the dialog, instead of its
+     bottom (and its Save button) being cut off. */
+  max-height: calc(100vh - 2 * var(--space-6));
+  overflow-y: auto;
 }
 
 /* Responsive — DESIGN.md "Layout & spacing": phone (default) / tablet ≥768px /
