@@ -24,6 +24,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the styles where they have "Verify ranks", for the students of their own
   branches (the Grading Board's read path); other staff get an empty list.
   Each item now carries the student's name and the style's name.
+- **Belts and stripes, not "rungs"** (Decision 187). Screens and messages now
+  say belt and stripe: the belt editor lists a belt's **Stripes** ("Stripe name",
+  "Add stripe", "Reorder stripes?"), the ladder shows each belt's number of
+  stripes, the style templates count "grades (each belt and each stripe)", and
+  the API's grading and ladder error messages use the same words.
+- **Staff given a role again start fresh** (Decision 193). Removing someone's
+  last Instructor or Branch Staff role at a School now clears their grading
+  permissions there, and removing their Branch Staff role clears "Can invite
+  coaches", so if they're added again later the owner grants what applies now.
+  Losing one branch while they still coach at another keeps their grading
+  permissions. The board's "inactive hidden" count already includes students on
+  the top stripe (Decision 194); a test now pins it.
+- **Fix: a replayed sign-in token always signs out every session.** When the
+  same refresh token was used twice at the same moment, the sweep that signs
+  out every session could run before the winning request had saved its new
+  token, leaving that one valid (about 1 run in 12 of the test). **api:** the
+  rotation and the new token are now written in one transaction, so the sweep
+  always sees it.
 - **Grading hardening, performance** (Phase 7 stress round). The Grading
   Board for coaches and staff loads in one query instead of one per student:
   a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a

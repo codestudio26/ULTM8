@@ -14,9 +14,9 @@
 export type TemplateId = 'ibjjf' | 'ibjjf_kids_red' | 'ibjjf_kids_yellow';
 
 export const TEMPLATES: Array<{ id: TemplateId; name: string; description: string }> = [
-  { id: 'ibjjf', name: 'IBJJF Adult & Kid (White Stripes)', description: 'Kids belts with white stripes, adult belts, black belt degrees. 90 rungs.' },
-  { id: 'ibjjf_kids_red', name: 'IBJJF Adult & Kid (White & Red Stripes)', description: 'As the White Stripes ladder, plus red stripes on the kids belts. 139 rungs.' },
-  { id: 'ibjjf_kids_yellow', name: 'IBJJF Adult & Kid (Yellow Stripes)', description: 'As the White & Red Stripes ladder, plus yellow stripes on the kids belts. 175 rungs.' },
+  { id: 'ibjjf', name: 'IBJJF Adult & Kid (White Stripes)', description: 'Kids belts with white stripes, adult belts, black belt degrees. 90 grades (each belt and each stripe).' },
+  { id: 'ibjjf_kids_red', name: 'IBJJF Adult & Kid (White & Red Stripes)', description: 'As the White Stripes ladder, plus red stripes on the kids belts. 139 grades (each belt and each stripe).' },
+  { id: 'ibjjf_kids_yellow', name: 'IBJJF Adult & Kid (Yellow Stripes)', description: 'As the White & Red Stripes ladder, plus yellow stripes on the kids belts. 175 grades (each belt and each stripe).' },
 ];
 
 const VARIANTS: Record<TemplateId, { red?: boolean; yellow?: boolean }> = {

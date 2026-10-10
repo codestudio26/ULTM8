@@ -22,7 +22,7 @@ test('start a style from an IBJJF template', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Start from a template' });
   await expect(dialog.getByRole('button', { name: 'Create style' })).toBeDisabled();
   await dialog.getByRole('radio', { name: /IBJJF Adult & Kid \(White & Red Stripes\)/ }).check();
-  await expect(dialog.getByText('139 rungs')).toBeVisible();
+  await expect(dialog.getByText('139 grades (each belt and each stripe)')).toBeVisible();
   await dialog.getByLabel('Style name').fill('Kids BJJ');
   await dialog.getByRole('button', { name: 'Create style' }).click();
 
