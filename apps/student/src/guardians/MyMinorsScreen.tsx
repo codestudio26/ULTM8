@@ -87,6 +87,12 @@ export function MyMinorsScreen({ navigation }: Props) {
           <Text style={{ color: theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>
             Born {formatDateOnly(minor.dateOfBirth)}
           </Text>
+          {/* Their ranks, progress, skills and history, read-only (Decision 132). */}
+          <Button
+            title="Grading"
+            variant="secondary"
+            onPress={() => navigation.navigate('MyGrading', { studentId: minor.studentId, name: minor.firstName })}
+          />
         </Pressable>
       ))}
 

@@ -20,6 +20,9 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_JOBS = process.env.DATABASE_URL_JOBS;
 const hasDb = Boolean(DATABASE_URL && DATABASE_URL_JOBS);
 
+// Stored as JSON (not a foreign key), so a fixed id is enough here.
+const SLOT_STYLES = [{ disciplineId: '00000000-0000-4000-8000-000000000001', classType: 'Open Mat' }];
+
 const describeIfDb = hasDb ? describe : describe.skip;
 
 if (!hasDb) {
@@ -65,6 +68,7 @@ describeIfDb('class-occurrence-generation job', () => {
         status: 'ON',
         title: 'Fixture Occurrence Class',
         activities: ['BJJ'],
+        styles: SLOT_STYLES,
         capacity: 20,
         bookingCutoffMinutesBeforeStart: 60,
       },
@@ -108,6 +112,8 @@ describeIfDb('class-occurrence-generation job', () => {
     for (const cls of generated) {
       expect(cls.title).toBe('Fixture Occurrence Class');
       expect(cls.activities).toEqual(['BJJ']);
+      // Styles and class types copy onto every generated Class (Decision 170).
+      expect(cls.styles).toEqual(SLOT_STYLES);
       expect(cls.capacity).toBe(20);
       expect(cls.schoolId).toBe(school.id);
       expect(cls.branchId).toBe(branch.id);
@@ -136,6 +142,40 @@ describeIfDb('class-occurrence-generation job', () => {
       expect(cls.occurrenceDate!.getUTCFullYear()).toBe(localStart.getFullYear());
       expect(cls.occurrenceDate!.getUTCMonth()).toBe(localStart.getMonth());
       expect(cls.occurrenceDate!.getUTCDate()).toBe(localStart.getDate());
+    }
+  });
+
+  it('a slot with no branch time zone uses the School\'s time zone (Decision 172)', async () => {
+    // 18:00 in Tokyo (no DST, UTC+9) is always 09:00 UTC.
+    const tzSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Occurrence-Gen TZ School', timezone: 'Asia/Tokyo' } });
+    const noTzBranch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: tzSchool.id, name: 'No-TZ Branch' } });
+    const slotFields = {
+      schoolId: tzSchool.id,
+      weekday: 'MONDAY' as const,
+      startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
+      endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+      status: 'ON' as const,
+      title: 'Fixture TZ Class',
+      activities: ['BJJ'],
+    };
+    const schoolWide = await superuser.timetableSlot.create({ data: { id: randomUUID(), ...slotFields, branchId: null } });
+    const atNoTzBranch = await superuser.timetableSlot.create({ data: { id: randomUUID(), ...slotFields, branchId: noTzBranch.id } });
+    const slotIds = [schoolWide.id, atNoTzBranch.id];
+    try {
+      await processor.process({ id: 'test-run-school-tz', data: {} } as never);
+      for (const slotId of slotIds) {
+        const generated = await superuser.class.findMany({ where: { timetableSlotId: slotId } });
+        expect(generated.length).toBe(4);
+        for (const cls of generated) {
+          expect(cls.startDate.getUTCHours()).toBe(9);
+          expect(cls.startDate.getUTCMinutes()).toBe(0);
+        }
+      }
+    } finally {
+      await superuser.class.deleteMany({ where: { timetableSlotId: { in: slotIds } } });
+      await superuser.timetableSlot.deleteMany({ where: { id: { in: slotIds } } });
+      await superuser.branch.delete({ where: { id: noTzBranch.id } });
+      await superuser.school.delete({ where: { id: tzSchool.id } });
     }
   });
 

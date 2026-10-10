@@ -11,7 +11,16 @@ describe('AuthService', () => {
   let loginAttempts: any;
 
   beforeEach(() => {
-    prismaAuth = { user: { findFirst: jest.fn(), findUnique: jest.fn() } };
+    prismaAuth = {
+      user: { findFirst: jest.fn(), findUnique: jest.fn() },
+      // Backs issueRefreshToken()'s create() (login()/refresh()) and
+      // confirmPasscodeReset()'s mass-revoke updateMany() — both now called
+      // unconditionally on their respective success paths.
+      refreshToken: { create: jest.fn(), findUnique: jest.fn(), updateMany: jest.fn() },
+      // refresh() rotates and issues the successor in one transaction; the
+      // mock runs it against the same client.
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prismaAuth)),
+    };
     prismaApp = {
       withTenantContext: jest.fn((_id: string, fn: any) =>
         fn({
@@ -102,8 +111,96 @@ describe('AuthService', () => {
       prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: new Date() });
       const result = await service.login({ email: 'a@example.test', passcode: '123456' });
       expect(result.accessToken).toBe('signed.jwt.token');
+      expect(typeof result.refreshToken).toBe('string');
+      expect(result.refreshToken.length).toBeGreaterThan(0);
+      expect(prismaAuth.refreshToken.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: 'u1' }) }),
+      );
       expect(loginAttempts.recordSuccess).toHaveBeenCalledWith('a@example.test');
       expect(jwt.sign).toHaveBeenCalledWith(expect.objectContaining({ sub: 'u1', email: 'a@example.test', grants: [] }));
+    });
+  });
+
+  describe('refresh', () => {
+    it('rejects an unknown token', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue(null);
+      await expect(service.refresh({ refreshToken: 'bogus' })).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('rejects an expired token', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt1', userId: 'u1', revokedAt: null, expiresAt: new Date(Date.now() - 1000),
+      });
+      await expect(service.refresh({ refreshToken: 'stale' })).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('REUSE DETECTION: a ROTATED-OUT token presented a second time revokes every other active token for that User and rejects', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt1', userId: 'u1', revokedAt: new Date(), rotatedOut: true, expiresAt: new Date(Date.now() + 1000),
+      });
+      await expect(service.refresh({ refreshToken: 'replayed' })).rejects.toThrow(UnauthorizedException);
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'u1', revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it('a revoked-but-NOT-rotated token (e.g. logged out, or caught by the passcode-reset mass-revoke) is an ordinary 401 — NOT a reuse signal, no mass revoke of sibling sessions', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt1', userId: 'u1', revokedAt: new Date(), rotatedOut: false, expiresAt: new Date(Date.now() + 1000),
+      });
+      await expect(service.refresh({ refreshToken: 'logged-out' })).rejects.toThrow(UnauthorizedException);
+      expect(prismaAuth.refreshToken.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rotates a valid token: revokes the presented one (and marks it rotatedOut), mints a fresh pair', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt1', userId: 'u1', revokedAt: null, rotatedOut: false, expiresAt: new Date(Date.now() + 1000),
+      });
+      prismaAuth.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+      const result = await service.refresh({ refreshToken: 'valid' });
+      expect(result.accessToken).toBe('signed.jwt.token');
+      expect(typeof result.refreshToken).toBe('string');
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { id: 'rt1', revokedAt: null },
+        data: { revokedAt: expect.any(Date), rotatedOut: true },
+      });
+    });
+
+    it('a losing concurrent rotation attempt (updateMany count 0) is rejected, not treated as success', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt1', userId: 'u1', revokedAt: null, rotatedOut: false, expiresAt: new Date(Date.now() + 1000),
+      });
+      prismaAuth.refreshToken.updateMany.mockResolvedValueOnce({ count: 0 });
+      await expect(service.refresh({ refreshToken: 'valid' })).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('FOUND ON REVIEW: a losing concurrent rotation attempt triggers the same mass-revoke reuse-detection as a sequential replay, not a silent no-op that merely claims it did', async () => {
+      prismaAuth.refreshToken.findUnique.mockResolvedValue({
+        id: 'rt1', userId: 'u1', revokedAt: null, rotatedOut: false, expiresAt: new Date(Date.now() + 1000),
+      });
+      // First updateMany call is the rotation attempt itself (loses the
+      // race); the second is the mass-revoke this test proves now actually
+      // runs, not just a message claiming it did.
+      prismaAuth.refreshToken.updateMany.mockResolvedValueOnce({ count: 0 });
+      prismaAuth.refreshToken.updateMany.mockResolvedValueOnce({ count: 1 });
+      await expect(service.refresh({ refreshToken: 'valid' })).rejects.toThrow(UnauthorizedException);
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenCalledTimes(2);
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { userId: 'u1', revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+  });
+
+  describe('logout', () => {
+    it('revokes exactly the presented token, nothing else', async () => {
+      prismaAuth.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+      const result = await service.logout({ refreshToken: 'mine' });
+      expect(result.message).toBe('Logged out');
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ revokedAt: null }) }),
+      );
     });
   });
 
@@ -118,6 +215,12 @@ describe('AuthService', () => {
       } as any);
       expect(loginAttempts.recordSuccess).toHaveBeenCalledWith('a@example.test');
       expect(loginAttempts.recordSuccess).not.toHaveBeenCalledWith('+15551234567');
+      // A passcode reset is frequently a compromise-recovery action — every
+      // refresh token issued under the OLD passcode must not survive it.
+      expect(prismaAuth.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'u1', revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
     });
   });
 });

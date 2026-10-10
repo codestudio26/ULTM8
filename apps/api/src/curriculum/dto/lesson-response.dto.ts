@@ -1,0 +1,63 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { LessonFormat, CaptionStatus } from '@prisma/client';
+
+export class LessonResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  schoolId!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  instructorId!: string | null;
+
+  @ApiProperty()
+  title!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Its category\'s name, or null.' })
+  category!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  categoryId!: string | null;
+
+  @ApiProperty({ description: 'Its place within its category, from 0.' })
+  order!: number;
+
+  @ApiProperty({ description: 'Watchable by every student and guardian at the School (Decision 190).' })
+  free!: boolean;
+
+  @ApiProperty({ description: 'The caller may not watch it (Decision 195): no membership of theirs covers it. Its description and video are left out.' })
+  locked!: boolean;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  durationSeconds!: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  description!: string | null;
+
+  @ApiProperty({ enum: LessonFormat })
+  format!: LessonFormat;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Vendor-agnostic pointer (Decision 101: Cloudflare Stream) — null until the video-hosting pipeline exists.' })
+  videoRef!: string | null;
+
+  @ApiProperty({ enum: CaptionStatus })
+  captionStatus!: CaptionStatus;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  captionTrackRef!: string | null;
+
+  @ApiProperty({ type: [String] })
+  skillIds!: string[];
+
+  @ApiProperty()
+  createdAt!: string;
+
+  @ApiProperty()
+  updatedAt!: string;
+}
+
+export class LessonListResponseDto {
+  @ApiProperty({ type: [LessonResponseDto] })
+  items!: LessonResponseDto[];
+}

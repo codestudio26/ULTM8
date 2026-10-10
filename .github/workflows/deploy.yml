@@ -1,0 +1,230 @@
+name: Deploy
+
+# Manual/gated only, by design — matching docs/ULTM8-MASTER-ROADMAP.md §3's own
+# framing of infra/terraform/ as "code that can be written now" without anything
+# actually running yet: this environment has no AWS account, no Terraform backend
+# decision (infra/terraform/versions.tf deliberately has none — see
+# infra/terraform/README.md's own "before you run this for real" item #1), and no
+# real domain (alb.tf's domain_name/route53_zone_id have no default). There is no
+# `on: push` trigger here on purpose; wiring one in before those decisions exist
+# would let a routine merge to master silently attempt a real cloud deploy against
+# nothing. Every job below also targets a GitHub Environment named after its
+# `environment` input — configure environment protection rules (required reviewers)
+# in the repo's own Settings > Environments before this can run for real; until
+# then, dispatching this workflow will fail closed at the "configure AWS OIDC"
+# step, not silently no-op.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment (must match a var.environment value used for a real `terraform apply`, and a GitHub Environment configured with required reviewers)"
+        type: choice
+        options: [staging, production]
+        required: true
+      terraform_action:
+        description: "plan (default, safe/read-only) or apply (provisions/changes real infrastructure — only run this once a human has reviewed the plan output)"
+        type: choice
+        options: [plan, apply]
+        default: plan
+        required: true
+      run_migrations:
+        description: "Also run `prisma migrate deploy` against this environment's RDS (via an ECS one-off task — see the migrate job below). Only meaningful alongside terraform_action=apply, or against an environment that's already been applied at least once."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  # Required for aws-actions/configure-aws-credentials' OIDC federation — no long-
+  # lived AWS access keys are stored as secrets anywhere in this repo.
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }} # not set anywhere yet — see infra/terraform/variables.tf's own aws_region default/caveat.
+  TF_VAR_environment: ${{ inputs.environment }}
+  TF_VAR_project: ultm8
+  # domain_name/route53_zone_id have no Terraform default (alb.tf) — supplied here
+  # only as GitHub Environment-scoped variables, never as a literal in this file,
+  # since no real ULTM8 production domain is named anywhere in confirmed material.
+  TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+  TF_VAR_route53_zone_id: ${{ vars.ROUTE53_ZONE_ID }}
+
+jobs:
+  # ---- Build the image and push it to the ECR repo ecr.tf creates. Runs even for
+  # a plan-only dispatch — a plan doesn't need a freshly-pushed image, but building
+  # it here (rather than as a separate workflow) keeps the image tag and the
+  # terraform apply that references it (api_image_tag below) coming from the same
+  # run, never two runs that could drift. ----
+  build-and-push:
+    name: Build & push apps/api image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compute image tag
+        id: tag
+        # The git SHA, never `:latest` — matches ecr.tf's own
+        # image_tag_mutability = "IMMUTABLE" and Decision 32's "redeploy the
+        # previous task-definition revision" rollback model: a mutable/floating tag
+        # would make "the previous revision" ambiguous.
+        run: echo "value=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      # role-to-assume references an IAM role this repo's own Terraform does not
+      # provision (a CI deploy role is a separate, human-made trust decision, not
+      # something infra/terraform/iam.tf should create for itself) — configure
+      # AWS_DEPLOY_ROLE_ARN as an Environment variable pointing at a role with an
+      # OIDC trust policy for this repo before dispatching this workflow for real.
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Build image
+        run: |
+          docker build \
+            -f apps/api/Dockerfile \
+            -t "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:${{ steps.tag.outputs.value }}" \
+            .
+
+      - name: Push image
+        run: |
+          docker push "${{ steps.ecr-login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:${{ steps.tag.outputs.value }}"
+
+  # ---- terraform plan (always) / apply (only if explicitly requested) ----
+  terraform:
+    name: Terraform ${{ inputs.terraform_action }}
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: infra/terraform
+    outputs:
+      ecs_task_definition_arn: ${{ steps.tf-outputs.outputs.ecs_task_definition_arn }}
+      private_subnet_ids: ${{ steps.tf-outputs.outputs.private_subnet_ids }}
+      fargate_security_group_id: ${{ steps.tf-outputs.outputs.fargate_security_group_id }}
+      ecs_cluster_name: ${{ steps.tf-outputs.outputs.ecs_cluster_name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+
+      # infra/terraform/versions.tf has no backend block — that's a real, unmade
+      # decision (README's own "before you run this for real" item #1), not
+      # something this workflow has the authority to invent. This step is written
+      # so a backend CAN be supplied later purely via -backend-config, with zero
+      # changes to this file or to versions.tf's own committed content — but
+      # without TF_BACKEND_CONFIG set, `terraform init` here falls back to a local
+      # backend scoped to this one ephemeral runner, which means NO STATE PERSISTS
+      # between runs. That's a real, load-bearing gap, not a subtle one: every run
+      # would plan against a blank slate and (if ever run with terraform_action:
+      # apply) try to recreate everything from scratch. Do not rely on
+      # terraform_action: apply until a real backend exists and
+      # TF_BACKEND_CONFIG is set.
+      - name: Terraform init
+        env:
+          TF_BACKEND_CONFIG: ${{ vars.TF_BACKEND_CONFIG }}
+        run: |
+          if [ -n "$TF_BACKEND_CONFIG" ]; then
+            terraform init -backend-config="$TF_BACKEND_CONFIG"
+          else
+            echo "::warning::No TF_BACKEND_CONFIG Environment variable set — initializing with Terraform's local backend. State from this run will NOT persist past this job. See infra/terraform/README.md's 'before you run this for real' item #1."
+            terraform init
+          fi
+
+      - name: Terraform plan
+        run: |
+          terraform plan \
+            -var="api_image_tag=${{ needs.build-and-push.outputs.image_tag }}" \
+            -out=tfplan
+
+      - name: Terraform apply
+        if: inputs.terraform_action == 'apply'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Read Terraform outputs
+        id: tf-outputs
+        # Only meaningful once at least one real apply has succeeded against a real
+        # backend — on a plan-only or first-ever run these `terraform output` calls
+        # return nothing, and the migrate job below is skipped accordingly.
+        if: inputs.terraform_action == 'apply'
+        run: |
+          {
+            echo "ecs_task_definition_arn=$(terraform output -raw ecs_task_definition_arn)"
+            echo "private_subnet_ids=$(terraform output -json private_subnet_ids | jq -c .)"
+            echo "fargate_security_group_id=$(terraform output -raw fargate_security_group_id)"
+            echo "ecs_cluster_name=$(terraform output -raw ecs_cluster_name)"
+          } >> "$GITHUB_OUTPUT"
+
+  # ---- Run pending Prisma migrations against this environment's RDS, via a
+  # one-off ECS Fargate task reusing the SAME task definition the service itself
+  # runs — same image, same VPC networking/security groups, same Secrets Manager-
+  # sourced DATABASE_URL (superuser role — matches every migration in this repo's
+  # own "runs as the superuser, grants app-role privileges" pattern). Deliberately
+  # NOT run from the GitHub-hosted runner directly: RDS Proxy sits in private
+  # subnets with no route from the public internet (security_groups.tf's own
+  # rds_proxy ingress rule only accepts the fargate security group), so a runner
+  # has no path to it. `aws ecs run-task` with a command override is the standard
+  # way to execute a one-off job against private-subnet infrastructure without a
+  # separate migration task definition or a bastion host — see
+  # infra/terraform/README.md's own item #6 and ecs.tf's own header comment, both
+  # of which already named this file as where that step would live. ----
+  migrate:
+    name: Run pending migrations
+    runs-on: ubuntu-latest
+    needs: terraform
+    if: inputs.terraform_action == 'apply' && inputs.run_migrations
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run migration task and wait for completion
+        run: |
+          set -euo pipefail
+
+          SUBNETS=$(echo '${{ needs.terraform.outputs.private_subnet_ids }}' | jq -r 'join(",")')
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "${{ needs.terraform.outputs.ecs_cluster_name }}" \
+            --task-definition "${{ needs.terraform.outputs.ecs_task_definition_arn }}" \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[${{ needs.terraform.outputs.fargate_security_group_id }}],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"api","command":["npx","prisma","migrate","deploy","--schema=apps/api/prisma/schema.prisma"]}]}' \
+            --query 'tasks[0].taskArn' \
+            --output text)
+
+          echo "Migration task: $TASK_ARN"
+
+          aws ecs wait tasks-stopped \
+            --cluster "${{ needs.terraform.outputs.ecs_cluster_name }}" \
+            --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster "${{ needs.terraform.outputs.ecs_cluster_name }}" \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          echo "Migration task exit code: $EXIT_CODE"
+          # A container that never started (e.g. failed to pull the image, or
+          # crashed before prisma even ran) reports exitCode "None" from the CLI,
+          # not a number — fail loudly on that too, not just a nonzero exit.
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::Migration task did not exit 0 (exitCode=$EXIT_CODE) — check CloudWatch Logs at $(aws ecs describe-tasks --cluster "${{ needs.terraform.outputs.ecs_cluster_name }}" --tasks "$TASK_ARN" --query 'tasks[0].taskDefinitionArn' --output text)"
+            exit 1
+          fi

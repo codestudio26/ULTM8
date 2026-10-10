@@ -2,7 +2,7 @@
 
 ## Purpose & status
 
-ULTM8 is a multi-tenant SaaS platform for Sports schools/clubs management — Franchise → School → Branch tenancy, Students and Guardian/minor accounts, Instructors, belt/rank grading, class scheduling, memberships, liability waivers, and QR-code check-in. The technical specification and domain rules have been reconciled and finalized (Spec 55). **Development has not started** — this repository is currently in a preparation/planning phase only.
+ULTM8 is a multi-tenant SaaS platform for Sports schools/clubs management — Franchise → School → Branch tenancy, Students and Guardian/minor accounts, Instructors, belt/rank grading, class scheduling, memberships, liability waivers, and QR-code check-in. The technical specification and domain rules have been reconciled and finalized (Spec 55). **Development is well underway** — see "Current phase" below for the verified state.
 
 ## Source-of-truth hierarchy
 
@@ -15,6 +15,7 @@ When sources disagree, resolve in this order, highest first:
    `skills/ultm8-domain-rules/SKILL.md`
    A tagged, scannable distillation of Spec 55's business rules. Load it before any work touching domain or business logic. If this skill and the current spec ever disagree, the spec wins — flag the mismatch, don't silently pick one.
 3. **Approved architectural/product decisions** — as recorded in Spec 55 §12.1, or made directly with the product owner since. These never override Spec 55 Sections 1–11. Decisions made after the Spec 55 handover are recorded in `docs/decisions/POST-SPEC-55-DECISION-LOG.md` — an append-only log continuing the spec's own decision numbering, starting at Decision 70.
+   - **Exception: grading.** For the grading module, Gus's prototype rules override Spec 55 where they conflict (Decision 124). The exception applies only through each override's own numbered decision (125 onward), so check the log before building any grading rule. See `docs/grading-integration/` for the plan and the open questions.
 4. **Existing code** — once implementation begins, working code is authoritative for *how* something is built, but it never overrides an unresolved spec item simply by existing.
 5. **Figma/design references** — illustrative only. Useful for screen inventory and observed UI flow, never a substitute for a confirmed business rule.
 
@@ -36,6 +37,30 @@ When sources disagree, resolve in this order, highest first:
 - Never stage broadly (e.g. `git add .`) without first reviewing exactly what's being added — stage specific, reviewed paths only.
 - Do not commit or push without the user's request.
 
+## Versioning
+
+**Version 1 is frozen as the annotated git tag `v1.0.0` (commit `11da406`).** It must never change.
+
+- **Scope of V1: Track A only** — `apps/api`, `apps/school-portal`, `apps/platform-admin`, the shared `packages/*`, and `infra/`. **Track B (`apps/student`) is NOT part of V1 and is not frozen.** A partial copy of `apps/student` exists inside the V1 snapshot only because PR #81 had synced it to `master`; it carries no version meaning and Track B keeps developing independently.
+- **The `v1.0.0` tag sits beside `master`, not on it.** It is `master` as of PR #85 plus PR #78's V1 work (Decisions 114–121), but *excludes* PR #78's three redesign commits (Instructors page redesign + app-shell header, and the redesign backend backlog), which were squash-merged into `master` together with it. Those are the first post-V1 work.
+- **Never move, delete, re-create, or force-push any `v*` tag**, and never commit to a `release/*` branch unless the user explicitly asks.
+- **Version numbers are assigned by the user**, as work accumulates ("this is v1.1", etc.). Never pick a version number or create a tag on your own. Informal version names inside docs (e.g. `docs/v1.2-backend-backlog.md`) are not version assignments.
+- **`master` is the latest development line.** Do each page redesign or feature on a short-lived branch created from the latest `master` (e.g. `redesign/<page>`, `feature/<name>`), one page/feature per PR, merged when done. No long-lived, never-merged branches. Don't push new, unrelated work onto another open PR's branch — that is how redesign work ended up bundled into V1's PR #78.
+- **Record every user-visible change** under `## Unreleased` in `CHANGELOG.md`. When the user declares a version, rename that heading to the version and tag the release commit (with the user's go-ahead).
+- **A redesign is visual/UX first.** Don't change business rules, the data model, API contracts, tenancy/RLS, or security behaviour as a side effect; anything the spec doesn't confirm follows the standing rules above (`[UNRESOLVED]` → ask).
+- **Fixing V1 itself** (only if the user asks): branch `release/1.0` from `v1.0.0`, fix there, tag `v1.0.1`.
+- **Comparing versions:** `git diff v1.0.0 master -- apps/school-portal` for code; `git checkout v1.0.0` (or a deployment pinned to the tag) to run V1 side by side with `master`.
+
 ## Current phase
 
-Development has **not started**. This repository is in a preparation phase: spec review, domain-rule maintenance, and planning only. Do not begin implementation work unless explicitly instructed to.
+**Updated 10 Oct 2026** (verified against the repository, not assumed):
+
+- **Track A — V1 frozen** as `v1.0.0` (see "Versioning" above): `apps/api` (NestJS + Prisma + Postgres RLS, covering tenancy, auth, Students/Instructors/Guardians, grading, classes/bookings/waitlist, memberships/payments, waivers, QR attendance, notifications, and Platform Admin), `apps/school-portal` (School Owner/Staff web app), and `apps/platform-admin`. Post-Spec-55 decisions run 70–121 as of V1 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`).
+- **Post-V1 work on `master`:** page-by-page redesign of `apps/school-portal` plus new features, planned as **v1.1** (the user decides which pages complete it; nothing is tagged until they say so). See `CHANGELOG.md` → Unreleased.
+  - **Redesigned pages shipped for real**, not just mockups (PR #78, PR #114): Instructors + a real app-shell header, the Auth flow (Login/Register/Reset Passcode/Verify OTP), Membership Plans, Transactions, Waivers (Split-Pane Reader), Staff invite flow, and a new Students roster page.
+  - **Still mockup-only in the design canvas**, with the exact backend gap logged per page: Branches, Franchises, Classes, Curriculum, Timetable, Dashboard, Notifications, the new Bookings page, Disciplines, and the new Student Detail/Invite pages. `docs/v1.2-backend-backlog.md` is the durable, in-repo source of truth for this (41 items, each effort-tagged) — read it before starting any of this work. A live status tracker also exists at https://claude.ai/artifact/KffxgELbjxWefsC9kid7uj (private; the user can share it from the artifact's own Share menu if a session can't open it) — useful for current status, but the markdown doc is the one every session can always reach.
+- **A large, separate grading-engine feature effort has also merged extensively into `master`** in parallel with the redesign work above (belt/rank grading criteria and ladders, coach dashboard and invites, Kid Mode booking delegation, and more) — Post-Spec-55 decisions now run well past 199. `docs/decisions/POST-SPEC-55-DECISION-LOG.md` is the current authoritative count; deliberately not restated here as a number, since that goes stale fast and this paragraph already did once.
+- **Track B — `apps/student`** (Student/Guardian React Native app): in active development, not part of V1. It now lives on `master`: PR #89 (merged 2 Oct 2026) brought in the `track-b-student-app-pka8oo` work and superseded PR #82, which was closed unmerged. Later Track B work lands through normal PRs (e.g. #92 QR check-in, #94 Guardian Kid Mode). See `docs/TRACK-B-ROADMAP.md` for its own status.
+- Known V1 gaps and deliberately deferred items are listed in `CHANGELOG.md` under v1.0.0.
+
+Treat git history, the decision log, and each app's own code as the source of truth for what's built — not a static status paragraph. Still applies: don't begin work in an area without checking the actual current code first, and don't assume a feature is unbuilt (or built) without verifying.

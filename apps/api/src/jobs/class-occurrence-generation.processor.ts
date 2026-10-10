@@ -103,13 +103,10 @@ export class ClassOccurrenceGenerationScheduler implements OnModuleInit {
  *    doesn't say what should happen, and retroactively touching rows a Student may
  *    already hold real Bookings against is the wrong default to guess at.
  *
- * Timezone: uses Branch.timezone when the slot is Branch-scoped. School itself has no
- * confirmed timezone field anywhere in this schema, so a School-wide slot
- * (branchId null) falls back to UTC — a reasonable-minimum default, NOT a confirmed
- * answer; flagged prominently here and in the kickoff prompt for a real product
- * decision (add School.timezone, or a different resolution) before this is trusted for
- * a School-wide slot outside UTC. Occurrence dates are computed by advancing in LOCAL
- * calendar days within the resolved IANA zone (via luxon, which handles DST correctly)
+ * Timezone (Decision 172): the slot's Branch.timezone, else its School.timezone,
+ * else UTC (a School that hasn't set one yet). Occurrence dates are computed by
+ * advancing in LOCAL calendar days within the resolved IANA zone (via luxon, which
+ * handles DST correctly)
  * and converting the resulting local wall-clock time to UTC per-occurrence — never by
  * adding a fixed 7x24-hour duration to a UTC instant, which would silently drift by an
  * hour across a DST boundary.
@@ -133,14 +130,14 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
   async process(_job: Job): Promise<void> {
     const activeSlots = await this.prismaJobs.timetableSlot.findMany({
       where: { status: 'ON' },
-      include: { branch: { select: { timezone: true } } },
+      include: { branch: { select: { timezone: true } }, school: { select: { timezone: true } } },
     });
 
     let created = 0;
     let skippedExisting = 0;
 
     for (const slot of activeSlots) {
-      const timezone = slot.branch?.timezone ?? 'UTC';
+      const timezone = slot.branch?.timezone ?? slot.school.timezone ?? 'UTC';
       const targetWeekday = WEEKDAY_TO_LUXON[slot.weekday];
       const now = DateTime.now().setZone(timezone);
       let daysUntilTarget = (targetWeekday - now.weekday + 7) % 7;
@@ -188,6 +185,8 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
           occurrenceDate,
           title: slot.title,
           activities: slot.activities,
+          // Styles and class types copy onto every generated Class (Decision 170).
+          styles: slot.styles ?? [],
           bannerUrl: slot.bannerUrl,
           description: slot.description,
           startDate,

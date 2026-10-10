@@ -20,6 +20,9 @@ interface AuthContextValue {
    * credential, not a step-up factor alongside OTP. */
   login: (email: string, passcode: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Swap in a fresh access token the API handed back, e.g. after joining a
+   * School, whose new STUDENT grant only exists in a newly minted token. */
+  applyAccessToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -94,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   const value = useMemo(
-    () => ({ loading, accessToken, claims, login, logout }),
-    [loading, accessToken, claims, login, logout],
+    () => ({ loading, accessToken, claims, login, logout, applyAccessToken: applyToken }),
+    [loading, accessToken, claims, login, logout, applyToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -130,4 +133,18 @@ export function useEnrolledSchoolIds(): string[] {
 export function useIsGuardian(): boolean {
   const { claims } = useAuth();
   return claims?.grants.some((g) => g.role === 'GUARDIAN') ?? false;
+}
+
+/** The School where this person coaches (Decisions 184, 186): an Instructor or
+ * Branch Staff grant. A coach at several Schools sees one of them for now (no
+ * School switcher yet, Decision 184 item 4); sorted, because the token's grants
+ * have no guaranteed order (see useEnrolledSchoolIds). */
+export function useCoachSchoolId(): string | null {
+  const { claims } = useAuth();
+  if (!claims) return null;
+  const ids = claims.grants
+    .filter((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId)
+    .map((g) => g.schoolId as string)
+    .sort();
+  return ids[0] ?? null;
 }

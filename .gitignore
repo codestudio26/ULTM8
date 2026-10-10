@@ -32,6 +32,10 @@ Thumbs.db
 # Test coverage
 coverage/
 
+# Local Redis runtime dump (created by `redis-server` when run locally, e.g. for
+# e2e tests against BullMQ) — never project content.
+dump.rdb
+
 # React Native (apps/student, once initialized)
 .expo/
 *.jks
@@ -39,3 +43,10 @@ coverage/
 *.p12
 *.key
 *.mobileprovision
+
+# Claude Code agent worktrees (local, per-session scratch checkouts — never project content)
+.claude/worktrees/
+
+# Playwright output
+test-results/
+playwright-report/

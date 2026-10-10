@@ -1,31 +1,32 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrap } from '@ultm8/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { unwrap, type components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
-/** Resolves a scanned Class's title/time for display — on-demand, only once a scan
- * has matched an upcoming Booking (not a list operation), so a single GET is fine.
- * Accessible to a Student via class_tenant_isolation's "any active RoleGrant at this
- * School" RLS shape (confirmed against the School Portal's own Check-in screen, which
- * reads the same endpoint) — a Student holds a STUDENT RoleGrant at any School they
- * have an upcoming Booking with. */
-export function useClass(classId: string | null) {
-  return useQuery({
-    queryKey: ['class', classId],
-    queryFn: () => unwrap(apiClient.GET('/v1/classes/{id}', { params: { path: { id: classId! } } })),
-    enabled: !!classId,
-  });
-}
+export type QrTokenResponse = components['schemas']['QrTokenResponseDto'];
 
-/** POST /attendance/scan — the self-service QR check-in endpoint (already built,
- * Phase 13). Does all the real enforcement (booking ownership, check-in time window,
- * camera-tier consent) — this screen's own classId/nonce/freshness check is purely a
- * client-side "was this screenshot taken just now" gate, never a security boundary;
- * nothing server-side ever inspects the QR payload itself (confirmed in
- * AttendanceService.scan — it only ever takes a bookingId). */
-export function useScanAttendance() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (bookingId: string) => unwrap(apiClient.POST('/v1/attendance/scan', { body: { bookingId } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
+/** Backs QrCheckInScreen — the Student's own rotating check-in code (Phase 51,
+ * Decision 107's `GET /attendance/my-qr-token`): class-agnostic, identifies
+ * only the Student; an Instructor's scan matches it against whichever Class
+ * they're currently taking roll-call for. Same refresh-just-before-expiry
+ * cadence apps/school-portal's `useClassQrToken` already established for the
+ * sibling endpoint — kept in sync with that same reasoning, not re-derived:
+ * `QR_ATTENDANCE_TOKEN_TTL_SECONDS` is an explicit Developer-level placeholder
+ * on the backend (QrTokenService's own header comment), so hardcoding an
+ * assumed TTL here would silently drift if that value ever changes. */
+export function useMyQrToken(enabled: boolean) {
+  return useQuery({
+    queryKey: ['myQrToken'],
+    queryFn: () => unwrap(apiClient.GET('/v1/attendance/my-qr-token', {})),
+    enabled,
+    refetchInterval: (query) => {
+      const data = query.state.data as QrTokenResponse | undefined;
+      if (!data) return 5_000;
+      const msUntilExpiry = new Date(data.expiresAt).getTime() - Date.now();
+      return Math.max(1_000, msUntilExpiry - 2_000);
+    },
+    // A stale token is worthless the moment it expires — never serve a cached
+    // one on remount instead of fetching fresh, same reasoning
+    // useClassQrToken already established for the sibling endpoint.
+    staleTime: 0,
   });
 }

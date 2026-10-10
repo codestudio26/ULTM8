@@ -23,8 +23,11 @@
   },
 
   // Runs once, when the codespace container is first created — full install +
-  // Prisma client generation so the workspace is immediately usable.
-  "postCreateCommand": "npm ci && npm run prisma:generate --workspace=@ultm8/api",
+  // Prisma client generation + the Claude Code CLI, so the workspace is
+  // immediately usable (this was missed on the first pass — caught only once
+  // `claude` actually got run inside a live codespace and came back
+  // "command not found").
+  "postCreateCommand": "npm ci && npm run prisma:generate --workspace=@ultm8/api && npm install -g @anthropic-ai/claude-code",
 
   // Runs every time the codespace starts (including resuming an existing one).
   // `git pull --ff-only` auto-syncs whoever opens this codespace with whatever the

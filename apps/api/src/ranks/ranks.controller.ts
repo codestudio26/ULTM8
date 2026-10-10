@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -8,6 +8,8 @@ import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { CreateRankDto } from './dto/create-rank.dto';
 import { UpdateRankDto } from './dto/update-rank.dto';
+import { ReorderRanksDto, RungHoldersResponseDto } from './dto/ladder.dto';
+import { CreateStyleFromTemplateDto, StyleTemplateListResponseDto } from './dto/style-template.dto';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { DisciplineListResponseDto, DisciplineResponseDto } from './dto/discipline-response.dto';
@@ -39,6 +41,24 @@ export class RanksController {
     return { items: await this.ranksService.findAllDisciplines(user.sub, schoolId) };
   }
 
+  @ApiOkResponse({ type: StyleTemplateListResponseDto })
+  @Get('style-templates')
+  listTemplates() {
+    return this.ranksService.listTemplates();
+  }
+
+  @ApiCreatedResponse({ type: DisciplineResponseDto, description: 'The new style, built from the template (Decisions 131, 182).' })
+  @Post('schools/:schoolId/disciplines/from-template')
+  createFromTemplate(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: CreateStyleFromTemplateDto) {
+    return this.ranksService.createFromTemplate(user.sub, schoolId, dto);
+  }
+
+  @ApiCreatedResponse({ type: DisciplineResponseDto, description: 'The copy, named "… (Copy)" (Decision 182).' })
+  @Post('disciplines/:id/duplicate')
+  duplicateDiscipline(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.ranksService.duplicateDiscipline(user.sub, id);
+  }
+
   @ApiOkResponse({ type: DisciplineResponseDto })
   @Get('disciplines/:id')
   findOneDiscipline(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
@@ -49,6 +69,14 @@ export class RanksController {
   @Patch('disciplines/:id')
   updateDiscipline(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateDisciplineDto) {
     return this.ranksService.updateDiscipline(user.sub, id, dto);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted (Decision 198).' })
+  @ApiConflictResponse({ description: 'The style is in use: someone holds a rank in it, or classes, slots or lessons use it.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('disciplines/:id')
+  async deleteDiscipline(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.ranksService.deleteDiscipline(user.sub, id);
   }
 
   // ---- Rank — confirmed route literal is "/styles/{id}/ranks" (Spec 55 §7);
@@ -67,6 +95,18 @@ export class RanksController {
     return { items: await this.ranksService.findAllRanks(user.sub, disciplineId) };
   }
 
+  @ApiOkResponse({ type: RankListResponseDto, description: 'The style\'s belts in their new order.' })
+  @Put('styles/:disciplineId/ranks/order')
+  async reorderRanks(@CurrentUser() user: JwtPayload, @Param('disciplineId') disciplineId: string, @Body() dto: ReorderRanksDto) {
+    return { items: await this.ranksService.reorderRanks(user.sub, disciplineId, dto) };
+  }
+
+  @ApiOkResponse({ type: RungHoldersResponseDto })
+  @Get('styles/:disciplineId/rung-holders')
+  findRungHolders(@CurrentUser() user: JwtPayload, @Param('disciplineId') disciplineId: string) {
+    return this.ranksService.findRungHolders(user.sub, disciplineId);
+  }
+
   @ApiOkResponse({ type: RankResponseDto })
   @Get('ranks/:id')
   findOneRank(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
@@ -77,6 +117,14 @@ export class RanksController {
   @Patch('ranks/:id')
   updateRank(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateRankDto) {
     return this.ranksService.updateRank(user.sub, id, dto);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted (Decision 198).' })
+  @ApiConflictResponse({ description: 'Someone holds the belt, or it is in grading history.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('ranks/:id')
+  async deleteRank(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.ranksService.deleteRank(user.sub, id);
   }
 
   // ---- Skill — nested under the same Discipline resource; no dedicated route
@@ -100,5 +148,13 @@ export class RanksController {
   @Patch('skills/:id')
   updateSkill(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateSkillDto) {
     return this.ranksService.updateSkill(user.sub, id, dto);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted (Decision 198).' })
+  @ApiConflictResponse({ description: 'Students have been marked on the skill, or it is a lesson\'s only skill.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('skills/:id')
+  async deleteSkill(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.ranksService.deleteSkill(user.sub, id);
   }
 }

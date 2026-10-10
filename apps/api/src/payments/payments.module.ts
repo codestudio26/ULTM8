@@ -23,11 +23,17 @@ import { StripeClientService } from './stripe-client.service';
  * rather than duplicating Stripe-primitive logic, same cross-module
  * service-injection pattern TenantsModule's own SchoolsService/
  * TenantAuthorizationService exports already established.
+ *
+ * Also exports StripeClientService (Phase 16b-ii, first outside consumer) — so
+ * FranchiseFeesModule's own job-scoped and caller-scoped Stripe primitives
+ * (FranchiseFeeBillingService, FranchiseFeesService.refund()) can share the one
+ * instance rather than each module re-declaring its own separate provider for
+ * what's a stateless wrapper around a single env-var-configured API key.
  */
 @Module({
   imports: [TenantsModule, QueueModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, StripeClientService],
-  exports: [PaymentsService],
+  exports: [PaymentsService, StripeClientService],
 })
 export class PaymentsModule {}

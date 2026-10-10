@@ -1,36 +1,56 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
-import { useAuth, useInstructorSchoolIds, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
+import { TopBar } from './TopBar';
+import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
+
+/** A coach or Branch Staff member who doesn't own the School sees their own
+ * screens (Decision 184), and "Invite coaches" when they may (Decision 183). */
+const COACH_NAV = [
+  { label: 'Dashboard', to: '/coach' },
+  { label: 'Grading Board', to: '/grading' },
+  { label: 'Notifications', to: '/notifications' },
+];
+const INVITE_NAV = { label: 'Invite coaches', to: '/coach-invites' };
+/** Instructors choose their own belt per style (Decision 188). */
+const MY_BELTS_NAV = { label: 'My belts', to: '/my-belts' };
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { logout } = useAuth();
-  const ownedSchoolId = useOwnedSchoolId();
-  const instructorSchoolIds = useInstructorSchoolIds();
-
-  const navItems = [
-    ...(ownedSchoolId
-      ? [
-          { label: 'School', to: '/school' },
-          { label: 'Branches', to: '/branches' },
-          { label: 'Staff', to: '/staff' },
-        ]
-      : []),
-    // A person can hold both an owning grant and an INSTRUCTOR grant at once
-    // (ultm8-domain-rules §3 — RoleGrant allows more than one role per User), so
-    // these two arms are additive, not either/or.
-    ...(instructorSchoolIds.length > 0 ? [{ label: 'Check-in', to: '/check-in' }] : []),
-  ];
-
+  const { logout, claims } = useAuth();
+  const coachSchoolId = useCoachSchoolId();
+  const isCoachOnly = !useOwnedSchoolId() && !!coachSchoolId;
+  const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
+  const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
   return (
     <AppShell
       brand="ULTM8 School Portal"
-      navItems={navItems}
+      header={<TopBar />}
+      navItems={isCoachOnly ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]] : [
+        { label: 'School', to: '/school' },
+        { label: 'Branches', to: '/branches' },
+        { label: 'Staff', to: '/staff' },
+        { label: 'Disciplines', to: '/disciplines' },
+        { label: 'Instructors', to: '/instructors' },
+        { label: 'Students', to: '/students' },
+        { label: 'Grading Board', to: '/grading' },
+        { label: 'Grading Permissions', to: '/grading-permissions' },
+        { label: 'Classes', to: '/classes' },
+        { label: 'Curriculum', to: '/curriculum' },
+        { label: 'Timetable', to: '/timetable' },
+        { label: 'Membership Plans', to: '/membership-plans' },
+        { label: 'Transactions', to: '/transactions' },
+        { label: 'Waivers', to: '/waivers' },
+        { label: 'Franchises', to: '/franchises' },
+        { label: 'Notifications', to: '/notifications' },
+      ]}
       footer={
         <Button variant="secondary" fullWidth onClick={logout}>
           Log out
         </Button>
       }
     >
+      <VerifyBeltsNotice />
       {children}
     </AppShell>
   );

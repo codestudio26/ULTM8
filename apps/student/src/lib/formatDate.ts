@@ -20,14 +20,15 @@ export function formatDateTime(iso: string): string {
   }
 }
 
-/** For calendar-only values (Prisma `@db.Date` columns — currently just
- * Minor.dateOfBirth), never `formatDate`/`formatDateTime` above. Those format in the
- * viewer's local timezone, which is correct for a real timestamp (a Class actually
- * starts at a specific instant) but wrong for a date-of-birth: the backend serializes
- * a `@db.Date` as UTC midnight (e.g. "2015-06-01T00:00:00.000Z"), and formatting that
- * in a timezone west of UTC renders it as May 31 — a genuinely wrong birth date, not
- * just a display nicety. Pinning `timeZone: 'UTC'` makes the rendered calendar day
- * match the stored one for every viewer, regardless of their own timezone. */
+/** FOUND ON REVIEW: for a date-ONLY value — no meaningful time component, e.g. a
+ * `@db.Date` column serialized as UTC midnight, like Student.dateOfBirth — formatDate()
+ * above is wrong, not just imprecise: it displays in the device's local timezone,
+ * which is correct for a genuine timestamp (Class start/end, a Membership's expiry, a
+ * Waiver signing time — all real instants) but shifts a date-only value back a
+ * calendar day on any device set to a timezone behind UTC (a DOB of 2015-06-01,
+ * serialized as 2015-06-01T00:00:00.000Z, would render as "May 31, 2015"). Formats in
+ * UTC instead, so the displayed day always matches the stored date regardless of the
+ * viewer's timezone. */
 export function formatDateOnly(iso: string): string {
   try {
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(iso));

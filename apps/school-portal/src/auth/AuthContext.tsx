@@ -1,7 +1,9 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { sessionStorageTokenStore, decodeJwtPayload } from '@ultm8/auth';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { markVerifyNoticeDue } from './verifyNoticeFlag';
 import type { JwtClaims } from './types';
 
 interface AuthContextValue {
@@ -34,6 +36,7 @@ function readClaims(): { accessToken: string | null; claims: JwtClaims | null } 
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [{ accessToken, claims }, setState] = useState(readClaims);
+  const queryClient = useQueryClient();
 
   const applyToken = useCallback((token: string) => {
     sessionStorageTokenStore.set(token);
@@ -44,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, passcode: string) => {
       const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
       applyToken(result.accessToken);
+      markVerifyNoticeDue();
     },
     [applyToken],
   );
@@ -51,7 +55,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     sessionStorageTokenStore.clear();
     setState({ accessToken: null, claims: null });
-  }, []);
+    // FOUND ON REVIEW (Phase 24, surfaced by the new Notifications inbox —
+    // the first query in this codebase keyed with no per-caller scoping
+    // identifier at all, e.g. `['notifications']` vs. every other query's
+    // `['branches', schoolId]`-shaped key): without this, react-query's
+    // cache outlives logout, so on a shared/front-desk machine a second
+    // Staff member logging in right after (no full page reload happens on
+    // logout) would briefly see the FIRST caller's cached data before the
+    // background refetch replaces it. `clear()` drops every cached query,
+    // not just Notifications' — closes the whole class of gap, not one
+    // instance of it.
+    queryClient.clear();
+  }, [queryClient]);
 
   const value = useMemo(
     () => ({ accessToken, claims, login, logout, setAccessToken: applyToken }),
@@ -79,14 +94,20 @@ export function useOwnedSchoolId(): string | null {
   return grant?.schoolId ?? null;
 }
 
-/** Mirrors apps/student's useEnrolledSchoolIds — an Instructor can hold an INSTRUCTOR
- * grant at more than one School (ultm8-domain-rules §3), so this returns every School
- * they teach at, deduplicated and sorted, rather than assuming just one like
- * useOwnedSchoolId above. Display hint only, decoded client-side — see this file's own
- * header comment on useOwnedSchoolId for why that's safe. */
-export function useInstructorSchoolIds(): string[] {
+/** The School a coach or Branch Staff member works at (Decision 184; Branch
+ * Staff get the same screens, Phase 7): their first INSTRUCTOR or BRANCH_STAFF
+ * grant's School. A display hint only, like useOwnedSchoolId; the API
+ * re-checks. Someone at several Schools sees the first one (no School
+ * switcher yet). */
+export function useCoachSchoolId(): string | null {
   const { claims } = useAuth();
-  if (!claims) return [];
-  const schoolIds = new Set(claims.grants.filter((g) => g.role === 'INSTRUCTOR' && g.schoolId).map((g) => g.schoolId as string));
-  return Array.from(schoolIds).sort();
+  if (!claims) return null;
+  return claims.grants.find((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId)?.schoolId ?? null;
+}
+
+/** The School the grading screens work in: the owner's, else the coach's. */
+export function useGradingSchoolId(): string | null {
+  const owned = useOwnedSchoolId();
+  const coached = useCoachSchoolId();
+  return owned ?? coached;
 }

@@ -7,6 +7,14 @@ export class WaitlistEntryResponseDto {
   @ApiProperty()
   studentId!: string;
 
+  /** Joined from WaitlistEntry.student (a User relation), not a WaitlistEntry
+   * column — see WaitlistService.findAllForClass. */
+  @ApiProperty()
+  studentFirstName!: string;
+
+  @ApiProperty()
+  studentSurname!: string;
+
   @ApiProperty()
   classId!: string;
 

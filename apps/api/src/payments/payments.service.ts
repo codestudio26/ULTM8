@@ -322,9 +322,23 @@ export class PaymentsService {
     // thread the full event payload through the queue for what this phase's handlers
     // actually use.
     const object = event.data.object as { id: string };
+    // stripeAccountId — Phase 16b-ii addition, found necessary while wiring the
+    // first handler that needs to call BACK into Stripe rather than just match
+    // an id against a stored correlator column: invoice.paid/invoice.payment_failed
+    // (stripe-webhook-processing.processor.ts's own new handlers) need the full
+    // Invoice object (period/amount/subscription), which the queue payload
+    // never carries (same reasoning objectId's own comment above already
+    // established — don't thread the whole event through the queue for what
+    // isn't needed), so they must re-fetch it — and that re-fetch has to be
+    // scoped to the correct CONNECTED account (every Franchise-fee invoice
+    // lives on the Franchise's own account, Decision 86), not the platform
+    // account. `event.account` is Stripe's own Connect field for exactly this —
+    // verified directly against the installed SDK's own Events.d.ts
+    // (`account?: string`), not assumed. Optional/unused by every handler that
+    // only matches ids (payment_intent.*, customer.subscription.deleted).
     await this.webhookQueue.add(
       'process',
-      { stripeEventId: event.id, eventType: event.type, objectId: object.id },
+      { stripeEventId: event.id, eventType: event.type, objectId: object.id, stripeAccountId: event.account ?? undefined },
       // Kept on the default 3-attempts/exponential-backoff policy every other job in
       // this codebase gets (Decision 23) — deliberately, not by omission. Decision
       // 23's own "except stripe-webhook-processing" carve-out reads (on this review)

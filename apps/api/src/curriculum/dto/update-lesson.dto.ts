@@ -1,0 +1,64 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { LessonFormat } from '@prisma/client';
+
+/**
+ * All fields optional (undefined = unchanged) — same simpler convention as
+ * UpdateSkillDto/UpdateDisciplineDto, not School/Branch/Class's null-means-clear
+ * convention (Lesson is closer to that catalog/content family than to a profile
+ * form with genuinely clearable fields).
+ *
+ * `skillIds`, when provided, REPLACES the full set (same REPLACE semantics as
+ * UpdateRankDto's own requiredSkillIds) — still requires at least one, same
+ * reasoning as CreateLessonDto.
+ *
+ * Same caption/video exclusion as CreateLessonDto — those fields aren't
+ * client-writable until a real captioning/video pipeline exists.
+ */
+export class UpdateLessonDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Move it to another of this School\'s categories (to the end), or null for none.' })
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  durationSeconds?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
+
+  @ApiPropertyOptional({ enum: LessonFormat })
+  @IsOptional()
+  @IsEnum(LessonFormat)
+  format?: LessonFormat;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  instructorId?: string;
+
+  @ApiPropertyOptional({ type: [String], minItems: 1 })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  skillIds?: string[];
+
+  @ApiPropertyOptional({ description: 'Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only.' })
+  @IsOptional()
+  @IsBoolean()
+  free?: boolean;
+}

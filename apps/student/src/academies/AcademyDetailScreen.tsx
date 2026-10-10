@@ -4,13 +4,14 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { ClassBookingRow } from '../bookings/ClassBookingRow';
 import { MembershipPlanRow } from '../memberships/MembershipPlanRow';
 import { rememberPlanNames } from '../memberships/planNameCache';
 import { MyRankSection } from '../ranks/MyRankSection';
 import { useDisciplines, useStudentRanks } from '../ranks/rankQueries';
 import { useAcademy, useAcademyTimetable } from './academyQueries';
+import { useDeclareOptions } from './joinQueries';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'AcademyDetail'>;
@@ -28,6 +29,11 @@ const WEEKDAY_LABEL: Record<string, string> = {
 export function AcademyDetailScreen({ route, navigation }: Props) {
   const { academyId } = route.params;
   const { claims } = useAuth();
+  const enrolled = useEnrolledSchoolIds().includes(academyId);
+  const isGuardian = useIsGuardian();
+  // A student who joined without adding a belt can add one later (Decision 137).
+  const beltOptions = useDeclareOptions(enrolled ? claims?.sub ?? null : null, academyId);
+  const canAddBelt = (beltOptions.data?.items.length ?? 0) > 0;
   const { data: academy, isLoading, error } = useAcademy(academyId);
   // FOUND ON REVIEW: `data` was destructured on its own, with fetchNextPage/
   // hasNextPage never wired to anything — only the timetable's first page (the
@@ -89,6 +95,21 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
         <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading }}>{academy.name}</Text>
         {academy.address ? <Text style={{ color: theme.textSecondary, marginTop: spacing[1] }}>{academy.address}</Text> : null}
         {academy.description ? <Text style={{ marginTop: spacing[3] }}>{academy.description}</Text> : null}
+
+        {!enrolled || isGuardian ? (
+          <View style={{ marginTop: 16 }}>
+            <Button title="Join this School" onPress={() => navigation.navigate('JoinSchool', { academyId, name: academy.name })} />
+          </View>
+        ) : null}
+        {canAddBelt && claims ? (
+          <View style={{ marginTop: 8 }}>
+            <Button
+              title="Add my belt"
+              variant="secondary"
+              onPress={() => navigation.navigate('JoinSchool', { academyId, name: academy.name, beltsFor: { studentId: claims.sub, name: 'Me' } })}
+            />
+          </View>
+        ) : null}
 
         {academy.activities.length ? (
           <View style={{ marginTop: spacing[4] }}>

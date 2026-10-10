@@ -73,36 +73,56 @@ export interface TokenStore {
 }
 
 /**
- * The chosen implementation — swappable behind the TokenStore interface so a future,
- * confirmed change (in-memory, or an httpOnly cookie once apps/api supports one) is a
- * one-line change at the call site, not a rewrite.
+ * Factory behind both exported stores below — same sessionStorage reasoning as the
+ * header comment above, parameterized only by the storage key so two realms can each
+ * get their own isolated store from one implementation.
  */
-export const sessionStorageTokenStore: TokenStore = {
-  get() {
-    try {
-      return sessionStorage.getItem(STORAGE_KEY);
-    } catch {
-      // Private-browsing / storage-disabled edge cases: fail to "no token" rather than
-      // throwing, so the app degrades to "logged out" instead of crashing.
-      return null;
-    }
-  },
-  set(token: string) {
-    try {
-      sessionStorage.setItem(STORAGE_KEY, token);
-    } catch {
-      // Same rationale as get() — a failed write just means the session won't
-      // persist; it shouldn't crash the login flow itself.
-    }
-  },
-  clear() {
-    try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* noop — nothing to clear if storage isn't available */
-    }
-  },
-};
+function createSessionStorageTokenStore(storageKey: string): TokenStore {
+  return {
+    get() {
+      try {
+        return sessionStorage.getItem(storageKey);
+      } catch {
+        // Private-browsing / storage-disabled edge cases: fail to "no token" rather
+        // than throwing, so the app degrades to "logged out" instead of crashing.
+        return null;
+      }
+    },
+    set(token: string) {
+      try {
+        sessionStorage.setItem(storageKey, token);
+      } catch {
+        // Same rationale as get() — a failed write just means the session won't
+        // persist; it shouldn't crash the login flow itself.
+      }
+    },
+    clear() {
+      try {
+        sessionStorage.removeItem(storageKey);
+      } catch {
+        /* noop — nothing to clear if storage isn't available */
+      }
+    },
+  };
+}
+
+/** The tenant realm's own store (apps/school-portal, apps/student). */
+export const sessionStorageTokenStore: TokenStore = createSessionStorageTokenStore(STORAGE_KEY);
+
+/**
+ * Platform Admin's own store — a DIFFERENT storage key, not a different instance of
+ * the same key. Platform Admin is a genuinely separate identity realm from tenant
+ * Users (Spec §4.4, enforced backend-side by PlatformAdminModule's own separate JWT
+ * secret/strategy/guard — see apps/api/src/platform-admin/platform-admin.module.ts's
+ * own header comment) — sharing a sessionStorage key with the tenant store would mean
+ * a browser tab that's logged into both realms overwrites one token with the other,
+ * and apps/api's two guards (JwtAuthGuard vs PlatformAdminJwtAuthGuard) would each
+ * reject the other realm's token outright the moment that happened. Two keys means
+ * two independent sessions can coexist in the same tab without collision.
+ */
+export const platformAdminSessionStorageTokenStore: TokenStore = createSessionStorageTokenStore(
+  'ultm8.platformAdminAccessToken',
+);
 
 /**
  * Minimal decode of the JWT payload for client-side use (e.g. reading `grants` to

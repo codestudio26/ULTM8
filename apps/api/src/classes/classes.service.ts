@@ -1,8 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { resolveClassStyles } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
@@ -13,6 +15,7 @@ export class ClassesService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly subscriptionGate: SubscriptionGateService,
   ) {}
 
   /**
@@ -23,6 +26,11 @@ export class ClassesService {
   async create(callerId: string, schoolId: string, dto: CreateClassDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new Classes"
+    // is one of the three actions it explicitly names (Phase 54).
+    await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
 
     if (dto.branchId) {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
@@ -36,15 +44,17 @@ export class ClassesService {
     this.assertValidDateRange(startDate, endDate);
 
     const classId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.create({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const { styles, activities } = await resolveClassStyles(tx, schoolId, dto.styles, dto.activities);
+      return tx.class.create({
         data: {
           id: classId,
           schoolId,
           branchId: dto.branchId,
           instructorId: dto.instructorId,
           title: dto.title,
-          activities: dto.activities,
+          activities,
+          styles,
           bannerUrl: dto.bannerUrl,
           description: dto.description,
           startDate,
@@ -57,8 +67,8 @@ export class ClassesService {
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
           membershipInclusion: dto.membershipInclusion ?? false,
         },
-      }),
-    );
+      });
+    });
   }
 
   /** Classes visible to the caller under one School — RLS restricts this to a School-
@@ -118,6 +128,8 @@ export class ClassesService {
   async update(callerId: string, classId: string, dto: UpdateClassDto) {
     const existing = await this.findOne(callerId, classId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     // Resolved "as of after this patch" values — string|null throughout, no
     // undefined round-trip needed since existing.branchId is already string|null.
@@ -142,14 +154,21 @@ export class ClassesService {
       this.assertValidDateRange(nextStartDate, nextEndDate);
     }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.class.update({
+    if ((dto as { styles?: unknown }).styles === null) {
+      throw new BadRequestException('styles cannot be null; omit it to leave the styles unchanged.');
+    }
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Styles are replaced when sent and kept when omitted (Decision 170).
+      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities) : null;
+      return tx.class.update({
         where: { id: classId },
         data: {
           branchId: dto.branchId,
           instructorId: dto.instructorId,
           title: dto.title,
-          activities: dto.activities,
+          activities: resolved ? resolved.activities : dto.activities,
+          styles: resolved ? resolved.styles : undefined,
           bannerUrl: dto.bannerUrl,
           description: dto.description,
           startDate: dto.startDate ? nextStartDate : undefined,
@@ -162,8 +181,8 @@ export class ClassesService {
           termsWaiverRequired: dto.termsWaiverRequired,
           membershipInclusion: dto.membershipInclusion,
         },
-      }),
-    );
+      });
+    });
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
+import { nullsToUndefined } from '../lib/nullableFields';
 import { useBranches, useCreateBranch, useUpdateBranch, type BranchResponse } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
 
@@ -55,7 +56,9 @@ export function BranchesPage() {
           title="Add branch"
           submitting={createBranch.isPending}
           onSubmit={async (values) => {
-            await createBranch.mutateAsync(values);
+            // Create has nothing to "clear" — map the form's nulls back to
+            // undefined (omitted), since CreateBranchDto doesn't accept null.
+            await createBranch.mutateAsync(nullsToUndefined(values));
             setCreating(false);
           }}
           onClose={() => setCreating(false)}
@@ -77,6 +80,8 @@ function EditBranchModal({ schoolId, branch, onClose }: { schoolId: string; bran
       initial={branch}
       submitting={updateBranch.isPending}
       onSubmit={async (values) => {
+        // Passed straight through, nulls included — UpdateBranchDto accepts
+        // null on these fields to mean "clear it".
         await updateBranch.mutateAsync(values);
         onClose();
       }}

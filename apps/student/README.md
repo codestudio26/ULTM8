@@ -1,7 +1,7 @@
 # apps/student
 
 React Native — Student app (Spec §4.2), Track B Slice 1 (walking skeleton). Expo-managed
-workflow (Decision 98, `docs/decisions/POST-SPEC-55-DECISION-LOG.md`) — EAS Build is the
+workflow (Decision 113, `docs/decisions/POST-SPEC-55-DECISION-LOG.md`) — EAS Build is the
 direct path to the confirmed per-School white-label rebuild pipeline (Spec §5,
 `packages/build-pipeline`, still an unbuilt placeholder as of this slice).
 
@@ -12,7 +12,7 @@ direct path to the confirmed per-School white-label rebuild pipeline (Spec §5,
   `apps/school-portal`).
 - Auth flow: Register → OTP verify → Login → Forgot/Reset passcode, against the real
   `apps/api` `AuthModule` surface (`src/auth/`).
-- Secure token storage via `expo-secure-store` (Decision 98), not `@ultm8/auth`'s
+- Secure token storage via `expo-secure-store` (Decision 113), not `@ultm8/auth`'s
   browser-only `sessionStorage` implementation and not `AsyncStorage`. See
   `src/auth/secureTokenStore.ts` and `src/auth/tokenCache.ts` for why an in-memory
   mirror bridges SecureStore's async API to `@ultm8/api-client`'s synchronous

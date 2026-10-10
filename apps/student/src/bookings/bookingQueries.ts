@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { usePaginatedQuery } from '../lib/usePaginatedQuery';
@@ -7,23 +7,6 @@ export function useMyBookings() {
   return usePaginatedQuery(['my-bookings'], (cursor) =>
     unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { cursor } } })),
   );
-}
-
-/** One wide page (limit: 100) of only UPCOMING Bookings, not the cursor-paginated
- * useMyBookings above — same "a Student realistically has far fewer than 100 of
- * these" reasoning useMyWaiverSignatures already established, but scoped with the
- * additive `status` filter (FOUND ON REVIEW: without it, a frequently-attending
- * Student's ever-growing COMPLETED/CANCELLED/NO_SHOW history could push a genuinely
- * upcoming Booking past the first 100 id-ordered rows, since GET /bookings/me with
- * no status filter returns every status, randomly ordered by UUID). CheckInScreen
- * needs to reliably find a match for a scanned classId among EVERY upcoming
- * Booking — a false "no booking found" here would incorrectly block a legitimate
- * check-in. */
-export function useMyUpcomingBookingsWide() {
-  return useQuery({
-    queryKey: ['my-bookings-upcoming-wide'],
-    queryFn: () => unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { limit: 100, status: 'UPCOMING' } } })),
-  });
 }
 
 /** Self-booking only — an empty body. `studentId`/`overrideReason` on BookClassDto are
@@ -52,7 +35,10 @@ export function useBookClass() {
 export function useCancelBooking() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (bookingId: string) => unwrap(apiClient.PATCH('/v1/bookings/{id}/cancel', { params: { path: { id: bookingId } } })),
+    // Self-cancel only — an empty body. `studentId` on CancelBookingDto is the same
+    // Staff/Guardian on-behalf-of field as BookClassDto's (see useBookClass above);
+    // a Student cancelling their own Booking never sends it.
+    mutationFn: (bookingId: string) => unwrap(apiClient.PATCH('/v1/bookings/{id}/cancel', { params: { path: { id: bookingId } }, body: {} })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
   });
 }

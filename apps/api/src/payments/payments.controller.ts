@@ -12,7 +12,13 @@ import { ConnectOnboardingResponseDto, PaymentAccountResponseDto } from './dto/p
 // this phase — see the Phase 8 kickoff prompt for the full scoping rationale. No
 // checkout, no refunds, no Cash/Bank confirmation, no Franchise-fee automation, no
 // SubscriptionPlan/white-label billing — all deferred to whenever Phase 9
-// (MembershipsModule) builds the entities they attach to.
+// (MembershipsModule) builds the entities they attach to. Franchise-fee billing
+// landed in FranchiseFeesModule (Phase 16b-ii); platform SubscriptionPlan billing
+// landed in its own SubscriptionPlansModule (Phase 54, Decision 106) rather than
+// here — both use StripeClientService directly (platformClient()/scopedClient()
+// respectively) rather than going through PaymentsService's own School-scoped
+// primitives. White-label billing remains unbuilt (SubscriptionPlan's own
+// schema.prisma comment).
 @ApiTags('payments')
 @Controller()
 export class PaymentsController {

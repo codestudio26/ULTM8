@@ -76,6 +76,84 @@ enum FranchiseFeeSubscriptionStatus {
   CANCELED
 }
 
+/// Franchise.platformSubscriptionStatus / School.platformSubscriptionStatus (Phase 54,
+/// domain-rules §2/§15) — synced from the platform SubscriptionPlan's own Stripe
+/// Subscription, the same three-value shape FranchiseFeeSubscriptionStatus already
+/// uses for the unrelated School<->Franchise fee relationship. Kept as its own,
+/// separately-named enum rather than reusing FranchiseFeeSubscriptionStatus — the two
+/// billing relationships must "never be conflated" (domain-rules §2's own confirmed
+/// warning), and a shared DB type would make that conflation easy to do by accident in
+/// a future migration/query even though the three literal values happen to match today.
+enum PlatformSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+/// PlatformCharge.chargeType (Phase 54, Spec 55 §6.1: "charge type (SubscriptionPlan
+/// tier fee or whiteLabelApp entitlement fee)"). Both values modeled now for schema
+/// completeness even though WHITE_LABEL_APP_FEE has no code path creating it yet —
+/// whiteLabelApp billing is deferred out of this phase (gated on both the still-unset
+/// metered rate, Spec 55 §12.2, and MobileAppPublishingModule, itself blocked on the
+/// separate Apple 4.2.6 compliance decision) — same "model the confirmed enum now,
+/// wire the second case later" precedent PromotionEventType's own BULK_* values
+/// already established in this schema.
+enum PlatformChargeType {
+  SUBSCRIPTION_PLAN_FEE
+  WHITE_LABEL_APP_FEE
+}
+
+/// SubscriptionPlan (platform) — Phase 54, Spec 55 §6.1/§7 (SubscriptionPlansModule).
+/// ULTM8's own platform revenue — a Franchise/School subscribes to this directly;
+/// never a plan the Franchise resells onward to its member Schools (Decision 106,
+/// domain-rules §2 — reconciled, not still open). NOT the same entity as
+/// MembershipPlan (School<->Student billing, domain-rules §15's own explicit
+/// "must never be merged or used interchangeably" warning).
+///
+/// Confirmed fields quoted from Spec 55 §6.1: "Plan name, price (e.g. '£30.00 Per
+/// Month'), description, feature list, payment type (Auto Renew), payment schedule".
+/// `price` is a minor-unit Int (Decision 84's established convention for every money
+/// field in this schema), billed in the single USD anchor currency ULTM8's own
+/// revenue always uses (domain-rules §7/§11.2, Decision 7) — no per-Plan currency
+/// column, same reasoning FranchiseFeeCharge.currency already documents. "Payment
+/// type (Auto Renew)" and "payment schedule" are NOT modeled as their own columns —
+/// every Stripe Subscription this codebase creates (Membership, franchise-fee Flat,
+/// and this one) is already hardcoded to a monthly recurring interval with no
+/// per-row schedule choice anywhere else in this schema (PaymentsService.subscribe(),
+/// FranchiseFeeBillingService.ensureSubscription()); a SubscriptionPlan is
+/// structurally always-recurring by what it IS, so a literal "type=Auto Renew" flag
+/// would carry no information a `SubscriptionPlan` row doesn't already imply. Flagged
+/// as a Developer-level scope call, same class as Decision 84's own "no code change,
+/// confirms convention" entries — not silently assumed, open for Architect review.
+///
+/// `whiteLabelApp` entitlement flag (Spec 55 §5.3/§6.1) is deliberately NOT modeled
+/// yet — this phase's own scope is the core platform-subscription flow only; the
+/// entitlement is meaningless before MobileAppPublishingModule exists (still blocked
+/// on the Apple 4.2.6 compliance decision) and its own metered rate is itself
+/// unresolved (Spec 55 §12.2: "$0.99-$1.99/active-student/month... exact rate still
+/// to be set"). Add the column when that module is unblocked, not preemptively.
+///
+/// No RLS — global, Platform-Admin-authored content with no tenant column, the exact
+/// same shape Translation/LegalDocument already established in this schema (see
+/// Translation's own migration comment for the full "no per-caller row subset to
+/// restrict" reasoning). Read via the plain `ultm8_app` role from both the public
+/// tenant-facing GET and the FULL_ADMIN-gated authoring CRUD — one service, not two,
+/// same deliberate deviation from "one service per realm" TranslationsService's own
+/// header comment already documents and justifies for the identical no-RLS case.
+model SubscriptionPlan {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Int // minor-unit USD (Decision 7/84) — "£30.00 Per Month" example, Spec 55 §6.1
+  featureList String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  franchises Franchise[]
+  schools    School[]
+}
+
 /// TimetableSlot.weekday — Phase 5. Confirmed field ("Week day"), Spec 55 §6.1.
 enum Weekday {
   MONDAY
@@ -208,6 +286,17 @@ model User {
   /// wrong.
   phoneVerifiedAt DateTime?
 
+  /// Decision 68/112 — set once by the chargeback-pattern-restriction job when this
+  /// Student's lost Stripe disputes (Transaction.disputeLostAt) cross the confirmed
+  /// threshold (2). While set, MembershipsService.purchase() refuses a purchase at any
+  /// School whose PaymentAccount is Stripe-provider — see that method's own comment for
+  /// why "restricted to Cash/Bank Transfer only" means exactly that in this codebase's
+  /// purchase flow (payment method is fixed per School, never a per-purchase Student
+  /// choice). Never cleared by any code in this codebase — Decision 68 names no
+  /// un-restriction path, so none is built; a genuinely open, flagged gap, not an
+  /// oversight.
+  paymentRestrictedAt DateTime?
+
   dateOfBirth     DateTime @db.Date // ISO 8601 date, no time component (confirmed)
   gender          String?
   nationality     String?
@@ -220,31 +309,120 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants           RoleGrant[]     @relation("RoleGrantUser")
-  grantsIssued         RoleGrant[]     @relation("RoleGrantGrantedBy")
-  classesTaught        Class[]         @relation("ClassInstructor")
-  timetableSlotsTaught TimetableSlot[] @relation("TimetableSlotInstructor")
-  instructorProfiles   Instructor[]
-  memberships          Membership[]    @relation("MembershipStudent")
-  membershipsGifted    Membership[]    @relation("MembershipGiftedBy")
-  transactionsPaid     Transaction[]   @relation("TransactionPayer")
-  studentRanks         StudentRank[]
-  promotionEventsPerformed PromotionEvent[] @relation("PromotionEventPerformedBy")
-  waiverSignatures     WaiverSignature[]
-  bookings                 Booking[]         @relation("BookingStudent")
-  bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
-  bookingsResolved         Booking[]         @relation("BookingResolvedBy")
-  bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
-  waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
-  guardianLinksAsGuardian  GuardianLink[]    @relation("GuardianLinkGuardian")
-  guardianLinksAsStudent   GuardianLink[]    @relation("GuardianLinkStudent")
-  consentRecordsAsGuardian ConsentRecord[]   @relation("ConsentRecordGuardian")
-  consentRecordsAsStudent  ConsentRecord[]   @relation("ConsentRecordStudent")
-  notifications            Notification[]
-  deviceTokens             DeviceToken[]
+  roleGrants                   RoleGrant[]             @relation("RoleGrantUser")
+  grantsIssued                 RoleGrant[]             @relation("RoleGrantGrantedBy")
+  classesTaught                Class[]                 @relation("ClassInstructor")
+  timetableSlotsTaught         TimetableSlot[]         @relation("TimetableSlotInstructor")
+  instructorProfiles           Instructor[]
+  lessonsAuthored              Lesson[]                @relation("LessonInstructor")
+  memberships                  Membership[]            @relation("MembershipStudent")
+  membershipsGifted            Membership[]            @relation("MembershipGiftedBy")
+  transactionsPaid             Transaction[]           @relation("TransactionPayer")
+  studentRanks                 StudentRank[]
+  promotionEventsPerformed     PromotionEvent[]        @relation("PromotionEventPerformedBy")
+  promotionEventsVoided        PromotionEvent[]        @relation("PromotionEventVoidedBy")
+  promotionEventNotesEdited    PromotionEvent[]        @relation("PromotionEventNoteEditedBy")
+  promotionEventNoteChanges    PromotionEventNoteLog[] @relation("PromotionEventNoteLogChangedBy")
+  skillSignOffChanges          SkillSignOffLog[]       @relation("SkillSignOffLogChangedBy")
+  homeBranches                 StudentHomeBranch[]     @relation("StudentHomeBranchStudent")
+  rankVerifications            StudentRank[]           @relation("StudentRankVerifiedBy")
+  homeBranchesAssigned         StudentHomeBranch[]     @relation("StudentHomeBranchAssignedBy")
+  gradingPermissions           GradingPermission[]     @relation("GradingPermissionUser")
+  gradingPermissionsGiven      GradingPermission[]     @relation("GradingPermissionGrantedBy")
+  staffPermissions             StaffPermission[]       @relation("StaffPermissionUser")
+  staffPermissionsGiven        StaffPermission[]       @relation("StaffPermissionGrantedBy")
+  coachInvitesSent             CoachInvite[]           @relation("CoachInviteInvitedBy")
+  coachInvitesAccepted         CoachInvite[]           @relation("CoachInviteAcceptedBy")
+  coachInvitesCancelled        CoachInvite[]           @relation("CoachInviteCancelledBy")
+  instructorBelts              InstructorBelt[]        @relation("InstructorBeltUser")
+  instructorBeltsVerified      InstructorBelt[]        @relation("InstructorBeltVerifiedBy")
+  waiverSignatures             WaiverSignature[]       @relation("WaiverSignatureStudent")
+  waiverSignaturesSigned       WaiverSignature[]       @relation("WaiverSignatureSignedBy")
+  bookings                     Booking[]               @relation("BookingStudent")
+  bookingsOverridden           Booking[]               @relation("BookingOverriddenBy")
+  bookingsResolved             Booking[]               @relation("BookingResolvedBy")
+  bookingsCheckedIn            Booking[]               @relation("BookingCheckedInBy")
+  bookingAttendeesResolved     BookingAttendee[]       @relation("BookingAttendeeResolvedBy")
+  waitlistEntries              WaitlistEntry[]         @relation("WaitlistEntryStudent")
+  guardianLinksAsGuardian      GuardianLink[]          @relation("GuardianLinkGuardian")
+  guardianLinksAsStudent       GuardianLink[]          @relation("GuardianLinkStudent")
+  consentRecordsAsGuardian     ConsentRecord[]         @relation("ConsentRecordGuardian")
+  consentRecordsAsStudent      ConsentRecord[]         @relation("ConsentRecordStudent")
+  bookingDelegationsAsGuardian BookingDelegation[]     @relation("BookingDelegationGuardian")
+  bookingDelegationsAsStudent  BookingDelegation[]     @relation("BookingDelegationStudent")
+  notifications                Notification[]
+  deviceTokens                 DeviceToken[]
+  refreshTokens                RefreshToken[]
 
   @@index([email])
   @@index([phone])
+}
+
+/// ultm8-nestjs-module §7's own confirmed refresh-token gap, now built: closes the
+/// "forced re-login every 15 minutes" staleness window Spec §8.3 describes, without
+/// widening that section's own httpOnly-cookie design (deliberately deferred there —
+/// needs CORS/credentials config apps/api doesn't have yet) — delivered the same way
+/// the existing accessToken already is, as a plain JSON response field.
+///
+/// `tokenHash` stores a SHA-256 hex digest of the raw token, never the raw token
+/// itself — deliberately NOT bcrypt: the raw token already carries 256 bits of
+/// its own entropy (crypto.randomBytes, AuthService's own issueRefreshToken()), so
+/// there's nothing for a slow, salted hash to defend against that a fast,
+/// deterministic one doesn't already cover just as well, and a deterministic hash
+/// is what makes an exact-match DB lookup possible at all for the presented token
+/// (bcrypt's per-hash salt means it can never be looked up by equality). Same
+/// "entropy carries the security, not the hash" reasoning session/API-key tokens
+/// use industry-wide — never apply this reasoning to passcodeHash, which protects
+/// a low-entropy, human-chosen value instead.
+///
+/// Rotation (AuthService.refresh()): every refresh consumes the presented row
+/// (revokedAt + rotatedOut set) and creates a brand-new row — never updates
+/// tokenHash in place. Reuse detection: a presented token whose row is already
+/// revoked AND rotatedOut is treated as a compromise signal and revokes every
+/// OTHER still-active RefreshToken for that User too, not just the one
+/// presented — forcing a full re-login everywhere, the standard
+/// OWASP-documented response to a replayed refresh token.
+///
+/// `rotatedOut` is what makes that signal specific to an actual replay —
+/// FOUND ON REVIEW (this phase's own e2e pass): without it, logout() and
+/// rotation both looked identical (revokedAt set, nothing else), so refreshing
+/// an already-logged-out token — an ordinary, harmless case, not evidence of
+/// theft — wrongly triggered the same mass-revoke-every-session reaction a
+/// genuine replay deserves, logging a User out of OTHER devices just because
+/// one device retried a stale request after its own logout. Only
+/// AuthService.refresh()'s own rotation step ever sets this true; logout() and
+/// confirmPasscodeReset()'s mass-revoke both leave it false (an ordinary
+/// revoke, not a replay signal) — a revoked-but-not-rotatedOut token presented
+/// again is just a plain 401, no cascade.
+///
+/// Deliberately does NOT track the full rotation chain (e.g. a
+/// replacedByTokenId pointer to the specific successor) — this one boolean is
+/// sufficient for the reuse-detection property itself; a forensic "show me the
+/// whole chain" capability is flagged as a future nice-to-have, not built here.
+///
+/// No DELETE anywhere — same "flip status, don't delete" convention this codebase
+/// already follows for every other audit-relevant row (Transaction, PromotionEvent,
+/// ...). An expired/revoked row is left in place, not purged by this phase; a
+/// retention/cleanup sweep is a separate, later concern (same category as
+/// TenantLifecyclePurgeProcessor, not built here).
+model RefreshToken {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String @unique
+
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  // true only when revokedAt was set by AuthService.refresh()'s own rotation
+  // step (this token had a legitimate successor minted) — the actual
+  // replay-attack signal. false for every other revocation (logout, the
+  // passcode-reset mass-revoke) — see this model's own header comment.
+  rotatedOut Boolean   @default(false)
+
+  @@index([userId])
 }
 
 /// Platform Admin identity — wholly separate from User, never joined to it
@@ -263,6 +441,66 @@ model AdminUser {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   revokedAt DateTime? // access revoked immediately on offboarding (§4.4)
+
+  auditLogEntries AuditLogEntry[]
+}
+
+/// Every Platform Admin action that touches tenant data (ultm8-tenant-isolation
+/// SKILL.md §6, Spec §4.7): "who, when, what, on which tenant." Immutable by design —
+/// UPDATE/DELETE are revoked at the database layer for every role, including the
+/// break-glass credential (see this phase's own migration). Range-partitioned by
+/// month on createdAt from the start (§6, §11.6) — see that same migration for why
+/// this means `id` is NOT independently unique at the database level (Postgres
+/// requires a partitioned table's primary key to include the partition key), only
+/// the composite (id, createdAt) is — acceptable here since a UUID's own collision
+/// probability makes `id` unique in practice, and this table's real access pattern is
+/// filtered `findMany` (by actor/target/time-range), never `findUnique` by bare id.
+///
+/// Exact retention period is a compliance/legal input, explicitly left open by the
+/// spec (§12.2) — deliberately NOT invented here; no deletion path exists on this
+/// table at all yet, which is the correct default for "not yet decided," not a gap.
+///
+/// targetType/targetId are a deliberate polymorphic reference (School, Franchise,
+/// PaymentAccount, User — whatever the action actually touched), NOT a real foreign
+/// key — Postgres has no single-column FK that can point at different tables per row,
+/// and an audit entry must remain permanently readable even if the target row is
+/// later deleted, so no FK/cascade relationship exists to it at all (validated at the
+/// application layer only). schoolId/franchiseId are a separate, direct "on which
+/// tenant" reference — both nullable, whichever applies (mirrors RoleGrant's own
+/// nullable-scope convention) — kept distinct from targetType/targetId specifically
+/// so "which tenant" can be queried/filtered directly without joining through the
+/// polymorphic reference first.
+model AuditLogEntry {
+  id String @default(uuid())
+
+  adminUserId String
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id])
+
+  /// A short action label (e.g. "VIEW_SCHOOL") — plain string, not a DB enum: the
+  /// spec's own confirmed examples ("viewing/editing another tenant's records,
+  /// viewing/rotating a payment credential, impersonating a tenant user") are
+  /// illustrative, not an exhaustive closed set, and a DB enum would need a migration
+  /// for every future Platform Admin capability. Disciplined string constants at each
+  /// call site, not a free-for-all — see AuditLogService's own header comment.
+  action String
+
+  targetType String
+  targetId   String
+
+  schoolId    String?
+  franchiseId String?
+
+  /// Freeform structured context (e.g. what changed) — deliberately optional; a
+  /// read-only "viewed a record" action has nothing to put here.
+  details Json?
+
+  createdAt DateTime @default(now()) // the partition key
+
+  @@id([id, createdAt])
+  @@index([adminUserId, createdAt])
+  @@index([schoolId, createdAt])
+  @@index([franchiseId, createdAt])
+  @@index([targetType, targetId, createdAt])
 }
 
 /// The sole source of truth for who holds what role, where (domain-rules §3, §6.1).
@@ -325,14 +563,98 @@ model Franchise {
 
   feeModel FeeModel @default(FLAT)
 
+  /// Phase 16b-ii — the actual franchise-fee rate, resolved directly with the
+  /// product owner (Decision 99): self-service, the Franchise Owner sets their own
+  /// rate, same shape MembershipPlan.price already uses for School->Student pricing
+  /// and the same self-service precedent feeModel itself already established.
+  /// Deliberately deferred out of 16b-i (see Decision 98) rather than added
+  /// unilaterally — see Decision 99 for the full account. Minor-unit Int, matching
+  /// every other money field in this schema; no upper bound at the schema level
+  /// (Postgres INTEGER's own 2^31-1 ceiling), but validated with an explicit
+  /// @Max() in CreateFranchiseDto/UpdateFranchiseDto — a first draft of these
+  /// fields (16b-i) shipped without that bound and code review caught it before
+  /// the fields were reverted entirely; carried forward now that they're back.
+  /// Currency is NOT a separate column — domain-rules §11.2/Decision 7 confirms
+  /// Franchise-fee is billed in a single anchor currency (USD) always, unlike
+  /// MembershipPlan's genuinely per-currency pricing, so there is nothing to store
+  /// per-Franchise here (FranchiseFeeCharge's own `currency` column is set to
+  /// 'USD' in code, not read from anywhere on Franchise).
+  ///
+  /// Both nullable and independently settable via the existing PATCH
+  /// /franchises/:id (no dedicated endpoint) regardless of which feeModel is
+  /// currently active — a Franchise can exist, and even have Schools join it
+  /// (Phase 16b-i), before its billing rate is configured; enforcement that the
+  /// RELEVANT rate is actually set happens in the franchise-fee-usage-reporting
+  /// job (this phase), which simply skips a School whose Franchise isn't fully
+  /// configured yet rather than erroring.
+  flatFeeAmount    Int?
+  perHeadcountRate Int?
+
+  /// Phase 16b-ii — lazily created the first time this Franchise's own
+  /// PER_HEADCOUNT metered billing is set up (franchise-fee-usage-reporting job),
+  /// never at Franchise creation/update time. A Stripe Billing Meter is scoped to
+  /// the Stripe account it's created on — here, the Franchise's own connected
+  /// account (Decision 86) — so each PER_HEADCOUNT Franchise needs its own Meter
+  /// and metered Price, not a shared platform-wide one. See
+  /// PaymentsService.ensureFranchiseFeeSubscription's own comment for the full
+  /// Stripe-mechanics account (verified directly against the installed `stripe`
+  /// SDK v22's Billing Meters API — the modern replacement for the removed legacy
+  /// usage_record API, not assumed).
+  stripeMeterId      String?
+  stripeUsagePriceId String?
+
+  /// Phase 54 — this Franchise's own platform SubscriptionPlan billing relationship
+  /// (ULTM8 <-> Franchise, distinct from and never conflated with the School<->
+  /// Franchise franchise-fee fields above — domain-rules §2/§15). `subscriptionPlanId`
+  /// is nullable: a Franchise can exist, and even own Schools, without ever
+  /// subscribing to a platform plan (this billing surface is new, optional
+  /// monetization added on top of an already-functioning platform, not a
+  /// precondition to operate it — see SubscriptionGateService's own header comment
+  /// for why the degraded-portal gate this phase builds never fires for a Franchise/
+  /// School that simply never subscribed). `stripePlatformSubscriptionId` is the
+  /// correlator id stripe-webhook-processing matches against;
+  /// `platformSubscriptionStatus` is its synced health, same three-field shape
+  /// School's own franchiseFeeSubscriptionStatus/stripeFranchiseFeeSubscriptionId
+  /// pair already established for the sibling billing relationship.
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
+  stripePlatformSubscriptionId String?                     @unique
+  platformSubscriptionStatus   PlatformSubscriptionStatus?
+
+  /// Phase 56 — Decision 110 (general tenant/content offboarding: soft-archive
+  /// with a 90-day retention window, gated behind an explicit close-account
+  /// action). `archivedAt` set = this Franchise is closed: read-only, blocked
+  /// from every mutating endpoint via TenantAuthorizationService.assertFranchiseNotArchived
+  /// (mirrors SubscriptionGateService's own degraded-portal gate shape, Phase 54,
+  /// but permanent rather than payment-lapse-driven — Decision 110 is explicit
+  /// that a cancelled subscription alone never sets this). `purgeAt` =
+  /// archivedAt + 90 days, set at the same time; the scheduled purge job
+  /// (tenant-lifecycle-purge.processor.ts) hard-deletes (or, where a RESTRICT
+  /// constraint or a flagged retention exception applies, anonymizes in place —
+  /// see that job's own header comment for the full account) once `purgeAt`
+  /// elapses. `purgedAt` records that this row itself has already been
+  /// processed by the purge job, so the scheduler never reprocesses an
+  /// already-anonymized row. Reactivation (PlatformAdminTenantLifecycleController)
+  /// clears archivedAt/purgeAt back to null; purgedAt is never cleared — once a
+  /// tenant's data has actually been purged, reactivating the (now-empty) row is
+  /// not the same as undoing the purge.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  schools        School[]
-  roleGrants     RoleGrant[]
-  paymentAccount PaymentAccount?
+  schools             School[]
+  roleGrants          RoleGrant[]
+  paymentAccount      PaymentAccount?
+  franchiseFeeCharges FranchiseFeeCharge[]
+  platformCharges     PlatformCharge[]
 
   @@index([name])
+  @@index([subscriptionPlanId])
+  @@index([purgeAt])
 }
 
 /// School (domain-rules §2, Spec §6.1). franchiseId is nullable — an independent,
@@ -353,6 +675,10 @@ model School {
 
   defaultLanguage String?
   defaultCurrency String?
+  /// IANA time zone name, e.g. "Europe/London" — the same field Branch has
+  /// (Decision 76: a branch mirrors its school's profile fields; Decision 172).
+  /// Classes use their branch's zone, else this one, else UTC.
+  timezone        String?
   description     String?
   logoUrl         String?
   bannerUrl       String?
@@ -361,23 +687,70 @@ model School {
   waitlistClaimWindowMinutes     Int                             @default(120)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
+  /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
+  /// franchise-fee billing relationship (created lazily by the
+  /// franchise-fee-usage-reporting job the first time this School has both a
+  /// Franchise affiliation, Phase 16b-i, and that Franchise has a configured rate +
+  /// onboarded PaymentAccount). Paired with franchiseFeeSubscriptionStatus above —
+  /// that field tracks the subscription's health (synced via
+  /// customer.subscription.* webhooks), this field is the correlator id itself.
+  /// Null for an independent School, or a Franchise-affiliated one whose billing
+  /// hasn't started yet.
+  stripeFranchiseFeeSubscriptionId String? @unique
+
+  /// Phase 54 — this School's own platform SubscriptionPlan billing relationship.
+  /// Same shape/reasoning as Franchise's own identical trio above — see that
+  /// model's own comment for the full account, including why `subscriptionPlanId`
+  /// being null is the ordinary, unaffected state for a School that never opted
+  /// into platform billing, not an error case.
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
+  stripePlatformSubscriptionId String?                     @unique
+  platformSubscriptionStatus   PlatformSubscriptionStatus?
+
+  /// Phase 56 — Decision 110. Same shape/reasoning as Franchise's own identical
+  /// trio above — see that model's own comment for the full account.
+  ///
+  /// One School-specific wrinkle the purge job's own header comment covers in
+  /// full: Waiver is explicitly flagged by Decision 110 as NOT on the uniform
+  /// 90-day clock (signed liability waivers need real legal input on retention
+  /// first), so a School that still owns Waiver rows is never hard-deleted by
+  /// the purge job even past its own purgeAt — it's anonymized in place instead,
+  /// same fallback the job uses when a PlatformCharge/FranchiseFeeCharge RESTRICT
+  /// blocks the delete outright.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches        Branch[]
-  roleGrants      RoleGrant[]
-  classes         Class[]
-  timetableSlots  TimetableSlot[]
-  instructors     Instructor[]
-  paymentAccount  PaymentAccount?
-  membershipPlans MembershipPlan[]
-  transactions    Transaction[]
-  disciplines     Discipline[]
-  waivers         Waiver[]
+  branches            Branch[]
+  roleGrants          RoleGrant[]
+  classes             Class[]
+  timetableSlots      TimetableSlot[]
+  instructors         Instructor[]
+  paymentAccount      PaymentAccount?
+  membershipPlans     MembershipPlan[]
+  transactions        Transaction[]
+  disciplines         Discipline[]
+  waivers             Waiver[]
+  franchiseFeeCharges FranchiseFeeCharge[]
+  lessons             Lesson[]
+  platformCharges     PlatformCharge[]
+  studentHomeBranches StudentHomeBranch[]
+  gradingPermissions  GradingPermission[]
+  staffPermissions    StaffPermission[]
+  coachInvites        CoachInvite[]
+  lessonCategories    LessonCategory[]
+  instructorBelts     InstructorBelt[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
   @@index([franchiseId])
+  @@index([subscriptionPlanId])
+  @@index([purgeAt])
 }
 
 /// Branch (Decision 76 — field set mirrors School's profile fields; the RLS-enforced
@@ -406,6 +779,8 @@ model Branch {
   classes        Class[]
   timetableSlots TimetableSlot[]
   instructors    Instructor[]
+  homeStudents   StudentHomeBranch[]
+  coachInvites   CoachInvite[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -455,7 +830,15 @@ model Class {
   title       String
   // Cardinality (required, at least one) is an inferred design choice, not stated by
   // §9 — flagged for Architect review same as branchId above.
+  // Grading foundation PR 5: when the School has styles, filled in from the
+  // styles' names (Decision 90's bridge keeps reading it until the grading
+  // engine switches to `styles`).
   activities  String[] @default([])
+  // The styles this class belongs to, each with a class type from that style's
+  // list: [{ disciplineId, classType }] (Decisions 143, 152, 170). One or more
+  // when the School has styles; a mixed class (e.g. an Open Mat for BJJ and
+  // Judo) lists several and counts once toward each.
+  styles      Json     @default("[]")
   bannerUrl   String?
   description String?
 
@@ -564,6 +947,9 @@ model TimetableSlot {
   // header comment above for why these exist beyond Spec 55's confirmed six.
   title       String
   activities  String[] @default([])
+  // Same shape and rules as Class.styles (Decisions 143, 152, 170); copied
+  // onto every generated Class.
+  styles      Json     @default("[]")
   capacity    Int?
   description String?
   bannerUrl   String?
@@ -631,12 +1017,14 @@ model Instructor {
 
   photoUrl String?
 
-  /// Plain display text, NOT a live reference into StudentRank/Rank — RanksModule
-  /// doesn't exist yet, and nothing confirms an Instructor's shown rank must be sourced
-  /// from that system rather than self-reported text.
-  beltRanking String?
+  // The owner's typed beltRanking was removed (Decision 196): instructors choose
+  // their own belt per style instead (InstructorBelt, Decision 188).
 
-  specializations String[] @default([])
+  specializations        String[] @default([])
+  /// The School's styles this instructor specialises in (Decision 152, item 1).
+  /// In a School with styles they are picked here and `specializations` is
+  /// filled in from their names; a School with no styles keeps free text.
+  specializationStyleIds String[] @default([])
 
   /// Distinct, optional School-facing contact number — Spec 55 lists `phone` on
   /// Instructor's own entity row, separate from User.phone (the login/OTP number). Not
@@ -709,6 +1097,48 @@ model LegalDocument {
   createdAt DateTime @default(now())
 }
 
+/// Translation (Phase 49, ultm8-nestjs-module §5) — the CMS-backed i18n content this
+/// codebase's own LegalDocument comment (above) already forward-referenced.
+/// Confirmed shape: `docs/ultm8-blueprint.html`'s own term glossary states
+/// "Translation: Screen · label key · locale · content" — corroborating
+/// ultm8-nestjs-module §5's confirmed query params (`GET /translations?locale=&screen=`)
+/// and supplying the remaining two fields those params imply.
+///
+/// No RLS — same precedent as LegalDocument (see that model's own comment for the
+/// full AdminUser-precedent reasoning): global, platform-level content, not
+/// tenant-scoped data, queried via the plain PrismaAppService/ultm8_app role, no
+/// PrismaPlatformAdminService bypass needed for the row itself.
+///
+/// `id` is a Prisma-client-generated UUID (`@default(uuid())`), not a human-meaningful
+/// key like LegalDocument's `slug` — there's no natural single-field identity here the
+/// way a legal document's own url slug is one; the real natural key is the
+/// (screen, labelKey, locale) triple below, enforced as a unique index rather than as
+/// the primary key so callers still address a row by a stable opaque id (matching
+/// every other CRUD resource in this codebase).
+///
+/// `locale` is free text, not an enum against `settings/constants/languages.ts`'s
+/// `LANGUAGES` list — same reasoning `UpdateFranchiseDto.defaultLanguage`'s own
+/// comment already gives: no canonical language code list is confirmed anywhere yet
+/// (domain-rules §1), so this doesn't invent a stricter constraint than the spec
+/// itself confirms.
+model Translation {
+  id String @id @default(uuid())
+
+  screen   String
+  labelKey String
+  locale   String
+  content  String
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  /// The natural key implied by the confirmed Translation shape — `content` is the
+  /// value, these three are the address. Enforced here, not just at the app layer,
+  /// so a raw client can't create a duplicate slot even if TranslationsService's own
+  /// check were ever bypassed.
+  @@unique([screen, labelKey, locale])
+}
+
 /// PaymentAccount (Phase 8, Spec 55 §6.1) — a School's or a Franchise's own Stripe
 /// Connect Express account reference (Decision 86,
 /// docs/decisions/POST-SPEC-55-DECISION-LOG.md). No raw secret keys are ever stored
@@ -745,8 +1175,8 @@ model PaymentAccount {
   provider     PaymentAccountProvider
   accountTitle String
   country      String
-  status       PaymentAccountStatus @default(ACTIVE)
-  mode         PaymentAccountMode   @default(TEST)
+  status       PaymentAccountStatus   @default(ACTIVE)
+  mode         PaymentAccountMode     @default(TEST)
 
   /// Never a raw secret key (Decision, existing, §4.5/§10.4). Null until Stripe
   /// Connect onboarding is initiated — set synchronously in
@@ -761,7 +1191,8 @@ model PaymentAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
+  transactions        Transaction[]
+  franchiseFeeCharges FranchiseFeeCharge[]
 
   // One PaymentAccount per School, one per Franchise — "has one PaymentAccount set"
   // (School's and Franchise's own confirmed entity rows, singular).
@@ -855,9 +1286,15 @@ model MembershipPlan {
   classesIncluded Int?
 
   scopedClassId String?
-  scopedClass   Class? @relation("MembershipPlanScopedClass", fields: [scopedClassId], references: [id])
+  scopedClass   Class?  @relation("MembershipPlanScopedClass", fields: [scopedClassId], references: [id])
 
   visible Boolean @default(true)
+
+  /// Lessons (Decision 195): the School's styles this plan covers, and
+  /// whether a live membership on it can watch those styles' lessons. On by
+  /// default for priced plans, off for free ones; the owner can change it.
+  disciplineIds   String[] @default([])
+  includesLessons Boolean  @default(false)
 
   refundFeeDate       DateTime?
   cancellationCharge  Int?
@@ -915,10 +1352,22 @@ model Membership {
 
   expiryDate DateTime?
 
+  // membership-expiry-sweep.processor.ts's OWN bookkeeping only — set the first
+  // time that job cancels this Membership's funded future Bookings after its
+  // expiryDate passed. Deliberately NOT a status/liveness signal: Decision 26
+  // confirms date-based expiry is "a live-computed predicate... not a
+  // scheduled batch flip" (status above stays ACTIVE in storage forever for
+  // this path, by design — see that model's own comment). This field exists
+  // purely so the sweep doesn't re-scan the same already-handled Membership
+  // every 15 minutes forever; nothing else in the codebase reads it, and it
+  // must never be treated as a substitute for MembershipsService.getMembershipStatus()'s
+  // own live computation.
+  bookingCancellationSweptAt DateTime?
+
   // Inherited from MembershipPlan when it names one (Spec 55 §6.1) — restricts which
   // Class this Membership can book. Set once at creation from membershipPlan.scopedClassId.
   scopedClassId String?
-  scopedClass   Class? @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
+  scopedClass   Class?  @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
 
   // Friend Pass only — distinguishes a School comp from a paid purchase.
   giftedById String?
@@ -1001,6 +1450,15 @@ model Transaction {
   // — see the Phase 9 kickoff prompt §3); modeled for schema completeness only.
   disputedAmount Int?
 
+  /// Decision 112 — set the instant stripe-webhook-processing's dispute handler
+  /// determines a dispute resolved as `lost` (Phase A's own `resolveDisputeOutcome()`
+  /// already computes this in memory; this persists it), cleared back to null on the
+  /// rare reversal to `won`. Exists purely so chargeback-pattern-restriction can count
+  /// "disputes that resolve as lost" (Decision 68's own confirmed wording) — `status =
+  /// DISPUTED` alone can't answer that, since it's also the state for a dispute that's
+  /// merely still open/unresolved.
+  disputeLostAt DateTime?
+
   // Cumulative across possibly-multiple partial refunds against the same Transaction
   // (Spec 55 §6.1). No Phase 9 code path sets this (refund isn't buildable yet —
   // needs Booking); modeled for schema completeness only, always null this phase.
@@ -1026,6 +1484,216 @@ model Transaction {
   @@index([membershipPlanId])
 }
 
+/// FranchiseFeeCharge (Phase 16b-ii, Spec 55 §6.1/§10.2) — the per-billing-cycle
+/// ledger record for a School->Franchise franchise-fee charge, a wholly separate
+/// payment relationship from Transaction (Student->School) and PlatformCharge
+/// (School/Franchise->ULTM8) — never conflate the three (domain-rules §2).
+///
+/// Confirmed field list (quoted, not paraphrased): "Franchise, School, billing
+/// period, fee basis snapshot (Flat or Per-Headcount, copied from
+/// Franchise.feeModel at charge time so a later feeModel change never rewrites
+/// history), computed amount, currency, active-student-count snapshot
+/// (Per-Headcount only, captured at charge time), Stripe PaymentIntent/Invoice id,
+/// status (Successful/Pending/Failed/Refunded/Disputed — same enum as
+/// Transaction), refundedAmount (nullable, cumulative), disputedAmount (nullable,
+/// taken straight from the Stripe dispute event payload)."
+///
+/// `status` reuses TransactionStatus directly (spec's own words: "same enum as
+/// Transaction") rather than a second identical enum — same reuse convention
+/// PaymentAccountProvider already established for Transaction.paymentMethod.
+///
+/// `franchisePaymentAccountId` — spec says this entity "references both parties'
+/// PaymentAccount". Modeled as a single explicit FK to the Franchise's own
+/// PaymentAccount (the payee/destination) only, mirroring Transaction's own
+/// `paymentAccountId` shape exactly (that field is also only ever the payee's
+/// account — a Student has no PaymentAccount of their own either). The School
+/// (payer) side is NOT a second FK to a School PaymentAccount: the School's own
+/// PaymentAccount (if it has one) is a wholly separate Stripe Connect account
+/// used for its OWN Student->School billing, and a franchise-fee charge is paid
+/// via a Stripe Customer+PaymentMethod created ON the Franchise's connected
+/// account instead (PaymentsService.ensureFranchiseFeeSubscription) — the same
+/// "throwaway Customer scoped to the payee's own connected account" pattern
+/// MembershipsService.subscribe() already established for Student->School, here
+/// applied School->Franchise instead. Developer-level interpretation of an
+/// otherwise-ambiguous spec phrase, flagged for Architect review.
+///
+/// `currency` is always 'USD', set in code, never read from a per-Franchise
+/// field — domain-rules §11.2/Decision 7 confirms Franchise-fee is billed in a
+/// single anchor currency, unlike MembershipPlan's genuinely per-currency
+/// pricing. Stored per-row anyway (nullable String, matching Transaction's own
+/// convention) rather than omitted, since the confirmed field list names it
+/// explicitly and PlatformCharge's own sibling entity does the same.
+///
+/// `billingPeriodStart`/`billingPeriodEnd` model "billing period" as an explicit
+/// date range rather than a single label — the natural reading for a recurring
+/// monthly charge, and needed by the franchise-fee-usage-reporting job to know
+/// which month's active-student-count a given Per-Headcount row snapshots.
+///
+/// One row is created per billing cycle (NOT once per School<->Franchise
+/// relationship, unlike Membership) — a genuinely different creation-timing
+/// shape from every other billing entity in this schema so far. See
+/// PaymentsService.ensureFranchiseFeeSubscription and the
+/// franchise-fee-usage-reporting job/stripe-webhook-processing's own new
+/// invoice.paid/invoice.payment_failed handlers for the full creation-timing
+/// account: a Per-Headcount row is created PENDING by the monthly usage-report
+/// job (which knows the activeStudentCountSnapshot value at that moment); a Flat
+/// row has no snapshot to capture in advance and is instead created directly,
+/// already Successful, by the invoice.paid webhook handler.
+model FranchiseFeeCharge {
+  id String @id @default(uuid())
+
+  franchiseId String
+  franchise   Franchise @relation(fields: [franchiseId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  franchisePaymentAccountId String
+  franchisePaymentAccount   PaymentAccount @relation(fields: [franchisePaymentAccountId], references: [id])
+
+  billingPeriodStart DateTime
+  billingPeriodEnd   DateTime
+
+  feeBasisSnapshot FeeModel
+  amount           Int // minor-unit, same convention as Transaction.amount
+  currency         String? // always 'USD' in practice — see header comment
+
+  // Per-Headcount only — the active-student-count reported to Stripe for this
+  // billing period. Null for a Flat-fee row.
+  activeStudentCountSnapshot Int?
+
+  status TransactionStatus // reused directly — spec's own "same enum as Transaction"
+
+  stripeInvoiceId      String? @unique
+  stripeSubscriptionId String?
+
+  /// Decision 111 — the PaymentIntent id behind this Invoice, captured at
+  /// `handleInvoicePaid()` time from `invoice.payments` (the only reachable path in
+  /// this Stripe API version — `Charge`/`PaymentIntent` no longer carry a direct
+  /// `invoice` reference; verified against the installed SDK's own type
+  /// definitions, not assumed). Exists so a later `charge.dispute.*` webhook —
+  /// which only ever gives a `payment_intent` id, never an Invoice id — can
+  /// correlate back to this row the same direct way `Transaction.stripePaymentIntentId`
+  /// already does; without this column a dispute against a franchise-fee charge
+  /// would have no reliable way to find its row at all.
+  stripePaymentIntentId String? @unique
+
+  // Cumulative across possibly-multiple partial refunds against the same charge,
+  // same convention as Transaction.refundedAmount. Set by
+  // FranchiseFeeChargesService.refund() (Franchise Owner only, Spec 55 §10.2 —
+  // the Franchise's own PaymentAccount holds the money, so the Franchise, not the
+  // paying School, is the party who'd issue it back).
+  refundedAmount Int?
+
+  /// Decision 111 — real now: stripe-webhook-processing's charge.dispute.*
+  /// handlers set this and flip `status` to DISPUTED. See Transaction.disputedAmount's
+  /// own comment for the "modeled for schema completeness only" history this
+  /// column carried before Decision 111 built real handlers for it.
+  disputedAmount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30) — this entity
+  // has two tenant sides (Franchise the payee, School the payer), so both get one.
+  @@index([franchiseId])
+  @@index([schoolId])
+  // Matches franchise-fee-usage-reporting.processor.ts's and stripe-webhook-
+  // processing.processor.ts's own (stripeSubscriptionId, status) query shape —
+  // see the migration's own comment. The companion partial unique index
+  // enforcing "one charge row per (subscription, billing period)" is NOT
+  // representable here — Prisma's schema DSL has no partial/filtered unique
+  // index support, same established limitation as every other partial unique
+  // index in this schema (Membership_one_active_general_access_per_school and
+  // siblings) — it exists only in the migration's own hand-authored SQL.
+  @@index([stripeSubscriptionId, status])
+}
+
+/// PlatformCharge (Phase 54, Spec 55 §6.1/§10.2, Decision 42) — ULTM8's own
+/// platform-level billing ledger, quoted: "School/Franchise reference, charge type
+/// (SubscriptionPlan tier fee or whiteLabelApp entitlement fee), amount, currency,
+/// Stripe charge/invoice reference, status... disputedAmount." Mirrors
+/// FranchiseFeeCharge's own shape directly (same confirmed spec line: "mirrors
+/// FranchiseFeeCharge's shape but bills ULTM8's own platform-level fees... rather
+/// than School<->Franchise fees") but bills the opposite direction — ULTM8 IS the
+/// payee here, never a School or Franchise's own connected PaymentAccount, so
+/// (unlike FranchiseFeeCharge) there is no `xPaymentAccountId` FK on this table at
+/// all; the money settles into ULTM8's own platform Stripe balance
+/// (StripeClientService.platformClient()), not a tenant's Connected Account.
+///
+/// "Belongs to whichever School or Franchise the platform-level charge is against"
+/// — exactly one of `schoolId`/`franchiseId` is set per row, never both, never
+/// neither (enforced by the migration's own hand-authored CHECK constraint, the
+/// same "Prisma's schema DSL can't express this, only the migration SQL can"
+/// limitation every other cross-field invariant in this schema already lives with).
+///
+/// This phase only ever creates SUBSCRIPTION_PLAN_FEE rows (see PlatformChargeType's
+/// own comment) — created by stripe-webhook-processing's invoice.paid handler,
+/// directly, already Successful, the same "nothing was snapshotted in advance"
+/// shape FranchiseFeeCharge's own Flat-fee branch already uses (there is no
+/// Per-Headcount-style usage-reporting job for platform SubscriptionPlan billing —
+/// it's a flat plan price, not metered, this phase).
+///
+/// Deliberately NOT exposed via any tenant-facing read endpoint this phase — Spec
+/// 55's own §7 representative endpoint table names no `GET .../platform-charges`
+/// anywhere (unlike FranchiseFeeCharge/Transaction, which do have confirmed read
+/// endpoints), so building one now would be inventing UI/API surface the spec
+/// doesn't ask for — same "don't build unrequested surface" discipline
+/// TranslationsService's own header comment already applies to its own no-separate-
+/// admin-list decision. Only `ultm8_jobs` (stripe-webhook-processing) can read/write
+/// this table today; add tenant-facing `ultm8_app` access + RLS policies + an
+/// endpoint together, in one later phase, if/when a real screen needs to show this
+/// history — not preemptively.
+model PlatformCharge {
+  id String @id @default(uuid())
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+
+  franchiseId String?
+  franchise   Franchise? @relation(fields: [franchiseId], references: [id])
+
+  chargeType PlatformChargeType
+  amount     Int // minor-unit, same convention as Transaction.amount/FranchiseFeeCharge.amount
+  currency   String? // always 'USD' in practice — see SubscriptionPlan's own header comment
+
+  status TransactionStatus // reused directly, same "same enum as Transaction" precedent FranchiseFeeCharge.status already follows
+
+  stripeInvoiceId      String? @unique
+  stripeSubscriptionId String?
+
+  /// Decision 111 — same shape and reasoning as FranchiseFeeCharge.stripePaymentIntentId's
+  /// own comment: captured from `invoice.payments` at `handleInvoicePaid()` time so a
+  /// later `charge.dispute.*` webhook (payment_intent-keyed only) can find this row.
+  stripePaymentIntentId String? @unique
+
+  // Cumulative across possibly-multiple partial refunds, same convention as
+  // Transaction.refundedAmount/FranchiseFeeCharge.refundedAmount. No refund code
+  // path exists yet this phase (no refund endpoint for platform billing is
+  // confirmed anywhere) — modeled for schema completeness only, same treatment
+  // FranchiseFeeCharge.refundedAmount got before its own refund() existed.
+  refundedAmount Int?
+
+  /// Decision 111 — real now: stripe-webhook-processing's charge.dispute.*
+  /// handlers set this and flip `status` to DISPUTED. See
+  /// Transaction.disputedAmount's own comment for the "modeled for schema
+  /// completeness only" history this column carried before Decision 111.
+  disputedAmount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes leading with the tenant column (Decision 30) — two possible
+  // tenant sides on this entity (exactly one set per row), so both get one, same
+  // shape FranchiseFeeCharge's own two indexes already use.
+  @@index([schoolId])
+  @@index([franchiseId])
+  // Matches stripe-webhook-processing's own "find the most recent row for this
+  // subscription" lookup shape — same "index the actual query, not a guess"
+  // discipline FranchiseFeeCharge's own identical index already follows.
+  @@index([stripeSubscriptionId, status])
+}
+
 /// PromotionEvent.type — Phase 10b. Confirmed field (skills/ultm8-domain-rules/
 /// SKILL.md §5, quoted): "types: Promotion / Downgrade / Bulk Promotion / Bulk
 /// Stripe Award / Stripe Award." The two BULK_* values exist in this enum even
@@ -1039,6 +1707,22 @@ enum PromotionEventType {
   STRIPE_AWARD
   BULK_PROMOTION
   BULK_STRIPE_AWARD
+  /// A correction that is not a grading: a board drag (Decision 128, item
+  /// 13) or an "edit rank date" (Decisions 153, 166). The rank does not change.
+  ADJUSTMENT
+  /// The rank a student (or their guardian) declared when joining (Decision 137).
+  SELF_DECLARED
+  /// Staff corrected a self-declared rank while verifying it (Decision 147).
+  RANK_CORRECTION
+}
+
+/// Whether a StudentRank's rank has been confirmed by the School (Decisions
+/// 137, 147). Ranks given by staff are VERIFIED; a self-declared rank is
+/// UNVERIFIED until someone with grading permission verifies or corrects it,
+/// except the style's first rung, which is verified automatically.
+enum RankVerificationStatus {
+  VERIFIED
+  UNVERIFIED
 }
 
 /// StudentRank per-skill sign-off status. Confirmed field (SKILL.md §5, quoted):
@@ -1070,15 +1754,25 @@ model Discipline {
   schoolId String
   school   School @relation(fields: [schoolId], references: [id])
 
-  name              String
-  classTypesOffered String[] @default([])
+  name                  String
+  classTypesOffered     String[] @default([])
+  /// Per-style "skills required" switch (Decision 128, item 10): off — grading
+  /// with required skills not signed off needs a written acknowledgement; on —
+  /// it is blocked with no override.
+  skillsRequiredToGrade Boolean  @default(false)
+  /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
+  /// There from this %, Ready to Grade from that %. 33 / 66 by default.
+  boardGettingThere     Int      @default(33)
+  boardReadyToGrade     Int      @default(66)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ranks        Rank[]
-  skills       Skill[]
-  studentRanks StudentRank[]
+  ranks              Rank[]
+  skills             Skill[]
+  studentRanks       StudentRank[]
+  gradingPermissions GradingPermission[]
+  instructorBelts    InstructorBelt[]
 
   @@index([schoolId])
 }
@@ -1088,13 +1782,10 @@ model Discipline {
 /// secondary colour (two-colour belts), a weekly class-count cap, a set of
 /// required Skills, and a years-in-rank flag."
 ///
-/// `yearsInRankFlag` is a genuine Boolean only — Spec 55's own literal field list
-/// ("years-in-rank flag (Black Belt and above)") never names a separate numeric
-/// field for HOW MANY years are required, and no confirmed mechanism exists
-/// anywhere for the actual threshold or where it would be configured. Storing and
-/// toggling the flag is all this phase does — nothing enforces real tenure yet.
-/// Do not invent a `yearsRequired: Int` field or a default number (Phase 10b
-/// kickoff prompt §3.1) — flagged for the Architect/product owner, not guessed.
+/// The weekly cap, required Skills and years-in-rank flag now live on each
+/// rung (RankStripeTier: weeklyClassCountCap, requiredSkills, and "time in rank
+/// only" with its years stored as minimum days; Decisions 126, 128 item 3); the
+/// belt-level copies were removed (Decisions 199, 207).
 model Rank {
   id String @id @default(uuid())
 
@@ -1114,22 +1805,28 @@ model Rank {
 
   order Int
 
+  /// Belt name, e.g. "Blue Belt" (Spec 55 §6.1 lists "Name"; grading
+  /// foundation PR 2). Existing rows were backfilled as "Belt {order+1}".
+  name String
+
   primaryColour   String
   secondaryColour String?
 
-  weeklyClassCountCap Int?
-  yearsInRankFlag     Boolean @default(false)
+  /// Drawing only (prototype `tagColor` / `coralAccent`): the tag sewn on the
+  /// belt tip (e.g. red on Black Belt) and the silver/gold accent of the coral
+  /// belts. No grading rule reads these.
+  tagColour   String?
+  coralAccent String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   stripeTiers RankStripeTier[]
 
-  requiredSkills RankRequiredSkill[]
-
   studentRanksCurrent StudentRank[]    @relation("StudentRankCurrentRank")
   promotionEventsFrom PromotionEvent[] @relation("PromotionEventFromRank")
   promotionEventsTo   PromotionEvent[] @relation("PromotionEventToRank")
+  instructorBelts     InstructorBelt[]
 
   @@unique([disciplineId, order])
   @@index([schoolId])
@@ -1145,7 +1842,7 @@ model RankStripeTier {
   id String @id @default(uuid())
 
   rankId String
-  rank   Rank @relation(fields: [rankId], references: [id])
+  rank   Rank   @relation(fields: [rankId], references: [id])
 
   // Denormalized from rank.schoolId — see Rank's own comment for the full
   // "avoid a multi-hop RLS join" reasoning, doubly true here (three hops from
@@ -1160,12 +1857,40 @@ model RankStripeTier {
   minimumDaysInRank  Int?
   eligibleClassTypes String[] @default([])
 
+  /// Grading foundation PR 2 — every rung carries every prototype rung setting
+  /// (Decisions 126, 128). `name` e.g. "Blue Belt · 2 Stripes" (typed per rung,
+  /// generated from the belt name + stripe count when omitted).
+  name                     String
+  /// Mixed stripe colours on one rung, in tip order, e.g.
+  /// [{"count":3,"colour":"#F0C419"},{"count":1,"colour":"#C23B3B"}]. The
+  /// segment counts always sum to `count`. Drawing data only, stored as JSON so
+  /// it needs no table/RLS policy of its own.
+  stripeSegments           Json           @default("[]")
+  weeklyClassCountCap      Int?
+  /// "Time in rank only" (Decision 128 item 3): classes are not counted and
+  /// skills are optional; the years are held in `minimumDaysInRank`.
+  timeOnly                 Boolean        @default(false)
+  // Which classes count (Decisions 140, 149): ANY_TYPE — a class of any type in
+  // eligibleClassTypes counts toward classesRequired (the default); EACH_TYPE —
+  // each ticked type has its own number in classTypeRequirements,
+  // [{ classType, classesRequired }], e.g. 20 Fundamentals + 10 Sparring.
+  classCountMode           ClassCountMode @default(ANY_TYPE)
+  classTypeRequirements    Json           @default("[]")
+  /// Who may book (Decision 173, set by the school owner): class types this
+  /// rung unlocks for booking, for it and every rung above. A type no rung
+  /// unlocks is open to everyone. Separate from eligibleClassTypes, which
+  /// says which classes count toward reaching this rung.
+  bookingUnlocksClassTypes String[]       @default([])
+
+  requiredSkills RankStripeTierRequiredSkill[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   studentRanksCurrentStripe StudentRank[]    @relation("StudentRankCurrentStripe")
   promotionEventsFrom       PromotionEvent[] @relation("PromotionEventFromStripeTier")
   promotionEventsTo         PromotionEvent[] @relation("PromotionEventToStripeTier")
+  instructorBelts           InstructorBelt[]
 
   @@unique([rankId, order])
   @@index([schoolId])
@@ -1173,11 +1898,11 @@ model RankStripeTier {
 }
 
 /// Skill (Phase 10b, Spec 55 §5/§6.1) — belongs to Discipline. Confirmed fields:
-/// "name, description." Many-to-many with Rank (required-skills gate). Also
-/// "referenced by Lesson" per Decision 58 (CurriculumModule) — that FK doesn't
-/// exist yet, deliberately: CurriculumModule is out of scope this phase, and this
-/// model isn't shaped in any way that would need a breaking change once Lesson is
-/// added (Lesson would simply gain its own skillId FK pointing here).
+/// "name, description." Many-to-many with Rank (required-skills gate) and, as of
+/// Phase 44 (CurriculumModule, Decision 58), many-to-many with Lesson too — Spec
+/// 55 §6.1 says "linked skill(s)" (plural) on Lesson's own side, so this is a real
+/// M2M via LessonSkill below, not the single skillId FK an earlier draft of this
+/// comment anticipated.
 model Skill {
   id String @id @default(uuid())
 
@@ -1194,26 +1919,165 @@ model Skill {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  requiredByRanks      RankRequiredSkill[]
+  requiredByRungs      RankStripeTierRequiredSkill[]
   studentSkillStatuses StudentRankSkillStatus[]
+  signOffLog           SkillSignOffLog[]
+  lessons              LessonSkill[]
 
   @@index([schoolId])
   @@index([disciplineId])
 }
 
-/// RankRequiredSkill — explicit join table for Rank's many-to-many "required
-/// Skills" gate (§5). Explicit rather than an implicit Prisma many-to-many —
-/// matches this schema's own established convention (every relation elsewhere in
-/// this codebase is an explicit model, and hand-authoring Prisma's undocumented
-/// implicit-join-table SQL correctly without a live `prisma migrate dev` run to
-/// verify against would be needless risk for zero benefit over an explicit one).
-model RankRequiredSkill {
-  rankId  String
-  rank    Rank  @relation(fields: [rankId], references: [id])
-  skillId String
-  skill   Skill @relation(fields: [skillId], references: [id])
+/// RankStripeTierRequiredSkill — per-rung required Skills (Decision 126):
+/// what it takes to be promoted INTO this rung (Decision 127). Same explicit
+/// join-table convention, and the same "no schoolId, RLS delegates to both
+/// parents" policy shape, as the belt-level RankRequiredSkill it replaced
+/// (removed, Decision 199).
+model RankStripeTierRequiredSkill {
+  stripeTierId String
+  stripeTier   RankStripeTier @relation(fields: [stripeTierId], references: [id], onDelete: Cascade)
+  skillId      String
+  skill        Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
-  @@id([rankId, skillId])
+  @@id([stripeTierId, skillId])
+  @@index([skillId])
+}
+
+enum LessonFormat {
+  PRERECORDED
+  LIVE
+}
+
+enum CaptionStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+/// Lesson (Phase 44, Decision 58 — Spec 55 §6.1/§7, CurriculumModule). Confirmed
+/// fields (quoted): "Title, category, duration, instructor, description, linked
+/// skill(s), format (Prerecorded/Live), videoRef, captionStatus
+/// (Pending/Processing/Ready/Failed), captionTrackRef." Links to one or more
+/// Skills via LessonSkill below (a real M2M — "linked skill(s)" is plural).
+///
+/// Scoping/authorship: Decision 58's own prose ("an instructor uploads") and Spec
+/// 55's own §7 endpoint table (`CRUD /admin/curriculum/lessons`, which per this
+/// project's own /admin/* == Platform-Admin-realm convention, ultm8-nestjs-module
+/// §5, would mean Platform-Admin-authored) directly contradict each other — a real
+/// gap inside Spec 55 itself, not resolved by picking whichever reading was found
+/// first. Resolved DIRECTLY WITH THE USER (Decision 104,
+/// docs/decisions/POST-SPEC-55-DECISION-LOG.md): School-scoped, Instructor/Staff-
+/// authored, ordinary tenant endpoints — same shape as every other content entity
+/// in this schema (Class, Waiver, MembershipPlan, ...), not the Platform Admin
+/// realm.
+///
+/// [UNRESOLVED, deliberately not modeled] Spec 55's own field row also says Lesson
+/// "Belongs to a Category" — no Category entity exists anywhere else in the
+/// document (verified directly against the extracted spec text: the word
+/// "Category" occurs exactly once in the whole document, this one relationship
+/// clause, one line below `category` used as a plain field). Treated as a spec
+/// doc-bug, not built as a relation — `category` below is a plain string only.
+/// Flag to the Architect before ever promoting this to a real model.
+///
+/// `instructorId` mirrors Class.instructorId's own established shape exactly (a
+/// User holding an active INSTRUCTOR RoleGrant at this School, validated via
+/// TenantAuthorizationService.assertValidInstructor — never a separate
+/// Instructor-profile FK, per that method's own header comment) — reused, not
+/// reinvented.
+///
+/// `videoRef`/`captionTrackRef` are deliberately vendor-agnostic opaque strings,
+/// not shaped around Cloudflare Stream specifically — Decision 101 (15 Sep 2026)
+/// picked that vendor (+ AWS Transcribe for captioning) but explicitly does not
+/// build the integration itself; no credentials for either are provisioned in this
+/// working environment, matching every other unprovisioned vendor in this codebase
+/// (Stripe/Cognito/R2/Twilio's own precedent) — the actual upload/dispatch calls
+/// are still unbuilt.
+model Lesson {
+  id String @id @default(uuid())
+
+  schoolId     String
+  school       School  @relation(fields: [schoolId], references: [id])
+  instructorId String?
+  instructor   User?   @relation("LessonInstructor", fields: [instructorId], references: [id])
+
+  title           String
+  /// Its category (Decisions 128.15, 191), and its place within it. A lesson
+  /// may have no category yet; those come after the categorised ones.
+  categoryId      String?
+  category        LessonCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  order           Int             @default(0)
+  /// Watchable by every student and guardian at the School, membership or
+  /// not (Decision 190). Set by the owner.
+  free            Boolean         @default(false)
+  durationSeconds Int?
+  format          LessonFormat
+
+  captionStatus CaptionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  skills  LessonSkill[]
+  /// What only those who may watch the lesson can read (Decision 208).
+  content LessonContent?
+
+  @@index([schoolId])
+  @@index([instructorId])
+  @@index([categoryId])
+}
+
+/// A lesson's watchable content, apart from the lesson itself so the database
+/// can decide who reads it (Decision 208): the description, the video and its
+/// captions. The lesson's title, category, order, styles and "free" stay on
+/// Lesson, readable by anyone at the School, so a locked lesson still shows what
+/// it is. RLS (`can_view_lesson_content`): staff at the School; anyone at the
+/// School when the lesson is free; a student whose live membership is on a plan
+/// that includes lessons and covers one of the lesson's styles (Decisions 154,
+/// 190, 195). A guardian reads under the student's context, as the API does.
+model LessonContent {
+  lessonId        String  @id
+  lesson          Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  description     String?
+  videoRef        String?
+  captionTrackRef String?
+}
+
+/// Lesson categories (Decisions 128.15, 191): a list per School with its own
+/// order; lessons are ordered within their category. Read by anyone at the
+/// School, like lessons; written by School staff.
+model LessonCategory {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name  String
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessons Lesson[]
+
+  @@index([schoolId])
+}
+
+/// LessonSkill — the confirmed Lesson<->Skill many-to-many ("linked skill(s)",
+/// plural, Spec 55 §6.1). Explicit join table, same convention as
+/// the former RankRequiredSkill (removed, Decision 199) (no implicit Prisma many-to-many anywhere in this
+/// codebase, by deliberate choice — see that model's own comment). No schoolId of
+/// its own — RLS delegates entirely to Lesson/Skill's own policies via the FK join,
+/// same reasoning as RankRequiredSkill's own migration comment: this table carries
+/// no queryable data beyond the two FKs, so a caller can only ever reach a row here
+/// by already having Lesson/Skill visibility.
+model LessonSkill {
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id])
+  skillId  String
+  skill    Skill  @relation(fields: [skillId], references: [id])
+
+  @@id([lessonId, skillId])
   @@index([skillId])
 }
 
@@ -1253,25 +2117,50 @@ model StudentRank {
   schoolId String
 
   currentRankId String
-  currentRank   Rank @relation("StudentRankCurrentRank", fields: [currentRankId], references: [id])
+  currentRank   Rank   @relation("StudentRankCurrentRank", fields: [currentRankId], references: [id])
 
   currentStripeId String?
   currentStripe   RankStripeTier? @relation("StudentRankCurrentStripe", fields: [currentStripeId], references: [id])
 
   dateOfCurrentRank DateTime @default(now())
 
-  classesAttendedTowardCheckpoint Int @default(0)
+  classesAttendedTowardCheckpoint Int       @default(0)
+  /// Classes counted toward the next rung, per class type (Decisions 149, 171):
+  /// {"Fundamentals": 18, "Sparring": 4}. Classes with no type are in the total
+  /// only. Reset with the total on every rank change.
+  classesAttendedByType           Json      @default("{}")
+  /// When counting toward the current rung started: the moment of the last rank
+  /// change (not the back-datable rank date). Classes before it belong to the
+  /// previous rung; the weekly cap only looks at classes after it.
+  countingSince                   DateTime  @default(now())
+  /// Grading Board "currently attending" (Decisions 152, 176): null follows
+  /// whether the student has an active membership; true/false is the manual
+  /// Active/Inactive switch for this style, overriding it.
+  boardActiveOverride             Boolean?
+  /// "Ready to grade" (Decisions 145, 178): when grading staff were told this
+  /// student is ready for their next rung. Once per rank: cleared on every rank
+  /// change.
+  readyNotifiedAt                 DateTime?
+
+  // Self-declared ranks (grading foundation PR 6, Decisions 137, 147).
+  verificationStatus RankVerificationStatus @default(VERIFIED)
+  verifiedAt         DateTime?
+  // Null when verified automatically, or when the verifier's account was deleted.
+  verifiedById       String?
+  verifiedBy         User?                  @relation("StudentRankVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   skillStatuses   StudentRankSkillStatus[]
   promotionEvents PromotionEvent[]
+  skillSignOffLog SkillSignOffLog[]
 
   @@unique([studentId, disciplineId])
   @@index([schoolId])
   @@index([studentId])
   @@index([disciplineId])
+  @@index([schoolId, verificationStatus])
 }
 
 /// StudentRankSkillStatus — join table carrying StudentRank's per-skill sign-off
@@ -1329,8 +2218,10 @@ model PromotionEvent {
 
   type PromotionEventType
 
-  performedById String
-  performedBy   User   @relation("PromotionEventPerformedBy", fields: [performedById], references: [id])
+  // Nullable, ON DELETE SET NULL (Decision 141): deleting an instructor's
+  // account keeps the students' history; a null here reads "Former instructor".
+  performedById String?
+  performedBy   User?   @relation("PromotionEventPerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
 
   fromRankId String?
   fromRank   Rank?   @relation("PromotionEventFromRank", fields: [fromRankId], references: [id])
@@ -1343,6 +2234,101 @@ model PromotionEvent {
   toStripeTier     RankStripeTier? @relation("PromotionEventToStripeTier", fields: [toStripeTierId], references: [id])
 
   acknowledgedWithoutSkillSignoff Boolean @default(false)
+
+  // Grading foundation PR 3 — history fields (Decisions 128, 129, 153, 166).
+  // effectiveDate: the grading date shown on the history, which may be
+  // back-dated (Decision 128, item 8); createdAt stays the audit timestamp.
+  effectiveDate         DateTime  @default(now())
+  // Downgrade reason, required on a downgrade (Decision 128, item 11).
+  reason                String?
+  // System note, e.g. "Skipped 2 ranks in between", and the user's own note
+  // (Decision 128, item 11).
+  systemNote            String?
+  note                  String?
+  // Rungs skipped by a grade (Decision 128, item 7); 0 for a normal grade.
+  rungsSkipped          Int       @default(0)
+  // "Starting classes" entered when grading (Decision 128, item 9).
+  startingClasses       Int?
+  // Starting classes per type, when the new next rung counts each type
+  // separately (Decision 174), e.g. {"Fundamentals": 5, "Sparring": 2}.
+  startingClassesByType Json?
+  // Void with a reason, never delete (Decision 129).
+  voidedAt              DateTime?
+  voidedById            String?
+  voidedBy              User?     @relation("PromotionEventVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+  voidReason            String?
+  // The user note can be edited and hidden (Decision 192): when it was last
+  // edited and by whom, and when it was hidden from the student and guardian
+  // (null: shown). Every change is in PromotionEventNoteLog.
+  noteEditedAt          DateTime?
+  noteEditedById        String?
+  noteEditedBy          User?     @relation("PromotionEventNoteEditedBy", fields: [noteEditedById], references: [id], onDelete: SetNull)
+  noteHiddenAt          DateTime?
+
+  createdAt DateTime @default(now())
+
+  noteLog PromotionEventNoteLog[]
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([studentRankId])
+}
+
+enum PromotionEventNoteChange {
+  EDITED
+  HIDDEN
+  SHOWN
+}
+
+/// Every change to a history entry's note (Decision 192): who, when, what
+/// (edited, hidden, shown), the old text and the new. Written by the API under
+/// the student's context, like the entry itself; readable by the School
+/// Owner/Manager only, never the student, so a hidden note stays hidden.
+model PromotionEventNoteLog {
+  id String @id @default(uuid())
+
+  promotionEventId String
+  promotionEvent   PromotionEvent @relation(fields: [promotionEventId], references: [id], onDelete: Cascade)
+
+  schoolId  String
+  studentId String
+
+  change  PromotionEventNoteChange
+  oldNote String?
+  newNote String?
+
+  // Nullable, ON DELETE SET NULL, same as PromotionEvent.performedById (Decision 141).
+  changedById String?
+  changedBy   User?   @relation("PromotionEventNoteLogChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([promotionEventId])
+}
+
+/// Every skill sign-off change, with who, when, the old status and the new
+/// status (Decision 156). Same narrow "School Owner/Manager or the Student"
+/// RLS shape as StudentRankSkillStatus. Kept across rank changes, which wipe
+/// the statuses themselves (Decision 128, item 16).
+model SkillSignOffLog {
+  id String @id @default(uuid())
+
+  studentRankId String
+  studentRank   StudentRank @relation(fields: [studentRankId], references: [id], onDelete: Cascade)
+
+  schoolId  String
+  studentId String
+
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  fromStatus SkillSignOffStatus
+  toStatus   SkillSignOffStatus
+
+  // Nullable, ON DELETE SET NULL, same as PromotionEvent.performedById (Decision 141).
+  changedById String?
+  changedBy   User?   @relation("SkillSignOffLogChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
@@ -1386,16 +2372,26 @@ model Waiver {
   @@index([schoolId])
 }
 
-/// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13) — belongs to Waiver and
-/// Student. Confirmed fields (quoted): "signer full name, signature, signed date,
-/// status." `signatureText` models the CONFIRMED baseline e-signature mechanism —
-/// "a typed full name plus a signature field" (§2.2) — not Decision 74/78's later
-/// drawn-signature-capture upgrade, whose own UI and possible schema change remain
-/// explicitly undesigned ("Decision 74's own engineering follow-up... remains open
-/// on its own terms," Decision 78's own effect note). Do not add a drawn-signature
-/// blob/canvas-data column as a guess — that's a real, separate, still-open piece
-/// of engineering work, not something this phase silently ships an interim answer
-/// for.
+/// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13; drawn-signature capture added
+/// Phase 34) — belongs to Waiver and Student. Confirmed fields (quoted): "signer
+/// full name, signature, signed date, status." `signatureText` models the
+/// CONFIRMED baseline e-signature mechanism — "a typed full name plus a signature
+/// field" (§2.2). `signatureImageKey` is Decision 74/78's drawn-signature-capture
+/// upgrade (legally confirmed sufficient by Decision 78; the engineering
+/// follow-up — raster vs. vector storage, the schema field itself — was left
+/// explicitly open by Decision 74 and resolved here, Phase 34): raster (PNG),
+/// not vector/stroke-path data — matches how virtually every production
+/// signature-pad capture works (a canvas's own toDataURL() output), directly
+/// displayable as an image with no custom renderer needed, and Spec 55 §11.3
+/// already classifies this exact asset category ("signed-waiver and invoice
+/// PDFs... served from R2 directly, no transformation needed") by the same
+/// "legal record, not a resizable gallery asset" reasoning this applies to a
+/// signature image. Nullable — a signature may still be Signed via typed-name
+/// only if the drawn-capture step was never completed, preserving the existing
+/// baseline mechanism rather than making drawn capture mandatory (not itself
+/// confirmed anywhere as required). Stores the R2 OBJECT KEY, not a public URL —
+/// see R2ClientService's own header comment for why every read of this image
+/// goes through a freshly-generated, short-lived presigned URL instead.
 ///
 /// RLS shape: deliberately the SAME narrow "School Owner/Manager, or the row's own
 /// Student, nobody else" shape Membership/Transaction use (Phase 9) — NOT the
@@ -1409,6 +2405,20 @@ model Waiver {
 /// default and flags it for Architect confirmation rather than silently choosing
 /// the broader shape. See the migration's own RLS policy comment for the concrete
 /// policy this produces.
+///
+/// Phase 37 added `signedById` — the actual signer, which diverges from
+/// `studentId` (whose waiver this is) once Guardian-on-behalf-of signing
+/// (SKILL.md §14, [CONFIRMED]) is possible. RLS is UNCHANGED — every write
+/// still runs under `withTenantContext(studentId, ...)` (the row's own
+/// "self" branch above), the same target-tenant-context substitution
+/// Booking's own Staff-on-behalf-of write already established, so a
+/// Guardian caller never needs a new RLS branch of their own. See
+/// WaiversService.sign()'s own header comment for the authorization check
+/// (GuardianLink, not RoleGrant) and the known limitation this surfaced:
+/// there is still no Guardian-on-behalf-of ENROLLMENT path (School's own
+/// `join()` is self-service-only), so this is only exercisable once a
+/// minor already holds a STUDENT RoleGrant by some other means — a
+/// separate, not-yet-built gap, not one this phase silently papers over.
 model WaiverSignature {
   id String @id @default(uuid())
 
@@ -1416,17 +2426,31 @@ model WaiverSignature {
   waiver   Waiver @relation(fields: [waiverId], references: [id])
 
   studentId String
-  student   User   @relation(fields: [studentId], references: [id])
+  student   User   @relation("WaiverSignatureStudent", fields: [studentId], references: [id])
+
+  // Phase 37 (Guardian-on-behalf-of signing, skills/ultm8-domain-rules/SKILL.md
+  // §14 — "Guardian... full access to... waiver-signing authority... for each
+  // linked minor", [CONFIRMED]): the actual human who signed, which is NOT
+  // always studentId — a Guardian may sign on a linked minor's behalf
+  // (WaiversService.sign()'s own header comment). Always set, including for the
+  // ordinary self-signing case (signedById == studentId there) — no nullable
+  // "assume self if absent" convention, so every row states its real signer
+  // explicitly. Backfilled from studentId for every row that predates this
+  // column (this migration), since every signature before Phase 37 was
+  // necessarily self-signed (no Guardian-signing path existed yet).
+  signedById String
+  signedBy   User   @relation("WaiverSignatureSignedBy", fields: [signedById], references: [id])
 
   // Denormalized from waiver.schoolId — same reasoning Membership.schoolId is
   // denormalized from membershipPlan.schoolId (Phase 9): keeps this row's own RLS
   // policy a direct column comparison rather than a join through Waiver.
   schoolId String
 
-  signerFullName String
-  signatureText  String // see header comment — typed name, not a drawn-signature blob
-  signedDate     DateTime @default(now())
-  status         WaiverSignatureStatus @default(SIGNED)
+  signerFullName    String
+  signatureText     String // see header comment — typed name, not a drawn-signature blob
+  signatureImageKey String? // see header comment — R2 object key, nullable, PNG raster
+  signedDate        DateTime              @default(now())
+  status            WaiverSignatureStatus @default(SIGNED)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1442,6 +2466,7 @@ model WaiverSignature {
   @@index([schoolId])
   @@index([studentId])
   @@index([waiverId])
+  @@index([signedById])
 }
 
 // =============================================================================
@@ -1460,6 +2485,22 @@ enum BookingStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+/// Booking.checkInMethod (Phase 51, Decision 107 — a flagged engineering design,
+/// not a SKILL.md-confirmed enum) — which of the three check-in paths a COMPLETED
+/// Booking actually went through. SELF_SERVICE is the Student's own rotating
+/// Class-QR scan (Phase 13, now token-verified — see AttendanceService); the other
+/// two are the Instructor roll-call scan this phase adds (SKILL.md §12, Decision
+/// 71): INSTRUCTOR_SCAN when the Instructor scanned the Student's own personal
+/// rotating token, INSTRUCTOR_MANUAL when Staff confirmed presence by name with no
+/// token at all (Decision 107's own camera-free fallback for a Student whose
+/// camera-tier consent is withdrawn, or an accessibility need). Null until a
+/// Booking is actually checked in (Upcoming/Cancelled/No-Show all leave it null).
+enum CheckInMethod {
+  SELF_SERVICE
+  INSTRUCTOR_SCAN
+  INSTRUCTOR_MANUAL
 }
 
 /// Booking.refundResolution / BookingAttendee.refundResolution — a Developer-level
@@ -1545,10 +2586,34 @@ model Booking {
   overriddenBy   User?   @relation("BookingOverriddenBy", fields: [overriddenById], references: [id])
   overrideReason String?
 
+  // Check-in method (Phase 51, Decision 107) — same "always recorded together"
+  // pairing as overriddenById/overrideReason above. checkedInById is the
+  // Instructor for INSTRUCTOR_SCAN/INSTRUCTOR_MANUAL, always null for
+  // SELF_SERVICE (the Student's own action, already identified by studentId —
+  // recording it again here would be redundant). No separate checkedInAt column:
+  // updatedAt already captures it, same as every other status transition on this
+  // model (cancel, no-show) already relies on updatedAt rather than a dedicated
+  // timestamp per transition.
+  checkInMethod CheckInMethod?
+  checkedInById String?
+  checkedInBy   User?          @relation("BookingCheckedInBy", fields: [checkedInById], references: [id])
+
   // See RefundResolution's own comment for exactly when/how this is set.
   refundResolution RefundResolution?
   resolvedById     String?
   resolvedBy       User?             @relation("BookingResolvedBy", fields: [resolvedById], references: [id])
+
+  // Guardian Kid Mode (Decision 123). bookedViaKidMode marks a Booking created via
+  // a Kid-Mode-scoped token (BookingsController's live BookingDelegation check, not
+  // the ordinary Guardian-on-behalf-of path alone) — needed so withdrawing a
+  // BookingDelegation knows which of a minor's UPCOMING Bookings to flag, and so
+  // support/the Guardian's own review queue can tell a self-booked-by-the-minor
+  // Booking apart from one the Guardian booked directly. pendingGuardianReview is
+  // set true on exactly that flagging (never on creation) — the Guardian's app
+  // surfaces it as a Confirm/Cancel action; Confirm clears it, Cancel reuses the
+  // existing cancelBooking() on-behalf-of path unchanged.
+  bookedViaKidMode      Boolean @default(false)
+  pendingGuardianReview Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1704,6 +2769,12 @@ enum ConsentTier {
 
 /// ConsentRecord.status — SKILL.md §14 (quoted): "status (Active / Withdrawn,
 /// with its own withdrawal timestamp)."
+/// How classes count toward a rung (Decisions 140, 149).
+enum ClassCountMode {
+  ANY_TYPE
+  EACH_TYPE
+}
+
 enum ConsentStatus {
   ACTIVE
   WITHDRAWN
@@ -1757,6 +2828,42 @@ model ConsentRecord {
 
   @@unique([guardianId, studentId, tier])
   @@index([studentId, tier])
+}
+
+enum BookingDelegationStatus {
+  ACTIVE
+  WITHDRAWN
+}
+
+/// BookingDelegation (Decision 123) — Guardian "Kid Mode": a Guardian-controlled,
+/// per-minor, revocable grant letting a linked minor book a Class themselves
+/// (consuming an existing paid Membership/class-pack credit only — never a
+/// purchase, cancellation, waitlist-join, or waiver-signing) from inside the
+/// Guardian's own already-authenticated session, never via a separate minor
+/// login. Deliberately its own model, not folded into ConsentRecord — SKILL.md
+/// §16 is explicit that consent and Guardian authority are "a different legal
+/// concept entirely," and this is an authority delegation, not a data-consent
+/// grant. Same narrow self-only RLS shape as GuardianLink/ConsentRecord
+/// (Decision 92) — no ultm8_jobs bypass needed here, unlike ConsentRecord's own
+/// camera-tier check, because the only consumer (BookingsController's live
+/// pre-booking check) always runs under the Guardian's own already-authenticated
+/// context, never a different service's context.
+model BookingDelegation {
+  id String @id @default(uuid())
+
+  guardianId String
+  guardian   User   @relation("BookingDelegationGuardian", fields: [guardianId], references: [id])
+
+  studentId String
+  student   User   @relation("BookingDelegationStudent", fields: [studentId], references: [id])
+
+  status BookingDelegationStatus @default(ACTIVE)
+
+  grantedAt   DateTime  @default(now())
+  withdrawnAt DateTime?
+
+  @@unique([guardianId, studentId])
+  @@index([studentId])
 }
 
 /// Notification (Phase 15, Spec 55 §6.1, page 27) — confirmed field list (quoted,
@@ -1872,4 +2979,172 @@ model DeviceToken {
 enum DevicePlatform {
   IOS
   ANDROID
+}
+
+/// A student's home branch at a School (Decisions 139, 148, 168). One per
+/// (School, Student). Chosen when joining a School that has branches; the
+/// owner assigns or changes it. Kept apart from the STUDENT RoleGrant on
+/// purpose: a branch on that grant would also narrow which classes the
+/// student can see (Class RLS), and which branches a student may book stays a
+/// booking rule (Decision 148). RLS: the School Owner/Manager, or the Student.
+model StudentHomeBranch {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentHomeBranchStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  assignedById String?
+  assignedBy   User?   @relation("StudentHomeBranchAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, studentId])
+  @@index([branchId])
+  @@index([studentId])
+}
+
+/// Grading permission for one staff member in one discipline (Decision 138).
+/// The School owner always has it and needs no row. Anyone else grades only
+/// in the disciplines listed here, and only students of their own branches
+/// (Decision 168). RLS: the School Owner/Manager, or the user themselves.
+model GradingPermission {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("GradingPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  grantedById String?
+  grantedBy   User?   @relation("GradingPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  /// What this grant allows in this style (Decision 181): seven toggles,
+  /// each covering its own grading actions. All on by default.
+  canPromote               Boolean @default(true)
+  canDowngrade             Boolean @default(true)
+  canSignOffSkills         Boolean @default(true)
+  canAdjustProgress        Boolean @default(true)
+  canVerifyRanks           Boolean @default(true)
+  canVoidHistory           Boolean @default(true)
+  canChangeBoardThresholds Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, disciplineId])
+  @@index([schoolId])
+  @@index([disciplineId])
+}
+
+/// Staff permissions beyond grading (Decision 183), one row per Branch Staff
+/// member per School. "Can invite coaches" lets them send coach invites for
+/// their own branches. The owner sets it; Instructors can't hold it (Spec 55
+/// §8.2: no instructor management). RLS: the owner, or the user themselves.
+model StaffPermission {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("StaffPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  canInviteCoaches Boolean @default(false)
+
+  grantedById String?
+  grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, userId])
+  @@index([userId])
+}
+
+/// A coach invite (Decision 183): one person, by email, to coach at a School
+/// (and a branch when it has branches). The link holds a random token; only
+/// its SHA-256 is stored. Single use, 7 days, cancellable. Accepting it, signed
+/// in with the invited email, gives an INSTRUCTOR RoleGrant; any other role the
+/// person holds is kept. RLS: the owner; Branch Staff with "Can invite coaches"
+/// for their own branches; the token holder (by its hash) to accept.
+model CoachInvite {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  /// Lower-cased.
+  email     String
+  tokenHash String @unique
+
+  invitedById String?
+  invitedBy   User?   @relation("CoachInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  expiresAt DateTime
+
+  acceptedAt   DateTime?
+  acceptedById String?
+  acceptedBy   User?     @relation("CoachInviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("CoachInviteCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, email])
+  @@index([branchId])
+}
+
+/// An instructor's own belt in one style at a School (Decisions 108, 188):
+/// chosen by the instructor from that style's belts, unverified until the
+/// School Owner verifies it or corrects it. One per instructor per style.
+/// Belongs to the person (an active INSTRUCTOR grant), not to an Instructor
+/// profile, since coaches who joined by invite have no profile.
+/// RLS: the owner manages all; the instructor reads theirs and may declare or
+/// change their own, always as unverified.
+model InstructorBelt {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("InstructorBeltUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  /// The belt and the stripe on it. Removing that stripe from the ladder
+  /// removes this row; the instructor chooses again.
+  rankId       String
+  rank         Rank           @relation(fields: [rankId], references: [id], onDelete: Cascade)
+  stripeTierId String
+  stripeTier   RankStripeTier @relation(fields: [stripeTierId], references: [id], onDelete: Cascade)
+
+  verificationStatus RankVerificationStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  verifiedById       String?
+  verifiedBy         User?                  @relation("InstructorBeltVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  /// When the instructor last chose it.
+  declaredAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, disciplineId])
+  @@index([schoolId])
+  @@index([disciplineId])
 }

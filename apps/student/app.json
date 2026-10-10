@@ -25,18 +25,10 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiBaseUrl": "https://ultm8-api.onrender.com"
+      "apiBaseUrl": "http://localhost:3000"
     },
     "plugins": [
-      "expo-secure-store",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "ULTM8 needs camera access to scan a Class's check-in code.",
-          "microphonePermission": false,
-          "recordAudioAndroid": false
-        }
-      ]
+      "expo-secure-store"
     ]
   }
 }

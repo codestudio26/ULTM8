@@ -1,5 +1,5 @@
 /**
- * RN-appropriate secure token storage (Decision 98 / kickoff doc "two real decisions").
+ * RN-appropriate secure token storage (Decision 113 / kickoff doc "two real decisions").
  * `@ultm8/auth`'s `sessionStorageTokenStore` uses `sessionStorage`, a browser-only API
  * not available in React Native, so it can't be reused here — this mirrors its
  * `TokenStore` shape (same get/set/clear contract every screen already expects) but
@@ -18,7 +18,7 @@
  * masked by a bare try/catch (indistinguishable from a rare real Keychain failure on a
  * real device), which a manual web-preview test caught: a session never survived a
  * page reload on web, with no visible error anywhere. The mobile target (iOS/Android,
- * this app's actual shipped platform per Decision 98) is unaffected — Keychain/Keystore
+ * this app's actual shipped platform per Decision 113) is unaffected — Keychain/Keystore
  * both work normally. `isAvailableAsync()` now makes the web gap an explicit, one-time
  * warning instead of a silent no-op indistinguishable from "everything's fine."
  */

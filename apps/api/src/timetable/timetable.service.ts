@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { resolveClassStyles } from '../classes/class-styles';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -67,6 +68,8 @@ export class TimetableService {
   async create(callerId: string, schoolId: string, dto: CreateTimetableSlotDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     if (dto.branchId) {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
@@ -76,8 +79,9 @@ export class TimetableService {
     }
 
     const slotId = randomUUID();
-    const created = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.timetableSlot.create({
+    const created = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const { styles, activities } = await resolveClassStyles(tx, schoolId, dto.styles, dto.activities);
+      return tx.timetableSlot.create({
         data: {
           id: slotId,
           schoolId,
@@ -90,7 +94,8 @@ export class TimetableService {
           breakEnd: dto.breakEnd ? parseHHmm(dto.breakEnd) : undefined,
           status: dto.status ?? 'ON',
           title: dto.title,
-          activities: dto.activities,
+          activities,
+          styles,
           capacity: dto.capacity,
           description: dto.description,
           bannerUrl: dto.bannerUrl,
@@ -101,8 +106,8 @@ export class TimetableService {
           refundCutoffHoursBeforeStart: dto.refundCutoffHoursBeforeStart,
           cancellationCharge: dto.cancellationCharge,
         },
-      }),
-    );
+      });
+    });
     return this.toResponse(created);
   }
 
@@ -145,6 +150,8 @@ export class TimetableService {
       throw new NotFoundException('TimetableSlot not found');
     }
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId;
     const nextInstructorId = dto.instructorId !== undefined ? dto.instructorId : existing.instructorId;
@@ -160,8 +167,14 @@ export class TimetableService {
       await this.tenantAuth.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
     }
 
-    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.timetableSlot.update({
+    if ((dto as { styles?: unknown }).styles === null) {
+      throw new BadRequestException('styles cannot be null; omit it to leave the styles unchanged.');
+    }
+
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Styles are replaced when sent and kept when omitted (Decision 170).
+      const resolved = dto.styles !== undefined ? await resolveClassStyles(tx, existing.schoolId, dto.styles, dto.activities) : null;
+      return tx.timetableSlot.update({
         where: { id: slotId },
         data: {
           branchId: dto.branchId,
@@ -173,7 +186,8 @@ export class TimetableService {
           breakEnd: dto.breakEnd ? parseHHmm(dto.breakEnd) : undefined,
           status: dto.status,
           title: dto.title,
-          activities: dto.activities,
+          activities: resolved ? resolved.activities : dto.activities,
+          styles: resolved ? resolved.styles : undefined,
           capacity: dto.capacity,
           description: dto.description,
           bannerUrl: dto.bannerUrl,
@@ -184,8 +198,8 @@ export class TimetableService {
           refundCutoffHoursBeforeStart: dto.refundCutoffHoursBeforeStart,
           cancellationCharge: dto.cancellationCharge,
         },
-      }),
-    );
+      });
+    });
     // Deliberately NOT touching Classes already materialized from this slot — Spec 55
     // doesn't say what should happen to them on an edit (status flip, instructor
     // change, time change), and retroactively cancelling/mutating rows a Student may

@@ -1,30 +1,46 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useInstructorSchoolIds, useOwnedSchoolId } from './auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from './auth/AuthContext';
+import { CoachDashboardPage } from './coach/CoachDashboardPage';
+import { CoachInvitesPage } from './coach/CoachInvitesPage';
+import { MyBeltsPage } from './coach/MyBeltsPage';
 import { RequireAuth } from './auth/RequireAuth';
 import { LoginPage } from './auth/LoginPage';
 import { RegisterPage } from './auth/RegisterPage';
 import { VerifyOtpPage } from './auth/VerifyOtpPage';
 import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
+import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
 import { StaffPage } from './roleGrants/StaffPage';
-import { CheckInPage } from './checkin/CheckInPage';
+import { DisciplinesPage } from './disciplines/DisciplinesPage';
+import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
+import { InstructorsPage } from './instructors/InstructorsPage';
+import { StudentsPage } from './students/StudentsPage';
+import { StudentGradingPage } from './grading/StudentGradingPage';
+import { GradingBoardPage } from './grading/GradingBoardPage';
+import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
+import { ClassesPage } from './classes/ClassesPage';
+import { ClassDetailPage } from './classes/ClassDetailPage';
+import { ClassQrCodePage } from './attendance/ClassQrCodePage';
+import { CurriculumPage } from './curriculum/CurriculumPage';
+import { TimetablePage } from './timetable/TimetablePage';
+import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
+import { TransactionsPage } from './transactions/TransactionsPage';
+import { WaiversPage } from './waivers/WaiversPage';
+import { FranchisesPage } from './franchises/FranchisesPage';
+import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
+import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
-// FOUND ON REVIEW (Track B Phase 5): this previously only ever checked
-// useOwnedSchoolId and fell back straight to /onboarding (CreateSchoolPage) for
-// anyone without a SCHOOL_OWNER_MANAGER grant -- including an Instructor, who holds
-// no such grant by design (ultm8-domain-rules §3) and would have been incorrectly
-// sent to "create a School" on their very first login.
+/** Owners land on their School; coaches on their dashboard (Decision 184);
+ * anyone else on creating a School. */
 function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
-  const instructorSchoolIds = useInstructorSchoolIds();
-  if (schoolId) return <Navigate to="/school" replace />;
-  if (instructorSchoolIds.length > 0) return <Navigate to="/check-in" replace />;
-  return <Navigate to="/onboarding" replace />;
+  const coachSchoolId = useCoachSchoolId();
+  return <Navigate to={schoolId ? '/school' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
 }
 
 export function App() {
@@ -35,6 +51,7 @@ export function App() {
       <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/forgot-passcode" element={<ForgotPasscodePage />} />
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
+      <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
       <Route
@@ -42,6 +59,36 @@ export function App() {
         element={
           <RequireAuth>
             <CreateSchoolPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/coach"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CoachDashboardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/my-belts"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MyBeltsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/coach-invites"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CoachInvitesPage />
+            </Shell>
           </RequireAuth>
         }
       />
@@ -76,11 +123,181 @@ export function App() {
         }
       />
       <Route
-        path="/check-in"
+        path="/disciplines"
         element={
           <RequireAuth>
             <Shell>
-              <CheckInPage />
+              <DisciplinesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/disciplines/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <DisciplineDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/instructors"
+        element={
+          <RequireAuth>
+            <Shell>
+              <InstructorsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/students"
+        element={
+          <RequireAuth>
+            <Shell>
+              <StudentsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/students/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <StudentGradingPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingBoardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading-permissions"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingPermissionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/classes"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ClassesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/classes/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ClassDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/classes/:id/qr-code"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ClassQrCodePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/curriculum"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CurriculumPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/timetable"
+        element={
+          <RequireAuth>
+            <Shell>
+              <TimetablePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/membership-plans"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MembershipPlansPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/transactions"
+        element={
+          <RequireAuth>
+            <Shell>
+              <TransactionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/waivers"
+        element={
+          <RequireAuth>
+            <Shell>
+              <WaiversPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/franchises"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchisesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/franchises/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchiseDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <RequireAuth>
+            <Shell>
+              <NotificationsPage />
             </Shell>
           </RequireAuth>
         }

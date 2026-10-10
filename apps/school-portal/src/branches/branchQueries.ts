@@ -13,6 +13,15 @@ export function useBranches(schoolId: string | null) {
     queryFn: () =>
       unwrap(apiClient.GET('/v1/schools/{schoolId}/branches', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
+    // FOUND ON REVIEW (Phase 17): Instructors/Classes/Timetable all call this
+    // same hook to populate a Branch dropdown, and the global QueryClient
+    // default is staleTime: 0 — without this, navigating between those
+    // screens (a natural admin workflow, since all three reference Branches)
+    // re-fetches the Branch list on every single page mount even though it
+    // rarely changes. Any actual Branch create/update still invalidates this
+    // query key directly (see useCreateBranch/useUpdateBranch below), so this
+    // only affects how long an unrelated navigation can serve cached data.
+    staleTime: 60_000,
   });
 }
 

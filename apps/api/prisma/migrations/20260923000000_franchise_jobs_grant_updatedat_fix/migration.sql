@@ -1,0 +1,29 @@
+-- Follow-up to 20260922000000_franchise_fee_charge_module — fixes a genuine gap in
+-- that migration's own ultm8_jobs GRANT on "Franchise" that was caught on review
+-- (before PR #22 shipped) but, due to a process error unrelated to the fix's own
+-- correctness (an uncommitted working-tree edit that never got staged before that
+-- PR's commit), the corrected grant never actually made it into the merged
+-- migration. Added here as a NEW migration rather than editing
+-- 20260922000000_franchise_fee_charge_module/migration.sql in place — once a
+-- migration has shipped in a merged PR, this codebase's convention (consistent
+-- with Prisma migration discipline generally: migrations are checksummed and
+-- tracked as applied in `_prisma_migrations`) is to never edit it after the fact,
+-- even when nothing has actually run it yet, and instead ship the fix as its own
+-- migration.
+--
+-- The gap: 20260922000000 column-scoped ultm8_jobs' UPDATE grant on "Franchise" to
+-- ("stripeMeterId", "stripeUsagePriceId") only. Prisma Client automatically
+-- includes a model's own `@updatedAt` column in the generated SQL SET clause of
+-- EVERY `.update()` call against that model, regardless of what fields the
+-- caller's own `data` object names — standard, documented Prisma behavior, not
+-- version-specific. Postgres column-level privilege checks apply to every column
+-- actually named in a SET clause, not just the ones whose value the caller
+-- intended to change. As shipped, the first real call to
+-- FranchiseFeeBillingService.ensureMeterAndPrice() (which does
+-- `prismaJobs.franchise.update({ data: { stripeMeterId, stripeUsagePriceId } })`)
+-- against a real Postgres instance would fail with "permission denied for column
+-- updatedAt".
+--
+-- Postgres GRANT is additive/idempotent per-column — this simply adds the missing
+-- column to the existing grant rather than re-stating the whole GRANT.
+GRANT UPDATE ("updatedAt") ON "Franchise" TO ultm8_jobs;

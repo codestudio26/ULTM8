@@ -1,0 +1,27 @@
+-- Phase 35 — the WRITE half of Billing/Payments Ops's own confirmed capability
+-- (Spec 55 §3.2/§4.4/§8.2): "the engineer initiates a new Stripe Connect
+-- onboarding/rotation flow" to rotate a tenant's payment credential. Deliberately
+-- NOT built in Phase 30 (see this file's own sibling migration,
+-- 20260927000000_platform_admin_payment_account_read, and
+-- PlatformAdminModule's own header comment) pending confirmation of the actual
+-- mechanism — resolved now by connecting two already-confirmed pieces: the
+-- spec's own literal wording above, and PaymentsService.initiateConnectOnboarding()
+-- (Phase 8), whose own comment already documents that re-requesting a fresh
+-- Stripe Account Link against an EXISTING Connected Account — not
+-- revoking/replacing it — is "the normal, supported flow" for exactly this case.
+-- Express Connected Accounts hold no platform-side secret beyond the Account
+-- Link itself (Decision 86 — Express, not Standard); an Account Link is
+-- deliberately short-lived/single-use by Stripe's own design, making
+-- "issue a fresh one" the only sensible reading of "rotation" here.
+--
+-- Extends ultm8_platform_admin's grant to include stripeConnectedAccountId —
+-- deliberately excluded from Phase 30's READ grant (that migration's own comment:
+-- "nothing confirms Billing/Payments Ops needs the raw id merely to VIEW
+-- configuration status... a separate, undesigned write path"). The rotation
+-- endpoint built this phase DOES need it internally, to pass to Stripe's own
+-- accountLinks.create() call — but PlatformAdminPaymentAccountsService's own
+-- rotation method never returns it in any HTTP response (see that method's own
+-- comment) — this grant is additive to the existing column-level grant, not a
+-- replacement of it, matching every prior PlatformAdminModule migration's own
+-- additive-GRANT convention.
+GRANT SELECT ("stripeConnectedAccountId") ON "PaymentAccount" TO ultm8_platform_admin;

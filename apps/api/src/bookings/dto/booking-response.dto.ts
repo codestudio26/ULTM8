@@ -21,6 +21,14 @@ export class BookingResponseDto {
   @ApiProperty()
   studentId!: string;
 
+  /** Joined from Booking.student (a User relation), not a Booking column —
+   * see BookingsService.findAllForClass. */
+  @ApiProperty()
+  studentFirstName!: string;
+
+  @ApiProperty()
+  studentSurname!: string;
+
   @ApiProperty()
   classId!: string;
 
@@ -55,6 +63,12 @@ export class BookingResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   overrideReason!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  checkInMethod!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  checkedInById!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   refundResolution!: string | null;

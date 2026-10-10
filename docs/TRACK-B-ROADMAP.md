@@ -94,7 +94,7 @@ in-scope is deliberately deferred, not forgotten.
   not Railway as originally planned here — confirmed with the user directly rather
   than standing up a second platform for no reason. Still open as of that date: it's
   only ever seen dev/testing use, not real School/Student usage (the actual condition
-  this line was written to satisfy) — see Decision 100 and this doc's own Slice 4b
+  this line was written to satisfy) — see Decision 210 and this doc's own Slice 4b
   section.
 - Offline (Phase 7) ✅ **DONE (2026-09-22)** — scoped to **light read-only caching**:
   previously-loaded screens stay viewable with no connection, including across an app
@@ -147,6 +147,23 @@ in-scope is deliberately deferred, not forgotten.
   made running the full Metro/Expo web bundler for a click-through test unreliable,
   and because this particular claim (data survives a restart) can't be distinguished
   from "a fresh fetch happened to be fast" through a UI alone anyway.
+
+**Superseded by the `master` sync (10 Oct 2026):** everything below this line through
+"Slice 8 shipped" describes a self-service QR check-in design and its own
+`apps/school-portal`/`apps/student` screens (`CheckInPage.tsx`/`CheckInScreen.tsx`)
+built independently on this branch before it was known that `master` had already
+redesigned and shipped this exact feature differently (Phase 51, Decision 107,
+`docs/decisions/POST-SPEC-55-DECISION-LOG.md`): two independently-keyed rotating
+tokens (Class-scoped + Student-scoped) rather than this branch's single `classId` +
+nonce payload, plus a real Instructor roll-call scan with a camera-free manual
+fallback. This branch's own screens and `useMyUpcomingBookingsWide` hook were removed
+during the sync as incompatible with the real, current `POST /attendance/scan`
+contract (`{classId, qrToken}`, not a bare `bookingId`) — see `apps/student/src/
+attendance/QrCheckInScreen.tsx` and `apps/school-portal/src/attendance/
+ClassQrCodePage.tsx` for what's actually shipped. Kept below only as a historical
+record of this branch's own now-superseded design process — citations to "Decision
+99" below are to this branch's own dropped decision-log entry, not a currently valid
+citation (see Decision 210's own numbering note).
 
 **QR check-in (Phase 5) — correction (2026-09-22): the earlier direction was wrong
 given what's actually built, not just under-scoped.** Reading `apps/api/src/attendance/`
@@ -324,6 +341,40 @@ The drawn-signature capture enhancement for Waivers (a different, still-genuinel
 blocked half of the original combined gap) remains parked — Decision 74 flags it as
 "still undesigned... for the Architect / design work before this can be built," and
 would need a `WaiverSignature` schema change besides.
+
+**Guardian "Kid Mode" booking delegation — proposed, stress-tested, approved, and
+shipped (Decision 123, 2026-10-06).** The user asked whether a Guardian could let a
+linked minor book a class themselves; proposed as a design (not inferred from any
+existing designs — a genuinely new question), adversarially stress-tested across two
+passes, and approved with 7 explicit open questions resolved directly by the user
+before any code was written. Full mechanism, scope, and the stress-test findings are
+in Decision 123 itself, not duplicated here.
+
+**What was built**: `BookingDelegation` (new model, per-minor, mirrors
+`ConsentRecord`'s grant/withdraw shape), a `kidMode` JWT claim + `JwtStrategy`
+route/body restriction (a Kid-Mode token may only call `POST /classes/:id/book`,
+only for the one studentId it was minted for), a live `BookingDelegation` re-check
+inside `BookingsController` (never trust the JWT claim alone — the same discipline
+`assertGuardianOfStudent()` already established), and `bookedViaKidMode`/
+`pendingGuardianReview` columns on `Booking` for the revoke→review-queue flow. On
+`apps/student`: `BookingDelegationRow` (off each minor's own settings screen,
+alongside `ConsentTierRow`), `KidModePinScreen` (a device-local handoff PIN —
+explicitly not the security boundary, see `kidModePinStore.ts`'s own comment),
+`KidModeBookingScreen` (a dedicated, isolated API client bound to the scoped
+token — never the shared `apiClient` singleton, see `kidModeClient.ts`), and
+`PendingReviewScreen` (the Guardian's Confirm/Cancel queue).
+
+**Verified**: `npx tsc --noEmit` and `nest build` clean on `apps/api`; the new
+`booking-delegation.e2e-spec.ts` (12/12) plus the full existing e2e suite
+(377 passed / 22 pre-existing unrelated skips / 0 failures) against a real local
+Postgres 16 — proving the live re-check, the route/body restriction, the
+revoke-flags-pendingGuardianReview flow, and RLS isolation between two Guardians'
+own delegations, not just reading the code. `apps/student`: `npx tsc --noEmit` and
+`npx expo export --platform web` both clean. No test infrastructure exists yet on
+this branch for `apps/student` (that's `feature/student-qr-checkin`'s own
+still-open, unmerged work) — this slice's frontend is typecheck/build-verified
+only, not unit-tested, same honestly-stated gap as every pre-Jest Track B slice
+before it.
 
 ---
 
@@ -770,7 +821,7 @@ custom-dev-client workflow change** (losing the web-preview verification path th
 whole track has relied on) **right now**, versus shipping the non-Stripe
 `pending_confirmation` path first as a smaller, unblocking slice.
 
-**Timing reaffirmed, deferred (8 Oct 2026, Decision 100).** Put to the user directly
+**Timing reaffirmed, deferred (8 Oct 2026, Decision 210).** Put to the user directly
 after confirming the actual status of the live Render deployment: dev/testing use
 only, no real School or Student usage yet — so the V1 plan's own original gate below
 ("ship Cash/Bank first, validate with real usage, add Stripe once the rest of the app
@@ -836,6 +887,46 @@ generated type's own comment) — deliberately not used for any icon/categorizat
 
 ---
 
+## Coach dashboard (Decision 184) — DONE
+
+Decision 184 asks for the coach dashboard "on both the mobile app and the web portal"; the web portal's came first (`apps/school-portal/src/coach/`). This is the mobile one, on the same API calls, for Instructors and Branch Staff (Decision 186).
+
+### What was built
+- **Landing:** a person with an Instructor or Branch Staff grant lands on **Coach** (`src/coach/CoachDashboardScreen.tsx`) instead of the student home (Decision 184 item 4); **Student home** is one tap away, and the student home has a **Coach dashboard** button. A coach at several Schools sees one (sorted; no School switcher yet).
+- **Dashboard:** Grading (the styles they grade, from `GET /schools/{id}/grading-permissions/me`, with ready / getting there / total counts from the board), My classes (their weekly slots and the next 10 classes, matched on `instructorId`), Notifications (latest 5, "See all" opens the existing screen), and My training when they also hold a Student grant there.
+- **Grading Board** (`GradingBoardScreen.tsx`): one style, the three columns as sections, highest progress first, search, the active-only switch and the "N inactive hidden" count. Students are the coach's own branches' (the API decides, Decision 168).
+- **Student panel** (`CoachStudentScreen.tsx`): stripe, date, progress (classes, or per class type; days; skills), the skills for the next grade (tap to cycle when the coach may sign off), the history, and only the actions the coach's toggles allow (Decision 181): award the next stripe or grade to the next belt (the skills acknowledgement when skills are missing and the style allows it, refused when it requires them), move down one stripe with a reason, log a class, verify a declared belt. Every grade sends the stripe the coach saw (`expectedCurrentRungId`, Decision 185), so a grade someone else made first is refused.
+
+### Left on the web portal for now
+Skipping stripes, back-dating, starting classes, bulk promote, dragging between columns, the column %, voiding history, editing rank dates and history notes, giving a first rank. All are in the School Portal for the same coach.
+
+### Verified
+`tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (10): the dashboard shows only the coach's styles and classes, the board filters and groups, each action appears only with its toggle and sends the right body.
+
+## My grading, read-only (Decisions 132, 142, 155, 161) — DONE
+
+### What was built
+- **My grading** (`src/grading/MyGradingScreen.tsx`), from the student home for anyone with a Student grant, and from **My minors → Grading** for a guardian (Decision 132). For each style at each School: the belt and stripe with the belt colour, since when, whether the School still has to verify a declared belt, the next stripe, the progress (% of the way; classes, or classes per type; days), **Ready to grade** when they are (always shown, Decision 161), and the skills for the next grade with their status. Nothing on it changes anything.
+- **History** per School (`GradingHistoryScreen.tsx`), newest first, with stripe names, reasons and notes; voided entries and hidden notes never reach the app (Decisions 129, 192).
+- **API:** `GET /students/{id}/grading` (new), because a guardian holds no role at the School and so can't read its styles, belts or skills; it sends the names with the grading, read under the student's own context, for the student or their guardian only. History uses the existing `GET /students/{id}/rank-history`.
+
+### Not yet
+Lessons in the app wait for video hosting (Decision 155).
+
+### Verified
+`tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
+
+## Join a School and declare a belt (Decisions 137, 147, 209) — DONE
+
+### What was built
+- **Join this School** on a School's page (`src/academies/JoinSchoolScreen.tsx`). The app had no way to join a School before this; the API's `POST /schools/{id}/join` had no caller. Choose who is joining (yourself, or a linked child for a guardian), then the home branch when the School has branches, then **Join**. Joining yourself swaps in the new token the API returns, so the new Student grant takes effect at once.
+- **Your current belt**, straight after joining: each style the School teaches, with its belts lowest first and "I don't train this" chosen by default. Choosing the plain first belt means never graded and is verified straight away; any other belt waits for the School to check it (Decision 147). **Not now** skips it.
+- **Add my belt** on the School's page, for a student who joined without adding one, while a style is still open to them. A guardian adds a child's belt by joining the child again: the app sees the child is already a student and goes straight to the belts.
+- **API:** `GET /academies/{id}` now lists the School's branch names (Decision 209), and `GET /students/{id}/ranks/declare-options?schoolId=` (new) lists the styles still open and their belts, read under the student's own context because a guardian holds no role at the School. Declaring uses the existing `POST /students/{id}/ranks/{disciplineId}/declare`.
+
+### Verified
+`tsc --noEmit`; jest `src/academies/joinSchool.test.tsx` (5); API e2e `join-declare.e2e-spec.ts` (6) and `academies.e2e-spec.ts` (branch names to a non-member, and the database refusing the discovery role a branch's address).
+
 ## Explicitly blocked — do not scope a slice for these yet
 
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own
@@ -860,18 +951,21 @@ section and each item's own section above for the current, accurate status.
 
 ## Recommendation
 
-**Shipped**: Slices 1, 2, 3, 4a, 5, 6a, 8 (QR check-in); the Guardian consent candidate
-(My Minors + consent grant/withdraw); the shared `PaginatedListScreen` extraction;
-light read-only offline caching (Phase 7); the Membership authorization-check fix.
+**Shipped**: Slices 1, 2, 3, 4a, 5, 6a; the Guardian consent candidate (My Minors +
+consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read-only
+offline caching (Phase 7); the Membership authorization-check fix; Guardian "Kid
+Mode" booking delegation (Decision 123).
 
-**Decided, deferred (Decision 100)**: Slice 4b (Stripe/PaymentSheet) — API shape and
+**Decided, deferred (Decision 210)**: Slice 4b (Stripe/PaymentSheet) — API shape and
 library choice were already settled; the timing question itself is now resolved too
 (reaffirmed deferred, 8 Oct 2026) rather than left open. Revisit once real production
 usage exists or a specific Stripe-requiring School is confirmed — whichever comes
 first.
 
-**Genuinely blocked** (see the section above): the Waiver drawn-signature capture and
-per-School white-label branding.
+**Genuinely blocked** (see the section above): the Waiver drawn-signature capture
+screen in `apps/student` (the backend — `signatureImageKey`, Guardian-on-behalf-of
+signing — shipped as Phase 34/37; only the client UI against that already-confirmed
+contract is still unbuilt) and per-School white-label branding.
 
 Several follow-ups are already spawned and tracked outside this doc (visible as task
 chips in the session): the waitlist notification-dispatch backend gap, the

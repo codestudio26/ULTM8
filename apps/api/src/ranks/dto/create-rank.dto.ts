@@ -3,16 +3,40 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
+  ArrayUnique,
+  Max,
   IsArray,
   IsBoolean,
+  IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   Min,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
+
+// Optional, but `null` is refused (400) rather than accepted: @IsOptional()
+// would let null through to the service, which reads `.length` on it (500) or
+// writes it to a NOT NULL column. Found on independent review (PR 2).
+const NotNullIfPresent = () => ValidateIf((_obj: unknown, value: unknown) => value !== undefined);
+
+/** One ticked class type's own number, for a rung in EACH_TYPE mode
+ * (Decision 149: e.g. 20 Fundamentals + 10 Sparring). */
+export class ClassTypeRequirementInputDto {
+  @ApiProperty({ description: 'A class type ticked in this rung\'s eligibleClassTypes.' })
+  @IsString()
+  @MaxLength(100)
+  classType!: string;
+
+  @ApiProperty({ description: 'Classes of this type needed for this rung.', minimum: 0 })
+  @IsInt()
+  @Min(0)
+  classesRequired!: number;
+}
 
 /**
  * One RankStripeTier, nested inline under CreateRankDto/UpdateRankDto — no
@@ -24,6 +48,14 @@ import {
  * rank thresholds, and its own eligibleClassTypes list."
  */
 export class RankStripeTierInputDto {
+  @ApiPropertyOptional({
+    description:
+      'Updating a belt only: the id of an existing rung of this belt. The rung keeps its id, and the students holding it, while its position, name or rules change (Decision 180). Omit for a new rung. When any rung in the list has an id, rungs left out are removed; a rung that students hold can\'t be removed (Decision 152).',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({ description: 'Position within this Rank\'s stripe ladder — must be unique and contiguous (enforced in the service layer, §5).' })
   @IsInt()
   @Min(0)
@@ -34,7 +66,7 @@ export class RankStripeTierInputDto {
   @Min(0)
   count!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Stripe colour. When the rung has stripes, the stored value is the colour of the first entry in `stripeSegments` (Decision 165); this value is only used to build the segments when they are omitted on a new rung.' })
   @IsString()
   @MaxLength(50)
   colour!: string;
@@ -57,12 +89,102 @@ export class RankStripeTierInputDto {
   @ArrayMaxSize(50)
   @IsString({ each: true })
   eligibleClassTypes?: string[];
+
+  // Grading foundation PR 2 — per-rung fields (Decisions 126, 128).
+
+  @ApiPropertyOptional({ description: 'Rung name, e.g. "Blue Belt · 2 Stripes". When omitted: generated from the belt name and stripe count on a new rung; kept on an existing rung (a generated name is regenerated).' })
+  @NotNullIfPresent()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiPropertyOptional({
+    type: () => [StripeSegmentInputDto],
+    description: 'Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. The only place this rung\'s stripe colours are set; the `colour` field follows the first entry (Decision 165). When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => StripeSegmentInputDto)
+  stripeSegments?: StripeSegmentInputDto[];
+
+  @ApiPropertyOptional({ description: 'Max classes per week that count toward this rung.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  weeklyClassCountCap?: number;
+
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers (the school portal's RankFormModal) that don't send it.
+  @ApiPropertyOptional({ description: '"Time in rank only" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung.' })
+  @IsOptional()
+  @IsBoolean()
+  timeOnly?: boolean;
+
+  // Grading foundation PR 5 — which classes count (Decisions 140, 149). No
+  // `default:` in the Swagger metadata, for the same reason as timeOnly.
+  @ApiPropertyOptional({
+    enum: ['ANY_TYPE', 'EACH_TYPE'],
+    description: 'ANY_TYPE (the default): a class of any ticked type counts toward classesRequired. EACH_TYPE: each ticked type has its own number in classTypeRequirements. When omitted: ANY_TYPE on a new rung; kept on an existing rung.',
+  })
+  @IsOptional()
+  @IsEnum(['ANY_TYPE', 'EACH_TYPE'])
+  classCountMode?: 'ANY_TYPE' | 'EACH_TYPE';
+
+  @ApiPropertyOptional({
+    type: () => [ClassTypeRequirementInputDto],
+    description: 'EACH_TYPE only: one entry per ticked class type in eligibleClassTypes, with its number. Must be empty for ANY_TYPE. When omitted: empty on a new rung; kept on an existing rung.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => ClassTypeRequirementInputDto)
+  classTypeRequirements?: ClassTypeRequirementInputDto[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung.',
+  })
+  @NotNullIfPresent()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  bookingUnlocksClassTypes?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.' })
+  @NotNullIfPresent()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  requiredSkillIds?: string[];
+}
+
+/** One run of same-coloured stripes on a rung's tip (prototype `stripeTiers`
+ * entry). Drawing data only. */
+export class StripeSegmentInputDto {
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  count!: number;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(50)
+  colour!: string;
 }
 
 /**
  * Field list verified against skills/ultm8-domain-rules/SKILL.md §5's confirmed
  * Rank row: "primary belt colour and an optional secondary colour..., a weekly
- * class-count cap, a set of required Skills, and a years-in-rank flag." disciplineId
+ * class-count cap, a set of required Skills, and a years-in-rank flag." All three
+ * now belong to each stripe (Decisions 126, 128 item 3, 199, 207). disciplineId
  * is a route param (`/styles/:disciplineId/ranks`), not a body field.
  *
  * `stripeTiers` requires at least one tier — Spec 55's own examples (§5: "White
@@ -76,6 +198,13 @@ export class CreateRankDto {
   @Min(0)
   order!: number;
 
+  @ApiPropertyOptional({ description: 'Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted.' })
+  @NotNullIfPresent()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  name?: string;
+
   @ApiProperty()
   @IsString()
   @MaxLength(50)
@@ -87,16 +216,17 @@ export class CreateRankDto {
   @MaxLength(50)
   secondaryColour?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Drawing only: colour of the tag sewn on the belt tip (e.g. red on Black Belt).' })
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  weeklyClassCountCap?: number;
+  @IsString()
+  @MaxLength(50)
+  tagColour?: string;
 
-  @ApiPropertyOptional({ default: false, description: 'Black Belt and above — see the schema\'s own comment on why this is a boolean only, no numeric threshold.' })
+  @ApiPropertyOptional({ description: 'Drawing only: silver/gold accent of the coral belts.' })
   @IsOptional()
-  @IsBoolean()
-  yearsInRankFlag?: boolean;
+  @IsString()
+  @MaxLength(50)
+  coralAccent?: string;
 
   @ApiProperty({ type: [RankStripeTierInputDto], minItems: 1 })
   @IsArray()
@@ -105,10 +235,6 @@ export class CreateRankDto {
   @Type(() => RankStripeTierInputDto)
   stripeTiers!: RankStripeTierInputDto[];
 
-  @ApiPropertyOptional({ type: [String], description: 'Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.' })
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(100)
-  @IsUUID('4', { each: true })
-  requiredSkillIds?: string[];
+  // No belt-level weekly cap, required skills or years-in-rank flag: they live
+  // on each stripe, the plain belt's own stripe included (Decisions 126, 164, 199, 207).
 }

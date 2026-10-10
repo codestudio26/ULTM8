@@ -2,24 +2,39 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { BookingStatus, PrismaClient } from '@prisma/client';
+import { BookingStatus, Prisma, PrismaClient } from '@prisma/client';
+import { assertBookingUnlocked } from '../ranks/booking-unlocks';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { GuardiansService } from '../guardians/guardians.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { BookClassDto } from './dto/book-class.dto';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 /**
- * Phase 11 scope only: single-Class booking creation/cancellation + the rank-gate
+ * Phase 11 scope: single-Class booking creation/cancellation + the rank-gate
  * override amendment. Waitlist join/withdraw/claim live in WaitlistService — see that
  * file's own header comment. QR check-in/Attendance (Phase "12") and
  * NotificationsModule are both explicitly out of scope — see the Phase 11 kickoff
- * prompt §3.
+ * prompt §3. Phase 40 added Guardian-on-behalf-of booking CREATION; Phase 41 added
+ * Guardian-on-behalf-of CANCELLATION (see cancelBooking()'s own comment for why it
+ * needed a genuinely different mechanism — a new DTO field, not the pre-existing
+ * BookClassDto.studentId — even though both ultimately reuse the same target-
+ * tenant-context substitution). updateOverrideReason() remains Staff-only — amending
+ * a rank-gate override's justification text is Instructor/Staff-exclusive by the
+ * same SKILL.md §9 reasoning bookClass() itself already applies to the override
+ * REASON field, so there is no Guardian case to build there at all, not a deferred
+ * one. Guardian-on-behalf-of Waitlist join/claim remains its own, separately-
+ * flagged follow-on — see WaitlistService's own header comment for why.
  *
  * RLS shape for Booking/BookingAttendee: the narrow "School Owner/Manager, or the
  * row's own Student, nobody else" shape (Decision 89), PLUS a second, additive,
@@ -36,8 +51,11 @@ export class BookingsService {
 
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
+    private readonly guardiansService: GuardiansService,
+    private readonly subscriptionGate: SubscriptionGateService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
@@ -46,30 +64,84 @@ export class BookingsService {
    * on-behalf-of shape. Gate order matches the Phase 11 kickoff prompt §1.b exactly:
    * waiver -> rank -> capacity, then Membership-credit selection, then the actual
    * create.
+   *
+   * Phase 40 added Guardian-on-behalf-of booking, the small follow-on Phase 37/38/39
+   * flagged as the true remaining prerequisite chain finally clears —
+   * selectAndConsumeMembership() below already keys purely off `studentId`, so it
+   * needed zero changes once a Guardian-managed minor could actually hold a
+   * Membership to spend (Phase 39).
+   *
+   * `cls` is looked up under the CALLER's own context first, same as before — this
+   * still succeeds unchanged for both ordinary self-booking and Staff-on-behalf-of,
+   * since both hold a RoleGrant at the School (Class's RLS requires one, any role).
+   * Only a Guardian caller (zero RoleGrant anywhere — Decision 92) fails that first
+   * lookup; the retry under the TARGET Student's own context is what a Staff caller
+   * already effectively relies on the target being enrolled for anyway, so this
+   * changes no existing behavior, only adds a fallback for the genuinely new case.
    */
-  async bookClass(callerId: string, classId: string, dto: BookClassDto) {
-    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+  /**
+   * `viaKidMode` (Decision 123) — set by BookingsController only when the
+   * caller's JWT itself carried a `kidMode` claim, after its own live
+   * `GuardiansService.assertBookingDelegationActive()` re-check already passed.
+   * Threaded through as a plain flag rather than this method re-deriving it
+   * from `callerId` alone, since a Kid-Mode token's `sub` is indistinguishable
+   * from an ordinary Guardian token's `sub` — same guardianId either way,
+   * exactly the point of reusing the existing on-behalf-of path unchanged.
+   */
+  async bookClass(callerId: string, classId: string, dto: BookClassDto, viaKidMode = false) {
+    const studentId = dto.studentId ?? callerId;
+    const isOnBehalfOf = dto.studentId !== undefined && dto.studentId !== callerId;
+
+    let cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    let isGuardianAction = false;
+    if (!cls && isOnBehalfOf) {
+      cls = await this.prismaApp.withTenantContext(studentId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+      isGuardianAction = cls !== null;
+    }
     if (!cls) {
       throw new NotFoundException('Class not found');
     }
+    // Hoisted to a local const — `cls` above is `let` (conditionally reassigned
+    // by the Guardian-retry branch), and TS narrowing from the guard above
+    // doesn't persist into the withTenantContext(...) closure below for a
+    // mutable binding, the same "narrowing doesn't cross a closure boundary
+    // for `let`" limitation MembershipsService.updatePlan() already found and
+    // worked around the same way (see its own comment on scopedClassIdToValidate).
+    const resolvedClass = cls;
 
-    const studentId = dto.studentId ?? callerId;
-    // FOUND ON REVIEW: `dto.studentId !== undefined` alone would wrongly flag an
-    // ordinary self-booking as a Staff action whenever a client happens to include
-    // its own caller id in the field (harmless but avoidably 403s a real Student) —
-    // only naming someone ELSE, or supplying an overrideReason, is actually a Staff
-    // action.
-    const isStaffAction = (dto.studentId !== undefined && dto.studentId !== callerId) || dto.overrideReason !== undefined;
-    if (isStaffAction) {
+    // FOUND ON REVIEW (Phase 11): `dto.studentId !== undefined` alone would wrongly
+    // flag an ordinary self-booking as a Staff action whenever a client happens to
+    // include its own caller id in the field (harmless but avoidably 403s a real
+    // Student) — only naming someone ELSE, or supplying an overrideReason, is
+    // actually a Staff action. `isGuardianAction` above already excludes the ordinary
+    // self-booking case (it's only ever set true when isOnBehalfOf is also true).
+    const isStaffAction = !isGuardianAction && (isOnBehalfOf || dto.overrideReason !== undefined);
+    if (isGuardianAction) {
+      // A Guardian may never also override — SKILL.md §9 reserves that to
+      // Instructor/Staff specifically, and Guardian is further still from Staff.
+      if (dto.overrideReason !== undefined) {
+        throw new ForbiddenException('A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.');
+      }
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    } else if (isStaffAction) {
       // A Student may never self-override or book on someone else's behalf — SKILL.md
       // §9: "An Instructor/Staff member can override", never the Student themselves.
-      await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId);
+      await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
     }
+    // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
+    // Bookings" is one of the three actions it explicitly names (Phase 54).
+    // Checked under `studentId`'s own RLS context, NOT `callerId`'s — a Guardian
+    // caller holds zero RoleGrant anywhere (Decision 92), so `callerId`'s own
+    // context would see nothing and silently no-op the check for exactly the
+    // on-behalf-of path that most needs it; `studentId` is guaranteed
+    // RLS-visible into this School the same way the actual Booking create()
+    // below already relies on (it also runs under `studentId`'s context).
+    await this.subscriptionGate.assertNotDegraded(studentId, resolvedClass.schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
-      if (cls.termsWaiverRequired) {
+      if (resolvedClass.termsWaiverRequired) {
         const signed = await tx.waiverSignature.findFirst({
-          where: { studentId, schoolId: cls.schoolId, status: 'SIGNED' },
+          where: { studentId, schoolId: resolvedClass.schoolId, status: 'SIGNED' },
           select: { id: true },
         });
         if (!signed) {
@@ -86,12 +158,12 @@ export class BookingsService {
       }
 
       if (!dto.overrideReason) {
-        await this.assertRankEligible(tx, studentId, cls);
+        await this.assertRankEligible(tx, studentId, resolvedClass);
       }
 
       const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];
       const partySize = 1 + attendeeMembershipIds.length;
-      if (cls.capacity !== null) {
+      if (resolvedClass.capacity !== null) {
         // FOUND ON REVIEW: a plain count()-then-compare here is a genuine TOCTOU
         // race — two concurrent bookClass() calls for the same Class can both read
         // the same pre-booking occupancy, both pass the capacity check, and both
@@ -105,14 +177,14 @@ export class BookingsService {
         // this codebase; flagged here rather than silently introduced.
         await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
         const occupied = await this.countOccupiedSeats(classId);
-        if (occupied + partySize > cls.capacity) {
+        if (occupied + partySize > resolvedClass.capacity) {
           throw new ConflictException(
             'This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist).',
           );
         }
       }
 
-      const sourceMembership = await this.selectAndConsumeMembership(tx, studentId, cls.schoolId, classId);
+      const sourceMembership = await this.selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, classId);
 
       const bookingId = randomUUID();
       try {
@@ -121,11 +193,12 @@ export class BookingsService {
             id: bookingId,
             studentId,
             classId,
-            schoolId: cls.schoolId,
-            branchId: cls.branchId,
+            schoolId: resolvedClass.schoolId,
+            branchId: resolvedClass.branchId,
             sourceMembershipId: sourceMembership.id,
             overriddenById: dto.overrideReason ? callerId : null,
             overrideReason: dto.overrideReason ?? null,
+            bookedViaKidMode: viaKidMode,
           },
         });
       } catch (err) {
@@ -149,9 +222,9 @@ export class BookingsService {
       // their OWN Membership) would need a real cross-account consent mechanism
       // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
       for (const membershipId of attendeeMembershipIds) {
-        const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, cls.schoolId, classId);
+        const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
         await tx.bookingAttendee.create({
-          data: { id: randomUUID(), bookingId, schoolId: cls.schoolId, membershipId: guestMembership.id },
+          data: { id: randomUUID(), bookingId, schoolId: resolvedClass.schoolId, membershipId: guestMembership.id },
         });
       }
 
@@ -161,21 +234,49 @@ export class BookingsService {
     });
   }
 
-  /** PATCH /bookings/{id}/cancel. Any caller (self or Staff) may cancel; Staff writes
-   * run under the target Student's own tenant context, same established mechanism. */
-  async cancelBooking(callerId: string, bookingId: string) {
-    const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
+  /**
+   * PATCH /bookings/{id}/cancel. Any caller (self, Staff, or — as of Phase 41 — a
+   * Guardian cancelling a linked minor's own Booking) may cancel; Staff/Guardian
+   * writes run under the target Student's own tenant context, same established
+   * mechanism.
+   *
+   * The initial lookup runs under the CALLER's own context first, unchanged for
+   * self-booking and Staff (Booking's broad `booking_staff_read` policy already lets
+   * any Staff role see the row directly, so a Staff caller never needed to name the
+   * Student up front). Only when that first lookup finds nothing does a Guardian's
+   * `dto.studentId` hint (CancelBookingDto's own comment) get a retry under that
+   * Student's own context — the same fallback shape bookClass() already established
+   * for Class visibility, applied here to Booking visibility instead. The actual
+   * authorization check afterward is always keyed off the row's own REAL
+   * `studentId` (whichever context actually found it), never trusted from
+   * `dto.studentId` directly.
+   */
+  async cancelBooking(callerId: string, bookingId: string, dto?: CancelBookingDto) {
+    let existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
     );
+    let isGuardianAction = false;
+    if (!existing && dto?.studentId !== undefined && dto.studentId !== callerId) {
+      existing = await this.prismaApp.withTenantContext(dto.studentId, (tx) =>
+        tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
+      );
+      isGuardianAction = existing !== null;
+    }
     if (!existing) {
       throw new NotFoundException('Booking not found');
     }
-    if (existing.studentId !== callerId) {
-      await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    // Hoisted to a local const — same "narrowing doesn't cross a closure boundary
+    // for a `let`" fix bookClass() already applies to its own `cls`/`resolvedClass`.
+    const resolvedBooking = existing;
+
+    if (isGuardianAction) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId);
+    } else if (resolvedBooking.studentId !== callerId) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
     }
 
-    const booking = await this.prismaApp.withTenantContext(existing.studentId, async (tx) => {
-      const cls = await tx.class.findUniqueOrThrow({ where: { id: existing.classId } });
+    const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
+      const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
       const now = new Date();
       // Kickoff prompt §1.c: refunds/credits back before the Class's own
       // refundFeeDate cutoff; withholds on/after it. No cutoff configured (null)
@@ -196,9 +297,9 @@ export class BookingsService {
       }
 
       if (resolution === 'REFUNDED') {
-        await this.restoreCredit(tx, existing.sourceMembershipId);
+        await this.restoreCredit(tx, resolvedBooking.sourceMembershipId);
       }
-      for (const attendee of existing.attendees) {
+      for (const attendee of resolvedBooking.attendees) {
         await tx.bookingAttendee.update({
           where: { id: attendee.id },
           data: { refundResolution: resolution, resolvedById: callerId },
@@ -283,75 +384,67 @@ export class BookingsService {
     };
   }
 
+  /**
+   * GET /classes/{id}/bookings — School Owner/Manager, Branch Staff, or Instructor
+   * (School Portal's own "who's booked into this Class" view). FOUND ON REVIEW
+   * (Phase 22, school-portal's own Booking admin screen): this endpoint never
+   * existed anywhere before, despite this phase's own `booking_staff_read` RLS
+   * policy (this migration's own header comment, §4 point 2) having been laid down
+   * specifically to support exactly this — a broad, SELECT-only Staff read,
+   * additive to Booking's own narrow owner-or-self policy. Completing that
+   * already-anticipated groundwork, not inventing new authorization shape.
+   */
+  async findAllForClass(callerId: string, classId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    // FOUND ON REVIEW: passes cls.branchId for defense-in-depth against a
+    // caller holding MULTIPLE RoleGrants at this School whose mismatched-Branch
+    // Staff grant would otherwise wrongly authorize them once some other grant
+    // of theirs has already let the Class row itself pass class_tenant_isolation
+    // (see assertStaffAtSchool's own comment — its header documents a case CI
+    // caught where this comment previously overstated what the check does: the
+    // common single-grant wrong-Branch case is already a 404 via RLS alone,
+    // before this line is ever reached).
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }),
+        cursor,
+        limit,
+      ),
+    );
+    // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
+    // Booking.student — an RLS-scoped include can silently fail to resolve the
+    // Student's own User row once their RoleGrant is revoked (e.g.
+    // GuardiansService.withdrawConsent's BASELINE cascade), even though this
+    // caller is fully authorized to see the Booking row itself. See
+    // resolveUserNames's own header comment.
+    const names = await resolveUserNames(this.prismaAuth, page.items.map((b) => b.studentId));
+    return {
+      ...page,
+      items: page.items.map((b) => ({
+        ...b,
+        // Falls back to '' only if the id genuinely doesn't resolve — not expected
+        // in practice (User rows are never hard-deleted in this codebase today),
+        // kept as defense-in-depth rather than a non-null assertion.
+        studentFirstName: names.get(b.studentId)?.firstName ?? '',
+        studentSurname: names.get(b.studentId)?.surname ?? '',
+      })),
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /** Rank gate (SKILL.md §9, quoted): "a Rank/stripe tier's eligibleClassTypes...
-   * governs which class types a Student may book, cumulative by ladder order."
-   *
-   * BRIDGING INFERENCE, not §9-confirmed — flagged prominently, recorded as Decision
-   * 90 (docs/decisions/POST-SPEC-55-DECISION-LOG.md): SKILL.md §4 itself flags that
-   * `Class.activities` and `Discipline` are "not formally reconciled into one
-   * controlled list." This method bridges them the only implementable way available
-   * without inventing a new reconciliation table: matching a Class's `activities`
-   * strings against `Discipline.name` at the same School. A Class whose activities
-   * don't match any Discipline has nothing to gate against and is silently allowed
-   * through (not a confirmed exemption — simply nothing to check). This means the
-   * rank gate is NOT reliably enforced for every Class, only for ones whose
-   * activities happen to name a real Discipline exactly — flagged for Architect
-   * confirmation, not asserted as a complete implementation of §9.
-   *
-   * "Cumulative by ladder order" is read as: every RankStripeTier belonging to a
-   * LOWER-ordered Rank in the same Discipline, PLUS every RankStripeTier at or below
-   * the Student's own current stripe-tier order within their CURRENT Rank — i.e. the
-   * full sequence of tiers the Student has already progressed through, not just their
-   * single current tier in isolation.
-   */
-  private async assertRankEligible(
-    tx: TenantTx,
-    studentId: string,
-    cls: { id: string; schoolId: string; activities: string[] },
-  ): Promise<void> {
-    if (cls.activities.length === 0) return;
-
-    const disciplines = await tx.discipline.findMany({ where: { schoolId: cls.schoolId, name: { in: cls.activities } } });
-    if (disciplines.length === 0) return;
-
-    const cumulativeEligible = new Set<string>();
-    for (const discipline of disciplines) {
-      const studentRank = await tx.studentRank.findUnique({
-        where: { studentId_disciplineId: { studentId, disciplineId: discipline.id } },
-        include: { currentRank: true, currentStripe: true },
-      });
-      if (!studentRank) {
-        throw new ForbiddenException(
-          `This Student has no Rank in the "${discipline.name}" Discipline required for this Class. A Staff member can override this per-Booking.`,
-        );
-      }
-
-      const tiers = await tx.rankStripeTier.findMany({
-        where: { rank: { disciplineId: discipline.id } },
-        include: { rank: true },
-      });
-      for (const tier of tiers) {
-        const passedLowerRank = tier.rank.order < studentRank.currentRank.order;
-        const passedCurrentRankTier =
-          tier.rank.order === studentRank.currentRank.order &&
-          studentRank.currentStripe !== null &&
-          tier.order <= studentRank.currentStripe.order;
-        if (passedLowerRank || passedCurrentRankTier) {
-          tier.eligibleClassTypes.forEach((t) => cumulativeEligible.add(t));
-        }
-      }
-    }
-
-    const uncovered = cls.activities.filter((a) => !cumulativeEligible.has(a));
-    if (uncovered.length > 0) {
-      throw new ForbiddenException(
-        `This Student's current Rank does not permit booking a Class with activities: ${uncovered.join(', ')}. A Staff member can override this per-Booking.`,
-      );
-    }
+  // Booking rank gate (SKILL.md §9, Decision 173): for each style the class
+  // lists, its class type must be open or unlocked by the student's rung or a
+  // rung below, as the school owner sets per rung. Replaces Decision 90's
+  // activities <-> Discipline.name bridge.
+  private async assertRankEligible(tx: TenantTx, studentId: string, cls: { styles: Prisma.JsonValue }): Promise<void> {
+    await assertBookingUnlocked(tx, studentId, cls, ' A Staff member can override this per-Booking.');
   }
 
   /** "A Class's Full status counts every attendee across all Bookings... including
@@ -450,11 +543,38 @@ export class BookingsService {
 
   private async restoreCredit(tx: TenantTx, membershipId: string): Promise<void> {
     const membership = await tx.membership.findUniqueOrThrow({ where: { id: membershipId } });
-    if (membership.classesRemaining !== null) {
-      await tx.membership.update({ where: { id: membershipId }, data: { classesRemaining: { increment: 1 } } });
+    if (membership.classesRemaining === null) {
+      // General-access (classesRemaining IS NULL) was never decremented at
+      // booking time — nothing to restore.
+      return;
     }
-    // General-access (classesRemaining IS NULL) was never decremented at booking
-    // time — nothing to restore.
+
+    // Decision 111 — frozen while this Membership's own purchase Transaction is
+    // under an active Stripe dispute (Decision 55's own confirmed "refund/
+    // credit-restore frozen while disputed" contract): giving back a class
+    // credit while the payment that funded it is contested risks the School
+    // delivering free value if the dispute is later lost. Only the
+    // credit-restore is frozen here, not the Booking cancellation itself —
+    // Decision 55's text freezes the money-adjacent action, not every Booking
+    // action.
+    //
+    // FLAGGED, not fully closed: this reads Transaction through the SAME
+    // tenant-scoped `tx` cancelBooking() already opened for the organizer
+    // (resolvedBooking.studentId) — correct for the organizer's own Membership,
+    // but transaction_school_staff_or_self's RLS policy only admits a
+    // Transaction row to School staff OR that Transaction's own studentId. For
+    // a GUEST's membership (the attendee.membershipId call site below, a
+    // genuinely different Student), this lookup can be silently RLS-blocked if
+    // the organizer isn't School staff at this School — a narrow, real gap not
+    // closed here (needs either a jobs-role read or a broadened RLS policy,
+    // out of this phase's own scope of freezing the two real call sites).
+    const disputedTransaction = await tx.transaction.findFirst({ where: { membershipId, status: 'DISPUTED' } });
+    if (disputedTransaction) {
+      this.logger.warn(`Membership ${membershipId}'s credit-restore skipped — its Transaction ${disputedTransaction.id} is under an active Stripe dispute (Decision 55/111).`);
+      return;
+    }
+
+    await tx.membership.update({ where: { id: membershipId }, data: { classesRemaining: { increment: 1 } } });
   }
 
   private isUniqueConstraintViolation(err: unknown): boolean {

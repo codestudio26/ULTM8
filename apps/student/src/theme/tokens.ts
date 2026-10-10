@@ -11,13 +11,14 @@
  *
  * CORRECTION: an earlier version of this file anchored the accent ramp on #1f5eff,
  * reasoning that Track B's own packages/ui/src/tokens.css (an ad hoc palette
- * predating this DESIGN.md) was "what's actually shipped." That was wrong — checked
- * against origin/docs/track-a-roadmap, whose packages/ui/src/tokens.css explicitly
- * implements THIS DESIGN.md ("implements DESIGN.md's concrete design system
- * (slate-blue + neutral ramps...)", its own header comment) with
- * --color-accent-500: #4a6b8a, an exact match. Track B's own tokens.css was simply
- * stale relative to Track A, not evidence the slate-blue spec was abandoned. Values
- * below are restored to match DESIGN.md/Track A's tokens.css exactly.
+ * predating this DESIGN.md) was "what's actually shipped." That was wrong — Track A
+ * did rebase onto a slate-blue accent (PR #61, 2026-09-20), confirming the direction
+ * here, but the specific hex values below were checked against a stale branch
+ * (`origin/docs/track-a-roadmap`) rather than current `master`'s own
+ * `packages/ui/src/tokens.css` — its real `--color-accent-500` is `#5d7081`, not
+ * `#4a6b8a`. Re-verified directly against `master`'s `packages/ui/src/tokens.css`
+ * during the Track B merge (2026-10-01) and corrected to match exactly; this file's
+ * own ramp had been a close but genuinely wrong approximation until now.
  *
  * `color-mix(in srgb, X p%, white)` tokens (bg-success/warning/danger) have no RN
  * equivalent — resolved here to their literal computed hex (verified via a Node
@@ -31,16 +32,16 @@
 /** Base ramps — DESIGN.md's `--color-accent-*`/`--color-neutral-*`/semantic tokens,
  * verified against Track A's packages/ui/src/tokens.css (see file header). */
 export const colors = {
-  accent50: '#f5f7fa',
-  accent100: '#e4ebf1',
-  accent200: '#c7d4e1',
-  accent300: '#9fb6cb',
-  accent400: '#7495b4',
-  accent500: '#4a6b8a',
-  accent600: '#3d5871',
-  accent700: '#30465a',
-  accent800: '#243442',
-  accent900: '#17212b',
+  accent50: '#fcfdfd',
+  accent100: '#edf0f2',
+  accent200: '#d3d9df',
+  accent300: '#afbbc5',
+  accent400: '#889aaa',
+  accent500: '#5d7081',
+  accent600: '#4d5d6b',
+  accent700: '#3e4b56',
+  accent800: '#2f3941',
+  accent900: '#20262c',
 
   neutral50: '#f9fafa',
   neutral100: '#f1f2f3',

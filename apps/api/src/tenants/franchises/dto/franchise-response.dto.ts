@@ -47,11 +47,33 @@ export class FranchiseResponseDto {
   @ApiProperty({ enum: FeeModelDto })
   feeModel!: FeeModelDto;
 
+  /** Self-service, Franchise-Owner-set — see create-franchise.dto.ts's own
+   * comment for the full account (Decision 99). Not `stripeMeterId`/
+   * `stripeUsagePriceId` — those are internal Stripe correlator ids with no
+   * direct caller action tied to them, deliberately not exposed here. */
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  flatFeeAmount!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  perHeadcountRate!: number | null;
+
   @ApiProperty()
   createdAt!: string;
 
   @ApiProperty()
   updatedAt!: string;
+
+  /** Phase 56/57 (Decision 110) — same reasoning as SchoolResponseDto's own
+   * identical trio (no explicit `select` anywhere this DTO is built from, so
+   * these were already returned at runtime; this just types them). */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  archivedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  purgeAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  purgedAt!: string | null;
 
   /**
    * Present only on the response from POST /franchises (self-service creation) — same

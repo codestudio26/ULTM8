@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -9,6 +9,10 @@ import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { SchoolListResponseDto, SchoolResponseDto } from './dto/school-response.dto';
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
+import { JoinSchoolDto } from './dto/join-school.dto';
+import { JoinFranchiseDto } from './dto/join-franchise.dto';
+import { StudentListResponseDto } from './dto/student-summary-response.dto';
+import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -45,9 +49,37 @@ export class SchoolsController {
     return this.schoolsService.update(user.sub, id, dto);
   }
 
+  /** The Student roster — Staff-only, see SchoolsService.findAllStudentsForSchool. */
+  @ApiOkResponse({ type: StudentListResponseDto })
+  @Get(':id/students')
+  findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.findAllStudentsForSchool(user.sub, id);
+  }
+
+  /** School Owner/Manager only — assign or change a student's home branch
+   * (Decisions 148, 168). */
+  @ApiOkResponse({ type: StudentHomeBranchResponseDto })
+  @Put(':id/students/:studentId/home-branch')
+  setStudentHomeBranch(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Body() dto: SetHomeBranchDto,
+  ) {
+    return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
+  }
+
   @ApiCreatedResponse({ type: JoinSchoolResponseDto })
   @Post(':id/join')
-  join(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.schoolsService.join(user.sub, id);
+  join(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinSchoolDto) {
+    return this.schoolsService.join(user.sub, id, dto);
+  }
+
+  /** School Owner/Manager only — see SchoolsService.joinFranchise's own header
+   * comment for the full "narrow, one-way only" account (Phase 16b-i, Decision 98). */
+  @ApiCreatedResponse({ type: SchoolResponseDto })
+  @Post(':id/join-franchise')
+  joinFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinFranchiseDto) {
+    return this.schoolsService.joinFranchise(user.sub, id, dto.franchiseId);
   }
 }

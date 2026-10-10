@@ -54,7 +54,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   let branchA2: { id: string };
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
-  let grantedSchoolWide: { id: string };
+  let grantedSchoolWide: { id: string; email: string };
   let grantedSchoolWide2: { id: string };
   let grantedSchoolWide3: { id: string };
   let grantedBranchA2: { id: string };
@@ -87,7 +87,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
         data: {
           id: randomUUID(),
           email: `instructors-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -195,7 +195,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-school-b-instructor-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'SchoolB',
         surname: 'Instructor',
         passcodeHash: 'x',
@@ -248,6 +248,56 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       .send({ bio: 'Updated by owner A' });
     expect(patchRes.status).toBe(200);
     expect(patchRes.body.bio).toBe('Updated by owner A');
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET .../instructors (the roster list) resolves a real name per profile — and
+  // keeps resolving it even after the profiled User's own RoleGrant is revoked,
+  // proving this uses PrismaAuthService (Decision 117's pattern), not a plain
+  // RLS-scoped `include` that user_self_or_shared_school could silently break.
+  // ---------------------------------------------------------------------------
+
+  it('roster list resolves a real name per profile, and keeps resolving it after the RoleGrant is revoked', async () => {
+    const nameUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-name-resolution-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'NameResolution',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const nameGrant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'INSTRUCTOR', userId: nameUser.id, schoolId: schoolA.id },
+    });
+
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(profileBody(nameUser.id));
+    expect(createRes.status).toBe(201);
+    instructorIds.push(createRes.body.id);
+
+    async function fetchProfile() {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolA.id}/instructors`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(res.status).toBe(200);
+      return res.body.items.find((i: { id: string }) => i.id === createRes.body.id);
+    }
+
+    const before = await fetchProfile();
+    expect(before.firstName).toBe('NameResolution');
+    expect(before.surname).toBe('Tenant');
+
+    await superuser.roleGrant.update({ where: { id: nameGrant.id }, data: { revokedAt: new Date() } });
+
+    const after = await fetchProfile();
+    expect(after.firstName).toBe('NameResolution');
+    expect(after.surname).toBe('Tenant');
   });
 
   // ---------------------------------------------------------------------------
@@ -309,7 +359,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-branch-or-wide-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'BranchOr',
         surname: 'SchoolWide',
         passcodeHash: 'x',
@@ -320,7 +370,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-branch-or-a1-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'BranchOr',
         surname: 'A1',
         passcodeHash: 'x',
@@ -331,7 +381,7 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `instructors-http-branch-or-a2-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'BranchOr',
         surname: 'A2',
         passcodeHash: 'x',
@@ -407,5 +457,140 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
 
     const unchanged = await superuser.instructor.findUniqueOrThrow({ where: { id: created.body.id } });
     expect(unchanged.specializations).toEqual(['BJJ']); // update was rejected, not partially applied
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET .../instructors/eligible-users (Decision 115) — the candidate pool for
+  // InstructorFormModal's picker: Users holding an active INSTRUCTOR RoleGrant at
+  // this School, i.e. exactly who assertValidInstructor would accept for create().
+  // ---------------------------------------------------------------------------
+
+  it('School Owner sees every active INSTRUCTOR RoleGrant holder at their School, and no one else', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.items.map((u: { id: string }) => u.id);
+    // Every School-scoped or Branch-scoped INSTRUCTOR grant holder fixtured in
+    // beforeAll — regardless of whether a profile was ever created for them.
+    expect(ids).toContain(grantedSchoolWide.id);
+    expect(ids).toContain(grantedSchoolWide2.id);
+    expect(ids).toContain(grantedSchoolWide3.id);
+    expect(ids).toContain(grantedBranchA2.id);
+    // `ungranted` has no RoleGrant at all; the caller (a SCHOOL_OWNER_MANAGER, not an
+    // INSTRUCTOR) shouldn't show up as their own candidate either.
+    expect(ids).not.toContain(ungranted.id);
+    expect(ids).not.toContain(ownerA.id);
+
+    const match = res.body.items.find((u: { id: string }) => u.id === grantedSchoolWide.id);
+    expect(match.firstName).toBe('granted-school-wide');
+    expect(match.surname).toBe('Tenant');
+    expect(match.email).toBe(grantedSchoolWide.email);
+  });
+
+  it('excludes a User whose INSTRUCTOR RoleGrant has been revoked', async () => {
+    const revokedUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-revoked-instructor-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Revoked',
+        surname: 'Instructor',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: {
+        id: randomUUID(),
+        role: 'INSTRUCTOR',
+        userId: revokedUser.id,
+        schoolId: schoolA.id,
+        revokedAt: new Date(),
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.items.map((u: { id: string }) => u.id);
+    expect(ids).not.toContain(revokedUser.id);
+    // The still-active grants from the previous test remain visible — proves this is
+    // a real revokedAt filter, not an empty/broken query.
+    expect(ids).toContain(grantedSchoolWide.id);
+  });
+
+  it('Branch Staff cannot list eligible Instructor candidates (School Owner only, narrower than the roster read)', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenBranchStaffA1}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('cannot list another tenant\'s eligible Instructor candidates', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors/eligible-users`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(404);
+  });
+  it('specialisations are picked from the School\'s styles when it has any; free text otherwise (Decision 152)', async () => {
+    const schoolS = await superuser.school.create({ data: { id: randomUUID(), name: 'Instructors HTTP Styles School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: schoolS.id } });
+    const tokenOwnerS = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolS.id, branchId: null }]);
+    const bjj = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'BJJ' } });
+    const judo = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'Judo' } });
+    const foreign = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolB.id, name: 'Other BJJ' } });
+    const coachUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-styles-coach-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Styles',
+        surname: 'Coach',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1990-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: coachUser.id, schoolId: schoolS.id } });
+    try {
+      const create = (body: Record<string, unknown>) =>
+        request(app.getHttpServer()).post(`/v1/schools/${schoolS.id}/instructors`).set('Authorization', `Bearer ${tokenOwnerS}`).send(profileBody(coachUser.id, body));
+
+      expect((await create({ specializations: ['BJJ'] })).status).toBe(400); // free text in a School with styles
+      expect((await create({ specializationStyleIds: [foreign.id] })).status).toBe(400); // another School's style
+      expect((await create({ specializationStyleIds: [bjj.id, bjj.id] })).status).toBe(400); // listed twice
+      expect(await superuser.instructor.count({ where: { schoolId: schoolS.id } })).toBe(0);
+
+      const created = await create({ specializationStyleIds: [bjj.id, judo.id] });
+      expect(created.status).toBe(201);
+      expect(created.body.specializationStyleIds).toEqual([bjj.id, judo.id]);
+      expect(created.body.specializations).toEqual(['BJJ', 'Judo']); // names, for display
+
+      const patch = (body: Record<string, unknown>) =>
+        request(app.getHttpServer()).patch(`/v1/instructors/${created.body.id}`).set('Authorization', `Bearer ${tokenOwnerS}`).send(body);
+      const kept = await patch({ bio: 'Updated' });
+      expect(kept.status).toBe(200);
+      expect(kept.body.specializationStyleIds).toEqual([bjj.id, judo.id]);
+      expect((await patch({ specializationStyleIds: null })).status).toBe(400);
+      const narrowed = await patch({ specializationStyleIds: [judo.id] });
+      expect(narrowed.status).toBe(200);
+      expect([narrowed.body.specializationStyleIds, narrowed.body.specializations]).toEqual([[judo.id], ['Judo']]);
+      const cleared = await patch({ specializationStyleIds: [] });
+      expect([cleared.body.specializationStyleIds, cleared.body.specializations]).toEqual([[], []]);
+
+      // School A has no styles: free text as before, style ids refused.
+      const noStyles = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolA.id}/instructors`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`)
+        .send(profileBody(coachUser.id, { specializationStyleIds: [bjj.id] }));
+      expect(noStyles.status).toBe(400);
+    } finally {
+      await superuser.instructor.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.discipline.deleteMany({ where: { id: { in: [bjj.id, judo.id, foreign.id] } } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.school.delete({ where: { id: schoolS.id } });
+    }
   });
 });

@@ -34,9 +34,18 @@ services:
   - name: ultm8-redis
     type: keyvalue
     plan: free
-    ipAllowList:
-      - source: 0.0.0.0/0
-        description: allow all (Render Key Value requires an explicit allow list; the API service reaches it over Render's private network regardless)
+    # FOUND ON REVIEW: `ipAllowList` is mandatory on a Key Value service (Render
+    # rejects the Blueprint without it), but an empty list is a valid value —
+    # verified against Render's own docs — and is the recommended setting for
+    # exactly this case ("No external access (internal only)"). The previous
+    # `0.0.0.0/0` entry wasn't a required workaround for the mandatory-field
+    # rule, it was the widest possible public exposure: it let anyone on the
+    # internet attempt a connection using the leaked connection string, not
+    # just Render's own private network. `ultm8-api` still reaches this over
+    # the private network regardless, via REDIS_URL/fromService below — that
+    # part of the original comment was correct, it just drew the wrong
+    # conclusion from it.
+    ipAllowList: []
 
   - name: ultm8-api
     type: web

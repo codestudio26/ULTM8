@@ -5,7 +5,9 @@ import { ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { spacing, fontSize, fontWeight } from '../theme/tokens';
 import { ConsentTierRow } from './ConsentTierRow';
+import { BookingDelegationRow } from './BookingDelegationRow';
 import { useMyConsentRecords } from './guardianQueries';
+import { useMyBookingDelegations } from './bookingDelegationQueries';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MinorConsent'>;
@@ -16,9 +18,13 @@ type Props = NativeStackScreenProps<AppStackParamList, 'MinorConsent'>;
  * granted. */
 export function MinorConsentScreen({ route }: Props) {
   const { studentId, name } = route.params;
-  const { data, isLoading, isError, error } = useMyConsentRecords();
+  const consent = useMyConsentRecords();
+  const delegations = useMyBookingDelegations();
 
-  if (isLoading) {
+  // Gated on BOTH queries settling, not just consent's own — same discipline
+  // Slice 6a's own review fixed for Waivers/signatures (a screen gating on only
+  // one of two related queries can flash a wrong initial state for the other).
+  if (consent.isLoading || delegations.isLoading) {
     return (
       <Screen>
         <ActivityIndicator />
@@ -26,21 +32,24 @@ export function MinorConsentScreen({ route }: Props) {
     );
   }
 
-  // FOUND ON REVIEW: checking `isError` before `data` (same class of bug fixed
-  // across every other screen this session) replaced already-loaded consent
-  // status with a full-screen error the moment any background refetch
-  // failed. Only block on the error when there's genuinely nothing cached.
-  if (isError && !data) {
+  // FOUND ON REVIEW (ConsentTierRow's own precedent): checking `isError` before
+  // `data` would replace already-loaded status with a full-screen error the
+  // moment any background refetch failed. Only block when there's genuinely
+  // nothing cached for either query.
+  if ((consent.isError && !consent.data) || (delegations.isError && !delegations.data)) {
     return (
       <Screen>
-        <ErrorBanner message={getApiErrorMessage(error, 'Failed to load consent records — please try again.')} />
+        <ErrorBanner
+          message={getApiErrorMessage(consent.error ?? delegations.error, 'Failed to load this minor\'s settings — please try again.')}
+        />
       </Screen>
     );
   }
 
   const activeByTier = new Map(
-    (data?.items ?? []).filter((r) => r.studentId === studentId && r.status === 'ACTIVE').map((r) => [r.tier, r]),
+    (consent.data?.items ?? []).filter((r) => r.studentId === studentId && r.status === 'ACTIVE').map((r) => [r.tier, r]),
   );
+  const activeDelegation = (delegations.data?.items ?? []).find((d) => d.studentId === studentId && d.status === 'ACTIVE');
 
   return (
     <Screen>
@@ -48,6 +57,7 @@ export function MinorConsentScreen({ route }: Props) {
         <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, marginBottom: spacing[4] }}>{name}</Text>
         <ConsentTierRow studentId={studentId} tier="BASELINE" record={activeByTier.get('BASELINE')} />
         <ConsentTierRow studentId={studentId} tier="CAMERA" record={activeByTier.get('CAMERA')} />
+        <BookingDelegationRow studentId={studentId} delegation={activeDelegation} />
       </ScrollView>
     </Screen>
   );

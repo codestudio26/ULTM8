@@ -1,9 +1,12 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { resolveInstructorSpecializations } from './instructor-specializations';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
+import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
-import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { cursorPaginate } from '../common/pagination/cursor-paginate';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
 
@@ -11,6 +14,7 @@ import { UpdateInstructorDto } from './dto/update-instructor.dto';
 export class InstructorsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
   ) {}
@@ -27,6 +31,8 @@ export class InstructorsService {
   async create(callerId: string, schoolId: string, dto: CreateInstructorDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     if (dto.branchId) {
       await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
@@ -50,38 +56,72 @@ export class InstructorsService {
     }
 
     const instructorId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.instructor.create({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const specs = await resolveInstructorSpecializations(tx, schoolId, dto.specializationStyleIds, dto.specializations);
+      return tx.instructor.create({
         data: {
           id: instructorId,
           userId: dto.userId,
           schoolId,
           branchId: dto.branchId,
           photoUrl: dto.photoUrl,
-          beltRanking: dto.beltRanking,
-          specializations: dto.specializations ?? [],
+          specializations: specs?.specializations ?? [],
+          specializationStyleIds: specs?.specializationStyleIds ?? [],
           phone: dto.phone,
           yearsOfExperience: dto.yearsOfExperience,
           bio: dto.bio,
         },
-      }),
-    );
+      });
+    });
   }
 
   /** Profiles visible to the caller under one School — RLS restricts this to a School-
    * level grant (sees every profile, any Branch) or a Branch-scoped grant (their own
    * Branch's profiles plus School-wide ones — instructor_tenant_isolation, this
-   * phase's migration; same three-way structure as class_tenant_isolation). */
-  async findAllForSchool(
-    callerId: string,
-    schoolId: string,
-    cursor?: string,
-    limit?: number,
-  ): Promise<CursorPage<{ id: string }>> {
+   * phase's migration; same three-way structure as class_tenant_isolation).
+   *
+   * Names are resolved via PrismaAuthService/resolveUserNames (Decision 117's
+   * pattern), not a Prisma `include` on `user` — closes the same real, verified gap
+   * Decision 117 found for Bookings/Waitlist/RoleGrant/Transactions: this endpoint's
+   * own list of profiles is exactly where InstructorsPage's Name column and every
+   * other page reusing this same hook (Classes, Timetable) look up an Instructor's
+   * display name, and none of them had one to show before this. */
+  async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.instructor.findMany({ ...args, where: { schoolId } }), cursor, limit),
     );
+    const names = await resolveUserNames(
+      this.prismaAuth,
+      page.items.map((i) => i.userId),
+    );
+    return {
+      ...page,
+      items: page.items.map((i) => ({
+        ...i,
+        firstName: names.get(i.userId)?.firstName ?? '',
+        surname: names.get(i.userId)?.surname ?? '',
+      })),
+    };
+  }
+
+  /** Candidate pool for InstructorFormModal's picker (Decision 115) — Users holding an
+   * active INSTRUCTOR RoleGrant at this School, i.e. exactly who assertValidInstructor
+   * would accept for a create() call here. School Owner/Manager only, same gate as
+   * create(). Deliberately unpaginated (bounded by realistic Instructor headcount) and
+   * hardcoded to INSTRUCTOR — no generic role param, since this is the only consumer. */
+  async findEligibleInstructorUsers(callerId: string, schoolId: string) {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { schoolId, role: 'INSTRUCTOR', revokedAt: null },
+        distinct: ['userId'],
+        select: { user: { select: { id: true, firstName: true, surname: true, email: true } } },
+      }),
+    );
+    return { items: grants.map((g) => g.user) };
   }
 
   async findOne(callerId: string, instructorId: string) {
@@ -105,6 +145,8 @@ export class InstructorsService {
     // exactly the shape this method needs.
     const existing = await this.findOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
 
     const nextBranchId = dto.branchId !== undefined ? dto.branchId : existing.branchId;
 
@@ -130,21 +172,26 @@ export class InstructorsService {
     if (dto.specializations === null) {
       throw new BadRequestException('specializations cannot be null — send [] to clear it, or omit the field to leave it unchanged.');
     }
+    if ((dto as { specializationStyleIds?: unknown }).specializationStyleIds === null) {
+      throw new BadRequestException('specializationStyleIds cannot be null — send [] to clear it, or omit the field to leave it unchanged.');
+    }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.instructor.update({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Replaced when sent, kept when omitted (Decision 152).
+      const specs = await resolveInstructorSpecializations(tx, existing.schoolId, dto.specializationStyleIds, dto.specializations);
+      return tx.instructor.update({
         where: { id: instructorId },
         data: {
           branchId: dto.branchId,
           photoUrl: dto.photoUrl,
-          beltRanking: dto.beltRanking,
-          specializations: dto.specializations,
+          specializations: specs?.specializations,
+          specializationStyleIds: specs?.specializationStyleIds,
           phone: dto.phone,
           yearsOfExperience: dto.yearsOfExperience,
           bio: dto.bio,
         },
-      }),
-    );
+      });
+    });
   }
 
   // No delete endpoint — same "general tenant offboarding is [UNRESOLVED]" reasoning as

@@ -1,0 +1,293 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Work+Sans:wght@400;500;600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Work Sans", ui-sans-serif, system-ui, sans-serif; background: oklch(98% 0.004 95); color: oklch(22% 0.01 95); }
+    h1, h2, h3 { font-family: "Manrope", ui-sans-serif, system-ui, sans-serif; margin: 0; }
+    button { font-family: inherit; cursor: pointer; }
+  </style>
+</helmet>
+
+<div style="display:flex; width:1440px; min-height:1160px; background:oklch(98% 0.004 95);">
+
+  <div style="width:236px; flex:0 0 236px; background:oklch(19% 0.02 265); display:flex; flex-direction:column; padding:20px 14px; gap:2px;">
+    <div style="display:flex; align-items:center; gap:10px; padding:6px 10px 22px 10px;">
+      <div style="width:30px; height:30px; border-radius:8px; background:{{accent}}; display:flex; align-items:center; justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(19% 0.02 265)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>
+      </div>
+      <div style="font-family:'Manrope'; font-weight:800; font-size:16px; color:oklch(96% 0.01 265); letter-spacing:-0.01em;">Dojo<span style="color:{{accent}};">HQ</span></div>
+    </div>
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:oklch(50% 0.02 265); text-transform:uppercase; padding:12px 10px 6px;">Workspace</div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Dashboard</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Students</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Attendance</span></div>
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:oklch(50% 0.02 265); text-transform:uppercase; padding:16px 10px 6px;">Grading</div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Styles &amp; Ranks</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Skill Library</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; background:oklch(27% 0.03 265); color:oklch(97% 0.01 265);"><span style="font-size:13.5px; font-weight:600;">Grading Events</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Settings</span></div>
+  </div>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; flex:0 0 60px; border-bottom:1px solid oklch(90% 0.006 95); display:flex; align-items:center; padding:0 28px; background:oklch(100% 0 0);">
+      <div style="font-size:13px; color:oklch(48% 0.012 95); display:flex; align-items:center; gap:6px;">
+        <span>Grading</span><span style="opacity:0.5;">/</span><span style="color:oklch(22% 0.01 95); font-weight:600;">Grading Events</span>
+      </div>
+    </div>
+
+    <div style="padding:28px; display:flex; flex-direction:column; gap:20px; flex:1;">
+
+      <sc-if value="{{showList}}" hint-placeholder-val="{{true}}">
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+          <div>
+            <h1 style="font-size:22px; font-weight:800; letter-spacing:-0.01em;">Grading Events</h1>
+            <div style="font-size:13.5px; color:oklch(48% 0.012 95); margin-top:4px;">Schedule a group grading day, invite eligible students, and record results for the whole cohort.</div>
+          </div>
+          <button onClick="{{toggleSchedule}}" style="display:flex; align-items:center; gap:8px; background:{{accent}}; border:none; color:oklch(19% 0.02 265); font-weight:700; font-size:13.5px; padding:10px 16px; border-radius:9px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Schedule Event
+          </button>
+        </div>
+
+        <sc-if value="{{scheduleOpen}}" hint-placeholder-val="{{false}}">
+        <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:14px; padding:22px; display:flex; flex-direction:column; gap:18px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h3 style="font-size:16px; font-weight:700;">Schedule a Grading Event</h3>
+            <button onClick="{{toggleSchedule}}" style="background:none; border:none; color:oklch(48% 0.012 95);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:14px;">
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">Date</div>
+              <div style="border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:10px 12px; font-size:13.5px;">Sat, 21 Nov 2026</div>
+            </div>
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">Venue</div>
+              <div style="border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:10px 12px; font-size:13.5px;">Riverside — Main Mat</div>
+            </div>
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">Style &amp; rank tier</div>
+              <div style="border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:10px 12px; font-size:13.5px;">BJJ — Blue → Purple Belt</div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button onClick="{{toggleFee}}" style="width:38px; height:22px; border-radius:999px; border:none; background:{{feeTrackBg}}; position:relative; padding:2px;">
+                <div style="width:18px; height:18px; border-radius:999px; background:oklch(100% 0 0); transform:{{feeKnobShift}}; transition:transform .1s;"></div>
+              </button>
+              <span style="font-size:13px; font-weight:600;">Charge a grading fee</span>
+              <span style="font-size:11px; color:oklch(48% 0.012 95);">(controlled by your school's Grading Settings)</span>
+            </div>
+            <sc-if value="{{feeOn}}" hint-placeholder-val="{{true}}">
+            <div style="margin-top:10px; display:flex; align-items:center; gap:10px;">
+              <div style="border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:9px 12px; font-size:13.5px; font-weight:600; width:100px;">$35.00</div>
+              <span style="font-size:12px; color:oklch(48% 0.012 95);">per participating student, added to their account</span>
+            </div>
+            </sc-if>
+          </div>
+
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95);">Participants</div>
+              <span style="font-size:11px; color:oklch(48% 0.012 95);">Eligible students are pre-checked — add anyone else manually</span>
+            </div>
+            <div style="border:1px solid oklch(92% 0.006 95); border-radius:10px; overflow:hidden;">
+              <sc-for list="{{invitees}}" as="inv" hint-placeholder-count="5">
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid oklch(95% 0.006 95);">
+                  <button onClick="{{inv.toggle}}" style="width:18px; height:18px; border-radius:5px; border:1.5px solid {{inv.checkBorder}}; background:{{inv.checkBg}}; display:flex; align-items:center; justify-content:center; padding:0;">
+                    <sc-if value="{{inv.checked}}" hint-placeholder-val="{{true}}">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(100% 0 0)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </sc-if>
+                  </button>
+                  <div style="width:26px; height:26px; border-radius:999px; background:oklch(90% 0.006 95);"></div>
+                  <span style="font-size:13.5px; font-weight:500; flex:1;">{{inv.name}}</span>
+                  <span style="font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; background:{{inv.badgeBg}}; color:{{inv.badgeColor}};">{{inv.badge}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button onClick="{{toggleSchedule}}" style="background:none; border:1px solid oklch(85% 0.008 95); color:oklch(30% 0.012 95); font-weight:600; font-size:13px; padding:9px 16px; border-radius:9px;">Cancel</button>
+            <button style="background:{{accent}}; border:none; color:oklch(19% 0.02 265); font-weight:700; font-size:13px; padding:9px 18px; border-radius:9px;">Create event</button>
+          </div>
+        </div>
+        </sc-if>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <sc-for list="{{events}}" as="ev" hint-placeholder-count="3">
+            <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:12px; padding:16px 18px; display:flex; align-items:center; gap:16px;">
+              <div style="width:52px; height:52px; border-radius:10px; background:oklch(96% 0.006 95); display:flex; flex-direction:column; align-items:center; justify-content:center; flex:0 0 auto;">
+                <div style="font-size:10px; font-weight:700; color:oklch(50% 0.012 95); text-transform:uppercase;">{{ev.month}}</div>
+                <div style="font-size:17px; font-weight:800;">{{ev.day}}</div>
+              </div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:14px; font-weight:700;">{{ev.title}}</div>
+                <div style="font-size:12px; color:oklch(48% 0.012 95); margin-top:2px;">{{ev.venue}} · {{ev.count}} participants</div>
+              </div>
+              <span style="font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; background:{{ev.statusBg}}; color:{{ev.statusColor}};">{{ev.status}}</span>
+              <button onClick="{{ev.view}}" style="background:none; border:1px solid oklch(85% 0.008 95); color:oklch(30% 0.012 95); font-weight:600; font-size:12.5px; padding:8px 14px; border-radius:8px;">{{ev.viewLabel}}</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- RUN EVENT VIEW -->
+      <sc-if value="{{showRun}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button onClick="{{backToList}}" style="background:none; border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:7px; display:flex;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(30% 0.012 95)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div>
+            <h1 style="font-size:20px; font-weight:800;">{{runEvent.title}}</h1>
+            <div style="font-size:12.5px; color:oklch(48% 0.012 95); margin-top:2px;">{{runEvent.date}} · {{runEvent.venue}} · {{runEvent.count}} participants</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:12px; overflow:hidden;">
+          <sc-for list="{{participants}}" as="p" hint-placeholder-count="4">
+            <div style="border-bottom:1px solid oklch(95% 0.006 95); padding:14px 18px; display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:32px; height:32px; border-radius:999px; background:oklch(90% 0.006 95); flex:0 0 auto;"></div>
+                <span style="font-size:13.5px; font-weight:600; flex:1;">{{p.name}}</span>
+                <div style="display:flex; gap:6px;">
+                  <button onClick="{{p.pass}}" style="border:1.5px solid {{p.passBorder}}; background:{{p.passBg}}; color:{{p.passColor}}; font-weight:700; font-size:12.5px; padding:7px 14px; border-radius:8px;">Pass</button>
+                  <button onClick="{{p.fail}}" style="border:1.5px solid {{p.failBorder}}; background:{{p.failBg}}; color:{{p.failColor}}; font-weight:700; font-size:12.5px; padding:7px 14px; border-radius:8px;">Fail</button>
+                </div>
+              </div>
+              <sc-if value="{{p.showRetry}}" hint-placeholder-val="{{false}}">
+              <div style="margin-left:46px; background:oklch(96% 0.03 25); border-radius:8px; padding:12px 14px; display:flex; gap:16px; align-items:flex-end;">
+                <div>
+                  <div style="font-size:11px; font-weight:600; color:oklch(40% 0.15 25); margin-bottom:5px;">Extended window</div>
+                  <div style="border:1px solid oklch(80% 0.06 25); background:oklch(100% 0 0); border-radius:7px; padding:7px 10px; font-size:12.5px; font-weight:600; width:80px; text-align:center;">45 days</div>
+                </div>
+                <div>
+                  <div style="font-size:11px; font-weight:600; color:oklch(40% 0.15 25); margin-bottom:5px;">New target</div>
+                  <div style="border:1px solid oklch(80% 0.06 25); background:oklch(100% 0 0); border-radius:7px; padding:7px 10px; font-size:12.5px; font-weight:600; width:80px; text-align:center;">20 classes</div>
+                </div>
+                <div style="font-size:11px; color:oklch(40% 0.15 25); max-width:260px;">Progress already earned is kept — this just sets the retry goal.</div>
+              </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end;">
+          <button style="background:{{accent}}; border:none; color:oklch(19% 0.02 265); font-weight:700; font-size:13.5px; padding:10px 20px; border-radius:9px;">Complete event — bulk-promote passes</button>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"oklch(72% 0.15 75)","options":["oklch(72% 0.15 75)","oklch(70% 0.13 200)","oklch(64% 0.15 148)","oklch(60% 0.15 300)"]}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      view: 'list',
+      scheduleOpen: false,
+      feeOn: true,
+      invite: { alex: true, jamie: true, sam: false, priya: true, noah: false },
+      results: { mia: null, theo: null, kai: 'fail', ren: null },
+      selectedEventId: 'autumn'
+    };
+  }
+  toggleSchedule = () => this.setState({ scheduleOpen: !this.state.scheduleOpen });
+  toggleFee = () => this.setState({ feeOn: !this.state.feeOn });
+  backToList = () => this.setState({ view: 'list' });
+  viewEvent = (id) => this.setState({ view: 'run', selectedEventId: id });
+
+  renderVals() {
+    const accent = this.props.accent ?? 'oklch(72% 0.15 75)';
+
+    const inviteDefs = [
+      { id: 'alex', name: 'Alex Chen', badge: 'ELIGIBLE' },
+      { id: 'jamie', name: 'Jamie Ortiz', badge: 'ELIGIBLE' },
+      { id: 'priya', name: 'Priya Nair', badge: 'ELIGIBLE' },
+      { id: 'sam', name: 'Sam Boateng', badge: 'IN PROGRESS' },
+      { id: 'noah', name: 'Noah Kim', badge: 'ADDED MANUALLY' }
+    ];
+    const invitees = inviteDefs.map(i => {
+      const checked = !!this.state.invite[i.id];
+      const eligible = i.badge !== 'IN PROGRESS';
+      return {
+        ...i,
+        checked,
+        checkBg: checked ? accent : 'oklch(100% 0 0)',
+        checkBorder: checked ? accent : 'oklch(80% 0.008 95)',
+        badgeBg: eligible ? 'oklch(94% 0.04 148)' : 'oklch(96% 0.02 90)',
+        badgeColor: eligible ? 'oklch(32% 0.1 148)' : 'oklch(45% 0.1 90)',
+        toggle: () => this.setState({ invite: { ...this.state.invite, [i.id]: !checked } })
+      };
+    });
+
+    const eventDefs = [
+      { id: 'autumn', month: 'Nov', day: '21', title: 'Autumn Grading Day — BJJ Blue → Purple', date: '21 Nov 2026', venue: 'Riverside — Main Mat', count: 6, status: 'SCHEDULED', statusBg: 'oklch(95% 0.03 75)', statusColor: 'oklch(45% 0.12 75)', viewLabel: 'Run event' },
+      { id: 'summer', month: 'Aug', day: '09', title: 'Summer Grading Day — BJJ White → Blue', date: '9 Aug 2026', venue: 'Riverside — Main Mat', count: 9, status: 'COMPLETED', statusBg: 'oklch(94% 0.04 148)', statusColor: 'oklch(32% 0.1 148)', viewLabel: 'View results' },
+      { id: 'spring', month: 'May', day: '17', title: 'Spring Grading Day — Kickboxing', date: '17 May 2026', venue: 'Riverside — Studio B', count: 5, status: 'COMPLETED', statusBg: 'oklch(94% 0.04 148)', statusColor: 'oklch(32% 0.1 148)', viewLabel: 'View results' }
+    ];
+    const events = eventDefs.map(ev => ({ ...ev, view: () => this.viewEvent(ev.id) }));
+    const runEvent = eventDefs.find(ev => ev.id === this.state.selectedEventId) || eventDefs[0];
+
+    const participantDefs = [
+      { id: 'mia', name: 'Mia Alvarez' },
+      { id: 'theo', name: 'Theo Brandt' },
+      { id: 'kai', name: 'Kai Sato' },
+      { id: 'ren', name: 'Ren Okafor' }
+    ];
+    const participants = participantDefs.map(p => {
+      const r = this.state.results[p.id];
+      const passOn = r === 'pass';
+      const failOn = r === 'fail';
+      return {
+        ...p,
+        passBorder: passOn ? 'oklch(64% 0.15 148)' : 'oklch(85% 0.008 95)',
+        passBg: passOn ? 'oklch(94% 0.04 148)' : 'oklch(100% 0 0)',
+        passColor: passOn ? 'oklch(32% 0.1 148)' : 'oklch(40% 0.012 95)',
+        failBorder: failOn ? 'oklch(58% 0.19 25)' : 'oklch(85% 0.008 95)',
+        failBg: failOn ? 'oklch(94% 0.05 25)' : 'oklch(100% 0 0)',
+        failColor: failOn ? 'oklch(45% 0.16 25)' : 'oklch(40% 0.012 95)',
+        showRetry: failOn,
+        pass: () => this.setState({ results: { ...this.state.results, [p.id]: 'pass' } }),
+        fail: () => this.setState({ results: { ...this.state.results, [p.id]: 'fail' } })
+      };
+    });
+
+    return {
+      accent,
+      showList: this.state.view === 'list',
+      showRun: this.state.view === 'run',
+      scheduleOpen: this.state.scheduleOpen,
+      toggleSchedule: this.toggleSchedule,
+      feeOn: this.state.feeOn,
+      toggleFee: this.toggleFee,
+      feeTrackBg: this.state.feeOn ? accent : 'oklch(85% 0.008 95)',
+      feeKnobShift: this.state.feeOn ? 'translateX(16px)' : 'translateX(0px)',
+      invitees,
+      events,
+      runEvent,
+      backToList: this.backToList,
+      participants
+    };
+  }
+}
+</script>
+</body>
+</html>

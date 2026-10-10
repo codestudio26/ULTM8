@@ -14,6 +14,7 @@ type FormState = {
   ranksToggle: boolean;
   defaultLanguage: string;
   defaultCurrency: string;
+  timezone: string;
   description: string;
   classCancellationPolicy: 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT';
   waitlistClaimWindowMinutes: number;
@@ -30,6 +31,7 @@ function formFromSchool(school: SchoolResponse): FormState {
     ranksToggle: school.ranksToggle,
     defaultLanguage: school.defaultLanguage ?? '',
     defaultCurrency: school.defaultCurrency ?? '',
+    timezone: school.timezone ?? '',
     description: school.description ?? '',
     classCancellationPolicy: school.classCancellationPolicy,
     waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
@@ -75,17 +77,24 @@ function SchoolProfileForm({ school, schoolId }: { school: SchoolResponse; schoo
     setSaveError(null);
     setSaved(false);
     try {
+      // `null` (not `undefined`) for a cleared field — UpdateSchoolDto accepts
+      // null on these fields to mean "clear it" (FOUND ON REVIEW, Phase 18:
+      // this exact "clearing a field silently no-ops" bug has been live since
+      // Phase 3, see that DTO's own header comment). SchoolPage is edit-only
+      // (School creation is CreateSchoolPage's own separate flow), so there's
+      // no create-path mapping to undefined needed here.
       await updateSchool.mutateAsync({
         name: form.name,
-        mobileNumber: form.mobileNumber || undefined,
-        address: form.address || undefined,
-        businessType: form.businessType || undefined,
+        mobileNumber: form.mobileNumber || null,
+        address: form.address || null,
+        businessType: form.businessType || null,
         activities: form.activities.split(',').map((s) => s.trim()).filter(Boolean),
         facilities: form.facilities.split(',').map((s) => s.trim()).filter(Boolean),
         ranksToggle: form.ranksToggle,
-        defaultLanguage: form.defaultLanguage || undefined,
-        defaultCurrency: form.defaultCurrency || undefined,
-        description: form.description || undefined,
+        defaultLanguage: form.defaultLanguage || null,
+        defaultCurrency: form.defaultCurrency || null,
+        timezone: form.timezone || null,
+        description: form.description || null,
         classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
       });
@@ -125,6 +134,9 @@ function SchoolProfileForm({ school, schoolId }: { school: SchoolResponse; schoo
           </Field>
           <Field label="Default currency" htmlFor="edit-currency">
             <TextField value={form.defaultCurrency} onChange={(e) => set('defaultCurrency', e.target.value)} />
+          </Field>
+          <Field label="Timezone" htmlFor="edit-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
+            <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
           </Field>
           <Field label="Description" htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
