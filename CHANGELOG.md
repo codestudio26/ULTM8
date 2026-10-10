@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading hardening, performance** (Phase 7 stress round). The Grading
+  Board for coaches and staff loads in one query instead of one per student:
+  a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a
+  3,000-student School without branches from 30 s to 0.2 s; the owner's
+  board is also faster (0.76 s to 0.52 s). Bulk promote checks the caller and
+  loads the ladder once per batch: 200 students in 5.9 s (owner) and 7.7 s
+  (coach), from 13.3 s and 20.1 s. Same students, same rules: **api:**
+  `grading_board_rows()` returns, for the calling staff member only, the
+  students they may see (their branches' students, or every enrolled student
+  at a School without branches; Decisions 168, 169, 177), approved by the
+  product owner (migration `20261027000000`).
 - **Grading hardening, correctness** (Phase 7; Decision 185). From the
   hardening round: a promote or downgrade with no target now moves one rung
   (was a whole belt); a downgrade no longer notifies the student; grading
