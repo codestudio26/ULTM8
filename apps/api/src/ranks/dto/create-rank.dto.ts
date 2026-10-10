@@ -48,6 +48,14 @@ export class ClassTypeRequirementInputDto {
  * rank thresholds, and its own eligibleClassTypes list."
  */
 export class RankStripeTierInputDto {
+  @ApiPropertyOptional({
+    description:
+      'Updating a belt only: the id of an existing rung of this belt. The rung keeps its id, and the students holding it, while its position, name or rules change (Decision 180). Omit for a new rung. When any rung in the list has an id, rungs left out are removed; a rung that students hold can\'t be removed (Decision 152).',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({ description: 'Position within this Rank\'s stripe ladder — must be unique and contiguous (enforced in the service layer, §5).' })
   @IsInt()
   @Min(0)

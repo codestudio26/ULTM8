@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — ladder reordering and safe rung edits** (Decisions 152, 180).
+  `PATCH /ranks/{id}` accepts each rung's `id` in `stripeTiers`, so stripes can
+  be reordered within their belt and keep their students. A rung that students
+  hold can no longer be removed (409, naming the students); before, removing
+  one left them with no rung. New `PUT /styles/{id}/ranks/order` reorders a
+  style's belts, and `GET /styles/{id}/rung-holders` (owner only) lists who
+  holds each rung, for the editor's confirmations. `packages/api-client`
+  regenerated.
 - **school-portal — Grading Board** (roadmap Phase 4, item 3; Decisions 128,
   130, 136, 152, 176). New **Grading Board** page: pick a style and see every
   student with a next rank in three columns (Just Starting / Getting There /

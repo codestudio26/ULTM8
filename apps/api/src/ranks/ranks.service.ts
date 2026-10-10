@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -8,6 +8,7 @@ import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { CreateRankDto, RankStripeTierInputDto } from './dto/create-rank.dto';
 import { UpdateRankDto } from './dto/update-rank.dto';
+import { ReorderRanksDto } from './dto/ladder.dto';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 
@@ -97,6 +98,9 @@ export class RanksService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertContiguousStripeTiers(dto.stripeTiers.map((t) => t.order));
+    if (dto.stripeTiers.some((t) => t.id !== undefined)) {
+      throw new BadRequestException('A new belt has only new rungs; rung ids are for updating a belt.');
+    }
 
     const existingOrders = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.rank.findMany({ where: { disciplineId }, select: { order: true }, orderBy: { order: 'asc' } }),
@@ -256,16 +260,50 @@ export class RanksService {
           where: { rankId },
           select: { id: true, order: true, name: true, count: true, colour: true, stripeSegments: true, timeOnly: true, classCountMode: true, classTypeRequirements: true, bookingUnlocksClassTypes: true },
         });
+        // Which existing rung each sent rung is (Decision 180). With ids:
+        // by id, so a rung keeps its students while it moves. Without ids
+        // (older clients): by position, as before.
+        const byId = dto.stripeTiers.some((t) => t.id !== undefined);
+        const existingById = new Map(existingTiers.map((t) => [t.id, t]));
         const existingByOrder = new Map(existingTiers.map((t) => [t.order, t]));
-        const newOrders = new Set(dto.stripeTiers.map((t) => t.order));
+        if (byId) {
+          const sentIds = dto.stripeTiers.filter((t) => t.id !== undefined).map((t) => t.id as string);
+          if (new Set(sentIds).size !== sentIds.length) {
+            throw new BadRequestException('Each rung id can appear only once.');
+          }
+          if (sentIds.some((id) => !existingById.has(id))) {
+            throw new BadRequestException('A rung id is not a rung of this belt. Rungs can only be reordered within their own belt (Decision 180).');
+          }
+        }
+        const previousFor = (tier: (typeof dto.stripeTiers)[number]) =>
+          byId ? (tier.id !== undefined ? existingById.get(tier.id) : undefined) : existingByOrder.get(tier.order);
+        const kept = new Set(dto.stripeTiers.map(previousFor).filter((t): t is (typeof existingTiers)[number] => !!t).map((t) => t.id));
+        const idsToDelete = existingTiers.filter((t) => !kept.has(t.id)).map((t) => t.id);
 
-        const idsToDelete = existingTiers.filter((t) => !newOrders.has(t.order)).map((t) => t.id);
+        // A rung students hold can't be removed (Decision 152): they would be
+        // left with no rung.
         if (idsToDelete.length) {
+          const holders = await tx.studentRank.findMany({
+            where: { currentStripeId: { in: idsToDelete } },
+            select: { currentStripeId: true, student: { select: { firstName: true, surname: true } } },
+          });
+          if (holders.length) {
+            const names = holders.map((h) => `${h.student.firstName} ${h.student.surname}`.trim());
+            const rungs = [...new Set(holders.map((h) => existingById.get(h.currentStripeId as string)?.name ?? 'a rung'))];
+            throw new ConflictException(
+              `Students hold ${rungs.join(', ')}, so it can't be removed: ${names.join(', ')}. Move them to another rank first (Decision 152).`,
+            );
+          }
           await tx.rankStripeTier.deleteMany({ where: { id: { in: idsToDelete } } });
+        }
+        // Positions are unique per belt: park the kept rungs first, so moving
+        // one into another's place doesn't collide.
+        for (const [i, id] of [...kept].entries()) {
+          await tx.rankStripeTier.update({ where: { id }, data: { order: -1 - i } });
         }
 
         for (const tier of dto.stripeTiers) {
-          const previous = existingByOrder.get(tier.order);
+          const previous = previousFor(tier);
           // FOUND ON INDEPENDENT REVIEW (PR 2): the school portal's edit form
           // sends stripeTiers without the per-rung fields, which used to reset
           // a custom name, mixed stripe colours and timeOnly on every save.
@@ -275,7 +313,7 @@ export class RanksService {
           let tierId: string;
           if (existingId) {
             tierId = existingId;
-            await tx.rankStripeTier.update({ where: { id: existingId }, data: fields });
+            await tx.rankStripeTier.update({ where: { id: existingId }, data: { ...fields, order: tier.order } });
           } else {
             tierId = randomUUID();
             await tx.rankStripeTier.create({
@@ -321,6 +359,55 @@ export class RanksService {
       });
       return this.shapeRankResponse(full);
     });
+  }
+
+  /** Reorder a style's belts (Decisions 152, 180). Students keep their rung;
+   * only the ladder order changes, so their next rank may change. The portal
+   * shows who is affected before saving (findRungHolders). */
+  async reorderRanks(callerId: string, disciplineId: string, dto: ReorderRanksDto) {
+    const discipline = await this.findOneDiscipline(callerId, disciplineId);
+    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
+    await this.assertRanksEnabled(callerId, discipline.schoolId);
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const ranks = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
+      const ids = new Set(ranks.map((r) => r.id));
+      if (dto.rankIds.length !== ids.size || dto.rankIds.some((id) => !ids.has(id))) {
+        throw new BadRequestException('Send every belt of this style exactly once, in the new order.');
+      }
+      // Positions are unique per style: park every belt first.
+      for (const [i, id] of dto.rankIds.entries()) {
+        await tx.rank.update({ where: { id }, data: { order: -1 - i } });
+      }
+      for (const [i, id] of dto.rankIds.entries()) {
+        await tx.rank.update({ where: { id }, data: { order: i } });
+      }
+      const full = await tx.rank.findMany({ where: { disciplineId }, include: RANK_INCLUDE, orderBy: { order: 'asc' } });
+      return full.map((r) => this.shapeRankResponse(r));
+    });
+  }
+
+  /** Who holds each rung of a style, for the ladder editor's confirmations
+   * (Decision 152): before a reorder, and to explain why a rung can't be
+   * removed. Owner only, like every ladder edit. */
+  async findRungHolders(callerId: string, disciplineId: string) {
+    const discipline = await this.findOneDiscipline(callerId, disciplineId);
+    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentRank.findMany({
+        where: { disciplineId, currentStripeId: { not: null } },
+        select: { currentStripeId: true, student: { select: { id: true, firstName: true, surname: true } } },
+        orderBy: [{ student: { firstName: 'asc' } }, { student: { surname: 'asc' } }],
+      }),
+    );
+    const byRung = new Map<string, Array<{ studentId: string; firstName: string; surname: string }>>();
+    for (const r of rows) {
+      const list = byRung.get(r.currentStripeId as string) ?? [];
+      list.push({ studentId: r.student.id, firstName: r.student.firstName, surname: r.student.surname });
+      byRung.set(r.currentStripeId as string, list);
+    }
+    return { items: [...byRung.entries()].map(([rungId, students]) => ({ rungId, students })) };
   }
 
   // No delete method — same reasoning as Discipline above, doubly so here:

@@ -2141,3 +2141,15 @@ Delivery is in-app and email, as for every notification until push is built (Dec
 1. The grading screens in the School Portal (student grading panel, Grading Board, ladder editor, grading settings) are built **in English now**. Translation is its own piece of work afterwards. Gus: *"Ok"*.
 2. Translations will cover **more than the four languages** named so far, including Asian languages. Which languages, and how, is to be decided then. Gus: *"also the translations will be for more languages, like asian languages, but we will look into this after"*.
 3. Browser tests: each screen is tested in Chromium here (desktop and tablet widths, keyboard-only). Firefox and WebKit runs are left to an environment that has those browsers. Gus: *"ok"*.
+
+---
+
+## Decision 180 — Ladder reordering: belts, and stripes within their own belt; a rung keeps its students when it moves
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 152 item 2 ("rungs can be reordered by drag even when students hold them, after a confirmation that lists the students affected") applies to ULTM8's two-level ladder. Gus's prototype has one flat list of rungs; ULTM8 stores belts, each with its own stripes.
+
+1. **What can be reordered:** whole belts within a style, and stripes within their own belt. A stripe can't move to another belt. Gus: *"Belts + stripes within a belt"*.
+2. **A rung keeps its identity when it moves.** The students holding it stay on it; only the ladder order changes, so their next rank may change. The editor lists the students affected before saving (Decision 152).
+3. **A rung students hold can't be removed** (Decision 152). The API refuses and names the students; move them to another rank first. This also closes a gap: before, removing a held rung left its students with no rung.
+
+Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT /styles/{id}/ranks/order` for belts, and `GET /styles/{id}/rung-holders` (owner only) for the confirmation.
