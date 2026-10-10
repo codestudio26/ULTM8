@@ -2144,6 +2144,18 @@ Delivery is in-app and email, as for every notification until push is built (Dec
 
 ---
 
+## Decision 180 — Ladder reordering: belts, and stripes within their own belt; a rung keeps its students when it moves
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 152 item 2 ("rungs can be reordered by drag even when students hold them, after a confirmation that lists the students affected") applies to ULTM8's two-level ladder. Gus's prototype has one flat list of rungs; ULTM8 stores belts, each with its own stripes.
+
+1. **What can be reordered:** whole belts within a style, and stripes within their own belt. A stripe can't move to another belt. Gus: *"Belts + stripes within a belt"*.
+2. **A rung keeps its identity when it moves.** The students holding it stay on it; only the ladder order changes, so their next rank may change. The editor lists the students affected before saving (Decision 152).
+3. **A rung students hold can't be removed** (Decision 152). The API refuses and names the students; move them to another rank first. This also closes a gap: before, removing a held rung left its students with no rung.
+
+Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT /styles/{id}/ranks/order` for belts, and `GET /styles/{id}/rung-holders` (owner only) for the confirmation.
+
+---
+
 ## Decision 181 — Grading permission becomes seven toggles per coach per style; board % editable by the owner and coaches given it
 
 **Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** who may change a style's Grading Board percentages (Decisions 75, 136), and refines Decision 138's single grading permission. Raised while planning the grading settings screen.
