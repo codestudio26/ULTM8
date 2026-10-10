@@ -981,13 +981,13 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
         .set('Authorization', `Bearer ${tokenOwner}`);
       const [greyWhite, belt2] = ladder.body.items;
 
-      // Same shape as RankFormModal.handleSubmit: no name, stripeSegments,
+      // Same shape as the old RankFormModal.handleSubmit (less the belt-level cap
+      // and skills, removed by Decision 199): no name, stripeSegments,
       // timeOnly or per-rung requiredSkillIds.
       type Tier = { order: number; count: number; colour: string; classesRequired: number | null; minimumDaysInRank: number | null; eligibleClassTypes: string[] };
       const portalPayload = (rank: { primaryColour: string; stripeTiers: Tier[] }) => ({
         primaryColour: rank.primaryColour,
         secondaryColour: null,
-        weeklyClassCountCap: null,
         yearsInRankFlag: false,
         stripeTiers: rank.stripeTiers.map((t) => ({
           order: t.order,
@@ -997,7 +997,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
           minimumDaysInRank: t.minimumDaysInRank ?? undefined,
           eligibleClassTypes: t.eligibleClassTypes,
         })),
-        requiredSkillIds: [],
       });
 
       const res = await request(app.getHttpServer())
@@ -1307,7 +1306,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
             // The skill is needed to reach the second belt (Decision 127), so
             // a student on the first belt can sign it off.
             stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF', requiredSkillIds: order === 1 ? [histSkillId] : [] }],
-            requiredSkillIds: order === 0 ? [histSkillId] : [],
           });
         expect(rank.status).toBe(201);
         beltIds.push(rank.body.id);
