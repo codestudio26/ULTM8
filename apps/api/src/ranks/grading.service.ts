@@ -8,7 +8,9 @@ import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
-import { studentEligibility, studentTimeZone } from './grading-eligibility';
+import { startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
+import { loadLadder } from './grading-attendance';
+import { dayNumber, gradingDateProblem, localDay, requirementFor, Rung, rungIndex } from './engine';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
@@ -18,9 +20,6 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
 // (board drags, rank-date corrections) do not.
 const RANK_CHANGE_TYPES = ['PROMOTION', 'DOWNGRADE', 'STRIPE_AWARD', 'BULK_PROMOTION', 'BULK_STRIPE_AWARD', 'SELF_DECLARED', 'RANK_CORRECTION'] as const;
 
-/** The UTC calendar day of a date, as YYYY-MM-DD. Grading dates are whole days
- * (the prototype's dayNumber()). */
-const dayOf = (d: Date): string => d.toISOString().slice(0, 10);
 
 // Same pattern MembershipsService.getMembershipStatus() uses for its :id check.
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -269,20 +268,48 @@ export class GradingService {
   // ---------------------------------------------------------------------------
 
   async promote(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
-    return this.gradeRankChange(callerId, studentId, disciplineId, dto, 'PROMOTION', 1);
+    return this.changeRung(callerId, studentId, disciplineId, dto, 'PROMOTION');
   }
 
   async downgrade(callerId: string, studentId: string, disciplineId: string, dto: DowngradeActionDto) {
-    return this.gradeRankChange(callerId, studentId, disciplineId, dto, 'DOWNGRADE', -1);
+    return this.changeRung(callerId, studentId, disciplineId, dto, 'DOWNGRADE');
   }
 
-  private async gradeRankChange(
+  /** Spec 55 §5 (quoted): "unavailable once the Student is at a belt's highest
+   * configured stripe tier" — a distinct, coach-initiated action from promote,
+   * never system-triggered. Moves to the next stripe tier of the same belt. */
+  async stripeAward(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
+    return this.changeRung(callerId, studentId, disciplineId, dto, 'STRIPE_AWARD');
+  }
+
+  /**
+   * The single way a coach moves a student to another rung, as the
+   * prototype's applyRankChange (roadmap Phase 3a; Decisions 126–128, 167,
+   * 174). Every change writes one history entry and resets the same things:
+   * the time-in-rank clock, the class count (to the starting classes), the
+   * per-type tally, when counting began, and the skill sign-offs.
+   *
+   * - Promote: up only, to any higher rung (skipped rungs are recorded,
+   *   "Skipped N ranks in between"); default the next belt's first rung, as
+   *   before. Downgrade: down only, to any lower rung, with a reason, dated
+   *   today; default the previous belt's first rung. Stripe award: the next
+   *   stripe tier of the same belt.
+   * - Skills (Decision 127): the engine's requirement for the student's next
+   *   rung. Not all signed off: blocked when the style's "skills required"
+   *   switch is on, otherwise allowed with the written acknowledgement
+   *   (Decision 128, item 10). Not checked on a downgrade or a time-only rung.
+   * - Back-dated grading (Decision 128, item 8): a local day, not in the
+   *   future and not before the current rank date.
+   * - Starting classes (Decision 128, item 9): one number when the new next
+   *   rung counts any type; a number per type when it counts each type
+   *   (Decision 174); none on a time-only rung.
+   */
+  private async changeRung(
     callerId: string,
     studentId: string,
     disciplineId: string,
     dto: GradingActionDto & { reason?: string },
-    type: 'PROMOTION' | 'DOWNGRADE',
-    direction: 1 | -1,
+    type: 'PROMOTION' | 'DOWNGRADE' | 'STRIPE_AWARD',
   ) {
     const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
     if (!discipline) {
@@ -291,93 +318,139 @@ export class GradingService {
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
+    if (type === 'DOWNGRADE' && (dto.effectiveDate !== undefined || dto.startingClasses !== undefined || dto.startingClassesByType !== undefined)) {
+      throw new BadRequestException('A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.');
+    }
+    if (type === 'STRIPE_AWARD' && dto.targetRungId !== undefined) {
+      throw new BadRequestException('A stripe award moves to the next stripe tier; to grade to a chosen rung, use promote with targetRungId.');
+    }
+
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
       });
+      const ladder = await loadLadder(tx, disciplineId);
+      if (ladder.length === 0) {
+        throw new BadRequestException('This Discipline has no Ranks configured yet.');
+      }
+      const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
+      const today = localDay(new Date(), timeZone);
 
-      let targetRank;
-      let fromRankId: string | null = null;
-      let fromStripeTierId: string | null = null;
-
-      if (!existing) {
-        // First-ever grading action for this Student/Discipline pair. A
-        // PROMOTION creates the StudentRank at the Discipline's first-order
-        // Rank — Spec 55 doesn't explicitly describe how a Student's very
-        // first StudentRank row comes into being; this is the most literal
-        // reading given Ranks are a strict ordered ladder with no other
-        // confirmed entry point. A DOWNGRADE with no existing StudentRank has
-        // nothing to downgrade FROM — reject.
-        if (type === 'DOWNGRADE') {
-          throw new BadRequestException('This Student has no existing rank in this Discipline to downgrade from.');
+      // --- Where from, where to.
+      const fromIndex = existing?.currentStripeId ? rungIndex(ladder, existing.currentStripeId) : -1;
+      if (existing && fromIndex < 0) {
+        throw new BadRequestException('This Student\'s current rung can\'t be found on the ladder; correct their rank first.');
+      }
+      if (!existing && type !== 'PROMOTION') {
+        throw new BadRequestException(
+          type === 'DOWNGRADE'
+            ? 'This Student has no existing rank in this Discipline to downgrade from.'
+            : 'This Student has no existing rank in this Discipline to award a stripe within.',
+        );
+      }
+      const from = existing ? ladder[fromIndex] : null;
+      let toIndex: number;
+      if (dto.targetRungId !== undefined) {
+        toIndex = rungIndex(ladder, dto.targetRungId);
+        if (toIndex < 0) throw new BadRequestException('targetRungId is not a rung of this style.');
+        if (from && type === 'PROMOTION' && toIndex <= fromIndex) {
+          throw new BadRequestException('Promote only moves up; pick a higher rung (Decision 128, item 12). Use downgrade to move down.');
         }
-        targetRank = await tx.rank.findFirst({ where: { disciplineId }, orderBy: { order: 'asc' } });
-        if (!targetRank) {
-          throw new BadRequestException('This Discipline has no Ranks configured yet.');
+        if (from && type === 'DOWNGRADE' && toIndex >= fromIndex) {
+          throw new BadRequestException('Downgrade only moves down; pick a lower rung (Decision 128, item 12).');
+        }
+      } else if (!from) {
+        toIndex = 0; // a first grade starts on the style's first rung
+      } else if (type === 'STRIPE_AWARD') {
+        toIndex = fromIndex + 1;
+        if (!ladder[toIndex] || ladder[toIndex].rankId !== from.rankId) {
+          throw new BadRequestException('This Student is already at the highest configured stripe tier for this Rank.');
         }
       } else {
-        const currentRank = await tx.rank.findUniqueOrThrow({ where: { id: existing.currentRankId } });
-        fromRankId = currentRank.id;
-        fromStripeTierId = existing.currentStripeId;
-
-        await this.assertSkillsSignedOffOrAcknowledged(tx, currentRank.id, existing.skillStatuses, dto.acknowledgeWithoutSkillSignoff ?? false);
-
-        targetRank = await tx.rank.findFirst({ where: { disciplineId, order: currentRank.order + direction } });
-        if (!targetRank) {
+        // Default: the first rung of the next (or previous) belt, as before.
+        const step = type === 'PROMOTION' ? 1 : -1;
+        const targetRankOrder = from.rankOrder + step;
+        toIndex = ladder.findIndex((r) => r.rankOrder === targetRankOrder);
+        if (toIndex < 0) {
           throw new BadRequestException(
             type === 'PROMOTION' ? 'This Student is already at the highest Rank in this Discipline.' : 'This Student is already at the lowest Rank in this Discipline.',
           );
         }
       }
+      const to = ladder[toIndex];
 
-      const targetFirstStripe = await tx.rankStripeTier.findFirst({ where: { rankId: targetRank.id }, orderBy: { order: 'asc' } });
+      // --- Skills for the student's next rung (Decision 127).
+      let missingSkillIds: string[] = [];
+      if (from && type !== 'DOWNGRADE') {
+        const req = requirementFor(ladder, from.id);
+        if (req.kind === 'NEXT' && !req.timeOnly) {
+          const signed = new Set(existing!.skillStatuses.filter((s) => s.status === 'SIGNED_OFF').map((s) => s.skillId));
+          missingSkillIds = req.requiredSkillIds.filter((id) => !signed.has(id));
+        }
+      }
+      if (missingSkillIds.length > 0) {
+        if (discipline.skillsRequiredToGrade) {
+          throw new BadRequestException(
+            'This style requires every skill for the next rank to be signed off before grading (Decision 128, item 10). Not signed off yet: ' +
+              missingSkillIds.join(', '),
+          );
+        }
+        if (!dto.acknowledgeWithoutSkillSignoff) {
+          throw new BadRequestException(
+            'This Student has required Skills for their next rank not yet Signed Off. Set acknowledgeWithoutSkillSignoff=true to grade anyway (always recorded).',
+          );
+        }
+      }
 
+      // --- The grading date.
+      let rankDate = new Date();
+      if (dto.effectiveDate !== undefined) {
+        const problem = gradingDateProblem(dto.effectiveDate, today, existing ? localDay(existing.dateOfCurrentRank, timeZone) : null);
+        if (problem === 'INVALID') throw new BadRequestException('effectiveDate must be a real calendar date, as YYYY-MM-DD.');
+        if (problem === 'IN_FUTURE') throw new BadRequestException('The grading date can\'t be in the future.');
+        if (problem === 'BEFORE_CURRENT_RANK') {
+          throw new BadRequestException(
+            `The grading date can't be before the date the student reached their current rank, ${localDay(existing!.dateOfCurrentRank, timeZone)} (Decision 128, item 8).`,
+          );
+        }
+        if (dto.effectiveDate !== today) rankDate = startOfLocalDay(dto.effectiveDate, timeZone);
+      }
+
+      // --- Starting classes toward the new next rung.
+      const { total: startingTotal, byType: startingByType } = this.startingClasses(ladder, to, dto);
+
+      // --- Write.
+      const now = new Date();
+      const counters = {
+        currentRankId: to.rankId,
+        currentStripeId: to.id,
+        dateOfCurrentRank: rankDate,
+        classesAttendedTowardCheckpoint: startingTotal,
+        classesAttendedByType: startingByType ?? {},
+        countingSince: now,
+      };
       let studentRank;
       if (existing) {
-        // FOUND ON REVIEW: a plain tx.studentRank.update({where: {id}, ...})
-        // here is a real TOCTOU race — two concurrent grading calls for the
-        // same Student both read the same `existing` pre-image, both compute
-        // the same targetRank, and the second UPDATE would silently overwrite
-        // with its own stale precomputed data (no WHERE clause tied to what it
-        // actually read), corrupting the audit trail with two PromotionEvent
-        // rows for what the data shows as only one real transition. Fixed with
-        // the same optimistic-concurrency shape Phase 9 already established
-        // for Transaction status flips (updateMany + affected-row-count
-        // check, not a bare update by id alone) — a losing concurrent call
-        // gets a clean 409 to retry, not a silent corruption.
-        const updateResult = await tx.studentRank.updateMany({
+        // Conditional on the rung read above, so a concurrent grading action
+        // gets a clean 409 instead of silently overwriting this one.
+        const updated = await tx.studentRank.updateMany({
           where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
-          data: {
-            currentRankId: targetRank.id,
-            currentStripeId: targetFirstStripe?.id ?? null,
-            dateOfCurrentRank: new Date(),
-            classesAttendedTowardCheckpoint: 0,
-            classesAttendedByType: {},
-            countingSince: new Date(),
-          },
+          data: counters,
         });
-        if (updateResult.count === 0) {
+        if (updated.count === 0) {
           throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');
         }
         studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
+        // Skill sign-offs belong to the old rung (Decision 128, item 16).
+        await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: existing.id } });
       } else {
         studentRank = await tx.studentRank.create({
-          data: {
-            id: randomUUID(),
-            studentId,
-            disciplineId,
-            schoolId: discipline.schoolId,
-            currentRankId: targetRank.id,
-            currentStripeId: targetFirstStripe?.id ?? null,
-          },
+          data: { id: randomUUID(), studentId, disciplineId, schoolId: discipline.schoolId, ...counters },
         });
       }
 
-      // Checkpoint reset — skill sign-off status is scoped to the current
-      // checkpoint only (§5); a Promotion/Downgrade moves to a new one.
-      await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: studentRank.id } });
-
+      const skipped = from && type === 'PROMOTION' ? toIndex - fromIndex - 1 : 0;
       const promotionEvent = await tx.promotionEvent.create({
         data: {
           id: randomUUID(),
@@ -386,14 +459,19 @@ export class GradingService {
           studentId,
           type,
           performedById: callerId,
-          fromRankId,
-          toRankId: targetRank.id,
-          fromStripeTierId,
-          toStripeTierId: targetFirstStripe?.id ?? null,
-          acknowledgedWithoutSkillSignoff: dto.acknowledgeWithoutSkillSignoff ?? false,
+          fromRankId: from?.rankId ?? null,
+          toRankId: to.rankId,
+          fromStripeTierId: from?.id ?? null,
+          toStripeTierId: to.id,
+          acknowledgedWithoutSkillSignoff: missingSkillIds.length > 0,
+          effectiveDate: rankDate,
           // Required on a downgrade by DowngradeActionDto (Decision 128, item 11).
           reason: type === 'DOWNGRADE' ? dto.reason : null,
           note: dto.note ?? null,
+          rungsSkipped: Math.max(0, skipped),
+          systemNote: skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null,
+          startingClasses: type === 'DOWNGRADE' ? null : startingTotal,
+          startingClassesByType: startingByType ?? undefined,
         },
       });
 
@@ -401,106 +479,41 @@ export class GradingService {
     });
   }
 
-  /** Spec 55 §5 (quoted): "unavailable once the Student is at a belt's highest
-   * configured stripe tier" — a distinct, coach-initiated action from promote,
-   * never system-triggered. */
-  async stripeAward(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
-    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
-    if (!discipline) {
-      throw new NotFoundException('Discipline not found');
+  /** Starting classes toward the rung after `to` (Decision 128, item 9;
+   * Decision 174): a number per type when that rung counts each type, one
+   * number otherwise; none when `to` is time-only (classes aren't counted). */
+  private startingClasses(
+    ladder: Rung[],
+    to: Rung,
+    dto: { startingClasses?: number; startingClassesByType?: Record<string, number> },
+  ): { total: number; byType: Record<string, number> | null } {
+    const given = dto.startingClasses !== undefined || dto.startingClassesByType !== undefined;
+    if (!given) return { total: 0, byType: null };
+    const req = requirementFor(ladder, to.id);
+    if (to.timeOnly || (req.kind === 'NEXT' && req.timeOnly)) {
+      throw new BadRequestException('The new rank counts time only, so it starts with no classes (Decision 128, item 3).');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
-
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
-      const existing = await tx.studentRank.findUnique({
-        where: { studentId_disciplineId: { studentId, disciplineId } },
-        include: { skillStatuses: true },
-      });
-      if (!existing) {
-        throw new BadRequestException('This Student has no existing rank in this Discipline to award a stripe within.');
+    if (req.kind === 'NEXT' && req.countRules.classCountMode === 'EACH_TYPE') {
+      if (dto.startingClasses !== undefined) {
+        throw new BadRequestException('The next rank counts each class type separately: send startingClassesByType, a number per type (Decision 174).');
       }
-      if (!existing.currentStripeId) {
-        throw new BadRequestException('This Student\'s current Rank has no configured stripe tiers.');
+      const types = req.countRules.classTypeRequirements.map((r) => r.classType);
+      const byType: Record<string, number> = {};
+      for (const [classType, n] of Object.entries(dto.startingClassesByType ?? {})) {
+        if (!types.includes(classType)) {
+          throw new BadRequestException(`"${classType}" is not one of the next rank's class types: ${types.join(', ')}.`);
+        }
+        if (!Number.isInteger(n) || n < 0) {
+          throw new BadRequestException('Each starting class number must be a whole number, 0 or more.');
+        }
+        if (n > 0) byType[classType] = n;
       }
-
-      await this.assertSkillsSignedOffOrAcknowledged(tx, existing.currentRankId, existing.skillStatuses, dto.acknowledgeWithoutSkillSignoff ?? false);
-
-      const currentTier = await tx.rankStripeTier.findUniqueOrThrow({ where: { id: existing.currentStripeId } });
-      const nextTier = await tx.rankStripeTier.findFirst({ where: { rankId: existing.currentRankId, order: currentTier.order + 1 } });
-      if (!nextTier) {
-        throw new BadRequestException('This Student is already at the highest configured stripe tier for this Rank.');
-      }
-
-      // Same TOCTOU-race fix as gradeRankChange — see that method's own
-      // comment. updateMany + affected-row-count check instead of a bare
-      // update-by-id, so a losing concurrent call gets a clean 409 instead of
-      // silently clobbering another grading action's result.
-      //
-      // Every stripe is its own rung (Decision 126), so a stripe award restarts
-      // the time-in-rank clock like any other rank change (Decision 167; the
-      // prototype's applyRankChange sets `since` for every change).
-      const updateResult = await tx.studentRank.updateMany({
-        where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
-        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0, classesAttendedByType: {}, countingSince: new Date(), dateOfCurrentRank: new Date() },
-      });
-      if (updateResult.count === 0) {
-        throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');
-      }
-      const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
-      await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: studentRank.id } });
-
-      const promotionEvent = await tx.promotionEvent.create({
-        data: {
-          id: randomUUID(),
-          studentRankId: studentRank.id,
-          schoolId: discipline.schoolId,
-          studentId,
-          type: 'STRIPE_AWARD',
-          performedById: callerId,
-          fromRankId: existing.currentRankId,
-          toRankId: existing.currentRankId,
-          fromStripeTierId: currentTier.id,
-          toStripeTierId: nextTier.id,
-          acknowledgedWithoutSkillSignoff: dto.acknowledgeWithoutSkillSignoff ?? false,
-          note: dto.note ?? null,
-        },
-      });
-
-      return { studentRank, promotionEvent };
-    });
-  }
-
-  /** Spec 55 §5 (quoted): "grading is permitted even when a required skill isn't
-   * yet signed off, but only behind an explicit, always-recorded written
-   * acknowledgement flag." Checks the CURRENT checkpoint's required Skills (the
-   * ones gating the grading action being attempted) — not the target
-   * checkpoint's, which the Student hasn't reached yet.
-   *
-   * FOUND ON REVIEW: the original version of this check looked at whatever
-   * StudentRankSkillStatus rows happened to already exist, rather than the
-   * Rank's actual RankRequiredSkill set. Those rows are populated lazily —
-   * only when someone calls cycleSkillSignOff — so a required Skill nobody
-   * has ever touched had NO row at all, `.some()` found nothing unsigned, and
-   * the acknowledgment gate was silently bypassed. Fixed to query the real
-   * required-Skill set for `currentRankId` and treat a missing status row as
-   * unsigned (NOT_STARTED), which is what it actually means. */
-  private async assertSkillsSignedOffOrAcknowledged(
-    tx: TenantTx,
-    currentRankId: string,
-    skillStatuses: Array<{ skillId: string; status: string }>,
-    acknowledged: boolean,
-  ): Promise<void> {
-    const requiredSkills = await tx.rankRequiredSkill.findMany({ where: { rankId: currentRankId }, select: { skillId: true } });
-    if (requiredSkills.length === 0) return; // nothing required at this checkpoint — nothing to acknowledge
-
-    const statusBySkillId = new Map(skillStatuses.map((s) => [s.skillId, s.status]));
-    const hasUnsignedRequired = requiredSkills.some((rs) => statusBySkillId.get(rs.skillId) !== 'SIGNED_OFF');
-    if (hasUnsignedRequired && !acknowledged) {
-      throw new BadRequestException(
-        'This Student has required Skills not yet Signed Off at their current checkpoint. Set acknowledgeWithoutSkillSignoff=true to grade anyway (always recorded).',
-      );
+      return { total: Object.values(byType).reduce((sum, n) => sum + n, 0), byType };
     }
+    if (dto.startingClassesByType !== undefined) {
+      throw new BadRequestException('The next rank counts any ticked class type: send startingClasses, one number.');
+    }
+    return { total: dto.startingClasses ?? 0, byType: null };
   }
 
   // ---------------------------------------------------------------------------
@@ -527,18 +540,14 @@ export class GradingService {
         throw new BadRequestException('This Student has no existing rank in this Skill\'s Discipline.');
       }
 
-      // FOUND ON REVIEW: the original version only checked the Skill belongs
-      // to the same Discipline as the Student's StudentRank, never that it's
-      // actually required at the Student's CURRENT Rank — letting sign-off
-      // status be cycled for irrelevant Skills, which then fed back into
-      // assertSkillsSignedOffOrAcknowledged's own (now-fixed) required-Skill
-      // check as noise. A Skill not required at the current checkpoint has
-      // nothing to sign off yet.
-      const isRequiredAtCurrentRank = await tx.rankRequiredSkill.findUnique({
-        where: { rankId_skillId: { rankId: studentRank.currentRankId, skillId } },
-      });
-      if (!isRequiredAtCurrentRank) {
-        throw new BadRequestException('This Skill is not a required Skill at this Student\'s current Rank checkpoint.');
+      // Only the skills of the student's next rung can be signed off: the
+      // engine's requirement for their current rung (Decision 127), required
+      // or, after a time-only rung, optional. Anything else has nothing to
+      // sign off yet.
+      const req = requirementFor(await loadLadder(tx, skill.disciplineId), studentRank.currentStripeId ?? '');
+      const forNextRung = req.kind === 'NEXT' ? [...req.requiredSkillIds, ...req.optionalSkillIds] : [];
+      if (!forNextRung.includes(skillId)) {
+        throw new BadRequestException('This Skill is not one of the skills for this Student\'s next rank.');
       }
 
       const existing = await tx.studentRankSkillStatus.findUnique({
@@ -642,15 +651,19 @@ export class GradingService {
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
-    const newDate = new Date(`${dto.date}T00:00:00.000Z`);
-    if (Number.isNaN(newDate.getTime()) || dayOf(newDate) !== dto.date) {
+    if (dayNumber(dto.date) === null) {
       throw new BadRequestException('date must be a real calendar date, as YYYY-MM-DD.');
-    }
-    if (dto.date > dayOf(new Date())) {
-      throw new BadRequestException('The rank date can\'t be in the future.');
     }
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // Days are the student's local days (home branch, else School, else
+      // UTC), the same days the engine counts time in rank with.
+      const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
+      const dayOf = (d: Date) => localDay(d, timeZone);
+      if (dto.date > dayOf(new Date())) {
+        throw new BadRequestException('The rank date can\'t be in the future.');
+      }
+      const newDate = startOfLocalDay(dto.date, timeZone);
       const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
       if (!existing) {
         throw new BadRequestException('This Student has no rank in this Discipline.');

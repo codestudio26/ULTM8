@@ -13,6 +13,9 @@ export class DisciplineResponseDto {
   @ApiProperty({ type: [String] })
   classTypesOffered!: string[];
 
+  @ApiProperty({ description: '"Skills required" switch (Decision 128, item 10).' })
+  skillsRequiredToGrade!: boolean;
+
   @ApiProperty()
   createdAt!: string;
 
