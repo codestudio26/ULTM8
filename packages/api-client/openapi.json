@@ -7616,6 +7616,49 @@
         ]
       }
     },
+    "/v1/students/{id}/lessons": {
+      "get": {
+        "operationId": "CurriculumController_findLessonsForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/translations": {
       "get": {
         "operationId": "TranslationsController_findAll",
@@ -11218,6 +11261,17 @@
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
+          },
+          "disciplineIds": {
+            "description": "The School's styles this plan covers (Decision 195).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "includesLessons": {
+            "type": "boolean",
+            "description": "A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one."
           }
         },
         "required": [
@@ -11274,6 +11328,17 @@
           "termsWaiverRequired": {
             "type": "boolean"
           },
+          "disciplineIds": {
+            "description": "The styles this plan covers (Decision 195).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "includesLessons": {
+            "type": "boolean",
+            "description": "Whether a live membership on this plan can watch its styles' lessons (Decision 195)."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -11289,6 +11354,8 @@
           "price",
           "visible",
           "termsWaiverRequired",
+          "disciplineIds",
+          "includesLessons",
           "createdAt",
           "updatedAt"
         ]
@@ -11346,6 +11413,17 @@
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
+          },
+          "disciplineIds": {
+            "description": "The School's styles this plan covers (Decision 195).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "includesLessons": {
+            "type": "boolean",
+            "description": "A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one."
           },
           "currency": {
             "type": "string",
@@ -14669,6 +14747,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "free": {
+            "type": "boolean",
+            "description": "Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only."
           }
         },
         "required": [
@@ -14705,6 +14787,14 @@
           "order": {
             "type": "number",
             "description": "Its place within its category, from 0."
+          },
+          "free": {
+            "type": "boolean",
+            "description": "Watchable by every student and guardian at the School (Decision 190)."
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "The caller may not watch it (Decision 195): no membership of theirs covers it. Its description and video are left out."
           },
           "durationSeconds": {
             "type": "number",
@@ -14757,6 +14847,8 @@
           "schoolId",
           "title",
           "order",
+          "free",
+          "locked",
           "format",
           "captionStatus",
           "skillIds",
@@ -14811,6 +14903,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "free": {
+            "type": "boolean",
+            "description": "Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only."
           }
         }
       },

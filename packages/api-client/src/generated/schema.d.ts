@@ -2500,6 +2500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findLessonsForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/translations": {
         parameters: {
             query?: never;
@@ -3589,6 +3605,10 @@ export interface components {
             cancellationCharge?: number;
             /** @default false */
             termsWaiverRequired: boolean;
+            /** @description The School's styles this plan covers (Decision 195). */
+            disciplineIds?: string[];
+            /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
+            includesLessons?: boolean;
         };
         MembershipPlanResponseDto: {
             id: string;
@@ -3604,6 +3624,10 @@ export interface components {
             refundFeeDate?: string | null;
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
+            /** @description The styles this plan covers (Decision 195). */
+            disciplineIds: string[];
+            /** @description Whether a live membership on this plan can watch its styles' lessons (Decision 195). */
+            includesLessons: boolean;
             createdAt: string;
             updatedAt: string;
         };
@@ -3625,6 +3649,10 @@ export interface components {
             refundFeeDate?: string;
             /** @default false */
             termsWaiverRequired: boolean;
+            /** @description The School's styles this plan covers (Decision 195). */
+            disciplineIds?: string[];
+            /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
+            includesLessons?: boolean;
             /** @description One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear. */
             currency?: string | null;
             /** @description Computes each purchased Membership's expiry date at creation time. Pass null to clear. */
@@ -4613,6 +4641,8 @@ export interface components {
             instructorId?: string;
             /** @description Skill ids this Lesson teaches — must all belong to this School. */
             skillIds: string[];
+            /** @description Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only. */
+            free?: boolean;
         };
         LessonResponseDto: {
             id: string;
@@ -4624,6 +4654,10 @@ export interface components {
             categoryId?: string | null;
             /** @description Its place within its category, from 0. */
             order: number;
+            /** @description Watchable by every student and guardian at the School (Decision 190). */
+            free: boolean;
+            /** @description The caller may not watch it (Decision 195): no membership of theirs covers it. Its description and video are left out. */
+            locked: boolean;
             durationSeconds?: number | null;
             description?: string | null;
             /** @enum {string} */
@@ -4650,6 +4684,8 @@ export interface components {
             format?: "PRERECORDED" | "LIVE";
             instructorId?: string;
             skillIds?: string[];
+            /** @description Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only. */
+            free?: boolean;
         };
         LessonCategoryResponseDto: {
             id: string;
@@ -9019,6 +9055,29 @@ export interface operations {
                 "application/json": components["schemas"]["OrderCategoryLessonsDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findLessonsForStudent: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

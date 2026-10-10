@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import type { ClassResponse } from '../classes/classQueries';
 import { isoToLocalInput, localInputToIso } from '../lib/datetime';
 import type { MembershipPlanResponse } from './membershipPlanQueries';
+import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 
 const PLAN_TYPES = ['SUBSCRIPTION', 'CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP'] as const;
 
@@ -29,6 +30,9 @@ export interface MembershipPlanFormValues {
   refundFeeDate?: string;
   cancellationCharge?: number | null;
   termsWaiverRequired: boolean;
+  /** The styles this plan covers, and whether it includes their lessons (Decision 195). */
+  disciplineIds: string[];
+  includesLessons: boolean;
 }
 
 /** Fields match CreateMembershipPlanDto/UpdateMembershipPlanDto exactly —
@@ -43,6 +47,7 @@ export function MembershipPlanFormModal({
   title,
   initial,
   classes,
+  disciplines,
   submitting,
   onSubmit,
   onClose,
@@ -50,6 +55,7 @@ export function MembershipPlanFormModal({
   title: string;
   initial?: Partial<MembershipPlanResponse>;
   classes: ClassResponse[];
+  disciplines: DisciplineResponse[];
   submitting: boolean;
   onSubmit: (values: MembershipPlanFormValues) => Promise<void>;
   onClose: () => void;
@@ -66,7 +72,13 @@ export function MembershipPlanFormModal({
     refundFeeDate: isoToLocalInput(initial?.refundFeeDate),
     cancellationCharge: initial?.cancellationCharge?.toString() ?? '',
     termsWaiverRequired: initial?.termsWaiverRequired ?? false,
+    disciplineIds: initial?.disciplineIds ?? [],
   });
+  // Decision 195: "Includes lessons" follows the price (on when priced, off
+  // when free) until the owner sets it.
+  const [includesLessons, setIncludesLessons] = useState<boolean | null>(initial?.includesLessons ?? null);
+  const priced = form.type !== 'FRIEND_PASS' && Number(form.price) > 0;
+  const lessonsOn = includesLessons ?? priced;
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -85,6 +97,8 @@ export function MembershipPlanFormModal({
         refundFeeDate: localInputToIso(form.refundFeeDate),
         cancellationCharge: form.cancellationCharge ? Number(form.cancellationCharge) : null,
         termsWaiverRequired: form.termsWaiverRequired,
+        disciplineIds: form.disciplineIds,
+        includesLessons: lessonsOn,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
@@ -193,6 +207,25 @@ export function MembershipPlanFormModal({
           checked={form.termsWaiverRequired}
           onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
         />
+        {disciplines.length > 0 ? (
+          <fieldset style={{ border: 'none', padding: 0, margin: '12px 0 0' }}>
+            <legend className="ultm8-field__label">Styles this plan covers</legend>
+            {disciplines.map((d) => (
+              <Checkbox
+                key={d.id}
+                label={d.name}
+                checked={form.disciplineIds.includes(d.id)}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, disciplineIds: e.target.checked ? [...f.disciplineIds, d.id] : f.disciplineIds.filter((x) => x !== d.id) }))
+                }
+              />
+            ))}
+          </fieldset>
+        ) : null}
+        <Checkbox label="Includes lessons" checked={lessonsOn} onChange={(e) => setIncludesLessons(e.target.checked)} />
+        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+          Members on this plan can watch the lessons of its styles. On by default when the plan has a price, off when it's free.
+        </p>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             Save

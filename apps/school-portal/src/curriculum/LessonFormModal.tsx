@@ -37,6 +37,8 @@ export function LessonFormModal({
     title: string;
     /** null: no category. */
     categoryId: string | null;
+    /** Watchable by every student and guardian at the School (Decision 190). */
+    free: boolean;
     durationSeconds?: number;
     description?: string;
     format: 'PRERECORDED' | 'LIVE';
@@ -48,6 +50,7 @@ export function LessonFormModal({
   const [form, setForm] = useState({
     title: initial?.title ?? '',
     categoryId: initial?.categoryId ?? '',
+    free: initial?.free ?? false,
     durationSeconds: initial?.durationSeconds?.toString() ?? '',
     description: initial?.description ?? '',
     format: initial?.format ?? 'PRERECORDED',
@@ -74,6 +77,7 @@ export function LessonFormModal({
       await onSubmit({
         title: form.title,
         categoryId: form.categoryId || null,
+        free: form.free,
         durationSeconds: form.durationSeconds ? Number(form.durationSeconds) : undefined,
         description: form.description || undefined,
         format: form.format as 'PRERECORDED' | 'LIVE',
@@ -100,6 +104,14 @@ export function LessonFormModal({
             options={[{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           />
         </Field>
+        <Checkbox
+          label="Free for everyone at the School"
+          checked={form.free}
+          onChange={(e) => setForm((f) => ({ ...f, free: e.target.checked }))}
+        />
+        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+          Otherwise only members whose plan includes lessons for this lesson's styles can watch it.
+        </p>
         <Field label="Duration (seconds)" htmlFor="lesson-duration">
           <TextField
             type="number"

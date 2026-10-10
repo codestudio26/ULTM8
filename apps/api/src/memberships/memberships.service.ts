@@ -61,6 +61,9 @@ export class MembershipsService {
       }
     }
 
+    if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, schoolId, dto.disciplineIds);
+    const price = dto.type === 'FRIEND_PASS' ? 0 : dto.price;
+
     const id = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.membershipPlan.create({
@@ -78,6 +81,9 @@ export class MembershipsService {
           refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : undefined,
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
+          disciplineIds: dto.disciplineIds ?? [],
+          // Decision 195: on by default for a priced plan, off for a free one.
+          includesLessons: dto.includesLessons ?? price > 0,
         },
       }),
     );
@@ -154,6 +160,8 @@ export class MembershipsService {
     // now actually surfaced now that scopedClassId's type includes `| null`
     // (see this DTO's own header comment on why). Hoisted to a local const,
     // which DOES stay narrowed.
+    if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, existing.schoolId, dto.disciplineIds);
+
     const scopedClassIdToValidate = dto.scopedClassId;
     if (scopedClassIdToValidate) {
       const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -186,9 +194,24 @@ export class MembershipsService {
           refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : undefined,
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired,
+          disciplineIds: dto.disciplineIds,
+          includesLessons: dto.includesLessons,
         },
       }),
     );
+  }
+
+  /** A plan's styles must be this School's (Decision 195). */
+  private async assertStylesOfSchool(callerId: string, schoolId: string, disciplineIds: string[]) {
+    if (new Set(disciplineIds).size !== disciplineIds.length) {
+      throw new BadRequestException('Each style can appear only once.');
+    }
+    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.count({ where: { id: { in: disciplineIds }, schoolId } }),
+    );
+    if (found !== disciplineIds.length) {
+      throw new BadRequestException('disciplineIds must all be styles of this School.');
+    }
   }
 
   // No delete method — same reasoning ClassesModule/School/Branch already

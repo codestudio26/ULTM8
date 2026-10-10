@@ -80,7 +80,16 @@ export function CurriculumPage() {
   }
 
   const lessonColumns = (category: LessonCategory | null, inCategory: LessonResponse[]) => [
-    { key: 'title', header: 'Title', render: (l: LessonResponse) => l.title },
+    {
+      key: 'title',
+      header: 'Title',
+      render: (l: LessonResponse) => (
+        <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+          {l.title}
+          {l.free ? <Badge variant="success">Free</Badge> : null}
+        </span>
+      ),
+    },
     {
       key: 'format',
       header: 'Format',

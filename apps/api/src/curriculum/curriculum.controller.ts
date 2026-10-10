@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -93,5 +93,13 @@ export class CurriculumController {
   @Put('curriculum/categories/:id/lessons/order')
   orderCategoryLessons(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: OrderCategoryLessonsDto) {
     return this.curriculumService.orderCategoryLessons(user.sub, id, dto);
+  }
+
+  /** The lessons a student may watch, for the student or their guardian
+   * (Decisions 154, 190, 195); the others come back locked. */
+  @ApiOkResponse({ type: LessonListResponseDto })
+  @Get('students/:id/lessons')
+  async findLessonsForStudent(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query('schoolId') schoolId: string) {
+    return { items: await this.curriculumService.findLessonsForStudent(user.sub, id, schoolId) };
   }
 }

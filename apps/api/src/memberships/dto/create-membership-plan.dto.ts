@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
 
 export enum MembershipPlanTypeDto {
   SUBSCRIPTION = 'SUBSCRIPTION',
@@ -84,4 +84,16 @@ export class CreateMembershipPlanDto {
   @IsOptional()
   @IsBoolean()
   termsWaiverRequired?: boolean;
+
+  @ApiPropertyOptional({ type: [String], description: 'The School\'s styles this plan covers (Decision 195).' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsUUID('all', { each: true })
+  disciplineIds?: string[];
+
+  @ApiPropertyOptional({ description: 'A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one.' })
+  @IsOptional()
+  @IsBoolean()
+  includesLessons?: boolean;
 }
