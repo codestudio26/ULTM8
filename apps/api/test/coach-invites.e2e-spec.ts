@@ -269,6 +269,20 @@ describeIfDb('Coach invites (Decision 183)', () => {
     expect((await as('otherOwner').get(`/v1/schools/${school.id}/staff-permissions`)).status).toBe(403);
   });
 
+  it('each person can read their own invite rights (for the portal)', async () => {
+    const mine = (who: string) => as(who).get(`/v1/schools/${school.id}/staff-permissions/me`);
+    expect((await mine('owner')).body).toEqual({ isOwner: true, canInviteCoaches: true, branchIds: [] });
+    expect((await mine('coach')).body).toEqual({ isOwner: false, canInviteCoaches: false, branchIds: [] });
+    await superuser.staffPermission.update({ where: { schoolId_userId: { schoolId: school.id, userId: user.staff.id } }, data: { canInviteCoaches: true } });
+    expect((await mine('staff')).body).toEqual({ isOwner: false, canInviteCoaches: true, branchIds: [north.id] });
+    // A plain student (not the one who accepted an invite above).
+    const pupil = await mkUser('pupil');
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: pupil.id, schoolId: school.id } });
+    await sign('pupil');
+    expect((await mine('pupil')).status).toBe(403);
+    expect((await mine('otherOwner')).status).toBe(403);
+  });
+
   it('without PORTAL_BASE_URL no invite is made', async () => {
     delete process.env.PORTAL_BASE_URL;
     const res = await invite('owner', { email: 'nourl@example.test', branchId: north.id });

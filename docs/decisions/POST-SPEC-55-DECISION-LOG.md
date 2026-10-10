@@ -2219,3 +2219,14 @@ Built in the API as `CoachInvite` and `StaffPermission` with the endpoints liste
 4. **Sign-in and menu:** a coach who doesn't own the School lands on their dashboard, with a menu of Dashboard, Grading Board and Notifications; the header shows "Coach". A coach at several Schools sees the first one for now (no School switcher yet).
 
 Built in the API as `GET /schools/{id}/grading-permissions/me` (the caller's own styles and toggles; the owner gets `isOwner: true`), and in the School Portal as `/coach`, with the Grading Board and student panel working for coaches.
+
+---
+
+## Decision 186 — Branch Staff use the coach screens
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found in the Phase 7 decision review. Decision 181 counts Instructors and Branch Staff as "coaches" for grading permissions, but the coach invite and coach dashboard (Decisions 183, 184) were built for Instructors only, so Branch Staff given grading toggles or "Can invite coaches" had no portal screens to use them.
+
+1. **Branch Staff get the same screens as coaches** in the School Portal: they land on the coach dashboard, use the Grading Board and student panel for the styles they may grade (only the actions their toggles allow, students of their own branches), and see their notifications. Gus: *"Same coach screens"*.
+2. **Branch Staff with "Can invite coaches"** also get **Invite coaches**, limited to their own branches; the owner keeps inviting from the Staff page, where "Who can invite coaches" stays owner only.
+
+Built in the API as `GET /schools/{id}/staff-permissions/me` (the caller's own invite rights), and in the School Portal as the coach screens for Branch Staff plus `/coach-invites`.

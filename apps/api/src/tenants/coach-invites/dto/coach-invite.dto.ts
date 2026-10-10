@@ -119,6 +119,20 @@ export class StaffPermissionResponseDto {
   canInviteCoaches!: boolean;
 }
 
+/** The caller's own "Can invite coaches" at a School (Decision 184): the
+ * owner may invite to any branch; Branch Staff with the permission to their
+ * own branches. */
+export class MyStaffPermissionResponseDto {
+  @ApiProperty()
+  isOwner!: boolean;
+
+  @ApiProperty()
+  canInviteCoaches!: boolean;
+
+  @ApiProperty({ type: [String], description: 'Branches they may invite to; empty for the owner (any branch) or when they can\'t invite.' })
+  branchIds!: string[];
+}
+
 export class StaffPermissionListResponseDto {
   @ApiProperty({ type: [StaffPermissionResponseDto] })
   items!: StaffPermissionResponseDto[];

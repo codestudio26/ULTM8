@@ -256,6 +256,22 @@ export class CoachInvitesService {
     return { schoolId: grant.schoolId!, branchId: grant.branchId, accessToken };
   }
 
+  /** The caller's own invite rights here (Decision 184), for the portal. */
+  async myStaffPermission(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId: callerId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true, branchId: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { isOwner: true, canInviteCoaches: true, branchIds: [] };
+      const permission = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { canInviteCoaches: true } });
+      const branchIds = [...new Set(grants.map((g) => g.branchId).filter((id): id is string => !!id))];
+      const canInviteCoaches = !!permission?.canInviteCoaches && branchIds.length > 0;
+      return { isOwner: false, canInviteCoaches, branchIds: canInviteCoaches ? branchIds : [] };
+    });
+  }
+
   /** Branch Staff at the School and whether each may invite coaches. Owner only. */
   async listStaffPermissions(callerId: string, schoolId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
