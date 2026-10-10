@@ -131,6 +131,25 @@ test('bulk promote: calling order, "Needs a look" acknowledgement, and the print
   expect(events[0]).toMatchObject({ acknowledgedWithoutSkillSignoff: true, note: 'Spring Grading Day' });
 });
 
+test('bulk promote: one click removes a student from the batch (Decision 130)', async ({ page }) => {
+  await page.goto('/grading');
+  await page.getByLabel(`Select ${s.student.name}`).check();
+  await page.getByLabel(`Select ${ben.name}`).check();
+  await page.getByRole('button', { name: 'Promote selected' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Promote these students' });
+  const order = dialog.getByRole('list', { name: 'Calling order' });
+  await expect(order.getByRole('listitem')).toHaveCount(2);
+
+  await dialog.getByRole('button', { name: `Remove ${s.student.name} from this batch` }).click();
+  await expect(order.getByRole('listitem')).toHaveCount(1);
+  await expect(order.getByRole('listitem').first()).toHaveAttribute('aria-label', `1. ${ben.name}`);
+  // Sam was the one needing a look; with him gone, Ben can be promoted straight away.
+  await dialog.getByRole('button', { name: 'Promote 1 student' }).click();
+  await expect(page.getByRole('dialog', { name: 'Students promoted' })).toBeVisible();
+  const promoted = await db.promotionEvent.findMany({ where: { schoolId: s.schoolId, voidedAt: null, type: { in: ['BULK_PROMOTION', 'BULK_STRIPE_AWARD'] } } });
+  expect(promoted.map((e) => e.studentId)).toEqual([ben.id]);
+});
+
 test('a style that requires skills: a student missing them can\'t be ticked', async ({ page }) => {
   await db.discipline.update({ where: { id: s.disciplineId }, data: { skillsRequiredToGrade: true } });
   await page.goto('/grading');
