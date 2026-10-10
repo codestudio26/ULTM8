@@ -141,6 +141,22 @@ export type BulkPromoteStudent = components['schemas']['BulkPromoteStudentDto'];
 /** The Grading Board for one style (Decisions 136, 152, 168, 176): every
  * student with a next rank, highest progress first. Search is done on the
  * page, over the loaded list. */
+/** The owner gives a student a home branch (Decisions 148, 168); used by the
+ * board's "No branch" group (Decision 148.2). */
+export function useSetHomeBranch(schoolId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ studentId, branchId }: { studentId: string; branchId: string }) =>
+      unwrap(
+        apiClient.PUT('/v1/schools/{id}/students/{studentId}/home-branch', {
+          params: { path: { id: schoolId!, studentId } },
+          body: { branchId },
+        }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['grading-board', schoolId] }),
+  });
+}
+
 export function useGradingBoard(schoolId: string | null, disciplineId: string | null, activeOnly: boolean) {
   return useQuery({
     queryKey: ['grading-board', schoolId, disciplineId, activeOnly],
