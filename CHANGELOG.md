@@ -20,6 +20,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   "Add stripe", "Reorder stripes?"), the ladder shows each belt's number of
   stripes, the style templates count "grades (each belt and each stripe)", and
   the API's grading and ladder error messages use the same words.
+- **Staff given a role again start fresh** (Decision 193). Removing someone's
+  last Instructor or Branch Staff role at a School now clears their grading
+  permissions there, and removing their Branch Staff role clears "Can invite
+  coaches", so if they're added again later the owner grants what applies now.
+  Losing one branch while they still coach at another keeps their grading
+  permissions. The board's "inactive hidden" count already includes students on
+  the top stripe (Decision 194); a test now pins it.
 - **Grading hardening, performance** (Phase 7 stress round). The Grading
   Board for coaches and staff loads in one query instead of one per student:
   a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a

@@ -2243,3 +2243,73 @@ Also fixed in the same round, with no new rule: rank history is listed newest fi
 2. **Branch Staff with "Can invite coaches"** also get **Invite coaches**, limited to their own branches; the owner keeps inviting from the Staff page, where "Who can invite coaches" stays owner only.
 
 Built in the API as `GET /schools/{id}/staff-permissions/me` (the caller's own invite rights), and in the School Portal as the coach screens for Branch Staff plus `/coach-invites`.
+
+---
+
+## Decision 187 — Words on screen: belts and stripes, not "rungs"
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** wording. Gus: *"The division between belts are called stripes."*
+
+Every word a user reads (School Portal, Student app, emails, notifications, API error messages) says **belt** and **stripe**: a student holds a belt with a number of stripes (e.g. "Blue Belt, 2 stripes"). "Rung" stays only as an internal name in code and in earlier entries of this log, where it means one step of the ladder: a belt with a given number of stripes.
+
+---
+
+## Decision 188 — Instructors choose their own belt per style; the owner verifies it
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the V1 specifics Decision 108 left open. Gus: *"Just like students, they will choose and school owner will verify"*, and chose *"Per style, from the School's belts"*.
+
+1. **The instructor chooses**, on their own profile page in the School Portal, a belt and stripes **for each style**, from that style's belts at the School, the same way a student self-declares at signup (Decision 137).
+2. **It is unverified until the School Owner verifies it, or corrects it.** Until then it shows as "Not verified".
+3. Linking an instructor's belt to their grading history (Decision 108's V2) stays out of scope.
+
+---
+
+## Decision 189 — Belts waiting to be verified: a notice at login for grading staff only
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** Decision 137.4. Gus chose *"Staff only"*.
+
+When the School Owner, or a coach or Branch Staff member with grading permission, logs in to the School Portal, a notice lists the students whose self-declared belts are waiting to be verified, limited to the styles and students they may grade (Decisions 138, 168, 181). Students and guardians see no such notice.
+
+---
+
+## Decision 190 — Lessons need a paid membership, unless the owner makes a lesson free
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Adds to:** Decision 154. Gus: *"yes, unless it is free of charge set by the school owner"*, and chose *"Each lesson"*.
+
+1. A lesson is watchable by students and guardians with an active paid membership for that activity (Decision 154).
+2. **The School Owner can mark any single lesson as free**; a free lesson is watchable by every student and guardian at the School.
+
+---
+
+## Decision 191 — Lesson categories: confirmed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** Decision 128.15. Gus: *"Yes"*.
+
+Lesson categories are a real list with an order, and lessons are ordered within their category.
+
+---
+
+## Decision 192 — Notes in a student's grading history can be edited and hidden; every change is kept
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Adds to:** Decision 128.11. Gus: *"Yes … but records changes and it can be hidden"*, and chose *"Graders edit; hidden from student"*.
+
+1. **Who:** the School Owner, and anyone who may grade that student in that style (Decisions 138, 168, 181).
+2. **Edit:** the note's text can be changed. Every change is kept: who, when, the old text and the new text.
+3. **Hide:** a note can be hidden, and shown again. A hidden note is not shown to the student or guardian; staff still see it, marked as hidden. Hiding and showing are kept in the same change record.
+4. System notes (written by ULTM8, e.g. "Bulk promotion") and the downgrade reason (Decision 128.11) are not edited this way.
+
+---
+
+## Decision 193 — A staff member given a role again starts with today's permissions
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** L1 from the Phase 7 security review. Gus: *"they should get the new permission given at the present time"*.
+
+When an Instructor or Branch Staff role is removed, that person's grading permissions and "Can invite coaches" at that School are cleared. If they are given the role again later, they start with no extra permissions, and the owner grants whatever applies now.
+
+---
+
+## Decision 194 — The board's "inactive hidden" count includes students on the top stripe
+
+**Date:** 10 Oct 2026 · **Status:** Follows Gus's prototype (Decision 124); offered to Gus as the default on 10 Oct 2026. **Resolves:** the question left in the Phase 7 acceptance report (D3).
+
+The Grading Board hides inactive students and shows how many it hid. That count includes inactive students on the last stripe of the top belt, who never appear on the board because they have nothing left to be promoted to, as the prototype does.

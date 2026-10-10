@@ -218,9 +218,22 @@ export class RoleGrantsService {
       return grant; // already revoked — idempotent, not an error
     }
 
-    const revoked = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } }),
-    );
+    const schoolId = grant.schoolId;
+    const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const row = await tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } });
+      // Given the role again later, they start with today's permissions, not
+      // their old ones (Decision 193). Cleared only once they hold no coach
+      // role at this School, so losing one branch keeps the others' rights.
+      const remaining = await tx.roleGrant.findMany({
+        where: { userId: targetUserId, schoolId, revokedAt: null, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } },
+        select: { role: true },
+      });
+      if (remaining.length === 0) await tx.gradingPermission.deleteMany({ where: { userId: targetUserId, schoolId } });
+      if (!remaining.some((g) => g.role === 'BRANCH_STAFF')) {
+        await tx.staffPermission.updateMany({ where: { userId: targetUserId, schoolId, canInviteCoaches: true }, data: { canInviteCoaches: false } });
+      }
+      return row;
+    });
     // Branch Staff no longer at that branch can't have coach invites open
     // there (Decision 183; security review M1).
     if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId, grant.branchId);
