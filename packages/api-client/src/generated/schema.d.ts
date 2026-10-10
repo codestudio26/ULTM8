@@ -1508,6 +1508,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/grading-board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_getGradingBoard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/board-move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_moveOnBoard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/log-class": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_logClass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/board-active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingController_setBoardActive"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/grading/bulk-promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_bulkPromote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/grading-permissions": {
         parameters: {
             query?: never;
@@ -3318,6 +3398,8 @@ export interface components {
             };
             /** @description When counting toward the current rung began: the moment of the last rank change. */
             countingSince: string;
+            /** @description Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176). */
+            boardActiveOverride?: boolean | null;
             /**
              * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
              * @enum {string}
@@ -3384,6 +3466,8 @@ export interface components {
             };
             /** @description When counting toward the current rung began: the moment of the last rank change. */
             countingSince: string;
+            /** @description Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176). */
+            boardActiveOverride?: boolean | null;
             /**
              * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
              * @enum {string}
@@ -3507,6 +3591,75 @@ export interface components {
             stripeTierId?: string;
             /** @description An optional note for the history. */
             note?: string;
+        };
+        GradingBoardItemDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            studentRankId: string;
+            currentRankId: string;
+            currentStripeId?: string | null;
+            /** @enum {string} */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            /** @description "Currently attending": the manual switch when set, otherwise whether the student has an active membership (Decision 152). */
+            active: boolean;
+            /** @enum {string} */
+            activeSource: "MANUAL" | "MEMBERSHIP";
+            hasActiveMembership: boolean;
+            /** @description The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10). */
+            hardBlocked: boolean;
+            eligibility: components["schemas"]["EligibilityResponseDto"];
+        };
+        GradingBoardResponseDto: {
+            /** @description Students with a next rank in this style, highest progress first. */
+            items: components["schemas"]["GradingBoardItemDto"][];
+            /** @description Students left out by activeOnly. */
+            hiddenInactive: number;
+        };
+        BoardMoveDto: {
+            /** @enum {string} */
+            column: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
+        };
+        LogClassDto: {
+            /** @description The class type, one of the next rank's ticked types. Required when the next rank ticks any; may be left out when it ticks none (every class counts). */
+            classType?: string | null;
+        };
+        BoardActiveDto: {
+            /** @description true or false: set by hand. null: follow whether the student has an active membership. */
+            active: boolean | null;
+        };
+        BulkPromoteDto: {
+            disciplineId: string;
+            /** @description Up to 200 students (Spec 55). */
+            studentIds: string[];
+            /**
+             * @description One grading date for the whole batch, YYYY-MM-DD; it must suit every student (Decision 128, item 8). Default today.
+             * @example 2026-03-01
+             */
+            effectiveDate?: string;
+            /** @description A note for every student's history entry, e.g. "Spring Grading Day". */
+            note?: string;
+            /** @description The flagged students ("Needs a look": skills not signed off or days short) the coach acknowledges with one tick (Decision 130). Every flagged student must be here or removed from the batch. */
+            acknowledgedStudentIds?: string[];
+            /** @description Check only: return what would happen, change nothing. */
+            dryRun?: boolean;
+        };
+        BulkPromoteStudentDto: {
+            studentId: string;
+            fromRungId?: string | null;
+            toRungId?: string;
+            /** @description Why this student needs a look, or why they can't be promoted. */
+            reasons: string[];
+            /** @description Set on a promoted student: their history entry. */
+            promotionEventId?: string;
+        };
+        BulkPromoteResponseDto: {
+            /** @description Nothing missing (dry run), or promoted. */
+            ready: components["schemas"]["BulkPromoteStudentDto"][];
+            /** @description Dry run: promoted only with the acknowledgement. After a real run: empty (they are in `ready`). */
+            needsAcknowledgement: components["schemas"]["BulkPromoteStudentDto"][];
+            /** @description Skipped: no next rank, blocked by the style's "skills required" switch, not yours to grade, or changed at the same time. */
+            cannotPromote: components["schemas"]["BulkPromoteStudentDto"][];
         };
         GradingPermissionResponseDto: {
             id: string;
@@ -6591,6 +6744,134 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentRankListResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_getGradingBoard: {
+        parameters: {
+            query: {
+                disciplineId: string;
+                /** @description Part of the student's name. */
+                search?: string;
+                /** @description "Currently attending only" (Decision 152). */
+                activeOnly?: boolean;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingBoardResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_moveOnBoard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardMoveDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_logClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogClassDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_setBoardActive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardActiveDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_bulkPromote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkPromoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkPromoteResponseDto"];
                 };
             };
         };

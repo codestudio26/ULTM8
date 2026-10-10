@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -8,9 +10,14 @@ import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
-import { startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
+import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
+import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
+import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
+import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
+import { isMembershipLive } from '../memberships/memberships.service';
+import { DateTime } from 'luxon';
 import { loadLadder } from './grading-attendance';
-import { dayNumber, gradingDateProblem, localDay, requirementFor, Rung, rungIndex } from './engine';
+import { boardMove, dayNumber, gradingDateProblem, localDay, requirementFor, Rung, rungIndex } from './engine';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
@@ -50,6 +57,7 @@ export class GradingService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly ranksService: RanksService,
     private readonly guardiansService: GuardiansService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -303,6 +311,14 @@ export class GradingService {
    * - Starting classes (Decision 128, item 9): one number when the new next
    *   rung counts any type; a number per type when it counts each type
    *   (Decision 174); none on a time-only rung.
+   *
+   * Promotion-notification wiring (grading foundation gap closed independently
+   * of this phase's own roadmap): after a successful PROMOTION/DOWNGRADE/
+   * STRIPE_AWARD, notifies the Student directly via NOTIFICATION_FANOUT_QUEUE
+   * (the same @InjectQueue-from-a-plain-HTTP-service pattern BookingsService/
+   * WaiversService/PaymentsService already use) — see
+   * notifyStudentOfGradingAction's own comment for why this is scoped to
+   * these three types only.
    */
   private async changeRung(
     callerId: string,
@@ -310,6 +326,8 @@ export class GradingService {
     disciplineId: string,
     dto: GradingActionDto & { reason?: string },
     type: 'PROMOTION' | 'DOWNGRADE' | 'STRIPE_AWARD',
+    // Bulk promote (Decision 130) records its own history type and note.
+    bulk?: { eventType: 'BULK_PROMOTION' | 'BULK_STRIPE_AWARD'; systemNote: string },
   ) {
     const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
     if (!discipline) {
@@ -325,7 +343,7 @@ export class GradingService {
       throw new BadRequestException('A stripe award moves to the next stripe tier; to grade to a chosen rung, use promote with targetRungId.');
     }
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
@@ -457,7 +475,7 @@ export class GradingService {
           studentRankId: studentRank.id,
           schoolId: discipline.schoolId,
           studentId,
-          type,
+          type: bulk?.eventType ?? type,
           performedById: callerId,
           fromRankId: from?.rankId ?? null,
           toRankId: to.rankId,
@@ -469,14 +487,28 @@ export class GradingService {
           reason: type === 'DOWNGRADE' ? dto.reason : null,
           note: dto.note ?? null,
           rungsSkipped: Math.max(0, skipped),
-          systemNote: skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null,
+          systemNote: bulk?.systemNote ?? (skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null),
           startingClasses: type === 'DOWNGRADE' ? null : startingTotal,
           startingClassesByType: startingByType ?? undefined,
         },
       });
 
-      return { studentRank, promotionEvent };
+      return { studentRank, promotionEvent, toRungName: to.name };
     });
+
+    await this.notifyStudentOfGradingAction(
+      studentId,
+      discipline.name,
+      result.promotionEvent.id,
+      type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD' ? 'New stripe!' : type === 'PROMOTION' ? 'Promoted!' : 'Rank updated',
+      type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD'
+        ? `You've earned ${result.toRungName}.`
+        : type === 'PROMOTION'
+          ? `You've been promoted to ${result.toRungName}.`
+          : `Your rank has been adjusted to ${result.toRungName}.`,
+    );
+
+    return result;
   }
 
   /** Starting classes toward the rung after `to` (Decision 128, item 9;
@@ -514,6 +546,454 @@ export class GradingService {
       throw new BadRequestException('The next rank counts any ticked class type: send startingClasses, one number.');
     }
     return { total: dto.startingClasses ?? 0, byType: null };
+  }
+
+  /** Promotion-notification wiring: notifies the Student directly for a
+   * PROMOTION/DOWNGRADE/STRIPE_AWARD only — not SELF_DECLARED (the student's
+   * own action, no one "did" it to them) and not RANK_CORRECTION/ADJUSTMENT
+   * (administrative corrections, not a "you were graded" moment). */
+  private async notifyStudentOfGradingAction(
+    studentId: string,
+    disciplineName: string,
+    promotionEventId: string,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    await this.notificationFanoutQueue.add(
+      'notify',
+      {
+        notificationId: `grading-${promotionEventId}`,
+        userId: studentId,
+        title,
+        body: `${body} (${disciplineName})`,
+        type: 'GRADING_RANK_CHANGE',
+      } satisfies NotificationFanoutJobData,
+      { jobId: `grading-${promotionEventId}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bulk promote (roadmap Phase 3c; Decision 130)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Promote up to 200 students one rung each, on one date (Decision 130,
+   * prototype confirmBulkPromote). The same checks as a single grade, judged
+   * per student, in one fast step:
+   * - Nothing missing: promoted with no extra step.
+   * - "Needs a look": required skills not signed off, or minimum days not yet
+   *   served. Promoted only when the coach acknowledges them
+   *   (acknowledgedStudentIds, one tick for the whole list); an unacknowledged
+   *   flagged student refuses the whole request, so nobody is promoted past a
+   *   check by accident. The acknowledgement is recorded on their history.
+   * - Can't be promoted (skipped): no next rank, blocked by the style's
+   *   "skills required" switch, or not a student this coach may grade.
+   * One grading date must suit every student, or the request is refused
+   * (prototype). `dryRun` returns the same three lists without changing
+   * anything, for the confirm window. Each student is promoted in their own
+   * transaction, so one student changed at the same time is skipped, not the
+   * whole batch.
+   */
+  async bulkPromote(callerId: string, schoolId: string, dto: BulkPromoteDto) {
+    if (!UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('schoolId must be a valid UUID');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: dto.disciplineId } }));
+    if (!discipline || discipline.schoolId !== schoolId) {
+      throw new NotFoundException('Discipline not found');
+    }
+    if (!(await this.isSchoolOwner(callerId, schoolId))) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
+
+    type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; reasons: string[]; promotionEventId?: string };
+    const ready: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
+    const needsAcknowledgement: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
+    const cannotPromote: Row[] = [];
+    const dateProblems: string[] = [];
+
+    for (const studentId of dto.studentIds) {
+      try {
+        await this.assertCanGrade(callerId, schoolId, dto.disciplineId, studentId);
+      } catch (err) {
+        if (err instanceof ForbiddenException) {
+          cannotPromote.push({ studentId, reasons: ['not a student you can grade in this style'] });
+          continue;
+        }
+        throw err;
+      }
+      const plan = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        const sr = await tx.studentRank.findUnique({
+          where: { studentId_disciplineId: { studentId, disciplineId: dto.disciplineId } },
+          include: { skillStatuses: { select: { skillId: true, status: true } } },
+        });
+        if (!sr) return { cannot: 'no rank in this style' };
+        const ladder = await loadLadder(tx, dto.disciplineId);
+        const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
+        const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;
+        if (!next) return { cannot: 'no next rank' };
+        const timeZone = await studentTimeZone(tx, studentId, schoolId);
+        const el = eligibilityOnLadder(ladder, sr, timeZone);
+        if (!el.hasNext) return { cannot: 'no next rank' };
+        const missing = el.timeOnly ? 0 : el.missingSkillIds.length;
+        if (missing > 0 && discipline.skillsRequiredToGrade) return { cannot: 'required skills not signed off (this style requires them)' };
+        const problem = dto.effectiveDate ? gradingDateProblem(dto.effectiveDate, localDay(new Date(), timeZone), localDay(sr.dateOfCurrentRank, timeZone)) : null;
+        const reasons: string[] = [];
+        if (missing > 0) reasons.push(`${missing} skill${missing > 1 ? 's' : ''} not signed off`);
+        const short = el.requiredDays - el.elapsedDays;
+        if (short > 0) reasons.push(`${short} day${short > 1 ? 's' : ''} short`);
+        return { fromRungId: sr.currentStripeId, toRungId: next.id, sameBelt: next.rankId === sr.currentRankId, missingSkills: missing > 0, reasons, problem };
+      });
+      if ('cannot' in plan) {
+        cannotPromote.push({ studentId, reasons: [plan.cannot as string] });
+        continue;
+      }
+      if (plan.problem) dateProblems.push(`${studentId}: ${plan.problem}`);
+      const row = { studentId, fromRungId: plan.fromRungId, toRungId: plan.toRungId, sameBelt: plan.sameBelt, missingSkills: plan.missingSkills, reasons: plan.reasons };
+      (plan.reasons.length > 0 ? needsAcknowledgement : ready).push(row);
+    }
+
+    if (dateProblems.length > 0) {
+      throw new BadRequestException(
+        `The grading date doesn't suit every student — it can't be in the future or before a student's current rank date (Decision 128, item 8): ${dateProblems.join('; ')}.`,
+      );
+    }
+    const strip = (r: Row & { sameBelt?: boolean; missingSkills?: boolean }): Row => ({
+      studentId: r.studentId,
+      fromRungId: r.fromRungId,
+      toRungId: r.toRungId,
+      reasons: r.reasons,
+      ...(r.promotionEventId ? { promotionEventId: r.promotionEventId } : {}),
+    });
+    if (dto.dryRun) {
+      return { ready: ready.map(strip), needsAcknowledgement: needsAcknowledgement.map(strip), cannotPromote };
+    }
+    const acknowledged = new Set(dto.acknowledgedStudentIds ?? []);
+    const unacknowledged = needsAcknowledgement.filter((r) => !acknowledged.has(r.studentId));
+    if (unacknowledged.length > 0) {
+      throw new BadRequestException(
+        `These students need a look: acknowledge them in acknowledgedStudentIds or remove them from the batch (Decision 130): ${unacknowledged
+          .map((r) => `${r.studentId} (${r.reasons.join(', ')})`)
+          .join('; ')}.`,
+      );
+    }
+
+    const promoted: Row[] = [];
+    for (const row of [...ready, ...needsAcknowledgement]) {
+      const systemNote =
+        row.reasons.length > 0 ? `Promoted in a batch; acknowledged: ${row.reasons.join(', ')} (Decision 130).` : 'Promoted in a batch.';
+      try {
+        const result = await this.changeRung(
+          callerId,
+          row.studentId,
+          dto.disciplineId,
+          { targetRungId: row.toRungId, effectiveDate: dto.effectiveDate, note: dto.note, acknowledgeWithoutSkillSignoff: row.missingSkills },
+          'PROMOTION',
+          { eventType: row.sameBelt ? 'BULK_STRIPE_AWARD' : 'BULK_PROMOTION', systemNote },
+        );
+        promoted.push({ ...strip(row), promotionEventId: result.promotionEvent.id });
+      } catch (err) {
+        if (err instanceof ConflictException || err instanceof BadRequestException) {
+          cannotPromote.push({ studentId: row.studentId, reasons: [err.message] });
+          continue;
+        }
+        throw err;
+      }
+    }
+    return { ready: promoted, needsAcknowledgement: [], cannotPromote };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Grading Board (roadmap Phase 3b; Decisions 128, 136, 152, 168, 174, 176)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Every student with a next rank in one style, with their readiness from the
+   * engine, highest progress first. The owner sees every student; other staff
+   * see the students of their own branches, or every student when the School
+   * has no branches (Decisions 168, 169). StudentRank and Membership stay
+   * readable only by the owner or the student (Decision 88): the owner's
+   * board is one read, and other staff's is read student by student under
+   * each student's own context. Staff find *which* students are theirs through
+   * two narrow read-only policies Gus approved for this board
+   * (20261021000000_grading_board).
+   */
+  async getGradingBoard(callerId: string, schoolId: string, disciplineId: string, opts: { search?: string; activeOnly?: boolean }) {
+    if (!UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(disciplineId ?? '')) {
+      throw new BadRequestException('schoolId and disciplineId must be valid UUIDs');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline || discipline.schoolId !== schoolId) {
+      throw new NotFoundException('Discipline not found');
+    }
+    const owner = await this.isSchoolOwner(callerId, schoolId);
+    if (!owner) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const { ladder, schoolTimeZone, hasBranches, myBranchIds } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const mine = await tx.roleGrant.findMany({
+        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: { not: null } },
+        select: { branchId: true },
+      });
+      return {
+        ladder: await loadLadder(tx, disciplineId),
+        schoolTimeZone: (await tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }))?.timezone ?? null,
+        hasBranches: (await tx.branch.findFirst({ where: { schoolId }, select: { id: true } })) !== null,
+        myBranchIds: [...new Set(mine.map((m) => m.branchId as string))],
+      };
+    });
+
+    type Row = {
+      student: { id: string; firstName: string; surname: string };
+      studentRank: Prisma.StudentRankGetPayload<{ include: { skillStatuses: { select: { skillId: true; status: true } } } }>;
+      homeTimeZone: string | null;
+      memberships: Array<{ status: string; expiryDate: Date | null; classesRemaining: number | null }>;
+    };
+    const rows: Row[] = [];
+    const membershipSelect = { studentId: true, status: true, expiryDate: true, classesRemaining: true } as const;
+    if (owner) {
+      await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        const grants = await tx.roleGrant.findMany({
+          where: { schoolId, role: 'STUDENT', revokedAt: null },
+          distinct: ['userId'],
+          select: { user: { select: { id: true, firstName: true, surname: true } } },
+        });
+        const ids = grants.map((g) => g.user.id);
+        const [ranks, homes, memberships] = await Promise.all([
+          tx.studentRank.findMany({ where: { schoolId, disciplineId, studentId: { in: ids } }, include: { skillStatuses: { select: { skillId: true, status: true } } } }),
+          tx.studentHomeBranch.findMany({ where: { schoolId, studentId: { in: ids } }, select: { studentId: true, branch: { select: { timezone: true } } } }),
+          tx.membership.findMany({ where: { schoolId, studentId: { in: ids } }, select: membershipSelect }),
+        ]);
+        for (const g of grants) {
+          const sr = ranks.find((r) => r.studentId === g.user.id);
+          if (!sr) continue;
+          rows.push({
+            student: g.user,
+            studentRank: sr,
+            homeTimeZone: homes.find((h) => h.studentId === g.user.id)?.branch.timezone ?? null,
+            memberships: memberships.filter((m) => m.studentId === g.user.id),
+          });
+        }
+      });
+    } else {
+      // Who this staff member may see (Decision 168): the students whose home
+      // branch is one of theirs, or, in a School with no branches, every
+      // enrolled student — read through the two narrow read-only policies
+      // added for this board (20261021000000_grading_board).
+      const candidateIds = await this.prismaApp.withTenantContext(callerId, async (tx) =>
+        hasBranches
+          ? (await tx.studentHomeBranch.findMany({ where: { schoolId, branchId: { in: myBranchIds } }, select: { studentId: true } })).map((h) => h.studentId)
+          : (await tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { userId: true } })).map((g) => g.userId),
+      );
+      for (const studentId of candidateIds) {
+        const row = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+          const enrolled = await tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
+          if (!enrolled) return null;
+          const studentRank = await tx.studentRank.findUnique({
+            where: { studentId_disciplineId: { studentId, disciplineId } },
+            include: { skillStatuses: { select: { skillId: true, status: true } } },
+          });
+          if (!studentRank) return null;
+          const [user, home, memberships] = await Promise.all([
+            tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { id: true, firstName: true, surname: true } }),
+            tx.studentHomeBranch.findUnique({ where: { schoolId_studentId: { schoolId, studentId } }, select: { branch: { select: { timezone: true } } } }),
+            tx.membership.findMany({ where: { schoolId, studentId }, select: membershipSelect }),
+          ]);
+          return { student: user, studentRank, homeTimeZone: home?.branch.timezone ?? null, memberships };
+        });
+        if (row) rows.push(row);
+      }
+    }
+
+    const needle = opts.search?.trim().toLowerCase();
+    const now = new Date();
+    let hiddenInactive = 0;
+    const items: Array<{
+      studentId: string;
+      firstName: string;
+      surname: string;
+      studentRankId: string;
+      currentRankId: string;
+      currentStripeId: string | null;
+      verificationStatus: string;
+      active: boolean;
+      activeSource: 'MANUAL' | 'MEMBERSHIP';
+      hasActiveMembership: boolean;
+      hardBlocked: boolean;
+      eligibility: Extract<ReturnType<typeof eligibilityOnLadder>, { hasNext: true }>;
+    }> = [];
+    for (const row of rows) {
+      const { student, studentRank: sr } = row;
+      if (needle && !`${student.firstName} ${student.surname}`.toLowerCase().includes(needle)) continue;
+      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now);
+      if (!eligibility.hasNext) continue; // nothing to progress toward: not on the board (prototype)
+      const hasActiveMembership = row.memberships.some((m) => isMembershipLive(m, now));
+      const active = sr.boardActiveOverride ?? hasActiveMembership;
+      if (opts.activeOnly && !active) {
+        hiddenInactive++;
+        continue;
+      }
+      items.push({
+        studentId: student.id,
+        firstName: student.firstName,
+        surname: student.surname,
+        studentRankId: sr.id,
+        currentRankId: sr.currentRankId,
+        currentStripeId: sr.currentStripeId,
+        verificationStatus: sr.verificationStatus,
+        active,
+        activeSource: sr.boardActiveOverride === null ? 'MEMBERSHIP' : 'MANUAL',
+        hasActiveMembership,
+        hardBlocked: discipline.skillsRequiredToGrade && !eligibility.timeOnly && eligibility.missingSkillIds.length > 0,
+        eligibility,
+      });
+    }
+    items.sort(
+      (a, b) =>
+        b.eligibility.progressPercent - a.eligibility.progressPercent ||
+        a.surname.localeCompare(b.surname) ||
+        a.firstName.localeCompare(b.firstName),
+    );
+    return { items, hiddenInactive };
+  }
+
+  /** Shared start of the board writes: the same staff check and School gates as
+   * every grading write, then the student's rank, ladder and time zone. */
+  private async withBoardTarget<T>(
+    callerId: string,
+    studentId: string,
+    disciplineId: string,
+    fn: (
+      tx: TenantTx,
+      ctx: {
+        discipline: { id: string; schoolId: string; classTypesOffered: string[] };
+        studentRank: Prisma.StudentRankGetPayload<{ include: { skillStatuses: true } }>;
+        ladder: Rung[];
+        timeZone: string;
+      },
+    ) => Promise<T>,
+  ): Promise<T> {
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const studentRank = await tx.studentRank.findUnique({
+        where: { studentId_disciplineId: { studentId, disciplineId } },
+        include: { skillStatuses: true },
+      });
+      if (!studentRank) {
+        throw new BadRequestException('This Student has no rank in this Discipline.');
+      }
+      const ladder = await loadLadder(tx, disciplineId);
+      const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
+      return fn(tx, { discipline, studentRank, ladder, timeZone });
+    });
+  }
+
+  private adjustmentEvent(
+    tx: TenantTx,
+    callerId: string,
+    sr: { id: string; schoolId: string; studentId: string; currentRankId: string; currentStripeId: string | null },
+    systemNote: string,
+  ) {
+    return tx.promotionEvent.create({
+      data: {
+        id: randomUUID(),
+        studentRankId: sr.id,
+        schoolId: sr.schoolId,
+        studentId: sr.studentId,
+        type: 'ADJUSTMENT',
+        performedById: callerId,
+        fromRankId: sr.currentRankId,
+        toRankId: sr.currentRankId,
+        fromStripeTierId: sr.currentStripeId,
+        toStripeTierId: sr.currentStripeId,
+        systemNote,
+      },
+    });
+  }
+
+  /** Board drag (Decision 128, item 13; prototype dropOnBand): rewrites the
+   * class count — on an "each type" rung every type to the column's % of its
+   * own number (Decision 174) — or, on a time-only rung, the rank date, and
+   * records an ADJUSTMENT entry. */
+  async moveOnBoard(callerId: string, studentId: string, disciplineId: string, dto: BoardMoveDto) {
+    return this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { studentRank: sr, ladder, timeZone }) => {
+      const current = eligibilityOnLadder(ladder, sr, timeZone);
+      if (current.hasNext && current.boardColumn === dto.column) {
+        throw new BadRequestException('This student is already in that column.');
+      }
+      const move = boardMove(requirementFor(ladder, sr.currentStripeId ?? ''), dto.column);
+      if (move.kind === 'NOT_MOVABLE') {
+        throw new BadRequestException('This student can\'t be moved: there is no next rank, or nothing required to split into columns.');
+      }
+      const label = { JUST_STARTING: 'Just Starting', GETTING_THERE: 'Getting There', READY_TO_GRADE: 'Ready to Grade' }[dto.column];
+      let what: string;
+      let data: Prisma.StudentRankUpdateManyMutationInput;
+      if (move.kind === 'DAYS') {
+        const newDay = DateTime.now().setZone(timeZone).minus({ days: move.daysInRank }).toISODate() as string;
+        what = `time-in-rank start date changed from ${localDay(sr.dateOfCurrentRank, timeZone)} to ${newDay}`;
+        data = { dateOfCurrentRank: startOfLocalDay(newDay, timeZone) };
+      } else {
+        const typeText = move.byType ? ` (${Object.entries(move.byType).map(([t, n]) => `${t} ${n}`).join(', ')})` : '';
+        what = `classes attended changed from ${sr.classesAttendedTowardCheckpoint} to ${move.total}${typeText}`;
+        data = { classesAttendedTowardCheckpoint: move.total, ...(move.byType ? { classesAttendedByType: move.byType } : {}) };
+      }
+      const updated = await tx.studentRank.updateMany({
+        where: { id: sr.id, currentStripeId: sr.currentStripeId, dateOfCurrentRank: sr.dateOfCurrentRank, classesAttendedTowardCheckpoint: sr.classesAttendedTowardCheckpoint },
+        data,
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This Student\'s progress was changed at the same time — please retry.');
+      }
+      const promotionEvent = await this.adjustmentEvent(tx, callerId, sr, `Progress adjusted by hand on the Grading Board: ${what} (moved to "${label}").`);
+      return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent };
+    });
+  }
+
+  /** "Log a class" (Decision 128 item 6, Decision 176): staff add one class by
+   * hand, with a class type from the next rank's ticked types. It always
+   * counts — the weekly cap is for attendance, not a deliberate entry — and it
+   * is written to the history. */
+  async logClass(callerId: string, studentId: string, disciplineId: string, dto: LogClassDto) {
+    return this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder }) => {
+      const req = requirementFor(ladder, sr.currentStripeId ?? '');
+      if (req.kind !== 'NEXT') throw new BadRequestException('This student has no next rank to count classes toward.');
+      if (req.timeOnly) throw new BadRequestException('The current rank counts time only, so classes are not counted (Decision 128, item 3).');
+      const classType = dto.classType ?? null;
+      const ticked = req.countRules.eligibleClassTypes;
+      if (ticked.length > 0 && (classType === null || !ticked.includes(classType))) {
+        throw new BadRequestException(`Pick the class type: one of ${ticked.join(', ')} (Decision 176).`);
+      }
+      if (ticked.length === 0 && classType !== null && !discipline.classTypesOffered.includes(classType)) {
+        throw new BadRequestException(`"${classType}" is not one of this style's class types.`);
+      }
+      const byType = { ...(sr.classesAttendedByType as Record<string, number>) };
+      if (classType !== null) byType[classType] = (byType[classType] ?? 0) + 1;
+      const updated = await tx.studentRank.updateMany({
+        where: { id: sr.id, currentStripeId: sr.currentStripeId, classesAttendedTowardCheckpoint: sr.classesAttendedTowardCheckpoint },
+        data: { classesAttendedTowardCheckpoint: sr.classesAttendedTowardCheckpoint + 1, classesAttendedByType: byType },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This Student\'s progress was changed at the same time — please retry.');
+      }
+      const promotionEvent = await this.adjustmentEvent(
+        tx,
+        callerId,
+        sr,
+        `Class logged by hand: ${classType ?? 'no class type'} (classes ${sr.classesAttendedTowardCheckpoint} → ${sr.classesAttendedTowardCheckpoint + 1}).`,
+      );
+      return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent };
+    });
+  }
+
+  /** The manual Active/Inactive switch for this style (Decisions 152, 176);
+   * null goes back to following membership. */
+  async setBoardActive(callerId: string, studentId: string, disciplineId: string, dto: BoardActiveDto) {
+    return this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { studentRank: sr }) =>
+      tx.studentRank.update({ where: { id: sr.id }, data: { boardActiveOverride: dto.active } }),
+    );
   }
 
   // ---------------------------------------------------------------------------

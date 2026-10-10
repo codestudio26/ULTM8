@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
-import { boardColumn, BoardColumn, computeEligibility, Eligibility, localDay, requirementFor } from './engine';
+import { boardColumn, BoardColumn, computeEligibility, Eligibility, localDay, requirementFor, Rung } from './engine';
 import { loadLadder } from './grading-attendance';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -28,7 +28,18 @@ export async function studentEligibility(
   timeZone: string,
   now: Date = new Date(),
 ): Promise<StudentEligibility> {
-  const req = requirementFor(await loadLadder(tx, studentRank.disciplineId), studentRank.currentStripeId ?? '');
+  return eligibilityOnLadder(await loadLadder(tx, studentRank.disciplineId), studentRank, timeZone, now);
+}
+
+/** As studentEligibility, on a ladder already loaded (the Grading Board loads
+ * it once for every student). */
+export function eligibilityOnLadder(
+  ladder: Rung[],
+  studentRank: Parameters<typeof studentEligibility>[1],
+  timeZone: string,
+  now: Date = new Date(),
+): StudentEligibility {
+  const req = requirementFor(ladder, studentRank.currentStripeId ?? '');
   const eligibility = computeEligibility(req, {
     rankDate: localDay(studentRank.dateOfCurrentRank, timeZone),
     today: localDay(now, timeZone),

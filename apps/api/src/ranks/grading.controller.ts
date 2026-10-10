@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -7,6 +7,8 @@ import { GradingService } from './grading.service';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
+import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
+import { Throttle } from '@nestjs/throttler';
 
 // StudentRank reads + grading actions. `schoolId` is a required query param on
 // every read below — same reasoning GET /students/{id}/membership-status needed
@@ -141,5 +143,53 @@ export class GradingController {
   @Get('schools/:schoolId/rank-verifications')
   findPendingVerifications(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
     return this.gradingService.findPendingVerifications(user.sub, schoolId);
+  }
+
+  /** The Grading Board for one style (roadmap Phase 3b): every student with a
+   * next rank, highest progress first. Owner: every student; other staff: the
+   * students of their own branches (Decision 168). */
+  @ApiOkResponse({ type: GradingBoardResponseDto })
+  @ApiQuery({ name: 'disciplineId', required: true })
+  @ApiQuery({ name: 'search', required: false, description: 'Part of the student\'s name.' })
+  @ApiQuery({ name: 'activeOnly', required: false, type: Boolean, description: '"Currently attending only" (Decision 152).' })
+  @Get('schools/:schoolId/grading-board')
+  getGradingBoard(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Query('disciplineId') disciplineId: string,
+    @Query('search') search?: string,
+    @Query('activeOnly') activeOnly?: string,
+  ) {
+    return this.gradingService.getGradingBoard(user.sub, schoolId, disciplineId, { search, activeOnly: activeOnly === 'true' });
+  }
+
+  /** Drag on the Grading Board (Decision 128 item 13, Decision 174). */
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Post('students/:id/ranks/:disciplineId/board-move')
+  moveOnBoard(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('disciplineId') disciplineId: string, @Body() dto: BoardMoveDto) {
+    return this.gradingService.moveOnBoard(user.sub, id, disciplineId, dto);
+  }
+
+  /** "Log a class" (Decision 128 item 6, Decision 176). */
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Post('students/:id/ranks/:disciplineId/log-class')
+  logClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('disciplineId') disciplineId: string, @Body() dto: LogClassDto) {
+    return this.gradingService.logClass(user.sub, id, disciplineId, dto);
+  }
+
+  /** The manual Active/Inactive switch for this style (Decisions 152, 176). */
+  @Put('students/:id/ranks/:disciplineId/board-active')
+  setBoardActive(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('disciplineId') disciplineId: string, @Body() dto: BoardActiveDto) {
+    return this.gradingService.setBoardActive(user.sub, id, disciplineId, dto);
+  }
+
+  /** Bulk promote (roadmap Phase 3c, Decision 130): up to 200 students, one
+   * rung each, on one date. Use dryRun first for the "Needs a look" list.
+   * Rate-limited tighter than the default: each call can write 200 grades. */
+  @ApiOkResponse({ type: BulkPromoteResponseDto })
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Post('schools/:schoolId/grading/bulk-promote')
+  bulkPromote(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: BulkPromoteDto) {
+    return this.gradingService.bulkPromote(user.sub, schoolId, dto);
   }
 }

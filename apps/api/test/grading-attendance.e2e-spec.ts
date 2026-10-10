@@ -187,6 +187,13 @@ describeIfDb('Grading — attendance counted through the engine (Phase 2b)', () 
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
+    // FOUND ON REVIEW: a real check-in here can free a waitlisted seat, which
+    // fans out a real Notification row via NOTIFICATION_FANOUT_QUEUE's live
+    // worker — racy (depends on whether that worker has written it yet),
+    // which is why this wasn't always caught. Same lookup-then-delete-
+    // Notification-first convention waivers.e2e-spec.ts and ranks.e2e-spec.ts
+    // already established for their own queue-triggered notifications.
+    await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
