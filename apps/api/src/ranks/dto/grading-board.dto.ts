@@ -12,7 +12,7 @@ export class BoardMoveDto {
   column!: BoardColumnValue;
 }
 
-/** Staff add a class by hand (Decision 128 item 6, Decision 175). */
+/** Staff add a class by hand (Decision 128 item 6, Decision 176). */
 export class LogClassDto {
   @ApiPropertyOptional({
     type: String,
@@ -25,7 +25,7 @@ export class LogClassDto {
   classType?: string | null;
 }
 
-/** The manual Active/Inactive switch for this style (Decisions 152, 175). */
+/** The manual Active/Inactive switch for this style (Decisions 152, 176). */
 export class BoardActiveDto {
   @ApiProperty({ type: Boolean, nullable: true, description: 'true or false: set by hand. null: follow whether the student has an active membership.' })
   @ValidateIf((o: { active?: unknown }) => o.active !== null)

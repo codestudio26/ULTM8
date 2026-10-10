@@ -47,7 +47,7 @@ export class StudentRankResponseDto {
   @ApiProperty({ description: 'When counting toward the current rung began: the moment of the last rank change.' })
   countingSince!: string;
 
-  @ApiPropertyOptional({ type: Boolean, nullable: true, description: 'Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 175).' })
+  @ApiPropertyOptional({ type: Boolean, nullable: true, description: 'Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176).' })
   boardActiveOverride!: boolean | null;
 
   @ApiProperty({ enum: ['VERIFIED', 'UNVERIFIED'], description: 'UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).' })

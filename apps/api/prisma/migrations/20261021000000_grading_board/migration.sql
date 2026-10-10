@@ -1,4 +1,4 @@
--- Grading Board, roadmap Phase 3b (Decisions 152, 175): the manual
+-- Grading Board, roadmap Phase 3b (Decisions 152, 176): the manual
 -- Active/Inactive switch per student per style. Null follows membership.
 ALTER TABLE "StudentRank" ADD COLUMN "boardActiveOverride" BOOLEAN;
 

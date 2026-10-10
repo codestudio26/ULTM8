@@ -169,14 +169,14 @@ export class GradingController {
     return this.gradingService.moveOnBoard(user.sub, id, disciplineId, dto);
   }
 
-  /** "Log a class" (Decision 128 item 6, Decision 175). */
+  /** "Log a class" (Decision 128 item 6, Decision 176). */
   @ApiOkResponse({ type: PromotionEventResponseDto })
   @Post('students/:id/ranks/:disciplineId/log-class')
   logClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('disciplineId') disciplineId: string, @Body() dto: LogClassDto) {
     return this.gradingService.logClass(user.sub, id, disciplineId, dto);
   }
 
-  /** The manual Active/Inactive switch for this style (Decisions 152, 175). */
+  /** The manual Active/Inactive switch for this style (Decisions 152, 176). */
   @Put('students/:id/ranks/:disciplineId/board-active')
   setBoardActive(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('disciplineId') disciplineId: string, @Body() dto: BoardActiveDto) {
     return this.gradingService.setBoardActive(user.sub, id, disciplineId, dto);

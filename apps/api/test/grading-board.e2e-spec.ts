@@ -1,5 +1,5 @@
 /**
- * Grading Board, roadmap Phase 3b (Decisions 128, 136, 152, 168, 174, 175):
+ * Grading Board, roadmap Phase 3b (Decisions 128, 136, 152, 168, 174, 176):
  * the board read (owner and branch staff), "currently attending", board drag,
  * "Log a class" and the manual Active switch. Real HTTP throughout.
  */
@@ -230,7 +230,7 @@ describeIfDb('Grading Board (Phase 3b)', () => {
     expect(gus.eligibility.boardColumn).toBe('GETTING_THERE');
   });
 
-  it('"Log a class": a type from the next rank\'s list, always counted, recorded (Decision 175)', async () => {
+  it('"Log a class": a type from the next rank\'s list, always counted, recorded (Decision 176)', async () => {
     expect((await write('carla', 'ben', 'log-class', {})).status).toBe(400);
     expect((await write('carla', 'ben', 'log-class', { classType: 'Kata' })).status).toBe(400);
     const before = await rankOf('ben');

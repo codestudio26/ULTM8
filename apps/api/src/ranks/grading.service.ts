@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -8,6 +10,8 @@ import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
+import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
+import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
 import { BoardActiveDto, BoardMoveDto, LogClassDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
@@ -53,6 +57,7 @@ export class GradingService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly ranksService: RanksService,
     private readonly guardiansService: GuardiansService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -306,6 +311,14 @@ export class GradingService {
    * - Starting classes (Decision 128, item 9): one number when the new next
    *   rung counts any type; a number per type when it counts each type
    *   (Decision 174); none on a time-only rung.
+   *
+   * Promotion-notification wiring (grading foundation gap closed independently
+   * of this phase's own roadmap): after a successful PROMOTION/DOWNGRADE/
+   * STRIPE_AWARD, notifies the Student directly via NOTIFICATION_FANOUT_QUEUE
+   * (the same @InjectQueue-from-a-plain-HTTP-service pattern BookingsService/
+   * WaiversService/PaymentsService already use) — see
+   * notifyStudentOfGradingAction's own comment for why this is scoped to
+   * these three types only.
    */
   private async changeRung(
     callerId: string,
@@ -328,7 +341,7 @@ export class GradingService {
       throw new BadRequestException('A stripe award moves to the next stripe tier; to grade to a chosen rung, use promote with targetRungId.');
     }
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
@@ -478,8 +491,22 @@ export class GradingService {
         },
       });
 
-      return { studentRank, promotionEvent };
+      return { studentRank, promotionEvent, toRungName: to.name };
     });
+
+    await this.notifyStudentOfGradingAction(
+      studentId,
+      discipline.name,
+      result.promotionEvent.id,
+      type === 'STRIPE_AWARD' ? 'New stripe!' : type === 'PROMOTION' ? 'Promoted!' : 'Rank updated',
+      type === 'STRIPE_AWARD'
+        ? `You've earned ${result.toRungName}.`
+        : type === 'PROMOTION'
+          ? `You've been promoted to ${result.toRungName}.`
+          : `Your rank has been adjusted to ${result.toRungName}.`,
+    );
+
+    return result;
   }
 
   /** Starting classes toward the rung after `to` (Decision 128, item 9;
@@ -519,8 +546,32 @@ export class GradingService {
     return { total: dto.startingClasses ?? 0, byType: null };
   }
 
+  /** Promotion-notification wiring: notifies the Student directly for a
+   * PROMOTION/DOWNGRADE/STRIPE_AWARD only — not SELF_DECLARED (the student's
+   * own action, no one "did" it to them) and not RANK_CORRECTION/ADJUSTMENT
+   * (administrative corrections, not a "you were graded" moment). */
+  private async notifyStudentOfGradingAction(
+    studentId: string,
+    disciplineName: string,
+    promotionEventId: string,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    await this.notificationFanoutQueue.add(
+      'notify',
+      {
+        notificationId: `grading-${promotionEventId}`,
+        userId: studentId,
+        title,
+        body: `${body} (${disciplineName})`,
+        type: 'GRADING_RANK_CHANGE',
+      } satisfies NotificationFanoutJobData,
+      { jobId: `grading-${promotionEventId}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
+  }
+
   // ---------------------------------------------------------------------------
-  // Grading Board (roadmap Phase 3b; Decisions 128, 136, 152, 168, 174, 175)
+  // Grading Board (roadmap Phase 3b; Decisions 128, 136, 152, 168, 174, 176)
   // ---------------------------------------------------------------------------
 
   /**
@@ -769,7 +820,7 @@ export class GradingService {
     });
   }
 
-  /** "Log a class" (Decision 128 item 6, Decision 175): staff add one class by
+  /** "Log a class" (Decision 128 item 6, Decision 176): staff add one class by
    * hand, with a class type from the next rank's ticked types. It always
    * counts — the weekly cap is for attendance, not a deliberate entry — and it
    * is written to the history. */
@@ -781,7 +832,7 @@ export class GradingService {
       const classType = dto.classType ?? null;
       const ticked = req.countRules.eligibleClassTypes;
       if (ticked.length > 0 && (classType === null || !ticked.includes(classType))) {
-        throw new BadRequestException(`Pick the class type: one of ${ticked.join(', ')} (Decision 175).`);
+        throw new BadRequestException(`Pick the class type: one of ${ticked.join(', ')} (Decision 176).`);
       }
       if (ticked.length === 0 && classType !== null && !discipline.classTypesOffered.includes(classType)) {
         throw new BadRequestException(`"${classType}" is not one of this style's class types.`);
@@ -805,7 +856,7 @@ export class GradingService {
     });
   }
 
-  /** The manual Active/Inactive switch for this style (Decisions 152, 175);
+  /** The manual Active/Inactive switch for this style (Decisions 152, 176);
    * null goes back to following membership. */
   async setBoardActive(callerId: string, studentId: string, disciplineId: string, dto: BoardActiveDto) {
     return this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { studentRank: sr }) =>
