@@ -8,7 +8,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
-import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
@@ -147,7 +147,7 @@ export class GradingService {
     if (includeVoided && relation !== 'staff') {
       throw new ForbiddenException('Only School staff can see voided history entries.');
     }
-    return this.prismaApp.withTenantContext(studentId, (tx) =>
+    const page = await this.prismaApp.withTenantContext(studentId, (tx) =>
       cursorPaginate(
         // Newest first by grading date, as the prototype (the cursor stays the id).
         (args) =>
@@ -160,6 +160,10 @@ export class GradingService {
         limit,
       ),
     );
+    if (relation === 'staff') return page;
+    // A hidden note isn't shown to the student or guardian, nor that one
+    // was hidden (Decision 192).
+    return { ...page, items: page.items.map((e) => (e.noteHiddenAt ? { ...e, note: null, noteHiddenAt: null } : e)) };
   }
 
   /** Staff (Owner/Manager/Branch Staff/Instructor), the Student themselves, OR
@@ -1253,6 +1257,118 @@ export class GradingService {
       }
       return tx.promotionEvent.findUniqueOrThrow({ where: { id: entry.id } });
     });
+  }
+
+  /** Edit a history entry's note, or hide or show it (Decision 192). For the
+   * owner and anyone who may grade that student in that style: a coach with
+   * "Promote" or "Move down" for the style, covering the student's branch.
+   * Every change goes to PromotionEventNoteLog. System notes and downgrade
+   * reasons are not edited here; voided entries can't be changed. */
+  async changeHistoryNote(callerId: string, studentId: string, schoolId: string, eventId: string, dto: ChangeHistoryNoteDto) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(eventId)) {
+      throw new BadRequestException('id, eventId and schoolId must be valid UUIDs');
+    }
+    if (dto.note === undefined && dto.hidden === undefined) {
+      throw new BadRequestException('Send a note, or hidden, or both.');
+    }
+    // Staff first, so an outsider learns nothing about which entries exist.
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const found = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.promotionEvent.findFirst({ where: { id: eventId, studentId, schoolId }, select: { studentRank: { select: { disciplineId: true } } } }),
+    );
+    if (!found) {
+      throw new NotFoundException('History entry not found');
+    }
+    await this.assertMayGradeEither(callerId, schoolId, found.studentRank.disciplineId, studentId, ['canPromote', 'canDowngrade']);
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const entry = await tx.promotionEvent.findFirstOrThrow({ where: { id: eventId, studentId, schoolId } });
+      if (entry.voidedAt) {
+        throw new ConflictException('This entry is voided; its note can\'t be changed.');
+      }
+      const now = new Date();
+      const newNote = dto.note === undefined ? entry.note : dto.note?.trim() || null;
+      const edited = newNote !== entry.note;
+      const hide = dto.hidden === true && !entry.noteHiddenAt;
+      const show = dto.hidden === false && !!entry.noteHiddenAt;
+      if (dto.hidden === true && !newNote) {
+        throw new BadRequestException('There is no note to hide.');
+      }
+      if (!edited && !hide && !show) return entry;
+
+      // Conditional on what was read: two changes at once give a 409, never
+      // a lost edit.
+      const updated = await tx.promotionEvent.updateMany({
+        where: { id: entry.id, note: entry.note, noteHiddenAt: entry.noteHiddenAt, voidedAt: null },
+        data: {
+          ...(edited ? { note: newNote, noteEditedAt: now, noteEditedById: callerId } : {}),
+          ...(hide ? { noteHiddenAt: now } : show ? { noteHiddenAt: null } : {}),
+        },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This note was changed at the same time — please look again.');
+      }
+      const base = { promotionEventId: entry.id, schoolId, studentId, changedById: callerId };
+      // createMany: no RETURNING, since the student's context may write the
+      // log but not read it back.
+      await tx.promotionEventNoteLog.createMany({
+        data: [
+          ...(edited ? [{ ...base, id: randomUUID(), change: 'EDITED' as const, oldNote: entry.note, newNote, createdAt: now }] : []),
+          ...(hide ? [{ ...base, id: randomUUID(), change: 'HIDDEN' as const, oldNote: newNote, newNote, createdAt: now }] : []),
+          ...(show ? [{ ...base, id: randomUUID(), change: 'SHOWN' as const, oldNote: newNote, newNote, createdAt: now }] : []),
+        ],
+      });
+      return tx.promotionEvent.findUniqueOrThrow({ where: { id: entry.id } });
+    });
+  }
+
+  /** Every change to one entry's note, oldest first (Decision 192). The
+   * School Owner/Manager only: the log keeps hidden notes' text. */
+  async findHistoryNoteLog(callerId: string, studentId: string, schoolId: string, eventId: string) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(eventId)) {
+      throw new BadRequestException('id, eventId and schoolId must be valid UUIDs');
+    }
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.promotionEventNoteLog.findMany({
+        where: { promotionEventId: eventId, studentId, schoolId },
+        orderBy: { createdAt: 'asc' },
+        include: { changedBy: { select: { firstName: true, surname: true } } },
+      }),
+    );
+    return {
+      items: rows.map(({ changedBy, ...r }) => ({
+        id: r.id,
+        change: r.change,
+        oldNote: r.oldNote,
+        newNote: r.newNote,
+        changedById: r.changedById,
+        changedByName: changedBy ? `${changedBy.firstName} ${changedBy.surname}` : null,
+        createdAt: r.createdAt,
+      })),
+    };
+  }
+
+  /** assertCanGrade, passing when the caller holds any one of these toggles. */
+  private async assertMayGradeEither(callerId: string, schoolId: string, disciplineId: string, studentId: string, toggles: PermissionToggle[]) {
+    let first: unknown;
+    for (const toggle of toggles) {
+      try {
+        await this.assertCanGrade(callerId, schoolId, disciplineId, studentId, toggle);
+        return;
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        first ??= err;
+      }
+    }
+    throw first;
   }
 
   /** Correct the date a student reached their current rung (Decision 153).

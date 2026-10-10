@@ -309,45 +309,47 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants                   RoleGrant[]         @relation("RoleGrantUser")
-  grantsIssued                 RoleGrant[]         @relation("RoleGrantGrantedBy")
-  classesTaught                Class[]             @relation("ClassInstructor")
-  timetableSlotsTaught         TimetableSlot[]     @relation("TimetableSlotInstructor")
+  roleGrants                   RoleGrant[]             @relation("RoleGrantUser")
+  grantsIssued                 RoleGrant[]             @relation("RoleGrantGrantedBy")
+  classesTaught                Class[]                 @relation("ClassInstructor")
+  timetableSlotsTaught         TimetableSlot[]         @relation("TimetableSlotInstructor")
   instructorProfiles           Instructor[]
-  lessonsAuthored              Lesson[]            @relation("LessonInstructor")
-  memberships                  Membership[]        @relation("MembershipStudent")
-  membershipsGifted            Membership[]        @relation("MembershipGiftedBy")
-  transactionsPaid             Transaction[]       @relation("TransactionPayer")
+  lessonsAuthored              Lesson[]                @relation("LessonInstructor")
+  memberships                  Membership[]            @relation("MembershipStudent")
+  membershipsGifted            Membership[]            @relation("MembershipGiftedBy")
+  transactionsPaid             Transaction[]           @relation("TransactionPayer")
   studentRanks                 StudentRank[]
-  promotionEventsPerformed     PromotionEvent[]    @relation("PromotionEventPerformedBy")
-  promotionEventsVoided        PromotionEvent[]    @relation("PromotionEventVoidedBy")
-  skillSignOffChanges          SkillSignOffLog[]   @relation("SkillSignOffLogChangedBy")
-  homeBranches                 StudentHomeBranch[] @relation("StudentHomeBranchStudent")
-  rankVerifications            StudentRank[]       @relation("StudentRankVerifiedBy")
-  homeBranchesAssigned         StudentHomeBranch[] @relation("StudentHomeBranchAssignedBy")
-  gradingPermissions           GradingPermission[] @relation("GradingPermissionUser")
-  gradingPermissionsGiven      GradingPermission[] @relation("GradingPermissionGrantedBy")
-  staffPermissions             StaffPermission[]   @relation("StaffPermissionUser")
-  staffPermissionsGiven        StaffPermission[]   @relation("StaffPermissionGrantedBy")
-  coachInvitesSent             CoachInvite[]       @relation("CoachInviteInvitedBy")
-  coachInvitesAccepted         CoachInvite[]       @relation("CoachInviteAcceptedBy")
-  coachInvitesCancelled        CoachInvite[]       @relation("CoachInviteCancelledBy")
-  instructorBelts              InstructorBelt[]    @relation("InstructorBeltUser")
-  instructorBeltsVerified      InstructorBelt[]    @relation("InstructorBeltVerifiedBy")
-  waiverSignatures             WaiverSignature[]   @relation("WaiverSignatureStudent")
-  waiverSignaturesSigned       WaiverSignature[]   @relation("WaiverSignatureSignedBy")
-  bookings                     Booking[]           @relation("BookingStudent")
-  bookingsOverridden           Booking[]           @relation("BookingOverriddenBy")
-  bookingsResolved             Booking[]           @relation("BookingResolvedBy")
-  bookingsCheckedIn            Booking[]           @relation("BookingCheckedInBy")
-  bookingAttendeesResolved     BookingAttendee[]   @relation("BookingAttendeeResolvedBy")
-  waitlistEntries              WaitlistEntry[]     @relation("WaitlistEntryStudent")
-  guardianLinksAsGuardian      GuardianLink[]      @relation("GuardianLinkGuardian")
-  guardianLinksAsStudent       GuardianLink[]      @relation("GuardianLinkStudent")
-  consentRecordsAsGuardian     ConsentRecord[]     @relation("ConsentRecordGuardian")
-  consentRecordsAsStudent      ConsentRecord[]     @relation("ConsentRecordStudent")
-  bookingDelegationsAsGuardian BookingDelegation[] @relation("BookingDelegationGuardian")
-  bookingDelegationsAsStudent  BookingDelegation[] @relation("BookingDelegationStudent")
+  promotionEventsPerformed     PromotionEvent[]        @relation("PromotionEventPerformedBy")
+  promotionEventsVoided        PromotionEvent[]        @relation("PromotionEventVoidedBy")
+  promotionEventNotesEdited    PromotionEvent[]        @relation("PromotionEventNoteEditedBy")
+  promotionEventNoteChanges    PromotionEventNoteLog[] @relation("PromotionEventNoteLogChangedBy")
+  skillSignOffChanges          SkillSignOffLog[]       @relation("SkillSignOffLogChangedBy")
+  homeBranches                 StudentHomeBranch[]     @relation("StudentHomeBranchStudent")
+  rankVerifications            StudentRank[]           @relation("StudentRankVerifiedBy")
+  homeBranchesAssigned         StudentHomeBranch[]     @relation("StudentHomeBranchAssignedBy")
+  gradingPermissions           GradingPermission[]     @relation("GradingPermissionUser")
+  gradingPermissionsGiven      GradingPermission[]     @relation("GradingPermissionGrantedBy")
+  staffPermissions             StaffPermission[]       @relation("StaffPermissionUser")
+  staffPermissionsGiven        StaffPermission[]       @relation("StaffPermissionGrantedBy")
+  coachInvitesSent             CoachInvite[]           @relation("CoachInviteInvitedBy")
+  coachInvitesAccepted         CoachInvite[]           @relation("CoachInviteAcceptedBy")
+  coachInvitesCancelled        CoachInvite[]           @relation("CoachInviteCancelledBy")
+  instructorBelts              InstructorBelt[]        @relation("InstructorBeltUser")
+  instructorBeltsVerified      InstructorBelt[]        @relation("InstructorBeltVerifiedBy")
+  waiverSignatures             WaiverSignature[]       @relation("WaiverSignatureStudent")
+  waiverSignaturesSigned       WaiverSignature[]       @relation("WaiverSignatureSignedBy")
+  bookings                     Booking[]               @relation("BookingStudent")
+  bookingsOverridden           Booking[]               @relation("BookingOverriddenBy")
+  bookingsResolved             Booking[]               @relation("BookingResolvedBy")
+  bookingsCheckedIn            Booking[]               @relation("BookingCheckedInBy")
+  bookingAttendeesResolved     BookingAttendee[]       @relation("BookingAttendeeResolvedBy")
+  waitlistEntries              WaitlistEntry[]         @relation("WaitlistEntryStudent")
+  guardianLinksAsGuardian      GuardianLink[]          @relation("GuardianLinkGuardian")
+  guardianLinksAsStudent       GuardianLink[]          @relation("GuardianLinkStudent")
+  consentRecordsAsGuardian     ConsentRecord[]         @relation("ConsentRecordGuardian")
+  consentRecordsAsStudent      ConsentRecord[]         @relation("ConsentRecordStudent")
+  bookingDelegationsAsGuardian BookingDelegation[]     @relation("BookingDelegationGuardian")
+  bookingDelegationsAsStudent  BookingDelegation[]     @relation("BookingDelegationStudent")
   notifications                Notification[]
   deviceTokens                 DeviceToken[]
   refreshTokens                RefreshToken[]
@@ -2260,12 +2262,54 @@ model PromotionEvent {
   voidedById            String?
   voidedBy              User?     @relation("PromotionEventVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
   voidReason            String?
+  // The user note can be edited and hidden (Decision 192): when it was last
+  // edited and by whom, and when it was hidden from the student and guardian
+  // (null: shown). Every change is in PromotionEventNoteLog.
+  noteEditedAt          DateTime?
+  noteEditedById        String?
+  noteEditedBy          User?     @relation("PromotionEventNoteEditedBy", fields: [noteEditedById], references: [id], onDelete: SetNull)
+  noteHiddenAt          DateTime?
 
   createdAt DateTime @default(now())
+
+  noteLog PromotionEventNoteLog[]
 
   @@index([schoolId])
   @@index([studentId])
   @@index([studentRankId])
+}
+
+enum PromotionEventNoteChange {
+  EDITED
+  HIDDEN
+  SHOWN
+}
+
+/// Every change to a history entry's note (Decision 192): who, when, what
+/// (edited, hidden, shown), the old text and the new. Written by the API under
+/// the student's context, like the entry itself; readable by the School
+/// Owner/Manager only, never the student, so a hidden note stays hidden.
+model PromotionEventNoteLog {
+  id String @id @default(uuid())
+
+  promotionEventId String
+  promotionEvent   PromotionEvent @relation(fields: [promotionEventId], references: [id], onDelete: Cascade)
+
+  schoolId  String
+  studentId String
+
+  change  PromotionEventNoteChange
+  oldNote String?
+  newNote String?
+
+  // Nullable, ON DELETE SET NULL, same as PromotionEvent.performedById (Decision 141).
+  changedById String?
+  changedBy   User?   @relation("PromotionEventNoteLogChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([promotionEventId])
 }
 
 /// Every skill sign-off change, with who, when, the old status and the new
