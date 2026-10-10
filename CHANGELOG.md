@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Instructors choose their own belt; the owner verifies it** (Decisions 108,
+  188). Instructors get a **My belts** page in the School Portal where they
+  choose their belt and stripe in each of the School's styles; it shows "Not
+  verified" until the owner verifies it, and choosing another belt makes it
+  unverified again. The owner's Instructors page gains **Instructors' belts**:
+  verify each, or correct it to the right belt (saving verifies it), and see who
+  hasn't chosen yet. **api:** `InstructorBelt` (migration `20261028000000`),
+  one per instructor per style, with RLS: the owner manages all; an instructor
+  reads theirs and writes their own only as unverified while they hold an
+  active Instructor role. Endpoints `GET|PUT /schools/{id}/instructor-belts/me`,
+  `GET /schools/{id}/instructor-belts` and
+  `POST /schools/{id}/instructor-belts/{userId}/{disciplineId}/verify`.
 - **Staff given a role again start fresh** (Decision 193). Removing someone's
   last Instructor or Branch Staff role at a School now clears their grading
   permissions there, and removing their Branch Staff role clears "Can invite

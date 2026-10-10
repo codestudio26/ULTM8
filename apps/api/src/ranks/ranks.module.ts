@@ -8,6 +8,8 @@ import { GradingController } from './grading.controller';
 import { GradingService } from './grading.service';
 import { GradingPermissionsController } from './grading-permissions.controller';
 import { GradingPermissionsService } from './grading-permissions.service';
+import { InstructorBeltsController } from './instructor-belts.controller';
+import { InstructorBeltsService } from './instructor-belts.service';
 
 /**
  * Phase 10b scope only: Discipline/Rank/Skill catalog CRUD + single-Student
@@ -28,7 +30,7 @@ import { GradingPermissionsService } from './grading-permissions.service';
   // GuardiansModule: GuardiansService.assertGuardianOfStudent() for Guardian
   // read access to a linked minor's grading (Decision 132).
   imports: [TenantsModule, GuardiansModule, QueueModule],
-  controllers: [RanksController, GradingController, GradingPermissionsController],
-  providers: [RanksService, GradingService, GradingPermissionsService],
+  controllers: [RanksController, GradingController, GradingPermissionsController, InstructorBeltsController],
+  providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService],
 })
 export class RanksModule {}
