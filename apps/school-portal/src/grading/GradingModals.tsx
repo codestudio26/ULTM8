@@ -9,6 +9,7 @@ import {
   useEditRankDate,
   usePromote,
   useStripeAward,
+  useLogClass,
   useVerifyRank,
   useVoidEntry,
 } from './gradingQueries';
@@ -388,6 +389,66 @@ export function VerifyRankModal({
           <TextArea id="verify-note" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
         <Actions submitting={verify.isPending} label={corrected ? 'Correct and verify' : 'Verify'} onClose={onClose} />
+      </form>
+    </Modal>
+  );
+}
+
+/** "Log a class" (Decision 128 item 6, Decision 176): staff add one class by
+ * hand. The class type is one of the next rank's ticked types (required when
+ * it ticks any; optional, from the style's types, when it ticks none). It
+ * always counts, even past the weekly cap, and is recorded on the history. */
+export function LogClassModal({
+  studentId,
+  discipline,
+  ladder,
+  current,
+  onClose,
+}: {
+  studentId: string;
+  discipline: DisciplineResponse;
+  ladder: Rung[];
+  current: Rung;
+  onClose: () => void;
+}) {
+  const logClass = useLogClass(discipline.id);
+  const next = ladder[current.index + 1];
+  const src = next && next.tier.timeOnly ? current : next;
+  const ticked = src?.tier.eligibleClassTypes ?? [];
+  const choices = ticked.length > 0 ? ticked : discipline.classTypesOffered;
+  const [classType, setClassType] = useState(ticked.length > 0 ? ticked[0] : '');
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await logClass.mutateAsync({ studentId, classType: classType || null });
+      onClose();
+    } catch (err) {
+      setError(errorText(err));
+    }
+  }
+
+  return (
+    <Modal title={`Log a class — ${discipline.name}`} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        {error ? <ErrorBanner message={error} /> : null}
+        {choices.length > 0 ? (
+          <Field
+            label="Class type"
+            htmlFor="log-class-type"
+            hint={ticked.length > 0 ? 'One of the types that count toward the next rank.' : 'Optional: every class counts toward the next rank.'}
+          >
+            <SelectField
+              value={classType}
+              onChange={(e) => setClassType(e.target.value)}
+              options={[...(ticked.length > 0 ? [] : [{ value: '', label: 'No class type' }]), ...choices.map((t) => ({ value: t, label: t }))]}
+            />
+          </Field>
+        ) : null}
+        <p className="ultm8-field__hint">Adds one class. It always counts, even past the weekly limit, and is recorded on the history.</p>
+        <Actions submitting={logClass.isPending} label="Log class" onClose={onClose} />
       </form>
     </Modal>
   );

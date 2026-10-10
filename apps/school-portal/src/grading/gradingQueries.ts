@@ -92,3 +92,79 @@ export function useVoidEntry(studentId: string, schoolId: string) {
     ),
   );
 }
+
+export type GradingBoard = components['schemas']['GradingBoardResponseDto'];
+export type GradingBoardItem = components['schemas']['GradingBoardItemDto'];
+export type BoardColumn = 'JUST_STARTING' | 'GETTING_THERE' | 'READY_TO_GRADE';
+export type BulkPromoteInput = components['schemas']['BulkPromoteDto'];
+export type BulkPromoteResult = components['schemas']['BulkPromoteResponseDto'];
+export type BulkPromoteStudent = components['schemas']['BulkPromoteStudentDto'];
+
+/** The Grading Board for one style (Decisions 136, 152, 168, 176): every
+ * student with a next rank, highest progress first. Search is done on the
+ * page, over the loaded list. */
+export function useGradingBoard(schoolId: string | null, disciplineId: string | null, activeOnly: boolean) {
+  return useQuery({
+    queryKey: ['grading-board', schoolId, disciplineId, activeOnly],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/grading-board', {
+          params: { path: { schoolId: schoolId! }, query: { disciplineId: disciplineId!, ...(activeOnly ? { activeOnly: true } : {}) } },
+        }),
+      ),
+    enabled: !!schoolId && !!disciplineId,
+  });
+}
+
+/** Board writes change the board and the student's panel. */
+function useBoardMutation<TVars>(fn: (vars: TVars) => Promise<unknown>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading'] }),
+      ]);
+    },
+  });
+}
+
+/** Board drag (Decision 128, item 13): rewrites progress so the student lands
+ * in the column, recorded on the history. */
+export function useBoardMove(disciplineId: string) {
+  return useBoardMutation(({ studentId, column }: { studentId: string; column: BoardColumn }) =>
+    unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/board-move', { params: { path: { id: studentId, disciplineId } }, body: { column } })),
+  );
+}
+
+/** "Log a class" (Decisions 128 item 6, 176). */
+export function useLogClass(disciplineId: string) {
+  return useBoardMutation(({ studentId, classType }: { studentId: string; classType: string | null }) =>
+    unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/log-class', { params: { path: { id: studentId, disciplineId } }, body: { classType } })),
+  );
+}
+
+/** The manual Active/Inactive switch for one style (Decisions 152, 176); null
+ * follows the student's membership again. */
+export function useSetBoardActive(disciplineId: string) {
+  return useBoardMutation(({ studentId, active }: { studentId: string; active: boolean | null }) =>
+    unwrap(apiClient.PUT('/v1/students/{id}/ranks/{disciplineId}/board-active', { params: { path: { id: studentId, disciplineId } }, body: { active } })),
+  );
+}
+
+/** Bulk promote (Decision 130). With dryRun it only checks, for the confirm window. */
+export function useBulkPromote(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: BulkPromoteInput) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/grading/bulk-promote', { params: { path: { schoolId } }, body })) as Promise<BulkPromoteResult>,
+    onSuccess: async (_result, body) => {
+      if (body.dryRun) return; // a check changes nothing
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading'] }),
+      ]);
+    },
+  });
+}
