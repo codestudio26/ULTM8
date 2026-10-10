@@ -279,6 +279,39 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.class.delete({ where: { id: cls.id } });
   });
 
+  it('PATCH with explicit null clears refundFeeDate too (Decision 209 regression)', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({
+        type: 'CLASS_PACK',
+        title: 'Refund-Fee-Date Clear Pack',
+        price: 1000,
+        classesIncluded: 5,
+        refundFeeDate: new Date().toISOString(),
+      });
+    expect(createRes.status).toBe(201);
+    membershipPlanIds.push(createRes.body.id);
+    expect(createRes.body.refundFeeDate).not.toBeNull();
+
+    // Omitting a field must still leave it unchanged — proved against a
+    // neighboring field here so this test also guards against a fix that
+    // widens the ternary too far and clears refundFeeDate unconditionally.
+    const noopRes = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ title: 'Refund-Fee-Date Clear Pack (renamed)' });
+    expect(noopRes.status).toBe(200);
+    expect(noopRes.body.refundFeeDate).toBe(createRes.body.refundFeeDate);
+
+    const clearRes = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ refundFeeDate: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.refundFeeDate).toBeNull();
+  });
+
   it('rejects an explicit classesIncluded: null on PATCH — 400, not a silent no-op', async () => {
     const createRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)

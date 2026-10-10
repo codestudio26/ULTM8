@@ -19,6 +19,19 @@ export function useMembershipPlans(schoolId: string | null) {
   });
 }
 
+/** Single-plan fetch via the already-existing `GET /v1/membership-plans/{id}`
+ * endpoint — previously unused by the frontend, which only ever read a plan
+ * out of the already-fetched `useMembershipPlans` list. Lets the Edit page
+ * load directly from a URL/refresh without depending on the List page's
+ * in-memory array having been fetched first. */
+export function useMembershipPlan(id: string | null) {
+  return useQuery({
+    queryKey: ['membershipPlan', id],
+    queryFn: () => unwrap(apiClient.GET('/v1/membership-plans/{id}', { params: { path: { id: id! } } })),
+    enabled: !!id,
+  });
+}
+
 export function useCreateMembershipPlan(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({

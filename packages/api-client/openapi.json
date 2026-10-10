@@ -11554,10 +11554,6 @@
             "type": "boolean",
             "default": true
           },
-          "refundFeeDate": {
-            "type": "string",
-            "description": "ISO 8601 date-time."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
@@ -11592,6 +11588,11 @@
             "type": "number",
             "nullable": true,
             "description": "Minor currency unit. Pass null to clear."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time. Pass null to clear."
           }
         }
       },

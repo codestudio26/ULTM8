@@ -55,7 +55,7 @@ export function TransactionsPage() {
   const failedOrDisputedCount = transactions.filter((t) => t.status === 'FAILED' || t.status === 'DISPUTED').length;
   // Grouped by currency rather than summed flat: currency is per-Transaction, not a
   // single School-wide constant (MembershipPlan.currency is nullable and School-chosen
-  // per plan, see MembershipPlanFormModal's own hint), so a School with plans in more
+  // per plan, see MembershipPlanFormPage's own hint), so a School with plans in more
   // than one currency shows one revenue figure per currency instead of a meaningless
   // sum-of-different-units total.
   const revenueByCurrency = new Map<string, number>();

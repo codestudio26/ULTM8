@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Create/Update Membership Plan is now a dedicated page, not a modal**
+  (Decision 209) — the first entity in the app to move off the
+  List + Modal pattern, given how large this form is (12 fields, several
+  type-driven rules). Fields are grouped into sections, and the ones a
+  selected Plan Type doesn't use (e.g. "Classes included" for a
+  Subscription) hide automatically. Currency is now a dropdown of the
+  platform's 6 supported currencies instead of free text. A new
+  **Duplicate** action on the Membership Plans list pre-fills the Add page
+  from an existing plan. **api:** fixed a bug where clearing a plan's
+  refund/credit cutoff date on Edit silently did nothing;
+  `UpdateMembershipPlanDto.refundFeeDate` is now nullable.
+  `packages/api-client` regenerated.
 - **Lesson access is also checked by the database** (Decision 208). A
   lesson's description, video and captions now live in their own table,
   which the database only lets staff, everyone at the School for a free
