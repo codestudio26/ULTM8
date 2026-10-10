@@ -134,3 +134,13 @@ export class GradingPermissionListResponseDto {
   @ApiProperty({ type: [GradingStaffDto], description: "The School's active Instructors and Branch Staff, who can be given grading permission (Decision 181)." })
   staff!: GradingStaffDto[];
 }
+
+/** The caller's own grading permissions at a School (Decision 184), for the
+ * coach's screens to show only what they may do. */
+export class MyGradingPermissionsResponseDto {
+  @ApiProperty({ description: 'The School owner may do everything, in every style; items is then empty.' })
+  isOwner!: boolean;
+
+  @ApiProperty({ type: [GradingPermissionResponseDto] })
+  items!: GradingPermissionResponseDto[];
+}

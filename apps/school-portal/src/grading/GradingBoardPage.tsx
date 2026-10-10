@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useGradingSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { BeltChip } from './BeltChip';
 import { flattenLadder, type Rung } from './ladder';
-import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useSetBoardThresholds } from './gradingQueries';
+import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useMyGrading, useSetBoardThresholds } from './gradingQueries';
 import { BulkPromoteModal } from './BulkPromoteModal';
 
 export const COLUMNS: Array<{ key: BoardColumn; label: string }> = [
@@ -28,9 +28,11 @@ export const fullName = (i: { firstName: string; surname: string }) => `${i.firs
  * progress and is recorded on their history.
  */
 export function GradingBoardPage() {
-  const schoolId = useOwnedSchoolId();
+  const schoolId = useGradingSchoolId();
   const disciplines = useDisciplines(schoolId);
-  const styles = disciplines.data?.items ?? [];
+  const my = useMyGrading(schoolId);
+  // A coach sees only the styles they grade in (Decisions 181, 184).
+  const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const [disciplineId, setDisciplineId] = useState<string | null>(null);
   const [activeOnly, setActiveOnly] = useState(false);
   const [search, setSearch] = useState('');
@@ -50,8 +52,11 @@ export function GradingBoardPage() {
   const style = styles.find((d) => d.id === disciplineId) ?? null;
 
   if (!schoolId) return null;
-  if (disciplines.isLoading) return <Spinner />;
+  if (disciplines.isLoading || my.isLoading) return <Spinner />;
   if (disciplines.error) return <ErrorBanner message={disciplines.error instanceof ApiError ? disciplines.error.message : 'Could not load styles.'} />;
+  if (my.error) return <ErrorBanner message={my.error instanceof ApiError ? my.error.message : 'Could not load your grading permissions.'} />;
+  const canPromote = my.can(disciplineId, 'canPromote');
+  const canMove = my.can(disciplineId, 'canAdjustProgress');
 
   const items = board.data?.items ?? [];
   const term = search.trim().toLowerCase();
@@ -71,7 +76,11 @@ export function GradingBoardPage() {
       />
       {styles.length === 0 ? (
         <Card>
-          <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page first." />
+          {my.isOwner ? (
+            <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page first." />
+          ) : (
+            <EmptyState title="No styles to grade yet" description="The School owner hasn't given you grading in any style yet." />
+          )}
         </Card>
       ) : (
         <>
@@ -105,17 +114,21 @@ export function GradingBoardPage() {
                   <span className="ultm8-field__hint">
                     Columns at {style.boardGettingThere}% / {style.boardReadyToGrade}%
                   </span>
-                  <Button variant="secondary" onClick={() => setEditingThresholds(true)}>
-                    Change %
-                  </Button>
+                  {my.can(style.id, 'canChangeBoardThresholds') ? (
+                    <Button variant="secondary" onClick={() => setEditingThresholds(true)}>
+                      Change %
+                    </Button>
+                  ) : null}
                 </div>
               ) : null}
               <div style={{ flex: 1 }} />
               <div style={{ paddingBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
-                {selectedItems.length > 0 ? <strong>{selectedItems.length} selected</strong> : null}
-                <Button onClick={() => setPromoting(true)} disabled={selectedItems.length === 0}>
-                  Promote selected
-                </Button>
+                {canPromote && selectedItems.length > 0 ? <strong>{selectedItems.length} selected</strong> : null}
+                {canPromote ? (
+                  <Button onClick={() => setPromoting(true)} disabled={selectedItems.length === 0}>
+                    Promote selected
+                  </Button>
+                ) : null}
               </div>
             </div>
           </Card>
@@ -134,9 +147,12 @@ export function GradingBoardPage() {
                   <section
                     key={col.key}
                     aria-label={col.label}
-                    onDragOver={(e) => e.preventDefault()}
+                    onDragOver={(e) => {
+                      if (canMove) e.preventDefault();
+                    }}
                     onDrop={(e) => {
                       e.preventDefault();
+                      if (!canMove) return;
                       const item = items.find((i) => i.studentId === draggingId);
                       setDraggingId(null);
                       if (item && item.eligibility.boardColumn !== col.key) setMoving({ item, to: col.key });
@@ -156,7 +172,7 @@ export function GradingBoardPage() {
                             </span>
                           ) : null}
                         </h2>
-                        {pickable.length > 0 ? (
+                        {canPromote && pickable.length > 0 ? (
                           <Checkbox
                             label="Select all"
                             aria-label={`Select all in ${col.label}`}
@@ -179,8 +195,8 @@ export function GradingBoardPage() {
                               item={item}
                               rung={ladder.find((r) => r.id === item.currentStripeId) ?? null}
                               selected={isSelected(item.studentId)}
-                              onToggle={() => toggle(item.studentId)}
-                              onMove={() => setMoving({ item })}
+                              onToggle={canPromote ? () => toggle(item.studentId) : undefined}
+                              onMove={canMove ? () => setMoving({ item }) : undefined}
                               onDragStart={() => setDraggingId(item.studentId)}
                             />
                           ))}
@@ -223,8 +239,10 @@ function BoardCard({
   item: GradingBoardItem;
   rung: Rung | null;
   selected: boolean;
-  onToggle: () => void;
-  onMove: () => void;
+  /** Absent when the caller may not promote in this style. */
+  onToggle?: () => void;
+  /** Absent when the caller may not adjust progress in this style. */
+  onMove?: () => void;
   onDragStart: () => void;
 }) {
   const name = fullName(item);
@@ -234,7 +252,7 @@ function BoardCard({
   const daysShort = e.daysOk === false ? (e.requiredDays ?? 0) - (e.elapsedDays ?? 0) : 0;
   return (
     <li
-      draggable
+      draggable={!!onMove}
       onDragStart={(ev) => {
         ev.dataTransfer.effectAllowed = 'move';
         ev.dataTransfer.setData('text/plain', item.studentId);
@@ -246,22 +264,24 @@ function BoardCard({
         background: selected ? 'var(--bg-accent)' : 'var(--surface-1)',
         borderRadius: 10,
         padding: 12,
-        cursor: 'grab',
+        cursor: onMove ? 'grab' : undefined,
         opacity: item.active ? 1 : 0.7,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <input
-          type="checkbox"
-          checked={selected}
-          disabled={item.hardBlocked}
-          onChange={onToggle}
-          aria-label={item.hardBlocked ? `${name} can't be selected: required skills not signed off` : `Select ${name}`}
-          title={item.hardBlocked ? 'This style requires every skill for the next rank to be signed off first.' : undefined}
-        />
+        {onToggle ? (
+          <input
+            type="checkbox"
+            checked={selected}
+            disabled={item.hardBlocked}
+            onChange={onToggle}
+            aria-label={item.hardBlocked ? `${name} can't be selected: required skills not signed off` : `Select ${name}`}
+            title={item.hardBlocked ? 'This style requires every skill for the next rank to be signed off first.' : undefined}
+          />
+        ) : null}
         {rung ? <BeltChip rung={rung} /> : null}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Link to={`/students/${item.studentId}`} style={{ fontWeight: 700 }}>
+          <Link to={`/students/${item.studentId}`} state={{ name }} style={{ fontWeight: 700 }}>
             {name}
           </Link>
           <div className="ultm8-field__hint">{rung?.name ?? 'Rank not on the ladder'}</div>
@@ -287,9 +307,11 @@ function BoardCard({
         {item.active ? null : <Badge>Inactive</Badge>}
         {item.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">Not verified</Badge> : null}
         <span style={{ flex: 1 }} />
-        <Button variant="secondary" onClick={onMove} aria-label={`Move ${name} to another column`}>
-          Move
-        </Button>
+        {onMove ? (
+          <Button variant="secondary" onClick={onMove} aria-label={`Move ${name} to another column`}>
+            Move
+          </Button>
+        ) : null}
       </div>
     </li>
   );

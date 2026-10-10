@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { useStudents } from '../students/studentQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
@@ -13,11 +13,13 @@ import { flattenLadder, type Rung } from './ladder';
 import { BeltChip } from './BeltChip';
 import {
   type Eligibility,
+  type GradingToggle,
   type PromotionEvent,
   type StudentEligibility,
   useCycleSkill,
   useRankHistory,
   useSetBoardActive,
+  useMyGrading,
   useStudentEligibility,
 } from './gradingQueries';
 import { DowngradeModal, GradeModal, LogClassModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
@@ -50,8 +52,11 @@ function formatDay(iso: string): string {
 export function StudentGradingPage() {
   const { id } = useParams<{ id: string }>();
   const studentId = id ?? null;
-  const schoolId = useOwnedSchoolId();
+  const schoolId = useGradingSchoolId();
   const { claims } = useAuth();
+  // The board passes the name along: a coach can't list the School's students.
+  const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
+  const my = useMyGrading(schoolId);
   const students = useStudents(schoolId);
   const disciplines = useDisciplines(schoolId);
   const eligibility = useStudentEligibility(studentId, schoolId);
@@ -67,30 +72,36 @@ export function StudentGradingPage() {
   }, [instructors.data]);
 
   if (!schoolId || !studentId) return null;
-  if (students.isLoading || disciplines.isLoading || eligibility.isLoading) return <Spinner />;
-  const loadError = students.error ?? disciplines.error ?? eligibility.error;
+  if (students.isLoading || disciplines.isLoading || eligibility.isLoading || my.isLoading) return <Spinner />;
+  const loadError = students.error ?? disciplines.error ?? eligibility.error ?? my.error;
   if (loadError) {
     return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : 'Could not load this student\'s grading.'} />;
   }
 
   const student = students.data?.items.find((s) => s.id === studentId);
-  const styles = disciplines.data?.items ?? [];
+  // A coach sees the styles they grade in (Decisions 181, 184).
+  const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const ranks = eligibility.data?.items ?? [];
+  const studentName = student ? `${student.firstName} ${student.surname}`.trim() : passedName ?? 'Student';
   const performerName = (userId: string | null | undefined) =>
     !userId ? 'Former instructor' : userId === claims?.sub ? 'You' : staffNames.get(userId) ?? 'Staff member';
 
   return (
     <>
       <p style={{ margin: '0 0 8px' }}>
-        <Link to="/students">← Students</Link>
+        {my.isOwner ? <Link to="/students">← Students</Link> : <Link to="/grading">← Grading Board</Link>}
       </p>
       <PageHeader
-        title={student ? `${student.firstName} ${student.surname}`.trim() : 'Student'}
+        title={studentName}
         subtitle="Ranks, progress toward the next grade, skills and history, for each style at your School."
       />
       {styles.length === 0 ? (
         <Card>
-          <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page before grading students." />
+          {my.isOwner ? (
+            <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page before grading students." />
+          ) : (
+            <EmptyState title="No styles to grade yet" description="The School owner hasn't given you grading in any style yet." />
+          )}
         </Card>
       ) : (
         styles.map((discipline) => (
@@ -104,6 +115,7 @@ export function StudentGradingPage() {
             history={history.data?.items ?? []}
             historyLoading={history.isLoading}
             performerName={performerName}
+            can={(toggle) => my.can(discipline.id, toggle)}
           />
         ))
       )}
@@ -123,6 +135,7 @@ function DisciplineGradingCard({
   history,
   historyLoading,
   performerName,
+  can,
 }: {
   studentId: string;
   schoolId: string;
@@ -132,6 +145,8 @@ function DisciplineGradingCard({
   history: PromotionEvent[];
   historyLoading: boolean;
   performerName: (userId: string | null | undefined) => string;
+  /** What the caller may do in this style; actions they can't use are hidden. */
+  can: (toggle: GradingToggle) => boolean;
 }) {
   const ranks = useRanks(discipline.id);
   const skills = useSkills(discipline.id);
@@ -169,18 +184,20 @@ function DisciplineGradingCard({
           </div>
           {ladder.length > 0 ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {studentRank?.verificationStatus === 'UNVERIFIED' && current ? (
+              {studentRank?.verificationStatus === 'UNVERIFIED' && current && can('canVerifyRanks') ? (
                 <Button onClick={() => setDialog('verify')}>Verify rank</Button>
               ) : null}
-              <Button onClick={() => setDialog('grade')} disabled={!!studentRank && !current}>
-                {studentRank ? 'Grade' : 'Give first rank'}
-              </Button>
-              {current && current.index > 0 ? (
+              {can('canPromote') ? (
+                <Button onClick={() => setDialog('grade')} disabled={!!studentRank && !current}>
+                  {studentRank ? 'Grade' : 'Give first rank'}
+                </Button>
+              ) : null}
+              {current && current.index > 0 && can('canDowngrade') ? (
                 <Button variant="secondary" onClick={() => setDialog('downgrade')}>
                   Move down
                 </Button>
               ) : null}
-              {current ? (
+              {current && can('canAdjustProgress') ? (
                 <Button variant="secondary" onClick={() => setDialog('date')}>
                   Correct date
                 </Button>
@@ -199,7 +216,7 @@ function DisciplineGradingCard({
           <Progress eligibility={eligibility} nextName={eligibility.hasNext ? rungName(eligibility.nextRungId) : null} />
         ) : null}
 
-        {current && studentRank ? (
+        {current && studentRank && can('canAdjustProgress') ? (
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
             {eligibility?.hasNext && !eligibility.timeOnly ? (
               <Button variant="secondary" onClick={() => setDialog('log-class')}>
@@ -217,6 +234,7 @@ function DisciplineGradingCard({
             statuses={studentRank?.skillStatuses ?? []}
             skills={skills.data?.items ?? []}
             lessons={lessons}
+            canSignOff={can('canSignOffSkills')}
           />
         ) : null}
 
@@ -226,7 +244,7 @@ function DisciplineGradingCard({
             loading={historyLoading}
             rungName={rungName}
             performerName={performerName}
-            onVoid={(e, summary) => setDialog({ voidEventId: e.id, summary })}
+            onVoid={can('canVoidHistory') ? (e, summary) => setDialog({ voidEventId: e.id, summary }) : undefined}
           />
         ) : null}
       </Card>
@@ -361,12 +379,14 @@ function SkillsForNext({
   statuses,
   skills,
   lessons,
+  canSignOff,
 }: {
   studentId: string;
   eligibility: Eligibility;
   statuses: Array<{ skillId: string; status: string }>;
   skills: SkillResponse[];
   lessons: Lesson[];
+  canSignOff: boolean;
 }) {
   const cycle = useCycleSkill(studentId);
   const [error, setError] = useState<string | null>(null);
@@ -399,7 +419,8 @@ function SkillsForNext({
               <Button
                 variant="secondary"
                 onClick={() => onCycle(skillId)}
-                disabled={cycle.isPending}
+                disabled={cycle.isPending || !canSignOff}
+                title={canSignOff ? undefined : 'You can\'t sign off skills in this style.'}
                 aria-label={`${name}: ${STATUS_LABEL[status]}. Change to ${NEXT_STATUS[status]}`}
               >
                 {STATUS_LABEL[status]}
@@ -452,7 +473,8 @@ function History({
   loading: boolean;
   rungName: (id: string | null | undefined) => string;
   performerName: (userId: string | null | undefined) => string;
-  onVoid: (entry: PromotionEvent, summary: string) => void;
+  /** Absent when the caller may not void history in this style. */
+  onVoid?: (entry: PromotionEvent, summary: string) => void;
 }) {
   return (
     <div style={{ marginTop: 16 }}>
@@ -477,7 +499,7 @@ function History({
                     <strong>{label}</strong> {change} · {formatDay(e.effectiveDate)} · by {performerName(e.performedById)}
                     {e.voidedAt ? <Badge variant="danger">Voided</Badge> : null}
                   </span>
-                  {e.voidedAt ? null : (
+                  {e.voidedAt || !onVoid ? null : (
                     <Button variant="secondary" onClick={() => onVoid(e, summary)} aria-label={`Void entry: ${summary}`}>
                       Void
                     </Button>

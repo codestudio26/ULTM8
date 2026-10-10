@@ -91,3 +91,19 @@ export function useOwnedSchoolId(): string | null {
   const grant = claims.grants.find((g) => g.role === 'SCHOOL_OWNER_MANAGER' && g.schoolId);
   return grant?.schoolId ?? null;
 }
+
+/** The School a coach works at (Decision 184): their first INSTRUCTOR grant's
+ * School. A display hint only, like useOwnedSchoolId; the API re-checks. A
+ * coach at several Schools sees the first one (no School switcher yet). */
+export function useCoachSchoolId(): string | null {
+  const { claims } = useAuth();
+  if (!claims) return null;
+  return claims.grants.find((g) => g.role === 'INSTRUCTOR' && g.schoolId)?.schoolId ?? null;
+}
+
+/** The School the grading screens work in: the owner's, else the coach's. */
+export function useGradingSchoolId(): string | null {
+  const owned = useOwnedSchoolId();
+  const coached = useCoachSchoolId();
+  return owned ?? coached;
+}
