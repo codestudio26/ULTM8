@@ -2232,3 +2232,14 @@ Built in the API as `GET /schools/{id}/grading-permissions/me` (the caller's own
 4. **Only the School's students are graded.** Grading actions refuse anyone without an active student role at the School (404), checked after the caller's own rights.
 
 Also fixed in the same round, with no new rule: rank history is listed newest first by grading date; the board's "N inactive hidden" counts every inactive student in the style whatever the search (Gus's 7 Oct fix); ladder edits of one style take turns instead of deadlocking; bad ids and out-of-range starting classes are refused with 400.
+
+---
+
+## Decision 186 — Branch Staff use the coach screens
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found in the Phase 7 decision review. Decision 181 counts Instructors and Branch Staff as "coaches" for grading permissions, but the coach invite and coach dashboard (Decisions 183, 184) were built for Instructors only, so Branch Staff given grading toggles or "Can invite coaches" had no portal screens to use them.
+
+1. **Branch Staff get the same screens as coaches** in the School Portal: they land on the coach dashboard, use the Grading Board and student panel for the styles they may grade (only the actions their toggles allow, students of their own branches), and see their notifications. Gus: *"Same coach screens"*.
+2. **Branch Staff with "Can invite coaches"** also get **Invite coaches**, limited to their own branches; the owner keeps inviting from the Staff page, where "Who can invite coaches" stays owner only.
+
+Built in the API as `GET /schools/{id}/staff-permissions/me` (the caller's own invite rights), and in the School Portal as the coach screens for Branch Staff plus `/coach-invites`.

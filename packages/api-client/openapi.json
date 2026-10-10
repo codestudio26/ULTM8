@@ -1297,6 +1297,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff-permissions/me": {
+      "get": {
+        "operationId": "CoachInvitesController_myStaffPermission",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyStaffPermissionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff-permissions": {
       "get": {
         "operationId": "CoachInvitesController_listStaffPermissions",
@@ -8617,6 +8652,29 @@
           "schoolId",
           "branchId",
           "accessToken"
+        ]
+      },
+      "MyStaffPermissionResponseDto": {
+        "type": "object",
+        "properties": {
+          "isOwner": {
+            "type": "boolean"
+          },
+          "canInviteCoaches": {
+            "type": "boolean"
+          },
+          "branchIds": {
+            "description": "Branches they may invite to; empty for the owner (any branch) or when they can't invite.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "isOwner",
+          "canInviteCoaches",
+          "branchIds"
         ]
       },
       "StaffPermissionResponseDto": {

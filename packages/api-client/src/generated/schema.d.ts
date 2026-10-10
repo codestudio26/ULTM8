@@ -404,6 +404,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff-permissions/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CoachInvitesController_myStaffPermission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff-permissions": {
         parameters: {
             query?: never;
@@ -2774,6 +2790,12 @@ export interface components {
             branchId: string | null;
             /** @description A new access token that includes the coach role. */
             accessToken: string;
+        };
+        MyStaffPermissionResponseDto: {
+            isOwner: boolean;
+            canInviteCoaches: boolean;
+            /** @description Branches they may invite to; empty for the owner (any branch) or when they can't invite. */
+            branchIds: string[];
         };
         StaffPermissionResponseDto: {
             userId: string;
@@ -5192,6 +5214,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcceptCoachInviteResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInvitesController_myStaffPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyStaffPermissionResponseDto"];
                 };
             };
         };

@@ -29,7 +29,15 @@ const STATUS: Record<CoachInvite['status'], { label: string; variant: 'default' 
  * owner chooses which Branch Staff may also invite coaches, for their own
  * branches.
  */
-export function CoachInvitesSection({ schoolId }: { schoolId: string }) {
+export function CoachInvitesSection({
+  schoolId,
+  allowedBranchIds,
+}: {
+  schoolId: string;
+  /** Branch Staff (Decision 183): only their own branches, and no "Who can
+   * invite coaches" card, which is the owner's. Omitted for the owner. */
+  allowedBranchIds?: string[];
+}) {
   const { data: branchData } = useBranches(schoolId);
   const invites = useCoachInvites(schoolId);
   const send = useSendCoachInvite(schoolId);
@@ -39,8 +47,9 @@ export function CoachInvitesSection({ schoolId }: { schoolId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
-  const branches = branchData?.items ?? [];
-  const branchName = (id: string | null) => (id ? branches.find((b) => b.id === id)?.name ?? '—' : 'Whole School');
+  const allBranches = branchData?.items ?? [];
+  const branches = allowedBranchIds ? allBranches.filter((b) => allowedBranchIds.includes(b.id)) : allBranches;
+  const branchName = (id: string | null) => (id ? allBranches.find((b) => b.id === id)?.name ?? '—' : 'Whole School');
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -137,7 +146,7 @@ export function CoachInvitesSection({ schoolId }: { schoolId: string }) {
         )}
       </Card>
 
-      <InviterPermissions schoolId={schoolId} branchName={branchName} />
+      {allowedBranchIds ? null : <InviterPermissions schoolId={schoolId} branchName={branchName} />}
     </>
   );
 }

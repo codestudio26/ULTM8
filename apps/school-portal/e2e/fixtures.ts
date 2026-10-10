@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes, randomUUID } from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import type { Page } from '@playwright/test';
 
 /**
@@ -213,7 +213,20 @@ export async function cleanup() {
   await db.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
   await db.roleGrant.deleteMany({ where });
   await db.branch.deleteMany({ where });
-  await db.user.deleteMany({ where: { id: { in: userIds } } });
+  // Grading actions queue notifications ("Promoted!", "ready to grade") that
+  // the API's job worker writes a moment later, possibly after the delete at
+  // the top; clear them again until the users go.
+  for (let attempt = 0; ; attempt++) {
+    await db.notification.deleteMany({ where: { userId: { in: userIds } } });
+    try {
+      await db.user.deleteMany({ where: { id: { in: userIds } } });
+      break;
+    } catch (err) {
+      const lateNotification = err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003';
+      if (!lateNotification || attempt >= 20) throw err;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
   await db.school.deleteMany({ where: { id: { in: schoolIds } } });
   schoolIds.length = 0;
   userIds.length = 0;

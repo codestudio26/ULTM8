@@ -86,6 +86,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   ranks or coach permissions. Owner only. **api:** `GET /style-templates`,
   `POST /schools/{id}/disciplines/from-template`,
   `POST /disciplines/{id}/duplicate`. `packages/api-client` regenerated.
+- **Branch Staff use the coach screens** (Decision 186). Branch Staff land on
+  the coach dashboard and use the Grading Board and student panel for the
+  styles the owner lets them grade; with "Can invite coaches" they also get
+  **Invite coaches**, for their own branches only. **api:**
+  `GET /schools/{id}/staff-permissions/me`. `packages/api-client`
+  regenerated.
 - **Grading Board columns per style** (Decisions 75, 136, 181). Each style
   keeps its own split, 33% / 66% by default. On the Grading Board, **Change %**
   sets "Getting There" and "Ready to Grade" (whole %, 1–99, Getting There

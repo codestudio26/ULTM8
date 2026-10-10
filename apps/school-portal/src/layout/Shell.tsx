@@ -1,23 +1,28 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 import { TopBar } from './TopBar';
 
-/** A coach who doesn't own the School sees their own screens (Decision 184). */
+/** A coach or Branch Staff member who doesn't own the School sees their own
+ * screens (Decision 184), and "Invite coaches" when they may (Decision 183). */
 const COACH_NAV = [
   { label: 'Dashboard', to: '/coach' },
   { label: 'Grading Board', to: '/grading' },
   { label: 'Notifications', to: '/notifications' },
 ];
+const INVITE_NAV = { label: 'Invite coaches', to: '/coach-invites' };
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { logout } = useAuth();
-  const isCoachOnly = !useOwnedSchoolId() && !!useCoachSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  const isCoachOnly = !useOwnedSchoolId() && !!coachSchoolId;
+  const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
   return (
     <AppShell
       brand="ULTM8 School Portal"
       header={<TopBar />}
-      navItems={isCoachOnly ? COACH_NAV : [
+      navItems={isCoachOnly ? [...COACH_NAV.slice(0, 2), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]] : [
         { label: 'School', to: '/school' },
         { label: 'Branches', to: '/branches' },
         { label: 'Staff', to: '/staff' },

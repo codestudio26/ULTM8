@@ -13,6 +13,7 @@ import {
   CoachInviteResponseDto,
   CreateCoachInviteDto,
   CreatedCoachInviteResponseDto,
+  MyStaffPermissionResponseDto,
   SetStaffPermissionDto,
   StaffPermissionListResponseDto,
   StaffPermissionResponseDto,
@@ -53,6 +54,12 @@ export class CoachInvitesController {
   @Post('coach-invite-links/:token/accept')
   accept(@CurrentUser() user: JwtPayload, @Param('token') token: string) {
     return this.coachInvites.accept(user.sub, token);
+  }
+
+  @ApiOkResponse({ type: MyStaffPermissionResponseDto })
+  @Get('schools/:schoolId/staff-permissions/me')
+  myStaffPermission(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
+    return this.coachInvites.myStaffPermission(user.sub, schoolId);
   }
 
   @ApiOkResponse({ type: StaffPermissionListResponseDto })
