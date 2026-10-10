@@ -39,7 +39,9 @@ export default defineConfig({
       url: `http://localhost:${API_PORT}/v1/docs`,
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
-      env: { PORT: String(API_PORT), CORS_ALLOWED_ORIGINS: `http://localhost:${PORTAL_PORT}` },
+      // The whole suite runs from one address, well over the API's default
+      // 60 requests a minute per IP; past that, pages load with 429s.
+      env: { PORT: String(API_PORT), CORS_ALLOWED_ORIGINS: `http://localhost:${PORTAL_PORT}`, THROTTLE_IP_LIMIT_PER_MINUTE: '100000' },
     },
     {
       command: `npx vite --port ${PORTAL_PORT} --strictPort`,
