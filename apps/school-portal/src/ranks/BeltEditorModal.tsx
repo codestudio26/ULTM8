@@ -195,9 +195,9 @@ export function BeltEditorModal({
   function validate(): string | null {
     if (!name.trim()) return 'Give this rank a name.';
     if (!primaryColour.trim()) return 'Pick a base colour.';
-    if (rungs.length === 0) return 'A rank needs at least one rung.';
+    if (rungs.length === 0) return 'A belt needs at least one line: the plain belt or a stripe.';
     for (const [i, r] of rungs.entries()) {
-      const label = r.name.trim() || `Rung ${i + 1}`;
+      const label = r.name.trim() || `Stripe line ${i + 1}`;
       if (r.segments.some((s) => !(Number(s.count) >= 1) || !s.colour.trim())) return `${label}: each group of stripes needs a number (1 or more) and a colour.`;
       if (!r.timeOnly && r.mode === 'EACH_TYPE' && r.types.length === 0) return `${label}: tick the class types that each need their own number.`;
     }
@@ -237,9 +237,9 @@ export function BeltEditorModal({
 
   if (confirming) {
     return (
-      <Modal title="Reorder rungs?" onClose={() => setConfirming(null)}>
+      <Modal title="Reorder stripes?" onClose={() => setConfirming(null)}>
         <p>
-          These students stay on their rung, but its place in the ladder changes, so their next rank may change ({confirming.length}):
+          These students stay on their stripe, but its place in the ladder changes, so their next rank may change ({confirming.length}):
         </p>
         <ul>
           {confirming.map((h) => (
@@ -262,7 +262,7 @@ export function BeltEditorModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Rank name" htmlFor="belt-name" hint='e.g. "Blue Belt". Rung names are made from it unless you type your own.'>
+        <Field label="Rank name" htmlFor="belt-name" hint='e.g. "Blue Belt". Stripe names are made from it unless you type your own.'>
           <TextField required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -277,9 +277,9 @@ export function BeltEditorModal({
           </Field>
         </div>
 
-        <h3 style={{ fontSize: 15, margin: '8px 0' }}>Rungs</h3>
+        <h3 style={{ fontSize: 15, margin: '8px 0' }}>Stripes</h3>
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          In ladder order, lowest first. Each rung's requirements are what it takes to be promoted into it.
+          The plain belt, then each stripe, lowest first. Each line's requirements are what it takes to be promoted into it.
         </p>
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {rungs.map((r, i) => {
@@ -287,13 +287,13 @@ export function BeltEditorModal({
             const label = r.name.trim() || generatedName(name || 'Rank', total(r.segments));
             const open = openKey === r.key;
             return (
-              <li key={r.key} aria-label={`Rung ${i + 1}: ${label}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+              <li key={r.key} aria-label={`Stripe line ${i + 1}: ${label}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <strong style={{ flex: 1, minWidth: 140 }}>
                     {i + 1}. {label}
                   </strong>
                   {r.timeOnly ? <Badge variant="accent">Time in rank only</Badge> : null}
-                  {held.length > 0 ? <Badge>{held.length} on this rung</Badge> : null}
+                  {held.length > 0 ? <Badge>{held.length} on this stripe</Badge> : null}
                   <Button type="button" variant="secondary" onClick={() => setOpenKey(open ? null : r.key)} aria-expanded={open} aria-label={`${open ? 'Close' : 'Edit'} ${label}`}>
                     {open ? 'Close' : 'Edit'}
                   </Button>
@@ -309,7 +309,7 @@ export function BeltEditorModal({
                     onClick={() => setRungs((rs) => rs.filter((x) => x.key !== r.key))}
                     disabled={held.length > 0 || rungs.length === 1}
                     aria-label={held.length > 0 ? `${label} can't be removed: ${held.length} student(s) on it` : `Remove ${label}`}
-                    title={held.length > 0 ? 'Students hold this rung. Move them to another rank first.' : undefined}
+                    title={held.length > 0 ? 'Students hold this stripe. Move them to another rank first.' : undefined}
                   >
                     ✕
                   </Button>
@@ -329,7 +329,7 @@ export function BeltEditorModal({
               setOpenKey(r.key);
             }}
           >
-            Add rung
+            Add stripe
           </Button>
         </div>
 
@@ -365,7 +365,7 @@ function RungFields({
   const setSegment = (i: number, patch: Partial<Segment>) => onChange({ segments: r.segments.map((s, j) => (j === i ? { ...s, ...patch } : s)) });
   return (
     <div style={{ marginTop: 12 }}>
-      <Field label="Rung name" htmlFor={id('name')} hint={`Leave empty for "${generatedName(beltName || 'Rank', total(r.segments))}".`}>
+      <Field label="Stripe name" htmlFor={id('name')} hint={`Leave empty for "${generatedName(beltName || 'Rank', total(r.segments))}".`}>
         <TextField maxLength={100} value={r.name} onChange={(e) => onChange({ name: e.target.value })} />
       </Field>
 

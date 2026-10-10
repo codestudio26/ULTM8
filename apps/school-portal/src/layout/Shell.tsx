@@ -3,6 +3,7 @@ import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 import { TopBar } from './TopBar';
+import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
 
 /** A coach or Branch Staff member who doesn't own the School sees their own
  * screens (Decision 184), and "Invite coaches" when they may (Decision 183). */
@@ -49,6 +50,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </Button>
       }
     >
+      <VerifyBeltsNotice />
       {children}
     </AppShell>
   );

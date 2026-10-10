@@ -4039,6 +4039,26 @@ export interface components {
             /** @description An optional note for the history. */
             note?: string;
         };
+        PendingVerificationDto: {
+            studentRankId: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            currentRankId: string;
+            currentStripeId: string | null;
+            /** @enum {string} */
+            verificationStatus: "UNVERIFIED";
+            /**
+             * Format: date-time
+             * @description When the student declared it.
+             */
+            declaredAt: string;
+        };
+        PendingVerificationListResponseDto: {
+            items: components["schemas"]["PendingVerificationDto"][];
+        };
         GradingBoardItemDto: {
             studentId: string;
             firstName: string;
@@ -7626,7 +7646,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                    "application/json": components["schemas"]["PendingVerificationListResponseDto"];
                 };
             };
         };

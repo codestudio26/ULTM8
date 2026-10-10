@@ -9,6 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID, randomBytes, createHash } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { TwilioVerifyService } from './otp/twilio-verify.service';
@@ -266,9 +267,9 @@ export class AuthService {
    * presented token), not a tenant-RLS-scoped read/write, so there's no
    * app.current_user_id to set and no reason to route it through that path.
    */
-  private async issueRefreshToken(userId: string): Promise<string> {
+  private async issueRefreshToken(userId: string, db: Pick<Prisma.TransactionClient, 'refreshToken'> = this.prismaAuth): Promise<string> {
     const token = randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
-    await this.prismaAuth.refreshToken.create({
+    await db.refreshToken.create({
       data: {
         id: randomUUID(),
         userId,
@@ -351,18 +352,27 @@ export class AuthService {
     // exact token between the read above and this write, this call loses the
     // race and its write is a no-op; the loser still must not mint a second
     // valid token pair for the same presented token.
-    const result = await this.prismaAuth.refreshToken.updateMany({
-      where: { id: existing.id, revokedAt: null },
-      data: { revokedAt: new Date(), rotatedOut: true },
+    //
+    // The rotation and the successor token are written in ONE transaction: a
+    // concurrent loser's update waits on this row's lock until it commits, so
+    // its "burn the family" sweep below then also sees (and revokes) the
+    // successor. Written separately, the sweep could run between the two
+    // writes and miss it, leaving the winner a valid token after a replay.
+    const refreshToken = await this.prismaAuth.$transaction(async (tx) => {
+      const result = await tx.refreshToken.updateMany({
+        where: { id: existing.id, revokedAt: null },
+        data: { revokedAt: new Date(), rotatedOut: true },
+      });
+      return result.count === 0 ? null : this.issueRefreshToken(existing.userId, tx);
     });
-    if (result.count === 0) {
+    if (refreshToken === null) {
       // See this method's own header comment — a lost concurrency race is
       // the same replay signal as the sequential case above, not a softer one.
       await this.revokeAllRefreshTokensForUser(existing.userId);
       throw new UnauthorizedException('This refresh token was already used — every session for this account has been signed out as a precaution.');
     }
 
-    const [accessToken, refreshToken] = await Promise.all([this.issueAccessToken(existing.userId), this.issueRefreshToken(existing.userId)]);
+    const accessToken = await this.issueAccessToken(existing.userId);
     return { accessToken, refreshToken };
   }
 

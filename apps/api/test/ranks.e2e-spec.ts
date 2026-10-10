@@ -1940,7 +1940,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(history.body.items.map((e: { type: string }) => e.type).sort()).toEqual(['RANK_CORRECTION', 'SELF_DECLARED']);
     });
 
-    it('the owner lists ranks waiting to be verified; other staff cannot yet (Decision 137, item 4)', async () => {
+    it('the owner and permitted coaches list belts waiting to be verified (Decisions 137 item 4, 189)', async () => {
       const waiting = await mkStudent('pending');
       expect((await declare(waiting.user.id, waiting.token, rungs[3])).status).toBe(201);
 
@@ -1949,7 +1949,9 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(res.body.items.every((r: { verificationStatus: string }) => r.verificationStatus === 'UNVERIFIED')).toBe(true);
       expect(res.body.items.map((r: { studentId: string }) => r.studentId)).toContain(waiting.user.id);
 
-      expect((await request(app.getHttpServer()).get(`/v1/schools/${school.id}/rank-verifications`).set('Authorization', `Bearer ${tokenCoach}`)).status).toBe(403);
+      const coachView = await request(app.getHttpServer()).get(`/v1/schools/${school.id}/rank-verifications`).set('Authorization', `Bearer ${tokenCoach}`);
+      expect(coachView.status).toBe(200);
+      expect(coachView.body.items.map((r: { studentId: string }) => r.studentId)).toContain(waiting.user.id);
     });
 
     it('declaring is refused while the School has ranks switched off (Decision 87)', async () => {

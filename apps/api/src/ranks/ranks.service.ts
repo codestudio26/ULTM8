@@ -222,7 +222,7 @@ export class RanksService {
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertContiguousStripeTiers(dto.stripeTiers.map((t) => t.order));
     if (dto.stripeTiers.some((t) => t.id !== undefined)) {
-      throw new BadRequestException('A new belt has only new rungs; rung ids are for updating a belt.');
+      throw new BadRequestException('A new belt has only new stripes; stripe ids are for updating a belt.');
     }
 
     const existingOrders = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -393,10 +393,10 @@ export class RanksService {
         if (byId) {
           const sentIds = dto.stripeTiers.filter((t) => t.id !== undefined).map((t) => t.id as string);
           if (new Set(sentIds).size !== sentIds.length) {
-            throw new BadRequestException('Each rung id can appear only once.');
+            throw new BadRequestException('Each stripe id can appear only once.');
           }
           if (sentIds.some((id) => !existingById.has(id))) {
-            throw new BadRequestException('A rung id is not a rung of this belt. Rungs can only be reordered within their own belt (Decision 180).');
+            throw new BadRequestException('A stripe id is not one of this belt\'s stripes. Stripes can only be reordered within their own belt (Decision 180).');
           }
         }
         const previousFor = (tier: (typeof dto.stripeTiers)[number]) =>
@@ -413,7 +413,7 @@ export class RanksService {
           });
           if (holders.length) {
             const names = holders.map((h) => `${h.student.firstName} ${h.student.surname}`.trim());
-            const rungs = [...new Set(holders.map((h) => existingById.get(h.currentStripeId as string)?.name ?? 'a rung'))];
+            const rungs = [...new Set(holders.map((h) => existingById.get(h.currentStripeId as string)?.name ?? 'a stripe'))];
             throw new ConflictException(
               `Students hold ${rungs.join(', ')}, so it can't be removed: ${names.join(', ')}. Move them to another rank first (Decision 152).`,
             );

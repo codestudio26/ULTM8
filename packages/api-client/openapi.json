@@ -5295,7 +5295,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StudentRankListResponseDto"
+                  "$ref": "#/components/schemas/PendingVerificationListResponseDto"
                 }
               }
             }
@@ -12634,6 +12634,73 @@
             "description": "An optional note for the history."
           }
         }
+      },
+      "PendingVerificationDto": {
+        "type": "object",
+        "properties": {
+          "studentRankId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "currentRankId": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED"
+            ]
+          },
+          "declaredAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the student declared it."
+          }
+        },
+        "required": [
+          "studentRankId",
+          "studentId",
+          "firstName",
+          "surname",
+          "disciplineId",
+          "disciplineName",
+          "currentRankId",
+          "currentStripeId",
+          "verificationStatus",
+          "declaredAt"
+        ]
+      },
+      "PendingVerificationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingVerificationDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
       },
       "GradingBoardItemDto": {
         "type": "object",

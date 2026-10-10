@@ -438,7 +438,7 @@ export class GradingService {
       throw new BadRequestException('A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.');
     }
     if (type === 'STRIPE_AWARD' && dto.targetRungId !== undefined) {
-      throw new BadRequestException('A stripe award moves to the next stripe tier; to grade to a chosen rung, use promote with targetRungId.');
+      throw new BadRequestException('A stripe award moves to the next stripe; to grade to a chosen belt or stripe, use promote with targetRungId.');
     }
 
     const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -456,7 +456,7 @@ export class GradingService {
       // --- Where from, where to.
       const fromIndex = existing?.currentStripeId ? rungIndex(ladder, existing.currentStripeId) : -1;
       if (existing && fromIndex < 0) {
-        throw new BadRequestException('This Student\'s current rung can\'t be found on the ladder; correct their rank first.');
+        throw new BadRequestException('This Student\'s current belt and stripe can\'t be found on the ladder; correct their rank first.');
       }
       if (!existing && type !== 'PROMOTION') {
         throw new BadRequestException(
@@ -472,12 +472,12 @@ export class GradingService {
       let toIndex: number;
       if (dto.targetRungId !== undefined) {
         toIndex = rungIndex(ladder, dto.targetRungId);
-        if (toIndex < 0) throw new BadRequestException('targetRungId is not a rung of this style.');
+        if (toIndex < 0) throw new BadRequestException('targetRungId is not a belt or stripe of this style.');
         if (from && type === 'PROMOTION' && toIndex <= fromIndex) {
-          throw new BadRequestException('Promote only moves up; pick a higher rung (Decision 128, item 12). Use downgrade to move down.');
+          throw new BadRequestException('Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.');
         }
         if (from && type === 'DOWNGRADE' && toIndex >= fromIndex) {
-          throw new BadRequestException('Downgrade only moves down; pick a lower rung (Decision 128, item 12).');
+          throw new BadRequestException('Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).');
         }
       } else if (!from) {
         toIndex = 0; // a first grade starts on the style's first rung
@@ -1391,7 +1391,7 @@ export class GradingService {
         select: { id: true, rankId: true },
       });
       if (!tier) {
-        throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+        throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its stripes.');
       }
       if (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } }, select: { id: true } })) {
         throw new ConflictException('This student already has a rank in this style; only staff can change it.');
@@ -1436,7 +1436,7 @@ export class GradingService {
           toRankId: tier.rankId,
           toStripeTierId: tier.id,
           systemNote: autoVerified
-            ? 'Declared when joining: the first rung, verified automatically (Decision 147).'
+            ? 'Declared when joining: the plain first belt, verified automatically (Decision 147).'
             : 'Declared when joining: waiting to be verified by the School (Decision 137).',
         },
       });
@@ -1476,7 +1476,7 @@ export class GradingService {
           select: { id: true, rankId: true },
         });
         if (!tier) {
-          throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+          throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its stripes.');
         }
         target = { rankId: tier.rankId, stripeTierId: tier.id };
       }
@@ -1531,22 +1531,61 @@ export class GradingService {
     }));
   }
 
-  /** Ranks waiting to be verified at a School, for the notice shown at login
-   * (Decision 137, item 4). Owner only for now: StudentRank's RLS (Decision
-   * 88) lets only the owner list other students' ranks. Permitted coaches get
-   * their branches' list with the Grading Board's read path (roadmap Phase 3). */
+  /** Belts waiting to be verified at a School, for the notice shown at login
+   * (Decisions 137 item 4, 189). The owner sees every enrolled student's; a
+   * coach or Branch Staff member sees those in the styles where they may
+   * verify (Decision 181's "Verify ranks"), for the students they cover
+   * (Decision 168), through the Grading Board's read path; anyone else at
+   * the School gets an empty list. Oldest first. */
   async findPendingVerifications(callerId: string, schoolId: string) {
     if (!UUID_PATTERN.test(schoolId)) {
       throw new BadRequestException('schoolId must be a valid UUID');
     }
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    const items = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.studentRank.findMany({
-        where: { schoolId, verificationStatus: 'UNVERIFIED' },
-        orderBy: { createdAt: 'asc' },
-        include: { skillStatuses: { select: { skillId: true, status: true } } },
-      }),
-    );
+    type Item = {
+      studentRankId: string; studentId: string; firstName: string; surname: string; disciplineId: string; disciplineName: string;
+      currentRankId: string; currentStripeId: string | null; verificationStatus: 'UNVERIFIED'; declaredAt: Date;
+    };
+    const items: Item[] = [];
+    const push = (student: { id: string; firstName: string; surname: string }, discipline: { id: string; name: string }, sr: { id: string; currentRankId: string; currentStripeId: string | null; createdAt: Date }) =>
+      items.push({
+        studentRankId: sr.id, studentId: student.id, firstName: student.firstName, surname: student.surname,
+        disciplineId: discipline.id, disciplineName: discipline.name,
+        currentRankId: sr.currentRankId, currentStripeId: sr.currentStripeId, verificationStatus: 'UNVERIFIED', declaredAt: sr.createdAt,
+      });
+
+    if (await this.isSchoolOwner(callerId, schoolId)) {
+      await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        const grants = await tx.roleGrant.findMany({
+          where: { schoolId, role: 'STUDENT', revokedAt: null },
+          distinct: ['userId'],
+          select: { user: { select: { id: true, firstName: true, surname: true } } },
+        });
+        const studentOf = new Map(grants.map((g) => [g.user.id, g.user]));
+        const ranks = await tx.studentRank.findMany({
+          where: { schoolId, verificationStatus: 'UNVERIFIED', studentId: { in: [...studentOf.keys()] } },
+          include: { discipline: { select: { id: true, name: true } } },
+        });
+        for (const sr of ranks) push(studentOf.get(sr.studentId)!, sr.discipline, sr);
+      });
+    } else {
+      await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+      const permissions = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.gradingPermission.findMany({
+          where: { userId: callerId, schoolId, canVerifyRanks: true },
+          select: { discipline: { select: { id: true, name: true } } },
+        }),
+      );
+      for (const { discipline } of permissions) {
+        const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+          tx.$queryRaw<Array<{ studentId: string; firstName: string; surname: string; studentRank: Record<string, unknown> }>>`SELECT * FROM grading_board_rows(${schoolId}, ${discipline.id})`,
+        );
+        for (const r of found) {
+          const sr = studentRankFromJson(r.studentRank);
+          if (sr.verificationStatus === 'UNVERIFIED') push({ id: r.studentId, firstName: r.firstName, surname: r.surname }, discipline, sr);
+        }
+      }
+    }
+    items.sort((a, b) => a.declaredAt.getTime() - b.declaredAt.getTime() || a.surname.localeCompare(b.surname));
     return { items };
   }
 }
