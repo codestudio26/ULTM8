@@ -108,7 +108,19 @@ export class AcademyTimetableListResponseDto {
  * prospective Student would need to decide whether to join, not the School's full
  * administrative record.
  */
+/** A branch as shown to anyone browsing the School: name only (Decision 209). */
+export class AcademyBranchDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+}
+
 export class AcademyDetailDto extends AcademySummaryDto {
+  @ApiProperty({ type: [AcademyBranchDto], description: 'The School\'s branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches.' })
+  branches!: AcademyBranchDto[];
+
   @ApiProperty({ type: [AcademyMembershipPlanDto] })
   membershipPlans!: AcademyMembershipPlanDto[];
 

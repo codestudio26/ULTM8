@@ -5,10 +5,11 @@ import { apiClient } from '../api';
 /** GET /guardians/me/minors — not paginated (MinorListResponseDto has no
  * nextCursor, matching StudentRankListResponseDto's own precedent for a
  * genuinely small, unpaginated list). */
-export function useMyMinors() {
+export function useMyMinors(enabled = true) {
   return useQuery({
     queryKey: ['my-minors'],
     queryFn: () => unwrap(apiClient.GET('/v1/guardians/me/minors', {})),
+    enabled,
   });
 }
 
