@@ -804,3 +804,30 @@ When exactly to revisit: either real production usage (not just dev/testing) pro
 ### Recorded by
 
 Logged during a direct, live exchange with the user, 8 Oct 2026 — asked to resolve the Stripe timing question explicitly; confirmed the Render deployment's real usage status first (dev/testing only), then asked for and received the user's explicit choice to reaffirm deferral after hearing the reasoning.
+
+---
+
+## Decision 101 — Instructor roll-call check-in (Decision 71's mechanics): a roster, not a scan
+
+**Date:** 10 Oct 2026
+**Status:** Product-owner decisions, made directly with the user across several questions
+**Resolves:** Decision 71's own open mechanics question — "what the Instructor actually scans... whether it's per-Student or batched per-Class, and what deters an Instructor marking Students who aren't present."
+
+### Decisions
+
+1. **Mechanism**: the Instructor's device shows a plain per-Student roster for the Class; tapping a Student marks them present. No QR code, no camera, no second scan mechanism — reasoning put to the user and accepted: a static per-Student code (the only alternative mechanism considered) carries the same forwardable/photographable spoofing risk Decision 66 already closed for self-service, just moved onto a different code; a roster avoids inventing that risk at all.
+2. **Anti-abuse**: attribution only (`checkedInById`), no typed justification required — matching the existing `overriddenById`/`resolvedById` precedent on `Booking`. A live classroom roll-call needs to stay fast; a School can review who checked a Student in after the fact if something looks wrong, without every tap requiring a written reason.
+3. **Time window**: a same-day grace window (any time up to 24h after the Class's own end), not a strict live-only cutoff — reasoning put to the user and accepted: real gym/class-management platforms (Mindbody, Glofox, TeamUp) generally allow same-day attendance completion for exactly this reason, since a strict live cutoff turns a forgotten roll-call into a permanently-wrong record with no fix path.
+4. **Undo**: allowed, scoped only to a Booking this same roster mechanism checked in (never a genuine self-service check-in) — a mis-tap on a crowded roster is a realistic, common slip, and a one-tap fix is low risk since it's the same trust level as the check-in action itself.
+
+### What this additionally resolves, not separately decided
+
+Closes the "accessibility/no-alternative check-in" gap `skills/ultm8-domain-rules/SKILL.md` §14 names — a Student whose camera-tier consent is withdrawn, or who has an accessibility need blocking self-service scan, now has a real path to being checked in, since the roster needs no Student camera or device at all. Previously, nothing matching that description actually touched `Booking.status` (`PATCH /bookings/{id}/override` only ever amended override justification text) — this was a real, standing gap, not a hypothetical one, closed as a side effect of building the roster the way Decision 71's own mechanics question was resolved.
+
+### Found while verifying this, not a separate decision
+
+Building this surfaced a genuine, pre-existing RLS bug: `user_self_or_shared_school` (the policy that's supposed to let anyone sharing a School see each other's names) has never actually worked for a Branch Staff/Instructor caller — only for a School Owner/Manager — because its own subquery into `RoleGrant` is itself subject to `RoleGrant`'s RLS, which doesn't extend "see another person's grant" to non-Owner/Manager roles. Fixed with the same `SECURITY DEFINER` + dedicated `BYPASSRLS` role pattern `20260904000000_fix_rolegrant_rls_recursion` already established for the identical class of problem (see `20260922000000_fix_user_shared_school_visibility`). This is the first time this project has had a real Postgres instance to verify against end-to-end — every prior phase's own migrations were hand-authored and verified by `tsc`/lint only, per each one's own documented "no Postgres reachable" note.
+
+### Recorded by
+
+Logged during a direct, live, question-by-question exchange with the user, 10 Oct 2026 — each decision above was asked and confirmed individually before building, not assumed.
