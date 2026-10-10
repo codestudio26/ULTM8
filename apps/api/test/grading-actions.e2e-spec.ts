@@ -133,6 +133,13 @@ describeIfDb('Grading actions (Phase 3a)', () => {
     await superuser.skill.deleteMany({ where: { schoolId: school.id } });
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
+    // FOUND ON REVIEW: this suite's own promote/downgrade/stripe-award calls
+    // now enqueue a real Notification row via NOTIFICATION_FANOUT_QUEUE's
+    // live worker (the promotion-notification wiring) — deleting Users before
+    // their Notification rows violates Notification_userId_fkey. Same
+    // lookup-then-delete-Notification-first convention waivers.e2e-spec.ts
+    // and ranks.e2e-spec.ts already established.
+    await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
