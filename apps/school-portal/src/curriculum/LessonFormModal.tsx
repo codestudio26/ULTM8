@@ -3,7 +3,7 @@ import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, Tex
 import { ApiError } from '@ultm8/api-client';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import type { DisciplineSkillGroup } from './curriculumQueries';
-import type { LessonResponse } from './curriculumQueries';
+import type { LessonCategory, LessonResponse } from './curriculumQueries';
 
 /** Fields match CreateLessonDto/UpdateLessonDto exactly —
  * apps/api/src/curriculum/dto/create-lesson.dto.ts. `videoRef`/`captionStatus`/
@@ -22,6 +22,7 @@ export function LessonFormModal({
   initial,
   instructors,
   skillGroups,
+  categories,
   submitting,
   onSubmit,
   onClose,
@@ -30,10 +31,12 @@ export function LessonFormModal({
   initial?: Partial<LessonResponse>;
   instructors: InstructorResponse[];
   skillGroups: DisciplineSkillGroup[];
+  categories: LessonCategory[];
   submitting: boolean;
   onSubmit: (values: {
     title: string;
-    category?: string;
+    /** null: no category. */
+    categoryId: string | null;
     durationSeconds?: number;
     description?: string;
     format: 'PRERECORDED' | 'LIVE';
@@ -44,7 +47,7 @@ export function LessonFormModal({
 }) {
   const [form, setForm] = useState({
     title: initial?.title ?? '',
-    category: initial?.category ?? '',
+    categoryId: initial?.categoryId ?? '',
     durationSeconds: initial?.durationSeconds?.toString() ?? '',
     description: initial?.description ?? '',
     format: initial?.format ?? 'PRERECORDED',
@@ -70,7 +73,7 @@ export function LessonFormModal({
     try {
       await onSubmit({
         title: form.title,
-        category: form.category || undefined,
+        categoryId: form.categoryId || null,
         durationSeconds: form.durationSeconds ? Number(form.durationSeconds) : undefined,
         description: form.description || undefined,
         format: form.format as 'PRERECORDED' | 'LIVE',
@@ -89,12 +92,13 @@ export function LessonFormModal({
         <Field label="Title" htmlFor="lesson-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
-        <Field
-          label="Category"
-          htmlFor="lesson-category"
-          hint="Plain text only — not a real catalog entity (see this Lesson's own field list)."
-        >
-          <TextField value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+        <Field label="Category" htmlFor="lesson-category" hint="A new category puts the lesson at its end. Add categories on the Curriculum page.">
+          <SelectField
+            id="lesson-category"
+            value={form.categoryId}
+            onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
+            options={[{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+          />
         </Field>
         <Field label="Duration (seconds)" htmlFor="lesson-duration">
           <TextField

@@ -27,6 +27,33 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   …/note-log`; `PromotionEvent.noteEditedAt/noteEditedById/noteHiddenAt` and
   `PromotionEventNoteLog` (migration `20261030000000`), whose RLS lets the
   owner read it and never the student.
+- **Lesson categories, in order** (Decisions 128.15, 191). Lessons are now
+  grouped into the School's own list of categories, in the order shown to
+  students, and ordered within each. The Curriculum page adds, renames and
+  reorders categories, moves lessons up and down within a category, and the
+  lesson form picks a category from the list (a new one puts the lesson at
+  its end). Existing free-text categories became real ones (names differing
+  only by spaces merged; blank ones became "No category"). **api:**
+  `LessonCategory` with RLS (anyone at the School reads; its staff write) and
+  `Lesson.categoryId`/`order` replace `Lesson.category` (migration
+  `20261029000000`); lessons are listed in category order. Lesson responses
+  keep `category` (now the category's name) and add `categoryId` and `order`;
+  create/update take `categoryId` instead of free text. New: `GET|POST
+  /schools/{id}/curriculum/categories`, `PATCH /curriculum/categories/{id}`,
+  `PUT /schools/{id}/curriculum/categories/order` and
+  `PUT /curriculum/categories/{id}/lessons/order`.
+- **Instructors choose their own belt; the owner verifies it** (Decisions 108,
+  188). Instructors get a **My belts** page in the School Portal where they
+  choose their belt and stripe in each of the School's styles; it shows "Not
+  verified" until the owner verifies it, and choosing another belt makes it
+  unverified again. The owner's Instructors page gains **Instructors' belts**:
+  verify each, or correct it to the right belt (saving verifies it), and see who
+  hasn't chosen yet. **api:** `InstructorBelt` (migration `20261028000000`),
+  one per instructor per style, with RLS: the owner manages all; an instructor
+  reads theirs and writes their own only as unverified while they hold an
+  active Instructor role. Endpoints `GET|PUT /schools/{id}/instructor-belts/me`,
+  `GET /schools/{id}/instructor-belts` and
+  `POST /schools/{id}/instructor-belts/{userId}/{disciplineId}/verify`.
 - **Belts waiting to be verified: a notice at login** (Decisions 137, 189).
   When the owner, or a coach or Branch Staff member who may verify belts, logs
   in to the School Portal, a notice lists the students whose self-declared belt

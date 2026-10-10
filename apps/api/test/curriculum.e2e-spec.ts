@@ -154,7 +154,6 @@ describeIfDb('CurriculumModule — HTTP-level Lesson CRUD, skillIds validation, 
       .set('Authorization', `Bearer ${tokenInstructorA}`)
       .send({
         title: 'Armbar From Guard',
-        category: 'Fundamentals',
         durationSeconds: 300,
         description: 'Basic armbar setup.',
         format: 'PRERECORDED',

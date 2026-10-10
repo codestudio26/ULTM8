@@ -85,6 +85,10 @@ describeIfDb('Coach invites (Decision 183)', () => {
       .overrideProvider(NotificationDeliveryService)
       .useValue({
         sendEmail: async (to: string, subject: string, body: string) => {
+          // Only invite emails: this app's job worker also delivers
+          // notification emails queued by other test files running at the
+          // same time on the shared Redis, which would land here too.
+          if (!subject.startsWith("You're invited to coach")) return;
           if (failEmail) throw new Error('mail is down');
           sent.push({ to, subject, body });
         },

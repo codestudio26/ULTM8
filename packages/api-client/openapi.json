@@ -5849,6 +5849,190 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/instructor-belts/me": {
+      "get": {
+        "operationId": "InstructorBeltsController_findMine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorBeltListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructor-belts/me/{disciplineId}": {
+      "put": {
+        "operationId": "InstructorBeltsController_declareMine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclareInstructorBeltDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorBeltResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructor-belts": {
+      "get": {
+        "operationId": "InstructorBeltsController_findAll",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolInstructorBeltsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructor-belts/{userId}/{disciplineId}/verify": {
+      "post": {
+        "operationId": "InstructorBeltsController_verify",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyInstructorBeltDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorBeltResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/waivers": {
       "post": {
         "operationId": "WaiversController_createWaiver",
@@ -7204,6 +7388,219 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/categories": {
+      "get": {
+        "operationId": "CurriculumController_findCategories",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CurriculumController_createCategory",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonCategoryNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/categories/{id}": {
+      "patch": {
+        "operationId": "CurriculumController_renameCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonCategoryNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/categories/order": {
+      "put": {
+        "operationId": "CurriculumController_orderCategories",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderLessonCategoriesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/categories/{id}/lessons/order": {
+      "put": {
+        "operationId": "CurriculumController_orderCategoryLessons",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCategoryLessonsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
                 }
               }
             }
@@ -13159,6 +13556,149 @@
           }
         }
       },
+      "InstructorBeltResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "rankId": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string"
+          },
+          "beltName": {
+            "type": "string",
+            "description": "The name of the belt and stripe, as the School typed it."
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ]
+          },
+          "declaredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "verifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "firstName",
+          "surname",
+          "disciplineId",
+          "disciplineName",
+          "rankId",
+          "stripeTierId",
+          "beltName",
+          "verificationStatus",
+          "declaredAt",
+          "verifiedAt"
+        ]
+      },
+      "InstructorBeltListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructorBeltResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "DeclareInstructorBeltDto": {
+        "type": "object",
+        "properties": {
+          "rankId": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rankId",
+          "stripeTierId"
+        ]
+      },
+      "SchoolInstructorDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname"
+        ]
+      },
+      "SchoolInstructorBeltsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructorBeltResponseDto"
+            }
+          },
+          "instructors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolInstructorDto"
+            }
+          }
+        },
+        "required": [
+          "items",
+          "instructors"
+        ]
+      },
+      "VerifyInstructorBeltDto": {
+        "type": "object",
+        "properties": {
+          "rankId": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string"
+          }
+        }
+      },
       "CreateWaiverDto": {
         "type": "object",
         "properties": {
@@ -14114,9 +14654,9 @@
           "title": {
             "type": "string"
           },
-          "category": {
+          "categoryId": {
             "type": "string",
-            "description": "Plain field only — Spec 55's own \"Belongs to a Category\" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation."
+            "description": "One of this School's lesson categories (Decisions 128.15, 191); the lesson goes to the end of it."
           },
           "durationSeconds": {
             "type": "number"
@@ -14168,7 +14708,16 @@
           },
           "category": {
             "type": "string",
+            "nullable": true,
+            "description": "Its category's name, or null."
+          },
+          "categoryId": {
+            "type": "string",
             "nullable": true
+          },
+          "order": {
+            "type": "number",
+            "description": "Its place within its category, from 0."
           },
           "durationSeconds": {
             "type": "number",
@@ -14220,6 +14769,7 @@
           "id",
           "schoolId",
           "title",
+          "order",
           "format",
           "captionStatus",
           "skillIds",
@@ -14247,8 +14797,10 @@
           "title": {
             "type": "string"
           },
-          "category": {
-            "type": "string"
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
             "type": "number"
@@ -14274,6 +14826,82 @@
             }
           }
         }
+      },
+      "LessonCategoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "name",
+          "order"
+        ]
+      },
+      "LessonCategoryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LessonCategoryResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "LessonCategoryNameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "OrderLessonCategoriesDto": {
+        "type": "object",
+        "properties": {
+          "categoryIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "categoryIds"
+        ]
+      },
+      "OrderCategoryLessonsDto": {
+        "type": "object",
+        "properties": {
+          "lessonIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "lessonIds"
+        ]
       },
       "TranslationResponseDto": {
         "type": "object",

@@ -1940,6 +1940,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/instructor-belts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorBeltsController_findMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts/me/{disciplineId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["InstructorBeltsController_declareMine"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorBeltsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts/{userId}/{disciplineId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorBeltsController_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/waivers": {
         parameters: {
             query?: never;
@@ -2370,6 +2434,70 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["CurriculumController_updateLesson"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findCategories"];
+        put?: never;
+        post: operations["CurriculumController_createCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CurriculumController_renameCategory"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/categories/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CurriculumController_orderCategories"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/categories/{id}/lessons/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CurriculumController_orderCategoryLessons"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/translations": {
@@ -4184,6 +4312,44 @@ export interface components {
             /** @description Older form: styles with every toggle on. Use `styles` instead. */
             disciplineIds?: string[];
         };
+        InstructorBeltResponseDto: {
+            id: string;
+            userId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            rankId: string;
+            stripeTierId: string;
+            /** @description The name of the belt and stripe, as the School typed it. */
+            beltName: string;
+            /** @enum {string} */
+            verificationStatus: "UNVERIFIED" | "VERIFIED";
+            /** Format: date-time */
+            declaredAt: string;
+            /** Format: date-time */
+            verifiedAt: string | null;
+        };
+        InstructorBeltListResponseDto: {
+            items: components["schemas"]["InstructorBeltResponseDto"][];
+        };
+        DeclareInstructorBeltDto: {
+            rankId: string;
+            stripeTierId: string;
+        };
+        SchoolInstructorDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+        };
+        SchoolInstructorBeltsResponseDto: {
+            items: components["schemas"]["InstructorBeltResponseDto"][];
+            instructors: components["schemas"]["SchoolInstructorDto"][];
+        };
+        VerifyInstructorBeltDto: {
+            rankId?: string;
+            stripeTierId?: string;
+        };
         CreateWaiverDto: {
             title: string;
             /** @description The waiver document body text. */
@@ -4442,8 +4608,8 @@ export interface components {
         };
         CreateLessonDto: {
             title: string;
-            /** @description Plain field only — Spec 55's own "Belongs to a Category" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation. */
-            category?: string;
+            /** @description One of this School's lesson categories (Decisions 128.15, 191); the lesson goes to the end of it. */
+            categoryId?: string;
             durationSeconds?: number;
             description?: string;
             /** @enum {string} */
@@ -4458,7 +4624,11 @@ export interface components {
             schoolId: string;
             instructorId?: string | null;
             title: string;
+            /** @description Its category's name, or null. */
             category?: string | null;
+            categoryId?: string | null;
+            /** @description Its place within its category, from 0. */
+            order: number;
             durationSeconds?: number | null;
             description?: string | null;
             /** @enum {string} */
@@ -4477,13 +4647,32 @@ export interface components {
         };
         UpdateLessonDto: {
             title?: string;
-            category?: string;
+            /** @description Move it to another of this School's categories (to the end), or null for none. */
+            categoryId?: string | null;
             durationSeconds?: number;
             description?: string;
             /** @enum {string} */
             format?: "PRERECORDED" | "LIVE";
             instructorId?: string;
             skillIds?: string[];
+        };
+        LessonCategoryResponseDto: {
+            id: string;
+            schoolId: string;
+            name: string;
+            order: number;
+        };
+        LessonCategoryListResponseDto: {
+            items: components["schemas"]["LessonCategoryResponseDto"][];
+        };
+        LessonCategoryNameDto: {
+            name: string;
+        };
+        OrderLessonCategoriesDto: {
+            categoryIds: string[];
+        };
+        OrderCategoryLessonsDto: {
+            lessonIds: string[];
         };
         TranslationResponseDto: {
             id: string;
@@ -7879,6 +8068,101 @@ export interface operations {
             };
         };
     };
+    InstructorBeltsController_findMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltListResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_declareMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareInstructorBeltDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolInstructorBeltsResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyInstructorBeltDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltResponseDto"];
+                };
+            };
+        };
+    };
     WaiversController_findAllWaivers: {
         parameters: {
             query?: {
@@ -8626,6 +8910,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LessonResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonCategoryNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_renameCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonCategoryNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_orderCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderLessonCategoriesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_orderCategoryLessons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderCategoryLessonsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonListResponseDto"];
                 };
             };
         };
