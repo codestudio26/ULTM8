@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
+import { CoachInvitesService } from '../coach-invites/coach-invites.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
@@ -23,6 +24,7 @@ export class RoleGrantsService {
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
+    private readonly coachInvites: CoachInvitesService,
   ) {}
 
   /**
@@ -216,9 +218,13 @@ export class RoleGrantsService {
       return grant; // already revoked — idempotent, not an error
     }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const revoked = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.update({ where: { id: roleGrantId }, data: { revokedAt: new Date() } }),
     );
+    // Branch Staff no longer at that branch can't have coach invites open
+    // there (Decision 183; security review M1).
+    if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId, grant.branchId);
+    return revoked;
     // Same JWT-staleness caveat as create() above: an already-issued token keeps this
     // grant's claim until it expires (≤15 min) or is refreshed — there is no
     // session-invalidation mechanism yet (flagged, not silently assumed away).

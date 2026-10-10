@@ -12343,7 +12343,12 @@
           },
           "targetRungId": {
             "type": "string",
-            "description": "The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award."
+            "description": "The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award."
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185).",
+            "nullable": true
           },
           "effectiveDate": {
             "type": "string",
@@ -12378,7 +12383,12 @@
           },
           "targetRungId": {
             "type": "string",
-            "description": "The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award."
+            "description": "The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award."
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185).",
+            "nullable": true
           },
           "effectiveDate": {
             "type": "string",

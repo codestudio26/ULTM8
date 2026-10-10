@@ -81,6 +81,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
   // real worker, bounded poll for the resulting Notification row by its
   // deterministic id (`grading-${promotionEventId}`, see
   // NotificationFanoutProcessor's own upsert `where: { id: notificationId }`).
+  /** A belt's rungs (stripe tiers) in ladder order. */
+  const tierIdsOf = async (rankId: string) =>
+    (await superuser.rankStripeTier.findMany({ where: { rankId }, orderBy: { order: 'asc' } })).map((t) => t.id);
+
   async function waitForNotification(notificationId: string, timeoutMs = 5000) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
@@ -374,10 +378,12 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       .send({});
     expect(rejected.status).toBe(400);
 
+    // Graded straight to the Blue belt (with no target it would go one rung up, Decision 185).
+    const [blueRung] = await tierIdsOf(blueBeltRankId);
     const accepted = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/promote`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ acknowledgeWithoutSkillSignoff: true });
+      .send({ acknowledgeWithoutSkillSignoff: true, targetRungId: blueRung });
     expect(accepted.status).toBe(201);
     expect(accepted.body.studentRank.currentRankId).toBe(blueBeltRankId);
     expect(accepted.body.promotionEvent.acknowledgedWithoutSkillSignoff).toBe(true);
@@ -388,6 +394,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
   });
 
   it('promoting past the highest Rank is rejected — 400', async () => {
+    // Blue is this style's top belt, with one rung: nothing above it.
     const notificationsBefore = await superuser.notification.count({ where: { userId: studentA.id } });
     const res = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/promote`)
@@ -596,10 +603,23 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(res.body.promotionEvent.reason).toBe('Test downgrade');
     expect(res.body.promotionEvent.fromRankId).toBe(blueBeltRankId);
     expect(res.body.promotionEvent.toRankId).toBe(whiteBeltRankId);
+    // With no target, one rung down: White's top stripe (Decision 185).
+    const whiteRungs = await tierIdsOf(whiteBeltRankId);
+    expect(res.body.promotionEvent.toStripeTierId).toBe(whiteRungs[whiteRungs.length - 1]);
 
-    // downgrade notifies too, with "Rank updated" rather than "Promoted!".
-    const downgradeNotification = await waitForNotification(`grading-${res.body.promotionEvent.id}`);
-    expect(downgradeNotification).toMatchObject({ userId: studentA.id, title: 'Rank updated', type: 'GRADING_RANK_CHANGE' });
+    // A downgrade sends no notification (Decisions 145, 185).
+    await new Promise((r) => setTimeout(r, 1000));
+    expect(await superuser.notification.count({ where: { id: `grading-${res.body.promotionEvent.id}` } })).toBe(0);
+
+    // Down the rest of White, one rung at a time, to the bottom.
+    for (let i = whiteRungs.length - 1; i > 0; i--) {
+      const step = await request(app.getHttpServer())
+        .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ reason: 'Test downgrade' });
+      expect(step.status).toBe(201);
+      expect(step.body.promotionEvent.toStripeTierId).toBe(whiteRungs[i - 1]);
+    }
 
     const belowLowest = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)

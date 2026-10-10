@@ -2222,6 +2222,19 @@ Built in the API as `GET /schools/{id}/grading-permissions/me` (the caller's own
 
 ---
 
+## Decision 185 — Grading hardening: one-rung default steps, no downgrade notice, grades tied to the rung the grader saw
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** questions raised by the Phase 7 hardening round (Gus's scenarios re-run against the API, and the grading stress test).
+
+1. **Default step is one rung.** A promote with no target rung goes to the next rung; a downgrade with no target goes to the rung just below, as the prototype's windows do. Before, the API defaulted to the next (or previous) belt's first rung. The portal always sends a target, so this matters for direct API callers such as the coach mobile app. Gus: *"Next rung, like the prototype"*.
+2. **No notification on a downgrade.** Only "ready to grade" and "promoted" / "new stripe" are sent (Decision 145); a downgrade shows in the student's history. Gus: *"Remove it"*.
+3. **A grade refers to the rung the grader saw.** Grading requests may carry the student's current rung as the grader sees it; if the student has moved since, the request is refused (409) and the grader reloads. The portal always sends it, and bulk promote uses the rung from its own plan, so a batch can't undo a downgrade made in the meantime or give two rungs at once (Decision 130: one rung each). Two coaches awarding the same stripe at once: one wins, the other is told to reload.
+4. **Only the School's students are graded.** Grading actions refuse anyone without an active student role at the School (404), checked after the caller's own rights.
+
+Also fixed in the same round, with no new rule: rank history is listed newest first by grading date; the board's "N inactive hidden" counts every inactive student in the style whatever the search (Gus's 7 Oct fix); ladder edits of one style take turns instead of deadlocking; bad ids and out-of-range starting classes are refused with 400.
+
+---
+
 ## Decision 186 — Branch Staff use the coach screens
 
 **Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found in the Phase 7 decision review. Decision 181 counts Instructors and Branch Staff as "coaches" for grading permissions, but the coach invite and coach dashboard (Decisions 183, 184) were built for Instructors only, so Branch Staff given grading toggles or "Can invite coaches" had no portal screens to use them.

@@ -15,6 +15,39 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading hardening, performance** (Phase 7 stress round). The Grading
+  Board for coaches and staff loads in one query instead of one per student:
+  a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a
+  3,000-student School without branches from 30 s to 0.2 s; the owner's
+  board is also faster (0.76 s to 0.52 s). Bulk promote checks the caller and
+  loads the ladder once per batch: 200 students in 5.9 s (owner) and 7.7 s
+  (coach), from 13.3 s and 20.1 s. Same students, same rules: **api:**
+  `grading_board_rows()` returns, for the calling staff member only, the
+  students they may see (their branches' students, or every enrolled student
+  at a School without branches; Decisions 168, 169, 177), approved by the
+  product owner (migration `20261027000000`).
+- **Grading hardening, security** (Phase 7 security review). A coach invite
+  is checked again when accepted: it no longer works once the person who sent
+  it may no longer invite there (their "Can invite coaches" turned off or
+  their Branch Staff role removed — those also cancel their open invites) or
+  once the School is closed; the link page then shows it as cancelled.
+  Cancelling an invite while it's being accepted is a clean 409, not a 500.
+  Sending invites is limited to 20 an hour per account. Database rules
+  narrowed: a student can read but no longer change their own home branch
+  (the owner assigns it, Decision 148); a sent invite's email, branch and
+  token can't be changed, only its outcome; coaches at a School without
+  branches see current students only (migration `20261026000000`).
+- **Grading hardening, correctness** (Phase 7; Decision 185). From the
+  hardening round: a promote or downgrade with no target now moves one rung
+  (was a whole belt); a downgrade no longer notifies the student; grading
+  requests can carry the rung the grader saw and are refused (409) if the
+  student moved since, which the portal always sends and bulk promote uses,
+  so two coaches can't award the same stripe twice and a batch can't undo a
+  downgrade made meanwhile; only the School's own students can be graded
+  (404 otherwise); rank history is newest first by grading date; the board's
+  "N inactive hidden" ignores the search; belt reorders and edits at the same
+  time no longer deadlock (409 instead of 500 if they clash); bad ids and
+  starting classes over 10,000 are a 400. `packages/api-client` regenerated.
 - **Coach dashboard on the web portal** (Decision 184). A coach who signs in
   lands on **Coach dashboard**: the styles they grade in, with how many
   students are ready to grade or getting there; their weekly classes and

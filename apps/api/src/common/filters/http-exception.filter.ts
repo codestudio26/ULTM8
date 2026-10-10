@@ -163,6 +163,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message: 'Record not found.',
           logLevel: 'warn' as const,
         };
+      case 'P2034': // write conflict or deadlock between concurrent transactions
+        return {
+          status: HttpStatus.CONFLICT,
+          code: 'CONFLICT',
+          message: 'This changed at the same time as another change. Please try again.',
+          logLevel: 'warn' as const,
+        };
       case 'P2003': // foreign key constraint violation
         return {
           status: HttpStatus.BAD_REQUEST,
