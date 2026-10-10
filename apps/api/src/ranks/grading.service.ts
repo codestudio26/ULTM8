@@ -13,7 +13,7 @@ import { RequestContext } from '../common/request-context';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
-import { BoardActiveDto, BoardMoveDto, LogClassDto } from './dto/grading-board.dto';
+import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
 import { DateTime } from 'luxon';
 import { loadLadder } from './grading-attendance';
@@ -326,6 +326,8 @@ export class GradingService {
     disciplineId: string,
     dto: GradingActionDto & { reason?: string },
     type: 'PROMOTION' | 'DOWNGRADE' | 'STRIPE_AWARD',
+    // Bulk promote (Decision 130) records its own history type and note.
+    bulk?: { eventType: 'BULK_PROMOTION' | 'BULK_STRIPE_AWARD'; systemNote: string },
   ) {
     const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
     if (!discipline) {
@@ -473,7 +475,7 @@ export class GradingService {
           studentRankId: studentRank.id,
           schoolId: discipline.schoolId,
           studentId,
-          type,
+          type: bulk?.eventType ?? type,
           performedById: callerId,
           fromRankId: from?.rankId ?? null,
           toRankId: to.rankId,
@@ -485,7 +487,7 @@ export class GradingService {
           reason: type === 'DOWNGRADE' ? dto.reason : null,
           note: dto.note ?? null,
           rungsSkipped: Math.max(0, skipped),
-          systemNote: skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null,
+          systemNote: bulk?.systemNote ?? (skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null),
           startingClasses: type === 'DOWNGRADE' ? null : startingTotal,
           startingClassesByType: startingByType ?? undefined,
         },
@@ -498,8 +500,8 @@ export class GradingService {
       studentId,
       discipline.name,
       result.promotionEvent.id,
-      type === 'STRIPE_AWARD' ? 'New stripe!' : type === 'PROMOTION' ? 'Promoted!' : 'Rank updated',
-      type === 'STRIPE_AWARD'
+      type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD' ? 'New stripe!' : type === 'PROMOTION' ? 'Promoted!' : 'Rank updated',
+      type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD'
         ? `You've earned ${result.toRungName}.`
         : type === 'PROMOTION'
           ? `You've been promoted to ${result.toRungName}.`
@@ -568,6 +570,136 @@ export class GradingService {
       } satisfies NotificationFanoutJobData,
       { jobId: `grading-${promotionEventId}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bulk promote (roadmap Phase 3c; Decision 130)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Promote up to 200 students one rung each, on one date (Decision 130,
+   * prototype confirmBulkPromote). The same checks as a single grade, judged
+   * per student, in one fast step:
+   * - Nothing missing: promoted with no extra step.
+   * - "Needs a look": required skills not signed off, or minimum days not yet
+   *   served. Promoted only when the coach acknowledges them
+   *   (acknowledgedStudentIds, one tick for the whole list); an unacknowledged
+   *   flagged student refuses the whole request, so nobody is promoted past a
+   *   check by accident. The acknowledgement is recorded on their history.
+   * - Can't be promoted (skipped): no next rank, blocked by the style's
+   *   "skills required" switch, or not a student this coach may grade.
+   * One grading date must suit every student, or the request is refused
+   * (prototype). `dryRun` returns the same three lists without changing
+   * anything, for the confirm window. Each student is promoted in their own
+   * transaction, so one student changed at the same time is skipped, not the
+   * whole batch.
+   */
+  async bulkPromote(callerId: string, schoolId: string, dto: BulkPromoteDto) {
+    if (!UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('schoolId must be a valid UUID');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: dto.disciplineId } }));
+    if (!discipline || discipline.schoolId !== schoolId) {
+      throw new NotFoundException('Discipline not found');
+    }
+    if (!(await this.isSchoolOwner(callerId, schoolId))) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
+
+    type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; reasons: string[]; promotionEventId?: string };
+    const ready: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
+    const needsAcknowledgement: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
+    const cannotPromote: Row[] = [];
+    const dateProblems: string[] = [];
+
+    for (const studentId of dto.studentIds) {
+      try {
+        await this.assertCanGrade(callerId, schoolId, dto.disciplineId, studentId);
+      } catch (err) {
+        if (err instanceof ForbiddenException) {
+          cannotPromote.push({ studentId, reasons: ['not a student you can grade in this style'] });
+          continue;
+        }
+        throw err;
+      }
+      const plan = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        const sr = await tx.studentRank.findUnique({
+          where: { studentId_disciplineId: { studentId, disciplineId: dto.disciplineId } },
+          include: { skillStatuses: { select: { skillId: true, status: true } } },
+        });
+        if (!sr) return { cannot: 'no rank in this style' };
+        const ladder = await loadLadder(tx, dto.disciplineId);
+        const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
+        const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;
+        if (!next) return { cannot: 'no next rank' };
+        const timeZone = await studentTimeZone(tx, studentId, schoolId);
+        const el = eligibilityOnLadder(ladder, sr, timeZone);
+        if (!el.hasNext) return { cannot: 'no next rank' };
+        const missing = el.timeOnly ? 0 : el.missingSkillIds.length;
+        if (missing > 0 && discipline.skillsRequiredToGrade) return { cannot: 'required skills not signed off (this style requires them)' };
+        const problem = dto.effectiveDate ? gradingDateProblem(dto.effectiveDate, localDay(new Date(), timeZone), localDay(sr.dateOfCurrentRank, timeZone)) : null;
+        const reasons: string[] = [];
+        if (missing > 0) reasons.push(`${missing} skill${missing > 1 ? 's' : ''} not signed off`);
+        const short = el.requiredDays - el.elapsedDays;
+        if (short > 0) reasons.push(`${short} day${short > 1 ? 's' : ''} short`);
+        return { fromRungId: sr.currentStripeId, toRungId: next.id, sameBelt: next.rankId === sr.currentRankId, missingSkills: missing > 0, reasons, problem };
+      });
+      if ('cannot' in plan) {
+        cannotPromote.push({ studentId, reasons: [plan.cannot as string] });
+        continue;
+      }
+      if (plan.problem) dateProblems.push(`${studentId}: ${plan.problem}`);
+      const row = { studentId, fromRungId: plan.fromRungId, toRungId: plan.toRungId, sameBelt: plan.sameBelt, missingSkills: plan.missingSkills, reasons: plan.reasons };
+      (plan.reasons.length > 0 ? needsAcknowledgement : ready).push(row);
+    }
+
+    if (dateProblems.length > 0) {
+      throw new BadRequestException(
+        `The grading date doesn't suit every student — it can't be in the future or before a student's current rank date (Decision 128, item 8): ${dateProblems.join('; ')}.`,
+      );
+    }
+    const strip = (r: Row & { sameBelt?: boolean; missingSkills?: boolean }): Row => ({
+      studentId: r.studentId,
+      fromRungId: r.fromRungId,
+      toRungId: r.toRungId,
+      reasons: r.reasons,
+      ...(r.promotionEventId ? { promotionEventId: r.promotionEventId } : {}),
+    });
+    if (dto.dryRun) {
+      return { ready: ready.map(strip), needsAcknowledgement: needsAcknowledgement.map(strip), cannotPromote };
+    }
+    const acknowledged = new Set(dto.acknowledgedStudentIds ?? []);
+    const unacknowledged = needsAcknowledgement.filter((r) => !acknowledged.has(r.studentId));
+    if (unacknowledged.length > 0) {
+      throw new BadRequestException(
+        `These students need a look: acknowledge them in acknowledgedStudentIds or remove them from the batch (Decision 130): ${unacknowledged
+          .map((r) => `${r.studentId} (${r.reasons.join(', ')})`)
+          .join('; ')}.`,
+      );
+    }
+
+    const promoted: Row[] = [];
+    for (const row of [...ready, ...needsAcknowledgement]) {
+      const systemNote =
+        row.reasons.length > 0 ? `Promoted in a batch; acknowledged: ${row.reasons.join(', ')} (Decision 130).` : 'Promoted in a batch.';
+      try {
+        const result = await this.changeRung(
+          callerId,
+          row.studentId,
+          dto.disciplineId,
+          { targetRungId: row.toRungId, effectiveDate: dto.effectiveDate, note: dto.note, acknowledgeWithoutSkillSignoff: row.missingSkills },
+          'PROMOTION',
+          { eventType: row.sameBelt ? 'BULK_STRIPE_AWARD' : 'BULK_PROMOTION', systemNote },
+        );
+        promoted.push({ ...strip(row), promotionEventId: result.promotionEvent.id });
+      } catch (err) {
+        if (err instanceof ConflictException || err instanceof BadRequestException) {
+          cannotPromote.push({ studentId: row.studentId, reasons: [err.message] });
+          continue;
+        }
+        throw err;
+      }
+    }
+    return { ready: promoted, needsAcknowledgement: [], cannotPromote };
   }
 
   // ---------------------------------------------------------------------------

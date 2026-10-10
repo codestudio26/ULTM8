@@ -7,7 +7,8 @@ import { GradingService } from './grading.service';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
-import { BoardActiveDto, BoardMoveDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
+import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
+import { Throttle } from '@nestjs/throttler';
 
 // StudentRank reads + grading actions. `schoolId` is a required query param on
 // every read below — same reasoning GET /students/{id}/membership-status needed
@@ -180,5 +181,15 @@ export class GradingController {
   @Put('students/:id/ranks/:disciplineId/board-active')
   setBoardActive(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('disciplineId') disciplineId: string, @Body() dto: BoardActiveDto) {
     return this.gradingService.setBoardActive(user.sub, id, disciplineId, dto);
+  }
+
+  /** Bulk promote (roadmap Phase 3c, Decision 130): up to 200 students, one
+   * rung each, on one date. Use dryRun first for the "Needs a look" list.
+   * Rate-limited tighter than the default: each call can write 200 grades. */
+  @ApiOkResponse({ type: BulkPromoteResponseDto })
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Post('schools/:schoolId/grading/bulk-promote')
+  bulkPromote(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: BulkPromoteDto) {
+    return this.gradingService.bulkPromote(user.sub, schoolId, dto);
   }
 }

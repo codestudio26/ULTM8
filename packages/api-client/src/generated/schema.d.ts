@@ -1572,6 +1572,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/grading/bulk-promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_bulkPromote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/grading-permissions": {
         parameters: {
             query?: never;
@@ -3611,6 +3627,39 @@ export interface components {
         BoardActiveDto: {
             /** @description true or false: set by hand. null: follow whether the student has an active membership. */
             active: boolean | null;
+        };
+        BulkPromoteDto: {
+            disciplineId: string;
+            /** @description Up to 200 students (Spec 55). */
+            studentIds: string[];
+            /**
+             * @description One grading date for the whole batch, YYYY-MM-DD; it must suit every student (Decision 128, item 8). Default today.
+             * @example 2026-03-01
+             */
+            effectiveDate?: string;
+            /** @description A note for every student's history entry, e.g. "Spring Grading Day". */
+            note?: string;
+            /** @description The flagged students ("Needs a look": skills not signed off or days short) the coach acknowledges with one tick (Decision 130). Every flagged student must be here or removed from the batch. */
+            acknowledgedStudentIds?: string[];
+            /** @description Check only: return what would happen, change nothing. */
+            dryRun?: boolean;
+        };
+        BulkPromoteStudentDto: {
+            studentId: string;
+            fromRungId?: string | null;
+            toRungId?: string;
+            /** @description Why this student needs a look, or why they can't be promoted. */
+            reasons: string[];
+            /** @description Set on a promoted student: their history entry. */
+            promotionEventId?: string;
+        };
+        BulkPromoteResponseDto: {
+            /** @description Nothing missing (dry run), or promoted. */
+            ready: components["schemas"]["BulkPromoteStudentDto"][];
+            /** @description Dry run: promoted only with the acknowledgement. After a real run: empty (they are in `ready`). */
+            needsAcknowledgement: components["schemas"]["BulkPromoteStudentDto"][];
+            /** @description Skipped: no next rank, blocked by the style's "skills required" switch, not yours to grade, or changed at the same time. */
+            cannotPromote: components["schemas"]["BulkPromoteStudentDto"][];
         };
         GradingPermissionResponseDto: {
             id: string;
@@ -6799,6 +6848,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GradingController_bulkPromote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkPromoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkPromoteResponseDto"];
+                };
             };
         };
     };

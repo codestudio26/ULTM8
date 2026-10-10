@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading Phase 3c: bulk promote** (Decision 130).
+  `POST /schools/{id}/grading/bulk-promote` moves up to 200 students one rung
+  each on one date, with an optional note. `dryRun` returns three lists for the
+  confirm window: ready; "Needs a look" (skills not signed off, or minimum
+  days not yet served, with the reason); and can't be promoted (no next rank,
+  blocked by the style's "skills required" switch, or not the coach's
+  student). Flagged students go ahead only when acknowledged with one tick
+  (`acknowledgedStudentIds`); the acknowledgement is recorded on each history
+  entry (BULK_PROMOTION / BULK_STRIPE_AWARD). One date must suit every
+  student. Each student is promoted in their own transaction and notified.
+  Rate-limited to 30 requests a minute. `packages/api-client` regenerated.
 - **api — database connections closed on shutdown.** The five Prisma
   services now disconnect when the app shuts down (`onModuleDestroy`), so a
   restarted process or a test run that starts the app many times no longer
