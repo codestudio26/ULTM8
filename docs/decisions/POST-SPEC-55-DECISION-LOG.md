@@ -2374,3 +2374,11 @@ Asked whether they can be removed, Gus: *"Yes as longer we have that on the non 
 4. **Not removed:** the belt-level "years in rank" flag (also unused by grading since Decision 128 item 3 made "time in rank only" a per-rung switch). It wasn't part of the question; left until asked.
 
 Built in migration `20261102000000_remove_belt_level_settings`.
+
+---
+
+## Decision 200 — The belt-level "years in rank" flag is removed too
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Completes:** Decision 199, which left this flag out because it wasn't part of that question.
+
+Asked whether the belt-level "years in rank" switch can go like the weekly cap and skills, Gus: *"yes"*. Each rung has its own "time in rank only" switch, with the years stored as minimum days (Decision 128, item 3), and grading reads only that, so nothing changes for students. `Rank.yearsInRankFlag` is dropped (migration `20261103000000_remove_years_in_rank_flag`) and a belt no longer takes or returns it.

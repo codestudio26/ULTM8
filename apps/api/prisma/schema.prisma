@@ -1782,13 +1782,10 @@ model Discipline {
 /// secondary colour (two-colour belts), a weekly class-count cap, a set of
 /// required Skills, and a years-in-rank flag."
 ///
-/// `yearsInRankFlag` is a genuine Boolean only — Spec 55's own literal field list
-/// ("years-in-rank flag (Black Belt and above)") never names a separate numeric
-/// field for HOW MANY years are required, and no confirmed mechanism exists
-/// anywhere for the actual threshold or where it would be configured. Storing and
-/// toggling the flag is all this phase does — nothing enforces real tenure yet.
-/// Do not invent a `yearsRequired: Int` field or a default number (Phase 10b
-/// kickoff prompt §3.1) — flagged for the Architect/product owner, not guessed.
+/// The weekly cap, required Skills and years-in-rank flag now live on each
+/// rung (RankStripeTier: weeklyClassCountCap, requiredSkills, and "time in rank
+/// only" with its years stored as minimum days; Decisions 126, 128 item 3); the
+/// belt-level copies were removed (Decisions 199, 200).
 model Rank {
   id String @id @default(uuid())
 
@@ -1820,12 +1817,6 @@ model Rank {
   /// belts. No grading rule reads these.
   tagColour   String?
   coralAccent String?
-
-  /// Belt-level flag kept from before per-rung fields (Decision 126 moved
-  /// "time in rank only" onto RankStripeTier). The belt-level weekly cap and
-  /// required Skills were removed (Decision 199): they live on each rung, the
-  /// plain belt's own rung included.
-  yearsInRankFlag Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

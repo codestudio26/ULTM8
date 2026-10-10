@@ -3838,11 +3838,6 @@ export interface components {
             tagColour?: string;
             /** @description Drawing only: silver/gold accent of the coral belts. */
             coralAccent?: string;
-            /**
-             * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
-             * @default false
-             */
-            yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierInputDto"][];
         };
         StripeSegmentResponseDto: {
@@ -3886,7 +3881,6 @@ export interface components {
             secondaryColour?: string | null;
             tagColour?: string | null;
             coralAccent?: string | null;
-            yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
             createdAt: string;
             updatedAt: string;
@@ -3918,11 +3912,6 @@ export interface components {
             /** @description Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted. */
             name?: string;
             primaryColour?: string;
-            /**
-             * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
-             * @default false
-             */
-            yearsInRankFlag: boolean;
             stripeTiers?: components["schemas"]["RankStripeTierInputDto"][];
             secondaryColour?: string | null;
             tagColour?: string | null;
