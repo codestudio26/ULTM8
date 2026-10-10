@@ -741,6 +741,7 @@ model School {
   gradingPermissions  GradingPermission[]
   staffPermissions    StaffPermission[]
   coachInvites        CoachInvite[]
+  lessonCategories    LessonCategory[]
   instructorBelts     InstructorBelt[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
@@ -2022,7 +2023,11 @@ model Lesson {
   instructor   User?   @relation("LessonInstructor", fields: [instructorId], references: [id])
 
   title           String
-  category        String?
+  /// Its category (Decisions 128.15, 191), and its place within it. A lesson
+  /// may have no category yet; those come after the categorised ones.
+  categoryId      String?
+  category        LessonCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  order           Int             @default(0)
   durationSeconds Int?
   description     String?
   format          LessonFormat
@@ -2038,6 +2043,27 @@ model Lesson {
 
   @@index([schoolId])
   @@index([instructorId])
+  @@index([categoryId])
+}
+
+/// Lesson categories (Decisions 128.15, 191): a list per School with its own
+/// order; lessons are ordered within their category. Read by anyone at the
+/// School, like lessons; written by School staff.
+model LessonCategory {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name  String
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessons Lesson[]
+
+  @@index([schoolId])
 }
 
 /// LessonSkill — the confirmed Lesson<->Skill many-to-many ("linked skill(s)",

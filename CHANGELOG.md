@@ -15,6 +15,21 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Lesson categories, in order** (Decisions 128.15, 191). Lessons are now
+  grouped into the School's own list of categories, in the order shown to
+  students, and ordered within each. The Curriculum page adds, renames and
+  reorders categories, moves lessons up and down within a category, and the
+  lesson form picks a category from the list (a new one puts the lesson at
+  its end). Existing free-text categories became real ones (names differing
+  only by spaces merged; blank ones became "No category"). **api:**
+  `LessonCategory` with RLS (anyone at the School reads; its staff write) and
+  `Lesson.categoryId`/`order` replace `Lesson.category` (migration
+  `20261029000000`); lessons are listed in category order. Lesson responses
+  keep `category` (now the category's name) and add `categoryId` and `order`;
+  create/update take `categoryId` instead of free text. New: `GET|POST
+  /schools/{id}/curriculum/categories`, `PATCH /curriculum/categories/{id}`,
+  `PUT /schools/{id}/curriculum/categories/order` and
+  `PUT /curriculum/categories/{id}/lessons/order`.
 - **Instructors choose their own belt; the owner verifies it** (Decisions 108,
   188). Instructors get a **My belts** page in the School Portal where they
   choose their belt and stripe in each of the School's styles; it shows "Not

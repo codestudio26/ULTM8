@@ -14,8 +14,14 @@ export class LessonResponseDto {
   @ApiProperty()
   title!: string;
 
-  @ApiPropertyOptional({ type: String, nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Its category\'s name, or null.' })
   category!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  categoryId!: string | null;
+
+  @ApiProperty({ description: 'Its place within its category, from 0.' })
+  order!: number;
 
   @ApiPropertyOptional({ type: Number, nullable: true })
   durationSeconds!: number | null;
