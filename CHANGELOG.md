@@ -15,6 +15,53 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading permissions: seven toggles per coach per style** (Decision 181).
+  New **Grading Permissions** page in the School Portal: for each Instructor
+  and Branch Staff member, the styles they may grade in and, per style,
+  Promote, Move down, Sign off skills, Adjust progress, Verify ranks, Void
+  history and Change board %. **api:** `GradingPermission` gains the seven
+  toggles (all on by default; migration `20261023000000`); every grading
+  action now checks its own toggle and says which one is missing;
+  `PUT /schools/{id}/grading-permissions/{userId}` takes `styles` with toggles
+  (the older `disciplineIds` still works, all toggles on); the list includes
+  the school's staff. "Ready to grade" goes to coaches who may promote.
+  `packages/api-client` regenerated.
+- **school-portal — ladder editor** (roadmap Phase 4, item 1; Decisions 127,
+  128, 149, 152, 165, 173, 180). A style's Ranks table is replaced by a
+  **Ladder**: belts in order with their rungs and requirements, reordered with
+  ↑/↓ and saved after a confirmation that names the students affected. The
+  new belt editor sets the rank name and colours (base, two-tone, tag) and,
+  per rung: its name, its stripes (mixed colours allowed), "time in rank only"
+  with the years, or classes and minimum days to be promoted into it, which
+  class types count (any ticked type, or a number for each), the weekly cap,
+  required skills and which class types it unlocks for booking. Rungs reorder
+  within their belt and keep their students; a rung someone holds can't be
+  removed. The prototype's labels are kept. **ui:** a dialog taller than the
+  screen now scrolls instead of cutting off its bottom (and its Save button).
+- **api — ladder reordering and safe rung edits** (Decisions 152, 180).
+  `PATCH /ranks/{id}` accepts each rung's `id` in `stripeTiers`, so stripes can
+  be reordered within their belt and keep their students. A rung that students
+  hold can no longer be removed (409, naming the students); before, removing
+  one left them with no rung. New `PUT /styles/{id}/ranks/order` reorders a
+  style's belts, and `GET /styles/{id}/rung-holders` (owner only) lists who
+  holds each rung, for the editor's confirmations. `packages/api-client`
+  regenerated.
+- **school-portal — Grading Board** (roadmap Phase 4, item 3; Decisions 128,
+  130, 136, 152, 176). New **Grading Board** page: pick a style and see every
+  student with a next rank in three columns (Just Starting / Getting There /
+  Ready to Grade, at 33% / 66%), with their belt, progress and flags (skills
+  not signed off, days short, inactive, not verified). Search; "currently
+  attending only" with the number hidden. Move a student to another column
+  by dragging the card or with its Move button, after a confirmation (it
+  rewrites their progress and is recorded). Tick students (or a whole
+  column) and **Promote selected**: set the calling order by dragging or
+  with Up/Down, one date and one note; the API checks the batch first and
+  the window shows "Needs a look" students with the reason, promoted only
+  with one acknowledgement tick, and skips those who can't be promoted;
+  afterwards a **printable report** lists the promotions in calling order.
+  Students blocked by the style's "skills required" switch can't be ticked.
+  The student panel gains **Log a class (+1)** and the per-style "Grading
+  Board" attending switch (follow membership, or Active/Inactive by hand).
 - **school-portal — student grading panel** (roadmap Phase 4, item 2;
   Decision 179). Open a student from the Students list to see, for each
   style: their rank (with a belt picture) and since when, whether it's

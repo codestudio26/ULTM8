@@ -79,7 +79,7 @@ Source: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 124–163, and G
 - Every belt and every stripe is its own rung and its own grade. Stored as `Rank` + `RankStripeTier`; each (belt, tier) is one rung (Decision 126).
 - Each rung carries: name, stripe count and colour segments (mixed colours allowed), classes required, minimum days, which class types count, weekly cap, required skills, and the "time in rank only" switch with its years stored as minimum days (Decisions 126, 128).
 - A rung's stripe colours are set only in its stripe list; its single colour is filled in from the **first** stripe in the list (the newest colour, the one the rung is named after), so the two never disagree (Decision 165).
-- Rungs can be reordered by drag with a confirmation listing affected students; a rung students hold cannot be deleted (Decision 152).
+- Rungs can be reordered by drag with a confirmation listing affected students; a rung students hold cannot be deleted (Decision 152). Belts reorder within a style and stripes within their own belt, never across belts; a moved rung keeps its students (Decision 180).
 - Styles are created from the three IBJJF templates only (90 / 139 / 175 rungs), built from scratch, or duplicated with their skills (Decision 131).
 
 **Requirements and progress**
@@ -100,7 +100,7 @@ Source: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 124–163, and G
 - Grading is always coach-initiated (unchanged).
 
 **People and permissions**
-- Grading permission: the School owner always; others only for the disciplines the owner grants. It covers grade, downgrade, adjustments, bulk, skill sign-off and rank verification (Decision 138). Branch Staff do not grade unless granted.
+- Grading permission: the School owner always; others only for the disciplines the owner grants. It covers grade, downgrade, adjustments, bulk, skill sign-off and rank verification (Decision 138). Branch Staff do not grade unless granted. Since Decision 181 it is seven toggles per coach per style (Promote, Move down, Sign off skills, Adjust progress, Verify ranks, Void history, Change board %); each action needs its own, and board % per style is changed by the owner or a coach with that toggle.
 - Branches: each student has one home branch (owner assigns existing students); grading staff see and grade only their branch; one ladder per School (Decisions 139, 148).
 - Branch coverage (Decision 168): a School with no branches is one branch, so permitted staff cover all its students. In a School with branches, joining requires choosing a home branch. Coaches and staff are assigned per branch (possibly several) and cover only students whose home branch is one of theirs. A staff assignment with no branch covers no students there, and students with no home branch are the owner's alone. Staff without grading permission can still view (read only) their branches' students' grading. Adding an instructor in a School with branches requires a branch (one assignment per branch); with no branches, the instructor belongs to the School (Decision 169).
 - Self-declared rank at signup, unverified until grading staff verify or correct it. Unverified ranks may still book rank-restricted classes; staff get a notice at login. Only the discipline's first rung (plain White Belt) is verified automatically (Decisions 137, 147).

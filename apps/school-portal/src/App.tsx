@@ -16,6 +16,8 @@ import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { StudentsPage } from './students/StudentsPage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
+import { GradingBoardPage } from './grading/GradingBoardPage';
+import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
 import { ClassQrCodePage } from './attendance/ClassQrCodePage';
@@ -128,6 +130,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <StudentGradingPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingBoardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading-permissions"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingPermissionsPage />
             </Shell>
           </RequireAuth>
         }

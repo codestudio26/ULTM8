@@ -2946,6 +2946,16 @@ model GradingPermission {
   grantedById String?
   grantedBy   User?   @relation("GradingPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
 
+  /// What this grant allows in this style (Decision 181): seven toggles,
+  /// each covering its own grading actions. All on by default.
+  canPromote               Boolean @default(true)
+  canDowngrade             Boolean @default(true)
+  canSignOffSkills         Boolean @default(true)
+  canAdjustProgress        Boolean @default(true)
+  canVerifyRanks           Boolean @default(true)
+  canVoidHistory           Boolean @default(true)
+  canChangeBoardThresholds Boolean @default(true)
+
   createdAt DateTime @default(now())
 
   @@unique([userId, disciplineId])

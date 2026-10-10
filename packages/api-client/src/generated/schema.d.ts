@@ -1268,6 +1268,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/styles/{disciplineId}/ranks/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RanksController_reorderRanks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/styles/{disciplineId}/rung-holders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RanksController_findRungHolders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ranks/{id}": {
         parameters: {
             query?: never;
@@ -3239,6 +3271,8 @@ export interface components {
             classesRequired: number;
         };
         RankStripeTierInputDto: {
+            /** @description Updating a belt only: the id of an existing rung of this belt. The rung keeps its id, and the students holding it, while its position, name or rules change (Decision 180). Omit for a new rung. When any rung in the list has an id, rungs left out are removed; a rung that students hold can't be removed (Decision 152). */
+            id?: string;
             /** @description Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order: number;
             count: number;
@@ -3339,6 +3373,24 @@ export interface components {
         };
         RankListResponseDto: {
             items: components["schemas"]["RankResponseDto"][];
+        };
+        ReorderRanksDto: {
+            /** @description Every belt id of this style, in the new order. */
+            rankIds: string[];
+        };
+        RungHolderDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+        };
+        RungHoldersDto: {
+            /** @description The rung (stripe tier id). */
+            rungId: string;
+            students: components["schemas"]["RungHolderDto"][];
+        };
+        RungHoldersResponseDto: {
+            /** @description Only rungs that someone holds. */
+            items: components["schemas"]["RungHoldersDto"][];
         };
         UpdateRankDto: {
             /** @description Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5). */
@@ -3667,14 +3719,49 @@ export interface components {
             userId: string;
             disciplineId: string;
             grantedById: string | null;
+            canPromote: boolean;
+            canDowngrade: boolean;
+            canSignOffSkills: boolean;
+            canAdjustProgress: boolean;
+            canVerifyRanks: boolean;
+            canVoidHistory: boolean;
+            canChangeBoardThresholds: boolean;
             createdAt: string;
+        };
+        GradingStaffDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            /** @description INSTRUCTOR and/or BRANCH_STAFF. */
+            roles: string[];
         };
         GradingPermissionListResponseDto: {
             items: components["schemas"]["GradingPermissionResponseDto"][];
+            /** @description The School's active Instructors and Branch Staff, who can be given grading permission (Decision 181). */
+            staff: components["schemas"]["GradingStaffDto"][];
+        };
+        StylePermissionInputDto: {
+            disciplineId: string;
+            /** @description Promote: grade up, stripe award, bulk promote, give a first rank. */
+            canPromote: boolean;
+            /** @description Move down (downgrade), with a reason. */
+            canDowngrade: boolean;
+            /** @description Sign off skills. */
+            canSignOffSkills: boolean;
+            /** @description Adjust progress: move a student on the Grading Board, log a class, correct the rank date, the Active switch. */
+            canAdjustProgress: boolean;
+            /** @description Verify (or correct) self-declared ranks. */
+            canVerifyRanks: boolean;
+            /** @description Void history entries. */
+            canVoidHistory: boolean;
+            /** @description Change the style's Grading Board percentages. */
+            canChangeBoardThresholds: boolean;
         };
         SetGradingPermissionsDto: {
-            /** @description Disciplines (styles) this staff member may grade in. Replaces the current list. */
-            disciplineIds: string[];
+            /** @description Each style this staff member may grade in, with its toggles (Decision 181). */
+            styles?: components["schemas"]["StylePermissionInputDto"][];
+            /** @description Older form: styles with every toggle on. Use `styles` instead. */
+            disciplineIds?: string[];
         };
         CreateWaiverDto: {
             title: string;
@@ -6333,6 +6420,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RankResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_reorderRanks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderRanksDto"];
+            };
+        };
+        responses: {
+            /** @description The style's belts in their new order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankListResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_findRungHolders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RungHoldersResponseDto"];
                 };
             };
         };

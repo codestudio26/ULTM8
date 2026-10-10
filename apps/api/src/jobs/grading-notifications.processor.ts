@@ -188,7 +188,8 @@ export class GradingNotificationsProcessor extends WorkerHost {
       where: { schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
       select: { userId: true },
     });
-    const permitted = (await db.gradingPermission.findMany({ where: { schoolId, disciplineId }, select: { userId: true } })).map((p) => p.userId);
+    // Those who may promote in this style (Decision 181): "ready to grade" is a call to grade.
+    const permitted = (await db.gradingPermission.findMany({ where: { schoolId, disciplineId, canPromote: true }, select: { userId: true } })).map((p) => p.userId);
     let staff: string[] = [];
     if (permitted.length > 0) {
       const hasBranches = (await db.branch.findFirst({ where: { schoolId }, select: { id: true } })) !== null;

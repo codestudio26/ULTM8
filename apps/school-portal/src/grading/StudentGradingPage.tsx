@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { useStudents } from '../students/studentQueries';
@@ -17,9 +17,10 @@ import {
   type StudentEligibility,
   useCycleSkill,
   useRankHistory,
+  useSetBoardActive,
   useStudentEligibility,
 } from './gradingQueries';
-import { DowngradeModal, GradeModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
+import { DowngradeModal, GradeModal, LogClassModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
 
 type Lesson = { id: string; title: string; skillIds: string[] };
 
@@ -111,7 +112,7 @@ export function StudentGradingPage() {
   );
 }
 
-type Dialog = 'grade' | 'downgrade' | 'date' | 'verify' | { voidEventId: string; summary: string } | null;
+type Dialog = 'grade' | 'downgrade' | 'date' | 'verify' | 'log-class' | { voidEventId: string; summary: string } | null;
 
 function DisciplineGradingCard({
   studentId,
@@ -198,6 +199,17 @@ function DisciplineGradingCard({
           <Progress eligibility={eligibility} nextName={eligibility.hasNext ? rungName(eligibility.nextRungId) : null} />
         ) : null}
 
+        {current && studentRank ? (
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
+            {eligibility?.hasNext && !eligibility.timeOnly ? (
+              <Button variant="secondary" onClick={() => setDialog('log-class')}>
+                Log a class (+1)
+              </Button>
+            ) : null}
+            <AttendingSwitch studentId={studentId} disciplineId={discipline.id} disciplineName={discipline.name} value={studentRank.boardActiveOverride ?? null} />
+          </div>
+        ) : null}
+
         {current && eligibility?.hasNext ? (
           <SkillsForNext
             studentId={studentId}
@@ -228,6 +240,9 @@ function DisciplineGradingCard({
       {dialog === 'date' && studentRank ? (
         <RankDateModal studentId={studentId} discipline={discipline} currentDay={dayOf(studentRank.dateOfCurrentRank)} onClose={() => setDialog(null)} />
       ) : null}
+      {dialog === 'log-class' && current ? (
+        <LogClassModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} onClose={() => setDialog(null)} />
+      ) : null}
       {dialog === 'verify' && current ? (
         <VerifyRankModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} onClose={() => setDialog(null)} />
       ) : null}
@@ -235,6 +250,42 @@ function DisciplineGradingCard({
         <VoidEntryModal studentId={studentId} schoolId={schoolId} eventId={dialog.voidEventId} summary={dialog.summary} onClose={() => setDialog(null)} />
       ) : null}
     </section>
+  );
+}
+
+/** "Currently attending" on the Grading Board, for this style only (Decisions
+ * 152, 176): follow the student's membership, or set by hand. */
+function AttendingSwitch({ studentId, disciplineId, disciplineName, value }: { studentId: string; disciplineId: string; disciplineName: string; value: boolean | null }) {
+  const setActive = useSetBoardActive(disciplineId);
+  const [error, setError] = useState<string | null>(null);
+  const current = value === null ? 'AUTO' : value ? 'ACTIVE' : 'INACTIVE';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      <label htmlFor={`attending-${disciplineId}`} className="ultm8-field__label" style={{ margin: 0 }}>
+        Grading Board
+      </label>
+      <SelectField
+        id={`attending-${disciplineId}`}
+        aria-label={`Currently attending ${disciplineName}`}
+        value={current}
+        disabled={setActive.isPending}
+        onChange={async (e) => {
+          setError(null);
+          const v = e.target.value;
+          try {
+            await setActive.mutateAsync({ studentId, active: v === 'AUTO' ? null : v === 'ACTIVE' });
+          } catch (err) {
+            setError(err instanceof ApiError ? err.message : 'Could not change this — please try again.');
+          }
+        }}
+        options={[
+          { value: 'AUTO', label: 'Active if they have a membership' },
+          { value: 'ACTIVE', label: 'Active (set by hand)' },
+          { value: 'INACTIVE', label: 'Inactive (set by hand)' },
+        ]}
+      />
+      {error ? <span role="alert" className="ultm8-field__error">{error}</span> : null}
+    </span>
   );
 }
 

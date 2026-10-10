@@ -119,6 +119,33 @@ export async function seedGradingSchool(): Promise<GradingSchool> {
   };
 }
 
+/** One more enrolled student in this School's BJJ, at a rung with a class count. */
+export async function addStudent(
+  s: GradingSchool,
+  first: string,
+  last: string,
+  opts: { rung: string; classes?: number; activeOverride?: boolean | null },
+) {
+  const u = await mkUser(first, last);
+  await db.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: s.schoolId } });
+  await db.studentRank.create({
+    data: {
+      id: randomUUID(), studentId: u.id, disciplineId: s.disciplineId, schoolId: s.schoolId,
+      currentRankId: s.rung[opts.rung].rankId, currentStripeId: s.rung[opts.rung].id,
+      classesAttendedTowardCheckpoint: opts.classes ?? 0, boardActiveOverride: opts.activeOverride ?? null,
+      dateOfCurrentRank: new Date(Date.now() - 60 * 86_400_000),
+    },
+  });
+  return { id: u.id, name: `${first} ${last}` };
+}
+
+/** An Instructor at this School (no branch), who can be given grading permission. */
+export async function addCoach(s: GradingSchool, first: string, last: string) {
+  const u = await mkUser(first, last);
+  await db.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: u.id, schoolId: s.schoolId } });
+  return { id: u.id, name: `${first} ${last}` };
+}
+
 /** Signs the page in as this token's user (the portal keeps the token in sessionStorage). */
 export async function signIn(page: Page, token: string) {
   await page.addInitScript((t) => sessionStorage.setItem('ultm8.accessToken', t), token);
@@ -130,6 +157,7 @@ export async function cleanup() {
   await db.notification.deleteMany({ where: { userId: { in: userIds } } });
   await db.skillSignOffLog.deleteMany({ where });
   await db.studentRankSkillStatus.deleteMany({ where });
+  await db.gradingPermission.deleteMany({ where });
   await db.promotionEvent.deleteMany({ where });
   await db.studentRank.deleteMany({ where });
   await db.lessonSkill.deleteMany({ where: { lesson: { schoolId: { in: schoolIds } } } });

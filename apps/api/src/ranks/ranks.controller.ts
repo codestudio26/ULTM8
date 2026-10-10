@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -8,6 +8,7 @@ import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { CreateRankDto } from './dto/create-rank.dto';
 import { UpdateRankDto } from './dto/update-rank.dto';
+import { ReorderRanksDto, RungHoldersResponseDto } from './dto/ladder.dto';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { DisciplineListResponseDto, DisciplineResponseDto } from './dto/discipline-response.dto';
@@ -65,6 +66,18 @@ export class RanksController {
   @Get('styles/:disciplineId/ranks')
   async findAllRanks(@CurrentUser() user: JwtPayload, @Param('disciplineId') disciplineId: string) {
     return { items: await this.ranksService.findAllRanks(user.sub, disciplineId) };
+  }
+
+  @ApiOkResponse({ type: RankListResponseDto, description: 'The style\'s belts in their new order.' })
+  @Put('styles/:disciplineId/ranks/order')
+  async reorderRanks(@CurrentUser() user: JwtPayload, @Param('disciplineId') disciplineId: string, @Body() dto: ReorderRanksDto) {
+    return { items: await this.ranksService.reorderRanks(user.sub, disciplineId, dto) };
+  }
+
+  @ApiOkResponse({ type: RungHoldersResponseDto })
+  @Get('styles/:disciplineId/rung-holders')
+  findRungHolders(@CurrentUser() user: JwtPayload, @Param('disciplineId') disciplineId: string) {
+    return this.ranksService.findRungHolders(user.sub, disciplineId);
   }
 
   @ApiOkResponse({ type: RankResponseDto })
