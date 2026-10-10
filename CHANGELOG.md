@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading hardening reports** (Phase 7). The acceptance pass, the grading
+  stress test and the decision conformance review are in
+  `docs/grading-integration/hardening/`, with a page saying where each
+  finding went. Gus's prototype scenarios now run in CI against the real API
+  (`apps/api/test/grading-acceptance.e2e-spec.ts`: the three IBJJF templates,
+  eligibility on a sample of their stripes, grade and downgrade rules, a
+  600-student board with bulk promote, hostile text, random actions;
+  `ACCEPTANCE_FULL=1` runs the full size). The domain rules file no longer
+  says the grading rules are mostly unbuilt, and marks where Decisions 93,
+  136 and 173 replaced older lines.
 - **Who can watch lessons** (Decisions 154, 190, 195). Each membership plan
   now ticks the styles it covers and has **Includes lessons** (on by default
   for plans with a price, off for free ones; the owner can change it). A
@@ -364,8 +374,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     (`POST …/verify`). A correction goes on the history with who, from what,
     to what and when.
   - **Pending list:** the owner sees ranks waiting to be verified
-    (`GET /schools/{id}/rank-verifications`). Permitted coaches get their
-    branches' list with the Grading Board (Phase 3).
+    (`GET /schools/{id}/rank-verifications`). Coaches and Branch Staff who
+    may verify a style get their own branches' list from the same endpoint
+    (added with the login notice, Decision 189).
   - **Booking:** an unverified rank still counts for booking, as before.
   - `packages/api-client` regenerated.
 - **api + school-portal — grading foundation, PR 5: styles and class types
