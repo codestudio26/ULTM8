@@ -26,7 +26,6 @@ async function lockLadder(tx: Pick<Prisma.TransactionClient, '$queryRaw'>, disci
 
 const RANK_INCLUDE = {
   stripeTiers: { orderBy: { order: 'asc' as const }, include: { requiredSkills: true } },
-  requiredSkills: true,
 } satisfies Prisma.RankInclude;
 
 /**
@@ -156,11 +155,9 @@ export class RanksService {
       }
       const ranks = await tx.rank.findMany({ where: { disciplineId }, include: RANK_INCLUDE, orderBy: { order: 'asc' } });
       for (const rank of ranks) {
-        const { id: _id, disciplineId: _d, createdAt: _c, updatedAt: _u, stripeTiers, requiredSkills, ...rankFields } = rank;
+        const { id: _id, disciplineId: _d, createdAt: _c, updatedAt: _u, stripeTiers, ...rankFields } = rank;
         const rankId = randomUUID();
         await tx.rank.create({ data: { ...rankFields, id: rankId, disciplineId: copy.id } });
-        const beltSkills = requiredSkills.map((r) => skillMap.get(r.skillId)).filter((id): id is string => !!id);
-        if (beltSkills.length) await tx.rankRequiredSkill.createMany({ data: beltSkills.map((skillId) => ({ rankId, skillId })) });
         for (const tier of stripeTiers) {
           const { id: _tid, rankId: _r, createdAt: _tc, updatedAt: _tu, requiredSkills: tierSkills, ...tierFields } = tier;
           const tierId = randomUUID();
@@ -233,11 +230,9 @@ export class RanksService {
       if (lessons > 0) throw new ConflictException('Lessons use this style\'s skills. Change or delete those lessons first.');
 
       await tx.gradingPermission.deleteMany({ where: { disciplineId } });
-      await tx.rankRequiredSkill.deleteMany({ where: { skillId: { in: skillIds } } });
       await tx.rankStripeTierRequiredSkill.deleteMany({ where: { skillId: { in: skillIds } } });
       await tx.skill.deleteMany({ where: { disciplineId } });
       const belts = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
-      await tx.rankRequiredSkill.deleteMany({ where: { rankId: { in: belts.map((b) => b.id) } } });
       await tx.rankStripeTier.deleteMany({ where: { rankId: { in: belts.map((b) => b.id) } } });
       await tx.rank.deleteMany({ where: { disciplineId } });
       // Taken off the plans and instructors that listed it (an unticked box).
@@ -279,9 +274,6 @@ export class RanksService {
     );
     this.assertContiguousOrder(existingOrders.map((r) => r.order), dto.order);
 
-    if (dto.requiredSkillIds?.length) {
-      await this.assertSkillsBelongToDiscipline(callerId, dto.requiredSkillIds, disciplineId);
-    }
     await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, disciplineId);
     const rankName = dto.name ?? `Belt ${dto.order + 1}`;
     const tierData = dto.stripeTiers.map((tier) => this.tierFields(tier, rankName));
@@ -306,7 +298,6 @@ export class RanksService {
           secondaryColour: dto.secondaryColour,
           tagColour: dto.tagColour,
           coralAccent: dto.coralAccent,
-          weeklyClassCountCap: dto.weeklyClassCountCap,
           yearsInRankFlag: dto.yearsInRankFlag ?? false,
         },
       });
@@ -320,11 +311,6 @@ export class RanksService {
             data: tier.requiredSkillIds.map((skillId) => ({ stripeTierId: tierId, skillId })),
           });
         }
-      }
-      if (dto.requiredSkillIds?.length) {
-        await tx.rankRequiredSkill.createMany({
-          data: dto.requiredSkillIds.map((skillId) => ({ rankId, skillId })),
-        });
       }
       // FOUND ON REVIEW: `rank` here is only the bare row from the
       // `tx.rank.create()` call above — no `stripeTiers`/`requiredSkillIds`
@@ -374,8 +360,8 @@ export class RanksService {
     // UpdateRankDto's PartialType re-adds @IsOptional(), which lets `null`
     // past validation; refused here so it is a 400, not a 500 (found on
     // independent review, PR 2).
-    if (dto.name === null || dto.requiredSkillIds === null || dto.stripeTiers === null) {
-      throw new BadRequestException('name, requiredSkillIds and stripeTiers cannot be null; omit them to leave them unchanged.');
+    if (dto.name === null || dto.stripeTiers === null) {
+      throw new BadRequestException('name and stripeTiers cannot be null; omit them to leave them unchanged.');
     }
 
     if (dto.order !== undefined) {
@@ -386,9 +372,6 @@ export class RanksService {
     }
     if (dto.stripeTiers) {
       this.assertContiguousStripeTiers(dto.stripeTiers.map((t) => t.order));
-    }
-    if (dto.requiredSkillIds?.length) {
-      await this.assertSkillsBelongToDiscipline(callerId, dto.requiredSkillIds, existing.disciplineId);
     }
     const rankName = dto.name ?? existing.name;
     if (dto.stripeTiers) {
@@ -409,7 +392,6 @@ export class RanksService {
           secondaryColour: dto.secondaryColour,
           tagColour: dto.tagColour,
           coralAccent: dto.coralAccent,
-          weeklyClassCountCap: dto.weeklyClassCountCap,
           yearsInRankFlag: dto.yearsInRankFlag,
         },
       });
@@ -494,7 +476,7 @@ export class RanksService {
             });
           }
           // Per-rung required Skills: replaced when sent, left alone when
-          // omitted (same convention as the belt-level requiredSkillIds below).
+          // omitted.
           if (tier.requiredSkillIds !== undefined) {
             await tx.rankStripeTierRequiredSkill.deleteMany({ where: { stripeTierId: tierId } });
             if (tier.requiredSkillIds.length) {
@@ -512,14 +494,6 @@ export class RanksService {
           if (t.name === RanksService.generatedTierName(existing.name, t.count)) {
             await tx.rankStripeTier.update({ where: { id: t.id }, data: { name: RanksService.generatedTierName(dto.name, t.count) } });
           }
-        }
-      }
-      if (dto.requiredSkillIds !== undefined) {
-        await tx.rankRequiredSkill.deleteMany({ where: { rankId } });
-        if (dto.requiredSkillIds.length) {
-          await tx.rankRequiredSkill.createMany({
-            data: dto.requiredSkillIds.map((skillId) => ({ rankId, skillId })),
-          });
         }
       }
       // FOUND ON REVIEW: same gap as createRank() — `rank` is only the bare
@@ -583,7 +557,6 @@ export class RanksService {
       const declared = await tx.instructorBelt.count({ where: { OR: [{ rankId }, { stripeTierId: { in: tierIds } }] } });
       if (declared > 0) throw new ConflictException('An instructor has declared this belt, so it can\'t be deleted.');
 
-      await tx.rankRequiredSkill.deleteMany({ where: { rankId } });
       await tx.rankStripeTier.deleteMany({ where: { rankId } });
       await tx.rank.delete({ where: { id: rankId } });
       // Close the gap: positions stay 0..N-1 (park first, they're unique per style).
@@ -676,7 +649,6 @@ export class RanksService {
         }
       }
       await tx.lessonSkill.deleteMany({ where: { skillId } });
-      await tx.rankRequiredSkill.deleteMany({ where: { skillId } });
       await tx.rankStripeTierRequiredSkill.deleteMany({ where: { skillId } });
       await tx.skill.delete({ where: { id: skillId } });
     });
@@ -709,10 +681,9 @@ export class RanksService {
   private shapeRankResponse(
     rank: Prisma.RankGetPayload<{ include: typeof RANK_INCLUDE }>,
   ) {
-    const { requiredSkills, stripeTiers, ...rest } = rank;
+    const { stripeTiers, ...rest } = rank;
     return {
       ...rest,
-      requiredSkillIds: requiredSkills.map((s) => s.skillId),
       stripeTiers: stripeTiers.map(({ requiredSkills: tierSkills, ...tier }) => ({
         ...tier,
         requiredSkillIds: tierSkills.map((s) => s.skillId),

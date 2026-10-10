@@ -1821,18 +1821,16 @@ model Rank {
   tagColour   String?
   coralAccent String?
 
-  /// Belt-level cap/flag kept during the transition to per-rung fields
-  /// (Decision 126 moved both onto RankStripeTier). Removed once the grading
-  /// engine (roadmap Phase 2) has switched over.
-  weeklyClassCountCap Int?
-  yearsInRankFlag     Boolean @default(false)
+  /// Belt-level flag kept from before per-rung fields (Decision 126 moved
+  /// "time in rank only" onto RankStripeTier). The belt-level weekly cap and
+  /// required Skills were removed (Decision 199): they live on each rung, the
+  /// plain belt's own rung included.
+  yearsInRankFlag Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   stripeTiers RankStripeTier[]
-
-  requiredSkills RankRequiredSkill[]
 
   studentRanksCurrent StudentRank[]    @relation("StudentRankCurrentRank")
   promotionEventsFrom PromotionEvent[] @relation("PromotionEventFromRank")
@@ -1930,7 +1928,6 @@ model Skill {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  requiredByRanks      RankRequiredSkill[]
   requiredByRungs      RankStripeTierRequiredSkill[]
   studentSkillStatuses StudentRankSkillStatus[]
   signOffLog           SkillSignOffLog[]
@@ -1940,26 +1937,11 @@ model Skill {
   @@index([disciplineId])
 }
 
-/// RankRequiredSkill — explicit join table for Rank's many-to-many "required
-/// Skills" gate (§5). Explicit rather than an implicit Prisma many-to-many —
-/// matches this schema's own established convention (every relation elsewhere in
-/// this codebase is an explicit model, and hand-authoring Prisma's undocumented
-/// implicit-join-table SQL correctly without a live `prisma migrate dev` run to
-/// verify against would be needless risk for zero benefit over an explicit one).
-model RankRequiredSkill {
-  rankId  String
-  rank    Rank   @relation(fields: [rankId], references: [id])
-  skillId String
-  skill   Skill  @relation(fields: [skillId], references: [id])
-
-  @@id([rankId, skillId])
-  @@index([skillId])
-}
-
 /// RankStripeTierRequiredSkill — per-rung required Skills (Decision 126):
 /// what it takes to be promoted INTO this rung (Decision 127). Same explicit
 /// join-table convention, and the same "no schoolId, RLS delegates to both
-/// parents" policy shape, as RankRequiredSkill above.
+/// parents" policy shape, as the belt-level RankRequiredSkill it replaced
+/// (removed, Decision 199).
 model RankStripeTierRequiredSkill {
   stripeTierId String
   stripeTier   RankStripeTier @relation(fields: [stripeTierId], references: [id], onDelete: Cascade)
@@ -2036,7 +2018,7 @@ model Lesson {
   order           Int             @default(0)
   /// Watchable by every student and guardian at the School, membership or
   /// not (Decision 190). Set by the owner.
-  free            Boolean @default(false)
+  free            Boolean         @default(false)
   durationSeconds Int?
   description     String?
   format          LessonFormat
@@ -2077,7 +2059,7 @@ model LessonCategory {
 
 /// LessonSkill — the confirmed Lesson<->Skill many-to-many ("linked skill(s)",
 /// plural, Spec 55 §6.1). Explicit join table, same convention as
-/// RankRequiredSkill above (no implicit Prisma many-to-many anywhere in this
+/// the former RankRequiredSkill (removed, Decision 199) (no implicit Prisma many-to-many anywhere in this
 /// codebase, by deliberate choice — see that model's own comment). No schoolId of
 /// its own — RLS delegates entirely to Lesson/Skill's own policies via the FK join,
 /// same reasoning as RankRequiredSkill's own migration comment: this table carries

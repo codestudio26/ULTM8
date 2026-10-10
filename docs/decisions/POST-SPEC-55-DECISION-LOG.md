@@ -2359,3 +2359,18 @@ The School owner can delete what no student's record uses; anything that is part
 Not in this decision: archiving a used style or belt (hide it, keep the records). Offered and not chosen for now.
 
 Built as `DELETE /disciplines/{id}`, `/ranks/{id}`, `/skills/{id}`, `/lessons/{id}` (204, or 409 with the reason), with **Delete** buttons on the Disciplines, style and Curriculum pages.
+
+---
+
+## Decision 199 — The belt-level weekly cap and required skills are removed; the plain belt keeps its own on its rung
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the open item left by Decision 164 (belt-level required skills, and the belt-level weekly cap, still written by the API but ignored by grading since roadmap Phase 2).
+
+Asked whether they can be removed, Gus: *"Yes as longer we have that on the non stripe belts for exemple brown belt! Not brown belt 1 stripe"*.
+
+1. **Removed:** `Rank.weeklyClassCountCap` and the `RankRequiredSkill` table, and the belt-level `weeklyClassCountCap` / `requiredSkillIds` in the ranks API (sending them is now a 400).
+2. **Kept, as Gus asked:** the plain belt (e.g. "Brown Belt", no stripes) is a rung of its own, with its own weekly cap and required skills (Decision 126), edited like every other rung. Its skills are what it takes to reach that belt (Decision 127).
+3. **Nothing changes for students.** Decision 164 had already copied each belt's cap onto its rungs and its skills onto the next belt's first rung, and grading reads only the rungs, so nothing is copied again; the migration logs what it drops.
+4. **Not removed:** the belt-level "years in rank" flag (also unused by grading since Decision 128 item 3 made "time in rank only" a per-rung switch). It wasn't part of the question; left until asked.
+
+Built in migration `20261102000000_remove_belt_level_settings`.

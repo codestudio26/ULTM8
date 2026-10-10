@@ -143,7 +143,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     await superuser.promotionEvent.deleteMany({ where: { schoolId: school.id } });
     await superuser.studentRankSkillStatus.deleteMany({ where: { schoolId: school.id } });
     await superuser.studentRank.deleteMany({ where: { schoolId: school.id } });
-    await superuser.rankRequiredSkill.deleteMany({ where: { rank: { schoolId: school.id } } });
     await superuser.skill.deleteMany({ where: { schoolId: school.id } });
     await superuser.rankStripeTier.deleteMany({ where: { schoolId: school.id } });
     await superuser.rank.deleteMany({ where: { schoolId: school.id } });
@@ -229,7 +228,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
           { order: 0, count: 0, colour: 'White' },
           { order: 1, count: 1, colour: 'White', requiredSkillIds: [requiredSkillId] },
         ],
-        requiredSkillIds: [requiredSkillId],
       });
     expect(whiteBeltRes.status).toBe(201);
     whiteBeltRankId = whiteBeltRes.body.id;
@@ -243,7 +241,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     // fields. Asserted directly now so a regression can't ship unnoticed a
     // second time.
     expect(whiteBeltRes.body.stripeTiers).toHaveLength(2);
-    expect(whiteBeltRes.body.requiredSkillIds).toEqual([requiredSkillId]);
+    expect(whiteBeltRes.body.stripeTiers[1].requiredSkillIds).toEqual([requiredSkillId]);
 
     const blueBeltRes = await request(app.getHttpServer())
       .post(`/v1/styles/${disciplineId}/ranks`)
@@ -261,41 +259,51 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(res.status).toBe(400);
   });
 
-  it('GET /styles/:disciplineId/ranks and GET /ranks/:id both return the full shape — requiredSkillIds as a flat array, not the raw requiredSkills join rows', async () => {
+  it('GET /styles/:disciplineId/ranks and GET /ranks/:id both return the full shape — each stripe\'s requiredSkillIds as a flat array, not the raw requiredSkills join rows', async () => {
     const listRes = await request(app.getHttpServer())
       .get(`/v1/styles/${disciplineId}/ranks`)
       .set('Authorization', `Bearer ${tokenOwner}`);
     expect(listRes.status).toBe(200);
     const whiteBelt = listRes.body.items.find((r: { id: string }) => r.id === whiteBeltRankId);
-    expect(whiteBelt.requiredSkillIds).toEqual([requiredSkillId]);
     expect(whiteBelt.stripeTiers).toHaveLength(2);
-    expect(whiteBelt.requiredSkills).toBeUndefined(); // the raw Prisma relation must not leak onto the wire
+    expect(whiteBelt.stripeTiers[1].requiredSkillIds).toEqual([requiredSkillId]);
+    expect(whiteBelt.stripeTiers[1].requiredSkills).toBeUndefined(); // the raw Prisma relation must not leak onto the wire
+    // Decision 199: no belt-level skills or weekly cap; they live on each stripe.
+    expect(whiteBelt.requiredSkillIds).toBeUndefined();
+    expect(whiteBelt.weeklyClassCountCap).toBeUndefined();
 
     const oneRes = await request(app.getHttpServer())
       .get(`/v1/ranks/${whiteBeltRankId}`)
       .set('Authorization', `Bearer ${tokenOwner}`);
     expect(oneRes.status).toBe(200);
-    expect(oneRes.body.requiredSkillIds).toEqual([requiredSkillId]);
+    expect(oneRes.body.stripeTiers[1].requiredSkillIds).toEqual([requiredSkillId]);
     expect(oneRes.body.stripeTiers).toHaveLength(2);
   });
 
-  it('PATCH clears secondaryColour/weeklyClassCountCap with explicit null; omitted fields stay unchanged', async () => {
+  it('PATCH clears secondaryColour/tagColour with explicit null; omitted fields stay unchanged', async () => {
     const setRes = await request(app.getHttpServer())
       .patch(`/v1/ranks/${blueBeltRankId}`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ secondaryColour: 'Black', weeklyClassCountCap: 3 });
+      .send({ secondaryColour: 'Black', tagColour: '#C23B3B' });
     expect(setRes.status).toBe(200);
     expect(setRes.body.secondaryColour).toBe('Black');
-    expect(setRes.body.weeklyClassCountCap).toBe(3);
+    expect(setRes.body.tagColour).toBe('#C23B3B');
 
     const clearRes = await request(app.getHttpServer())
       .patch(`/v1/ranks/${blueBeltRankId}`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ secondaryColour: null, weeklyClassCountCap: null });
+      .send({ secondaryColour: null, tagColour: null });
     expect(clearRes.status).toBe(200);
     expect(clearRes.body.secondaryColour).toBeNull();
-    expect(clearRes.body.weeklyClassCountCap).toBeNull();
+    expect(clearRes.body.tagColour).toBeNull();
     expect(clearRes.body.primaryColour).toBe('Blue'); // untouched field survives
+  });
+
+  it('a belt takes no weekly cap or required skills of its own (Decision 199): they go on its stripes', async () => {
+    for (const body of [{ weeklyClassCountCap: 3 }, { requiredSkillIds: [requiredSkillId] }]) {
+      const res = await request(app.getHttpServer()).patch(`/v1/ranks/${blueBeltRankId}`).set('Authorization', `Bearer ${tokenOwner}`).send(body);
+      expect(res.status).toBe(400);
+    }
   });
 
   it('PATCH stripeTiers at unchanged order positions preserves each tier\'s stable id (StudentRank.currentStripeId FK safety) — only genuinely removed positions get deleted', async () => {
@@ -1597,8 +1605,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
         .send({ name: 'Osoto Gari' });
       expect(skill.status).toBe(201);
       judoSkillId = skill.body.id;
-      const firstJudoRank = await superuser.rank.findFirstOrThrow({ where: { disciplineId: judoId, order: 0 } });
-      await superuser.rankRequiredSkill.create({ data: { rankId: firstJudoRank.id, skillId: judoSkillId } });
       // Needed to reach Judo's second belt (Decision 127), so it can be signed
       // off by a student on the first.
       const secondJudoTier = await superuser.rankStripeTier.findFirstOrThrow({ where: { rank: { disciplineId: judoId, order: 1 } } });
@@ -1638,7 +1644,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       await superuser.promotionEvent.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.studentRankSkillStatus.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.studentRank.deleteMany({ where: { schoolId: schoolP.id } });
-      await superuser.rankRequiredSkill.deleteMany({ where: { rank: { schoolId: schoolP.id } } });
       await superuser.skill.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.rankStripeTier.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.rank.deleteMany({ where: { schoolId: schoolP.id } });

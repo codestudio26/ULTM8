@@ -12131,9 +12131,6 @@
             "type": "string",
             "description": "Drawing only: silver/gold accent of the coral belts."
           },
-          "weeklyClassCountCap": {
-            "type": "number"
-          },
           "yearsInRankFlag": {
             "type": "boolean",
             "default": false,
@@ -12144,13 +12141,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RankStripeTierInputDto"
-            }
-          },
-          "requiredSkillIds": {
-            "description": "Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.",
-            "type": "array",
-            "items": {
-              "type": "string"
             }
           }
         },
@@ -12306,10 +12296,6 @@
             "type": "string",
             "nullable": true
           },
-          "weeklyClassCountCap": {
-            "type": "number",
-            "nullable": true
-          },
           "yearsInRankFlag": {
             "type": "boolean"
           },
@@ -12317,13 +12303,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RankStripeTierResponseDto"
-            }
-          },
-          "requiredSkillIds": {
-            "description": "Required Skill ids.",
-            "type": "array",
-            "items": {
-              "type": "string"
             }
           },
           "createdAt": {
@@ -12342,7 +12321,6 @@
           "primaryColour",
           "yearsInRankFlag",
           "stripeTiers",
-          "requiredSkillIds",
           "createdAt",
           "updatedAt"
         ]
@@ -12455,19 +12433,8 @@
               "$ref": "#/components/schemas/RankStripeTierInputDto"
             }
           },
-          "requiredSkillIds": {
-            "description": "Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "secondaryColour": {
             "type": "string",
-            "nullable": true
-          },
-          "weeklyClassCountCap": {
-            "type": "number",
             "nullable": true
           },
           "tagColour": {
