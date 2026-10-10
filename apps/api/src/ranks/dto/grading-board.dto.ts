@@ -69,6 +69,12 @@ export class GradingBoardItemDto {
 
   @ApiProperty({ type: EligibilityResponseDto })
   eligibility!: EligibilityResponseDto;
+
+  @ApiProperty({
+    description:
+      'Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff.',
+  })
+  noHomeBranch!: boolean;
 }
 
 export class GradingBoardResponseDto {
