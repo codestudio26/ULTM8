@@ -2070,7 +2070,35 @@ Built as `RankStripeTier.bookingUnlocksClassTypes` (kept when omitted on an edit
 
 Item 1 is built in roadmap Phase 3a: the `startingClassesByType` grading field, recorded on the history entry. Item 2 comes with the Grading Board in Phase 3b.
 
-## Decision 175 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
+---
+
+## Decision 175 — Age-13 minor limited-login: closed as superseded by Kid Mode, not built
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the age-13 limited-login item's own long-standing open status (`skills/ultm8-domain-rules/SKILL.md` §14/§18, "provisional age threshold 13, *pending legal review*") — raised while reviewing the user-journey gap inventory (Step 1, sign-up) for whether it was still needed now that Decision 123's Kid Mode exists.
+
+### Decision
+
+**The age-13 limited-login feature is closed, not built.** Kid Mode (Decision 123) already covers the practical need it was meant to serve — a minor doing something themselves without their own credentials — via a scoped, short-lived token minted from the Guardian's own session, with no new auth surface, no OTP-for-a-minor problem, and no new claim shape every endpoint has to trust. Building a second, parallel "real" minor login (even a read-only one) alongside Kid Mode would be two mechanisms answering overlapping versions of the same question, for no confirmed product need beyond what Kid Mode already serves.
+
+This explicitly reverses the "not a dependency on or a widening of" framing in Decision 123 §"What this does NOT resolve" (line 1424) — that line described the two as merely independent at the time; this decision goes further and closes the age-13 feature outright, rather than leaving it standing as a separate future build.
+
+### Why
+
+Decision 123 itself already laid out why a genuine minor login is a large, separate feature (new auth codepath, new rate-limiting/lockout surface, a new claim shape every downstream endpoint would need to explicitly trust) — that cost was accepted as a tradeoff *against* building a second mechanism, not as a reason to eventually build both. With Kid Mode shipped and the only concrete use case (booking, Decision 123) already served, there's no longer a live product requirement driving the age-13 feature forward; keeping it listed as `[CONFIRMED]`-but-unbuilt indefinitely invited future work against a need that no longer has a clear owner or scope.
+
+### What this does NOT resolve
+
+- Does not retroactively change anything about Kid Mode's own scope (still booking-only, per-minor, Decision 123) — this closes the *alternative* feature, not an expansion of Kid Mode.
+- If a future, genuinely different need emerges for a minor's own read-only login (e.g. a minor old enough to want to check their own schedule without a Guardian's device), that would be a new product question requiring its own decision — not a reopening of this one by assumption.
+- Decision 77's age-13 threshold finding (the number itself, confirmed final for whenever/if a limited login were ever built) is not disturbed — it simply has no live feature to attach to now.
+
+### Recorded by
+
+Raised by Claude while auditing open gaps against the current, merged state of the codebase (Kid Mode now shipped, grading now merged); the user chose "Close as superseded" over "Keep it open" when asked directly, 9 Oct 2026.
+
+## Decision 176 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
 
 **Date:** 26 Sep 2026
 **Status:** Developer-level finding, escalated — **not resolved**, flagged for Architect decision before any backend work starts
@@ -2102,7 +2130,7 @@ Logged in `docs/v1.2-backend-backlog.md` ("Timetable page (mockup — click-to-b
 
 Surfaced while implementing the user's explicit request to add a click-to-book function to the Timetable page (Daily/Weekly/Monthly) — escalated per this project's standing rule (never fill an `[UNRESOLVED]` domain gap with a plausible-sounding guess), 26 Sep 2026.
 
-## Decision 176 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
+## Decision 177 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
 
 **Date:** 26 Sep 2026
 **Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts; the codegen finding is a Developer-level workaround, not an Architect ruling
@@ -2135,10 +2163,10 @@ Logged in `docs/v1.2-backend-backlog.md` ("Membership Plans page") and as `note2
 
 Implemented per the user's explicit choice of Concept 5 and instruction to "build [what's real], and... anything that is not on the back end now... to a list with notes to be done by the dev team back end team," 26 Sep 2026.
 
-## Decision 177 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
+## Decision 178 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
 
 **Date:** 27 Sep 2026
-**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 176, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 177, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
 **Resolves:** the user picked Concept 2 (Stats Ribbon + List) and asked for the same "build what's real, log the rest" treatment as Membership Plans
 
 ### What was built (real, in `TransactionsPage.tsx`)
@@ -2149,7 +2177,7 @@ One correctness detail worth recording: **Total revenue is grouped by currency, 
 
 ### What was deliberately not built
 
-Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 176's same reasoning for why a real read-only page shouldn't grow dead action buttons).
+Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 177's same reasoning for why a real read-only page shouldn't grow dead action buttons).
 
 ### Verification
 
@@ -2161,9 +2189,9 @@ Logged as `note2` on the "Transactions — 5 concepts" canvas artifact. No `docs
 
 ### Recorded by
 
-Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 176, 27 Sep 2026.
+Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 177, 27 Sep 2026.
 
-## Decision 178 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
+## Decision 179 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
 
 **Date:** 27 Sep 2026
 **Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decisions 123/124: `https://claude.ai/artifact/MctvsgBry9WEkEK2Fqq5QL`); the signature-status finding below is a Developer-level investigation, escalated — not resolved here
@@ -2199,7 +2227,7 @@ Logged in `docs/v1.2-backend-backlog.md` ("Waivers page") with the full three-la
 
 Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concept 3") plus a follow-up request for a signature/signed-status field; shape and build-scope confirmed via AskUserQuestion, then built per the user's "build and create the notes for the dev team" answer, continuing the same policy established in Decisions 123/124, 27 Sep 2026.
 
-## Decision 179 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
+## Decision 180 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
 
 **Date:** 27 Sep 2026
 **Status:** Developer-level finding, escalated — the backlog below is logged for the dev/backend team; no real code was changed as part of this entry (design/documentation only)
@@ -2207,7 +2235,7 @@ Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concep
 
 ### What was found (verified directly against `NotificationsController`/`NotificationsService`/`schema.prisma`, not assumed)
 
-The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 178): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
+The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 179): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
 
 Two smaller, independent gaps were also found: `Notification` has no snoozed/deferred state of any kind (only `read`, a plain boolean), and no delete endpoint exists. Push notification delivery itself is real only at the registration step — `DeviceToken` registration works, but actual push SEND is, per that model's own header comment, "deliberately NOT built this phase," so no delivery-rate or read-time metric can be computed even in principle from what the schema stores today (`Notification.read` has no timestamp — no `readAt` column).
 
@@ -2226,10 +2254,10 @@ Full backend requirements (a new broadcast/compose endpoint and its open product
 
 Requested directly by the user ("Give 5 great ideas... look at other softwares ideas" pattern, continuing Decisions 123/124/125's process), recommendation given via AskUserQuestion-free direct comparison, then the full non-real inventory logged per the user's explicit "any that is not real add to the note for the dev... to do the back end" instruction, 27 Sep 2026.
 
-## Decision 180 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
+## Decision 181 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
 
 **Date:** 27 Sep 2026
-**Status:** Developer-level correction of an earlier overstated finding (Decision 175), verified directly against `BookingsService`/`SchoolsService` before changing anything
+**Status:** Developer-level correction of an earlier overstated finding (Decision 176), verified directly against `BookingsService`/`SchoolsService` before changing anything
 **Resolves:** the user's own second-guess on the Timetable mockup's "Book" action ("this is the school view, not the students... does not make sense for academies") — investigated rather than agreed with by default, since the premise turned out to be wrong
 
 ### What was found (verified directly, not assumed)
@@ -2244,7 +2272,7 @@ Added a required "Student" field to the Book confirmation dialog (all three view
 
 ### What's still not real, and why that hasn't changed
 
-Decision 175's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
+Decision 176's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
 
 ### Tracking
 
@@ -2256,7 +2284,7 @@ Investigated in response to the user questioning the Book action's fit for the S
 
 ---
 
-## Decision 181 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
+## Decision 182 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
 
 **Date:** 28 Sep 2026
 **Status:** Developer-level proposed design, **not approved, not built** — flagged for Architect/product-owner confirmation before any of this is implemented. Recorded because the user asked directly for the logic to be worked out and written down, not because it's been signed off.
