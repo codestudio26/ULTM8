@@ -130,6 +130,7 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
     await superuser.membershipPlan.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.timetableSlot.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.class.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.branch.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
@@ -194,6 +195,36 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
     const returnedUpcomingClass = res.body.upcomingClasses.find((c: { id: string }) => c.id === upcomingClass.id);
     expect(returnedUpcomingClass.instructorId).toBeUndefined();
     expect(returnedUpcomingClass.cancellationCharge).toBeUndefined();
+  });
+
+  it("GET /academies/:id shows the School's branch names to a non-member, so they can choose one when joining (Decision 209), and nothing else about a branch", async () => {
+    const b = await superuser.branch.create({
+      data: { id: randomUUID(), schoolId: otherSchool.id, name: 'Riverside', address: '1 Private Lane', contactPhone: '+15550001111' },
+    });
+    const a = await superuser.branch.create({ data: { id: randomUUID(), schoolId: otherSchool.id, name: 'Downtown' } });
+    const home = await superuser.branch.create({ data: { id: randomUUID(), schoolId: homeSchool.id, name: 'Elsewhere' } });
+
+    const res = await request(app.getHttpServer()).get(`/v1/academies/${otherSchool.id}`).set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.branches).toEqual([
+      { id: a.id, name: 'Downtown' },
+      { id: b.id, name: 'Riverside' },
+    ]);
+    expect(res.body.branches.map((x: { id: string }) => x.id)).not.toContain(home.id);
+
+    // The database backstop: the discovery role may read a branch's name but
+    // not its address or phone.
+    await expect(
+      superuser.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe('SET LOCAL ROLE ultm8_discovery');
+        return tx.$queryRawUnsafe('SELECT "address" FROM "Branch" LIMIT 1');
+      }),
+    ).rejects.toThrow(/permission denied/);
+    const names = await superuser.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe('SET LOCAL ROLE ultm8_discovery');
+      return tx.$queryRawUnsafe<{ name: string }[]>('SELECT "name" FROM "Branch" WHERE "schoolId" = $1 ORDER BY "name"', otherSchool.id);
+    });
+    expect(names.map((n) => n.name)).toEqual(['Downtown', 'Riverside']);
   });
 
   it('GET /academies/:id/timetable returns only ON slots for a School the caller has never joined, with curated fields only', async () => {
