@@ -10,9 +10,10 @@ interface StripeTierRow {
   classesRequired: string;
   minimumDaysInRank: string;
   eligibleClassTypes: string;
+  bookingUnlocksClassTypes: string;
 }
 
-const BLANK_TIER: StripeTierRow = { count: '', colour: '', classesRequired: '', minimumDaysInRank: '', eligibleClassTypes: '' };
+const BLANK_TIER: StripeTierRow = { count: '', colour: '', classesRequired: '', minimumDaysInRank: '', eligibleClassTypes: '', bookingUnlocksClassTypes: '' };
 
 export interface RankFormValues {
   primaryColour: string;
@@ -70,6 +71,7 @@ export function RankFormModal({
           classesRequired: t.classesRequired?.toString() ?? '',
           minimumDaysInRank: t.minimumDaysInRank?.toString() ?? '',
           eligibleClassTypes: t.eligibleClassTypes.join(', '),
+          bookingUnlocksClassTypes: (t.bookingUnlocksClassTypes ?? []).join(', '),
         }))
       : [BLANK_TIER],
   );
@@ -114,6 +116,10 @@ export function RankFormModal({
           classesRequired: t.classesRequired ? Number(t.classesRequired) : undefined,
           minimumDaysInRank: t.minimumDaysInRank ? Number(t.minimumDaysInRank) : undefined,
           eligibleClassTypes: t.eligibleClassTypes
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+          bookingUnlocksClassTypes: t.bookingUnlocksClassTypes
             .split(',')
             .map((s) => s.trim())
             .filter(Boolean),
@@ -222,6 +228,13 @@ export function RankFormModal({
               </Field>
               <Field label="Eligible class types" htmlFor={`tier-${i}-eligibleClassTypes`} hint="Comma-separated">
                 <TextField value={tier.eligibleClassTypes} onChange={(e) => updateTier(i, { eligibleClassTypes: e.target.value })} />
+              </Field>
+              <Field
+                label="Unlocks booking"
+                htmlFor={`tier-${i}-bookingUnlocks`}
+                hint="Comma-separated class types this rung and every rung above may book. Types no rung lists are open to everyone."
+              >
+                <TextField value={tier.bookingUnlocksClassTypes} onChange={(e) => updateTier(i, { bookingUnlocksClassTypes: e.target.value })} />
               </Field>
             </div>
           ))}

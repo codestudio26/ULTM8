@@ -52,7 +52,7 @@ export class RanksService {
     const id = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.discipline.create({
-        data: { id, schoolId, name: dto.name, classTypesOffered: dto.classTypesOffered ?? [] },
+        data: { id, schoolId, name: dto.name, classTypesOffered: dto.classTypesOffered ?? [], skillsRequiredToGrade: dto.skillsRequiredToGrade ?? false },
       }),
     );
   }
@@ -79,7 +79,7 @@ export class RanksService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.discipline.update({ where: { id: disciplineId }, data: { name: dto.name, classTypesOffered: dto.classTypesOffered } }),
+      tx.discipline.update({ where: { id: disciplineId }, data: { name: dto.name, classTypesOffered: dto.classTypesOffered, skillsRequiredToGrade: dto.skillsRequiredToGrade } }),
     );
   }
 
@@ -254,7 +254,7 @@ export class RanksService {
         // positions get a freshly generated id.
         const existingTiers = await tx.rankStripeTier.findMany({
           where: { rankId },
-          select: { id: true, order: true, name: true, count: true, colour: true, stripeSegments: true, timeOnly: true, classCountMode: true, classTypeRequirements: true },
+          select: { id: true, order: true, name: true, count: true, colour: true, stripeSegments: true, timeOnly: true, classCountMode: true, classTypeRequirements: true, bookingUnlocksClassTypes: true },
         });
         const existingByOrder = new Map(existingTiers.map((t) => [t.order, t]));
         const newOrders = new Set(dto.stripeTiers.map((t) => t.order));
@@ -466,6 +466,7 @@ export class RanksService {
       timeOnly: boolean;
       classCountMode: 'ANY_TYPE' | 'EACH_TYPE';
       classTypeRequirements: Prisma.JsonValue;
+      bookingUnlocksClassTypes: string[];
       rankName: string;
     },
   ) {
@@ -522,6 +523,7 @@ export class RanksService {
       stripeSegments: segments.map((s) => ({ count: s.count, colour: s.colour })),
       weeklyClassCountCap: tier.weeklyClassCountCap,
       timeOnly: tier.timeOnly ?? previous?.timeOnly ?? false,
+      bookingUnlocksClassTypes: [...new Set(tier.bookingUnlocksClassTypes ?? previous?.bookingUnlocksClassTypes ?? [])],
     };
   }
 

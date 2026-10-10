@@ -2041,3 +2041,59 @@ Decision 76 says a Branch mirrors its School's profile fields, time zone include
 2. **Which time zone applies.** A class uses its Branch's time zone; when it has no Branch, or its Branch has none, the School's; when neither is set, UTC (today's behaviour). This applies to generating classes from the timetable now, and to the grading engine's days and weeks in roadmap Phase 2b.
 
 Existing Schools start with no time zone, so nothing changes until an owner sets one. Like a Branch's, the value is free text (validated as an IANA name by neither form today).
+
+---
+
+## Decision 173 — Who may book: each rung unlocks class types for booking, set by the school owner
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus). A grading override under Decision 124 where it differs from Spec 55 §6.1 (`eligibleClassTypes` as the booking gate). **Resolves:** how the booking rank gate works once Decision 127 made a rung's ticked class types mean "classes that count toward reaching this rung", raised while building roadmap Phase 2c
+
+Asked whether a student may book the class types up to their current rung or up to their next one, Gus said neither is fixed: *"this decision is for the school owner, for example a lot of academies across the world will allow white 3 stripes and above to join the blue belt and open mats. This is particular to each place, school owner must decide."*
+
+1. **A separate per-rung list, "Unlocks booking".** It is separate from "which classes count" (Decisions 140, 149). The class types a rung lists may be booked by students on that rung and on every rung above it.
+2. **Types no rung lists are open to everyone,** so the owner only marks the classes they want to restrict. Fundamentals, listed nowhere, stays open even to a student with no rank yet. A style where nothing is set is open throughout. Gus: *"Yes, any class"*.
+3. **Refused otherwise.** A restricted type is refused for a student below the unlocking rung, or with no rank in that style. Staff can still override per booking, recorded as before (SKILL.md §9).
+4. **A class with no class type is open.** A class listing several styles must pass for each style.
+
+Gus confirmed the worked example (White · 3 Stripes unlocks Advanced and Open Mat, Purple Belt unlocks Competition): *"yes"*.
+
+Built as `RankStripeTier.bookingUnlocksClassTypes` (kept when omitted on an edit, like the other rung settings), the engine's `bookingAccess`, and one gate shared by booking and the waitlist claim. This replaces Decision 90's activities ↔ style-name bridge for booking. Existing rungs start with nothing unlocked, so every class is open until the owner sets some. The old gate never worked as designed in practice: it compared style names against class types.
+
+---
+
+## Decision 174 — "Each type required" rungs: starting classes per type, and the board drag sets the same % for each type
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 128's "starting classes" (item 9) and board drag (item 13) work on a rung that counts each class type separately (Decision 149). The prototype has one class count per student, so it doesn't say. Raised while building roadmap Phase 3.
+
+1. **Starting classes, per type.** When the student's new next rung counts each type separately (for example 20 Fundamentals + 10 Sparring), the coach enters a number per type when grading (Fundamentals 5, Sparring 2). For an "any type" rung it stays one number. A time-only new rank takes none. Gus: *"A number per type"*.
+2. **Board drag, same % for each type.** Dragging a student on such a rung to a column sets every type to that column's percentage of its own number. For example, Ready to Grade at 66% gives Fundamentals 14/20 and Sparring 7/10. Gus: *"Same % for each type"*.
+
+Item 1 is built in roadmap Phase 3a: the `startingClassesByType` grading field, recorded on the history entry. Item 2 comes with the Grading Board in Phase 3b.
+
+---
+
+## Decision 175 — Age-13 minor limited-login: closed as superseded by Kid Mode, not built
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the age-13 limited-login item's own long-standing open status (`skills/ultm8-domain-rules/SKILL.md` §14/§18, "provisional age threshold 13, *pending legal review*") — raised while reviewing the user-journey gap inventory (Step 1, sign-up) for whether it was still needed now that Decision 123's Kid Mode exists.
+
+### Decision
+
+**The age-13 limited-login feature is closed, not built.** Kid Mode (Decision 123) already covers the practical need it was meant to serve — a minor doing something themselves without their own credentials — via a scoped, short-lived token minted from the Guardian's own session, with no new auth surface, no OTP-for-a-minor problem, and no new claim shape every endpoint has to trust. Building a second, parallel "real" minor login (even a read-only one) alongside Kid Mode would be two mechanisms answering overlapping versions of the same question, for no confirmed product need beyond what Kid Mode already serves.
+
+This explicitly reverses the "not a dependency on or a widening of" framing in Decision 123 §"What this does NOT resolve" (line 1424) — that line described the two as merely independent at the time; this decision goes further and closes the age-13 feature outright, rather than leaving it standing as a separate future build.
+
+### Why
+
+Decision 123 itself already laid out why a genuine minor login is a large, separate feature (new auth codepath, new rate-limiting/lockout surface, a new claim shape every downstream endpoint would need to explicitly trust) — that cost was accepted as a tradeoff *against* building a second mechanism, not as a reason to eventually build both. With Kid Mode shipped and the only concrete use case (booking, Decision 123) already served, there's no longer a live product requirement driving the age-13 feature forward; keeping it listed as `[CONFIRMED]`-but-unbuilt indefinitely invited future work against a need that no longer has a clear owner or scope.
+
+### What this does NOT resolve
+
+- Does not retroactively change anything about Kid Mode's own scope (still booking-only, per-minor, Decision 123) — this closes the *alternative* feature, not an expansion of Kid Mode.
+- If a future, genuinely different need emerges for a minor's own read-only login (e.g. a minor old enough to want to check their own schedule without a Guardian's device), that would be a new product question requiring its own decision — not a reopening of this one by assumption.
+- Decision 77's age-13 threshold finding (the number itself, confirmed final for whenever/if a limited login were ever built) is not disturbed — it simply has no live feature to attach to now.
+
+### Recorded by
+
+Raised by Claude while auditing open gaps against the current, merged state of the codebase (Kid Mode now shipped, grading now merged); the user chose "Close as superseded" over "Keep it open" when asked directly, 9 Oct 2026.

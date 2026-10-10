@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsInt, IsISO8601, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, Matches, MaxLength, Min, ValidateIf } from 'class-validator';
 
 /**
  * Shared body for promote/downgrade/stripe-award. `acknowledgeWithoutSkillSignoff`
@@ -27,6 +27,37 @@ export class GradingActionDto {
   @IsString()
   @MaxLength(1000)
   note?: string;
+
+  @ApiPropertyOptional({
+    description: 'The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt\'s first rung. Downgrade: any lower rung; default the previous belt\'s first rung. Not used by stripe award.',
+  })
+  @IsOptional()
+  @IsUUID()
+  targetRungId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Back-dated grading date, YYYY-MM-DD in the student\'s local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.',
+    example: '2026-03-01',
+  })
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @MaxLength(10)
+  effectiveDate?: string;
+
+  @ApiPropertyOptional({ description: 'Starting classes toward the new next rung (Decision 128, item 9), when it counts any ticked type. Promote and stripe award only.', minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  startingClasses?: number;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'integer', minimum: 0 },
+    description: 'Starting classes per type, when the new next rung counts each type separately (Decision 174), e.g. {"Fundamentals": 5, "Sparring": 2}.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined)
+  @IsObject()
+  startingClassesByType?: Record<string, number>;
 }
 
 /** Downgrade: a written reason is required (Decision 128, item 11). */

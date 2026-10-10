@@ -1,6 +1,7 @@
 import {
   AttendedClass,
   boardColumn,
+  bookingAccess,
   computeEligibility,
   countClasses,
   CountRules,
@@ -439,5 +440,35 @@ describe('grading engine — days', () => {
     expect(localDay(instant, 'Australia/Sydney')).toBe('2026-10-10');
     expect(localDay(instant, 'America/Los_Angeles')).toBe('2026-10-09');
     expect(() => localDay(instant, 'Not/AZone')).toThrow('Invalid time zone');
+  });
+});
+
+describe('grading engine — booking access (Decision 173)', () => {
+  // Gus's example: White · 3 Stripes unlocks Advanced and Open Mat, Purple Belt
+  // unlocks Competition; Fundamentals is unlocked nowhere, so it is open.
+  const ladder = flattenLadder([
+    { id: 'white', order: 0, stripeTiers: [0, 1, 2, 3, 4].map((n) => tier({ id: `white-${n}`, order: n, bookingUnlocksClassTypes: n === 3 ? ['Advanced', 'Open Mat'] : [] })) },
+    { id: 'blue', order: 1, stripeTiers: [0, 1, 2].map((n) => tier({ id: `blue-${n}`, order: n })) },
+    { id: 'purple', order: 2, stripeTiers: [tier({ id: 'purple-0', order: 0, bookingUnlocksClassTypes: ['Competition'] })] },
+  ]);
+  const row = (rung: string) => ['Fundamentals', 'Advanced', 'Open Mat', 'Competition'].map((t) => bookingAccess(ladder, rung, t));
+
+  it.each([
+    ['white-1', ['OPEN', 'LOCKED', 'LOCKED', 'LOCKED']],
+    ['white-3', ['OPEN', 'UNLOCKED', 'UNLOCKED', 'LOCKED']],
+    ['blue-2', ['OPEN', 'UNLOCKED', 'UNLOCKED', 'LOCKED']],
+    ['purple-0', ['OPEN', 'UNLOCKED', 'UNLOCKED', 'UNLOCKED']],
+  ])('%s', (rung, expected) => {
+    expect(row(rung)).toEqual(expected);
+  });
+
+  it('a class with no type is open', () => expect(bookingAccess(ladder, 'white-0', null)).toBe('OPEN'));
+  it('no rung in the style: open types stay open, restricted ones are locked', () => {
+    expect(bookingAccess(ladder, null, 'Fundamentals')).toBe('OPEN');
+    expect(bookingAccess(ladder, null, 'Open Mat')).toBe('LOCKED');
+  });
+  it('a style where nothing is set is open throughout', () => {
+    const plain = flattenLadder([{ id: 'r', order: 0, stripeTiers: [tier({ id: 'a', order: 0 })] }]);
+    expect(bookingAccess(plain, 'a', 'Anything')).toBe('OPEN');
   });
 });

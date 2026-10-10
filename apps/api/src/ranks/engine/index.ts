@@ -4,3 +4,4 @@ export * from './requirement';
 export * from './class-count';
 export * from './eligibility';
 export * from './grading-date';
+export * from './booking-access';

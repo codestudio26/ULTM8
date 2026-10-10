@@ -3124,12 +3124,16 @@ export interface components {
             name: string;
             /** @description e.g. "Kids Fundamentals", "Adult Sparring", "Competition Team". */
             classTypesOffered?: string[];
+            /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
+            skillsRequiredToGrade?: boolean;
         };
         DisciplineResponseDto: {
             id: string;
             schoolId: string;
             name: string;
             classTypesOffered: string[];
+            /** @description "Skills required" switch (Decision 128, item 10). */
+            skillsRequiredToGrade: boolean;
             createdAt: string;
             updatedAt: string;
         };
@@ -3141,6 +3145,8 @@ export interface components {
             name?: string;
             /** @description e.g. "Kids Fundamentals", "Adult Sparring", "Competition Team". */
             classTypesOffered?: string[];
+            /** @description "Skills required" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one. */
+            skillsRequiredToGrade?: boolean;
         };
         StripeSegmentInputDto: {
             count: number;
@@ -3176,6 +3182,8 @@ export interface components {
             classCountMode?: "ANY_TYPE" | "EACH_TYPE";
             /** @description EACH_TYPE only: one entry per ticked class type in eligibleClassTypes, with its number. Must be empty for ANY_TYPE. When omitted: empty on a new rung; kept on an existing rung. */
             classTypeRequirements?: components["schemas"]["ClassTypeRequirementInputDto"][];
+            /** @description Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung. */
+            bookingUnlocksClassTypes?: string[];
             /** @description Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted. */
             requiredSkillIds?: string[];
         };
@@ -3212,6 +3220,8 @@ export interface components {
             classesRequired?: number | null;
             minimumDaysInRank?: number | null;
             eligibleClassTypes: string[];
+            /** @description Class types this rung unlocks for booking, for it and every rung above (Decision 173). */
+            bookingUnlocksClassTypes: string[];
             /**
              * @description Which classes count (Decisions 140, 149).
              * @enum {string}
@@ -3416,6 +3426,10 @@ export interface components {
             rungsSkipped: number;
             /** @description "Starting classes" entered when grading (Decision 128, item 9). */
             startingClasses: number | null;
+            /** @description Starting classes per type, when the new next rung counts each type separately (Decision 174). */
+            startingClassesByType?: {
+                [key: string]: number;
+            } | null;
             /** @description Set when the entry has been voided (Decision 129). */
             voidedAt: string | null;
             voidedById: string | null;
@@ -3445,12 +3459,38 @@ export interface components {
             acknowledgeWithoutSkillSignoff: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
+            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award. */
+            targetRungId?: string;
+            /**
+             * @description Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.
+             * @example 2026-03-01
+             */
+            effectiveDate?: string;
+            /** @description Starting classes toward the new next rung (Decision 128, item 9), when it counts any ticked type. Promote and stripe award only. */
+            startingClasses?: number;
+            /** @description Starting classes per type, when the new next rung counts each type separately (Decision 174), e.g. {"Fundamentals": 5, "Sparring": 2}. */
+            startingClassesByType?: {
+                [key: string]: number;
+            };
         };
         DowngradeActionDto: {
             /** @default false */
             acknowledgeWithoutSkillSignoff: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
+            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award. */
+            targetRungId?: string;
+            /**
+             * @description Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.
+             * @example 2026-03-01
+             */
+            effectiveDate?: string;
+            /** @description Starting classes toward the new next rung (Decision 128, item 9), when it counts any ticked type. Promote and stripe award only. */
+            startingClasses?: number;
+            /** @description Starting classes per type, when the new next rung counts each type separately (Decision 174), e.g. {"Fundamentals": 5, "Sparring": 2}. */
+            startingClassesByType?: {
+                [key: string]: number;
+            };
             /** @description Why the student is being moved down. Required. */
             reason: string;
         };

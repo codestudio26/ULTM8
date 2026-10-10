@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { DateTime } from 'luxon';
 import { boardColumn, BoardColumn, computeEligibility, Eligibility, localDay, requirementFor } from './engine';
 import { loadLadder } from './grading-attendance';
 
@@ -47,4 +48,13 @@ export async function studentTimeZone(tx: TenantTx, studentId: string, schoolId:
     tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }),
   ]);
   return home?.branch.timezone ?? school?.timezone ?? 'UTC';
+}
+
+/** The instant a local calendar day (YYYY-MM-DD) starts in a time zone, so a
+ * date typed by a coach (back-dated grade, edited rank date) reads back as the
+ * same day in that zone. */
+export function startOfLocalDay(day: string, timeZone: string): Date {
+  const dt = DateTime.fromISO(day, { zone: timeZone }).startOf('day');
+  if (!dt.isValid) throw new Error(`Invalid day or time zone: ${day} ${timeZone}`);
+  return dt.toJSDate();
 }

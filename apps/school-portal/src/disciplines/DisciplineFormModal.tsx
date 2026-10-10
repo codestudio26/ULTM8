@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from './disciplineQueries';
 
@@ -17,12 +17,13 @@ export function DisciplineFormModal({
   title: string;
   initial?: Partial<DisciplineResponse>;
   submitting: boolean;
-  onSubmit: (values: { name: string; classTypesOffered?: string[] }) => Promise<void>;
+  onSubmit: (values: { name: string; classTypesOffered?: string[]; skillsRequiredToGrade?: boolean }) => Promise<void>;
   onClose: () => void;
 }) {
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     classTypesOffered: (initial?.classTypesOffered ?? []).join(', '),
+    skillsRequiredToGrade: initial?.skillsRequiredToGrade ?? false,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +37,7 @@ export function DisciplineFormModal({
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean),
+        skillsRequiredToGrade: form.skillsRequiredToGrade,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
@@ -59,6 +61,11 @@ export function DisciplineFormModal({
             onChange={(e) => setForm((f) => ({ ...f, classTypesOffered: e.target.value }))}
           />
         </Field>
+        <Checkbox
+          label="Skills required to grade: block grading until every skill for the next rank is signed off (otherwise the coach can grade with a written acknowledgement)"
+          checked={form.skillsRequiredToGrade}
+          onChange={(e) => setForm((f) => ({ ...f, skillsRequiredToGrade: e.target.checked }))}
+        />
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             Save
