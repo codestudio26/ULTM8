@@ -108,7 +108,7 @@ Source: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 124–163, and G
 - Deleted accounts: grading data goes with the account (Spec Decision 44); a deleted instructor shows as "Former instructor" (Decisions 134, 141).
 
 **Other**
-- Notifications in v1.1: "ready to grade" to grading staff; "you've been promoted" to the student or guardian (Decision 145).
+- Notifications in v1.1: "ready to grade" to grading staff; "you've been promoted" to the student or guardian (Decision 145). Built (Decision 178): "ready to grade" goes to the owner and the permitted coaches covering the student's branch, checked after grading actions and check-ins and in a daily sweep, once per rank (`StudentRank.readyNotifiedAt`); "promoted" goes to each linked guardian instead of a Guardian-linked minor. The background-job role reads grading data and guardian links read-only for this.
 - Names (styles, rungs, skills) are typed once by the School, not translated (Decision 146).
 - Lessons: watchable by students and guardians with a paid membership for that activity; lesson categories with ordering (Decisions 128, 154).
 - Grading fee: ULTM8 takes nothing. In v1.1 the School sets up a one-off grading-day Class plus a 1-credit pass scoped to it; no separate fee switch (Decisions 159, 162, 163).

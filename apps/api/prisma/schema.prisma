@@ -2096,6 +2096,10 @@ model StudentRank {
   /// whether the student has an active membership; true/false is the manual
   /// Active/Inactive switch for this style, overriding it.
   boardActiveOverride Boolean?
+  /// "Ready to grade" (Decisions 145, 178): when grading staff were told this
+  /// student is ready for their next rung. Once per rank: cleared on every rank
+  /// change.
+  readyNotifiedAt DateTime?
 
   // Self-declared ranks (grading foundation PR 6, Decisions 137, 147).
   verificationStatus RankVerificationStatus @default(VERIFIED)

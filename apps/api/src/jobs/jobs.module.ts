@@ -15,6 +15,7 @@ import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingSchedule
 import { TenantLifecyclePurgeProcessor, TenantLifecyclePurgeScheduler } from './tenant-lifecycle-purge.processor';
 import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-restriction.processor';
 import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from './membership-expiry-sweep.processor';
+import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './grading-notifications.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -101,6 +102,12 @@ import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from '
  * and date-based paths share one implementation. No new module import needed
  * — same PrismaJobsService/WAITLIST_CASCADE_PROCESSING_QUEUE dependencies every sweep
  * above it already uses.
+ *
+ * Decisions 145, 178 add GradingNotificationsProcessor/Scheduler: "ready to
+ * grade" checks (queued by GradingService and AttendanceService after an
+ * action, plus a daily sweep) and the routing of "you've been promoted" to the
+ * student or a minor's guardians. Fans out through NOTIFICATION_FANOUT_QUEUE
+ * like the others; no new module import.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -122,6 +129,8 @@ import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from '
     ChargebackPatternRestrictionProcessor,
     MembershipExpirySweepProcessor,
     MembershipExpirySweepScheduler,
+    GradingNotificationsProcessor,
+    GradingNotificationsScheduler,
   ],
 })
 export class JobsModule {}

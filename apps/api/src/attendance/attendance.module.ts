@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
+import { QueueModule } from '../jobs/queue.module';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 import { QrTokenService } from './qr-token.service';
@@ -11,9 +12,10 @@ import { QrTokenService } from './qr-token.service';
  * Class QR-token mint and the Instructor roll-call scan both need
  * TenantAuthorizationService — so this module imports TenantsModule for the
  * first time, same shape ClassesModule/InstructorsModule already use.
+ * QueueModule: a check-in queues a "ready to grade" check (Decision 178).
  */
 @Module({
-  imports: [TenantsModule],
+  imports: [TenantsModule, QueueModule],
   controllers: [AttendanceController],
   providers: [AttendanceService, QrTokenService],
 })

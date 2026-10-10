@@ -7,6 +7,10 @@ import { QrTokenService } from './qr-token.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { creditAttendance } from '../ranks/grading-attendance';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
+import { queueReadyCheck } from '../jobs/grading-notifications.types';
 
 /**
  * Phase 13 built self-service-only QR check-in against a bare `bookingId` — the
@@ -51,6 +55,7 @@ export class AttendanceService {
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly qrTokenService: QrTokenService,
+    @InjectQueue(GRADING_NOTIFICATIONS_QUEUE) private readonly gradingNotificationsQueue: Queue,
   ) {}
 
   /** GET /classes/{id}/qr-token — Staff-only. Mints the rotating Class-scoped
@@ -194,7 +199,7 @@ export class AttendanceService {
     method: CheckInMethod,
     checkedInById: string | null,
   ) {
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    const completed = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       // Optimistic-concurrency guard, same established pattern as every other
       // status transition in this codebase — guards against a double-scan
       // race (any combination of the three methods) or a race against the
@@ -218,5 +223,8 @@ export class AttendanceService {
 
       return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
     });
+    // The class may have made the student ready to grade (Decision 178).
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId);
+    return completed;
   }
 }

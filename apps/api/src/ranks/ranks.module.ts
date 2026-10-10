@@ -16,17 +16,13 @@ import { GradingPermissionsService } from './grading-permissions.service';
  * Booking-time rank-gating enforcement. See RanksService's and GradingService's
  * own header comments for the full scoping rationale.
  *
- * QueueModule: closes a real gap found while auditing the user-journey gap
- * inventory — GradingService now injects NOTIFICATION_FANOUT_QUEUE directly to
- * notify a Student of a promotion/downgrade/stripe award, the same
+ * QueueModule: GradingService injects GRADING_NOTIFICATIONS_QUEUE, the same
  * @InjectQueue-from-a-plain-HTTP-service pattern BookingsService/WaiversService/
- * PaymentsService already established (each injects its own job queue
- * directly, not via an intermediate module) — see GradingService's own
- * promotion-notification comment for why this goes straight to
- * NOTIFICATION_FANOUT_QUEUE rather than through an intermediate job queue the
- * way WaiverSignatureRequestsProcessor does (that processor does real
- * cross-tenant enumeration work; grading already knows its one recipient
- * synchronously, so there's no extra step to defer to a job for).
+ * PaymentsService already established, to notify a Student (or a minor's
+ * guardians) of a promotion/downgrade/stripe award and to check "ready to
+ * grade" after each grading action (Decisions 145, 178). It goes through a job
+ * rather than straight to NOTIFICATION_FANOUT_QUEUE because the recipients
+ * (guardians, permitted coaches) are only readable cross-tenant.
  */
 @Module({
   // GuardiansModule: GuardiansService.assertGuardianOfStudent() for Guardian
