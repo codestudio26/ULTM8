@@ -9,6 +9,7 @@ import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { CreateRankDto } from './dto/create-rank.dto';
 import { UpdateRankDto } from './dto/update-rank.dto';
 import { ReorderRanksDto, RungHoldersResponseDto } from './dto/ladder.dto';
+import { CreateStyleFromTemplateDto, StyleTemplateListResponseDto } from './dto/style-template.dto';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { DisciplineListResponseDto, DisciplineResponseDto } from './dto/discipline-response.dto';
@@ -38,6 +39,24 @@ export class RanksController {
   @Get('schools/:schoolId/disciplines')
   async findAllDisciplines(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
     return { items: await this.ranksService.findAllDisciplines(user.sub, schoolId) };
+  }
+
+  @ApiOkResponse({ type: StyleTemplateListResponseDto })
+  @Get('style-templates')
+  listTemplates() {
+    return this.ranksService.listTemplates();
+  }
+
+  @ApiCreatedResponse({ type: DisciplineResponseDto, description: 'The new style, built from the template (Decisions 131, 182).' })
+  @Post('schools/:schoolId/disciplines/from-template')
+  createFromTemplate(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: CreateStyleFromTemplateDto) {
+    return this.ranksService.createFromTemplate(user.sub, schoolId, dto);
+  }
+
+  @ApiCreatedResponse({ type: DisciplineResponseDto, description: 'The copy, named "… (Copy)" (Decision 182).' })
+  @Post('disciplines/:id/duplicate')
+  duplicateDiscipline(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.ranksService.duplicateDiscipline(user.sub, id);
   }
 
   @ApiOkResponse({ type: DisciplineResponseDto })

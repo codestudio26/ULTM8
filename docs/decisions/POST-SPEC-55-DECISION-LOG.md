@@ -2174,3 +2174,15 @@ Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT 
 3. **"Ready to grade" notifications** (Decisions 145, 178) go to coaches who may **Promote** in that style.
 4. **Existing grants keep every toggle on.** Nobody uses the system live yet (Gus).
 5. **A Grading permissions page** in the School Portal lists the school's Instructors and Branch Staff, with "May grade" per style and the seven toggles. The API's permission list includes that staff list (owner only), since no staff roster endpoint existed.
+
+---
+
+## Decision 182 — Templates use the prototype's numbers; Duplicate copies the ladder, skills and settings
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how the three IBJJF templates (Decision 131) and "Duplicate style" are built.
+
+1. **Templates start with the prototype's numbers.** A style created from one of the three IBJJF templates gets the prototype's belts, stripes, classes required, minimum days, weekly caps, eligible class types and black-belt degree years (`buildIbjjfLadder`), plus its five class types. Each belt's totals are spread over its five stripe rungs, as in the prototype. The school then edits everything as its own; the template is not linked afterwards. Gus: *"Prototype numbers, then edit"*.
+2. **Duplicate copies the ladder, skills and settings.** The copy, named "… (Copy)", gets every belt and rung with all their rules, every skill (re-linked to the copied belts and rungs), the class types, the "skills required" switch and the board %. It does not copy students, their ranks or history, lesson links, or coach grading permissions. Gus: *"Ladder + skills + settings"*.
+3. **Owner only**, like every ladder edit.
+
+Built in the API as `GET /style-templates`, `POST /schools/{id}/disciplines/from-template` and `POST /disciplines/{id}/duplicate`; in the School Portal as **Start from template** and **Duplicate** on the Disciplines page.

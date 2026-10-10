@@ -3730,6 +3730,112 @@
         ]
       }
     },
+    "/v1/style-templates": {
+      "get": {
+        "operationId": "RanksController_listTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleTemplateListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/disciplines/from-template": {
+      "post": {
+        "operationId": "RanksController_createFromTemplate",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStyleFromTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new style, built from the template (Decisions 131, 182).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/duplicate": {
+      "post": {
+        "operationId": "RanksController_duplicateDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The copy, named \"… (Copy)\" (Decision 182).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/disciplines/{id}": {
       "get": {
         "operationId": "RanksController_findOneDiscipline",
@@ -10322,6 +10428,64 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "StyleTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rungs": {
+            "type": "number",
+            "description": "Number of rungs."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "rungs"
+        ]
+      },
+      "StyleTemplateListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StyleTemplateDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateStyleFromTemplateDto": {
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "enum": [
+              "ibjjf",
+              "ibjjf_kids_red",
+              "ibjjf_kids_yellow"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The style's name. Default: the template's name."
+          }
+        },
+        "required": [
+          "templateId"
         ]
       },
       "UpdateDisciplineDto": {
