@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsISO8601, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import { IsBoolean, IsISO8601, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 /** Upper bound on any starting class number (input sanity, not a grading rule). */
 export const MAX_STARTING_CLASSES = 10_000;
@@ -93,6 +93,21 @@ export class VoidPromotionEventDto {
   @Matches(/\S/, { message: 'reason must contain text' })
   @MaxLength(1000)
   reason!: string;
+}
+
+/** Edit a history entry's note, or hide or show it (Decision 192). Send
+ * either or both; an empty note clears it. */
+export class ChangeHistoryNoteDto {
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  note?: string | null;
+
+  @ApiPropertyOptional({ description: 'true hides the note from the student and guardian; false shows it again.' })
+  @IsOptional()
+  @IsBoolean()
+  hidden?: boolean;
 }
 
 /** Correct the date a student reached their current rung (Decisions 153, 166). */

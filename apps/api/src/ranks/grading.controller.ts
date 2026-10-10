@@ -4,9 +4,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
-import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
-import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
+import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
 import { Throttle } from '@nestjs/throttler';
@@ -66,6 +66,31 @@ export class GradingController {
     @Body() dto: VoidPromotionEventDto,
   ) {
     return this.gradingService.voidPromotionEvent(user.sub, id, schoolId, eventId, dto);
+  }
+
+  /** Edit a history entry's note, or hide or show it (Decision 192). */
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Patch('students/:id/rank-history/:eventId/note')
+  changeHistoryNote(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @Query('schoolId') schoolId: string,
+    @Body() dto: ChangeHistoryNoteDto,
+  ) {
+    return this.gradingService.changeHistoryNote(user.sub, id, schoolId, eventId, dto);
+  }
+
+  /** Every change to an entry's note, for the School owner (Decision 192). */
+  @ApiOkResponse({ type: PromotionEventNoteLogResponseDto })
+  @Get('students/:id/rank-history/:eventId/note-log')
+  findHistoryNoteLog(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @Query('schoolId') schoolId: string,
+  ) {
+    return this.gradingService.findHistoryNoteLog(user.sub, id, schoolId, eventId);
   }
 
   @ApiOkResponse({ type: PromotionEventResponseDto })

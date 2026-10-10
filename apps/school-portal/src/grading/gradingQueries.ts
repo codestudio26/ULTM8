@@ -98,6 +98,39 @@ export function useVoidEntry(studentId: string, schoolId: string) {
   );
 }
 
+/** Edit a history entry's note, or hide or show it (Decision 192). */
+export function useChangeHistoryNote(studentId: string, schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventId, ...body }: { eventId: string; note?: string | null; hidden?: boolean }) =>
+      unwrap(
+        apiClient.PATCH('/v1/students/{id}/rank-history/{eventId}/note', {
+          params: { path: { id: studentId, eventId }, query: { schoolId } },
+          body,
+        }),
+      ),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
+        queryClient.invalidateQueries({ queryKey: ['history-note-log', studentId] }),
+      ]),
+  });
+}
+
+/** Every change to one entry's note, for the School owner (Decision 192). */
+export function useHistoryNoteLog(studentId: string, schoolId: string, eventId: string | null) {
+  return useQuery({
+    queryKey: ['history-note-log', studentId, eventId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/students/{id}/rank-history/{eventId}/note-log', {
+          params: { path: { id: studentId, eventId: eventId! }, query: { schoolId } },
+        }),
+      ),
+    enabled: !!eventId,
+  });
+}
+
 export type GradingBoard = components['schemas']['GradingBoardResponseDto'];
 export type GradingBoardItem = components['schemas']['GradingBoardItemDto'];
 export type BoardColumn = 'JUST_STARTING' | 'GETTING_THERE' | 'READY_TO_GRADE';

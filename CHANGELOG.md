@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **History notes can be edited and hidden; every change is kept** (Decision
+  192). On a student's grading page, the owner and anyone who may grade that
+  student in that style ("Promote" or "Move down") can edit a history entry's
+  note, or add one, and hide it from the student and guardian, or show it
+  again. Staff see "Edited" and "Hidden from the student"; the owner can open
+  every change (who, when, old and new text). Students and guardians get no
+  hidden note, nor a sign one was hidden. System notes, downgrade reasons and
+  voided entries are not changed. **api:** `PATCH
+  /students/{id}/rank-history/{eventId}/note` and the owner-only `GET
+  …/note-log`; `PromotionEvent.noteEditedAt/noteEditedById/noteHiddenAt` and
+  `PromotionEventNoteLog` (migration `20261030000000`), whose RLS lets the
+  owner read it and never the student.
 - **Belts waiting to be verified: a notice at login** (Decisions 137, 189).
   When the owner, or a coach or Branch Staff member who may verify belts, logs
   in to the School Portal, a notice lists the students whose self-declared belt

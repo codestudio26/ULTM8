@@ -4936,6 +4936,118 @@
         ]
       }
     },
+    "/v1/students/{id}/rank-history/{eventId}/note": {
+      "patch": {
+        "operationId": "GradingController_changeHistoryNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeHistoryNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/rank-history/{eventId}/note-log": {
+      "get": {
+        "operationId": "GradingController_findHistoryNoteLog",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventNoteLogResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/rank-date": {
       "patch": {
         "operationId": "GradingController_editRankDate",
@@ -12258,6 +12370,20 @@
             "type": "string",
             "nullable": true
           },
+          "noteEditedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the note was last edited (Decision 192)."
+          },
+          "noteEditedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "noteHiddenAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden."
+          },
           "createdAt": {
             "type": "string",
             "description": "When the entry was written (audit timestamp)."
@@ -12280,6 +12406,9 @@
           "voidedAt",
           "voidedById",
           "voidReason",
+          "noteEditedAt",
+          "noteEditedById",
+          "noteHiddenAt",
           "createdAt"
         ]
       },
@@ -12311,6 +12440,78 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "ChangeHistoryNoteDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "true hides the note from the student and guardian; false shows it again."
+          }
+        }
+      },
+      "PromotionEventNoteLogEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "EDITED",
+              "HIDDEN",
+              "SHOWN"
+            ]
+          },
+          "oldNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "newNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "changedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "changedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "First name and surname of who made the change."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "change",
+          "oldNote",
+          "newNote",
+          "changedById",
+          "changedByName",
+          "createdAt"
+        ]
+      },
+      "PromotionEventNoteLogResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromotionEventNoteLogEntryDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "EditRankDateDto": {

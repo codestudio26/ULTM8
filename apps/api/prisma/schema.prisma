@@ -309,46 +309,48 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants               RoleGrant[]       @relation("RoleGrantUser")
-  grantsIssued             RoleGrant[]       @relation("RoleGrantGrantedBy")
-  classesTaught            Class[]           @relation("ClassInstructor")
-  timetableSlotsTaught     TimetableSlot[]   @relation("TimetableSlotInstructor")
-  instructorProfiles       Instructor[]
-  lessonsAuthored          Lesson[]          @relation("LessonInstructor")
-  memberships              Membership[]      @relation("MembershipStudent")
-  membershipsGifted        Membership[]      @relation("MembershipGiftedBy")
-  transactionsPaid         Transaction[]     @relation("TransactionPayer")
-  studentRanks             StudentRank[]
-  promotionEventsPerformed PromotionEvent[]  @relation("PromotionEventPerformedBy")
-  promotionEventsVoided    PromotionEvent[]  @relation("PromotionEventVoidedBy")
-  skillSignOffChanges      SkillSignOffLog[] @relation("SkillSignOffLogChangedBy")
-  homeBranches             StudentHomeBranch[] @relation("StudentHomeBranchStudent")
-  rankVerifications        StudentRank[]       @relation("StudentRankVerifiedBy")
-  homeBranchesAssigned     StudentHomeBranch[] @relation("StudentHomeBranchAssignedBy")
-  gradingPermissions       GradingPermission[] @relation("GradingPermissionUser")
-  gradingPermissionsGiven  GradingPermission[] @relation("GradingPermissionGrantedBy")
-  staffPermissions         StaffPermission[]   @relation("StaffPermissionUser")
-  staffPermissionsGiven    StaffPermission[]   @relation("StaffPermissionGrantedBy")
-  coachInvitesSent         CoachInvite[]       @relation("CoachInviteInvitedBy")
-  coachInvitesAccepted     CoachInvite[]       @relation("CoachInviteAcceptedBy")
-  coachInvitesCancelled    CoachInvite[]       @relation("CoachInviteCancelledBy")
-  waiverSignatures         WaiverSignature[] @relation("WaiverSignatureStudent")
-  waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
-  bookings                 Booking[]         @relation("BookingStudent")
-  bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
-  bookingsResolved         Booking[]         @relation("BookingResolvedBy")
-  bookingsCheckedIn        Booking[]         @relation("BookingCheckedInBy")
-  bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
-  waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
-  guardianLinksAsGuardian  GuardianLink[]    @relation("GuardianLinkGuardian")
-  guardianLinksAsStudent   GuardianLink[]    @relation("GuardianLinkStudent")
-  consentRecordsAsGuardian ConsentRecord[]   @relation("ConsentRecordGuardian")
-  consentRecordsAsStudent  ConsentRecord[]   @relation("ConsentRecordStudent")
-  bookingDelegationsAsGuardian BookingDelegation[] @relation("BookingDelegationGuardian")
-  bookingDelegationsAsStudent  BookingDelegation[] @relation("BookingDelegationStudent")
-  notifications            Notification[]
-  deviceTokens             DeviceToken[]
-  refreshTokens            RefreshToken[]
+  roleGrants                   RoleGrant[]             @relation("RoleGrantUser")
+  grantsIssued                 RoleGrant[]             @relation("RoleGrantGrantedBy")
+  classesTaught                Class[]                 @relation("ClassInstructor")
+  timetableSlotsTaught         TimetableSlot[]         @relation("TimetableSlotInstructor")
+  instructorProfiles           Instructor[]
+  lessonsAuthored              Lesson[]                @relation("LessonInstructor")
+  memberships                  Membership[]            @relation("MembershipStudent")
+  membershipsGifted            Membership[]            @relation("MembershipGiftedBy")
+  transactionsPaid             Transaction[]           @relation("TransactionPayer")
+  studentRanks                 StudentRank[]
+  promotionEventsPerformed     PromotionEvent[]        @relation("PromotionEventPerformedBy")
+  promotionEventsVoided        PromotionEvent[]        @relation("PromotionEventVoidedBy")
+  promotionEventNotesEdited    PromotionEvent[]        @relation("PromotionEventNoteEditedBy")
+  promotionEventNoteChanges    PromotionEventNoteLog[] @relation("PromotionEventNoteLogChangedBy")
+  skillSignOffChanges          SkillSignOffLog[]       @relation("SkillSignOffLogChangedBy")
+  homeBranches                 StudentHomeBranch[]     @relation("StudentHomeBranchStudent")
+  rankVerifications            StudentRank[]           @relation("StudentRankVerifiedBy")
+  homeBranchesAssigned         StudentHomeBranch[]     @relation("StudentHomeBranchAssignedBy")
+  gradingPermissions           GradingPermission[]     @relation("GradingPermissionUser")
+  gradingPermissionsGiven      GradingPermission[]     @relation("GradingPermissionGrantedBy")
+  staffPermissions             StaffPermission[]       @relation("StaffPermissionUser")
+  staffPermissionsGiven        StaffPermission[]       @relation("StaffPermissionGrantedBy")
+  coachInvitesSent             CoachInvite[]           @relation("CoachInviteInvitedBy")
+  coachInvitesAccepted         CoachInvite[]           @relation("CoachInviteAcceptedBy")
+  coachInvitesCancelled        CoachInvite[]           @relation("CoachInviteCancelledBy")
+  waiverSignatures             WaiverSignature[]       @relation("WaiverSignatureStudent")
+  waiverSignaturesSigned       WaiverSignature[]       @relation("WaiverSignatureSignedBy")
+  bookings                     Booking[]               @relation("BookingStudent")
+  bookingsOverridden           Booking[]               @relation("BookingOverriddenBy")
+  bookingsResolved             Booking[]               @relation("BookingResolvedBy")
+  bookingsCheckedIn            Booking[]               @relation("BookingCheckedInBy")
+  bookingAttendeesResolved     BookingAttendee[]       @relation("BookingAttendeeResolvedBy")
+  waitlistEntries              WaitlistEntry[]         @relation("WaitlistEntryStudent")
+  guardianLinksAsGuardian      GuardianLink[]          @relation("GuardianLinkGuardian")
+  guardianLinksAsStudent       GuardianLink[]          @relation("GuardianLinkStudent")
+  consentRecordsAsGuardian     ConsentRecord[]         @relation("ConsentRecordGuardian")
+  consentRecordsAsStudent      ConsentRecord[]         @relation("ConsentRecordStudent")
+  bookingDelegationsAsGuardian BookingDelegation[]     @relation("BookingDelegationGuardian")
+  bookingDelegationsAsStudent  BookingDelegation[]     @relation("BookingDelegationStudent")
+  notifications                Notification[]
+  deviceTokens                 DeviceToken[]
+  refreshTokens                RefreshToken[]
 
   @@index([email])
   @@index([phone])
@@ -409,14 +411,14 @@ model RefreshToken {
 
   tokenHash String @unique
 
-  createdAt DateTime  @default(now())
-  expiresAt DateTime
-  revokedAt DateTime?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
   // true only when revokedAt was set by AuthService.refresh()'s own rotation
   // step (this token had a legitimate successor minted) — the actual
   // replay-attack signal. false for every other revocation (logout, the
   // passcode-reset mass-revoke) — see this model's own header comment.
-  rotatedOut Boolean @default(false)
+  rotatedOut Boolean   @default(false)
 
   @@index([userId])
 }
@@ -1016,7 +1018,7 @@ model Instructor {
   /// from that system rather than self-reported text.
   beltRanking String?
 
-  specializations String[] @default([])
+  specializations        String[] @default([])
   /// The School's styles this instructor specialises in (Decision 152, item 1).
   /// In a School with styles they are picked here and `specializations` is
   /// filled in from their names; a School with no styles keeps free text.
@@ -1744,23 +1746,23 @@ model Discipline {
   schoolId String
   school   School @relation(fields: [schoolId], references: [id])
 
-  name              String
-  classTypesOffered String[] @default([])
+  name                  String
+  classTypesOffered     String[] @default([])
   /// Per-style "skills required" switch (Decision 128, item 10): off — grading
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
-  skillsRequiredToGrade Boolean @default(false)
+  skillsRequiredToGrade Boolean  @default(false)
   /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
-  boardGettingThere Int @default(33)
-  boardReadyToGrade Int @default(66)
+  boardGettingThere     Int      @default(33)
+  boardReadyToGrade     Int      @default(66)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ranks        Rank[]
-  skills       Skill[]
-  studentRanks StudentRank[]
+  ranks              Rank[]
+  skills             Skill[]
+  studentRanks       StudentRank[]
   gradingPermissions GradingPermission[]
 
   @@index([schoolId])
@@ -1859,27 +1861,27 @@ model RankStripeTier {
   /// Grading foundation PR 2 — every rung carries every prototype rung setting
   /// (Decisions 126, 128). `name` e.g. "Blue Belt · 2 Stripes" (typed per rung,
   /// generated from the belt name + stripe count when omitted).
-  name                String
+  name                     String
   /// Mixed stripe colours on one rung, in tip order, e.g.
   /// [{"count":3,"colour":"#F0C419"},{"count":1,"colour":"#C23B3B"}]. The
   /// segment counts always sum to `count`. Drawing data only, stored as JSON so
   /// it needs no table/RLS policy of its own.
-  stripeSegments      Json    @default("[]")
-  weeklyClassCountCap Int?
+  stripeSegments           Json           @default("[]")
+  weeklyClassCountCap      Int?
   /// "Time in rank only" (Decision 128 item 3): classes are not counted and
   /// skills are optional; the years are held in `minimumDaysInRank`.
-  timeOnly            Boolean @default(false)
+  timeOnly                 Boolean        @default(false)
   // Which classes count (Decisions 140, 149): ANY_TYPE — a class of any type in
   // eligibleClassTypes counts toward classesRequired (the default); EACH_TYPE —
   // each ticked type has its own number in classTypeRequirements,
   // [{ classType, classesRequired }], e.g. 20 Fundamentals + 10 Sparring.
-  classCountMode        ClassCountMode @default(ANY_TYPE)
-  classTypeRequirements Json           @default("[]")
+  classCountMode           ClassCountMode @default(ANY_TYPE)
+  classTypeRequirements    Json           @default("[]")
   /// Who may book (Decision 173, set by the school owner): class types this
   /// rung unlocks for booking, for it and every rung above. A type no rung
   /// unlocks is open to everyone. Separate from eligibleClassTypes, which
   /// says which classes count toward reaching this rung.
-  bookingUnlocksClassTypes String[] @default([])
+  bookingUnlocksClassTypes String[]       @default([])
 
   requiredSkills RankStripeTierRequiredSkill[]
 
@@ -2095,23 +2097,23 @@ model StudentRank {
 
   dateOfCurrentRank DateTime @default(now())
 
-  classesAttendedTowardCheckpoint Int @default(0)
+  classesAttendedTowardCheckpoint Int       @default(0)
   /// Classes counted toward the next rung, per class type (Decisions 149, 171):
   /// {"Fundamentals": 18, "Sparring": 4}. Classes with no type are in the total
   /// only. Reset with the total on every rank change.
-  classesAttendedByType Json @default("{}")
+  classesAttendedByType           Json      @default("{}")
   /// When counting toward the current rung started: the moment of the last rank
   /// change (not the back-datable rank date). Classes before it belong to the
   /// previous rung; the weekly cap only looks at classes after it.
-  countingSince DateTime @default(now())
+  countingSince                   DateTime  @default(now())
   /// Grading Board "currently attending" (Decisions 152, 176): null follows
   /// whether the student has an active membership; true/false is the manual
   /// Active/Inactive switch for this style, overriding it.
-  boardActiveOverride Boolean?
+  boardActiveOverride             Boolean?
   /// "Ready to grade" (Decisions 145, 178): when grading staff were told this
   /// student is ready for their next rung. Once per rank: cleared on every rank
   /// change.
-  readyNotifiedAt DateTime?
+  readyNotifiedAt                 DateTime?
 
   // Self-declared ranks (grading foundation PR 6, Decisions 137, 147).
   verificationStatus RankVerificationStatus @default(VERIFIED)
@@ -2209,31 +2211,73 @@ model PromotionEvent {
   // Grading foundation PR 3 — history fields (Decisions 128, 129, 153, 166).
   // effectiveDate: the grading date shown on the history, which may be
   // back-dated (Decision 128, item 8); createdAt stays the audit timestamp.
-  effectiveDate   DateTime @default(now())
+  effectiveDate         DateTime  @default(now())
   // Downgrade reason, required on a downgrade (Decision 128, item 11).
-  reason          String?
+  reason                String?
   // System note, e.g. "Skipped 2 ranks in between", and the user's own note
   // (Decision 128, item 11).
-  systemNote      String?
-  note            String?
+  systemNote            String?
+  note                  String?
   // Rungs skipped by a grade (Decision 128, item 7); 0 for a normal grade.
-  rungsSkipped    Int      @default(0)
+  rungsSkipped          Int       @default(0)
   // "Starting classes" entered when grading (Decision 128, item 9).
-  startingClasses Int?
+  startingClasses       Int?
   // Starting classes per type, when the new next rung counts each type
   // separately (Decision 174), e.g. {"Fundamentals": 5, "Sparring": 2}.
   startingClassesByType Json?
   // Void with a reason, never delete (Decision 129).
-  voidedAt        DateTime?
-  voidedById      String?
-  voidedBy        User?     @relation("PromotionEventVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
-  voidReason      String?
+  voidedAt              DateTime?
+  voidedById            String?
+  voidedBy              User?     @relation("PromotionEventVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+  voidReason            String?
+  // The user note can be edited and hidden (Decision 192): when it was last
+  // edited and by whom, and when it was hidden from the student and guardian
+  // (null: shown). Every change is in PromotionEventNoteLog.
+  noteEditedAt          DateTime?
+  noteEditedById        String?
+  noteEditedBy          User?     @relation("PromotionEventNoteEditedBy", fields: [noteEditedById], references: [id], onDelete: SetNull)
+  noteHiddenAt          DateTime?
 
   createdAt DateTime @default(now())
+
+  noteLog PromotionEventNoteLog[]
 
   @@index([schoolId])
   @@index([studentId])
   @@index([studentRankId])
+}
+
+enum PromotionEventNoteChange {
+  EDITED
+  HIDDEN
+  SHOWN
+}
+
+/// Every change to a history entry's note (Decision 192): who, when, what
+/// (edited, hidden, shown), the old text and the new. Written by the API under
+/// the student's context, like the entry itself; readable by the School
+/// Owner/Manager only, never the student, so a hidden note stays hidden.
+model PromotionEventNoteLog {
+  id String @id @default(uuid())
+
+  promotionEventId String
+  promotionEvent   PromotionEvent @relation(fields: [promotionEventId], references: [id], onDelete: Cascade)
+
+  schoolId  String
+  studentId String
+
+  change  PromotionEventNoteChange
+  oldNote String?
+  newNote String?
+
+  // Nullable, ON DELETE SET NULL, same as PromotionEvent.performedById (Decision 141).
+  changedById String?
+  changedBy   User?   @relation("PromotionEventNoteLogChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([promotionEventId])
 }
 
 /// Every skill sign-off change, with who, when, the old status and the new
@@ -2541,7 +2585,7 @@ model Booking {
   // set true on exactly that flagging (never on creation) — the Guardian's app
   // surfaces it as a Confirm/Cancel action; Confirm clears it, Cancel reuses the
   // existing cancelBooking() on-behalf-of path unchanged.
-  bookedViaKidMode     Boolean @default(false)
+  bookedViaKidMode      Boolean @default(false)
   pendingGuardianReview Boolean @default(false)
 
   createdAt DateTime @default(now())

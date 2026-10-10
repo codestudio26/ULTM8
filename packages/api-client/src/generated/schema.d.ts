@@ -1636,6 +1636,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/rank-history/{eventId}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GradingController_changeHistoryNote"];
+        trace?: never;
+    };
+    "/v1/students/{id}/rank-history/{eventId}/note-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_findHistoryNoteLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/rank-date": {
         parameters: {
             query?: never;
@@ -3897,6 +3929,11 @@ export interface components {
             voidedAt: string | null;
             voidedById: string | null;
             voidReason: string | null;
+            /** @description When the note was last edited (Decision 192). */
+            noteEditedAt: string | null;
+            noteEditedById: string | null;
+            /** @description When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden. */
+            noteHiddenAt: string | null;
             /** @description When the entry was written (audit timestamp). */
             createdAt: string;
         };
@@ -3907,6 +3944,25 @@ export interface components {
         VoidPromotionEventDto: {
             /** @description Why this entry is being voided. Required. */
             reason: string;
+        };
+        ChangeHistoryNoteDto: {
+            note?: string | null;
+            /** @description true hides the note from the student and guardian; false shows it again. */
+            hidden?: boolean;
+        };
+        PromotionEventNoteLogEntryDto: {
+            id: string;
+            /** @enum {string} */
+            change: "EDITED" | "HIDDEN" | "SHOWN";
+            oldNote: string | null;
+            newNote: string | null;
+            changedById: string | null;
+            /** @description First name and surname of who made the change. */
+            changedByName: string | null;
+            createdAt: string;
+        };
+        PromotionEventNoteLogResponseDto: {
+            items: components["schemas"]["PromotionEventNoteLogEntryDto"][];
         };
         EditRankDateDto: {
             /**
@@ -7352,6 +7408,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_changeHistoryNote: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeHistoryNoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_findHistoryNoteLog: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventNoteLogResponseDto"];
                 };
             };
         };
