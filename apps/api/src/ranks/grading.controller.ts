@@ -40,6 +40,8 @@ export class GradingController {
   }
 
   @ApiOkResponse({ type: PromotionEventListResponseDto })
+  @ApiQuery({ name: 'cursor', required: false, description: 'nextCursor from the previous page.' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'includeVoided', required: false, type: Boolean, description: 'Staff only: also return voided entries (Decision 129).' })
   @Get('students/:id/rank-history')
   findRankHistoryForStudent(

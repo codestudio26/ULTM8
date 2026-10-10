@@ -6504,8 +6504,9 @@ export interface operations {
         parameters: {
             query: {
                 schoolId: string;
-                cursor: string;
-                limit: number;
+                /** @description nextCursor from the previous page. */
+                cursor?: string;
+                limit?: number;
                 /** @description Staff only: also return voided entries (Decision 129). */
                 includeVoided?: boolean;
             };

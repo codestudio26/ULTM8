@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -22,7 +23,7 @@ export function StudentsPage() {
 
   return (
     <>
-      <PageHeader title="Students" subtitle="Everyone currently enrolled at your School." />
+      <PageHeader title="Students" subtitle="Everyone currently enrolled at your School. Open a student to see and change their ranks." />
       <Card>
         {students.length === 0 ? (
           <EmptyState
@@ -33,7 +34,7 @@ export function StudentsPage() {
           <Table<StudentSummary>
             rows={students}
             columns={[
-              { key: 'name', header: 'Name', render: (s) => `${s.firstName} ${s.surname}`.trim() },
+              { key: 'name', header: 'Name', render: (s) => <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link> },
               { key: 'email', header: 'Email', render: (s) => s.email },
               { key: 'enrolledAt', header: 'Enrolled', render: (s) => new Date(s.enrolledAt).toLocaleDateString() },
             ]}
