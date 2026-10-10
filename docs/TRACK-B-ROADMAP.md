@@ -868,6 +868,19 @@ Skipping stripes, back-dating, starting classes, bulk promote, dragging between 
 ### Verified
 `tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (10): the dashboard shows only the coach's styles and classes, the board filters and groups, each action appears only with its toggle and sends the right body.
 
+## My grading, read-only (Decisions 132, 142, 155, 161) — DONE
+
+### What was built
+- **My grading** (`src/grading/MyGradingScreen.tsx`), from the student home for anyone with a Student grant, and from **My minors → Grading** for a guardian (Decision 132). For each style at each School: the belt and stripe with the belt colour, since when, whether the School still has to verify a declared belt, the next stripe, the progress (% of the way; classes, or classes per type; days), **Ready to grade** when they are (always shown, Decision 161), and the skills for the next grade with their status. Nothing on it changes anything.
+- **History** per School (`GradingHistoryScreen.tsx`), newest first, with stripe names, reasons and notes; voided entries and hidden notes never reach the app (Decisions 129, 192).
+- **API:** `GET /students/{id}/grading` (new), because a guardian holds no role at the School and so can't read its styles, belts or skills; it sends the names with the grading, read under the student's own context, for the student or their guardian only. History uses the existing `GET /students/{id}/rank-history`.
+
+### Not yet
+Lessons in the app wait for video hosting (Decision 155).
+
+### Verified
+`tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
+
 ## Explicitly blocked — do not scope a slice for these yet
 
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own

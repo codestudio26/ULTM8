@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading for the student app** (Decisions 132, 142, 155, 161). **api:**
+  `GET /students/{id}/grading` gives the student, or a guardian of theirs,
+  every style they hold a rank in at every School they're a student at,
+  with the School and style names, the ladder (stripe names and belt
+  colours), progress toward the next grade (always shown, "Ready to grade"
+  included) and the skills for it, by name. It reads under the student's own
+  context, because a guardian holds no role at the School; nobody else may
+  read it, and a School the student has left isn't shown.
+  `packages/api-client` regenerated. The app's screens are on Track B
+  (`docs/TRACK-B-ROADMAP.md`).
 - **Grading hardening reports** (Phase 7). The acceptance pass, the grading
   stress test and the decision conformance review are in
   `docs/grading-integration/hardening/`, with a page saying where each

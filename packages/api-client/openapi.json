@@ -4806,6 +4806,41 @@
         ]
       }
     },
+    "/v1/students/{id}/grading": {
+      "get": {
+        "operationId": "GradingController_findGradingOverview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentGradingOverviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/rank-history": {
       "get": {
         "operationId": "GradingController_findRankHistoryForStudent",
@@ -12733,6 +12768,149 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StudentEligibilityResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GradingLadderRungDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The stripe's own name, e.g. \"Blue Belt · 2 Stripes\"."
+          },
+          "beltName": {
+            "type": "string"
+          },
+          "primaryColour": {
+            "type": "string"
+          },
+          "secondaryColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "stripeColour": {
+            "type": "string",
+            "description": "Stripe colour."
+          },
+          "stripeCount": {
+            "type": "number"
+          },
+          "timeOnly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "beltName",
+          "primaryColour",
+          "stripeColour",
+          "stripeCount",
+          "timeOnly"
+        ]
+      },
+      "GradingSkillDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "LEARNING",
+              "SIGNED_OFF"
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Required for the next grade; false when optional (time-only stripes)."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "required"
+        ]
+      },
+      "StudentGradingStyleDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfCurrentRank": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ]
+          },
+          "ladder": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingLadderRungDto"
+            }
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityResponseDto"
+          },
+          "skills": {
+            "description": "The skills for the next grade.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingSkillDto"
+            }
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "disciplineId",
+          "disciplineName",
+          "dateOfCurrentRank",
+          "verificationStatus",
+          "ladder",
+          "eligibility",
+          "skills"
+        ]
+      },
+      "StudentGradingOverviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentGradingStyleDto"
             }
           }
         },

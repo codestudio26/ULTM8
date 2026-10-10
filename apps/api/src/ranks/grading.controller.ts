@@ -5,7 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
 import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
-import { PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
+import { PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentGradingOverviewResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
@@ -38,6 +38,15 @@ export class GradingController {
   @Get('students/:id/eligibility')
   findEligibilityForStudent(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query('schoolId') schoolId: string) {
     return this.gradingService.findEligibilityForStudent(user.sub, id, schoolId);
+  }
+
+  /** The student app's grading view: every style the student has a rank in,
+   * at every School they're a student at, with names, ladder, progress and
+   * skills. For the student and their guardians (Decisions 132, 142, 161). */
+  @ApiOkResponse({ type: StudentGradingOverviewResponseDto })
+  @Get('students/:id/grading')
+  findGradingOverview(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
+    return this.gradingService.findGradingOverview(user.sub, id);
   }
 
   @ApiOkResponse({ type: PromotionEventListResponseDto })

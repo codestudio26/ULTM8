@@ -16,6 +16,8 @@ import { QrCheckInScreen } from '../attendance/QrCheckInScreen';
 import { CoachDashboardScreen } from '../coach/CoachDashboardScreen';
 import { GradingBoardScreen } from '../coach/GradingBoardScreen';
 import { CoachStudentScreen } from '../coach/CoachStudentScreen';
+import { MyGradingScreen } from '../grading/MyGradingScreen';
+import { GradingHistoryScreen } from '../grading/GradingHistoryScreen';
 import { useCoachSchoolId } from '../auth/AuthContext';
 import type { AppStackParamList } from './types';
 
@@ -44,6 +46,12 @@ export function AppNavigator() {
       <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: 'Kid Mode' }} />
       <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: 'Needs Your Review' }} />
       <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: 'Check In' }} />
+      <Stack.Screen
+        name="MyGrading"
+        component={MyGradingScreen}
+        options={({ route }) => ({ title: route.params?.name ? `${route.params.name}'s grading` : 'My Grading' })}
+      />
+      <Stack.Screen name="GradingHistory" component={GradingHistoryScreen} options={({ route }) => ({ title: route.params.title })} />
       <Stack.Screen name="CoachDashboard" component={CoachDashboardScreen} options={{ title: 'Coach' }} />
       <Stack.Screen name="GradingBoard" component={GradingBoardScreen} options={({ route }) => ({ title: `Grading Board — ${route.params.name}` })} />
       <Stack.Screen name="CoachStudent" component={CoachStudentScreen} options={({ route }) => ({ title: route.params.name })} />
