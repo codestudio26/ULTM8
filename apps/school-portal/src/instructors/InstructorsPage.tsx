@@ -3,6 +3,7 @@ import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Tabl
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
+import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { Avatar } from '../lib/Avatar';
 import {
@@ -13,6 +14,7 @@ import {
   type InstructorResponse,
 } from './instructorQueries';
 import { InstructorFormModal } from './InstructorFormModal';
+import { InstructorBeltsSection } from './InstructorBeltsSection';
 
 /** Up to 3 specialization badges, then a "+N" overflow badge — keeps a long
  * specializations list from blowing out the row height instead of silently
@@ -35,6 +37,7 @@ export function InstructorsPage() {
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useInstructors(schoolId);
   const { data: branchData } = useBranches(schoolId);
+  const { data: disciplineData } = useDisciplines(schoolId);
   const { data: eligibleUsersData } = useEligibleInstructorUsers(schoolId);
   const createInstructor = useCreateInstructor(schoolId ?? '');
   const [creating, setCreating] = useState(false);
@@ -46,6 +49,7 @@ export function InstructorsPage() {
 
   const instructors = data?.items ?? [];
   const branches = branchData?.items ?? [];
+  const disciplines = disciplineData?.items ?? [];
 
   return (
     <>
@@ -105,10 +109,13 @@ export function InstructorsPage() {
         )}
       </Card>
 
+      <InstructorBeltsSection schoolId={schoolId} />
+
       {creating ? (
         <InstructorFormModal
           title="Add instructor"
           branches={branches}
+          disciplines={disciplines}
           eligibleUsers={eligibleUsersData?.items ?? []}
           submitting={createInstructor.isPending}
           onSubmit={async (values) => {
@@ -123,7 +130,7 @@ export function InstructorsPage() {
       ) : null}
 
       {editing ? (
-        <EditInstructorModal schoolId={schoolId} branches={branches} instructor={editing} onClose={() => setEditing(null)} />
+        <EditInstructorModal schoolId={schoolId} branches={branches} disciplines={disciplines} instructor={editing} onClose={() => setEditing(null)} />
       ) : null}
     </>
   );
@@ -132,11 +139,13 @@ export function InstructorsPage() {
 function EditInstructorModal({
   schoolId,
   branches,
+  disciplines,
   instructor,
   onClose,
 }: {
   schoolId: string;
   branches: BranchResponse[];
+  disciplines: DisciplineResponse[];
   instructor: InstructorResponse;
   onClose: () => void;
 }) {
@@ -146,6 +155,7 @@ function EditInstructorModal({
       title="Edit instructor"
       initial={instructor}
       branches={branches}
+      disciplines={disciplines}
       submitting={updateInstructor.isPending}
       onSubmit={async (values) => {
         // Passed straight through, nulls included — UpdateInstructorDto

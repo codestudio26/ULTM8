@@ -37,6 +37,63 @@ export function useUpdateLesson(schoolId: string, lessonId: string) {
   });
 }
 
+/** Deletes a lesson (Decision 198). Owner only. */
+export function useDeleteLesson(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (lessonId: string) => unwrap(apiClient.DELETE('/v1/lessons/{id}', { params: { path: { id: lessonId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
+  });
+}
+
+export type LessonCategory = components['schemas']['LessonCategoryResponseDto'];
+
+/** The School's lesson categories, in order (Decisions 128.15, 191). */
+export function useLessonCategories(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['lesson-categories', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/curriculum/categories', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** Any category write changes how lessons are grouped and ordered too. */
+function useCategoryMutation<TVars>(schoolId: string, fn: (vars: TVars) => Promise<unknown>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['lesson-categories', schoolId] }),
+        queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
+      ]),
+  });
+}
+
+export function useCreateLessonCategory(schoolId: string) {
+  return useCategoryMutation(schoolId, (name: string) =>
+    unwrap(apiClient.POST('/v1/schools/{schoolId}/curriculum/categories', { params: { path: { schoolId } }, body: { name } })),
+  );
+}
+
+export function useRenameLessonCategory(schoolId: string) {
+  return useCategoryMutation(schoolId, (v: { id: string; name: string }) =>
+    unwrap(apiClient.PATCH('/v1/curriculum/categories/{id}', { params: { path: { id: v.id } }, body: { name: v.name } })),
+  );
+}
+
+export function useOrderLessonCategories(schoolId: string) {
+  return useCategoryMutation(schoolId, (categoryIds: string[]) =>
+    unwrap(apiClient.PUT('/v1/schools/{schoolId}/curriculum/categories/order', { params: { path: { schoolId } }, body: { categoryIds } })),
+  );
+}
+
+export function useOrderCategoryLessons(schoolId: string) {
+  return useCategoryMutation(schoolId, (v: { categoryId: string; lessonIds: string[] }) =>
+    unwrap(apiClient.PUT('/v1/curriculum/categories/{id}/lessons/order', { params: { path: { id: v.categoryId } }, body: { lessonIds: v.lessonIds } })),
+  );
+}
+
 export interface DisciplineSkillGroup {
   disciplineId: string;
   disciplineName: string;

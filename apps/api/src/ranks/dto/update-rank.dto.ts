@@ -1,8 +1,8 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Min, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { CreateRankDto } from './create-rank.dto';
 
-const NULLABLE_ON_UPDATE = ['secondaryColour', 'weeklyClassCountCap', 'tagColour', 'coralAccent'] as const;
+const NULLABLE_ON_UPDATE = ['secondaryColour', 'tagColour', 'coralAccent'] as const;
 
 /**
  * If `stripeTiers` is provided, it REPLACES the Rank's entire existing set (not
@@ -12,9 +12,9 @@ const NULLABLE_ON_UPDATE = ['secondaryColour', 'weeklyClassCountCap', 'tagColour
  * FOUND PROACTIVELY (Phase 21, same fix already applied to every other
  * Update DTO with a directly-forwarded nullable field this session —
  * see UpdateBranchDto's own header comment for the full reasoning):
- * RanksService.updateRank()'s Prisma call forwards `dto.secondaryColour`/
- * `dto.weeklyClassCountCap` straight through with no ternary, and both are
- * nullable columns on the Rank model.
+ * RanksService.updateRank()'s Prisma call forwards `dto.secondaryColour`
+ * straight through with no ternary, and it is a nullable column on the Rank
+ * model.
  *
  * Deliberately NOT widened: `order` (RanksService.updateRank()'s own
  * `assertContiguousOrder` re-validates it against this Rank's siblings —
@@ -23,9 +23,9 @@ const NULLABLE_ON_UPDATE = ['secondaryColour', 'weeklyClassCountCap', 'tagColour
  * "reorder" path through this endpoint at all today, only a no-op "send
  * back what it already was." Not something a null-widening on this field
  * could fix — flagged as a real, separate backend gap, not silently
- * presented as reorderable), `primaryColour`/`yearsInRankFlag` (required/
- * boolean, nothing to clear), or `stripeTiers`/`requiredSkillIds` (whole-
- * array-replace fields — an empty array `[]` already unambiguously means
+ * presented as reorderable), `primaryColour` (required,
+ * nothing to clear), or `stripeTiers` (a whole-
+ * array-replace field — an empty array `[]` already unambiguously means
  * "none," so there's no null-vs-undefined ambiguity for these to begin
  * with, the same reasoning already established for Class.activities/
  * Instructor.specializations).
@@ -36,12 +36,6 @@ export class UpdateRankDto extends PartialType(OmitType(CreateRankDto, NULLABLE_
   @IsString()
   @MaxLength(50)
   secondaryColour?: string | null;
-
-  @ApiPropertyOptional({ type: Number, nullable: true })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  weeklyClassCountCap?: number | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()

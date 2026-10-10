@@ -46,3 +46,7 @@ dump.rdb
 
 # Claude Code agent worktrees (local, per-session scratch checkouts — never project content)
 .claude/worktrees/
+
+# Playwright output
+test-results/
+playwright-report/

@@ -2013,3 +2013,618 @@ Instructors added before this rule, without a branch in a School that has branch
 2. **One or more styles per class.** A class lists one or more styles, each with its own class type. Most classes list one. A mixed class, for example an Open Mat for BJJ and Judo, lists both ("BJJ · Open Mat" and "Judo · Open Mat"), and attending counts once toward each listed style whose type is ticked on the student's next rung in that style (Decision 140). Gus asked for the best solution, and chose it: *"Yes, one or more"*.
 
 Built as: a `styles` list (`[{disciplineId, classType}]`) on Class and TimetableSlot. Classes generated from a timetable slot copy it. Existing classes were mapped once from their free text wherever an entry named exactly one style (Decision 152). Until the grading engine switches over (roadmap Phase 2), the booking rank check and attendance credit keep reading the free-text `activities`, which the API now fills in from the chosen styles' names.
+
+---
+
+## Decision 171 — Counting classes toward a rung: Monday–Sunday weekly cap, combined progress for "each type", nothing ticked counts everything
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** four points the prototype leaves open (it stores `weeklyCap` and `scope` but never applies them), raised while building the grading engine (roadmap Phase 2)
+
+1. **Weekly cap.** Weeks run Monday to Sunday, in the school's local time. Within a week, the first classes up to the cap count, in date order; extra classes that week are ignored, not carried over to the next week. Gus: *"Mon–Sun, extras ignored"*.
+2. **Progress in "each ticked type required" mode (Decision 149).** One combined figure, with each type capped at its own number. For 20 Fundamentals + 10 Sparring, a student with 18 and 4 is at 22 of 30 = 73%. Extra classes of one type never make up for another. Gus: *"Combined: 22 of 30 = 73%"*.
+3. **A rung with no class types ticked** counts every class. Gus: *"Every class counts"*.
+4. **A rung with no weekly cap, or a cap of 0,** has no weekly limit. Gus: *"No limit"*.
+
+Built as: the grading engine, `apps/api/src/ranks/engine/` (pure functions with unit tests; the API, portal and app all get their numbers from it). It is not wired in yet: attendance counting moves onto it in roadmap Phase 2b, and eligibility and the booking check in Phase 2c.
+
+**Confirmed by Gus (9 Oct 2026).** When the next rung is time-only (Brown Belt · 4 Stripes → Black Belt), Decision 127 takes the class number from the **current** rung, and the engine also takes that rung's ticked class types, count mode and weekly cap. So Brown 4 → Black counts exactly as Brown 3 → Brown 4 did: both read Brown · 4 Stripes' settings. Time-only counting starts at Black Belt (Black → Black · 1 Stripe). Gus: *"brown 4 to black, it is the same as brown 3 to brown 4 nothing has changes"*. Decision 140's wording ("ticked on the student's next rung") describes the normal case, where the two readings agree.
+
+---
+
+## Decision 172 — A School has its own time zone, set up the same way as a Branch's
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the School-wide time zone gap flagged in `class-occurrence-generation.processor.ts`, raised again for the grading engine's Monday–Sunday week (Decision 171)
+
+Decision 76 says a Branch mirrors its School's profile fields, time zone included, but the School never got the field. Gus: *"we need to add the time on school, the set up from branches and schools should be mirrored"* and *"need to add time zone to the set up"*.
+
+1. **School time zone.** A School has an optional time zone (an IANA name such as `Europe/London`), entered the same way as a Branch's: in the create-school form and in school settings.
+2. **Which time zone applies.** A class uses its Branch's time zone; when it has no Branch, or its Branch has none, the School's; when neither is set, UTC (today's behaviour). This applies to generating classes from the timetable now, and to the grading engine's days and weeks in roadmap Phase 2b.
+
+Existing Schools start with no time zone, so nothing changes until an owner sets one. Like a Branch's, the value is free text (validated as an IANA name by neither form today).
+
+---
+
+## Decision 173 — Who may book: each rung unlocks class types for booking, set by the school owner
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus). A grading override under Decision 124 where it differs from Spec 55 §6.1 (`eligibleClassTypes` as the booking gate). **Resolves:** how the booking rank gate works once Decision 127 made a rung's ticked class types mean "classes that count toward reaching this rung", raised while building roadmap Phase 2c
+
+Asked whether a student may book the class types up to their current rung or up to their next one, Gus said neither is fixed: *"this decision is for the school owner, for example a lot of academies across the world will allow white 3 stripes and above to join the blue belt and open mats. This is particular to each place, school owner must decide."*
+
+1. **A separate per-rung list, "Unlocks booking".** It is separate from "which classes count" (Decisions 140, 149). The class types a rung lists may be booked by students on that rung and on every rung above it.
+2. **Types no rung lists are open to everyone,** so the owner only marks the classes they want to restrict. Fundamentals, listed nowhere, stays open even to a student with no rank yet. A style where nothing is set is open throughout. Gus: *"Yes, any class"*.
+3. **Refused otherwise.** A restricted type is refused for a student below the unlocking rung, or with no rank in that style. Staff can still override per booking, recorded as before (SKILL.md §9).
+4. **A class with no class type is open.** A class listing several styles must pass for each style.
+
+Gus confirmed the worked example (White · 3 Stripes unlocks Advanced and Open Mat, Purple Belt unlocks Competition): *"yes"*.
+
+Built as `RankStripeTier.bookingUnlocksClassTypes` (kept when omitted on an edit, like the other rung settings), the engine's `bookingAccess`, and one gate shared by booking and the waitlist claim. This replaces Decision 90's activities ↔ style-name bridge for booking. Existing rungs start with nothing unlocked, so every class is open until the owner sets some. The old gate never worked as designed in practice: it compared style names against class types.
+
+---
+
+## Decision 174 — "Each type required" rungs: starting classes per type, and the board drag sets the same % for each type
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 128's "starting classes" (item 9) and board drag (item 13) work on a rung that counts each class type separately (Decision 149). The prototype has one class count per student, so it doesn't say. Raised while building roadmap Phase 3.
+
+1. **Starting classes, per type.** When the student's new next rung counts each type separately (for example 20 Fundamentals + 10 Sparring), the coach enters a number per type when grading (Fundamentals 5, Sparring 2). For an "any type" rung it stays one number. A time-only new rank takes none. Gus: *"A number per type"*.
+2. **Board drag, same % for each type.** Dragging a student on such a rung to a column sets every type to that column's percentage of its own number. For example, Ready to Grade at 66% gives Fundamentals 14/20 and Sparring 7/10. Gus: *"Same % for each type"*.
+
+Item 1 is built in roadmap Phase 3a: the `startingClassesByType` grading field, recorded on the history entry. Item 2 comes with the Grading Board in Phase 3b.
+
+---
+
+## Decision 175 — Age-13 minor limited-login: closed as superseded by Kid Mode, not built
+
+**Date:** 9 Oct 2026
+**Status:** Product-owner decision, made directly with the user
+**Resolves:** the age-13 limited-login item's own long-standing open status (`skills/ultm8-domain-rules/SKILL.md` §14/§18, "provisional age threshold 13, *pending legal review*") — raised while reviewing the user-journey gap inventory (Step 1, sign-up) for whether it was still needed now that Decision 123's Kid Mode exists.
+
+### Decision
+
+**The age-13 limited-login feature is closed, not built.** Kid Mode (Decision 123) already covers the practical need it was meant to serve — a minor doing something themselves without their own credentials — via a scoped, short-lived token minted from the Guardian's own session, with no new auth surface, no OTP-for-a-minor problem, and no new claim shape every endpoint has to trust. Building a second, parallel "real" minor login (even a read-only one) alongside Kid Mode would be two mechanisms answering overlapping versions of the same question, for no confirmed product need beyond what Kid Mode already serves.
+
+This explicitly reverses the "not a dependency on or a widening of" framing in Decision 123 §"What this does NOT resolve" (line 1424) — that line described the two as merely independent at the time; this decision goes further and closes the age-13 feature outright, rather than leaving it standing as a separate future build.
+
+### Why
+
+Decision 123 itself already laid out why a genuine minor login is a large, separate feature (new auth codepath, new rate-limiting/lockout surface, a new claim shape every downstream endpoint would need to explicitly trust) — that cost was accepted as a tradeoff *against* building a second mechanism, not as a reason to eventually build both. With Kid Mode shipped and the only concrete use case (booking, Decision 123) already served, there's no longer a live product requirement driving the age-13 feature forward; keeping it listed as `[CONFIRMED]`-but-unbuilt indefinitely invited future work against a need that no longer has a clear owner or scope.
+
+### What this does NOT resolve
+
+- Does not retroactively change anything about Kid Mode's own scope (still booking-only, per-minor, Decision 123) — this closes the *alternative* feature, not an expansion of Kid Mode.
+- If a future, genuinely different need emerges for a minor's own read-only login (e.g. a minor old enough to want to check their own schedule without a Guardian's device), that would be a new product question requiring its own decision — not a reopening of this one by assumption.
+- Decision 77's age-13 threshold finding (the number itself, confirmed final for whenever/if a limited login were ever built) is not disturbed — it simply has no live feature to attach to now.
+
+### Recorded by
+
+Raised by Claude while auditing open gaps against the current, merged state of the codebase (Kid Mode now shipped, grading now merged); the user chose "Close as superseded" over "Keep it open" when asked directly, 9 Oct 2026.
+
+---
+
+## Decision 176 — "Log a class" picks a class type, always counts and is recorded; the board's Active switch is per student per style
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** two points the prototype leaves open now that rungs count by class type and students can train several styles. Raised while building roadmap Phase 3b (the Grading Board).
+
+1. **"Log a class"** (Decision 128, item 6): the coach picks the class type from the next rank's ticked types. If the next rank ticks none, the type is optional. A logged class always counts, even past the weekly cap, because the coach is adding it deliberately. It is written to the student's history (who, when, which type), so the count can be audited. A time-only rank takes none. Gus: *"Pick type, skip cap, record it"*.
+2. **The Grading Board's manual Active/Inactive switch** (Decision 152) is **per student per style**: a student marked inactive on the BJJ board still shows on the Judo board. Gus: *"Per student, per style"*.
+
+---
+
+## Decision 177 — Coaches can see which students are theirs: two narrow read-only database rules
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found building the Grading Board. Decision 168 says coaches see their own branch's students, but row-level security only let the School owner (and each student) see who belongs to a branch or School, so a coach's board came back empty. The existing student roster has the same gap for coaches.
+
+1. **Schools with branches.** An active INSTRUCTOR or BRANCH_STAFF grant at a branch lets its holder **read** the home-branch rows of that branch, and nothing more. Gus: *"Narrow rule for coaches"*.
+2. **Schools without branches: the School is the branch** (Decisions 168, 169). That School's INSTRUCTOR/BRANCH_STAFF can **read** its STUDENT role grants (who is enrolled), nothing else, and only while the School has no branch. Gus: *"Yes, the school is the branch"*.
+
+Both are read-only (`FOR SELECT`) and scoped to the caller's own active grant, and they follow impersonation scoping. Each student's grading data (rank, memberships, name) is still read under that student's own context, after this check. Built in `20261021000000_grading_board` (`student_home_branch_staff_read`, `rolegrant_branchless_staff_student_read`, `is_staff_of_school_without_branches()`), with tests for leaks across branches and Schools, for writes, for revoked grants, and for the rule switching off once a branch exists.
+
+---
+
+## Decision 178 — "Ready to grade": after grading actions and daily, once per rank; the background job may read grading data
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 145's two grading notifications are delivered. Raised while building them.
+
+1. **When "ready to grade" is checked.** Right after anything that can make a student ready (a check-in, "Log a class", a skill sign-off, a board drag, a rank-date edit, a grade, a declared or verified rank), **and** in a daily sweep, which catches students who become ready by time alone. Gus: *"Actions + daily check, once per rank"*.
+2. **Once per rank.** The owner and coaches are told once when a student meets everything for their next rung (classes, minimum days and required skills, per the engine). Every rank change clears it, so the next rung can notify again. Stored as `StudentRank.readyNotifiedAt`.
+3. **Who is told** (Decision 145, with Decisions 138, 139, 168): the School owner(s), and the staff with grading permission for that style who cover the student's branch (in a School with no branches, all such staff; a student with no home branch is the owner's alone). Only for an enrolled student, at an open School with ranks switched on.
+4. **"You've been promoted"** goes to the student, or, when the student is a Guardian-linked minor, to each linked guardian instead (Decision 145, item 2). Text for a guardian: "Sam has been promoted to Blue Belt."
+5. **The background job may read grading data.** These checks run as the background-job role (`ultm8_jobs`), which until now could not read grading tables, and guardian links are readable only by the guardian. With Gus's approval, that role gets **read-only** access to student ranks and skill sign-offs, the ladder (ranks, rungs, rung skills), disciplines, home branches, grading permissions and guardian links, plus students' first name and surname. Its only write is `StudentRank.readyNotifiedAt`. Gus: *"Yes, read-only grants"*. Built in `20261022000000_grading_ready_notification`; the alternative (the job acting as each user) was declined.
+
+Delivery is in-app and email, as for every notification until push is built (Decision 95).
+
+---
+
+## Decision 179 — Grading portal screens are built in English first; translations come later, for more languages
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how the grading roadmap's Phase 4 exit criterion "translations for all 4 languages including Arabic RTL" applies while the portal has no translation support (Decision 146 already treats that as separate work).
+
+1. The grading screens in the School Portal (student grading panel, Grading Board, ladder editor, grading settings) are built **in English now**. Translation is its own piece of work afterwards. Gus: *"Ok"*.
+2. Translations will cover **more than the four languages** named so far, including Asian languages. Which languages, and how, is to be decided then. Gus: *"also the translations will be for more languages, like asian languages, but we will look into this after"*.
+3. Browser tests: each screen is tested in Chromium here (desktop and tablet widths, keyboard-only). Firefox and WebKit runs are left to an environment that has those browsers. Gus: *"ok"*.
+
+---
+
+## Decision 180 — Ladder reordering: belts, and stripes within their own belt; a rung keeps its students when it moves
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 152 item 2 ("rungs can be reordered by drag even when students hold them, after a confirmation that lists the students affected") applies to ULTM8's two-level ladder. Gus's prototype has one flat list of rungs; ULTM8 stores belts, each with its own stripes.
+
+1. **What can be reordered:** whole belts within a style, and stripes within their own belt. A stripe can't move to another belt. Gus: *"Belts + stripes within a belt"*.
+2. **A rung keeps its identity when it moves.** The students holding it stay on it; only the ladder order changes, so their next rank may change. The editor lists the students affected before saving (Decision 152).
+3. **A rung students hold can't be removed** (Decision 152). The API refuses and names the students; move them to another rank first. This also closes a gap: before, removing a held rung left its students with no rung.
+
+Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT /styles/{id}/ranks/order` for belts, and `GET /styles/{id}/rung-holders` (owner only) for the confirmation.
+
+---
+
+## Decision 181 — Grading permission becomes seven toggles per coach per style; board % editable by the owner and coaches given it
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** who may change a style's Grading Board percentages (Decisions 75, 136), and refines Decision 138's single grading permission. Raised while planning the grading settings screen.
+
+1. **Seven toggles, per coach, per style.** The owner always may do everything. For each Instructor or Branch Staff member and each style, the owner sets:
+   - **Promote:** grade up, stripe award, bulk promote, give a first rank;
+   - **Move down:** downgrade, with a reason;
+   - **Sign off skills;**
+   - **Adjust progress:** move a student on the Grading Board (e.g. to Ready to Grade), log a class, correct the rank date, and the board's Active/Inactive switch;
+   - **Verify self-declared ranks** (or correct them);
+   - **Void history entries;**
+   - **Change board %:** this style's Grading Board split.
+
+   Each grading action needs its own toggle. The branch rule is unchanged: coaches grade only their own branches' students (Decision 168). Gus: the 7-toggle list, *"Per person, per style"*.
+2. **Board percentages are per style** (Decision 75), 33% / 66% by default (Decision 136), changed by the owner or a coach with **Change board %** for that style. Gus: *"The owner + who ever is granted the permission to the grading area"*. The settings screen itself is built separately.
+3. **"Ready to grade" notifications** (Decisions 145, 178) go to coaches who may **Promote** in that style.
+4. **Existing grants keep every toggle on.** Nobody uses the system live yet (Gus).
+5. **A Grading permissions page** in the School Portal lists the school's Instructors and Branch Staff, with "May grade" per style and the seven toggles. The API's permission list includes that staff list (owner only), since no staff roster endpoint existed.
+
+---
+
+## Decision 182 — Templates use the prototype's numbers; Duplicate copies the ladder, skills and settings
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how the three IBJJF templates (Decision 131) and "Duplicate style" are built.
+
+1. **Templates start with the prototype's numbers.** A style created from one of the three IBJJF templates gets the prototype's belts, stripes, classes required, minimum days, weekly caps, eligible class types and black-belt degree years (`buildIbjjfLadder`), plus its five class types. Each belt's totals are spread over its five stripe rungs, as in the prototype. The school then edits everything as its own; the template is not linked afterwards. Gus: *"Prototype numbers, then edit"*.
+2. **Duplicate copies the ladder, skills and settings.** The copy, named "… (Copy)", gets every belt and rung with all their rules, every skill (re-linked to the copied belts and rungs), the class types, the "skills required" switch and the board %. It does not copy students, their ranks or history, lesson links, or coach grading permissions. Gus: *"Ladder + skills + settings"*.
+3. **Owner only**, like every ladder edit.
+
+Built in the API as `GET /style-templates`, `POST /schools/{id}/disciplines/from-template` and `POST /disciplines/{id}/duplicate`; in the School Portal as **Start from template** and **Duplicate** on the Disciplines page.
+
+---
+
+## Decision 183 — Coach invites: one emailed link per coach, single use, 7 days; "Can invite coaches" for Branch Staff
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how a coach joins a School. Spec 55 §8.2 says Instructors are "provisioned by School invite, not self-registration"; until now the only invite was the owner granting the role to an existing account (Decisions 80, 116).
+
+1. **Coaches have an ordinary account**, like students and parents, and don't buy a membership to coach. They become a coach in one of two ways: the owner grants the role to their existing account (unchanged), or they accept an invite link. Gus: *"account owner will upgrade the account to coaches level or school owner will send an coaches invitation link, which will auto link the coaches to a coaches account"*.
+2. **The invite link:** one per person, sent by **email**; it works **once**, for **7 days**, and can be **cancelled**. Gus: *"Single use, 7-day expiry, cancellable"*. Text-message invites need a new Twilio Messaging integration and come later. Gus: *"Email now, text later"*.
+3. **Accepting:** the person opens the link, logs in (or creates their account) **with the invited email**, and accepts. Their account gets an INSTRUCTOR grant at the School, at the branch chosen in the invite when the School has branches (Decision 169). Matching the email stops a forwarded link being used by someone else.
+4. **A coach keeps their student side.** Any role the account already holds, such as STUDENT, is kept (Spec 55: a person may hold more than one role). Gus: *"A coach keeps their student side"*.
+5. **Who can invite:** the owner, and Branch Staff the owner has given **"Can invite coaches"**, set per staff member. Gus: *"owner and those who have been granted the access to the invitation area… a school operator could be assigned this job"*; *"Can invite coaches toggle"*. **Branch Staff only:** Spec 55 §8.2 rules out instructor management for Instructors, and a decision can't override the spec outside grading. Gus: *"Branch Staff only"*. **Own branches only** for staff; the owner can invite to any branch. Gus: *"Own branches only"*.
+6. **Security:** only the token's SHA-256 is stored. Row-level security lets the owner manage all of the School's invites, staff with the permission manage their own branches' invites, and the link holder read and accept only that one invite. Whoever sends an invite must have a verified phone (Decision 81).
+7. **The coach dashboard** (grading, their classes, notifications, their own student info), in the web portal and the mobile app, is Decision 184 and is built separately.
+
+Built in the API as `CoachInvite` and `StaffPermission` with the endpoints listed in the CHANGELOG, and in the School Portal as **Invite a coach** and **Who can invite coaches** on the Staff page, plus the invite link page `/coach-invite/{token}`.
+
+---
+
+## Decision 184 — The coach dashboard, on the web portal and the mobile app
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** what a coach sees after signing in. Gus: *"We need to create a coaches dashboard, similar to the students, carrying the coaches info too such as, Grading, their classes, messages, plus their students info if they are a students"*; *"Both Mobile app and Web Portal, just like the students portal"*.
+
+1. **Where:** both the School Portal (web) and the mobile app. The web portal is built first; the mobile app's coach screens follow on the Track B branch.
+2. **What it shows:**
+   - **Grading:** the styles the coach grades in (Decision 181), with how many of their students are ready to grade and getting there, and the Grading Board and student panels for them.
+   - **Their classes:** the weekly timetable slots and upcoming classes where they are the instructor.
+   - **Messages:** their notifications for now. There is no messaging between people yet; that is its own feature later. Gus: *"Notifications for now"*.
+   - **Their own training:** when they also train at the School, their ranks and progress (Decision 183: a coach keeps their student side).
+3. **Only what they may do.** A coach sees the Grading Board and student panels for their styles only, and only the actions their toggles allow (promote, move down, sign off skills, adjust progress, verify, void, change board %). The API enforces this regardless (Decision 181). They see students of their own branches only (Decision 168).
+4. **Sign-in and menu:** a coach who doesn't own the School lands on their dashboard, with a menu of Dashboard, Grading Board and Notifications; the header shows "Coach". A coach at several Schools sees the first one for now (no School switcher yet).
+
+Built in the API as `GET /schools/{id}/grading-permissions/me` (the caller's own styles and toggles; the owner gets `isOwner: true`), and in the School Portal as `/coach`, with the Grading Board and student panel working for coaches.
+
+---
+
+## Decision 185 — Grading hardening: one-rung default steps, no downgrade notice, grades tied to the rung the grader saw
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** questions raised by the Phase 7 hardening round (Gus's scenarios re-run against the API, and the grading stress test).
+
+1. **Default step is one rung.** A promote with no target rung goes to the next rung; a downgrade with no target goes to the rung just below, as the prototype's windows do. Before, the API defaulted to the next (or previous) belt's first rung. The portal always sends a target, so this matters for direct API callers such as the coach mobile app. Gus: *"Next rung, like the prototype"*.
+2. **No notification on a downgrade.** Only "ready to grade" and "promoted" / "new stripe" are sent (Decision 145); a downgrade shows in the student's history. Gus: *"Remove it"*.
+3. **A grade refers to the rung the grader saw.** Grading requests may carry the student's current rung as the grader sees it; if the student has moved since, the request is refused (409) and the grader reloads. The portal always sends it, and bulk promote uses the rung from its own plan, so a batch can't undo a downgrade made in the meantime or give two rungs at once (Decision 130: one rung each). Two coaches awarding the same stripe at once: one wins, the other is told to reload.
+4. **Only the School's students are graded.** Grading actions refuse anyone without an active student role at the School (404), checked after the caller's own rights.
+
+Also fixed in the same round, with no new rule: rank history is listed newest first by grading date; the board's "N inactive hidden" counts every inactive student in the style whatever the search (Gus's 7 Oct fix); ladder edits of one style take turns instead of deadlocking; bad ids and out-of-range starting classes are refused with 400.
+
+---
+
+## Decision 186 — Branch Staff use the coach screens
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found in the Phase 7 decision review. Decision 181 counts Instructors and Branch Staff as "coaches" for grading permissions, but the coach invite and coach dashboard (Decisions 183, 184) were built for Instructors only, so Branch Staff given grading toggles or "Can invite coaches" had no portal screens to use them.
+
+1. **Branch Staff get the same screens as coaches** in the School Portal: they land on the coach dashboard, use the Grading Board and student panel for the styles they may grade (only the actions their toggles allow, students of their own branches), and see their notifications. Gus: *"Same coach screens"*.
+2. **Branch Staff with "Can invite coaches"** also get **Invite coaches**, limited to their own branches; the owner keeps inviting from the Staff page, where "Who can invite coaches" stays owner only.
+
+Built in the API as `GET /schools/{id}/staff-permissions/me` (the caller's own invite rights), and in the School Portal as the coach screens for Branch Staff plus `/coach-invites`.
+
+---
+
+## Decision 187 — Words on screen: belts and stripes, not "rungs"
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** wording. Gus: *"The division between belts are called stripes."*
+
+Every word a user reads (School Portal, Student app, emails, notifications, API error messages) says **belt** and **stripe**: a student holds a belt with a number of stripes (e.g. "Blue Belt, 2 stripes"). "Rung" stays only as an internal name in code and in earlier entries of this log, where it means one step of the ladder: a belt with a given number of stripes.
+
+---
+
+## Decision 188 — Instructors choose their own belt per style; the owner verifies it
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the V1 specifics Decision 108 left open. Gus: *"Just like students, they will choose and school owner will verify"*, and chose *"Per style, from the School's belts"*.
+
+1. **The instructor chooses**, on their own profile page in the School Portal, a belt and stripes **for each style**, from that style's belts at the School, the same way a student self-declares at signup (Decision 137).
+2. **It is unverified until the School Owner verifies it, or corrects it.** Until then it shows as "Not verified".
+3. Linking an instructor's belt to their grading history (Decision 108's V2) stays out of scope.
+
+---
+
+## Decision 189 — Belts waiting to be verified: a notice at login for grading staff only
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** Decision 137.4. Gus chose *"Staff only"*.
+
+When the School Owner, or a coach or Branch Staff member with grading permission, logs in to the School Portal, a notice lists the students whose self-declared belts are waiting to be verified, limited to the styles and students they may grade (Decisions 138, 168, 181). Students and guardians see no such notice.
+
+---
+
+## Decision 190 — Lessons need a paid membership, unless the owner makes a lesson free
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Adds to:** Decision 154. Gus: *"yes, unless it is free of charge set by the school owner"*, and chose *"Each lesson"*.
+
+1. A lesson is watchable by students and guardians with an active paid membership for that activity (Decision 154).
+2. **The School Owner can mark any single lesson as free**; a free lesson is watchable by every student and guardian at the School.
+
+---
+
+## Decision 191 — Lesson categories: confirmed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** Decision 128.15. Gus: *"Yes"*.
+
+Lesson categories are a real list with an order, and lessons are ordered within their category.
+
+---
+
+## Decision 192 — Notes in a student's grading history can be edited and hidden; every change is kept
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Adds to:** Decision 128.11. Gus: *"Yes … but records changes and it can be hidden"*, and chose *"Graders edit; hidden from student"*.
+
+1. **Who:** the School Owner, and anyone who may grade that student in that style (Decisions 138, 168, 181).
+2. **Edit:** the note's text can be changed. Every change is kept: who, when, the old text and the new text.
+3. **Hide:** a note can be hidden, and shown again. A hidden note is not shown to the student or guardian; staff still see it, marked as hidden. Hiding and showing are kept in the same change record.
+4. System notes (written by ULTM8, e.g. "Bulk promotion") and the downgrade reason (Decision 128.11) are not edited this way.
+
+---
+
+## Decision 193 — A staff member given a role again starts with today's permissions
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** L1 from the Phase 7 security review. Gus: *"they should get the new permission given at the present time"*.
+
+When an Instructor or Branch Staff role is removed, that person's grading permissions and "Can invite coaches" at that School are cleared. If they are given the role again later, they start with no extra permissions, and the owner grants whatever applies now.
+
+---
+
+## Decision 194 — The board's "inactive hidden" count includes students on the top stripe
+
+**Date:** 10 Oct 2026 · **Status:** Follows Gus's prototype (Decision 124); offered to Gus as the default on 10 Oct 2026. **Resolves:** the question left in the Phase 7 acceptance report (D3).
+
+The Grading Board hides inactive students and shows how many it hid. That count includes inactive students on the last stripe of the top belt, who never appear on the board because they have nothing left to be promoted to, as the prototype does.
+
+---
+
+## Decision 195 — Lessons: membership plans say which styles they cover and whether they include lessons
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how a membership maps to an activity (left open by Decision 154) and "paid" (Decision 190). Gus chose *"Plans tick their styles"*, then for free passes: *"any one with pass, or if better when we set up the free pass and can give access to the curriculum or not"*, and agreed to *"Yes, switch per plan"*.
+
+1. **Each membership plan ticks the styles it covers.**
+2. **Each plan has an "Includes lessons" switch.** It starts on for plans with a price and off for free plans (Friend Pass, £0 plans); the owner can change it on any plan.
+3. **A lesson's styles are the styles of the skills it teaches.**
+4. **Who can watch a lesson:** a student, or a guardian of that student, with a live membership (active, not expired, credits left for packs) on a plan that includes lessons and covers one of the lesson's styles. A lesson the owner marked free (Decision 190) is watchable by every student and guardian at the School. Staff always see every lesson.
+
+Replaces "paid membership" in Decisions 154 and 190 with this per-plan switch.
+
+---
+
+## Decision 196 — The owner's typed "Belt ranking" on an instructor is removed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · Gus: *"correct remove the old one"*.
+
+Instructors choose their own belt per style (Decision 188), so the owner's free-text "Belt ranking" on the Instructor profile goes, with its stored values.
+
+---
+
+## Decision 197 — Who edits history notes: confirmed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** the reading of Decision 192 built in PR #145. Gus: *"yes"*.
+
+"Anyone who may grade that student in that style" means the School Owner, or a coach with "Promote" or "Move down" for that style who covers the student's branch.
+
+---
+
+## Decision 198 — Deleting: only what has never been used
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the acceptance pass's Q2 (Gus's prototype can delete a style, a belt, a skill and a lesson; ULTM8 could not). Asked what fits best, Gus chose the recommended rule: *"Delete if never used"*.
+
+The School owner can delete what no student's record uses; anything that is part of a record stays, and the portal says why. Owner only, with a confirmation.
+
+1. **Lesson:** always (nothing in a student's record points to a lesson).
+2. **Skill:** when no student has ever been marked on it (Learning or Signed off, now or in the sign-off log). It comes off the stripes that required it and the lessons that list it; refused if it is a lesson's only skill.
+3. **Belt:** when nobody holds it or any of its stripes, it is not in anyone's grading history, and no instructor has declared it (Decision 188). Its stripes go with it and the belts after it move up one place. (Decision 152: a stripe a student holds still can't be removed.)
+4. **Style:** when nobody has ever held a rank in it, no instructor has declared a belt in it, and no class, timetable slot or lesson uses it. Its belts, skills and coach grading permissions go with it, and it is taken off membership plans (Decision 195) and instructors' styles.
+
+Not in this decision: archiving a used style or belt (hide it, keep the records). Offered and not chosen for now.
+
+Built as `DELETE /disciplines/{id}`, `/ranks/{id}`, `/skills/{id}`, `/lessons/{id}` (204, or 409 with the reason), with **Delete** buttons on the Disciplines, style and Curriculum pages.
+
+---
+
+## Decision 199 — The belt-level weekly cap and required skills are removed; the plain belt keeps its own on its rung
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the open item left by Decision 164 (belt-level required skills, and the belt-level weekly cap, still written by the API but ignored by grading since roadmap Phase 2).
+
+Asked whether they can be removed, Gus: *"Yes as longer we have that on the non stripe belts for exemple brown belt! Not brown belt 1 stripe"*.
+
+1. **Removed:** `Rank.weeklyClassCountCap` and the `RankRequiredSkill` table, and the belt-level `weeklyClassCountCap` / `requiredSkillIds` in the ranks API (sending them is now a 400).
+2. **Kept, as Gus asked:** the plain belt (e.g. "Brown Belt", no stripes) is a rung of its own, with its own weekly cap and required skills (Decision 126), edited like every other rung. Its skills are what it takes to reach that belt (Decision 127).
+3. **Nothing changes for students.** Decision 164 had already copied each belt's cap onto its rungs and its skills onto the next belt's first rung, and grading reads only the rungs, so nothing is copied again; the migration logs what it drops.
+4. **Not removed:** the belt-level "years in rank" flag (also unused by grading since Decision 128 item 3 made "time in rank only" a per-rung switch). It wasn't part of the question; left until asked.
+
+Built in migration `20261102000000_remove_belt_level_settings`.
+
+---
+
+## Decision 200 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
+
+**Date:** 26 Sep 2026
+**Status:** Developer-level finding, escalated — **not resolved**, flagged for Architect decision before any backend work starts
+**Resolves:** why the Timetable design-canvas mockup's new "Book" action (added to every slot across Daily/Weekly/Monthly, per the user's request to make booking a class easier straight from the Timetable) is a review-only preview and not a real booking flow
+
+### What was built
+
+Every rendered slot on the Timetable mockup (`https://claude.ai/artifact/MbCT5h6Nq23yeZY8Sf7myu`, `Timetable.dc.html`) now has a "Book" affordance — a pill button on Daily/Weekly's agenda cards, a small icon button on Monthly's dots. Clicking it opens a confirmation preview (Class, Instructor, Day-or-Date, Time, Branch, then Cancel/Confirm) matching Spec §3.2's own confirmed booking-flow field set. Confirm only closes the preview — there is nothing to submit to yet.
+
+### Why this can't be more than a preview today
+
+`skills/ultm8-domain-rules/SKILL.md` §9 already carried this as an `[UNRESOLVED]` citation before this session touched Timetable at all: *"How `TimetableSlot` and `Class` actually relate... do not assume one Class row is auto-spawned per TimetableSlot occurrence without this being confirmed."* The real `Booking` entity belongs to `Class` (§10, §16: `Class *—* Booking`), never to `TimetableSlot` — and the Timetable page's own subtitle already states it renders "the recurring weekly slot template — not the bookable Classes list." Adding a Book button to the Timetable therefore reproduces the exact citation the skill already flags, except now against a concrete, user-requested UI feature instead of an abstract data-model question — worth its own decision-log entry so it doesn't stay buried only inside a skill citation and a mockup tooltip.
+
+### What actually needs deciding (Architect, not a Developer inference)
+
+1. Does selecting a Timetable slot resolve to an **existing, already-dated** `Class` occurrence (i.e. is a `Class` row auto-spawned per `TimetableSlot` × calendar date somewhere already, or by some job not yet built)? Or does one need to be **created/looked up on demand** at the moment of booking?
+2. If on-demand: what identifies "the same" `Class` occurrence across repeat visits (so two Students booking the same Monday 6pm slot land on one shared `Class`, not two separate ones each capped at their own capacity)?
+3. Only once (1)/(2) are answered does a real `POST /timetable-slots/:id/book`-shaped endpoint (or whatever shape falls out of the answer) make sense to design — building one against a guessed answer risks the same class of mistake Decision 105 already warned against (building speculatively ahead of a named, confirmed use case).
+
+### What does NOT need deciding again
+
+The confirmation preview's field set (Class, Instructor, Class Timings, Class Date) is already right — it's a direct match to Spec §3.2's own confirmed booking flow (browse → select → confirm → pay if required). Whatever the Architect decides above, the UI shape built here likely doesn't need to change, only what it's wired to.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Timetable page (mockup — click-to-book preview, Daily/Weekly/Monthly)") and `docs/ULTM8-MASTER-ROADMAP.md` §4 (cross-track open-decisions view), and as `note7` on the canvas artifact itself, so it's discoverable from all three places a future session might look, not just one.
+
+### Recorded by
+
+Surfaced while implementing the user's explicit request to add a click-to-book function to the Timetable page (Daily/Weekly/Monthly) — escalated per this project's standing rule (never fill an `[UNRESOLVED]` domain gap with a plausible-sounding guess), 26 Sep 2026.
+
+## Decision 201 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
+
+**Date:** 26 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts; the codegen finding is a Developer-level workaround, not an Architect ruling
+**Resolves:** turning the "Membership Plans — 5 concepts" exploration (`https://claude.ai/artifact/UibYczF3pRDdHXcJAsQRnm`) into real code — the user picked Concept 5 (Stats Ribbon + List) and asked to build what's real now, with anything not backend-ready logged for the dev/backend team instead of faked
+
+### What was built (real, in `MembershipPlansPage.tsx`/`membershipPlanQueries.ts`)
+
+- A stats ribbon above the existing plans table: **Total plans / Visible / Hidden** — real, computed client-side from the same `plans` list the table already renders, no new endpoint.
+- **Active members** — the ribbon's 4th tile, shown as a visibly muted/dashed placeholder ("—") with an explanatory `title`/`aria-label`, same "not built yet, not broken" convention `TopBar.tsx`'s disabled search input already established. No per-plan membership-count endpoint exists (`MembershipsController` only has Student-scoped `findMyMemberships`/`getMembershipStatus`) — logged in `docs/v1.2-backend-backlog.md` rather than guessed at.
+- **Visibility made an inline, real toggle** — replaced the static Visible/Hidden `Badge` with a `Checkbox` wired to a new `useUpdateMembershipPlanVisibility(schoolId)` hook, sending a partial `PATCH /v1/membership-plans/{id}` body of just `{ visible }`. Confirmed safe by reading `MembershipsService.updatePlan()` directly: every field it doesn't receive is left `undefined` in the Prisma `update()` call, so this never touches a FRIEND_PASS plan's forced `price=0`/`classesIncluded=1` or any other cross-field rule — it only ever changes the one field the user actually toggled.
+
+### What was deliberately NOT built
+
+- **Colour-coded Type badges / a toggle-switch visual** — the mockup concepts used a 5-colour categorical palette and a toggle-switch control that don't exist in `@ultm8/ui` today (`Badge` only supports `'default' | 'accent' | 'success' | 'danger'`; no Toggle/Switch component exists at all). Adding either would be a shared-design-system change affecting every consumer of `@ultm8/ui`, not something to invent unilaterally for one page — the real Visibility toggle above reuses the existing `Checkbox` component instead, keeping the same underlying capability without a new design-system primitive. Left for a future, separate design-system decision if the colour/toggle-switch treatment is still wanted.
+- **Duplicate / Archive actions** — present in the mockup's kebab menu as explicitly-flagged proposed items; not carried into real code since no backend endpoint exists for either and this page's real Actions column has only ever had Edit.
+
+### Codegen gap found while wiring the Visibility toggle (not Membership-Plans-specific)
+
+`UpdateMembershipPlanDto`'s generated TS type marks `visible`/`termsWaiverRequired` as non-optional, but a fresh `export:openapi` off the current backend source shows this DTO's OpenAPI schema has **no `required` array at all** — both fields are genuinely optional, matching `updatePlan()`'s own undefined-tolerant handling. `openapi-typescript` appears to render any `@ApiPropertyOptional({ default })` field as non-optional regardless. Grepped the whole schema for the same shape (a `default`-having property absent from its DTO's `required[]`) and found ~10 more affected DTOs: `CreateSchoolDto`/`UpdateSchoolDto`, `CreateFranchiseDto`/`UpdateFranchiseDto`, `CreateClassDto`/`UpdateClassDto`, `CreateTimetableSlotDto`/`UpdateTimetableSlotDto`, `CreateRankDto`/`UpdateRankDto`, `GradingActionDto` — see `docs/v1.2-backend-backlog.md` for the exact field list. Worked around here with one documented type cast in `membershipPlanQueries.ts` rather than widened ad hoc per call site; the real fix (an `openapi-typescript` config/version change, or dropping `default` from the affected Swagger metadata) is a one-time tooling change, logged once rather than repeated per affected page.
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `packages/api-client` and `apps/school-portal`. `export:openapi` re-run and diffed against the committed `packages/api-client/openapi.json` (byte-identical — confirms the DTO source and the committed schema JSON already agree; the gap is purely in the JSON→TS codegen step). No backend files changed — this decision is frontend-only plus documentation.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Membership Plans page") and as `note2` on the "Membership Plans — 5 concepts" canvas artifact.
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 5 and instruction to "build [what's real], and... anything that is not on the back end now... to a list with notes to be done by the dev team back end team," 26 Sep 2026.
+
+## Decision 202 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 201, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
+**Resolves:** the user picked Concept 2 (Stats Ribbon + List) and asked for the same "build what's real, log the rest" treatment as Membership Plans
+
+### What was built (real, in `TransactionsPage.tsx`)
+
+A stats ribbon above the existing table: **Total transactions / Successful / Failed+disputed / Total revenue** — all four real and client-computed from the same `transactions` list the table already renders. Unlike Membership Plans' Concept 5, this concept needed no scope decision and produced no backend-backlog entry: `Transaction` already carries `status` and `amount`, so every tile is genuinely real with zero new endpoints and zero proposed placeholders.
+
+One correctness detail worth recording: **Total revenue is grouped by currency, not summed flat.** `Transaction.currency` is per-row and nullable (inherited from `MembershipPlan.currency`, itself an optional, School-chosen field per plan — see `MembershipPlanFormModal`'s own "Your School's own choice, no conversion applied" hint), so a School running plans in more than one currency could have genuinely mixed-currency Transactions. Summing raw minor units across currencies and labeling the result with one currency code would be silently wrong. Implemented as a `Map<currency, sum>` instead, rendering one revenue figure per currency present (almost always just one, in practice) rather than a single figure that assumes a school-wide currency constant that doesn't actually exist in the schema.
+
+### What was deliberately not built
+
+Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 201's same reasoning for why a real read-only page shouldn't grow dead action buttons).
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`. No backend or `packages/api-client` files touched — this decision is frontend-only.
+
+### Tracking
+
+Logged as `note2` on the "Transactions — 5 concepts" canvas artifact. No `docs/v1.2-backend-backlog.md` entry — there is no backend gap to track.
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 201, 27 Sep 2026.
+
+## Decision 203 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decisions 123/124: `https://claude.ai/artifact/MctvsgBry9WEkEK2Fqq5QL`); the signature-status finding below is a Developer-level investigation, escalated — not resolved here
+**Resolves:** the user picked Concept 3 (Split-Pane Reader) and, separately, asked for a "signature field... show[ing] if it has been signed or not" to be added — this entry covers both: what was built for real, and why the signature request could not be
+
+### What was built (real, in `WaiversPage.tsx`)
+
+Replaced the flat table with a list-plus-reader split pane, matching the chosen Concept 3: a compact left-hand list (Title, a truncated preview, and a real reading-time/word-count estimate) beside a right-hand reader pane showing the selected Waiver's **full** `body` text (`white-space: pre-line`, preserving paragraph breaks, capped at `70ch` for readability). This directly closes a gap the shipped code's own `bodyPreview()` comment already admitted: `Waiver.body` can run up to 20,000 characters (`CreateWaiverDto`'s own `MaxLength`) — "far too long for a table cell." Staff can now actually read a waiver's full text without opening the Edit form. Title/preview/reading-time/Last-updated/Edit are all real fields or client-computed values requiring no backend change, same as Concept 1's own real columns.
+
+### What was asked for and why it can't be built today — a deeper gap than this session's own earlier note assumed
+
+Asked via AskUserQuestion which shape to show ("rollup count", "full per-student roster", or "both") and whether to build it for real now or flag it as a mockup placeholder first. The user deferred the shape choice ("which would you pick") and asked to build what's real and log the rest for the backend team ("Just as before"). Recommended shape: **both** — a rollup count, expandable to the full per-student roster — since that's the most useful presentation once the data exists. It doesn't today, for three independently-blocking reasons found by re-reading the actual current backend source (not assumed from this session's own earlier canvas note, which only flagged the first of these three):
+
+1. **No staff-facing endpoint exists at all.** `WaiversController` (verified directly) exposes only `POST /waivers/:id/sign` (a Student/Guardian signs), `POST /waivers/:id/signature-upload-url`, and `GET /waivers/me` (a Student's own signatures, self-scoped). There is no `GET .../waivers/:id/signatures` or equivalent for a School Owner. This was already known from this session's earlier Waivers-concepts research.
+2. **New finding — even if that endpoint existed, `WaiverSignature` rows don't model "unsigned."** `WaiversService.sign()` is the *only* code path anywhere that creates a `WaiverSignature` row, and `schema.prisma`'s own model declares `status WaiverSignatureStatus @default(SIGNED)` — grepped the whole backend for any write of `UNSIGNED`/`PENDING`/`EXPIRED` on this model and found none. So a `WaiverSignature` row existing *means* signed; there is no row representing "assigned, not yet signed" despite those being real enum values on `WaiverSignatureStatus`. "Who hasn't signed" can't be read off this table alone — it would have to be computed as (all Students who should sign) minus (Students with a SIGNED row), which needs a Student roster to diff against.
+3. **New finding — that Student roster doesn't exist for real in production either.** `WaiverSignatureRequestsProcessor`'s own header comment (the `waiver-signature-requests` job, confirmed by reading it directly) documents a pre-existing, separate, larger gap: no endpoint anywhere in this codebase ever creates a `STUDENT` RoleGrant through the real API — every e2e test seeds one directly with a superuser Prisma client. In a real deployment today this job's own Student-lookup query would return empty, and so would any "how many Students are there to sign this" denominator. This is already tracked elsewhere (the processor's comment cites Decision 95 and the project roadmap) — not a new gap, but a real blocking dependency for this feature specifically, worth stating plainly here rather than leaving it implicit in a job's code comment.
+
+Given all three, nothing under "signature status" could be shown as genuinely real today — not even a partial figure (e.g. a bare SIGNED count with no denominator) without materially misrepresenting what's known. Built instead as a single, visibly inert "Signatures" panel in the reader pane (dashed border, muted text, explanatory `title` tooltip pointing at the backlog) — the same "not built yet, not broken" convention `StatTile`'s `proposed` mode already established for Membership Plans' Active Members tile, adapted here to a panel rather than a numeric tile since there is no honest number to show at all, not even a placeholder "—" metric with a real (if incomplete) count behind it.
+
+### A related, newly-confirmed real behavior worth flagging to the Architect
+
+While tracing this, confirmed that `skills/ultm8-domain-rules/SKILL.md` §13's `[UNRESOLVED]` item — "where `Class.terms/waiver-required` is actually enforced" — **is resolved in code**, just never updated in the skill: `BookingsService` (verified directly) checks, at booking time, whether the Student holds *any* `WaiverSignature` with `status: 'SIGNED'` at that School — not scoped to a specific required Waiver, since `Class` has no field linking it to one particular `Waiver` row (only the boolean `termsWaiverRequired`). This is a reasonable reading of the schema as it stands, but it does mean "requires a waiver" currently means "requires having signed *some* waiver for this School," which may or may not be the intended rule — flagged for the Architect to confirm or correct, not silently treated as settled by this entry.
+
+### Verification
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`. No backend or `packages/api-client` files touched — this decision is frontend-only plus documentation; the signature-status feature itself is not implemented anywhere, real or placeholder-wired, beyond the inert panel described above.
+
+### Tracking
+
+Logged in `docs/v1.2-backend-backlog.md` ("Waivers page") with the full three-layer gap above, spelled out for the dev team, and referenced from the "Waivers — 5 concepts" canvas artifact's own `note1` (already recorded there before this page was built for real).
+
+### Recorded by
+
+Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concept 3") plus a follow-up request for a signature/signed-status field; shape and build-scope confirmed via AskUserQuestion, then built per the user's "build and create the notes for the dev team" answer, continuing the same policy established in Decisions 123/124, 27 Sep 2026.
+
+## Decision 204 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level finding, escalated — the backlog below is logged for the dev/backend team; no real code was changed as part of this entry (design/documentation only)
+**Resolves:** the user's request for 5 Notifications concept directions (same research-first process as Decisions 123/124/125), recommended Concept 3, and asked for every non-real element found across the 5 boards to be logged for the backend team
+
+### What was found (verified directly against `NotificationsController`/`NotificationsService`/`schema.prisma`, not assumed)
+
+The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 203): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
+
+Two smaller, independent gaps were also found: `Notification` has no snoozed/deferred state of any kind (only `read`, a plain boolean), and no delete endpoint exists. Push notification delivery itself is real only at the registration step — `DeviceToken` registration works, but actual push SEND is, per that model's own header comment, "deliberately NOT built this phase," so no delivery-rate or read-time metric can be computed even in principle from what the schema stores today (`Notification.read` has no timestamp — no `readAt` column).
+
+### The 5 concepts
+
+1. Refined Table and 2. Grouped Timeline carry no proposed elements at all — both are 100% real fields (`Notification.title`/`body`/`read`/`type`/`createdAt`) or client-side computations over them (a Type label, a relative-time display, day-grouping), same standard Concepts 1/2 met on Transactions/Waivers.
+3. Priority Inbox (Linear-style, **the recommended and user-favored direction**) — Unread/All tabs and Mark read are both real; Snooze and Delete are shown, explicitly flagged proposed, and — per a follow-up request — consolidated into a single "⋮" row-actions menu rather than three separate icon buttons.
+4. Broadcast Center (ClassDojo/Bloomz-style) — an entirely proposed "Compose announcement" panel above the same real inbox list, built specifically to make the missing-broadcast-capability gap concrete rather than leave it only as prose.
+5. Delivery Ribbon — Total/Unread are real but page-scoped (no count endpoint exists to total across every page); Push delivery rate and Read within 24h are explicitly flagged proposed placeholders.
+
+### Tracking
+
+Full backend requirements (a new broadcast/compose endpoint and its open product questions, a snooze data-model decision, a delete endpoint, push SEND + a delivery-status field, a `readAt` column for time-to-read metrics, and a dedicated count endpoint) logged in `docs/v1.2-backend-backlog.md` ("Notifications page"), and recorded as `note1` on the "Notifications — 5 concepts" canvas artifact (`https://claude.ai/artifact/Vi4uogt6Kpiq166NSR9GHm`).
+
+### Recorded by
+
+Requested directly by the user ("Give 5 great ideas... look at other softwares ideas" pattern, continuing Decisions 123/124/125's process), recommendation given via AskUserQuestion-free direct comparison, then the full non-real inventory logged per the user's explicit "any that is not real add to the note for the dev... to do the back end" instruction, 27 Sep 2026.
+
+## Decision 205 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
+
+**Date:** 27 Sep 2026
+**Status:** Developer-level correction of an earlier overstated finding (Decision 200), verified directly against `BookingsService`/`SchoolsService` before changing anything
+**Resolves:** the user's own second-guess on the Timetable mockup's "Book" action ("this is the school view, not the students... does not make sense for academies") — investigated rather than agreed with by default, since the premise turned out to be wrong
+
+### What was found (verified directly, not assumed)
+
+`BookingsService.bookClass()` (`apps/api/src/bookings/bookings.service.ts:81-119`) already has a real, shipped **Staff-on-behalf-of** booking path: when `BookClassDto.studentId` names someone other than the caller, `isStaffAction` is set true and the write is gated by `TenantAuthorizationService.assertStaffAtSchool()` — a School Owner/Staff member can, today, book a named Student into a `Class` for real. So "Book" is not inherently wrong for the School Portal audience — a front-desk/walk-in booking is a legitimate, already-designed capability, not something invented for this mockup. The user's instinct that *something* was wrong with the Book action was still correct, just for a narrower reason than "wrong audience": the confirmation preview never asked which Student it was for at all — no student picker existed anywhere in it, despite that being the one piece of information every real booking action absolutely requires.
+
+Also verified before building the fix: `GET /schools/:id/students` is real (`apps/api/src/tenants/schools/schools.controller.ts`, `SchoolsService.findAllStudentsForSchool`), Staff-gated, returns `id`/`firstName`/`surname`/`email`/`enrolledAt`, full unpaginated list — same "small bounded roster, client-side filter" convention every other picker in this app already follows (confirmed via `apps/school-portal/src/students/StudentsPage.tsx`/`studentQueries.ts`, and cross-checked against the near-identical `instructors/eligible-users` endpoint built for the same reason in Fix 3 earlier this session).
+
+### What was built (mockup only — `Timetable.dc.html`)
+
+Added a required "Student" field to the Book confirmation dialog (all three views share one modal), populated from real-shaped sample data matching `StudentSummaryResponseDto`'s actual fields, with "Confirm booking" disabled until a Student is selected — matching what a real submission would require. Updated the board's own inline comments and the backend backlog to state the corrected finding plainly, including retracting the overstated "no backend booking capability exists for a Timetable slot at all" line from the earlier note.
+
+### What's still not real, and why that hasn't changed
+
+Decision 200's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s existing "Timetable page" section rewritten in place (not appended past) to correct the overstated claim and separate the two gaps clearly, rather than leaving a known-inaccurate note live alongside the correct one.
+
+### Recorded by
+
+Investigated in response to the user questioning the Book action's fit for the School Portal audience ("what do you think?"); the premise was checked against the real code rather than accepted, found materially wrong, and the actual narrower gap fixed per the user's follow-up "lets fix it make sense, any thing that we dont have on the back end please add to the back end to do list," 27 Sep 2026.
+
+---
+
+## Decision 206 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
+
+**Date:** 28 Sep 2026
+**Status:** Developer-level proposed design, **not approved, not built** — flagged for Architect/product-owner confirmation before any of this is implemented. Recorded because the user asked directly for the logic to be worked out and written down, not because it's been signed off.
+**Resolves:** the open question left by "Add Manually" on the Add Instructor mockup (`InstructorAdd.dc.html`) — that mode collects First Name/Surname/Email for a person who has no ULTM8 account at all, but nothing was ever built to say how that person subsequently gets in. Also generalizes the identical, previously-flagged gap on `StaffPage.tsx`'s invite form ("If a true from-zero invite... is wanted, that's a new capability" — logged in `docs/v1.2-backend-backlog.md`'s Instructors section) so the same mechanism can serve both, rather than building it twice.
+
+### What was checked before designing anything
+
+- `RegisterDto` (`apps/api/src/auth/dto/register.dto.ts`) requires **email, phone, firstName, surname, passcode+passcodeConfirm, dateOfBirth** — all mandatory. "Add Manually" only collects name + email. Even a full self-registration can't be synthesized from what Staff enters today; phone and date of birth are missing, and passcode is explicitly "the account's sole login credential" (Decision 72) — nothing in the confirmed model suggests an admin should be the one setting it on someone else's behalf.
+- The only credential-recovery flow that exists (`RequestPasscodeResetDto`/`ConfirmPasscodeResetDto`) is **phone + Twilio Verify OTP**, not an email link or token of any kind. There is no email-based claim/magic-link mechanism anywhere in this codebase to build on — this would be new.
+- No `Invitation`-shaped entity exists in `schema.prisma` today. `RoleGrant` requires a `userId` that already exists (`RoleGrantsService.create()`'s `PrismaAuthService` existence check, Decision 80/81) — there's no "grant a role to someone who doesn't have an account yet" path anywhere, confirmed by re-reading that service directly rather than assumed.
+- Email delivery is real and already wired (`NotificationDeliveryService`, Postmark primary/SES fallback, Spec 55 §11.4) — usable as-is for whatever this sends.
+
+### Proposed design
+
+A new, generic **account-claim invitation**, not an Instructor-specific mechanism (so it also closes the identical gap on Staff's invite form later, without a second design):
+
+1. **New entity — `AccountInvitation`** (name indicative, Architect's call): `id`, `email`, `firstName`, `surname`, `schoolId`, `intendedRole` (`INSTRUCTOR` | `BRANCH_STAFF`), `branchId?`, a cryptographically random single-use `token` (hashed at rest, like the OTP codes already are), `expiresAt` (proposed 7 days), `createdByUserId`, `status` (`PENDING` | `CLAIMED` | `EXPIRED` | `REVOKED`), `draftProfile` (JSON — the rest of what Staff already entered on Add Instructor: branch, phone, beltRanking, specializations, yearsOfExperience, bio, photoUrl; empty for a future Branch Staff use of the same mechanism).
+2. **On Add Instructor's "Add Manually" submit:** server first checks whether `email` already belongs to an existing `User` (via `PrismaAuthService`, same lookup Decision 116 already uses). If it does, **reject** and point Staff at "Invite to Instructor Role" instead — that page already exists precisely for an existing account, and this keeps the two flows from overlapping or ever creating a duplicate account for the same person. If it doesn't, create the `AccountInvitation` row (status `PENDING`) and enqueue an email — reusing `NotificationDeliveryService` — with a claim link (`https://.../claim-invitation?token=...`). No `User`, `RoleGrant`, or `Instructor` row is created yet.
+3. **New unauthenticated, token-gated endpoints:** `GET /invitations/:token` (validates not expired/claimed/revoked, returns `firstName`/`surname`/`email` to prefill a screen — never anything from `draftProfile`, which is internal); `POST /invitations/:token/claim` (body: the same required fields `RegisterDto` already needs minus name/email, which come from the invitation — phone, passcode+confirm, dateOfBirth, plus the existing optional fields). On success, in one transaction: create the `User` row (same path `AuthService.register()` already uses), create the `RoleGrant` (`RoleGrantsService.create()`'s existing logic, `role=intendedRole`), create the `Instructor` row from `draftProfile` (`InstructorsService.create()`'s existing logic), mark the invitation `CLAIMED`. A token that's expired or already claimed fails with a clear error, same as an already-used OTP does today.
+4. **New frontend screen — "Complete Your Registration":** effectively the existing Register screen, pre-filled with the invitation's name/email (email shown read-only — it's what the invite was sent to) and gated by the token in the URL instead of being open self-registration. No new field vocabulary — same fields `RegisterDto` already requires.
+5. **Expiry/resend/revoke:** an expired or revoked invitation should be resendable/revocable by the School Owner (same authorization gate as the invite itself) — not designed further here; flagged as part of the same follow-up work, not a separate gap.
+
+### Why this shape, not a simpler one
+
+- **Not admin-set passcodes** — nothing in the confirmed model treats passcode as something anyone but the account holder sets; this preserves that without needing a new decision to violate it.
+- **Not reusing the phone-OTP reset flow** — that flow authenticates *an existing* User by proving phone ownership; there's no User yet here to attach an OTP challenge to, so it doesn't fit.
+- **Generic, not Instructor-only** — costs nothing extra to design this way now, and avoids building the identical mechanism twice when Staff's own from-zero invite gap (already flagged) gets picked up.
+- **Server-side existing-email check before creating an invitation** — closes the risk of two divergent paths (Add Manually vs. Invite to Instructor Role) ever producing two accounts for one person, which neither page's design considered in isolation.
+
+### What this does NOT resolve
+
+- Whether 7 days is the right expiry, whether resend should be rate-limited, and exact copy/branding for the claim email — left to whoever builds this.
+- Whether `AccountInvitation` should also become the mechanism for Guardian/minor account creation or any other "someone else creates this account" flow elsewhere in the product — out of scope, not evaluated here.
+- This is still unbuilt. `InstructorAdd.dc.html`'s "Add Manually" mode stays tagged Proposed/Placeholder exactly as before; nothing in this decision changes what's real today.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s "Add Manually" note (under "Add / Update Instructor pages") updated to point here instead of carrying the design inline.
+
+### Recorded by
+
+Written up directly at the user's request ("we need to send the new user a log in. How are we going to do that, write the logic and add to the back end notes"), 28 Sep 2026 — a proposed design, not a product decision; needs Architect/product-owner confirmation before anything here is built.
+
+---
+
+## Decision 207 — The belt-level "years in rank" flag is removed too
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Completes:** Decision 199, which left this flag out because it wasn't part of that question.
+
+Asked whether the belt-level "years in rank" switch can go like the weekly cap and skills, Gus: *"yes"*. Each rung has its own "time in rank only" switch, with the years stored as minimum days (Decision 128, item 3), and grading reads only that, so nothing changes for students. `Rank.yearsInRankFlag` is dropped (migration `20261103000000_remove_years_in_rank_flag`) and a belt no longer takes or returns it.
+
+---
+
+## Decision 208 — Lesson access is also enforced by the database
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Completes:** Decisions 154, 190 and 195, which the API enforced alone.
+
+Gus: *"yes add the database check"*.
+
+1. **What it does.** A lesson's content (description, video and captions) moves to its own table, `LessonContent`. The database gives it only to: staff at the School (Owner/Manager, Branch Staff, Instructor); anyone at the School when the lesson is free; a student whose live membership (active, not expired, credits left) is on a plan that includes lessons and covers one of the lesson's styles. A guardian reads through the child's context, as the API already does. Same rule as the API's (Decisions 154, 190, 195).
+2. **What doesn't change.** The lesson itself (title, category, order, styles, "free") stays readable by anyone at the School, so a locked lesson still shows what it is. Nothing changes for users: they see exactly what the API showed before. Only staff write content.
+3. **Why.** A second layer: if a future server change forgot the check, the database would still not hand out a locked lesson's content. When the two disagree, the database wins.
+
+Built in migration `20261104000000_lesson_content_access` (`can_view_lesson_content`, `is_lesson_staff`); existing content is copied into the new table.

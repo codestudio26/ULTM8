@@ -37,3 +37,18 @@ export function useUpdateSkill(disciplineId: string, skillId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['skills', disciplineId] }),
   });
 }
+
+/** Deletes a skill no student has been marked on (Decision 198); it comes off
+ * the stripes and lessons that listed it. */
+export function useDeleteSkill(disciplineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (skillId: string) => unwrap(apiClient.DELETE('/v1/skills/{id}', { params: { path: { id: skillId } } })),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['skills', disciplineId] }),
+        queryClient.invalidateQueries({ queryKey: ['ranks', disciplineId] }),
+        queryClient.invalidateQueries({ queryKey: ['lessons'] }),
+      ]),
+  });
+}

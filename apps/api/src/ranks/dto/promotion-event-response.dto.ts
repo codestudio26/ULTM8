@@ -52,6 +52,14 @@ export class PromotionEventResponseDto {
   @ApiProperty({ type: Number, nullable: true, description: '"Starting classes" entered when grading (Decision 128, item 9).' })
   startingClasses!: number | null;
 
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    nullable: true,
+    description: 'Starting classes per type, when the new next rung counts each type separately (Decision 174).',
+  })
+  startingClassesByType!: Record<string, number> | null;
+
   @ApiProperty({ type: String, nullable: true, description: 'Set when the entry has been voided (Decision 129).' })
   voidedAt!: string | null;
 
@@ -60,6 +68,15 @@ export class PromotionEventResponseDto {
 
   @ApiProperty({ type: String, nullable: true })
   voidReason!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'When the note was last edited (Decision 192).' })
+  noteEditedAt!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  noteEditedById!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden.' })
+  noteHiddenAt!: string | null;
 
   @ApiProperty({ description: 'When the entry was written (audit timestamp).' })
   createdAt!: string;
@@ -71,4 +88,32 @@ export class PromotionEventListResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   nextCursor!: string | null;
+}
+
+export class PromotionEventNoteLogEntryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: ['EDITED', 'HIDDEN', 'SHOWN'] })
+  change!: 'EDITED' | 'HIDDEN' | 'SHOWN';
+
+  @ApiProperty({ type: String, nullable: true })
+  oldNote!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  newNote!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  changedById!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'First name and surname of who made the change.' })
+  changedByName!: string | null;
+
+  @ApiProperty()
+  createdAt!: string;
+}
+
+export class PromotionEventNoteLogResponseDto {
+  @ApiProperty({ type: [PromotionEventNoteLogEntryDto] })
+  items!: PromotionEventNoteLogEntryDto[];
 }

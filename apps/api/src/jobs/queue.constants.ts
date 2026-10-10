@@ -40,3 +40,9 @@ export const CHARGEBACK_PATTERN_RESTRICTION_QUEUE = 'chargeback-pattern-restrict
 // membership-expiry-sweep.processor.ts's own header comment for the full
 // account (including a real bug this caught before merge).
 export const MEMBERSHIP_EXPIRY_SWEEP_QUEUE = 'membership-expiry-sweep';
+// Decisions 145, 178 — grading notifications: "ready to grade" to the owner and
+// the coaches who may grade the student (checked after grading actions and in a
+// daily sweep), and "you've been promoted" to the student, or a minor's
+// guardians. Runs as ultm8_jobs: GuardianLink is readable only by the guardian
+// under ultm8_app's RLS.
+export const GRADING_NOTIFICATIONS_QUEUE = 'grading-notifications';

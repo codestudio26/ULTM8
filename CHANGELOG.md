@@ -15,6 +15,395 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Lesson access is also checked by the database** (Decision 208). A
+  lesson's description, video and captions now live in their own table,
+  which the database only lets staff, everyone at the School for a free
+  lesson, and students whose live membership covers the lesson's style read
+  (a guardian through their child). The lesson's title and category stay
+  visible to everyone at the School, as before; nothing changes on screen.
+  **api:** `LessonContent` (migration `20261104000000`, with RLS:
+  `can_view_lesson_content`, `is_lesson_staff`); existing content copied.
+- **Belt-level "years in rank" flag removed** (Decision 207). Each stripe
+  has its own "time in rank only" switch, which grading uses; nothing changes
+  for students. **api:** `Rank.yearsInRankFlag` dropped (migration
+  `20261103000000`); a belt no longer takes or returns it.
+  `packages/api-client` regenerated.
+- **Belt-level weekly cap and required skills removed** (Decision 199). They
+  live on each stripe, the plain belt's own (e.g. "Brown Belt", no stripes)
+  included, and grading reads only those, so no student's requirements
+  change. **api:** `Rank.weeklyClassCountCap` and `RankRequiredSkill`
+  dropped (migration `20261102000000`); a belt no longer takes or returns
+  `weeklyClassCountCap` / `requiredSkillIds` (sending them is a 400).
+  `packages/api-client` regenerated.
+
+- **Deleting** (Decision 198). The owner can delete a lesson, and a skill,
+  belt or style that has never been used: **Delete** on the Curriculum,
+  Disciplines and style pages, with a confirmation. Anything a student's
+  record uses is kept and the window says why (someone holds the belt, it's
+  in grading history, students were marked on the skill, a class or lesson
+  uses the style). A deleted belt's stripes go with it and the belts after it
+  move up; a deleted style takes its belts, skills and coach permissions and
+  comes off membership plans and instructors. **api:** `DELETE
+  /disciplines/{id}`, `/ranks/{id}`, `/skills/{id}`, `/lessons/{id}` (owner
+  only; 204, or 409 with the reason). `packages/api-client` regenerated.
+
+- **Grading for the student app** (Decisions 132, 142, 155, 161). **api:**
+  `GET /students/{id}/grading` gives the student, or a guardian of theirs,
+  every style they hold a rank in at every School they're a student at,
+  with the School and style names, the ladder (stripe names and belt
+  colours), progress toward the next grade (always shown, "Ready to grade"
+  included) and the skills for it, by name. It reads under the student's own
+  context, because a guardian holds no role at the School; nobody else may
+  read it, and a School the student has left isn't shown.
+  `packages/api-client` regenerated. The app's screens are on Track B
+  (`docs/TRACK-B-ROADMAP.md`).
+- **Grading hardening reports** (Phase 7). The acceptance pass, the grading
+  stress test and the decision conformance review are in
+  `docs/grading-integration/hardening/`, with a page saying where each
+  finding went. Gus's prototype scenarios now run in CI against the real API
+  (`apps/api/test/grading-acceptance.e2e-spec.ts`: the three IBJJF templates,
+  eligibility on a sample of their stripes, grade and downgrade rules, a
+  600-student board with bulk promote, hostile text, random actions;
+  `ACCEPTANCE_FULL=1` runs the full size). The domain rules file no longer
+  says the grading rules are mostly unbuilt, and marks where Decisions 93,
+  136 and 173 replaced older lines.
+- **Who can watch lessons** (Decisions 154, 190, 195). Each membership plan
+  now ticks the styles it covers and has **Includes lessons** (on by default
+  for plans with a price, off for free ones; the owner can change it). A
+  student, or their guardian, can watch a lesson when a live membership of
+  theirs is on a plan that includes lessons and covers one of the lesson's
+  styles (its skills' styles); the owner can make any lesson **Free for
+  everyone at the School**; staff see every lesson. Other lessons show as
+  locked: title and category, no description or video. Existing plans cover
+  every style their School has and include lessons when priced, so today's
+  members keep what they see now. **api:** `MembershipPlan.disciplineIds` /
+  `includesLessons` and `Lesson.free` (migration `20261101000000`); lesson
+  responses add `free` and `locked`; new `GET /students/{id}/lessons` for the
+  student or their guardian; only the owner sets `free`.
+- **The typed "Belt / ranking" on an instructor is gone** (Decision 196).
+  Instructors choose their own belt per style on "My belts" (Decision 188), so
+  the owner's free-text field on the Instructor form is removed, with its
+  stored values. The lesson form's instructor list now shows names. **api:**
+  `beltRanking` removed from the instructor create/update/response shapes
+  (migration `20261031000000` drops the column).
+- **History notes can be edited and hidden; every change is kept** (Decision
+  192). On a student's grading page, the owner and anyone who may grade that
+  student in that style ("Promote" or "Move down") can edit a history entry's
+  note, or add one, and hide it from the student and guardian, or show it
+  again. Staff see "Edited" and "Hidden from the student"; the owner can open
+  every change (who, when, old and new text). Students and guardians get no
+  hidden note, nor a sign one was hidden. System notes, downgrade reasons and
+  voided entries are not changed. **api:** `PATCH
+  /students/{id}/rank-history/{eventId}/note` and the owner-only `GET
+  …/note-log`; `PromotionEvent.noteEditedAt/noteEditedById/noteHiddenAt` and
+  `PromotionEventNoteLog` (migration `20261030000000`), whose RLS lets the
+  owner read it and never the student.
+- **Lesson categories, in order** (Decisions 128.15, 191). Lessons are now
+  grouped into the School's own list of categories, in the order shown to
+  students, and ordered within each. The Curriculum page adds, renames and
+  reorders categories, moves lessons up and down within a category, and the
+  lesson form picks a category from the list (a new one puts the lesson at
+  its end). Existing free-text categories became real ones (names differing
+  only by spaces merged; blank ones became "No category"). **api:**
+  `LessonCategory` with RLS (anyone at the School reads; its staff write) and
+  `Lesson.categoryId`/`order` replace `Lesson.category` (migration
+  `20261029000000`); lessons are listed in category order. Lesson responses
+  keep `category` (now the category's name) and add `categoryId` and `order`;
+  create/update take `categoryId` instead of free text. New: `GET|POST
+  /schools/{id}/curriculum/categories`, `PATCH /curriculum/categories/{id}`,
+  `PUT /schools/{id}/curriculum/categories/order` and
+  `PUT /curriculum/categories/{id}/lessons/order`.
+- **Instructors choose their own belt; the owner verifies it** (Decisions 108,
+  188). Instructors get a **My belts** page in the School Portal where they
+  choose their belt and stripe in each of the School's styles; it shows "Not
+  verified" until the owner verifies it, and choosing another belt makes it
+  unverified again. The owner's Instructors page gains **Instructors' belts**:
+  verify each, or correct it to the right belt (saving verifies it), and see who
+  hasn't chosen yet. **api:** `InstructorBelt` (migration `20261028000000`),
+  one per instructor per style, with RLS: the owner manages all; an instructor
+  reads theirs and writes their own only as unverified while they hold an
+  active Instructor role. Endpoints `GET|PUT /schools/{id}/instructor-belts/me`,
+  `GET /schools/{id}/instructor-belts` and
+  `POST /schools/{id}/instructor-belts/{userId}/{disciplineId}/verify`.
+- **Belts waiting to be verified: a notice at login** (Decisions 137, 189).
+  When the owner, or a coach or Branch Staff member who may verify belts, logs
+  in to the School Portal, a notice lists the students whose self-declared belt
+  is waiting to be verified, each linking to the student's grading page; it
+  shows once per login and not at all when nothing is waiting. **api:**
+  `GET /schools/{id}/rank-verifications` is no longer owner-only: coaches get
+  the styles where they have "Verify ranks", for the students of their own
+  branches (the Grading Board's read path); other staff get an empty list.
+  Each item now carries the student's name and the style's name.
+- **Belts and stripes, not "rungs"** (Decision 187). Screens and messages now
+  say belt and stripe: the belt editor lists a belt's **Stripes** ("Stripe name",
+  "Add stripe", "Reorder stripes?"), the ladder shows each belt's number of
+  stripes, the style templates count "grades (each belt and each stripe)", and
+  the API's grading and ladder error messages use the same words.
+- **Staff given a role again start fresh** (Decision 193). Removing someone's
+  last Instructor or Branch Staff role at a School now clears their grading
+  permissions there, and removing their Branch Staff role clears "Can invite
+  coaches", so if they're added again later the owner grants what applies now.
+  Losing one branch while they still coach at another keeps their grading
+  permissions. The board's "inactive hidden" count already includes students on
+  the top stripe (Decision 194); a test now pins it.
+- **Fix: a replayed sign-in token always signs out every session.** When the
+  same refresh token was used twice at the same moment, the sweep that signs
+  out every session could run before the winning request had saved its new
+  token, leaving that one valid (about 1 run in 12 of the test). **api:** the
+  rotation and the new token are now written in one transaction, so the sweep
+  always sees it.
+- **Grading hardening, performance** (Phase 7 stress round). The Grading
+  Board for coaches and staff loads in one query instead of one per student:
+  a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a
+  3,000-student School without branches from 30 s to 0.2 s; the owner's
+  board is also faster (0.76 s to 0.52 s). Bulk promote checks the caller and
+  loads the ladder once per batch: 200 students in 5.9 s (owner) and 7.7 s
+  (coach), from 13.3 s and 20.1 s. Same students, same rules: **api:**
+  `grading_board_rows()` returns, for the calling staff member only, the
+  students they may see (their branches' students, or every enrolled student
+  at a School without branches; Decisions 168, 169, 177), approved by the
+  product owner (migration `20261027000000`).
+- **Grading hardening, security** (Phase 7 security review). A coach invite
+  is checked again when accepted: it no longer works once the person who sent
+  it may no longer invite there (their "Can invite coaches" turned off or
+  their Branch Staff role removed — those also cancel their open invites) or
+  once the School is closed; the link page then shows it as cancelled.
+  Cancelling an invite while it's being accepted is a clean 409, not a 500.
+  Sending invites is limited to 20 an hour per account. Database rules
+  narrowed: a student can read but no longer change their own home branch
+  (the owner assigns it, Decision 148); a sent invite's email, branch and
+  token can't be changed, only its outcome; coaches at a School without
+  branches see current students only (migration `20261026000000`).
+- **Grading hardening, correctness** (Phase 7; Decision 185). From the
+  hardening round: a promote or downgrade with no target now moves one rung
+  (was a whole belt); a downgrade no longer notifies the student; grading
+  requests can carry the rung the grader saw and are refused (409) if the
+  student moved since, which the portal always sends and bulk promote uses,
+  so two coaches can't award the same stripe twice and a batch can't undo a
+  downgrade made meanwhile; only the School's own students can be graded
+  (404 otherwise); rank history is newest first by grading date; the board's
+  "N inactive hidden" ignores the search; belt reorders and edits at the same
+  time no longer deadlock (409 instead of 500 if they clash); bad ids and
+  starting classes over 10,000 are a 400. `packages/api-client` regenerated.
+- **Coach dashboard on the web portal** (Decision 184). A coach who signs in
+  lands on **Coach dashboard**: the styles they grade in, with how many
+  students are ready to grade or getting there; their weekly classes and
+  upcoming classes; their latest notifications; and, if they also train
+  there, their own ranks and progress. Their menu is Dashboard, Grading
+  Board and Notifications, and the header shows "Coach". The **Grading
+  Board** and **student panel** now work for coaches: only the styles they
+  grade in, and only the actions their grading permission allows. After
+  accepting an invite, **Go to your coach dashboard** takes them there.
+  **api:** `GET /schools/{id}/grading-permissions/me`. `packages/api-client`
+  regenerated. The mobile app's coach screens follow separately.
+- **Coach invites** (Decision 183). On the Staff page, **Invite a coach**
+  emails one person a link to coach at the School (choosing the branch when it
+  has branches). The link works once, for 7 days, and can be cancelled; the
+  page lists each invite as Waiting, Accepted, Cancelled or Expired. Opening
+  the link asks the person to log in, or create their account, with the
+  invited email, then **Accept invite** makes them a coach; a student keeps
+  their student account. **Who can invite coaches**: the owner ticks which
+  Branch Staff may also invite, for their own branches (coaches can't, per
+  Spec 55 §8.2). Email only for now. **api:** `CoachInvite` and
+  `StaffPermission` (migration `20261025000000`, with RLS: the owner, staff
+  with the permission for their branches, and the link holder for its own
+  invite; only the token's SHA-256 is stored);
+  `POST/GET /schools/{id}/coach-invites`, `POST /coach-invites/{id}/cancel`,
+  `GET /coach-invite-links/{token}` (no sign-in needed),
+  `POST /coach-invite-links/{token}/accept`,
+  `GET /schools/{id}/staff-permissions`,
+  `PUT /schools/{id}/staff-permissions/{userId}`. New setting
+  `PORTAL_BASE_URL` for the link. `packages/api-client` regenerated.
+- **Style templates and Duplicate** (Decisions 131, 182). On the Disciplines
+  page, **Start from template** creates a style from one of the three IBJJF
+  ladders (White Stripes, 90 rungs; White & Red Stripes, 139; Yellow Stripes,
+  175) with the prototype's numbers and class types, ready to edit.
+  **Duplicate** copies a style's belts, rungs and their rules, skills, class
+  types, "skills required" switch and board %, as "… (Copy)"; no students,
+  ranks or coach permissions. Owner only. **api:** `GET /style-templates`,
+  `POST /schools/{id}/disciplines/from-template`,
+  `POST /disciplines/{id}/duplicate`. `packages/api-client` regenerated.
+- **Branch Staff use the coach screens** (Decision 186). Branch Staff land on
+  the coach dashboard and use the Grading Board and student panel for the
+  styles the owner lets them grade; with "Can invite coaches" they also get
+  **Invite coaches**, for their own branches only. **api:**
+  `GET /schools/{id}/staff-permissions/me`. `packages/api-client`
+  regenerated.
+- **Grading Board columns per style** (Decisions 75, 136, 181). Each style
+  keeps its own split, 33% / 66% by default. On the Grading Board, **Change %**
+  sets "Getting There" and "Ready to Grade" (whole %, 1–99, Getting There
+  below Ready to Grade), and each column shows its range. The board, a
+  student's readiness and moving a student to a column all use the style's
+  own %. **api:** `Discipline.boardGettingThere` / `boardReadyToGrade`
+  (migration `20261024000000`, with a database check) and
+  `PUT /disciplines/{id}/board-thresholds`, for the owner or a coach with
+  "Change board %" for the style. `packages/api-client` regenerated.
+- **Grading permissions: seven toggles per coach per style** (Decision 181).
+  New **Grading Permissions** page in the School Portal: for each Instructor
+  and Branch Staff member, the styles they may grade in and, per style,
+  Promote, Move down, Sign off skills, Adjust progress, Verify ranks, Void
+  history and Change board %. **api:** `GradingPermission` gains the seven
+  toggles (all on by default; migration `20261023000000`); every grading
+  action now checks its own toggle and says which one is missing;
+  `PUT /schools/{id}/grading-permissions/{userId}` takes `styles` with toggles
+  (the older `disciplineIds` still works, all toggles on); the list includes
+  the school's staff. "Ready to grade" goes to coaches who may promote.
+  `packages/api-client` regenerated.
+- **school-portal — ladder editor** (roadmap Phase 4, item 1; Decisions 127,
+  128, 149, 152, 165, 173, 180). A style's Ranks table is replaced by a
+  **Ladder**: belts in order with their rungs and requirements, reordered with
+  ↑/↓ and saved after a confirmation that names the students affected. The
+  new belt editor sets the rank name and colours (base, two-tone, tag) and,
+  per rung: its name, its stripes (mixed colours allowed), "time in rank only"
+  with the years, or classes and minimum days to be promoted into it, which
+  class types count (any ticked type, or a number for each), the weekly cap,
+  required skills and which class types it unlocks for booking. Rungs reorder
+  within their belt and keep their students; a rung someone holds can't be
+  removed. The prototype's labels are kept. **ui:** a dialog taller than the
+  screen now scrolls instead of cutting off its bottom (and its Save button).
+- **api — ladder reordering and safe rung edits** (Decisions 152, 180).
+  `PATCH /ranks/{id}` accepts each rung's `id` in `stripeTiers`, so stripes can
+  be reordered within their belt and keep their students. A rung that students
+  hold can no longer be removed (409, naming the students); before, removing
+  one left them with no rung. New `PUT /styles/{id}/ranks/order` reorders a
+  style's belts, and `GET /styles/{id}/rung-holders` (owner only) lists who
+  holds each rung, for the editor's confirmations. `packages/api-client`
+  regenerated.
+- **school-portal — Grading Board** (roadmap Phase 4, item 3; Decisions 128,
+  130, 136, 152, 176). New **Grading Board** page: pick a style and see every
+  student with a next rank in three columns (Just Starting / Getting There /
+  Ready to Grade, at 33% / 66%), with their belt, progress and flags (skills
+  not signed off, days short, inactive, not verified). Search; "currently
+  attending only" with the number hidden. Move a student to another column
+  by dragging the card or with its Move button, after a confirmation (it
+  rewrites their progress and is recorded). Tick students (or a whole
+  column) and **Promote selected**: set the calling order by dragging or
+  with Up/Down, one date and one note; the API checks the batch first and
+  the window shows "Needs a look" students with the reason, promoted only
+  with one acknowledgement tick, and skips those who can't be promoted;
+  afterwards a **printable report** lists the promotions in calling order.
+  Students blocked by the style's "skills required" switch can't be ticked.
+  The student panel gains **Log a class (+1)** and the per-style "Grading
+  Board" attending switch (follow membership, or Active/Inactive by hand).
+- **school-portal — student grading panel** (roadmap Phase 4, item 2;
+  Decision 179). Open a student from the Students list to see, for each
+  style: their rank (with a belt picture) and since when, whether it's
+  self-declared; progress toward the next rank (classes, per class type where
+  the rank counts each type, time at the rank, skills); the skills for the
+  next rank with Not started → Learning → Signed off and linked lessons; and
+  the rank history with notes, reasons and voided entries on request.
+  Actions: Grade (any higher rank, a back-dated date, starting classes, the
+  skills acknowledgement or block; the next stripe is recorded as a stripe
+  award), Give first rank, Move down (with a reason), Correct date, Verify a
+  self-declared rank (or correct it), and Void a history entry. English only
+  for now. First browser tests for the portal (Playwright, `npm run e2e` in
+  `apps/school-portal`), run in Chromium at desktop and tablet widths and
+  keyboard-only. API docs: the rank-history `cursor` and `limit` are marked
+  optional; `packages/api-client` regenerated.
+- **api — "ready to grade" notification** (Decisions 145, 178). The School
+  owner and the coaches with grading permission for the style who cover the
+  student's branch are told, in-app and by email, when a student meets
+  everything for their next rung (classes, minimum days, required skills).
+  Checked right after grading actions and check-ins, and in a daily sweep; sent
+  once per rank (`StudentRank.readyNotifiedAt`, cleared on every rank change).
+  **"You've been promoted" now goes to a minor's guardians** instead of the
+  minor's own profile, which has no login. Security: the background-job role
+  can now read grading data and guardian links (read-only; its only write is
+  `readyNotifiedAt`), in `20261022000000_grading_ready_notification`.
+- **api — grading Phase 3c: bulk promote** (Decision 130).
+  `POST /schools/{id}/grading/bulk-promote` moves up to 200 students one rung
+  each on one date, with an optional note. `dryRun` returns three lists for the
+  confirm window: ready; "Needs a look" (skills not signed off, or minimum
+  days not yet served, with the reason); and can't be promoted (no next rank,
+  blocked by the style's "skills required" switch, or not the coach's
+  student). Flagged students go ahead only when acknowledged with one tick
+  (`acknowledgedStudentIds`); the acknowledgement is recorded on each history
+  entry (BULK_PROMOTION / BULK_STRIPE_AWARD). One date must suit every
+  student. Each student is promoted in their own transaction and notified.
+  Rate-limited to 30 requests a minute. `packages/api-client` regenerated.
+- **api — database connections closed on shutdown.** The five Prisma
+  services now disconnect when the app shuts down (`onModuleDestroy`), so a
+  restarted process or a test run that starts the app many times no longer
+  leaves connection pools open. The full e2e run had reached Postgres's
+  100-connection limit; it now peaks at about 27.
+- **api — grading Phase 3b: Grading Board** (Decisions 128, 136, 152, 168,
+  174, 176, 177). `GET /schools/{id}/grading-board?disciplineId=` lists every
+  student with a next rank in a style, highest progress first, with readiness,
+  board column, "currently attending" (active membership, or the manual
+  per-style switch) and whether grading is blocked by missing skills; search
+  and active-only filters. The owner sees every student; coaches see their
+  branch's students (the whole School when it has no branches). New writes,
+  each needing grading permission: `board-move` (drag: rewrites the class
+  count — per type on "each type" rungs — or the rank date on a time-only
+  rung, recorded on the history), `log-class` (a class type from the next
+  rank's, always counted, recorded) and `board-active` (the Active switch).
+  Two narrow read-only database rules let coaches see which students are
+  theirs (Decision 177). `packages/api-client` regenerated.
+- **api + school-portal — grading Phase 3a: grade actions** (Decisions 127,
+  128, 174). Promote can target any higher rung (skipped rungs recorded:
+  "Skipped N ranks in between"); downgrade any lower rung (with a reason, dated
+  today); promote and stripe award take a back-dated `effectiveDate` (local
+  day, not in the future or before the current rank date) and starting classes
+  — one number, or `startingClassesByType` when the new next rung counts each
+  type. The skills check uses the engine's requirement for the next rung, and
+  a new per-style switch (`skillsRequiredToGrade`, in the portal's style form)
+  blocks grading until they are signed off instead of allowing it with an
+  acknowledgement; downgrades no longer need skills. Skill sign-off is limited
+  to the next rung's skills. Fixed: dates typed by a coach (edit rank date,
+  back-dated grade) are stored as the start of that day in the student's time
+  zone, so they no longer read back a day early west of UTC.
+  `packages/api-client` regenerated.
+- **api + school-portal — grading Phase 2c (part 2): who may book is set per
+  rung** (Decision 173). Each rung gets an "Unlocks booking" list of class
+  types, open to that rung and every rung above; types no rung lists are open
+  to everyone. The booking and waitlist-claim rank gate now checks each style
+  on the class by its class type (replacing the activities ↔ style-name
+  bridge); staff override is unchanged. Existing rungs start with nothing
+  unlocked, so every class is open until the owner sets some. The portal's
+  rung editor has the new field. `packages/api-client` regenerated.
+- **api — grading engine, Phase 2c (part 1): readiness from the engine**
+  (Decisions 127, 136, 149, 171, 172). `GET /students/{id}/eligibility` now
+  returns, for each style, the student's readiness for their next rung:
+  classes counted and required (per type for "each type required"), days in
+  rank and required, required/optional/missing skills, eligible, progress %
+  and the Grading Board column (33% / 66% defaults). Days are counted in the
+  student's local time (home branch, else school, else UTC). The rank fields
+  it already returned are unchanged. `packages/api-client` regenerated.
+- **api — grading engine, Phase 2b: attendance counted through the engine**
+  (Decisions 140, 149, 170, 171, 172). A check-in now counts once toward each
+  style the class lists, with that style's class type, and only when the type
+  is ticked on the student's next rung (nothing ticked: every class). The
+  rung's weekly cap applies on Monday–Sunday weeks in the class's local time
+  (branch, else school, else UTC); a time-only rung counts no classes.
+  `StudentRank` gains a per-type tally (`classesAttendedByType`, for "each
+  type required") and `countingSince` (the moment of the last rank change;
+  classes before it belong to the previous rung). Replaces Decision 90's
+  activities ↔ style-name bridge for attendance; a class with no styles counts
+  toward nothing. Existing rows are backfilled from their last grade.
+  `packages/api-client` regenerated.
+- **api + school-portal — School time zone** (Decisions 76, 172): a School
+  has its own optional time zone, set like a Branch's in the create-school form
+  and school settings. Classes generated from the timetable use the Branch's
+  time zone, else the School's, else UTC (previously always UTC for a
+  School-wide slot). `packages/api-client` regenerated.
+- **api-client — regenerated for `POST /auth/refresh` and `POST /auth/logout`**
+  (added in #101 without a client regeneration), including the `refreshToken`
+  now returned on sign-in. No code change.
+- **api — grading engine (roadmap Phase 2a; Decisions 127, 136, 149, 171).**
+  Gus's grading rules as pure functions in `apps/api/src/ranks/engine/`: the
+  flat ladder of rungs, what the next rung requires, which classes count
+  (ticked types, Monday–Sunday weekly cap), eligibility, progress % and the
+  board columns, and the back-dated grading-date check. Checked against the
+  prototype's own QA reference rules on every rung of an IBJJF-style ladder.
+  Not wired in yet, so nothing changes for users until Phases 2b and 2c.
+- **api + school-portal — instructor specialisations picked from the School's
+  styles** (Decision 152, item 1): in a School with styles, an instructor's
+  specialisations are chosen from its styles (`specializationStyleIds`). Free
+  text is refused there, and the names are filled in for display. A School
+  with no styles keeps free text. Specialisations stay optional. Existing
+  instructors were mapped once wherever a specialisation named exactly one
+  style. The portal's instructor form shows a checkbox per style.
+  `packages/api-client` regenerated.
 - **api — grading foundation, PR 6: self-declared ranks** (Decisions 137,
   147):
   - **Declaring:** a student (or their guardian, for a minor) declares the
@@ -27,8 +416,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     (`POST …/verify`). A correction goes on the history with who, from what,
     to what and when.
   - **Pending list:** the owner sees ranks waiting to be verified
-    (`GET /schools/{id}/rank-verifications`). Permitted coaches get their
-    branches' list with the Grading Board (Phase 3).
+    (`GET /schools/{id}/rank-verifications`). Coaches and Branch Staff who
+    may verify a style get their own branches' list from the same endpoint
+    (added with the login notice, Decision 189).
   - **Booking:** an unverified rank still counts for booking, as before.
   - `packages/api-client` regenerated.
 - **api + school-portal — grading foundation, PR 5: styles and class types

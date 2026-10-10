@@ -6,6 +6,11 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { QrTokenService } from './qr-token.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
+import { creditAttendance } from '../ranks/grading-attendance';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
+import { queueReadyCheck } from '../jobs/grading-notifications.types';
 
 /**
  * Phase 13 built self-service-only QR check-in against a bare `bookingId` — the
@@ -33,8 +38,9 @@ import { InstructorScanDto } from './dto/instructor-scan.dto';
  *
  * No dedicated Attendance entity — confirmed as intentional (SKILL.md §11): a
  * successful check-in (any of the three methods) marks the matching Booking
- * Completed, and that Completed status is exactly what increments
- * `StudentRank.classesAttendedTowardCheckpoint`. All three methods share the
+ * Completed, and that Completed status is exactly what credits
+ * `StudentRank.classesAttendedTowardCheckpoint`, through the grading engine's
+ * counting rules (`creditAttendance`, roadmap Phase 2b). All three methods share the
  * same completeBooking() transition below — the only difference between them
  * is which gates ran first and what gets recorded on `checkInMethod`/
  * `checkedInById`.
@@ -49,6 +55,7 @@ export class AttendanceService {
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly qrTokenService: QrTokenService,
+    @InjectQueue(GRADING_NOTIFICATIONS_QUEUE) private readonly gradingNotificationsQueue: Queue,
   ) {}
 
   /** GET /classes/{id}/qr-token — Staff-only. Mints the rotating Class-scoped
@@ -188,11 +195,11 @@ export class AttendanceService {
 
   private async completeBooking(
     studentId: string,
-    booking: { id: string; schoolId: string; class: { activities: string[] } },
+    booking: { id: string; classId: string },
     method: CheckInMethod,
     checkedInById: string | null,
   ) {
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    const completed = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       // Optimistic-concurrency guard, same established pattern as every other
       // status transition in this codebase — guards against a double-scan
       // race (any combination of the three methods) or a race against the
@@ -207,29 +214,17 @@ export class AttendanceService {
         );
       }
 
-      // StudentRank increment — reuses the SAME Class.activities <->
-      // Discipline.name bridging heuristic Decision 90 established for the
-      // rank gate, applied here for a different purpose (Decision 93,
-      // extended to cover all three check-in methods by Decision 107). Two
-      // DIFFERENT cases both silently increment nothing, deliberately: a
-      // Class whose activities don't match any Discipline, and a Discipline
-      // that DOES match but where this Student has no StudentRank row for it
-      // yet — attendance check-in happens regardless of ranking, unlike
-      // booking eligibility, which is explicitly rank-gated.
-      if (booking.class.activities.length > 0) {
-        const disciplines = await tx.discipline.findMany({
-          where: { schoolId: booking.schoolId, name: { in: booking.class.activities } },
-          select: { id: true },
-        });
-        for (const discipline of disciplines) {
-          await tx.studentRank.updateMany({
-            where: { studentId, disciplineId: discipline.id },
-            data: { classesAttendedTowardCheckpoint: { increment: 1 } },
-          });
-        }
-      }
+      // Credit toward the student's next rung in each style the class lists
+      // (roadmap Phase 2b; Decisions 140, 149, 170, 171). This replaces Decision
+      // 90's activities <-> Discipline.name bridge for attendance. Attendance
+      // check-in happens regardless of ranking: a style the student has no rank
+      // in is skipped.
+      await creditAttendance(tx, studentId, booking);
 
       return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
     });
+    // The class may have made the student ready to grade (Decision 178).
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId);
+    return completed;
   }
 }

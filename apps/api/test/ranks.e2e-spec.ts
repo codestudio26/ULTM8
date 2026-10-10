@@ -66,6 +66,35 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     });
   }
 
+  // Promotion-notification wiring (grading foundation gap closed independently
+  // of this file's own PRs): GradingService enqueues onto the real
+  // NOTIFICATION_FANOUT_QUEUE, the same queue NotificationFanoutProcessor
+  // already consumes for real in this file's full-AppModule bootstrap — that
+  // queue's DI token cannot be overridden with a fake Queue here the way
+  // notifications.e2e-spec.ts does (FOUND ON REVIEW: doing so leaves
+  // NotificationFanoutProcessor's own Worker with no `.opts.connection` to
+  // read, since BullExplorer derives it from the very same token, and
+  // app.init() throws "Worker requires a connection" for every test in this
+  // file). notifications.e2e-spec.ts's own fake-queue convention is for
+  // testing a processor directly against a minimal module it fully controls,
+  // not a full-app HTTP gate with a live consumer already on that token. So:
+  // real worker, bounded poll for the resulting Notification row by its
+  // deterministic id (`grading-${promotionEventId}`, see
+  // NotificationFanoutProcessor's own upsert `where: { id: notificationId }`).
+  /** A belt's rungs (stripe tiers) in ladder order. */
+  const tierIdsOf = async (rankId: string) =>
+    (await superuser.rankStripeTier.findMany({ where: { rankId }, orderBy: { order: 'asc' } })).map((t) => t.id);
+
+  async function waitForNotification(notificationId: string, timeoutMs = 5000) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const row = await superuser.notification.findUnique({ where: { id: notificationId } });
+      if (row) return row;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return null;
+  }
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
@@ -114,13 +143,22 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     await superuser.promotionEvent.deleteMany({ where: { schoolId: school.id } });
     await superuser.studentRankSkillStatus.deleteMany({ where: { schoolId: school.id } });
     await superuser.studentRank.deleteMany({ where: { schoolId: school.id } });
-    await superuser.rankRequiredSkill.deleteMany({ where: { rank: { schoolId: school.id } } });
     await superuser.skill.deleteMany({ where: { schoolId: school.id } });
     await superuser.rankStripeTier.deleteMany({ where: { schoolId: school.id } });
     await superuser.rank.deleteMany({ where: { schoolId: school.id } });
     await superuser.discipline.deleteMany({ where: { id: { in: disciplineIds } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.guardianLink.deleteMany({ where: { guardian: { email: { contains: 'ranks-http-' } } } });
+    // FOUND ON REVIEW: GradingService now enqueues a real Notification row on
+    // promote/downgrade/stripe-award (the promotion-notification wiring) — this
+    // suite's own grading actions create several, and deleting Users before
+    // their Notification rows violates Notification_userId_fkey. Same
+    // lookup-then-delete-Notification-first convention waivers.e2e-spec.ts
+    // already established for its own WaiverSignature-triggered notifications.
+    const createdUserIds = (
+      await superuser.user.findMany({ where: { email: { contains: 'ranks-http-' } }, select: { id: true } })
+    ).map((u) => u.id);
+    await superuser.notification.deleteMany({ where: { userId: { in: createdUserIds } } });
     await superuser.user.deleteMany({ where: { email: { contains: 'ranks-http-' } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
@@ -184,11 +222,12 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       .send({
         order: 0,
         primaryColour: 'White',
+        // Skills belong to the rung being reached (Decision 127): White · 1
+        // needs the skill, so it gates leaving White · 0.
         stripeTiers: [
           { order: 0, count: 0, colour: 'White' },
-          { order: 1, count: 1, colour: 'White' },
+          { order: 1, count: 1, colour: 'White', requiredSkillIds: [requiredSkillId] },
         ],
-        requiredSkillIds: [requiredSkillId],
       });
     expect(whiteBeltRes.status).toBe(201);
     whiteBeltRankId = whiteBeltRes.body.id;
@@ -202,12 +241,12 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     // fields. Asserted directly now so a regression can't ship unnoticed a
     // second time.
     expect(whiteBeltRes.body.stripeTiers).toHaveLength(2);
-    expect(whiteBeltRes.body.requiredSkillIds).toEqual([requiredSkillId]);
+    expect(whiteBeltRes.body.stripeTiers[1].requiredSkillIds).toEqual([requiredSkillId]);
 
     const blueBeltRes = await request(app.getHttpServer())
       .post(`/v1/styles/${disciplineId}/ranks`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ order: 1, primaryColour: 'Blue', stripeTiers: [{ order: 0, count: 0, colour: 'Blue' }] });
+      .send({ order: 1, primaryColour: 'Blue', stripeTiers: [{ order: 0, count: 0, colour: 'Blue', requiredSkillIds: [requiredSkillId] }] });
     expect(blueBeltRes.status).toBe(201);
     blueBeltRankId = blueBeltRes.body.id;
   });
@@ -220,41 +259,51 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(res.status).toBe(400);
   });
 
-  it('GET /styles/:disciplineId/ranks and GET /ranks/:id both return the full shape — requiredSkillIds as a flat array, not the raw requiredSkills join rows', async () => {
+  it('GET /styles/:disciplineId/ranks and GET /ranks/:id both return the full shape — each stripe\'s requiredSkillIds as a flat array, not the raw requiredSkills join rows', async () => {
     const listRes = await request(app.getHttpServer())
       .get(`/v1/styles/${disciplineId}/ranks`)
       .set('Authorization', `Bearer ${tokenOwner}`);
     expect(listRes.status).toBe(200);
     const whiteBelt = listRes.body.items.find((r: { id: string }) => r.id === whiteBeltRankId);
-    expect(whiteBelt.requiredSkillIds).toEqual([requiredSkillId]);
     expect(whiteBelt.stripeTiers).toHaveLength(2);
-    expect(whiteBelt.requiredSkills).toBeUndefined(); // the raw Prisma relation must not leak onto the wire
+    expect(whiteBelt.stripeTiers[1].requiredSkillIds).toEqual([requiredSkillId]);
+    expect(whiteBelt.stripeTiers[1].requiredSkills).toBeUndefined(); // the raw Prisma relation must not leak onto the wire
+    // Decision 199: no belt-level skills or weekly cap; they live on each stripe.
+    expect(whiteBelt.requiredSkillIds).toBeUndefined();
+    expect(whiteBelt.weeklyClassCountCap).toBeUndefined();
 
     const oneRes = await request(app.getHttpServer())
       .get(`/v1/ranks/${whiteBeltRankId}`)
       .set('Authorization', `Bearer ${tokenOwner}`);
     expect(oneRes.status).toBe(200);
-    expect(oneRes.body.requiredSkillIds).toEqual([requiredSkillId]);
+    expect(oneRes.body.stripeTiers[1].requiredSkillIds).toEqual([requiredSkillId]);
     expect(oneRes.body.stripeTiers).toHaveLength(2);
   });
 
-  it('PATCH clears secondaryColour/weeklyClassCountCap with explicit null; omitted fields stay unchanged', async () => {
+  it('PATCH clears secondaryColour/tagColour with explicit null; omitted fields stay unchanged', async () => {
     const setRes = await request(app.getHttpServer())
       .patch(`/v1/ranks/${blueBeltRankId}`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ secondaryColour: 'Black', weeklyClassCountCap: 3 });
+      .send({ secondaryColour: 'Black', tagColour: '#C23B3B' });
     expect(setRes.status).toBe(200);
     expect(setRes.body.secondaryColour).toBe('Black');
-    expect(setRes.body.weeklyClassCountCap).toBe(3);
+    expect(setRes.body.tagColour).toBe('#C23B3B');
 
     const clearRes = await request(app.getHttpServer())
       .patch(`/v1/ranks/${blueBeltRankId}`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ secondaryColour: null, weeklyClassCountCap: null });
+      .send({ secondaryColour: null, tagColour: null });
     expect(clearRes.status).toBe(200);
     expect(clearRes.body.secondaryColour).toBeNull();
-    expect(clearRes.body.weeklyClassCountCap).toBeNull();
+    expect(clearRes.body.tagColour).toBeNull();
     expect(clearRes.body.primaryColour).toBe('Blue'); // untouched field survives
+  });
+
+  it('a belt takes no weekly cap or required skills of its own (Decision 199): they go on its stripes', async () => {
+    for (const body of [{ weeklyClassCountCap: 3 }, { requiredSkillIds: [requiredSkillId] }]) {
+      const res = await request(app.getHttpServer()).patch(`/v1/ranks/${blueBeltRankId}`).set('Authorization', `Bearer ${tokenOwner}`).send(body);
+      expect(res.status).toBe(400);
+    }
   });
 
   it('PATCH stripeTiers at unchanged order positions preserves each tier\'s stable id (StudentRank.currentStripeId FK safety) — only genuinely removed positions get deleted', async () => {
@@ -322,6 +371,12 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(res.body.studentRank.currentRankId).toBe(whiteBeltRankId);
     expect(res.body.promotionEvent.fromRankId).toBeNull();
     expect(res.body.promotionEvent.toRankId).toBe(whiteBeltRankId);
+
+    // Promotion-notification wiring: promote() notifies the Student directly
+    // (GradingService injects NOTIFICATION_FANOUT_QUEUE, not an intermediate job).
+    const notification = await waitForNotification(`grading-${res.body.promotionEvent.id}`);
+    expect(notification).toMatchObject({ userId: studentA.id, title: 'Promoted!', type: 'GRADING_RANK_CHANGE' });
+    expect(notification!.body).toContain('Jiu Jitsu');
   });
 
   it('a required-skill-unsigned promotion is rejected without acknowledgment, accepted with it', async () => {
@@ -331,21 +386,32 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       .send({});
     expect(rejected.status).toBe(400);
 
+    // Graded straight to the Blue belt (with no target it would go one rung up, Decision 185).
+    const [blueRung] = await tierIdsOf(blueBeltRankId);
     const accepted = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/promote`)
       .set('Authorization', `Bearer ${tokenOwner}`)
-      .send({ acknowledgeWithoutSkillSignoff: true });
+      .send({ acknowledgeWithoutSkillSignoff: true, targetRungId: blueRung });
     expect(accepted.status).toBe(201);
     expect(accepted.body.studentRank.currentRankId).toBe(blueBeltRankId);
     expect(accepted.body.promotionEvent.acknowledgedWithoutSkillSignoff).toBe(true);
+
+    // The rejected attempt above must not have notified; only the accepted one does.
+    const notification = await waitForNotification(`grading-${accepted.body.promotionEvent.id}`);
+    expect(notification).toMatchObject({ userId: studentA.id, title: 'Promoted!' });
   });
 
   it('promoting past the highest Rank is rejected — 400', async () => {
+    // Blue is this style's top belt, with one rung: nothing above it.
+    const notificationsBefore = await superuser.notification.count({ where: { userId: studentA.id } });
     const res = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/promote`)
       .set('Authorization', `Bearer ${tokenOwner}`)
       .send({ acknowledgeWithoutSkillSignoff: true });
     expect(res.status).toBe(400);
+    // Nothing further to wait for — a rejected request never enqueues, so there's
+    // no notificationId to poll for; a plain count comparison is enough here.
+    expect(await superuser.notification.count({ where: { userId: studentA.id } })).toBe(notificationsBefore);
   });
 
   it('stripe-award moves to the next tier and resets classesAttendedTowardCheckpoint', async () => {
@@ -364,6 +430,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(awardRes.body.studentRank.classesAttendedTowardCheckpoint).toBe(0);
     expect(awardRes.body.promotionEvent.type).toBe('STRIPE_AWARD');
     expect(awardRes.body.promotionEvent.toRankId).toBe(awardRes.body.promotionEvent.fromRankId); // rank unchanged
+
+    // stripe-award notifies too, with its own distinct copy (not "Promoted!").
+    const awardNotification = await waitForNotification(`grading-${awardRes.body.promotionEvent.id}`);
+    expect(awardNotification).toMatchObject({ userId: studentB.id, title: 'New stripe!', type: 'GRADING_RANK_CHANGE' });
 
     // Already at White's highest tier (order 1) now — a second award must reject.
     const secondAwardRes = await request(app.getHttpServer())
@@ -541,6 +611,23 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     expect(res.body.promotionEvent.reason).toBe('Test downgrade');
     expect(res.body.promotionEvent.fromRankId).toBe(blueBeltRankId);
     expect(res.body.promotionEvent.toRankId).toBe(whiteBeltRankId);
+    // With no target, one rung down: White's top stripe (Decision 185).
+    const whiteRungs = await tierIdsOf(whiteBeltRankId);
+    expect(res.body.promotionEvent.toStripeTierId).toBe(whiteRungs[whiteRungs.length - 1]);
+
+    // A downgrade sends no notification (Decisions 145, 185).
+    await new Promise((r) => setTimeout(r, 1000));
+    expect(await superuser.notification.count({ where: { id: `grading-${res.body.promotionEvent.id}` } })).toBe(0);
+
+    // Down the rest of White, one rung at a time, to the bottom.
+    for (let i = whiteRungs.length - 1; i > 0; i--) {
+      const step = await request(app.getHttpServer())
+        .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ reason: 'Test downgrade' });
+      expect(step.status).toBe(201);
+      expect(step.body.promotionEvent.toStripeTierId).toBe(whiteRungs[i - 1]);
+    }
 
     const belowLowest = await request(app.getHttpServer())
       .post(`/v1/students/${studentA.id}/ranks/${disciplineId}/downgrade`)
@@ -894,14 +981,13 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
         .set('Authorization', `Bearer ${tokenOwner}`);
       const [greyWhite, belt2] = ladder.body.items;
 
-      // Same shape as RankFormModal.handleSubmit: no name, stripeSegments,
+      // Same shape as the old RankFormModal.handleSubmit (less the belt-level cap
+      // and skills, removed by Decision 199): no name, stripeSegments,
       // timeOnly or per-rung requiredSkillIds.
       type Tier = { order: number; count: number; colour: string; classesRequired: number | null; minimumDaysInRank: number | null; eligibleClassTypes: string[] };
       const portalPayload = (rank: { primaryColour: string; stripeTiers: Tier[] }) => ({
         primaryColour: rank.primaryColour,
         secondaryColour: null,
-        weeklyClassCountCap: null,
-        yearsInRankFlag: false,
         stripeTiers: rank.stripeTiers.map((t) => ({
           order: t.order,
           count: t.count,
@@ -910,7 +996,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
           minimumDaysInRank: t.minimumDaysInRank ?? undefined,
           eligibleClassTypes: t.eligibleClassTypes,
         })),
-        requiredSkillIds: [],
       });
 
       const res = await request(app.getHttpServer())
@@ -1217,8 +1302,9 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
           .send({
             order,
             primaryColour: '#FFFFFF',
-            stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF' }],
-            requiredSkillIds: order === 0 ? [histSkillId] : [],
+            // The skill is needed to reach the second belt (Decision 127), so
+            // a student on the first belt can sign it off.
+            stripeTiers: [{ order: 0, count: 0, colour: '#FFFFFF', requiredSkillIds: order === 1 ? [histSkillId] : [] }],
           });
         expect(rank.status).toBe(201);
         beltIds.push(rank.body.id);
@@ -1516,8 +1602,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
         .send({ name: 'Osoto Gari' });
       expect(skill.status).toBe(201);
       judoSkillId = skill.body.id;
-      const firstJudoRank = await superuser.rank.findFirstOrThrow({ where: { disciplineId: judoId, order: 0 } });
-      await superuser.rankRequiredSkill.create({ data: { rankId: firstJudoRank.id, skillId: judoSkillId } });
+      // Needed to reach Judo's second belt (Decision 127), so it can be signed
+      // off by a student on the first.
+      const secondJudoTier = await superuser.rankStripeTier.findFirstOrThrow({ where: { rank: { disciplineId: judoId, order: 1 } } });
+      await superuser.rankStripeTierRequiredSkill.create({ data: { stripeTierId: secondJudoTier.id, skillId: judoSkillId } });
 
       // Coaches and staff: Carla at Downtown, Max at both branches, Wes with
       // no branch, Rita (Branch Staff) at Riverside.
@@ -1553,7 +1641,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       await superuser.promotionEvent.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.studentRankSkillStatus.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.studentRank.deleteMany({ where: { schoolId: schoolP.id } });
-      await superuser.rankRequiredSkill.deleteMany({ where: { rank: { schoolId: schoolP.id } } });
       await superuser.skill.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.rankStripeTier.deleteMany({ where: { schoolId: schoolP.id } });
       await superuser.rank.deleteMany({ where: { schoolId: schoolP.id } });
@@ -1672,7 +1759,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect((await voidIt()).status).toBe(201);
     });
 
-    it('RLS: grading permissions and home branches are visible only to the owner and the person themselves; staff cannot grant themselves permission', async () => {
+    it('RLS: grading permissions are visible only to the owner and the person themselves, home branches also to their own branch\'s staff; staff cannot grant themselves permission', async () => {
       const { carla, max, ana, ben } = people;
       expect(await withUser(carla.user.id, (tx) => tx.gradingPermission.count({ where: { schoolId: schoolP.id } }))).toBe(
         await superuser.gradingPermission.count({ where: { schoolId: schoolP.id, userId: carla.user.id } }),
@@ -1687,7 +1774,11 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
 
       expect(await withUser(ana.user.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(1);
       expect(await withUser(ben.user.id, (tx) => tx.studentHomeBranch.count({ where: { studentId: ana.user.id } }))).toBe(0);
-      expect(await withUser(carla.user.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(0);
+      // Staff read the home-branch rows of their own branches only (Decision
+      // 168; the Grading Board's read-only rule, 20261021000000).
+      const carlaSees = await withUser(carla.user.id, (tx) => tx.studentHomeBranch.findMany({ where: { schoolId: schoolP.id } }));
+      expect(carlaSees.length).toBe(await superuser.studentHomeBranch.count({ where: { schoolId: schoolP.id, branchId: downtown.id } }));
+      expect(carlaSees.every((h) => h.branchId === downtown.id)).toBe(true);
       expect(await withUser(ownerP.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(3);
     });
   });
@@ -1776,6 +1867,16 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(res.body.promotionEvent.type).toBe('SELF_DECLARED');
       expect(res.body.promotionEvent.performedById).toBe(user.id);
 
+      // Promotion-notification wiring is deliberately scoped to
+      // promote/downgrade/stripe-award only (Student-already-knows actions like
+      // a self-declaration don't get a "you were graded" notification). Give the
+      // real worker a beat to prove this is actually true, not just "too soon to
+      // tell" — waitForNotification would be the wrong tool for a negative
+      // assertion (it returns the instant it sees null once, not after
+      // confirming nothing ever shows up).
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(await superuser.notification.findUnique({ where: { id: `grading-${res.body.promotionEvent.id}` } })).toBeNull();
+
       expect((await declare(user.id, token, rungs[3])).status).toBe(409); // already has a rank here
       const history = await request(app.getHttpServer())
         .get(`/v1/students/${user.id}/rank-history`)
@@ -1841,7 +1942,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(history.body.items.map((e: { type: string }) => e.type).sort()).toEqual(['RANK_CORRECTION', 'SELF_DECLARED']);
     });
 
-    it('the owner lists ranks waiting to be verified; other staff cannot yet (Decision 137, item 4)', async () => {
+    it('the owner and permitted coaches list belts waiting to be verified (Decisions 137 item 4, 189)', async () => {
       const waiting = await mkStudent('pending');
       expect((await declare(waiting.user.id, waiting.token, rungs[3])).status).toBe(201);
 
@@ -1850,7 +1951,9 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect(res.body.items.every((r: { verificationStatus: string }) => r.verificationStatus === 'UNVERIFIED')).toBe(true);
       expect(res.body.items.map((r: { studentId: string }) => r.studentId)).toContain(waiting.user.id);
 
-      expect((await request(app.getHttpServer()).get(`/v1/schools/${school.id}/rank-verifications`).set('Authorization', `Bearer ${tokenCoach}`)).status).toBe(403);
+      const coachView = await request(app.getHttpServer()).get(`/v1/schools/${school.id}/rank-verifications`).set('Authorization', `Bearer ${tokenCoach}`);
+      expect(coachView.status).toBe(200);
+      expect(coachView.body.items.map((r: { studentId: string }) => r.studentId)).toContain(waiting.user.id);
     });
 
     it('declaring is refused while the School has ranks switched off (Decision 87)', async () => {

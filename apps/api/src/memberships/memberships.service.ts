@@ -16,6 +16,19 @@ import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
 // type=Subscription... auto-recurring billing has no Cash/Bank Transfer equivalent").
 const CASH_BANK_ELIGIBLE_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP'] as const;
 
+/** A membership in effect now: ACTIVE, not past its expiry date (a
+ * live-computed predicate, Decision 26), and not a used-up pack. Shared with
+ * the Grading Board's "currently attending" (Decision 152). */
+export function isMembershipLive(
+  m: { status: string; expiryDate: Date | null; classesRemaining: number | null },
+  now: Date = new Date(),
+): boolean {
+  if (m.status !== 'ACTIVE') return false;
+  if (m.expiryDate && m.expiryDate < now) return false;
+  if (m.classesRemaining !== null && m.classesRemaining <= 0) return false;
+  return true;
+}
+
 @Injectable()
 export class MembershipsService {
   constructor(
@@ -48,6 +61,9 @@ export class MembershipsService {
       }
     }
 
+    if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, schoolId, dto.disciplineIds);
+    const price = dto.type === 'FRIEND_PASS' ? 0 : dto.price;
+
     const id = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.membershipPlan.create({
@@ -65,6 +81,9 @@ export class MembershipsService {
           refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : undefined,
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
+          disciplineIds: dto.disciplineIds ?? [],
+          // Decision 195: on by default for a priced plan, off for a free one.
+          includesLessons: dto.includesLessons ?? price > 0,
         },
       }),
     );
@@ -141,6 +160,8 @@ export class MembershipsService {
     // now actually surfaced now that scopedClassId's type includes `| null`
     // (see this DTO's own header comment on why). Hoisted to a local const,
     // which DOES stay narrowed.
+    if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, existing.schoolId, dto.disciplineIds);
+
     const scopedClassIdToValidate = dto.scopedClassId;
     if (scopedClassIdToValidate) {
       const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -173,9 +194,24 @@ export class MembershipsService {
           refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : undefined,
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired,
+          disciplineIds: dto.disciplineIds,
+          includesLessons: dto.includesLessons,
         },
       }),
     );
+  }
+
+  /** A plan's styles must be this School's (Decision 195). */
+  private async assertStylesOfSchool(callerId: string, schoolId: string, disciplineIds: string[]) {
+    if (new Set(disciplineIds).size !== disciplineIds.length) {
+      throw new BadRequestException('Each style can appear only once.');
+    }
+    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.count({ where: { id: { in: disciplineIds }, schoolId } }),
+    );
+    if (found !== disciplineIds.length) {
+      throw new BadRequestException('disciplineIds must all be styles of this School.');
+    }
   }
 
   // No delete method — same reasoning ClassesModule/School/Branch already
@@ -495,12 +531,7 @@ export class MembershipsService {
     );
     if (memberships.length === 0) return 'NONE';
     const now = new Date();
-    const hasActive = memberships.some((m) => {
-      if (m.status !== 'ACTIVE') return false;
-      if (m.expiryDate && m.expiryDate < now) return false; // live-computed predicate (Decision 26)
-      if (m.classesRemaining !== null && m.classesRemaining <= 0) return false;
-      return true;
-    });
+    const hasActive = memberships.some((m) => isMembershipLive(m, now));
     return hasActive ? 'ACTIVE' : 'EXPIRED';
   }
 }

@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { resolveInstructorSpecializations } from './instructor-specializations';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
@@ -55,22 +56,23 @@ export class InstructorsService {
     }
 
     const instructorId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.instructor.create({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const specs = await resolveInstructorSpecializations(tx, schoolId, dto.specializationStyleIds, dto.specializations);
+      return tx.instructor.create({
         data: {
           id: instructorId,
           userId: dto.userId,
           schoolId,
           branchId: dto.branchId,
           photoUrl: dto.photoUrl,
-          beltRanking: dto.beltRanking,
-          specializations: dto.specializations ?? [],
+          specializations: specs?.specializations ?? [],
+          specializationStyleIds: specs?.specializationStyleIds ?? [],
           phone: dto.phone,
           yearsOfExperience: dto.yearsOfExperience,
           bio: dto.bio,
         },
-      }),
-    );
+      });
+    });
   }
 
   /** Profiles visible to the caller under one School — RLS restricts this to a School-
@@ -170,21 +172,26 @@ export class InstructorsService {
     if (dto.specializations === null) {
       throw new BadRequestException('specializations cannot be null — send [] to clear it, or omit the field to leave it unchanged.');
     }
+    if ((dto as { specializationStyleIds?: unknown }).specializationStyleIds === null) {
+      throw new BadRequestException('specializationStyleIds cannot be null — send [] to clear it, or omit the field to leave it unchanged.');
+    }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.instructor.update({
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Replaced when sent, kept when omitted (Decision 152).
+      const specs = await resolveInstructorSpecializations(tx, existing.schoolId, dto.specializationStyleIds, dto.specializations);
+      return tx.instructor.update({
         where: { id: instructorId },
         data: {
           branchId: dto.branchId,
           photoUrl: dto.photoUrl,
-          beltRanking: dto.beltRanking,
-          specializations: dto.specializations,
+          specializations: specs?.specializations,
+          specializationStyleIds: specs?.specializationStyleIds,
           phone: dto.phone,
           yearsOfExperience: dto.yearsOfExperience,
           bio: dto.bio,
         },
-      }),
-    );
+      });
+    });
   }
 
   // No delete endpoint — same "general tenant offboarding is [UNRESOLVED]" reasoning as

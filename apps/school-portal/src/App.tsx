@@ -1,12 +1,16 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useOwnedSchoolId } from './auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from './auth/AuthContext';
+import { CoachDashboardPage } from './coach/CoachDashboardPage';
+import { CoachInvitesPage } from './coach/CoachInvitesPage';
+import { MyBeltsPage } from './coach/MyBeltsPage';
 import { RequireAuth } from './auth/RequireAuth';
 import { LoginPage } from './auth/LoginPage';
 import { RegisterPage } from './auth/RegisterPage';
 import { VerifyOtpPage } from './auth/VerifyOtpPage';
 import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
+import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
@@ -15,6 +19,9 @@ import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
 import { StudentsPage } from './students/StudentsPage';
+import { StudentGradingPage } from './grading/StudentGradingPage';
+import { GradingBoardPage } from './grading/GradingBoardPage';
+import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
 import { ClassQrCodePage } from './attendance/ClassQrCodePage';
@@ -28,9 +35,12 @@ import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
+/** Owners land on their School; coaches on their dashboard (Decision 184);
+ * anyone else on creating a School. */
 function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
-  return <Navigate to={schoolId ? '/school' : '/onboarding'} replace />;
+  const coachSchoolId = useCoachSchoolId();
+  return <Navigate to={schoolId ? '/school' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
 }
 
 export function App() {
@@ -41,6 +51,7 @@ export function App() {
       <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/forgot-passcode" element={<ForgotPasscodePage />} />
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
+      <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
       <Route
@@ -48,6 +59,36 @@ export function App() {
         element={
           <RequireAuth>
             <CreateSchoolPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/coach"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CoachDashboardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/my-belts"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MyBeltsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/coach-invites"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CoachInvitesPage />
+            </Shell>
           </RequireAuth>
         }
       />
@@ -117,6 +158,36 @@ export function App() {
           <RequireAuth>
             <Shell>
               <StudentsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/students/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <StudentGradingPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingBoardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/grading-permissions"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GradingPermissionsPage />
             </Shell>
           </RequireAuth>
         }

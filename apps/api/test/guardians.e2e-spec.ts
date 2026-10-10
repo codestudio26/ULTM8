@@ -91,10 +91,15 @@ describeIfDb('GuardianModule — HTTP-level linking, consent, and RLS', () => {
   });
 
   afterAll(async () => {
+    // Only this file's minors: other test files create guardian-managed
+    // minors too, and may be running at the same time.
+    const minorIds = (await superuser.guardianLink.findMany({ where: { guardianId: { in: [guardianA.id, guardianB.id] } }, select: { studentId: true } })).map(
+      (l) => l.studentId,
+    );
     await superuser.consentRecord.deleteMany({ where: { guardianId: { in: [guardianA.id, guardianB.id] } } });
     await superuser.guardianLink.deleteMany({ where: { guardianId: { in: [guardianA.id, guardianB.id] } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
-    await superuser.user.deleteMany({ where: { OR: [{ id: { in: userIds } }, { email: { contains: 'guardian-managed.ultm8.internal' } }] } });
+    await superuser.user.deleteMany({ where: { id: { in: [...userIds, ...minorIds] } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
     await appDb.$disconnect();

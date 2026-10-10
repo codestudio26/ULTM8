@@ -852,6 +852,35 @@ generated type's own comment) — deliberately not used for any icon/categorizat
 
 ---
 
+## Coach dashboard (Decision 184) — DONE
+
+Decision 184 asks for the coach dashboard "on both the mobile app and the web portal"; the web portal's came first (`apps/school-portal/src/coach/`). This is the mobile one, on the same API calls, for Instructors and Branch Staff (Decision 186).
+
+### What was built
+- **Landing:** a person with an Instructor or Branch Staff grant lands on **Coach** (`src/coach/CoachDashboardScreen.tsx`) instead of the student home (Decision 184 item 4); **Student home** is one tap away, and the student home has a **Coach dashboard** button. A coach at several Schools sees one (sorted; no School switcher yet).
+- **Dashboard:** Grading (the styles they grade, from `GET /schools/{id}/grading-permissions/me`, with ready / getting there / total counts from the board), My classes (their weekly slots and the next 10 classes, matched on `instructorId`), Notifications (latest 5, "See all" opens the existing screen), and My training when they also hold a Student grant there.
+- **Grading Board** (`GradingBoardScreen.tsx`): one style, the three columns as sections, highest progress first, search, the active-only switch and the "N inactive hidden" count. Students are the coach's own branches' (the API decides, Decision 168).
+- **Student panel** (`CoachStudentScreen.tsx`): stripe, date, progress (classes, or per class type; days; skills), the skills for the next grade (tap to cycle when the coach may sign off), the history, and only the actions the coach's toggles allow (Decision 181): award the next stripe or grade to the next belt (the skills acknowledgement when skills are missing and the style allows it, refused when it requires them), move down one stripe with a reason, log a class, verify a declared belt. Every grade sends the stripe the coach saw (`expectedCurrentRungId`, Decision 185), so a grade someone else made first is refused.
+
+### Left on the web portal for now
+Skipping stripes, back-dating, starting classes, bulk promote, dragging between columns, the column %, voiding history, editing rank dates and history notes, giving a first rank. All are in the School Portal for the same coach.
+
+### Verified
+`tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (10): the dashboard shows only the coach's styles and classes, the board filters and groups, each action appears only with its toggle and sends the right body.
+
+## My grading, read-only (Decisions 132, 142, 155, 161) — DONE
+
+### What was built
+- **My grading** (`src/grading/MyGradingScreen.tsx`), from the student home for anyone with a Student grant, and from **My minors → Grading** for a guardian (Decision 132). For each style at each School: the belt and stripe with the belt colour, since when, whether the School still has to verify a declared belt, the next stripe, the progress (% of the way; classes, or classes per type; days), **Ready to grade** when they are (always shown, Decision 161), and the skills for the next grade with their status. Nothing on it changes anything.
+- **History** per School (`GradingHistoryScreen.tsx`), newest first, with stripe names, reasons and notes; voided entries and hidden notes never reach the app (Decisions 129, 192).
+- **API:** `GET /students/{id}/grading` (new), because a guardian holds no role at the School and so can't read its styles, belts or skills; it sends the names with the grading, read under the student's own context, for the student or their guardian only. History uses the existing `GET /students/{id}/rank-history`.
+
+### Not yet
+Lessons in the app wait for video hosting (Decision 155).
+
+### Verified
+`tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
+
 ## Explicitly blocked — do not scope a slice for these yet
 
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own

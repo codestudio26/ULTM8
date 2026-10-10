@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
+import { GuardiansModule } from '../guardians/guardians.module';
 import { CurriculumController } from './curriculum.controller';
 import { CurriculumService } from './curriculum.service';
 
@@ -11,7 +12,7 @@ import { CurriculumService } from './curriculum.service';
  * no credentials provisioned in this environment).
  */
 @Module({
-  imports: [TenantsModule],
+  imports: [TenantsModule, GuardiansModule],
   controllers: [CurriculumController],
   providers: [CurriculumService],
 })

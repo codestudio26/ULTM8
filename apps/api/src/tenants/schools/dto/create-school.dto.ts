@@ -101,6 +101,12 @@ export class CreateSchoolDto {
   @MaxLength(100)
   defaultCurrency?: string;
 
+  @ApiPropertyOptional({ description: 'IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  timezone?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

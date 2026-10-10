@@ -125,6 +125,68 @@
         ]
       }
     },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/auth/forgot-password": {
       "post": {
         "operationId": "AuthController_requestPasscodeReset",
@@ -1087,6 +1149,307 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/coach-invites": {
+      "post": {
+        "operationId": "CoachInvitesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCoachInviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedCoachInviteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CoachInvitesController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachInviteListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach-invites/{id}/cancel": {
+      "post": {
+        "operationId": "CoachInvitesController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachInviteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach-invite-links/{token}/accept": {
+      "post": {
+        "operationId": "CoachInvitesController_accept",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptCoachInviteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff-permissions/me": {
+      "get": {
+        "operationId": "CoachInvitesController_myStaffPermission",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyStaffPermissionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff-permissions": {
+      "get": {
+        "operationId": "CoachInvitesController_listStaffPermissions",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff-permissions/{userId}": {
+      "put": {
+        "operationId": "CoachInvitesController_setStaffPermission",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetStaffPermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach-invite-links/{token}": {
+      "get": {
+        "operationId": "CoachInviteLinksController_preview",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachInvitePreviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ]
+      }
+    },
     "/v1/guardians/me/minors": {
       "post": {
         "operationId": "GuardiansController_createMinor",
@@ -1440,6 +1803,152 @@
         },
         "tags": [
           "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/me": {
+      "get": {
+        "operationId": "NotificationsController_findAllForCaller",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/device-tokens": {
+      "post": {
+        "operationId": "NotificationsController_registerDeviceToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceTokenResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/device-tokens/{id}": {
+      "delete": {
+        "operationId": "NotificationsController_deregisterDeviceToken",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
         ],
         "security": [
           {
@@ -3668,6 +4177,112 @@
         ]
       }
     },
+    "/v1/style-templates": {
+      "get": {
+        "operationId": "RanksController_listTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleTemplateListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/disciplines/from-template": {
+      "post": {
+        "operationId": "RanksController_createFromTemplate",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStyleFromTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new style, built from the template (Decisions 131, 182).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/duplicate": {
+      "post": {
+        "operationId": "RanksController_duplicateDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The copy, named \"… (Copy)\" (Decision 182).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/disciplines/{id}": {
       "get": {
         "operationId": "RanksController_findOneDiscipline",
@@ -3734,6 +4349,35 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "RanksController_deleteDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198)."
+          },
+          "409": {
+            "description": "The style is in use: someone holds a rank in it, or classes, slots or lessons use it."
           }
         },
         "tags": [
@@ -3824,6 +4468,86 @@
         ]
       }
     },
+    "/v1/styles/{disciplineId}/ranks/order": {
+      "put": {
+        "operationId": "RanksController_reorderRanks",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRanksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style's belts in their new order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{disciplineId}/rung-holders": {
+      "get": {
+        "operationId": "RanksController_findRungHolders",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RungHoldersResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/ranks/{id}": {
       "get": {
         "operationId": "RanksController_findOneRank",
@@ -3890,6 +4614,35 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "RanksController_deleteRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198)."
+          },
+          "409": {
+            "description": "Someone holds the belt, or it is in grading history."
           }
         },
         "tags": [
@@ -4023,6 +4776,35 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "RanksController_deleteSkill",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198)."
+          },
+          "409": {
+            "description": "Students have been marked on the skill, or it is a lesson's only skill."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/students/{id}/ranks": {
@@ -4095,7 +4877,42 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StudentRankListResponseDto"
+                  "$ref": "#/components/schemas/StudentEligibilityListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/grading": {
+      "get": {
+        "operationId": "GradingController_findGradingOverview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentGradingOverviewResponseDto"
                 }
               }
             }
@@ -4133,15 +4950,16 @@
           },
           {
             "name": "cursor",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "nextCursor from the previous page.",
             "schema": {
               "type": "string"
             }
           },
           {
             "name": "limit",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
               "type": "number"
@@ -4225,6 +5043,118 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/rank-history/{eventId}/note": {
+      "patch": {
+        "operationId": "GradingController_changeHistoryNote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeHistoryNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/rank-history/{eventId}/note-log": {
+      "get": {
+        "operationId": "GradingController_findHistoryNoteLog",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventNoteLogResponseDto"
                 }
               }
             }
@@ -4599,7 +5529,345 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StudentRankListResponseDto"
+                  "$ref": "#/components/schemas/PendingVerificationListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/grading-board": {
+      "get": {
+        "operationId": "GradingController_getGradingBoard",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Part of the student's name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activeOnly",
+            "required": false,
+            "in": "query",
+            "description": "\"Currently attending only\" (Decision 152).",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingBoardResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/board-thresholds": {
+      "put": {
+        "operationId": "GradingController_setBoardThresholds",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardThresholdsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style, with its new board columns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/board-move": {
+      "post": {
+        "operationId": "GradingController_moveOnBoard",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardMoveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/log-class": {
+      "post": {
+        "operationId": "GradingController_logClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/board-active": {
+      "put": {
+        "operationId": "GradingController_setBoardActive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardActiveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/grading/bulk-promote": {
+      "post": {
+        "operationId": "GradingController_bulkPromote",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkPromoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkPromoteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/grading-permissions/me": {
+      "get": {
+        "operationId": "GradingPermissionsController_findMine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGradingPermissionsResponseDto"
                 }
               }
             }
@@ -4688,6 +5956,190 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GradingPermissionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructor-belts/me": {
+      "get": {
+        "operationId": "InstructorBeltsController_findMine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorBeltListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructor-belts/me/{disciplineId}": {
+      "put": {
+        "operationId": "InstructorBeltsController_declareMine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclareInstructorBeltDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorBeltResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructor-belts": {
+      "get": {
+        "operationId": "InstructorBeltsController_findAll",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolInstructorBeltsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructor-belts/{userId}/{disciplineId}/verify": {
+      "post": {
+        "operationId": "InstructorBeltsController_verify",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyInstructorBeltDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorBeltResponseDto"
                 }
               }
             }
@@ -5692,152 +7144,6 @@
         ]
       }
     },
-    "/v1/notifications/me": {
-      "get": {
-        "operationId": "NotificationsController_findAllForCaller",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "Opaque cursor from a previous page's nextCursor.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/{id}/read": {
-      "patch": {
-        "operationId": "NotificationsController_markRead",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/device-tokens": {
-      "post": {
-        "operationId": "NotificationsController_registerDeviceToken",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterDeviceTokenDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceTokenResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/device-tokens/{id}": {
-      "delete": {
-        "operationId": "NotificationsController_deregisterDeviceToken",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/v1/franchises/{id}/fee-charges": {
       "get": {
         "operationId": "FranchiseFeesController_findAllForFranchise",
@@ -6175,6 +7481,32 @@
           }
         ]
       },
+      "delete": {
+        "operationId": "CurriculumController_deleteLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted (Decision 198). Owner only."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "patch": {
         "operationId": "CurriculumController_updateLesson",
         "parameters": [
@@ -6204,6 +7536,262 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/categories": {
+      "get": {
+        "operationId": "CurriculumController_findCategories",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CurriculumController_createCategory",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonCategoryNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/categories/{id}": {
+      "patch": {
+        "operationId": "CurriculumController_renameCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonCategoryNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/categories/order": {
+      "put": {
+        "operationId": "CurriculumController_orderCategories",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderLessonCategoriesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonCategoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/categories/{id}/lessons/order": {
+      "put": {
+        "operationId": "CurriculumController_orderCategoryLessons",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCategoryLessonsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/lessons": {
+      "get": {
+        "operationId": "CurriculumController_findLessonsForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonListResponseDto"
                 }
               }
             }
@@ -6526,10 +8114,25 @@
         "properties": {
           "accessToken": {
             "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
           }
         },
         "required": [
-          "accessToken"
+          "accessToken",
+          "refreshToken"
+        ]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
         ]
       },
       "RequestPasscodeResetDto": {
@@ -6603,6 +8206,10 @@
           "defaultCurrency": {
             "type": "string",
             "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172)."
           },
           "description": {
             "type": "string"
@@ -6679,6 +8286,11 @@
           "defaultCurrency": {
             "type": "string",
             "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "IANA timezone name."
           },
           "description": {
             "type": "string",
@@ -6820,6 +8432,11 @@
           "defaultCurrency": {
             "type": "string",
             "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone name. Same field as Branch.timezone (Decisions 76, 172).",
             "nullable": true
           },
           "description": {
@@ -7538,6 +9155,320 @@
           }
         }
       },
+      "CreateCoachInviteDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when the School has branches; the branch they will coach at."
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "CreatedCoachInviteResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "invitedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "invitedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "First name and surname of who sent it."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "emailSent": {
+            "type": "boolean",
+            "description": "False when the email could not be sent; cancel and invite again."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "branchName",
+          "email",
+          "status",
+          "invitedById",
+          "invitedByName",
+          "createdAt",
+          "expiresAt",
+          "acceptedAt",
+          "cancelledAt",
+          "emailSent"
+        ]
+      },
+      "CoachInviteResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "invitedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "invitedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "First name and surname of who sent it."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "branchName",
+          "email",
+          "status",
+          "invitedById",
+          "invitedByName",
+          "createdAt",
+          "expiresAt",
+          "acceptedAt",
+          "cancelledAt"
+        ]
+      },
+      "CoachInviteListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoachInviteResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcceptCoachInviteResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "A new access token that includes the coach role."
+          }
+        },
+        "required": [
+          "schoolId",
+          "branchId",
+          "accessToken"
+        ]
+      },
+      "MyStaffPermissionResponseDto": {
+        "type": "object",
+        "properties": {
+          "isOwner": {
+            "type": "boolean"
+          },
+          "canInviteCoaches": {
+            "type": "boolean"
+          },
+          "branchIds": {
+            "description": "Branches they may invite to; empty for the owner (any branch) or when they can't invite.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "isOwner",
+          "canInviteCoaches",
+          "branchIds"
+        ]
+      },
+      "StaffPermissionResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "branchIds": {
+            "description": "Branches where they are Branch Staff.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "canInviteCoaches": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "branchIds",
+          "canInviteCoaches"
+        ]
+      },
+      "StaffPermissionListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffPermissionResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SetStaffPermissionDto": {
+        "type": "object",
+        "properties": {
+          "canInviteCoaches": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "canInviteCoaches"
+        ]
+      },
+      "CoachInvitePreviewDto": {
+        "type": "object",
+        "properties": {
+          "schoolName": {
+            "type": "string"
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "The email the invite was sent to; sign in or sign up with it."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolName",
+          "branchName",
+          "email",
+          "status",
+          "expiresAt"
+        ]
+      },
       "CreateMinorDto": {
         "type": "object",
         "properties": {
@@ -7786,6 +9717,115 @@
         },
         "required": [
           "studentId"
+        ]
+      },
+      "NotificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true,
+            "description": "Developer-level discriminator — not spec-confirmed, see the Prisma model comment."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "title",
+          "body",
+          "read",
+          "createdAt"
+        ]
+      },
+      "NotificationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RegisterDeviceTokenDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "IOS",
+              "ANDROID"
+            ]
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "DeviceTokenResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "IOS",
+              "ANDROID"
+            ]
+          },
+          "token": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "platform",
+          "token",
+          "lastSeenAt",
+          "createdAt"
         ]
       },
       "ClassStyleInputDto": {
@@ -8968,11 +11008,14 @@
           "photoUrl": {
             "type": "string"
           },
-          "beltRanking": {
-            "type": "string",
-            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system."
-          },
           "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "specializationStyleIds": {
+            "description": "The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names.",
             "type": "array",
             "items": {
               "type": "string"
@@ -9020,11 +11063,14 @@
             "type": "string",
             "nullable": true
           },
-          "beltRanking": {
-            "type": "string",
-            "nullable": true
-          },
           "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "specializationStyleIds": {
+            "description": "The School's styles this instructor specialises in (Decision 152).",
             "type": "array",
             "items": {
               "type": "string"
@@ -9056,6 +11102,7 @@
           "surname",
           "schoolId",
           "specializations",
+          "specializationStyleIds",
           "createdAt",
           "updatedAt"
         ]
@@ -9125,6 +11172,13 @@
               "type": "string"
             }
           },
+          "specializationStyleIds": {
+            "description": "The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "branchId": {
             "type": "string",
             "description": "Branch to scope this profile to. Pass null to clear (make it School-wide).",
@@ -9132,11 +11186,6 @@
           },
           "photoUrl": {
             "type": "string",
-            "nullable": true
-          },
-          "beltRanking": {
-            "type": "string",
-            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system.",
             "nullable": true
           },
           "phone": {
@@ -9360,6 +11409,17 @@
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
+          },
+          "disciplineIds": {
+            "description": "The School's styles this plan covers (Decision 195).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "includesLessons": {
+            "type": "boolean",
+            "description": "A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one."
           }
         },
         "required": [
@@ -9416,6 +11476,17 @@
           "termsWaiverRequired": {
             "type": "boolean"
           },
+          "disciplineIds": {
+            "description": "The styles this plan covers (Decision 195).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "includesLessons": {
+            "type": "boolean",
+            "description": "Whether a live membership on this plan can watch its styles' lessons (Decision 195)."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -9431,6 +11502,8 @@
           "price",
           "visible",
           "termsWaiverRequired",
+          "disciplineIds",
+          "includesLessons",
           "createdAt",
           "updatedAt"
         ]
@@ -9488,6 +11561,17 @@
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
+          },
+          "disciplineIds": {
+            "description": "The School's styles this plan covers (Decision 195).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "includesLessons": {
+            "type": "boolean",
+            "description": "A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one."
           },
           "currency": {
             "type": "string",
@@ -9750,6 +11834,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "skillsRequiredToGrade": {
+            "type": "boolean",
+            "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
           }
         },
         "required": [
@@ -9774,6 +11862,18 @@
               "type": "string"
             }
           },
+          "skillsRequiredToGrade": {
+            "type": "boolean",
+            "description": "\"Skills required\" switch (Decision 128, item 10)."
+          },
+          "boardGettingThere": {
+            "type": "number",
+            "description": "Grading Board: \"Getting There\" from this % (Decisions 75, 136). Default 33."
+          },
+          "boardReadyToGrade": {
+            "type": "number",
+            "description": "Grading Board: \"Ready to Grade\" from this % (Decisions 75, 136). Default 66."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -9786,6 +11886,9 @@
           "schoolId",
           "name",
           "classTypesOffered",
+          "skillsRequiredToGrade",
+          "boardGettingThere",
+          "boardReadyToGrade",
           "createdAt",
           "updatedAt"
         ]
@@ -9808,6 +11911,64 @@
           "items"
         ]
       },
+      "StyleTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rungs": {
+            "type": "number",
+            "description": "Number of rungs."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "rungs"
+        ]
+      },
+      "StyleTemplateListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StyleTemplateDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateStyleFromTemplateDto": {
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "enum": [
+              "ibjjf",
+              "ibjjf_kids_red",
+              "ibjjf_kids_yellow"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The style's name. Default: the template's name."
+          }
+        },
+        "required": [
+          "templateId"
+        ]
+      },
       "UpdateDisciplineDto": {
         "type": "object",
         "properties": {
@@ -9820,6 +11981,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "skillsRequiredToGrade": {
+            "type": "boolean",
+            "description": "\"Skills required\" switch (Decision 128, item 10). Off: grading with required skills not signed off needs a written acknowledgement. On: it is blocked. When omitted: off on a new style; kept on an existing one."
           }
         }
       },
@@ -9859,6 +12024,10 @@
       "RankStripeTierInputDto": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "Updating a belt only: the id of an existing rung of this belt. The rung keeps its id, and the students holding it, while its position, name or rules change (Decision 180). Omit for a new rung. When any rung in the list has an id, rungs left out are removed; a rung that students hold can't be removed (Decision 152)."
+          },
           "order": {
             "type": "number",
             "description": "Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5)."
@@ -9916,6 +12085,13 @@
               "$ref": "#/components/schemas/ClassTypeRequirementInputDto"
             }
           },
+          "bookingUnlocksClassTypes": {
+            "description": "Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "requiredSkillIds": {
             "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
             "type": "array",
@@ -9955,26 +12131,11 @@
             "type": "string",
             "description": "Drawing only: silver/gold accent of the coral belts."
           },
-          "weeklyClassCountCap": {
-            "type": "number"
-          },
-          "yearsInRankFlag": {
-            "type": "boolean",
-            "default": false,
-            "description": "Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold."
-          },
           "stripeTiers": {
             "minItems": 1,
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RankStripeTierInputDto"
-            }
-          },
-          "requiredSkillIds": {
-            "description": "Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.",
-            "type": "array",
-            "items": {
-              "type": "string"
             }
           }
         },
@@ -10023,6 +12184,13 @@
             "nullable": true
           },
           "eligibleClassTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bookingUnlocksClassTypes": {
+            "description": "Class types this rung unlocks for booking, for it and every rung above (Decision 173).",
             "type": "array",
             "items": {
               "type": "string"
@@ -10081,6 +12249,7 @@
           "count",
           "colour",
           "eligibleClassTypes",
+          "bookingUnlocksClassTypes",
           "classCountMode",
           "classTypeRequirements",
           "name",
@@ -10122,24 +12291,10 @@
             "type": "string",
             "nullable": true
           },
-          "weeklyClassCountCap": {
-            "type": "number",
-            "nullable": true
-          },
-          "yearsInRankFlag": {
-            "type": "boolean"
-          },
           "stripeTiers": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RankStripeTierResponseDto"
-            }
-          },
-          "requiredSkillIds": {
-            "description": "Required Skill ids.",
-            "type": "array",
-            "items": {
-              "type": "string"
             }
           },
           "createdAt": {
@@ -10156,9 +12311,7 @@
           "order",
           "name",
           "primaryColour",
-          "yearsInRankFlag",
           "stripeTiers",
-          "requiredSkillIds",
           "createdAt",
           "updatedAt"
         ]
@@ -10170,6 +12323,74 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RankResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReorderRanksDto": {
+        "type": "object",
+        "properties": {
+          "rankIds": {
+            "description": "Every belt id of this style, in the new order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "rankIds"
+        ]
+      },
+      "RungHolderDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname"
+        ]
+      },
+      "RungHoldersDto": {
+        "type": "object",
+        "properties": {
+          "rungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id)."
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RungHolderDto"
+            }
+          }
+        },
+        "required": [
+          "rungId",
+          "students"
+        ]
+      },
+      "RungHoldersResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Only rungs that someone holds.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RungHoldersDto"
             }
           }
         },
@@ -10191,11 +12412,6 @@
           "primaryColour": {
             "type": "string"
           },
-          "yearsInRankFlag": {
-            "type": "boolean",
-            "default": false,
-            "description": "Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold."
-          },
           "stripeTiers": {
             "minItems": 1,
             "type": "array",
@@ -10203,19 +12419,8 @@
               "$ref": "#/components/schemas/RankStripeTierInputDto"
             }
           },
-          "requiredSkillIds": {
-            "description": "Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "secondaryColour": {
             "type": "string",
-            "nullable": true
-          },
-          "weeklyClassCountCap": {
-            "type": "number",
             "nullable": true
           },
           "tagColour": {
@@ -10346,6 +12551,22 @@
           "classesAttendedTowardCheckpoint": {
             "type": "number"
           },
+          "classesAttendedByType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Classes counted toward the next rung, per class type, e.g. {\"Fundamentals\": 18, \"Sparring\": 4} (Decisions 149, 171)."
+          },
+          "countingSince": {
+            "type": "string",
+            "description": "When counting toward the current rung began: the moment of the last rank change."
+          },
+          "boardActiveOverride": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176)."
+          },
           "verificationStatus": {
             "type": "string",
             "enum": [
@@ -10384,6 +12605,8 @@
           "currentRankId",
           "dateOfCurrentRank",
           "classesAttendedTowardCheckpoint",
+          "classesAttendedByType",
+          "countingSince",
           "verificationStatus",
           "skillStatuses",
           "createdAt",
@@ -10397,6 +12620,363 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StudentRankResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "TypeProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "classType": {
+            "type": "string"
+          },
+          "required": {
+            "type": "number"
+          },
+          "counted": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "classType",
+          "required",
+          "counted"
+        ]
+      },
+      "EligibilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "hasNext": {
+            "type": "boolean"
+          },
+          "dataError": {
+            "type": "boolean",
+            "description": "The student's rung could not be found on the ladder (bad data), as opposed to the top of the ladder."
+          },
+          "nextRungId": {
+            "type": "string",
+            "description": "The next rung (stripe tier id)."
+          },
+          "timeOnly": {
+            "type": "boolean",
+            "description": "The current rung is time-only: days are the only gate (Decision 128, item 3)."
+          },
+          "elapsedDays": {
+            "type": "number"
+          },
+          "requiredDays": {
+            "type": "number"
+          },
+          "requiredClasses": {
+            "type": "number"
+          },
+          "countedClasses": {
+            "type": "number"
+          },
+          "byType": {
+            "description": "\"Each ticked type required\" rungs only (Decision 149).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeProgressResponseDto"
+            }
+          },
+          "classesOk": {
+            "type": "boolean"
+          },
+          "daysOk": {
+            "type": "boolean"
+          },
+          "skillsOk": {
+            "type": "boolean"
+          },
+          "eligible": {
+            "type": "boolean",
+            "description": "Classes, days and skills all met."
+          },
+          "requiredSkillIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optionalSkillIds": {
+            "description": "Shown but optional: the next rung's skills when the current rung is time-only.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "missingSkillIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "progressPercent": {
+            "type": "number",
+            "description": "0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136)."
+          },
+          "boardColumn": {
+            "type": "string",
+            "enum": [
+              "JUST_STARTING",
+              "GETTING_THERE",
+              "READY_TO_GRADE"
+            ],
+            "description": "Grading Board column at the default 33% / 66% (Decision 136)."
+          }
+        },
+        "required": [
+          "hasNext"
+        ]
+      },
+      "StudentEligibilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "currentRankId": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfCurrentRank": {
+            "type": "string"
+          },
+          "classesAttendedTowardCheckpoint": {
+            "type": "number"
+          },
+          "classesAttendedByType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Classes counted toward the next rung, per class type, e.g. {\"Fundamentals\": 18, \"Sparring\": 4} (Decisions 149, 171)."
+          },
+          "countingSince": {
+            "type": "string",
+            "description": "When counting toward the current rung began: the moment of the last rank change."
+          },
+          "boardActiveOverride": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176)."
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ],
+            "description": "UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147)."
+          },
+          "verifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "verifiedById": {
+            "type": "string",
+            "nullable": true,
+            "description": "Empty when verified automatically (the first rung) or the verifier's account was deleted."
+          },
+          "skillStatuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentRankSkillStatusResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "disciplineId",
+          "schoolId",
+          "currentRankId",
+          "dateOfCurrentRank",
+          "classesAttendedTowardCheckpoint",
+          "classesAttendedByType",
+          "countingSince",
+          "verificationStatus",
+          "skillStatuses",
+          "createdAt",
+          "updatedAt",
+          "eligibility"
+        ]
+      },
+      "StudentEligibilityListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentEligibilityResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GradingLadderRungDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The stripe's own name, e.g. \"Blue Belt · 2 Stripes\"."
+          },
+          "beltName": {
+            "type": "string"
+          },
+          "primaryColour": {
+            "type": "string"
+          },
+          "secondaryColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "stripeColour": {
+            "type": "string",
+            "description": "Stripe colour."
+          },
+          "stripeCount": {
+            "type": "number"
+          },
+          "timeOnly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "beltName",
+          "primaryColour",
+          "stripeColour",
+          "stripeCount",
+          "timeOnly"
+        ]
+      },
+      "GradingSkillDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "LEARNING",
+              "SIGNED_OFF"
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Required for the next grade; false when optional (time-only stripes)."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "required"
+        ]
+      },
+      "StudentGradingStyleDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfCurrentRank": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ]
+          },
+          "ladder": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingLadderRungDto"
+            }
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityResponseDto"
+          },
+          "skills": {
+            "description": "The skills for the next grade.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingSkillDto"
+            }
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "disciplineId",
+          "disciplineName",
+          "dateOfCurrentRank",
+          "verificationStatus",
+          "ladder",
+          "eligibility",
+          "skills"
+        ]
+      },
+      "StudentGradingOverviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentGradingStyleDto"
             }
           }
         },
@@ -10475,6 +13055,14 @@
             "nullable": true,
             "description": "\"Starting classes\" entered when grading (Decision 128, item 9)."
           },
+          "startingClassesByType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "nullable": true,
+            "description": "Starting classes per type, when the new next rung counts each type separately (Decision 174)."
+          },
           "voidedAt": {
             "type": "string",
             "nullable": true,
@@ -10487,6 +13075,20 @@
           "voidReason": {
             "type": "string",
             "nullable": true
+          },
+          "noteEditedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the note was last edited (Decision 192)."
+          },
+          "noteEditedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "noteHiddenAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden."
           },
           "createdAt": {
             "type": "string",
@@ -10510,6 +13112,9 @@
           "voidedAt",
           "voidedById",
           "voidReason",
+          "noteEditedAt",
+          "noteEditedById",
+          "noteHiddenAt",
           "createdAt"
         ]
       },
@@ -10543,6 +13148,78 @@
           "reason"
         ]
       },
+      "ChangeHistoryNoteDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "true hides the note from the student and guardian; false shows it again."
+          }
+        }
+      },
+      "PromotionEventNoteLogEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "EDITED",
+              "HIDDEN",
+              "SHOWN"
+            ]
+          },
+          "oldNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "newNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "changedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "changedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "First name and surname of who made the change."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "change",
+          "oldNote",
+          "newNote",
+          "changedById",
+          "changedByName",
+          "createdAt"
+        ]
+      },
+      "PromotionEventNoteLogResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PromotionEventNoteLogEntryDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "EditRankDateDto": {
         "type": "object",
         "properties": {
@@ -10570,6 +13247,33 @@
           "note": {
             "type": "string",
             "description": "The grader's own note on this history entry (Decision 128, item 11)."
+          },
+          "targetRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award."
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185).",
+            "nullable": true
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.",
+            "example": "2026-03-01"
+          },
+          "startingClasses": {
+            "type": "number",
+            "description": "Starting classes toward the new next rung (Decision 128, item 9), when it counts any ticked type. Promote and stripe award only.",
+            "minimum": 0
+          },
+          "startingClassesByType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Starting classes per type, when the new next rung counts each type separately (Decision 174), e.g. {\"Fundamentals\": 5, \"Sparring\": 2}."
           }
         }
       },
@@ -10583,6 +13287,33 @@
           "note": {
             "type": "string",
             "description": "The grader's own note on this history entry (Decision 128, item 11)."
+          },
+          "targetRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award."
+          },
+          "expectedCurrentRungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185).",
+            "nullable": true
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.",
+            "example": "2026-03-01"
+          },
+          "startingClasses": {
+            "type": "number",
+            "description": "Starting classes toward the new next rung (Decision 128, item 9), when it counts any ticked type. Promote and stripe award only.",
+            "minimum": 0
+          },
+          "startingClassesByType": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Starting classes per type, when the new next rung counts each type separately (Decision 174), e.g. {\"Fundamentals\": 5, \"Sparring\": 2}."
           },
           "reason": {
             "type": "string",
@@ -10627,6 +13358,320 @@
           }
         }
       },
+      "PendingVerificationDto": {
+        "type": "object",
+        "properties": {
+          "studentRankId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "currentRankId": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED"
+            ]
+          },
+          "declaredAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the student declared it."
+          }
+        },
+        "required": [
+          "studentRankId",
+          "studentId",
+          "firstName",
+          "surname",
+          "disciplineId",
+          "disciplineName",
+          "currentRankId",
+          "currentStripeId",
+          "verificationStatus",
+          "declaredAt"
+        ]
+      },
+      "PendingVerificationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingVerificationDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GradingBoardItemDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "studentRankId": {
+            "type": "string"
+          },
+          "currentRankId": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "\"Currently attending\": the manual switch when set, otherwise whether the student has an active membership (Decision 152)."
+          },
+          "activeSource": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "MEMBERSHIP"
+            ]
+          },
+          "hasActiveMembership": {
+            "type": "boolean"
+          },
+          "hardBlocked": {
+            "type": "boolean",
+            "description": "The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10)."
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityResponseDto"
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "studentRankId",
+          "currentRankId",
+          "verificationStatus",
+          "active",
+          "activeSource",
+          "hasActiveMembership",
+          "hardBlocked",
+          "eligibility"
+        ]
+      },
+      "GradingBoardResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Students with a next rank in this style, highest progress first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingBoardItemDto"
+            }
+          },
+          "hiddenInactive": {
+            "type": "number",
+            "description": "Students left out by activeOnly."
+          }
+        },
+        "required": [
+          "items",
+          "hiddenInactive"
+        ]
+      },
+      "BoardThresholdsDto": {
+        "type": "object",
+        "properties": {
+          "gettingThere": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 98,
+            "example": 33
+          },
+          "readyToGrade": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 99,
+            "example": 66,
+            "description": "Must be above gettingThere."
+          }
+        },
+        "required": [
+          "gettingThere",
+          "readyToGrade"
+        ]
+      },
+      "BoardMoveDto": {
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string",
+            "enum": [
+              "JUST_STARTING",
+              "GETTING_THERE",
+              "READY_TO_GRADE"
+            ]
+          }
+        },
+        "required": [
+          "column"
+        ]
+      },
+      "LogClassDto": {
+        "type": "object",
+        "properties": {
+          "classType": {
+            "type": "string",
+            "nullable": true,
+            "description": "The class type, one of the next rank's ticked types. Required when the next rank ticks any; may be left out when it ticks none (every class counts)."
+          }
+        }
+      },
+      "BoardActiveDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "true or false: set by hand. null: follow whether the student has an active membership."
+          }
+        },
+        "required": [
+          "active"
+        ]
+      },
+      "BulkPromoteDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "studentIds": {
+            "description": "Up to 200 students (Spec 55).",
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "effectiveDate": {
+            "type": "string",
+            "description": "One grading date for the whole batch, YYYY-MM-DD; it must suit every student (Decision 128, item 8). Default today.",
+            "example": "2026-03-01"
+          },
+          "note": {
+            "type": "string",
+            "description": "A note for every student's history entry, e.g. \"Spring Grading Day\"."
+          },
+          "acknowledgedStudentIds": {
+            "description": "The flagged students (\"Needs a look\": skills not signed off or days short) the coach acknowledges with one tick (Decision 130). Every flagged student must be here or removed from the batch.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Check only: return what would happen, change nothing."
+          }
+        },
+        "required": [
+          "disciplineId",
+          "studentIds"
+        ]
+      },
+      "BulkPromoteStudentDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "fromRungId": {
+            "type": "string",
+            "nullable": true
+          },
+          "toRungId": {
+            "type": "string"
+          },
+          "reasons": {
+            "description": "Why this student needs a look, or why they can't be promoted.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "promotionEventId": {
+            "type": "string",
+            "description": "Set on a promoted student: their history entry."
+          }
+        },
+        "required": [
+          "studentId",
+          "reasons"
+        ]
+      },
+      "BulkPromoteResponseDto": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "description": "Nothing missing (dry run), or promoted.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkPromoteStudentDto"
+            }
+          },
+          "needsAcknowledgement": {
+            "description": "Dry run: promoted only with the acknowledgement. After a real run: empty (they are in `ready`).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkPromoteStudentDto"
+            }
+          },
+          "cannotPromote": {
+            "description": "Skipped: no next rank, blocked by the style's \"skills required\" switch, not yours to grade, or changed at the same time.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkPromoteStudentDto"
+            }
+          }
+        },
+        "required": [
+          "ready",
+          "needsAcknowledgement",
+          "cannotPromote"
+        ]
+      },
       "GradingPermissionResponseDto": {
         "type": "object",
         "properties": {
@@ -10646,6 +13691,27 @@
             "type": "string",
             "nullable": true
           },
+          "canPromote": {
+            "type": "boolean"
+          },
+          "canDowngrade": {
+            "type": "boolean"
+          },
+          "canSignOffSkills": {
+            "type": "boolean"
+          },
+          "canAdjustProgress": {
+            "type": "boolean"
+          },
+          "canVerifyRanks": {
+            "type": "boolean"
+          },
+          "canVoidHistory": {
+            "type": "boolean"
+          },
+          "canChangeBoardThresholds": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "string"
           }
@@ -10656,7 +13722,60 @@
           "userId",
           "disciplineId",
           "grantedById",
+          "canPromote",
+          "canDowngrade",
+          "canSignOffSkills",
+          "canAdjustProgress",
+          "canVerifyRanks",
+          "canVoidHistory",
+          "canChangeBoardThresholds",
           "createdAt"
+        ]
+      },
+      "MyGradingPermissionsResponseDto": {
+        "type": "object",
+        "properties": {
+          "isOwner": {
+            "type": "boolean",
+            "description": "The School owner may do everything, in every style; items is then empty."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingPermissionResponseDto"
+            }
+          }
+        },
+        "required": [
+          "isOwner",
+          "items"
+        ]
+      },
+      "GradingStaffDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "roles": {
+            "description": "INSTRUCTOR and/or BRANCH_STAFF.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "roles"
         ]
       },
       "GradingPermissionListResponseDto": {
@@ -10667,26 +13786,227 @@
             "items": {
               "$ref": "#/components/schemas/GradingPermissionResponseDto"
             }
+          },
+          "staff": {
+            "description": "The School's active Instructors and Branch Staff, who can be given grading permission (Decision 181).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingStaffDto"
+            }
+          }
+        },
+        "required": [
+          "items",
+          "staff"
+        ]
+      },
+      "StylePermissionInputDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "canPromote": {
+            "type": "boolean",
+            "description": "Promote: grade up, stripe award, bulk promote, give a first rank."
+          },
+          "canDowngrade": {
+            "type": "boolean",
+            "description": "Move down (downgrade), with a reason."
+          },
+          "canSignOffSkills": {
+            "type": "boolean",
+            "description": "Sign off skills."
+          },
+          "canAdjustProgress": {
+            "type": "boolean",
+            "description": "Adjust progress: move a student on the Grading Board, log a class, correct the rank date, the Active switch."
+          },
+          "canVerifyRanks": {
+            "type": "boolean",
+            "description": "Verify (or correct) self-declared ranks."
+          },
+          "canVoidHistory": {
+            "type": "boolean",
+            "description": "Void history entries."
+          },
+          "canChangeBoardThresholds": {
+            "type": "boolean",
+            "description": "Change the style's Grading Board percentages."
+          }
+        },
+        "required": [
+          "disciplineId",
+          "canPromote",
+          "canDowngrade",
+          "canSignOffSkills",
+          "canAdjustProgress",
+          "canVerifyRanks",
+          "canVoidHistory",
+          "canChangeBoardThresholds"
+        ]
+      },
+      "SetGradingPermissionsDto": {
+        "type": "object",
+        "properties": {
+          "styles": {
+            "description": "Each style this staff member may grade in, with its toggles (Decision 181).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StylePermissionInputDto"
+            }
+          },
+          "disciplineIds": {
+            "description": "Older form: styles with every toggle on. Use `styles` instead.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "InstructorBeltResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "rankId": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string"
+          },
+          "beltName": {
+            "type": "string",
+            "description": "The name of the belt and stripe, as the School typed it."
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "UNVERIFIED",
+              "VERIFIED"
+            ]
+          },
+          "declaredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "verifiedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "firstName",
+          "surname",
+          "disciplineId",
+          "disciplineName",
+          "rankId",
+          "stripeTierId",
+          "beltName",
+          "verificationStatus",
+          "declaredAt",
+          "verifiedAt"
+        ]
+      },
+      "InstructorBeltListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructorBeltResponseDto"
+            }
           }
         },
         "required": [
           "items"
         ]
       },
-      "SetGradingPermissionsDto": {
+      "DeclareInstructorBeltDto": {
         "type": "object",
         "properties": {
-          "disciplineIds": {
-            "description": "Disciplines (styles) this staff member may grade in. Replaces the current list.",
+          "rankId": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rankId",
+          "stripeTierId"
+        ]
+      },
+      "SchoolInstructorDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname"
+        ]
+      },
+      "SchoolInstructorBeltsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/InstructorBeltResponseDto"
+            }
+          },
+          "instructors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolInstructorDto"
             }
           }
         },
         "required": [
-          "disciplineIds"
+          "items",
+          "instructors"
         ]
+      },
+      "VerifyInstructorBeltDto": {
+        "type": "object",
+        "properties": {
+          "rankId": {
+            "type": "string"
+          },
+          "stripeTierId": {
+            "type": "string"
+          }
+        }
       },
       "CreateWaiverDto": {
         "type": "object",
@@ -11523,115 +14843,6 @@
           "items"
         ]
       },
-      "NotificationResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "body": {
-            "type": "string"
-          },
-          "read": {
-            "type": "boolean"
-          },
-          "type": {
-            "type": "string",
-            "nullable": true,
-            "description": "Developer-level discriminator — not spec-confirmed, see the Prisma model comment."
-          },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "userId",
-          "title",
-          "body",
-          "read",
-          "createdAt"
-        ]
-      },
-      "NotificationListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NotificationResponseDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true,
-            "description": "Cursor for the next page, or null if this is the last page."
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "RegisterDeviceTokenDto": {
-        "type": "object",
-        "properties": {
-          "platform": {
-            "type": "string",
-            "enum": [
-              "IOS",
-              "ANDROID"
-            ]
-          },
-          "token": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "platform",
-          "token"
-        ]
-      },
-      "DeviceTokenResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "platform": {
-            "type": "string",
-            "enum": [
-              "IOS",
-              "ANDROID"
-            ]
-          },
-          "token": {
-            "type": "string"
-          },
-          "lastSeenAt": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "userId",
-          "platform",
-          "token",
-          "lastSeenAt",
-          "createdAt"
-        ]
-      },
       "FranchiseFeeChargeResponseDto": {
         "type": "object",
         "properties": {
@@ -11752,9 +14963,9 @@
           "title": {
             "type": "string"
           },
-          "category": {
+          "categoryId": {
             "type": "string",
-            "description": "Plain field only — Spec 55's own \"Belongs to a Category\" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation."
+            "description": "One of this School's lesson categories (Decisions 128.15, 191); the lesson goes to the end of it."
           },
           "durationSeconds": {
             "type": "number"
@@ -11780,6 +14991,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "free": {
+            "type": "boolean",
+            "description": "Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only."
           }
         },
         "required": [
@@ -11806,7 +15021,24 @@
           },
           "category": {
             "type": "string",
+            "nullable": true,
+            "description": "Its category's name, or null."
+          },
+          "categoryId": {
+            "type": "string",
             "nullable": true
+          },
+          "order": {
+            "type": "number",
+            "description": "Its place within its category, from 0."
+          },
+          "free": {
+            "type": "boolean",
+            "description": "Watchable by every student and guardian at the School (Decision 190)."
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "The caller may not watch it (Decision 195): no membership of theirs covers it. Its description and video are left out."
           },
           "durationSeconds": {
             "type": "number",
@@ -11858,6 +15090,9 @@
           "id",
           "schoolId",
           "title",
+          "order",
+          "free",
+          "locked",
           "format",
           "captionStatus",
           "skillIds",
@@ -11885,8 +15120,10 @@
           "title": {
             "type": "string"
           },
-          "category": {
-            "type": "string"
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Move it to another of this School's categories (to the end), or null for none."
           },
           "durationSeconds": {
             "type": "number"
@@ -11910,8 +15147,88 @@
             "items": {
               "type": "string"
             }
+          },
+          "free": {
+            "type": "boolean",
+            "description": "Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only."
           }
         }
+      },
+      "LessonCategoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "name",
+          "order"
+        ]
+      },
+      "LessonCategoryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LessonCategoryResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "LessonCategoryNameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "OrderLessonCategoriesDto": {
+        "type": "object",
+        "properties": {
+          "categoryIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "categoryIds"
+        ]
+      },
+      "OrderCategoryLessonsDto": {
+        "type": "object",
+        "properties": {
+          "lessonIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "lessonIds"
+        ]
       },
       "TranslationResponseDto": {
         "type": "object",

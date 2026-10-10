@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useCreateDiscipline, useDisciplines, useUpdateDiscipline, type DisciplineResponse } from './disciplineQueries';
+import { useCreateDiscipline, useDeleteDiscipline, useDisciplines, useUpdateDiscipline, type DisciplineResponse } from './disciplineQueries';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { DisciplineFormModal } from './DisciplineFormModal';
+import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
 
 /** Disciplines are reference data Instructors' specializations and Classes'/
  * TimetableSlots' activities are conceptually drawn from (domain-rules §4 —
@@ -18,6 +20,10 @@ export function DisciplinesPage() {
   const createDiscipline = useCreateDiscipline(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<DisciplineResponse | null>(null);
+  const [fromTemplate, setFromTemplate] = useState(false);
+  const [duplicating, setDuplicating] = useState<DisciplineResponse | null>(null);
+  const [deleting, setDeleting] = useState<DisciplineResponse | null>(null);
+  const deleteDiscipline = useDeleteDiscipline(schoolId ?? '');
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
@@ -30,7 +36,14 @@ export function DisciplinesPage() {
       <PageHeader
         title="Disciplines"
         subtitle="The martial arts / activities your School offers — Instructors and Classes both reference these."
-        actions={<Button onClick={() => setCreating(true)}>Add discipline</Button>}
+        actions={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button variant="secondary" onClick={() => setFromTemplate(true)}>
+              Start from template
+            </Button>
+            <Button onClick={() => setCreating(true)}>Add discipline</Button>
+          </div>
+        }
       />
       <Card>
         {disciplines.length === 0 ? (
@@ -52,6 +65,12 @@ export function DisciplinesPage() {
                     <Button variant="secondary" onClick={() => setEditing(d)}>
                       Edit
                     </Button>
+                    <Button variant="secondary" onClick={() => setDuplicating(d)}>
+                      Duplicate
+                    </Button>
+                    <Button variant="secondary" onClick={() => setDeleting(d)} aria-label={`Delete ${d.name}`}>
+                      Delete
+                    </Button>
                   </div>
                 ),
               },
@@ -69,6 +88,28 @@ export function DisciplinesPage() {
             setCreating(false);
           }}
           onClose={() => setCreating(false)}
+        />
+      ) : null}
+
+      {fromTemplate ? (
+        <TemplateModal schoolId={schoolId} onCreated={(id) => navigate(`/disciplines/${id}`)} onClose={() => setFromTemplate(false)} />
+      ) : null}
+
+      {deleting ? (
+        <ConfirmDeleteModal
+          title={`Delete ${deleting.name}?`}
+          description="Its belts, skills and coach permissions are deleted with it. A style can only be deleted while nobody has a rank in it and no class or lesson uses it."
+          onConfirm={() => deleteDiscipline.mutateAsync(deleting.id)}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
+
+      {duplicating ? (
+        <DuplicateModal
+          schoolId={schoolId}
+          discipline={duplicating}
+          onCreated={(id) => navigate(`/disciplines/${id}`)}
+          onClose={() => setDuplicating(null)}
         />
       ) : null}
 

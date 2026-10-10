@@ -1,13 +1,35 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Discipline, Prisma, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
-import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MAX_STARTING_CLASSES, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
+import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
+import { GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
+import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone, thresholdsOf } from './grading-eligibility';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
+import { isMembershipLive } from '../memberships/memberships.service';
+import { PermissionToggle } from './dto/grading-permission.dto';
+
+/** How each toggle reads in an error message (Decision 181). */
+const TOGGLE_LABELS: Record<PermissionToggle, string> = {
+  canPromote: 'Promote',
+  canDowngrade: 'Move down',
+  canSignOffSkills: 'Sign off skills',
+  canAdjustProgress: 'Adjust progress',
+  canVerifyRanks: 'Verify self-declared ranks',
+  canVoidHistory: 'Void history entries',
+  canChangeBoardThresholds: 'Change board %',
+};
+import { DateTime } from 'luxon';
+import { loadLadder } from './grading-attendance';
+import { boardMove, dayNumber, gradingDateProblem, localDay, requirementFor, Rung, rungIndex } from './engine';
 
 // Same shape PrismaAppService#withTenantContext hands its callback — see that
 // method's own comment for why $transaction/etc are deliberately omitted.
@@ -17,12 +39,30 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
 // (board drags, rank-date corrections) do not.
 const RANK_CHANGE_TYPES = ['PROMOTION', 'DOWNGRADE', 'STRIPE_AWARD', 'BULK_PROMOTION', 'BULK_STRIPE_AWARD', 'SELF_DECLARED', 'RANK_CORRECTION'] as const;
 
-/** The UTC calendar day of a date, as YYYY-MM-DD. Grading dates are whole days
- * (the prototype's dayNumber()). */
-const dayOf = (d: Date): string => d.toISOString().slice(0, 10);
 
 // Same pattern MembershipsService.getMembershipStatus() uses for its :id check.
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A timestamp from Postgres JSON (to_jsonb of a timestamp without time zone,
+ * which Prisma stores as UTC): "2026-10-10T07:00:00.123" → Date. */
+function dbDate(value: unknown): Date | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value);
+  return new Date(/(Z|[+-]\d\d:?\d\d)$/.test(text) ? text : `${text}Z`);
+}
+
+/** StudentRank's DateTime fields, from the Prisma schema. */
+const STUDENT_RANK_DATE_FIELDS = Prisma.dmmf.datamodel.models
+  .find((m) => m.name === 'StudentRank')!
+  .fields.filter((f) => f.type === 'DateTime')
+  .map((f) => f.name);
+
+/** A StudentRank row (with its skill sign-offs) from grading_board_rows(). */
+function studentRankFromJson(json: Record<string, unknown>) {
+  const row: Record<string, unknown> = { ...json };
+  for (const field of STUDENT_RANK_DATE_FIELDS) if (field in row) row[field] = dbDate(row[field]);
+  return row as unknown as Prisma.StudentRankGetPayload<{ include: { skillStatuses: { select: { skillId: true; status: true } } } }>;
+}
 
 /**
  * Phase 10b scope only: single-Student grading actions (promote/downgrade/
@@ -50,6 +90,7 @@ export class GradingService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly ranksService: RanksService,
     private readonly guardiansService: GuardiansService,
+    @InjectQueue(GRADING_NOTIFICATIONS_QUEUE) private readonly gradingNotificationsQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -72,14 +113,104 @@ export class GradingService {
     );
   }
 
-  /** Currently identical to findRanksForStudent — see StudentRank's own Prisma
-   * model comment for why (Decision 75's readiness-bucket/progress-% formula is
-   * genuinely undesigned; this returns the same raw fields pending that). Kept as
-   * a separate method/route rather than aliased, since Spec 55 names it as its
-   * own confirmed endpoint and a future phase will make the two genuinely
-   * diverge once Decision 75 resolves. */
-  async findEligibilityForStudent(callerId: string, studentId: string, schoolId: string): Promise<CursorPage<{ id: string }>> {
-    return this.findRanksForStudent(callerId, studentId, schoolId);
+  /** The rank list plus each style's readiness for its next rung, from the
+   * grading engine: Gus's progress formula and the 33% / 66% board columns
+   * (Decisions 75, 136). Same readers as the rank list (Decision 132). */
+  async findEligibilityForStudent(callerId: string, studentId: string, schoolId: string) {
+    const page = await this.findRanksForStudent(callerId, studentId, schoolId);
+    // Readiness from the grading engine (roadmap Phase 2c): the same fields as
+    // the rank list, plus each style's eligibility for its next rung.
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const timeZone = await studentTimeZone(tx, studentId, schoolId);
+      // Each style's own board columns (Decisions 75, 136, 181).
+      const styles = await tx.discipline.findMany({ where: { schoolId }, select: { id: true, boardGettingThere: true, boardReadyToGrade: true } });
+      const items: Array<Record<string, unknown>> = [];
+      for (const row of page.items as Array<Parameters<typeof studentEligibility>[1] & { id: string }>) {
+        const style = styles.find((d) => d.id === row.disciplineId);
+        items.push({ ...row, eligibility: await studentEligibility(tx, row, timeZone, undefined, style ? thresholdsOf(style) : undefined) });
+      }
+      return { items };
+    });
+  }
+
+  /** The student app's grading view (Decisions 132, 142, 155, 161): for the
+   * student or a guardian of theirs, every style they hold a rank in at every
+   * School they're a student at, with the names, ladder and skill names the
+   * app can't read itself (a guardian holds no role at the School). Read
+   * under the student's own context, like the rest of these reads. Progress
+   * and "Ready to grade" are always shown (Decision 161). History comes from
+   * GET /students/{id}/rank-history per School. */
+  async findGradingOverview(callerId: string, studentId: string) {
+    if (callerId !== studentId) {
+      try {
+        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        throw new ForbiddenException('You may not view this Student\'s grading.');
+      }
+    }
+    const impersonationSchoolId = RequestContext.getImpersonationSchoolId();
+    const grants = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId: studentId, role: 'STUDENT', revokedAt: null, schoolId: impersonationSchoolId ?? { not: null } },
+        select: { schoolId: true, school: { select: { name: true } } },
+        distinct: ['schoolId'],
+      }),
+    );
+    const items: Array<Record<string, unknown>> = [];
+    for (const grant of grants.sort((a, b) => (a.school?.name ?? '').localeCompare(b.school?.name ?? ''))) {
+      const schoolId = grant.schoolId!;
+      const { items: ranks } = await this.findEligibilityForStudent(studentId, studentId, schoolId);
+      if (ranks.length === 0) continue;
+      const catalog = await this.prismaApp.withTenantContext(studentId, async (tx) => ({
+        styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+        belts: await tx.rank.findMany({ where: { schoolId }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
+        skills: await tx.skill.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+      }));
+      for (const row of ranks as Array<{
+        disciplineId: string;
+        currentStripeId: string | null;
+        dateOfCurrentRank: Date;
+        verificationStatus: 'VERIFIED' | 'UNVERIFIED';
+        skillStatuses: Array<{ skillId: string; status: string }>;
+        eligibility: { requiredSkillIds?: string[]; optionalSkillIds?: string[] };
+      }>) {
+        const ladder = catalog.belts
+          .filter((b) => b.disciplineId === row.disciplineId)
+          .flatMap((b) =>
+            b.stripeTiers.map((t) => ({
+              id: t.id,
+              name: t.name,
+              beltName: b.name,
+              primaryColour: b.primaryColour,
+              secondaryColour: b.secondaryColour,
+              stripeColour: t.colour,
+              stripeCount: t.count,
+              timeOnly: t.timeOnly,
+            })),
+          );
+        const status = new Map(row.skillStatuses.map((s) => [s.skillId, s.status]));
+        const skill = (id: string, required: boolean) => ({
+          id,
+          name: catalog.skills.find((s) => s.id === id)?.name ?? '',
+          status: status.get(id) ?? 'NOT_STARTED',
+          required,
+        });
+        items.push({
+          schoolId,
+          schoolName: grant.school?.name ?? '',
+          disciplineId: row.disciplineId,
+          disciplineName: catalog.styles.find((d) => d.id === row.disciplineId)?.name ?? '',
+          currentStripeId: row.currentStripeId,
+          dateOfCurrentRank: row.dateOfCurrentRank,
+          verificationStatus: row.verificationStatus,
+          ladder,
+          eligibility: row.eligibility,
+          skills: [...(row.eligibility.requiredSkillIds ?? []).map((id) => skill(id, true)), ...(row.eligibility.optionalSkillIds ?? []).map((id) => skill(id, false))],
+        });
+      }
+    }
+    return { items };
   }
 
   /** Voided entries are hidden from the normal history (Decision 129). Staff
@@ -96,13 +227,23 @@ export class GradingService {
     if (includeVoided && relation !== 'staff') {
       throw new ForbiddenException('Only School staff can see voided history entries.');
     }
-    return this.prismaApp.withTenantContext(studentId, (tx) =>
+    const page = await this.prismaApp.withTenantContext(studentId, (tx) =>
       cursorPaginate(
-        (args) => tx.promotionEvent.findMany({ ...args, where: { studentId, schoolId, ...(includeVoided ? {} : { voidedAt: null }) } }),
+        // Newest first by grading date, as the prototype (the cursor stays the id).
+        (args) =>
+          tx.promotionEvent.findMany({
+            ...args,
+            where: { studentId, schoolId, ...(includeVoided ? {} : { voidedAt: null }) },
+            orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+          }),
         cursor,
         limit,
       ),
     );
+    if (relation === 'staff') return page;
+    // A hidden note isn't shown to the student or guardian, nor that one
+    // was hidden (Decision 192).
+    return { ...page, items: page.items.map((e) => (e.noteHiddenAt ? { ...e, note: null, noteHiddenAt: null } : e)) };
   }
 
   /** Staff (Owner/Manager/Branch Staff/Instructor), the Student themselves, OR
@@ -180,20 +321,57 @@ export class GradingService {
   /** Decision 138: the School owner always may grade. Anyone else must be
    * School staff (Instructor or Branch Staff) holding grading permission for
    * this discipline, and the student must be in one of their branches
-   * (Decision 168). Covers every grading write: grade, downgrade, stripe
-   * award, skill sign-off, void and edit rank date. Replaces the plain
+   * (Decision 168). Covers every grading write; each needs its own toggle of
+   * that permission (Decision 181): promote (grade, stripe award, bulk),
+   * downgrade, skill sign-off, adjust progress (board move, log a class, rank
+   * date, Active switch), verify, void. Replaces the plain
    * assertStaffAtSchool() check, which admitted all staff to every grading
    * action and was flagged [UNRESOLVED] in this file. */
-  async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string): Promise<void> {
-    if (await this.isSchoolOwner(callerId, schoolId)) return;
+  async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string, toggle: PermissionToggle): Promise<void> {
+    const authorize = await this.gradeAuthorizer(callerId, schoolId, disciplineId, toggle);
+    await authorize(studentId);
+  }
+
+  /** assertCanGrade for many students (bulk promote): what concerns only the
+   * caller — owner or not, staff grant, the permission and its toggle, their
+   * branches — is read once; each student is then checked for branch and
+   * enrollment (stress round, finding 2). Same rules, same messages. */
+  private async gradeAuthorizer(
+    callerId: string,
+    schoolId: string,
+    disciplineId: string,
+    toggle: PermissionToggle,
+  ): Promise<(studentId: string) => Promise<void>> {
+    if (await this.isSchoolOwner(callerId, schoolId)) {
+      return (studentId) => this.assertEnrolledStudent(studentId, schoolId);
+    }
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } }, select: { schoolId: true } }),
+      tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } } }),
     );
     if (!permission || permission.schoolId !== schoolId) {
       throw new ForbiddenException('You do not have grading permission for this style. The School owner grants it.');
     }
-    await this.assertBranchCoversStudent(callerId, schoolId, studentId);
+    // Decision 181: each action needs its own toggle.
+    if (!permission[toggle]) {
+      throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS[toggle]}. The School owner can turn it on.`);
+    }
+    const coverage = await this.branchCoverage(callerId, schoolId);
+    return async (studentId) => {
+      await this.assertBranchCoversStudent(coverage, schoolId, studentId);
+      await this.assertEnrolledStudent(studentId, schoolId);
+    };
+  }
+
+  /** Grading is for the School's own students (stress round, finding 8): an
+   * active STUDENT grant here, read under the student's own context. Checked
+   * after the caller's own rights, so it tells an outsider nothing. */
+  private async assertEnrolledStudent(studentId: string, schoolId: string): Promise<void> {
+    if (!UUID_PATTERN.test(studentId)) throw new BadRequestException('studentId must be a valid UUID');
+    const grant = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+    );
+    if (!grant) throw new NotFoundException('This person isn\'t a student at this School.');
   }
 
   /** Reads: the owner sees every student; other staff see the students of
@@ -201,7 +379,7 @@ export class GradingService {
   private async assertStaffCanSeeStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
     if (await this.isSchoolOwner(callerId, schoolId)) return;
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
-    await this.assertBranchCoversStudent(callerId, schoolId, studentId);
+    await this.assertBranchCoversStudent(await this.branchCoverage(callerId, schoolId), schoolId, studentId);
   }
 
   /** Decision 168 (with 139 and 148):
@@ -212,27 +390,36 @@ export class GradingService {
    *   branch; a coach may hold several). A staff grant with no branch covers
    *   no students there, and a student with no home branch yet is the
    *   owner's alone until the owner assigns one. */
-  private async assertBranchCoversStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
-    // Under the caller's context, Branch RLS shows a staff member at least
-    // their own branch, so any row means the School has branches.
-    const anyBranch = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.branch.findFirst({ where: { schoolId }, select: { id: true } }),
-    );
-    if (!anyBranch) return;
+  /** Which branches a staff member covers at a School (Decisions 168, 169):
+   * none needed when it has no branches; otherwise their staff grants'
+   * branches. Under the caller's context, Branch RLS shows a staff member at
+   * least their own branch, so any row means the School has branches. */
+  private async branchCoverage(callerId: string, schoolId: string): Promise<{ hasBranches: boolean; branchIds: Set<string> }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const anyBranch = await tx.branch.findFirst({ where: { schoolId }, select: { id: true } });
+      if (!anyBranch) return { hasBranches: false, branchIds: new Set<string>() };
+      const grants = await tx.roleGrant.findMany({
+        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: { not: null } },
+        select: { branchId: true },
+      });
+      return { hasBranches: true, branchIds: new Set(grants.map((g) => g.branchId as string)) };
+    });
+  }
 
+  private async assertBranchCoversStudent(
+    coverage: { hasBranches: boolean; branchIds: Set<string> },
+    schoolId: string,
+    studentId: string,
+  ): Promise<void> {
+    if (!coverage.hasBranches) return;
+    if (!UUID_PATTERN.test(studentId)) throw new BadRequestException('studentId must be a valid UUID');
     const home = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.studentHomeBranch.findUnique({ where: { schoolId_studentId: { schoolId, studentId } }, select: { branchId: true } }),
     );
     if (!home) {
       throw new ForbiddenException('This student has no home branch yet. Only the School owner can see or grade them until one is assigned.');
     }
-    const assignment = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findFirst({
-        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: home.branchId },
-        select: { id: true },
-      }),
-    );
-    if (!assignment) {
+    if (!coverage.branchIds.has(home.branchId)) {
       throw new ForbiddenException('This student belongs to a branch you are not assigned to.');
     }
   }
@@ -261,236 +448,774 @@ export class GradingService {
   // ---------------------------------------------------------------------------
 
   async promote(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
-    return this.gradeRankChange(callerId, studentId, disciplineId, dto, 'PROMOTION', 1);
+    return this.changeRung(callerId, studentId, disciplineId, dto, 'PROMOTION');
   }
 
   async downgrade(callerId: string, studentId: string, disciplineId: string, dto: DowngradeActionDto) {
-    return this.gradeRankChange(callerId, studentId, disciplineId, dto, 'DOWNGRADE', -1);
+    return this.changeRung(callerId, studentId, disciplineId, dto, 'DOWNGRADE');
   }
 
-  private async gradeRankChange(
+  /** Spec 55 §5 (quoted): "unavailable once the Student is at a belt's highest
+   * configured stripe tier" — a distinct, coach-initiated action from promote,
+   * never system-triggered. Moves to the next stripe tier of the same belt. */
+  async stripeAward(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
+    return this.changeRung(callerId, studentId, disciplineId, dto, 'STRIPE_AWARD');
+  }
+
+  /**
+   * The single way a coach moves a student to another rung, as the
+   * prototype's applyRankChange (roadmap Phase 3a; Decisions 126–128, 167,
+   * 174). Every change writes one history entry and resets the same things:
+   * the time-in-rank clock, the class count (to the starting classes), the
+   * per-type tally, when counting began, and the skill sign-offs.
+   *
+   * - Promote: up only, to any higher rung (skipped rungs are recorded,
+   *   "Skipped N ranks in between"); default the next rung. Downgrade: down
+   *   only, to any lower rung, with a reason, dated today; default the rung
+   *   just below (Decision 185, as the prototype). Stripe award: the next
+   *   stripe tier of the same belt.
+   * - expectedCurrentRungId (Decision 185): when sent, refused with 409 if the
+   *   student is no longer on that rung, so a second coach (or a bulk batch
+   *   planned earlier) can't apply the same step twice or undo a change.
+   * - Skills (Decision 127): the engine's requirement for the student's next
+   *   rung. Not all signed off: blocked when the style's "skills required"
+   *   switch is on, otherwise allowed with the written acknowledgement
+   *   (Decision 128, item 10). Not checked on a downgrade or a time-only rung.
+   * - Back-dated grading (Decision 128, item 8): a local day, not in the
+   *   future and not before the current rank date.
+   * - Starting classes (Decision 128, item 9): one number when the new next
+   *   rung counts any type; a number per type when it counts each type
+   *   (Decision 174); none on a time-only rung.
+   *
+   * Promotion-notification wiring (grading foundation gap closed independently
+   * of this phase's own roadmap): after a successful PROMOTION/DOWNGRADE/
+   * STRIPE_AWARD, notifies the Student, or a minor's guardians, through the
+   * grading-notifications job — see notifyOfGradingAction's own comment for
+   * why this is scoped to these three types only. Clears "ready to grade" and
+   * checks the new rung (Decision 178).
+   */
+  private async changeRung(
     callerId: string,
     studentId: string,
     disciplineId: string,
     dto: GradingActionDto & { reason?: string },
-    type: 'PROMOTION' | 'DOWNGRADE',
-    direction: 1 | -1,
+    type: 'PROMOTION' | 'DOWNGRADE' | 'STRIPE_AWARD',
+    // Bulk promote (Decision 130) records its own history type and note.
+    bulk?: { eventType: 'BULK_PROMOTION' | 'BULK_STRIPE_AWARD'; systemNote: string },
+    // Bulk promote checks the style, the School and the caller once for the
+    // batch and loads the ladder once; each student is still authorized.
+    batch?: { discipline: Discipline; ladder: Rung[]; authorize: (studentId: string) => Promise<void> },
   ) {
-    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    const discipline =
+      batch?.discipline ?? (await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } })));
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    if (batch) {
+      await batch.authorize(studentId);
+    } else {
+      await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' ? 'canDowngrade' : 'canPromote');
+      await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    }
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    if (type === 'DOWNGRADE' && (dto.effectiveDate !== undefined || dto.startingClasses !== undefined || dto.startingClassesByType !== undefined)) {
+      throw new BadRequestException('A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.');
+    }
+    if (type === 'STRIPE_AWARD' && dto.targetRungId !== undefined) {
+      throw new BadRequestException('A stripe award moves to the next stripe; to grade to a chosen belt or stripe, use promote with targetRungId.');
+    }
+
+    const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
       });
+      const ladder = batch?.ladder ?? (await loadLadder(tx, disciplineId));
+      if (ladder.length === 0) {
+        throw new BadRequestException('This Discipline has no Ranks configured yet.');
+      }
+      const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
+      const today = localDay(new Date(), timeZone);
 
-      let targetRank;
-      let fromRankId: string | null = null;
-      let fromStripeTierId: string | null = null;
-
-      if (!existing) {
-        // First-ever grading action for this Student/Discipline pair. A
-        // PROMOTION creates the StudentRank at the Discipline's first-order
-        // Rank — Spec 55 doesn't explicitly describe how a Student's very
-        // first StudentRank row comes into being; this is the most literal
-        // reading given Ranks are a strict ordered ladder with no other
-        // confirmed entry point. A DOWNGRADE with no existing StudentRank has
-        // nothing to downgrade FROM — reject.
-        if (type === 'DOWNGRADE') {
-          throw new BadRequestException('This Student has no existing rank in this Discipline to downgrade from.');
+      // --- Where from, where to.
+      const fromIndex = existing?.currentStripeId ? rungIndex(ladder, existing.currentStripeId) : -1;
+      if (existing && fromIndex < 0) {
+        throw new BadRequestException('This Student\'s current belt and stripe can\'t be found on the ladder; correct their rank first.');
+      }
+      if (!existing && type !== 'PROMOTION') {
+        throw new BadRequestException(
+          type === 'DOWNGRADE'
+            ? 'This Student has no existing rank in this Discipline to downgrade from.'
+            : 'This Student has no existing rank in this Discipline to award a stripe within.',
+        );
+      }
+      const from = existing ? ladder[fromIndex] : null;
+      if (dto.expectedCurrentRungId !== undefined && (from?.id ?? null) !== dto.expectedCurrentRungId) {
+        throw new ConflictException('This student\'s rank has changed since you opened it. Reload and try again.');
+      }
+      let toIndex: number;
+      if (dto.targetRungId !== undefined) {
+        toIndex = rungIndex(ladder, dto.targetRungId);
+        if (toIndex < 0) throw new BadRequestException('targetRungId is not a belt or stripe of this style.');
+        if (from && type === 'PROMOTION' && toIndex <= fromIndex) {
+          throw new BadRequestException('Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.');
         }
-        targetRank = await tx.rank.findFirst({ where: { disciplineId }, orderBy: { order: 'asc' } });
-        if (!targetRank) {
-          throw new BadRequestException('This Discipline has no Ranks configured yet.');
+        if (from && type === 'DOWNGRADE' && toIndex >= fromIndex) {
+          throw new BadRequestException('Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).');
+        }
+      } else if (!from) {
+        toIndex = 0; // a first grade starts on the style's first rung
+      } else if (type === 'STRIPE_AWARD') {
+        toIndex = fromIndex + 1;
+        if (!ladder[toIndex] || ladder[toIndex].rankId !== from.rankId) {
+          throw new BadRequestException('This Student is already at the highest configured stripe tier for this Rank.');
         }
       } else {
-        const currentRank = await tx.rank.findUniqueOrThrow({ where: { id: existing.currentRankId } });
-        fromRankId = currentRank.id;
-        fromStripeTierId = existing.currentStripeId;
-
-        await this.assertSkillsSignedOffOrAcknowledged(tx, currentRank.id, existing.skillStatuses, dto.acknowledgeWithoutSkillSignoff ?? false);
-
-        targetRank = await tx.rank.findFirst({ where: { disciplineId, order: currentRank.order + direction } });
-        if (!targetRank) {
+        // Default: the next rung up, or the rung just below (Decision 185).
+        toIndex = fromIndex + (type === 'PROMOTION' ? 1 : -1);
+        if (!ladder[toIndex]) {
           throw new BadRequestException(
             type === 'PROMOTION' ? 'This Student is already at the highest Rank in this Discipline.' : 'This Student is already at the lowest Rank in this Discipline.',
           );
         }
       }
+      const to = ladder[toIndex];
 
-      const targetFirstStripe = await tx.rankStripeTier.findFirst({ where: { rankId: targetRank.id }, orderBy: { order: 'asc' } });
+      // --- Skills for the student's next rung (Decision 127).
+      let missingSkillIds: string[] = [];
+      if (from && type !== 'DOWNGRADE') {
+        const req = requirementFor(ladder, from.id);
+        if (req.kind === 'NEXT' && !req.timeOnly) {
+          const signed = new Set(existing!.skillStatuses.filter((s) => s.status === 'SIGNED_OFF').map((s) => s.skillId));
+          missingSkillIds = req.requiredSkillIds.filter((id) => !signed.has(id));
+        }
+      }
+      if (missingSkillIds.length > 0) {
+        if (discipline.skillsRequiredToGrade) {
+          throw new BadRequestException(
+            'This style requires every skill for the next rank to be signed off before grading (Decision 128, item 10). Not signed off yet: ' +
+              missingSkillIds.join(', '),
+          );
+        }
+        if (!dto.acknowledgeWithoutSkillSignoff) {
+          throw new BadRequestException(
+            'This Student has required Skills for their next rank not yet Signed Off. Set acknowledgeWithoutSkillSignoff=true to grade anyway (always recorded).',
+          );
+        }
+      }
 
+      // --- The grading date.
+      let rankDate = new Date();
+      if (dto.effectiveDate !== undefined) {
+        const problem = gradingDateProblem(dto.effectiveDate, today, existing ? localDay(existing.dateOfCurrentRank, timeZone) : null);
+        if (problem === 'INVALID') throw new BadRequestException('effectiveDate must be a real calendar date, as YYYY-MM-DD.');
+        if (problem === 'IN_FUTURE') throw new BadRequestException('The grading date can\'t be in the future.');
+        if (problem === 'BEFORE_CURRENT_RANK') {
+          throw new BadRequestException(
+            `The grading date can't be before the date the student reached their current rank, ${localDay(existing!.dateOfCurrentRank, timeZone)} (Decision 128, item 8).`,
+          );
+        }
+        if (dto.effectiveDate !== today) rankDate = startOfLocalDay(dto.effectiveDate, timeZone);
+      }
+
+      // --- Starting classes toward the new next rung.
+      const { total: startingTotal, byType: startingByType } = this.startingClasses(ladder, to, dto);
+
+      // --- Write.
+      const now = new Date();
+      const counters = {
+        currentRankId: to.rankId,
+        currentStripeId: to.id,
+        dateOfCurrentRank: rankDate,
+        classesAttendedTowardCheckpoint: startingTotal,
+        classesAttendedByType: startingByType ?? {},
+        countingSince: now,
+        // "Ready to grade" is once per rank (Decision 178).
+        readyNotifiedAt: null,
+      };
       let studentRank;
       if (existing) {
-        // FOUND ON REVIEW: a plain tx.studentRank.update({where: {id}, ...})
-        // here is a real TOCTOU race — two concurrent grading calls for the
-        // same Student both read the same `existing` pre-image, both compute
-        // the same targetRank, and the second UPDATE would silently overwrite
-        // with its own stale precomputed data (no WHERE clause tied to what it
-        // actually read), corrupting the audit trail with two PromotionEvent
-        // rows for what the data shows as only one real transition. Fixed with
-        // the same optimistic-concurrency shape Phase 9 already established
-        // for Transaction status flips (updateMany + affected-row-count
-        // check, not a bare update by id alone) — a losing concurrent call
-        // gets a clean 409 to retry, not a silent corruption.
-        const updateResult = await tx.studentRank.updateMany({
+        // Conditional on the rung read above, so a concurrent grading action
+        // gets a clean 409 instead of silently overwriting this one.
+        const updated = await tx.studentRank.updateMany({
           where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
-          data: {
-            currentRankId: targetRank.id,
-            currentStripeId: targetFirstStripe?.id ?? null,
-            dateOfCurrentRank: new Date(),
-            classesAttendedTowardCheckpoint: 0,
-          },
+          data: counters,
         });
-        if (updateResult.count === 0) {
+        if (updated.count === 0) {
           throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');
         }
         studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
+        // Skill sign-offs belong to the old rung (Decision 128, item 16).
+        await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: existing.id } });
       } else {
         studentRank = await tx.studentRank.create({
-          data: {
-            id: randomUUID(),
-            studentId,
-            disciplineId,
-            schoolId: discipline.schoolId,
-            currentRankId: targetRank.id,
-            currentStripeId: targetFirstStripe?.id ?? null,
-          },
+          data: { id: randomUUID(), studentId, disciplineId, schoolId: discipline.schoolId, ...counters },
         });
       }
 
-      // Checkpoint reset — skill sign-off status is scoped to the current
-      // checkpoint only (§5); a Promotion/Downgrade moves to a new one.
-      await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: studentRank.id } });
-
+      const skipped = from && type === 'PROMOTION' ? toIndex - fromIndex - 1 : 0;
       const promotionEvent = await tx.promotionEvent.create({
         data: {
           id: randomUUID(),
           studentRankId: studentRank.id,
           schoolId: discipline.schoolId,
           studentId,
-          type,
+          type: bulk?.eventType ?? type,
           performedById: callerId,
-          fromRankId,
-          toRankId: targetRank.id,
-          fromStripeTierId,
-          toStripeTierId: targetFirstStripe?.id ?? null,
-          acknowledgedWithoutSkillSignoff: dto.acknowledgeWithoutSkillSignoff ?? false,
+          fromRankId: from?.rankId ?? null,
+          toRankId: to.rankId,
+          fromStripeTierId: from?.id ?? null,
+          toStripeTierId: to.id,
+          acknowledgedWithoutSkillSignoff: missingSkillIds.length > 0,
+          effectiveDate: rankDate,
           // Required on a downgrade by DowngradeActionDto (Decision 128, item 11).
           reason: type === 'DOWNGRADE' ? dto.reason : null,
           note: dto.note ?? null,
+          rungsSkipped: Math.max(0, skipped),
+          systemNote: bulk?.systemNote ?? (skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null),
+          startingClasses: type === 'DOWNGRADE' ? null : startingTotal,
+          startingClassesByType: startingByType ?? undefined,
         },
       });
 
-      return { studentRank, promotionEvent };
+      return { studentRank, promotionEvent, toRungName: to.name };
+    });
+
+    // Only "promoted" and "new stripe" reach the student (Decision 145); a
+    // downgrade shows in their history, with no notification (Decision 185).
+    if (type !== 'DOWNGRADE') {
+      const isStripe = type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD';
+      await this.notifyOfGradingAction({
+        promotionEventId: result.promotionEvent.id,
+        studentId,
+        disciplineName: discipline.name,
+        toRungName: result.toRungName,
+        kind: isStripe ? 'STRIPE' : 'PROMOTED',
+      });
+    }
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId, disciplineId);
+
+    return result;
+  }
+
+  /** Starting classes toward the rung after `to` (Decision 128, item 9;
+   * Decision 174): a number per type when that rung counts each type, one
+   * number otherwise; none when `to` is time-only (classes aren't counted). */
+  private startingClasses(
+    ladder: Rung[],
+    to: Rung,
+    dto: { startingClasses?: number; startingClassesByType?: Record<string, number> },
+  ): { total: number; byType: Record<string, number> | null } {
+    const given = dto.startingClasses !== undefined || dto.startingClassesByType !== undefined;
+    if (!given) return { total: 0, byType: null };
+    const req = requirementFor(ladder, to.id);
+    if (to.timeOnly || (req.kind === 'NEXT' && req.timeOnly)) {
+      throw new BadRequestException('The new rank counts time only, so it starts with no classes (Decision 128, item 3).');
+    }
+    if (req.kind === 'NEXT' && req.countRules.classCountMode === 'EACH_TYPE') {
+      if (dto.startingClasses !== undefined) {
+        throw new BadRequestException('The next rank counts each class type separately: send startingClassesByType, a number per type (Decision 174).');
+      }
+      const types = req.countRules.classTypeRequirements.map((r) => r.classType);
+      const byType: Record<string, number> = {};
+      for (const [classType, n] of Object.entries(dto.startingClassesByType ?? {})) {
+        if (!types.includes(classType)) {
+          throw new BadRequestException(`"${classType}" is not one of the next rank's class types: ${types.join(', ')}.`);
+        }
+        if (!Number.isInteger(n) || n < 0 || n > MAX_STARTING_CLASSES) {
+          throw new BadRequestException(`Each starting class number must be a whole number from 0 to ${MAX_STARTING_CLASSES}.`);
+        }
+        if (n > 0) byType[classType] = n;
+      }
+      return { total: Object.values(byType).reduce((sum, n) => sum + n, 0), byType };
+    }
+    if (dto.startingClassesByType !== undefined) {
+      throw new BadRequestException('The next rank counts any ticked class type: send startingClasses, one number.');
+    }
+    return { total: dto.startingClasses ?? 0, byType: null };
+  }
+
+  /** Promotion-notification wiring: a PROMOTION/DOWNGRADE/STRIPE_AWARD only —
+   * not SELF_DECLARED (the student's own action, no one "did" it to them) and
+   * not RANK_CORRECTION/ADJUSTMENT (administrative corrections, not a "you
+   * were graded" moment). The grading-notifications job sends it to the
+   * student, or to a minor's guardians (Decision 145, item 2): GuardianLink
+   * is readable only by the guardian here, so the job (ultm8_jobs) routes it. */
+  private async notifyOfGradingAction(data: GradingPromotedJobData): Promise<void> {
+    await this.gradingNotificationsQueue.add('promoted', data, {
+      jobId: `grading-promoted-${data.promotionEventId}`,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
     });
   }
 
-  /** Spec 55 §5 (quoted): "unavailable once the Student is at a belt's highest
-   * configured stripe tier" — a distinct, coach-initiated action from promote,
-   * never system-triggered. */
-  async stripeAward(callerId: string, studentId: string, disciplineId: string, dto: GradingActionDto) {
+  /** After a grading action commits, check whether the student is now ready
+   * for their next rung (Decisions 145, 178). */
+  private async thenCheckReady<T>(studentId: string, disciplineId: string, action: Promise<T>): Promise<T> {
+    const result = await action;
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId, disciplineId);
+    return result;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bulk promote (roadmap Phase 3c; Decision 130)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Promote up to 200 students one rung each, on one date (Decision 130,
+   * prototype confirmBulkPromote). The same checks as a single grade, judged
+   * per student, in one fast step:
+   * - Nothing missing: promoted with no extra step.
+   * - "Needs a look": required skills not signed off, or minimum days not yet
+   *   served. Promoted only when the coach acknowledges them
+   *   (acknowledgedStudentIds, one tick for the whole list); an unacknowledged
+   *   flagged student refuses the whole request, so nobody is promoted past a
+   *   check by accident. The acknowledgement is recorded on their history.
+   * - Can't be promoted (skipped): no next rank, blocked by the style's
+   *   "skills required" switch, or not a student this coach may grade.
+   * One grading date must suit every student, or the request is refused
+   * (prototype). `dryRun` returns the same three lists without changing
+   * anything, for the confirm window. Each student is promoted in their own
+   * transaction, so one student changed at the same time is skipped, not the
+   * whole batch.
+   */
+  async bulkPromote(callerId: string, schoolId: string, dto: BulkPromoteDto) {
+    if (!UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('schoolId must be a valid UUID');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: dto.disciplineId } }));
+    if (!discipline || discipline.schoolId !== schoolId) {
+      throw new NotFoundException('Discipline not found');
+    }
+    if (!(await this.isSchoolOwner(callerId, schoolId))) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
+
+    type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; reasons: string[]; promotionEventId?: string };
+    const ready: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
+    const needsAcknowledgement: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
+    const cannotPromote: Row[] = [];
+    const dateProblems: string[] = [];
+
+    // The caller, their permission and the ladder: once for the batch.
+    let authorize: (studentId: string) => Promise<void>;
+    try {
+      authorize = await this.gradeAuthorizer(callerId, schoolId, dto.disciplineId, 'canPromote');
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+      authorize = () => Promise.reject(err);
+    }
+    const ladder = await this.prismaApp.withTenantContext(callerId, (tx) => loadLadder(tx, dto.disciplineId));
+    const batch = { discipline, ladder, authorize };
+
+    for (const studentId of dto.studentIds) {
+      try {
+        await authorize(studentId);
+      } catch (err) {
+        if (err instanceof ForbiddenException || err instanceof NotFoundException || err instanceof BadRequestException) {
+          cannotPromote.push({ studentId, reasons: ['not a student you can grade in this style'] });
+          continue;
+        }
+        throw err;
+      }
+      const plan = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        const sr = await tx.studentRank.findUnique({
+          where: { studentId_disciplineId: { studentId, disciplineId: dto.disciplineId } },
+          include: { skillStatuses: { select: { skillId: true, status: true } } },
+        });
+        if (!sr) return { cannot: 'no rank in this style' };
+        const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
+        const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;
+        if (!next) return { cannot: 'no next rank' };
+        const timeZone = await studentTimeZone(tx, studentId, schoolId);
+        const el = eligibilityOnLadder(ladder, sr, timeZone);
+        if (!el.hasNext) return { cannot: 'no next rank' };
+        const missing = el.timeOnly ? 0 : el.missingSkillIds.length;
+        if (missing > 0 && discipline.skillsRequiredToGrade) return { cannot: 'required skills not signed off (this style requires them)' };
+        const problem = dto.effectiveDate ? gradingDateProblem(dto.effectiveDate, localDay(new Date(), timeZone), localDay(sr.dateOfCurrentRank, timeZone)) : null;
+        const reasons: string[] = [];
+        if (missing > 0) reasons.push(`${missing} skill${missing > 1 ? 's' : ''} not signed off`);
+        const short = el.requiredDays - el.elapsedDays;
+        if (short > 0) reasons.push(`${short} day${short > 1 ? 's' : ''} short`);
+        return { fromRungId: sr.currentStripeId, toRungId: next.id, sameBelt: next.rankId === sr.currentRankId, missingSkills: missing > 0, reasons, problem };
+      });
+      if ('cannot' in plan) {
+        cannotPromote.push({ studentId, reasons: [plan.cannot as string] });
+        continue;
+      }
+      if (plan.problem) dateProblems.push(`${studentId}: ${plan.problem}`);
+      const row = { studentId, fromRungId: plan.fromRungId, toRungId: plan.toRungId, sameBelt: plan.sameBelt, missingSkills: plan.missingSkills, reasons: plan.reasons };
+      (plan.reasons.length > 0 ? needsAcknowledgement : ready).push(row);
+    }
+
+    if (dateProblems.length > 0) {
+      throw new BadRequestException(
+        `The grading date doesn't suit every student — it can't be in the future or before a student's current rank date (Decision 128, item 8): ${dateProblems.join('; ')}.`,
+      );
+    }
+    const strip = (r: Row & { sameBelt?: boolean; missingSkills?: boolean }): Row => ({
+      studentId: r.studentId,
+      fromRungId: r.fromRungId,
+      toRungId: r.toRungId,
+      reasons: r.reasons,
+      ...(r.promotionEventId ? { promotionEventId: r.promotionEventId } : {}),
+    });
+    if (dto.dryRun) {
+      return { ready: ready.map(strip), needsAcknowledgement: needsAcknowledgement.map(strip), cannotPromote };
+    }
+    const acknowledged = new Set(dto.acknowledgedStudentIds ?? []);
+    const unacknowledged = needsAcknowledgement.filter((r) => !acknowledged.has(r.studentId));
+    if (unacknowledged.length > 0) {
+      throw new BadRequestException(
+        `These students need a look: acknowledge them in acknowledgedStudentIds or remove them from the batch (Decision 130): ${unacknowledged
+          .map((r) => `${r.studentId} (${r.reasons.join(', ')})`)
+          .join('; ')}.`,
+      );
+    }
+
+    const promoted: Row[] = [];
+    for (const row of [...ready, ...needsAcknowledgement]) {
+      const systemNote =
+        row.reasons.length > 0 ? `Promoted in a batch; acknowledged: ${row.reasons.join(', ')} (Decision 130).` : 'Promoted in a batch.';
+      try {
+        const result = await this.changeRung(
+          callerId,
+          row.studentId,
+          dto.disciplineId,
+          {
+            targetRungId: row.toRungId,
+            // Refused if they moved since the plan (Decision 185): one rung each.
+            expectedCurrentRungId: row.fromRungId ?? null,
+            effectiveDate: dto.effectiveDate,
+            note: dto.note,
+            acknowledgeWithoutSkillSignoff: row.missingSkills,
+          },
+          'PROMOTION',
+          { eventType: row.sameBelt ? 'BULK_STRIPE_AWARD' : 'BULK_PROMOTION', systemNote },
+          batch,
+        );
+        promoted.push({ ...strip(row), promotionEventId: result.promotionEvent.id });
+      } catch (err) {
+        if (err instanceof ConflictException || err instanceof BadRequestException) {
+          cannotPromote.push({ studentId: row.studentId, reasons: [err.message] });
+          continue;
+        }
+        throw err;
+      }
+    }
+    return { ready: promoted, needsAcknowledgement: [], cannotPromote };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Grading Board (roadmap Phase 3b; Decisions 128, 136, 152, 168, 174, 176)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Every student with a next rank in one style, with their readiness from the
+   * engine, highest progress first. The owner sees every student; other staff
+   * see the students of their own branches, or every student when the School
+   * has no branches (Decisions 168, 169). StudentRank and Membership stay
+   * readable only by the owner or the student (Decision 88): the owner's
+   * board is one read, and other staff's is read student by student under
+   * each student's own context. Staff find *which* students are theirs through
+   * two narrow read-only policies Gus approved for this board
+   * (20261021000000_grading_board).
+   */
+  async getGradingBoard(callerId: string, schoolId: string, disciplineId: string, opts: { search?: string; activeOnly?: boolean }) {
+    if (!UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(disciplineId ?? '')) {
+      throw new BadRequestException('schoolId and disciplineId must be valid UUIDs');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline || discipline.schoolId !== schoolId) {
+      throw new NotFoundException('Discipline not found');
+    }
+    const owner = await this.isSchoolOwner(callerId, schoolId);
+    if (!owner) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const { ladder, schoolTimeZone } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+      ladder: await loadLadder(tx, disciplineId),
+      schoolTimeZone: (await tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }))?.timezone ?? null,
+    }));
+
+    type Row = {
+      student: { id: string; firstName: string; surname: string };
+      studentRank: Prisma.StudentRankGetPayload<{ include: { skillStatuses: { select: { skillId: true; status: true } } } }>;
+      homeTimeZone: string | null;
+      memberships: Array<{ status: string; expiryDate: Date | null; classesRemaining: number | null }>;
+    };
+    const rows: Row[] = [];
+    const membershipSelect = { studentId: true, status: true, expiryDate: true, classesRemaining: true } as const;
+    if (owner) {
+      await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        const grants = await tx.roleGrant.findMany({
+          where: { schoolId, role: 'STUDENT', revokedAt: null },
+          distinct: ['userId'],
+          select: { user: { select: { id: true, firstName: true, surname: true } } },
+        });
+        const ids = grants.map((g) => g.user.id);
+        const [ranks, homes, memberships] = await Promise.all([
+          tx.studentRank.findMany({ where: { schoolId, disciplineId, studentId: { in: ids } }, include: { skillStatuses: { select: { skillId: true, status: true } } } }),
+          tx.studentHomeBranch.findMany({ where: { schoolId, studentId: { in: ids } }, select: { studentId: true, branch: { select: { timezone: true } } } }),
+          tx.membership.findMany({ where: { schoolId, studentId: { in: ids } }, select: membershipSelect }),
+        ]);
+        // Keyed by student, not searched per student (stress round, finding 3).
+        const rankOf = new Map(ranks.map((r) => [r.studentId, r]));
+        const zoneOf = new Map(homes.map((h) => [h.studentId, h.branch.timezone]));
+        const membershipsOf = new Map<string, typeof memberships>();
+        for (const m of memberships) membershipsOf.set(m.studentId, [...(membershipsOf.get(m.studentId) ?? []), m]);
+        for (const g of grants) {
+          const sr = rankOf.get(g.user.id);
+          if (!sr) continue;
+          rows.push({ student: g.user, studentRank: sr, homeTimeZone: zoneOf.get(g.user.id) ?? null, memberships: membershipsOf.get(g.user.id) ?? [] });
+        }
+      });
+    } else {
+      // Who this staff member may see (Decisions 168, 169, 177): the students
+      // whose home branch is one of theirs, or, in a School with no branches,
+      // every enrolled student. One query through grading_board_rows()
+      // (20261027000000), which applies that rule for the caller; it replaced
+      // reading each student in their own transaction (stress round, finding 1).
+      const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.$queryRaw<
+          Array<{ studentId: string; firstName: string; surname: string; homeTimeZone: string | null; studentRank: Record<string, unknown>; memberships: Array<Record<string, unknown>> }>
+        >`SELECT * FROM grading_board_rows(${schoolId}, ${disciplineId})`,
+      );
+      for (const r of found) {
+        rows.push({
+          student: { id: r.studentId, firstName: r.firstName, surname: r.surname },
+          studentRank: studentRankFromJson(r.studentRank),
+          homeTimeZone: r.homeTimeZone,
+          memberships: r.memberships.map((m) => ({
+            status: m.status as string,
+            expiryDate: dbDate(m.expiryDate),
+            classesRemaining: (m.classesRemaining as number | null) ?? null,
+          })),
+        });
+      }
+    }
+
+    const needle = opts.search?.trim().toLowerCase();
+    const now = new Date();
+    let hiddenInactive = 0;
+    const items: Array<{
+      studentId: string;
+      firstName: string;
+      surname: string;
+      studentRankId: string;
+      currentRankId: string;
+      currentStripeId: string | null;
+      verificationStatus: string;
+      active: boolean;
+      activeSource: 'MANUAL' | 'MEMBERSHIP';
+      hasActiveMembership: boolean;
+      hardBlocked: boolean;
+      eligibility: Extract<ReturnType<typeof eligibilityOnLadder>, { hasNext: true }>;
+    }> = [];
+    for (const row of rows) {
+      const { student, studentRank: sr } = row;
+      const hasActiveMembership = row.memberships.some((m) => isMembershipLive(m, now));
+      const active = sr.boardActiveOverride ?? hasActiveMembership;
+      // "N inactive hidden" counts every inactive student in the style, the
+      // search aside, as the prototype (Gus's 7 Oct fix).
+      if (opts.activeOnly && !active) {
+        hiddenInactive++;
+        continue;
+      }
+      if (needle && !`${student.firstName} ${student.surname}`.toLowerCase().includes(needle)) continue;
+      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now, thresholdsOf(discipline));
+      if (!eligibility.hasNext) continue; // nothing to progress toward: not on the board (prototype)
+      items.push({
+        studentId: student.id,
+        firstName: student.firstName,
+        surname: student.surname,
+        studentRankId: sr.id,
+        currentRankId: sr.currentRankId,
+        currentStripeId: sr.currentStripeId,
+        verificationStatus: sr.verificationStatus,
+        active,
+        activeSource: sr.boardActiveOverride === null ? 'MEMBERSHIP' : 'MANUAL',
+        hasActiveMembership,
+        hardBlocked: discipline.skillsRequiredToGrade && !eligibility.timeOnly && eligibility.missingSkillIds.length > 0,
+        eligibility,
+      });
+    }
+    items.sort(
+      (a, b) =>
+        b.eligibility.progressPercent - a.eligibility.progressPercent ||
+        a.surname.localeCompare(b.surname) ||
+        a.firstName.localeCompare(b.firstName),
+    );
+    return { items, hiddenInactive };
+  }
+
+  /** Shared start of the board writes: the same staff check and School gates as
+   * every grading write, then the student's rank, ladder and time zone. */
+  private async withBoardTarget<T>(
+    callerId: string,
+    studentId: string,
+    disciplineId: string,
+    fn: (
+      tx: TenantTx,
+      ctx: {
+        discipline: { id: string; schoolId: string; classTypesOffered: string[]; boardGettingThere: number; boardReadyToGrade: number };
+        studentRank: Prisma.StudentRankGetPayload<{ include: { skillStatuses: true } }>;
+        ladder: Rung[];
+        timeZone: string;
+      },
+    ) => Promise<T>,
+  ): Promise<T> {
     const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canAdjustProgress');
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
-
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
-      const existing = await tx.studentRank.findUnique({
+      const studentRank = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
       });
-      if (!existing) {
-        throw new BadRequestException('This Student has no existing rank in this Discipline to award a stripe within.');
+      if (!studentRank) {
+        throw new BadRequestException('This Student has no rank in this Discipline.');
       }
-      if (!existing.currentStripeId) {
-        throw new BadRequestException('This Student\'s current Rank has no configured stripe tiers.');
-      }
-
-      await this.assertSkillsSignedOffOrAcknowledged(tx, existing.currentRankId, existing.skillStatuses, dto.acknowledgeWithoutSkillSignoff ?? false);
-
-      const currentTier = await tx.rankStripeTier.findUniqueOrThrow({ where: { id: existing.currentStripeId } });
-      const nextTier = await tx.rankStripeTier.findFirst({ where: { rankId: existing.currentRankId, order: currentTier.order + 1 } });
-      if (!nextTier) {
-        throw new BadRequestException('This Student is already at the highest configured stripe tier for this Rank.');
-      }
-
-      // Same TOCTOU-race fix as gradeRankChange — see that method's own
-      // comment. updateMany + affected-row-count check instead of a bare
-      // update-by-id, so a losing concurrent call gets a clean 409 instead of
-      // silently clobbering another grading action's result.
-      //
-      // Every stripe is its own rung (Decision 126), so a stripe award restarts
-      // the time-in-rank clock like any other rank change (Decision 167; the
-      // prototype's applyRankChange sets `since` for every change).
-      const updateResult = await tx.studentRank.updateMany({
-        where: { id: existing.id, currentRankId: existing.currentRankId, currentStripeId: existing.currentStripeId },
-        data: { currentStripeId: nextTier.id, classesAttendedTowardCheckpoint: 0, dateOfCurrentRank: new Date() },
-      });
-      if (updateResult.count === 0) {
-        throw new ConflictException('This Student\'s rank was changed by a concurrent grading action — please retry.');
-      }
-      const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
-      await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: studentRank.id } });
-
-      const promotionEvent = await tx.promotionEvent.create({
-        data: {
-          id: randomUUID(),
-          studentRankId: studentRank.id,
-          schoolId: discipline.schoolId,
-          studentId,
-          type: 'STRIPE_AWARD',
-          performedById: callerId,
-          fromRankId: existing.currentRankId,
-          toRankId: existing.currentRankId,
-          fromStripeTierId: currentTier.id,
-          toStripeTierId: nextTier.id,
-          acknowledgedWithoutSkillSignoff: dto.acknowledgeWithoutSkillSignoff ?? false,
-          note: dto.note ?? null,
-        },
-      });
-
-      return { studentRank, promotionEvent };
+      const ladder = await loadLadder(tx, disciplineId);
+      const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
+      return fn(tx, { discipline, studentRank, ladder, timeZone });
     });
   }
 
-  /** Spec 55 §5 (quoted): "grading is permitted even when a required skill isn't
-   * yet signed off, but only behind an explicit, always-recorded written
-   * acknowledgement flag." Checks the CURRENT checkpoint's required Skills (the
-   * ones gating the grading action being attempted) — not the target
-   * checkpoint's, which the Student hasn't reached yet.
-   *
-   * FOUND ON REVIEW: the original version of this check looked at whatever
-   * StudentRankSkillStatus rows happened to already exist, rather than the
-   * Rank's actual RankRequiredSkill set. Those rows are populated lazily —
-   * only when someone calls cycleSkillSignOff — so a required Skill nobody
-   * has ever touched had NO row at all, `.some()` found nothing unsigned, and
-   * the acknowledgment gate was silently bypassed. Fixed to query the real
-   * required-Skill set for `currentRankId` and treat a missing status row as
-   * unsigned (NOT_STARTED), which is what it actually means. */
-  private async assertSkillsSignedOffOrAcknowledged(
+  private adjustmentEvent(
     tx: TenantTx,
-    currentRankId: string,
-    skillStatuses: Array<{ skillId: string; status: string }>,
-    acknowledged: boolean,
-  ): Promise<void> {
-    const requiredSkills = await tx.rankRequiredSkill.findMany({ where: { rankId: currentRankId }, select: { skillId: true } });
-    if (requiredSkills.length === 0) return; // nothing required at this checkpoint — nothing to acknowledge
+    callerId: string,
+    sr: { id: string; schoolId: string; studentId: string; currentRankId: string; currentStripeId: string | null },
+    systemNote: string,
+  ) {
+    return tx.promotionEvent.create({
+      data: {
+        id: randomUUID(),
+        studentRankId: sr.id,
+        schoolId: sr.schoolId,
+        studentId: sr.studentId,
+        type: 'ADJUSTMENT',
+        performedById: callerId,
+        fromRankId: sr.currentRankId,
+        toRankId: sr.currentRankId,
+        fromStripeTierId: sr.currentStripeId,
+        toStripeTierId: sr.currentStripeId,
+        systemNote,
+      },
+    });
+  }
 
-    const statusBySkillId = new Map(skillStatuses.map((s) => [s.skillId, s.status]));
-    const hasUnsignedRequired = requiredSkills.some((rs) => statusBySkillId.get(rs.skillId) !== 'SIGNED_OFF');
-    if (hasUnsignedRequired && !acknowledged) {
-      throw new BadRequestException(
-        'This Student has required Skills not yet Signed Off at their current checkpoint. Set acknowledgeWithoutSkillSignoff=true to grade anyway (always recorded).',
-      );
+  /** A style's Grading Board columns (Decisions 75, 136, 181): the owner, or
+   * a coach with the "Change board %" toggle for this style. Not tied to a
+   * student, so the branch rule doesn't apply. */
+  async setBoardThresholds(callerId: string, disciplineId: string, dto: BoardThresholdsDto) {
+    if (!UUID_PATTERN.test(disciplineId)) {
+      throw new BadRequestException('disciplineId must be a valid UUID');
     }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    if (!(await this.isSchoolOwner(callerId, discipline.schoolId))) {
+      await this.tenantAuth.assertStaffAtSchool(callerId, discipline.schoolId);
+      const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.gradingPermission.findUnique({ where: { userId_disciplineId: { userId: callerId, disciplineId } } }),
+      );
+      if (!permission || permission.schoolId !== discipline.schoolId || !permission.canChangeBoardThresholds) {
+        throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS.canChangeBoardThresholds}. The School owner can turn it on.`);
+      }
+    }
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    if (dto.gettingThere >= dto.readyToGrade) {
+      throw new BadRequestException('"Getting There" must start below "Ready to Grade".');
+    }
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.update({ where: { id: disciplineId }, data: { boardGettingThere: dto.gettingThere, boardReadyToGrade: dto.readyToGrade } }),
+    );
+  }
+
+  /** Board drag (Decision 128, item 13; prototype dropOnBand): rewrites the
+   * class count — on an "each type" rung every type to the column's % of its
+   * own number (Decision 174) — or, on a time-only rung, the rank date, and
+   * records an ADJUSTMENT entry. */
+  async moveOnBoard(callerId: string, studentId: string, disciplineId: string, dto: BoardMoveDto) {
+    return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder, timeZone }) => {
+      const thresholds = thresholdsOf(discipline);
+      const current = eligibilityOnLadder(ladder, sr, timeZone, undefined, thresholds);
+      if (current.hasNext && current.boardColumn === dto.column) {
+        throw new BadRequestException('This student is already in that column.');
+      }
+      const move = boardMove(requirementFor(ladder, sr.currentStripeId ?? ''), dto.column, thresholds);
+      if (move.kind === 'NOT_MOVABLE') {
+        throw new BadRequestException('This student can\'t be moved: there is no next rank, or nothing required to split into columns.');
+      }
+      const label = { JUST_STARTING: 'Just Starting', GETTING_THERE: 'Getting There', READY_TO_GRADE: 'Ready to Grade' }[dto.column];
+      let what: string;
+      let data: Prisma.StudentRankUpdateManyMutationInput;
+      if (move.kind === 'DAYS') {
+        const newDay = DateTime.now().setZone(timeZone).minus({ days: move.daysInRank }).toISODate() as string;
+        what = `time-in-rank start date changed from ${localDay(sr.dateOfCurrentRank, timeZone)} to ${newDay}`;
+        data = { dateOfCurrentRank: startOfLocalDay(newDay, timeZone) };
+      } else {
+        const typeText = move.byType ? ` (${Object.entries(move.byType).map(([t, n]) => `${t} ${n}`).join(', ')})` : '';
+        what = `classes attended changed from ${sr.classesAttendedTowardCheckpoint} to ${move.total}${typeText}`;
+        data = { classesAttendedTowardCheckpoint: move.total, ...(move.byType ? { classesAttendedByType: move.byType } : {}) };
+      }
+      const updated = await tx.studentRank.updateMany({
+        where: { id: sr.id, currentStripeId: sr.currentStripeId, dateOfCurrentRank: sr.dateOfCurrentRank, classesAttendedTowardCheckpoint: sr.classesAttendedTowardCheckpoint },
+        data,
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This Student\'s progress was changed at the same time — please retry.');
+      }
+      const promotionEvent = await this.adjustmentEvent(tx, callerId, sr, `Progress adjusted by hand on the Grading Board: ${what} (moved to "${label}").`);
+      return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent };
+    }));
+  }
+
+  /** "Log a class" (Decision 128 item 6, Decision 176): staff add one class by
+   * hand, with a class type from the next rank's ticked types. It always
+   * counts — the weekly cap is for attendance, not a deliberate entry — and it
+   * is written to the history. */
+  async logClass(callerId: string, studentId: string, disciplineId: string, dto: LogClassDto) {
+    return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder }) => {
+      const req = requirementFor(ladder, sr.currentStripeId ?? '');
+      if (req.kind !== 'NEXT') throw new BadRequestException('This student has no next rank to count classes toward.');
+      if (req.timeOnly) throw new BadRequestException('The current rank counts time only, so classes are not counted (Decision 128, item 3).');
+      const classType = dto.classType ?? null;
+      const ticked = req.countRules.eligibleClassTypes;
+      if (ticked.length > 0 && (classType === null || !ticked.includes(classType))) {
+        throw new BadRequestException(`Pick the class type: one of ${ticked.join(', ')} (Decision 176).`);
+      }
+      if (ticked.length === 0 && classType !== null && !discipline.classTypesOffered.includes(classType)) {
+        throw new BadRequestException(`"${classType}" is not one of this style's class types.`);
+      }
+      const byType = { ...(sr.classesAttendedByType as Record<string, number>) };
+      if (classType !== null) byType[classType] = (byType[classType] ?? 0) + 1;
+      const updated = await tx.studentRank.updateMany({
+        where: { id: sr.id, currentStripeId: sr.currentStripeId, classesAttendedTowardCheckpoint: sr.classesAttendedTowardCheckpoint },
+        data: { classesAttendedTowardCheckpoint: sr.classesAttendedTowardCheckpoint + 1, classesAttendedByType: byType },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This Student\'s progress was changed at the same time — please retry.');
+      }
+      const promotionEvent = await this.adjustmentEvent(
+        tx,
+        callerId,
+        sr,
+        `Class logged by hand: ${classType ?? 'no class type'} (classes ${sr.classesAttendedTowardCheckpoint} → ${sr.classesAttendedTowardCheckpoint + 1}).`,
+      );
+      return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent };
+    }));
+  }
+
+  /** The manual Active/Inactive switch for this style (Decisions 152, 176);
+   * null goes back to following membership. */
+  async setBoardActive(callerId: string, studentId: string, disciplineId: string, dto: BoardActiveDto) {
+    return this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { studentRank: sr }) =>
+      tx.studentRank.update({ where: { id: sr.id }, data: { boardActiveOverride: dto.active } }),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -506,10 +1231,10 @@ export class GradingService {
     if (!skill) {
       throw new NotFoundException('Skill not found');
     }
-    await this.assertCanGrade(callerId, skill.schoolId, skill.disciplineId, studentId);
+    await this.assertCanGrade(callerId, skill.schoolId, skill.disciplineId, studentId, 'canSignOffSkills');
     await this.assertSchoolAcceptsGradingWrites(callerId, skill.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, skill.disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const studentRank = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId: skill.disciplineId } },
       });
@@ -517,18 +1242,14 @@ export class GradingService {
         throw new BadRequestException('This Student has no existing rank in this Skill\'s Discipline.');
       }
 
-      // FOUND ON REVIEW: the original version only checked the Skill belongs
-      // to the same Discipline as the Student's StudentRank, never that it's
-      // actually required at the Student's CURRENT Rank — letting sign-off
-      // status be cycled for irrelevant Skills, which then fed back into
-      // assertSkillsSignedOffOrAcknowledged's own (now-fixed) required-Skill
-      // check as noise. A Skill not required at the current checkpoint has
-      // nothing to sign off yet.
-      const isRequiredAtCurrentRank = await tx.rankRequiredSkill.findUnique({
-        where: { rankId_skillId: { rankId: studentRank.currentRankId, skillId } },
-      });
-      if (!isRequiredAtCurrentRank) {
-        throw new BadRequestException('This Skill is not a required Skill at this Student\'s current Rank checkpoint.');
+      // Only the skills of the student's next rung can be signed off: the
+      // engine's requirement for their current rung (Decision 127), required
+      // or, after a time-only rung, optional. Anything else has nothing to
+      // sign off yet.
+      const req = requirementFor(await loadLadder(tx, skill.disciplineId), studentRank.currentStripeId ?? '');
+      const forNextRung = req.kind === 'NEXT' ? [...req.requiredSkillIds, ...req.optionalSkillIds] : [];
+      if (!forNextRung.includes(skillId)) {
+        throw new BadRequestException('This Skill is not one of the skills for this Student\'s next rank.');
       }
 
       const existing = await tx.studentRankSkillStatus.findUnique({
@@ -570,7 +1291,7 @@ export class GradingService {
           status: next,
         },
       });
-    });
+    }));
   }
 
   // ---------------------------------------------------------------------------
@@ -597,7 +1318,7 @@ export class GradingService {
     if (!found) {
       throw new NotFoundException('History entry not found');
     }
-    await this.assertCanGrade(callerId, schoolId, found.studentRank.disciplineId, studentId);
+    await this.assertCanGrade(callerId, schoolId, found.studentRank.disciplineId, studentId, 'canVoidHistory');
     await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
 
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -618,6 +1339,118 @@ export class GradingService {
     });
   }
 
+  /** Edit a history entry's note, or hide or show it (Decision 192). For the
+   * owner and anyone who may grade that student in that style: a coach with
+   * "Promote" or "Move down" for the style, covering the student's branch.
+   * Every change goes to PromotionEventNoteLog. System notes and downgrade
+   * reasons are not edited here; voided entries can't be changed. */
+  async changeHistoryNote(callerId: string, studentId: string, schoolId: string, eventId: string, dto: ChangeHistoryNoteDto) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(eventId)) {
+      throw new BadRequestException('id, eventId and schoolId must be valid UUIDs');
+    }
+    if (dto.note === undefined && dto.hidden === undefined) {
+      throw new BadRequestException('Send a note, or hidden, or both.');
+    }
+    // Staff first, so an outsider learns nothing about which entries exist.
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const found = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.promotionEvent.findFirst({ where: { id: eventId, studentId, schoolId }, select: { studentRank: { select: { disciplineId: true } } } }),
+    );
+    if (!found) {
+      throw new NotFoundException('History entry not found');
+    }
+    await this.assertMayGradeEither(callerId, schoolId, found.studentRank.disciplineId, studentId, ['canPromote', 'canDowngrade']);
+    await this.assertSchoolAcceptsGradingWrites(callerId, schoolId);
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const entry = await tx.promotionEvent.findFirstOrThrow({ where: { id: eventId, studentId, schoolId } });
+      if (entry.voidedAt) {
+        throw new ConflictException('This entry is voided; its note can\'t be changed.');
+      }
+      const now = new Date();
+      const newNote = dto.note === undefined ? entry.note : dto.note?.trim() || null;
+      const edited = newNote !== entry.note;
+      const hide = dto.hidden === true && !entry.noteHiddenAt;
+      const show = dto.hidden === false && !!entry.noteHiddenAt;
+      if (dto.hidden === true && !newNote) {
+        throw new BadRequestException('There is no note to hide.');
+      }
+      if (!edited && !hide && !show) return entry;
+
+      // Conditional on what was read: two changes at once give a 409, never
+      // a lost edit.
+      const updated = await tx.promotionEvent.updateMany({
+        where: { id: entry.id, note: entry.note, noteHiddenAt: entry.noteHiddenAt, voidedAt: null },
+        data: {
+          ...(edited ? { note: newNote, noteEditedAt: now, noteEditedById: callerId } : {}),
+          ...(hide ? { noteHiddenAt: now } : show ? { noteHiddenAt: null } : {}),
+        },
+      });
+      if (updated.count === 0) {
+        throw new ConflictException('This note was changed at the same time — please look again.');
+      }
+      const base = { promotionEventId: entry.id, schoolId, studentId, changedById: callerId };
+      // createMany: no RETURNING, since the student's context may write the
+      // log but not read it back.
+      await tx.promotionEventNoteLog.createMany({
+        data: [
+          ...(edited ? [{ ...base, id: randomUUID(), change: 'EDITED' as const, oldNote: entry.note, newNote, createdAt: now }] : []),
+          ...(hide ? [{ ...base, id: randomUUID(), change: 'HIDDEN' as const, oldNote: newNote, newNote, createdAt: now }] : []),
+          ...(show ? [{ ...base, id: randomUUID(), change: 'SHOWN' as const, oldNote: newNote, newNote, createdAt: now }] : []),
+        ],
+      });
+      return tx.promotionEvent.findUniqueOrThrow({ where: { id: entry.id } });
+    });
+  }
+
+  /** Every change to one entry's note, oldest first (Decision 192). The
+   * School Owner/Manager only: the log keeps hidden notes' text. */
+  async findHistoryNoteLog(callerId: string, studentId: string, schoolId: string, eventId: string) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(eventId)) {
+      throw new BadRequestException('id, eventId and schoolId must be valid UUIDs');
+    }
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.promotionEventNoteLog.findMany({
+        where: { promotionEventId: eventId, studentId, schoolId },
+        orderBy: { createdAt: 'asc' },
+        include: { changedBy: { select: { firstName: true, surname: true } } },
+      }),
+    );
+    return {
+      items: rows.map(({ changedBy, ...r }) => ({
+        id: r.id,
+        change: r.change,
+        oldNote: r.oldNote,
+        newNote: r.newNote,
+        changedById: r.changedById,
+        changedByName: changedBy ? `${changedBy.firstName} ${changedBy.surname}` : null,
+        createdAt: r.createdAt,
+      })),
+    };
+  }
+
+  /** assertCanGrade, passing when the caller holds any one of these toggles. */
+  private async assertMayGradeEither(callerId: string, schoolId: string, disciplineId: string, studentId: string, toggles: PermissionToggle[]) {
+    let first: unknown;
+    for (const toggle of toggles) {
+      try {
+        await this.assertCanGrade(callerId, schoolId, disciplineId, studentId, toggle);
+        return;
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        first ??= err;
+      }
+    }
+    throw first;
+  }
+
   /** Correct the date a student reached their current rung (Decision 153).
    * The new date may not be in the future, nor before the student's previous
    * grading on their (non-voided) history, so the history never runs
@@ -629,18 +1462,22 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canAdjustProgress');
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
-    const newDate = new Date(`${dto.date}T00:00:00.000Z`);
-    if (Number.isNaN(newDate.getTime()) || dayOf(newDate) !== dto.date) {
+    if (dayNumber(dto.date) === null) {
       throw new BadRequestException('date must be a real calendar date, as YYYY-MM-DD.');
     }
-    if (dto.date > dayOf(new Date())) {
-      throw new BadRequestException('The rank date can\'t be in the future.');
-    }
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // Days are the student's local days (home branch, else School, else
+      // UTC), the same days the engine counts time in rank with.
+      const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
+      const dayOf = (d: Date) => localDay(d, timeZone);
+      if (dto.date > dayOf(new Date())) {
+        throw new BadRequestException('The rank date can\'t be in the future.');
+      }
+      const newDate = startOfLocalDay(dto.date, timeZone);
       const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
       if (!existing) {
         throw new BadRequestException('This Student has no rank in this Discipline.');
@@ -699,7 +1536,7 @@ export class GradingService {
       });
       const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
       return { studentRank, promotionEvent };
-    });
+    }));
   }
 
   private nextSkillStatus(current: string): 'NOT_STARTED' | 'LEARNING' | 'SIGNED_OFF' {
@@ -744,13 +1581,13 @@ export class GradingService {
     }
     await this.assertSchoolAcceptsGradingWrites(studentId, discipline.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const tier = await tx.rankStripeTier.findFirst({
         where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId } },
         select: { id: true, rankId: true },
       });
       if (!tier) {
-        throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+        throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its stripes.');
       }
       if (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } }, select: { id: true } })) {
         throw new ConflictException('This student already has a rank in this style; only staff can change it.');
@@ -795,12 +1632,12 @@ export class GradingService {
           toRankId: tier.rankId,
           toStripeTierId: tier.id,
           systemNote: autoVerified
-            ? 'Declared when joining: the first rung, verified automatically (Decision 147).'
+            ? 'Declared when joining: the plain first belt, verified automatically (Decision 147).'
             : 'Declared when joining: waiting to be verified by the School (Decision 137).',
         },
       });
       return { studentRank, promotionEvent };
-    });
+    }));
   }
 
   /** Verify a self-declared rank, or correct it to the right rung while
@@ -816,10 +1653,10 @@ export class GradingService {
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
+    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, 'canVerifyRanks');
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
       if (!existing) {
         throw new BadRequestException('This student has no rank in this style to verify.');
@@ -835,7 +1672,7 @@ export class GradingService {
           select: { id: true, rankId: true },
         });
         if (!tier) {
-          throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+          throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its stripes.');
         }
         target = { rankId: tier.rankId, stripeTierId: tier.id };
       }
@@ -856,6 +1693,8 @@ export class GradingService {
           verifiedById: callerId,
           currentRankId: target.rankId,
           currentStripeId: target.stripeTierId,
+          // A corrected rung is a new rank: "ready to grade" may notify again (Decision 178).
+          ...(corrected ? { readyNotifiedAt: null } : {}),
         },
       });
       if (updated.count === 0) {
@@ -885,25 +1724,64 @@ export class GradingService {
       }
       const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
       return { studentRank, promotionEvent };
-    });
+    }));
   }
 
-  /** Ranks waiting to be verified at a School, for the notice shown at login
-   * (Decision 137, item 4). Owner only for now: StudentRank's RLS (Decision
-   * 88) lets only the owner list other students' ranks. Permitted coaches get
-   * their branches' list with the Grading Board's read path (roadmap Phase 3). */
+  /** Belts waiting to be verified at a School, for the notice shown at login
+   * (Decisions 137 item 4, 189). The owner sees every enrolled student's; a
+   * coach or Branch Staff member sees those in the styles where they may
+   * verify (Decision 181's "Verify ranks"), for the students they cover
+   * (Decision 168), through the Grading Board's read path; anyone else at
+   * the School gets an empty list. Oldest first. */
   async findPendingVerifications(callerId: string, schoolId: string) {
     if (!UUID_PATTERN.test(schoolId)) {
       throw new BadRequestException('schoolId must be a valid UUID');
     }
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    const items = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.studentRank.findMany({
-        where: { schoolId, verificationStatus: 'UNVERIFIED' },
-        orderBy: { createdAt: 'asc' },
-        include: { skillStatuses: { select: { skillId: true, status: true } } },
-      }),
-    );
+    type Item = {
+      studentRankId: string; studentId: string; firstName: string; surname: string; disciplineId: string; disciplineName: string;
+      currentRankId: string; currentStripeId: string | null; verificationStatus: 'UNVERIFIED'; declaredAt: Date;
+    };
+    const items: Item[] = [];
+    const push = (student: { id: string; firstName: string; surname: string }, discipline: { id: string; name: string }, sr: { id: string; currentRankId: string; currentStripeId: string | null; createdAt: Date }) =>
+      items.push({
+        studentRankId: sr.id, studentId: student.id, firstName: student.firstName, surname: student.surname,
+        disciplineId: discipline.id, disciplineName: discipline.name,
+        currentRankId: sr.currentRankId, currentStripeId: sr.currentStripeId, verificationStatus: 'UNVERIFIED', declaredAt: sr.createdAt,
+      });
+
+    if (await this.isSchoolOwner(callerId, schoolId)) {
+      await this.prismaApp.withTenantContext(callerId, async (tx) => {
+        const grants = await tx.roleGrant.findMany({
+          where: { schoolId, role: 'STUDENT', revokedAt: null },
+          distinct: ['userId'],
+          select: { user: { select: { id: true, firstName: true, surname: true } } },
+        });
+        const studentOf = new Map(grants.map((g) => [g.user.id, g.user]));
+        const ranks = await tx.studentRank.findMany({
+          where: { schoolId, verificationStatus: 'UNVERIFIED', studentId: { in: [...studentOf.keys()] } },
+          include: { discipline: { select: { id: true, name: true } } },
+        });
+        for (const sr of ranks) push(studentOf.get(sr.studentId)!, sr.discipline, sr);
+      });
+    } else {
+      await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+      const permissions = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.gradingPermission.findMany({
+          where: { userId: callerId, schoolId, canVerifyRanks: true },
+          select: { discipline: { select: { id: true, name: true } } },
+        }),
+      );
+      for (const { discipline } of permissions) {
+        const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+          tx.$queryRaw<Array<{ studentId: string; firstName: string; surname: string; studentRank: Record<string, unknown> }>>`SELECT * FROM grading_board_rows(${schoolId}, ${discipline.id})`,
+        );
+        for (const r of found) {
+          const sr = studentRankFromJson(r.studentRank);
+          if (sr.verificationStatus === 'UNVERIFIED') push({ id: r.studentId, firstName: r.firstName, surname: r.surname }, discipline, sr);
+        }
+      }
+    }
+    items.sort((a, b) => a.declaredAt.getTime() - b.declaredAt.getTime() || a.surname.localeCompare(b.surname));
     return { items };
   }
 }

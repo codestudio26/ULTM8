@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 /**
@@ -28,7 +28,7 @@ import { PrismaClient } from '@prisma/client';
  * field) before `super()` runs in a derived class.
  */
 @Injectable()
-export class PrismaDiscoveryService extends PrismaClient {
+export class PrismaDiscoveryService extends PrismaClient implements OnModuleDestroy {
   constructor() {
     const url = process.env.DATABASE_URL_DISCOVERY;
     if (!url) {
@@ -38,5 +38,12 @@ export class PrismaDiscoveryService extends PrismaClient {
       );
     }
     super(url ? { datasourceUrl: url } : undefined);
+  }
+
+  /** Close this client's connection pool when the app shuts down (app.close(),
+   * SIGTERM), so a restarted process or a test suite that starts the app
+   * repeatedly doesn't leave connections open until the process exits. */
+  async onModuleDestroy(): Promise<void> {
+    await this.$disconnect();
   }
 }

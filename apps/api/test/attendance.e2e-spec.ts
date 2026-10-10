@@ -159,10 +159,15 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     await superuser.rank.deleteMany({ where: { schoolId: school.id } });
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
-    await superuser.consentRecord.deleteMany({ where: { studentId: { in: userIds } } });
-    await superuser.guardianLink.deleteMany({ where: { studentId: { in: userIds } } });
+    // Only this file's minors: other test files create guardian-managed
+    // minors too, and may be running at the same time.
+    const minorIds = (
+      await superuser.guardianLink.findMany({ where: { OR: [{ guardianId: { in: userIds } }, { studentId: { in: userIds } }] }, select: { studentId: true } })
+    ).map((l) => l.studentId);
+    await superuser.consentRecord.deleteMany({ where: { studentId: { in: [...userIds, ...minorIds] } } });
+    await superuser.guardianLink.deleteMany({ where: { studentId: { in: [...userIds, ...minorIds] } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
-    await superuser.user.deleteMany({ where: { OR: [{ id: { in: userIds } }, { email: { contains: 'guardian-managed.ultm8.internal' } }] } });
+    await superuser.user.deleteMany({ where: { id: { in: [...userIds, ...minorIds] } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
     await app.close();
@@ -175,7 +180,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       });
       const future = new Date(Date.now() + 3_600_000);
       const cls = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Judo Class', activities: ['Judo'], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
+        data: { id: randomUUID(), schoolId: school.id, title: 'Judo Class', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: null }], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
       });
       const membership = await mkActiveMembership(studentA.id);
       await mkBooking(studentA.id, cls.id, membership.id);

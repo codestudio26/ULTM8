@@ -65,18 +65,22 @@ export class CreateInstructorDto {
   @IsUrl()
   photoUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system.' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  beltRanking?: string;
-
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
   specializations?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: "The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names.",
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('4', { each: true })
+  specializationStyleIds?: string[];
 
   @ApiPropertyOptional({ description: 'School-facing contact number, E.164 — distinct from this User\'s own login phone.' })
   @IsOptional()

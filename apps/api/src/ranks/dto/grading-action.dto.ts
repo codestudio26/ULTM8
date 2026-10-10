@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsISO8601, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+
+/** Upper bound on any starting class number (input sanity, not a grading rule). */
+export const MAX_STARTING_CLASSES = 10_000;
 
 /**
  * Shared body for promote/downgrade/stripe-award. `acknowledgeWithoutSkillSignoff`
@@ -27,6 +30,48 @@ export class GradingActionDto {
   @IsString()
   @MaxLength(1000)
   note?: string;
+
+  @ApiPropertyOptional({
+    description: 'The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award.',
+  })
+  @IsOptional()
+  @IsUUID()
+  targetRungId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can\'t both grade the same step (Decision 185).',
+    nullable: true,
+    type: String,
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsUUID()
+  expectedCurrentRungId?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Back-dated grading date, YYYY-MM-DD in the student\'s local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.',
+    example: '2026-03-01',
+  })
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @MaxLength(10)
+  effectiveDate?: string;
+
+  @ApiPropertyOptional({ description: 'Starting classes toward the new next rung (Decision 128, item 9), when it counts any ticked type. Promote and stripe award only.', minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(MAX_STARTING_CLASSES)
+  startingClasses?: number;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'integer', minimum: 0 },
+    description: 'Starting classes per type, when the new next rung counts each type separately (Decision 174), e.g. {"Fundamentals": 5, "Sparring": 2}.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined)
+  @IsObject()
+  startingClassesByType?: Record<string, number>;
 }
 
 /** Downgrade: a written reason is required (Decision 128, item 11). */
@@ -48,6 +93,21 @@ export class VoidPromotionEventDto {
   @Matches(/\S/, { message: 'reason must contain text' })
   @MaxLength(1000)
   reason!: string;
+}
+
+/** Edit a history entry's note, or hide or show it (Decision 192). Send
+ * either or both; an empty note clears it. */
+export class ChangeHistoryNoteDto {
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  note?: string | null;
+
+  @ApiPropertyOptional({ description: 'true hides the note from the student and guardian; false shows it again.' })
+  @IsOptional()
+  @IsBoolean()
+  hidden?: boolean;
 }
 
 /** Correct the date a student reached their current rung (Decisions 153, 166). */

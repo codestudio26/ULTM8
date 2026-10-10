@@ -48,6 +48,14 @@ export class ClassTypeRequirementInputDto {
  * rank thresholds, and its own eligibleClassTypes list."
  */
 export class RankStripeTierInputDto {
+  @ApiPropertyOptional({
+    description:
+      'Updating a belt only: the id of an existing rung of this belt. The rung keeps its id, and the students holding it, while its position, name or rules change (Decision 180). Omit for a new rung. When any rung in the list has an id, rungs left out are removed; a rung that students hold can\'t be removed (Decision 152).',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({ description: 'Position within this Rank\'s stripe ladder — must be unique and contiguous (enforced in the service layer, §5).' })
   @IsInt()
   @Min(0)
@@ -137,6 +145,17 @@ export class RankStripeTierInputDto {
   @Type(() => ClassTypeRequirementInputDto)
   classTypeRequirements?: ClassTypeRequirementInputDto[];
 
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung.',
+  })
+  @NotNullIfPresent()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  bookingUnlocksClassTypes?: string[];
+
   @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.' })
   @NotNullIfPresent()
   @IsArray()
@@ -164,7 +183,8 @@ export class StripeSegmentInputDto {
 /**
  * Field list verified against skills/ultm8-domain-rules/SKILL.md §5's confirmed
  * Rank row: "primary belt colour and an optional secondary colour..., a weekly
- * class-count cap, a set of required Skills, and a years-in-rank flag." disciplineId
+ * class-count cap, a set of required Skills, and a years-in-rank flag." All three
+ * now belong to each stripe (Decisions 126, 128 item 3, 199, 207). disciplineId
  * is a route param (`/styles/:disciplineId/ranks`), not a body field.
  *
  * `stripeTiers` requires at least one tier — Spec 55's own examples (§5: "White
@@ -208,17 +228,6 @@ export class CreateRankDto {
   @MaxLength(50)
   coralAccent?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  weeklyClassCountCap?: number;
-
-  @ApiPropertyOptional({ default: false, description: 'Black Belt and above — see the schema\'s own comment on why this is a boolean only, no numeric threshold.' })
-  @IsOptional()
-  @IsBoolean()
-  yearsInRankFlag?: boolean;
-
   @ApiProperty({ type: [RankStripeTierInputDto], minItems: 1 })
   @IsArray()
   @ArrayMinSize(1)
@@ -226,10 +235,6 @@ export class CreateRankDto {
   @Type(() => RankStripeTierInputDto)
   stripeTiers!: RankStripeTierInputDto[];
 
-  @ApiPropertyOptional({ type: [String], description: 'Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements.' })
-  @NotNullIfPresent()
-  @IsArray()
-  @ArrayMaxSize(100)
-  @IsUUID('4', { each: true })
-  requiredSkillIds?: string[];
+  // No belt-level weekly cap, required skills or years-in-rank flag: they live
+  // on each stripe, the plain belt's own stripe included (Decisions 126, 164, 199, 207).
 }
