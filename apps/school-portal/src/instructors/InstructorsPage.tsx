@@ -14,6 +14,7 @@ import {
   type InstructorResponse,
 } from './instructorQueries';
 import { InstructorFormModal } from './InstructorFormModal';
+import { InstructorBeltsSection } from './InstructorBeltsSection';
 
 /** Up to 3 specialization badges, then a "+N" overflow badge — keeps a long
  * specializations list from blowing out the row height instead of silently
@@ -107,6 +108,8 @@ export function InstructorsPage() {
           />
         )}
       </Card>
+
+      <InstructorBeltsSection schoolId={schoolId} />
 
       {creating ? (
         <InstructorFormModal
