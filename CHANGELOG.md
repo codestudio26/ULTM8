@@ -15,6 +15,19 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Who can watch lessons** (Decisions 154, 190, 195). Each membership plan
+  now ticks the styles it covers and has **Includes lessons** (on by default
+  for plans with a price, off for free ones; the owner can change it). A
+  student, or their guardian, can watch a lesson when a live membership of
+  theirs is on a plan that includes lessons and covers one of the lesson's
+  styles (its skills' styles); the owner can make any lesson **Free for
+  everyone at the School**; staff see every lesson. Other lessons show as
+  locked: title and category, no description or video. Existing plans cover
+  every style their School has and include lessons when priced, so today's
+  members keep what they see now. **api:** `MembershipPlan.disciplineIds` /
+  `includesLessons` and `Lesson.free` (migration `20261101000000`); lesson
+  responses add `free` and `locked`; new `GET /students/{id}/lessons` for the
+  student or their guardian; only the owner sets `free`.
 - **History notes can be edited and hidden; every change is kept** (Decision
   192). On a student's grading page, the owner and anyone who may grade that
   student in that style ("Promote" or "Move down") can edit a history entry's

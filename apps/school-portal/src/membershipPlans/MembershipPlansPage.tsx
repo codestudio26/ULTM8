@@ -3,6 +3,7 @@ import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Tabl
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
+import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { formatMoney } from '../lib/money';
 import {
@@ -25,6 +26,7 @@ export function MembershipPlansPage() {
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useMembershipPlans(schoolId);
   const { data: classData } = useClasses(schoolId);
+  const { data: disciplineData } = useDisciplines(schoolId);
   const createPlan = useCreateMembershipPlan(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<MembershipPlanResponse | null>(null);
@@ -35,6 +37,7 @@ export function MembershipPlansPage() {
 
   const plans = data?.items ?? [];
   const classes = classData?.items ?? [];
+  const disciplines = disciplineData?.items ?? [];
 
   return (
     <>
@@ -81,6 +84,7 @@ export function MembershipPlansPage() {
         <MembershipPlanFormModal
           title="Add membership plan"
           classes={classes}
+          disciplines={disciplines}
           submitting={createPlan.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to
@@ -94,7 +98,7 @@ export function MembershipPlansPage() {
       ) : null}
 
       {editing ? (
-        <EditMembershipPlanModal schoolId={schoolId} classes={classes} plan={editing} onClose={() => setEditing(null)} />
+        <EditMembershipPlanModal schoolId={schoolId} classes={classes} disciplines={disciplines} plan={editing} onClose={() => setEditing(null)} />
       ) : null}
     </>
   );
@@ -103,11 +107,13 @@ export function MembershipPlansPage() {
 function EditMembershipPlanModal({
   schoolId,
   classes,
+  disciplines,
   plan,
   onClose,
 }: {
   schoolId: string;
   classes: ClassResponse[];
+  disciplines: DisciplineResponse[];
   plan: MembershipPlanResponse;
   onClose: () => void;
 }) {
@@ -117,6 +123,7 @@ function EditMembershipPlanModal({
       title="Edit membership plan"
       initial={plan}
       classes={classes}
+      disciplines={disciplines}
       submitting={updatePlan.isPending}
       onSubmit={async (values) => {
         // Passed straight through, nulls included — UpdateMembershipPlanDto

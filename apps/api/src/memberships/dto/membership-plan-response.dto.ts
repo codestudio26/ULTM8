@@ -42,6 +42,12 @@ export class MembershipPlanResponseDto {
   @ApiProperty()
   termsWaiverRequired!: boolean;
 
+  @ApiProperty({ type: [String], description: 'The styles this plan covers (Decision 195).' })
+  disciplineIds!: string[];
+
+  @ApiProperty({ description: 'Whether a live membership on this plan can watch its styles\' lessons (Decision 195).' })
+  includesLessons!: boolean;
+
   @ApiProperty()
   createdAt!: string;
 

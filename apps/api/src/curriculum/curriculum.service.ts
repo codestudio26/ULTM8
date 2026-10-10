@@ -1,14 +1,22 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
+import { GuardiansService } from '../guardians/guardians.service';
+import { isMembershipLive } from '../memberships/memberships.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { OrderCategoryLessonsDto, OrderLessonCategoriesDto } from './dto/lesson-category.dto';
 
-const LESSON_INCLUDE = { skills: true, category: { select: { name: true } } } as const;
+const LESSON_INCLUDE = { skills: { include: { skill: { select: { disciplineId: true } } } }, category: { select: { name: true } } } as const;
+
+/** What a caller may watch (Decisions 154, 190, 195): staff everything; a
+ * student, or a guardian on their behalf, free lessons and those of the styles
+ * their live memberships cover on plans that include lessons. */
+type LessonAccess = 'all' | Set<string>;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Categorised lessons in category order, each in its own order; then the rest. */
 const LESSON_ORDER: Prisma.LessonOrderByWithRelationInput[] = [{ category: { order: 'asc' } }, { categoryId: 'asc' }, { order: 'asc' }, { title: 'asc' }];
 
@@ -39,6 +47,7 @@ export class CurriculumService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly guardiansService: GuardiansService,
   ) {}
 
   async createLesson(callerId: string, schoolId: string, dto: CreateLessonDto) {
@@ -52,6 +61,8 @@ export class CurriculumService {
       await this.tenantAuth.assertValidInstructor(callerId, dto.instructorId, schoolId, null);
     }
     await this.assertSkillsBelongToSchool(callerId, dto.skillIds, schoolId);
+    // Only the owner makes a lesson free (Decision 190).
+    if (dto.free) await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     const lessonId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -65,6 +76,7 @@ export class CurriculumService {
           title: dto.title,
           categoryId,
           order: await this.nextOrderIn(tx, schoolId, categoryId),
+          free: dto.free ?? false,
           durationSeconds: dto.durationSeconds,
           description: dto.description,
           format: dto.format,
@@ -80,10 +92,11 @@ export class CurriculumService {
 
   async findLessonsForSchool(callerId: string, schoolId: string) {
     await this.schoolsService.findOne(callerId, schoolId);
+    const access = await this.accessFor(callerId, schoolId);
     const lessons = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.lesson.findMany({ where: { schoolId }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
     );
-    return lessons.map((l) => this.shapeLessonResponse(l));
+    return lessons.map((l) => this.shapeLessonResponse(l, access));
   }
 
   /** GET /skills/{id}/lessons — Spec 55 §7's literal confirmed route. */
@@ -99,7 +112,8 @@ export class CurriculumService {
         include: LESSON_INCLUDE,
       }),
     );
-    return lessons.map((l) => this.shapeLessonResponse(l));
+    const access = await this.accessFor(callerId, skill.schoolId);
+    return lessons.map((l) => this.shapeLessonResponse(l, access));
   }
 
   async findOneLesson(callerId: string, lessonId: string) {
@@ -109,7 +123,52 @@ export class CurriculumService {
     if (!found) {
       throw new NotFoundException('Lesson not found');
     }
-    return this.shapeLessonResponse(found);
+    return this.shapeLessonResponse(found, await this.accessFor(callerId, found.schoolId));
+  }
+
+  /** The lessons a student may watch, for the student or their guardian
+   * (Decisions 154, 190, 195): every lesson of the School, the ones they may
+   * not watch marked locked. Read under the student's context, since a
+   * guardian holds no role at the School. */
+  async findLessonsForStudent(callerId: string, studentId: string, schoolId: string) {
+    if (!schoolId) throw new BadRequestException('schoolId query parameter is required');
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('id and schoolId must be valid UUIDs');
+    }
+    if (callerId !== studentId) await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    const enrolled = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+    );
+    if (!enrolled) throw new NotFoundException('This person isn\'t a student at this School.');
+    const access = await this.studentStyles(studentId, schoolId);
+    const lessons = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.lesson.findMany({ where: { schoolId }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
+    );
+    return lessons.map((l) => this.shapeLessonResponse(l, access));
+  }
+
+  /** Staff see every lesson; anyone else is treated as a student. */
+  private async accessFor(callerId: string, schoolId: string): Promise<LessonAccess> {
+    try {
+      await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+      return 'all';
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+      return this.studentStyles(callerId, schoolId);
+    }
+  }
+
+  /** The styles a student's live memberships cover, on plans that include
+   * lessons (Decision 195). */
+  private async studentStyles(studentId: string, schoolId: string): Promise<Set<string>> {
+    const memberships = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.membership.findMany({
+        where: { studentId, schoolId },
+        select: { status: true, expiryDate: true, classesRemaining: true, membershipPlan: { select: { includesLessons: true, disciplineIds: true } } },
+      }),
+    );
+    const now = new Date();
+    return new Set(memberships.filter((m) => m.membershipPlan.includesLessons && isMembershipLive(m, now)).flatMap((m) => m.membershipPlan.disciplineIds));
   }
 
   async updateLesson(callerId: string, lessonId: string, dto: UpdateLessonDto) {
@@ -126,6 +185,8 @@ export class CurriculumService {
     if (dto.skillIds) {
       await this.assertSkillsBelongToSchool(callerId, dto.skillIds, existing.schoolId);
     }
+    // Only the owner makes a lesson free, or not (Decision 190).
+    if (dto.free !== undefined && dto.free !== existing.free) await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       // A new category puts the lesson at its end (null: no category).
@@ -135,6 +196,7 @@ export class CurriculumService {
         where: { id: lessonId },
         data: {
           title: dto.title,
+          free: dto.free,
           ...(moving ? { categoryId: dto.categoryId, order: await this.nextOrderIn(tx, existing.schoolId, dto.categoryId ?? null) } : {}),
           durationSeconds: dto.durationSeconds,
           description: dto.description,
@@ -162,9 +224,18 @@ export class CurriculumService {
   // Shared response shaping
   // ---------------------------------------------------------------------------
 
-  private shapeLessonResponse(lesson: Prisma.LessonGetPayload<{ include: typeof LESSON_INCLUDE }>) {
+  private shapeLessonResponse(lesson: Prisma.LessonGetPayload<{ include: typeof LESSON_INCLUDE }>, access: LessonAccess = 'all') {
     const { skills, category, ...rest } = lesson;
-    return { ...rest, category: category?.name ?? null, skillIds: skills.map((s) => s.skillId) };
+    // A lesson's styles are its skills' styles (Decision 195).
+    const locked = access !== 'all' && !lesson.free && !skills.some((s) => access.has(s.skill.disciplineId));
+    return {
+      ...rest,
+      category: category?.name ?? null,
+      skillIds: skills.map((s) => s.skillId),
+      locked,
+      // A locked lesson shows what it is, not its content.
+      ...(locked ? { description: null, videoRef: null, captionTrackRef: null } : {}),
+    };
   }
 
   /** The next free place at the end of a category (or of the uncategorised). */

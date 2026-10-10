@@ -1292,6 +1292,12 @@ model MembershipPlan {
 
   visible Boolean @default(true)
 
+  /// Lessons (Decision 195): the School's styles this plan covers, and
+  /// whether a live membership on it can watch those styles' lessons. On by
+  /// default for priced plans, off for free ones; the owner can change it.
+  disciplineIds   String[] @default([])
+  includesLessons Boolean  @default(false)
+
   refundFeeDate       DateTime?
   cancellationCharge  Int?
   termsWaiverRequired Boolean   @default(false)
@@ -2030,6 +2036,9 @@ model Lesson {
   categoryId      String?
   category        LessonCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   order           Int             @default(0)
+  /// Watchable by every student and guardian at the School, membership or
+  /// not (Decision 190). Set by the owner.
+  free            Boolean @default(false)
   durationSeconds Int?
   description     String?
   format          LessonFormat

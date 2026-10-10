@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { LessonFormat } from '@prisma/client';
 
 /**
@@ -64,4 +64,9 @@ export class CreateLessonDto {
   @ArrayMaxSize(50)
   @IsUUID('4', { each: true })
   skillIds!: string[];
+
+  @ApiPropertyOptional({ description: 'Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only.' })
+  @IsOptional()
+  @IsBoolean()
+  free?: boolean;
 }
