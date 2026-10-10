@@ -1737,7 +1737,7 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       expect((await voidIt()).status).toBe(201);
     });
 
-    it('RLS: grading permissions and home branches are visible only to the owner and the person themselves; staff cannot grant themselves permission', async () => {
+    it('RLS: grading permissions are visible only to the owner and the person themselves, home branches also to their own branch\'s staff; staff cannot grant themselves permission', async () => {
       const { carla, max, ana, ben } = people;
       expect(await withUser(carla.user.id, (tx) => tx.gradingPermission.count({ where: { schoolId: schoolP.id } }))).toBe(
         await superuser.gradingPermission.count({ where: { schoolId: schoolP.id, userId: carla.user.id } }),
@@ -1752,7 +1752,11 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
 
       expect(await withUser(ana.user.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(1);
       expect(await withUser(ben.user.id, (tx) => tx.studentHomeBranch.count({ where: { studentId: ana.user.id } }))).toBe(0);
-      expect(await withUser(carla.user.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(0);
+      // Staff read the home-branch rows of their own branches only (Decision
+      // 168; the Grading Board's read-only rule, 20261021000000).
+      const carlaSees = await withUser(carla.user.id, (tx) => tx.studentHomeBranch.findMany({ where: { schoolId: schoolP.id } }));
+      expect(carlaSees.length).toBe(await superuser.studentHomeBranch.count({ where: { schoolId: schoolP.id, branchId: downtown.id } }));
+      expect(carlaSees.every((h) => h.branchId === downtown.id)).toBe(true);
       expect(await withUser(ownerP.id, (tx) => tx.studentHomeBranch.count({ where: { schoolId: schoolP.id } }))).toBe(3);
     });
   });

@@ -2097,3 +2097,23 @@ Decision 123 itself already laid out why a genuine minor login is a large, separ
 ### Recorded by
 
 Raised by Claude while auditing open gaps against the current, merged state of the codebase (Kid Mode now shipped, grading now merged); the user chose "Close as superseded" over "Keep it open" when asked directly, 9 Oct 2026.
+
+---
+
+## Decision 176 — "Log a class" picks a class type, always counts and is recorded; the board's Active switch is per student per style
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** two points the prototype leaves open now that rungs count by class type and students can train several styles. Raised while building roadmap Phase 3b (the Grading Board).
+
+1. **"Log a class"** (Decision 128, item 6): the coach picks the class type from the next rank's ticked types. If the next rank ticks none, the type is optional. A logged class always counts, even past the weekly cap, because the coach is adding it deliberately. It is written to the student's history (who, when, which type), so the count can be audited. A time-only rank takes none. Gus: *"Pick type, skip cap, record it"*.
+2. **The Grading Board's manual Active/Inactive switch** (Decision 152) is **per student per style**: a student marked inactive on the BJJ board still shows on the Judo board. Gus: *"Per student, per style"*.
+
+---
+
+## Decision 177 — Coaches can see which students are theirs: two narrow read-only database rules
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found building the Grading Board. Decision 168 says coaches see their own branch's students, but row-level security only let the School owner (and each student) see who belongs to a branch or School, so a coach's board came back empty. The existing student roster has the same gap for coaches.
+
+1. **Schools with branches.** An active INSTRUCTOR or BRANCH_STAFF grant at a branch lets its holder **read** the home-branch rows of that branch, and nothing more. Gus: *"Narrow rule for coaches"*.
+2. **Schools without branches: the School is the branch** (Decisions 168, 169). That School's INSTRUCTOR/BRANCH_STAFF can **read** its STUDENT role grants (who is enrolled), nothing else, and only while the School has no branch. Gus: *"Yes, the school is the branch"*.
+
+Both are read-only (`FOR SELECT`) and scoped to the caller's own active grant, and they follow impersonation scoping. Each student's grading data (rank, memberships, name) is still read under that student's own context, after this check. Built in `20261021000000_grading_board` (`student_home_branch_staff_read`, `rolegrant_branchless_staff_student_read`, `is_staff_of_school_without_branches()`), with tests for leaks across branches and Schools, for writes, for revoked grants, and for the rule switching off once a branch exists.

@@ -4677,6 +4677,219 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/grading-board": {
+      "get": {
+        "operationId": "GradingController_getGradingBoard",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Part of the student's name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activeOnly",
+            "required": false,
+            "in": "query",
+            "description": "\"Currently attending only\" (Decision 152).",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradingBoardResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/board-move": {
+      "post": {
+        "operationId": "GradingController_moveOnBoard",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardMoveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/log-class": {
+      "post": {
+        "operationId": "GradingController_logClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/ranks/{disciplineId}/board-active": {
+      "put": {
+        "operationId": "GradingController_setBoardActive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardActiveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/grading-permissions": {
       "get": {
         "operationId": "GradingPermissionsController_findAll",
@@ -10498,6 +10711,11 @@
             "type": "string",
             "description": "When counting toward the current rung began: the moment of the last rank change."
           },
+          "boardActiveOverride": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176)."
+          },
           "verificationStatus": {
             "type": "string",
             "enum": [
@@ -10702,6 +10920,11 @@
           "countingSince": {
             "type": "string",
             "description": "When counting toward the current rung began: the moment of the last rank change."
+          },
+          "boardActiveOverride": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176)."
           },
           "verificationStatus": {
             "type": "string",
@@ -11041,6 +11264,130 @@
             "description": "An optional note for the history."
           }
         }
+      },
+      "GradingBoardItemDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "studentRankId": {
+            "type": "string"
+          },
+          "currentRankId": {
+            "type": "string"
+          },
+          "currentStripeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "\"Currently attending\": the manual switch when set, otherwise whether the student has an active membership (Decision 152)."
+          },
+          "activeSource": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "MEMBERSHIP"
+            ]
+          },
+          "hasActiveMembership": {
+            "type": "boolean"
+          },
+          "hardBlocked": {
+            "type": "boolean",
+            "description": "The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10)."
+          },
+          "eligibility": {
+            "$ref": "#/components/schemas/EligibilityResponseDto"
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "studentRankId",
+          "currentRankId",
+          "verificationStatus",
+          "active",
+          "activeSource",
+          "hasActiveMembership",
+          "hardBlocked",
+          "eligibility"
+        ]
+      },
+      "GradingBoardResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Students with a next rank in this style, highest progress first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingBoardItemDto"
+            }
+          },
+          "hiddenInactive": {
+            "type": "number",
+            "description": "Students left out by activeOnly."
+          }
+        },
+        "required": [
+          "items",
+          "hiddenInactive"
+        ]
+      },
+      "BoardMoveDto": {
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string",
+            "enum": [
+              "JUST_STARTING",
+              "GETTING_THERE",
+              "READY_TO_GRADE"
+            ]
+          }
+        },
+        "required": [
+          "column"
+        ]
+      },
+      "LogClassDto": {
+        "type": "object",
+        "properties": {
+          "classType": {
+            "type": "string",
+            "nullable": true,
+            "description": "The class type, one of the next rank's ticked types. Required when the next rank ticks any; may be left out when it ticks none (every class counts)."
+          }
+        }
+      },
+      "BoardActiveDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "true or false: set by hand. null: follow whether the student has an active membership."
+          }
+        },
+        "required": [
+          "active"
+        ]
       },
       "GradingPermissionResponseDto": {
         "type": "object",
