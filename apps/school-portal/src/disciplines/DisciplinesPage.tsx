@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useCreateDiscipline, useDisciplines, useUpdateDiscipline, type DisciplineResponse } from './disciplineQueries';
 import { DisciplineFormModal } from './DisciplineFormModal';
+import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
 
 /** Disciplines are reference data Instructors' specializations and Classes'/
  * TimetableSlots' activities are conceptually drawn from (domain-rules §4 —
@@ -18,6 +19,8 @@ export function DisciplinesPage() {
   const createDiscipline = useCreateDiscipline(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<DisciplineResponse | null>(null);
+  const [fromTemplate, setFromTemplate] = useState(false);
+  const [duplicating, setDuplicating] = useState<DisciplineResponse | null>(null);
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
@@ -30,7 +33,14 @@ export function DisciplinesPage() {
       <PageHeader
         title="Disciplines"
         subtitle="The martial arts / activities your School offers — Instructors and Classes both reference these."
-        actions={<Button onClick={() => setCreating(true)}>Add discipline</Button>}
+        actions={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button variant="secondary" onClick={() => setFromTemplate(true)}>
+              Start from template
+            </Button>
+            <Button onClick={() => setCreating(true)}>Add discipline</Button>
+          </div>
+        }
       />
       <Card>
         {disciplines.length === 0 ? (
@@ -52,6 +62,9 @@ export function DisciplinesPage() {
                     <Button variant="secondary" onClick={() => setEditing(d)}>
                       Edit
                     </Button>
+                    <Button variant="secondary" onClick={() => setDuplicating(d)}>
+                      Duplicate
+                    </Button>
                   </div>
                 ),
               },
@@ -69,6 +82,19 @@ export function DisciplinesPage() {
             setCreating(false);
           }}
           onClose={() => setCreating(false)}
+        />
+      ) : null}
+
+      {fromTemplate ? (
+        <TemplateModal schoolId={schoolId} onCreated={(id) => navigate(`/disciplines/${id}`)} onClose={() => setFromTemplate(false)} />
+      ) : null}
+
+      {duplicating ? (
+        <DuplicateModal
+          schoolId={schoolId}
+          discipline={duplicating}
+          onCreated={(id) => navigate(`/disciplines/${id}`)}
+          onClose={() => setDuplicating(null)}
         />
       ) : null}
 
