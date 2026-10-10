@@ -6,6 +6,7 @@
  *
  * Requires the same environment as attendance.e2e-spec.ts.
  */
+import { DateTime } from 'luxon';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -321,7 +322,13 @@ describeIfDb('Grading — attendance counted through the engine (Phase 2b)', () 
     async function setCounts(total: number, byType: Record<string, number> = {}, daysAgo = 400) {
       await superuser.studentRank.update({
         where: { studentId_disciplineId: { studentId: student.id, disciplineId: bjj.id } },
-        data: { classesAttendedTowardCheckpoint: total, classesAttendedByType: byType, dateOfCurrentRank: new Date(Date.now() - daysAgo * 86_400_000) },
+        // `daysAgo` calendar days in the School's own time zone, at local noon:
+        // a fixed 24 h × N drifts a day across a DST change (Sydney, 4 Oct).
+        data: {
+          classesAttendedTowardCheckpoint: total,
+          classesAttendedByType: byType,
+          dateOfCurrentRank: DateTime.now().setZone('Australia/Sydney').startOf('day').minus({ days: daysAgo }).plus({ hours: 12 }).toJSDate(),
+        },
       });
     }
 
