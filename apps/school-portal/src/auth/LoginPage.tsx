@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from './AuthContext';
+import { takeReturnTo } from './returnTo';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -30,7 +31,7 @@ export function LoginPage() {
   }
 
   function handleContinue() {
-    navigate(location.state?.from?.pathname ?? '/', { replace: true });
+    navigate(location.state?.from?.pathname ?? takeReturnTo() ?? '/', { replace: true });
   }
 
   if (loggedIn) {

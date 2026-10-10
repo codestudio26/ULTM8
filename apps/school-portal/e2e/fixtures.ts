@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'crypto';
+import { createHash, createHmac, randomBytes, randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import type { Page } from '@playwright/test';
 
@@ -146,6 +146,45 @@ export async function addCoach(s: GradingSchool, first: string, last: string) {
   return { id: u.id, name: `${first} ${last}` };
 }
 
+/** Anyone with these grants (none: a plain account), signed in by `token`. */
+export async function addPerson(
+  first: string,
+  last: string,
+  grants: Array<{ role: 'STUDENT' | 'INSTRUCTOR' | 'BRANCH_STAFF'; schoolId: string; branchId?: string }> = [],
+) {
+  const u = await mkUser(first, last);
+  for (const g of grants) {
+    await db.roleGrant.create({ data: { id: randomUUID(), role: g.role, userId: u.id, schoolId: g.schoolId, branchId: g.branchId ?? null } });
+  }
+  const token = signToken({
+    sub: u.id,
+    email: u.email,
+    grants: grants.map((g) => ({ role: g.role, franchiseId: null, schoolId: g.schoolId, branchId: g.branchId ?? null })),
+  });
+  return { id: u.id, email: u.email, name: `${first} ${last}`, token };
+}
+
+export async function addBranch(s: GradingSchool, name: string) {
+  return db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name } });
+}
+
+/** A coach invite as the API makes it (Decision 183); returns the link's token. */
+export async function addCoachInvite(s: GradingSchool, email: string, opts: { branchId?: string; expiresAt?: Date } = {}) {
+  const token = randomBytes(32).toString('base64url');
+  await db.coachInvite.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      branchId: opts.branchId ?? null,
+      email: email.toLowerCase(),
+      tokenHash: createHash('sha256').update(token).digest('hex'),
+      invitedById: s.ownerId,
+      expiresAt: opts.expiresAt ?? new Date(Date.now() + 7 * 86_400_000),
+    },
+  });
+  return token;
+}
+
 /** Signs the page in as this token's user (the portal keeps the token in sessionStorage). */
 export async function signIn(page: Page, token: string) {
   await page.addInitScript((t) => sessionStorage.setItem('ultm8.accessToken', t), token);
@@ -168,7 +207,11 @@ export async function cleanup() {
   await db.rank.deleteMany({ where });
   await db.skill.deleteMany({ where });
   await db.discipline.deleteMany({ where });
+  await db.coachInvite.deleteMany({ where });
+  await db.staffPermission.deleteMany({ where });
+  await db.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
   await db.roleGrant.deleteMany({ where });
+  await db.branch.deleteMany({ where });
   await db.user.deleteMany({ where: { id: { in: userIds } } });
   await db.school.deleteMany({ where: { id: { in: schoolIds } } });
   schoolIds.length = 0;
