@@ -28,6 +28,7 @@ if (!hasDb) {
 describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
+  const appRole = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL_APP });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
   const schoolIds: string[] = [];
   const userIds: string[] = [];
@@ -126,6 +127,7 @@ describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
+    await appRole.$disconnect();
     await app.close();
   });
 
@@ -184,5 +186,33 @@ describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
     expect((await as('coach').patch(`/v1/lessons/${lesson.Armbar}`, { free: true })).status).toBe(403);
     expect((await as('owner').patch(`/v1/lessons/${lesson.Armbar}`, { free: true })).body.free).toBe(true);
     expect((await view('none')).Armbar).toBe('open');
+  });
+
+  it('the database itself only gives a lesson\'s content to those who may watch it (Decision 208)', async () => {
+    /** The lesson titles whose content this person can read straight from the database. */
+    const readable = async (label: string) => {
+      const rows = await appRole.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${id[label]}'`);
+        return tx.lessonContent.findMany({ where: { lessonId: { in: Object.values(lesson) } }, select: { lessonId: true } });
+      });
+      const title = Object.fromEntries(Object.entries(lesson).map(([t, l]) => [l, t]));
+      return rows.map((r) => title[r.lessonId]).sort();
+    };
+    // By now: Armbar was made free and the paid plan covers BJJ and Judo (test above).
+    expect(await readable('coach')).toEqual(['Armbar', 'Breakfall', 'Hip throw']);
+    expect(await readable('none')).toEqual(['Armbar', 'Breakfall']); // free ones only
+    expect(await readable('free')).toEqual(['Armbar', 'Breakfall']); // a plan without lessons adds nothing
+    expect(await readable('trial')).toEqual(['Armbar', 'Breakfall', 'Hip throw']); // Judo trial includes lessons
+    expect(await readable('expired')).toEqual(['Armbar', 'Breakfall']);
+    expect(await readable('stranger')).toEqual([]);
+
+    // A student can't write content, even to a lesson they may watch.
+    await expect(
+      appRole.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_user_id = '${id.trial}'`);
+        return tx.lessonContent.update({ where: { lessonId: lesson['Hip throw'] }, data: { description: 'Hacked' } });
+      }),
+    ).rejects.toThrow();
+    expect((await superuser.lessonContent.findUniqueOrThrow({ where: { lessonId: lesson['Hip throw'] } })).description).toBe('Hip throw step by step');
   });
 });

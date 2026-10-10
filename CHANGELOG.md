@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Lesson access is also checked by the database** (Decision 208). A
+  lesson's description, video and captions now live in their own table,
+  which the database only lets staff, everyone at the School for a free
+  lesson, and students whose live membership covers the lesson's style read
+  (a guardian through their child). The lesson's title and category stay
+  visible to everyone at the School, as before; nothing changes on screen.
+  **api:** `LessonContent` (migration `20261104000000`, with RLS:
+  `can_view_lesson_content`, `is_lesson_staff`); existing content copied.
+
 - **Belt-level weekly cap and required skills removed** (Decision 199). They
   live on each stripe, the plain belt's own (e.g. "Brown Belt", no stripes)
   included, and grading reads only those, so no student's requirements
