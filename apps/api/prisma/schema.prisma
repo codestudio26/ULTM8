@@ -234,7 +234,6 @@ model User {
   bookings                 Booking[]         @relation("BookingStudent")
   bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
   bookingsResolved         Booking[]         @relation("BookingResolvedBy")
-  bookingsCheckedIn        Booking[]         @relation("BookingCheckedInBy")
   bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
   waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian  GuardianLink[]    @relation("GuardianLinkGuardian")
@@ -1550,16 +1549,6 @@ model Booking {
   refundResolution RefundResolution?
   resolvedById     String?
   resolvedBy       User?             @relation("BookingResolvedBy", fields: [resolvedById], references: [id])
-
-  // Instructor roll-call check-in (Decision 71's named concept, built as a plain
-  // per-Student roster tap rather than a literal QR scan — see AttendanceService's
-  // own header comment for the full reasoning). Null for a self-service check-in
-  // (POST /attendance/scan, the Student's own action) or any Booking never
-  // checked in this way at all. Set alongside status -> COMPLETED by
-  // POST /classes/{id}/attendance-scan, cleared again if undone within the same
-  // grace window.
-  checkedInById String?
-  checkedInBy   User?   @relation("BookingCheckedInBy", fields: [checkedInById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -22,7 +22,7 @@ Detail for each Slice is in its own section below; this table is the map.
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
 | 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
 | 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b still blocked — needs a design pass + schema change; partially unblockable by syncing with `master` (see below) |
-| 5 | **Attendance** | 8 (QR check-in), 8b (Instructor roll-call, Decision 71) | ✅ DONE (8: 2026-10-08; 8b: 2026-10-10) |
+| 5 | **Attendance** | 8 (QR check-in) | ✅ DONE (2026-10-08) |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
 | 7 | **Resilience** | 10 (offline behavior/caching) | ✅ DONE (light read-only caching via react-query persistence) |
 
@@ -181,8 +181,7 @@ their own already-known `bookingId` for that Class (visible to them via "My
 Bookings"). No new backend endpoint is required for the core flow — only a
 QR-scanning capability in `apps/student` and a QR-display screen in
 `apps/school-portal`. The Instructor roll-call fallback (Decision 71) stays a
-separate follow-up, not a blocker for this — **shipped 2026-10-10 as Slice 8b,
-see below.**
+separate, genuinely unbuilt follow-up, not a blocker for this.
 
 **Both open questions above were put to the user directly and resolved (8 Oct 2026) — logged as Decision 99 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`).** `classId` + rotating nonce (regenerated ~20s), displayed on the Instructor's own device in `apps/school-portal`, not a fixed kiosk.
 
@@ -195,26 +194,7 @@ see below.**
 
 **Verified**: `npx tsc --noEmit` clean across `apps/api`, `apps/school-portal`, and `apps/student`. **Not** interactively click-tested — no mock backend/camera-capable preview exists in this checkout (same constraint as every prior slice's own notes). The existing `classes.e2e-spec.ts`/`bookings.e2e-spec.ts` suites don't pass any of the new optional params, so both are unaffected; confirmed by reading the where-clause logic directly rather than assumed, since neither suite is runnable in this sandbox (no live Postgres).
 
-**Deliberately not built at the time, same as the original scoping**: the Instructor roll-call scan (Decision 71 — mechanics still undesigned at that point) and a fixed venue kiosk (the kiosk idea remains out of scope — no change there).
-
-## Slice 8b — Instructor roll-call check-in (Decision 71's mechanics, resolved) — DONE (2026-10-10)
-
-Decision 71 named the concept but left its mechanics as an open question — mechanism, anti-abuse, time window, and undo were all genuinely unresolved, not merely undesigned-in-detail. Put to the user directly, one question at a time, and resolved as Decision 101 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`):
-
-1. **Mechanism**: a plain per-Student roster on the Instructor's own device — no QR, no camera, no second scan mechanism.
-2. **Anti-abuse**: attribution only (`checkedInById`, mirroring the existing `overriddenById`/`resolvedById` pattern on `Booking`), no typed justification required.
-3. **Time window**: a same-day grace window (up to 24h after the Class's own end), not a strict live-only cutoff — matching real gym/class-management platform conventions (Mindbody, Glofox, TeamUp).
-4. **Undo**: allowed within that same grace window, scoped only to a Booking this roster mechanism itself checked in (never a genuine self-service check-in).
-
-**Built**:
-- **`apps/api`** — `AttendanceService.getClassRoster`/`instructorCheckIn`/`undoInstructorCheckIn` (`attendance.service.ts`), new `GET classes/:id/roster`, `POST classes/:id/attendance-scan`, `DELETE classes/:id/attendance-scan/:studentId` routes; `Booking.checkedInById` column + FK (migration `20260921000000_booking_instructor_checkin`).
-- **`apps/school-portal`** — `RollCallRoster` component in `CheckInPage.tsx` (per-Student tap-to-check-in/undo, independent per-row pending state), a "Roll call" button alongside the existing "Start check-in" QR flow. Both mechanisms coexist per-Class.
-
-**Also closes, as a side effect of the mechanics chosen, not a separately scoped item**: the "accessibility/no-alternative check-in" gap `skills/ultm8-domain-rules/SKILL.md` §14 names — a Student who can't use self-service QR scan (withdrawn camera consent, accessibility need) now has a real path to being checked in, since the roster needs no Student camera or device at all.
-
-**Found and fixed while verifying, not a separate decision**: a real, previously-latent RLS bug in `user_self_or_shared_school` — it silently never worked for a Branch Staff/Instructor caller (only for a School Owner/Manager), because its own subquery into `RoleGrant` was itself subject to `RoleGrant`'s own RLS. Fixed with the same `SECURITY DEFINER` + dedicated `BYPASSRLS` role pattern `20260904000000_fix_rolegrant_rls_recursion` already established for the identical class of problem (migration `20260922000000_fix_user_shared_school_visibility`). Full root-cause writeup in that migration's own header comment and in Decision 101.
-
-**Verified**: this is the first slice in the project's history verified against a real running Postgres + Redis + NestJS server end-to-end (not just `tsc`/lint) — seeded fixtures, minted real JWTs matching `AuthService.issueAccessToken()`'s payload shape, and exercised the roster, check-in, and undo endpoints live via curl, including the RLS bug's discovery and confirmed fix. `npx tsc --noEmit` clean across `apps/api` and `apps/school-portal`.
+**Deliberately not built, same as the original scoping**: the Instructor roll-call scan (Decision 71 — mechanics still undesigned) and a fixed venue kiosk.
 
 **Deferred past V1 (fast-follow candidates, not abandoned):**
 - Slice 4b (Stripe/PaymentSheet) — deferred to avoid shipping the highest-risk,

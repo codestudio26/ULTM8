@@ -1,10 +1,9 @@
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
 export type ClassResponse = components['schemas']['ClassResponseDto'];
-export type ClassRosterEntry = components['schemas']['ClassRosterEntryResponseDto'];
 
 /** Resolves School names for the multi-School picker (an Instructor teaching at more
  * than one School, ultm8-domain-rules §3) — mirrors apps/student's
@@ -49,34 +48,5 @@ export function useTodaysClassesForInstructor(schoolId: string | null, instructo
         }),
       ),
     enabled: !!schoolId && !!instructorId,
-  });
-}
-
-/** GET /classes/{id}/roster — the Instructor roll-call screen's own data (Decision
- * 71's named concept, built as a plain per-Student roster tap rather than a literal
- * QR scan — see AttendanceService's own header comment, apps/api). */
-export function useClassRoster(classId: string | null) {
-  return useQuery({
-    queryKey: ['class-roster', classId],
-    queryFn: () => unwrap(apiClient.GET('/v1/classes/{id}/roster', { params: { path: { id: classId! } } })),
-    enabled: !!classId,
-  });
-}
-
-export function useInstructorCheckIn(classId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (studentId: string) =>
-      unwrap(apiClient.POST('/v1/classes/{id}/attendance-scan', { params: { path: { id: classId } }, body: { studentId } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['class-roster', classId] }),
-  });
-}
-
-export function useUndoInstructorCheckIn(classId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (studentId: string) =>
-      unwrap(apiClient.DELETE('/v1/classes/{id}/attendance-scan/{studentId}', { params: { path: { id: classId, studentId } } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['class-roster', classId] }),
   });
 }
