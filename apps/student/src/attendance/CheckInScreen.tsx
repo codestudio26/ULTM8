@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Screen, SuccessBanner } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
-import { spacing, fontSize, fontWeight, theme } from '../theme/tokens';
+import { colors, spacing, fontSize, fontWeight, theme } from '../theme/tokens';
 import { useMyUpcomingBookingsWide } from '../bookings/bookingQueries';
 import { useClass, useScanAttendance } from './attendanceQueries';
 import type { AppStackParamList } from '../navigation/types';
@@ -161,5 +161,5 @@ const styles = StyleSheet.create({
   cameraContainer: { flex: 1 },
   camera: { flex: 1 },
   overlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing[4], backgroundColor: 'rgba(0,0,0,0.5)' },
-  overlayText: { color: '#fff', textAlign: 'center', fontSize: fontSize.body },
+  overlayText: { color: colors.white, textAlign: 'center', fontSize: fontSize.body },
 });
