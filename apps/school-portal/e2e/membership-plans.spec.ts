@@ -5,10 +5,18 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
 /**
  * Create/Update Membership Plan, rebuilt as a dedicated full page (first of
  * its kind in this app — every other entity still uses a List + Modal,
- * Decision 209). Covers the type-conditional field visibility (classesIncluded/
- * scopedClassId only for Class Pack/Friend Pass) and the client-side
- * Duplicate flow (prefills the Add page via router state, no backend
- * endpoint).
+ * Decision 209), then as a multi-step wizard (Decision 209 follow-up): the
+ * page's 5 sections (Basics / Pricing & Access / Policies / Disciplines &
+ * Lessons / Visibility) each become one step, shown one at a time, with a
+ * clickable pill row that can jump to any step directly (not strictly
+ * linear — Edit especially shouldn't require clicking Next four times to
+ * reach one field).
+ *
+ * Covers the type-conditional field visibility (classesIncluded/
+ * scopedClassId only for Class Pack/Friend Pass, which only matters once
+ * their step — "2. Pricing & Access" — is actually shown) and the
+ * client-side Duplicate flow (prefills the Add page via router state, no
+ * backend endpoint).
  */
 let s: GradingSchool;
 let classId: string;
@@ -40,17 +48,26 @@ test.afterAll(async () => {
   await cleanup();
 });
 
-test('add a Subscription plan (classesIncluded/scopedClass hidden), then edit it', async ({ page }) => {
+test('add a Subscription plan across steps (classesIncluded/scopedClass stay hidden), then edit it', async ({ page }) => {
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
   await expect(page.getByRole('heading', { name: 'Add membership plan' })).toBeVisible();
 
-  // Subscription is the default type — Class Pack/Friend Pass-only fields stay hidden.
+  // Step 1: Basics.
+  await expect(page.getByRole('button', { name: '1. Basics' })).toBeVisible();
+  await page.getByLabel('Title').fill('Monthly Unlimited');
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  // Step 2: Pricing & Access — Subscription is the default type, so Class
+  // Pack/Friend Pass-only fields stay hidden even on their own step.
+  await expect(page.getByLabel('Price')).toBeVisible();
   await expect(page.getByLabel('Classes included')).toHaveCount(0);
   await expect(page.getByLabel('Scoped to Class')).toHaveCount(0);
-
-  await page.getByLabel('Title').fill('Monthly Unlimited');
   await page.getByLabel('Price').fill('5000');
+
+  // Jump straight to the last step via its pill, skipping Policies/Disciplines.
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await expect(page.getByLabel('Visible to Students')).toBeVisible();
   await page.getByRole('button', { name: 'Save' }).click();
 
   await expect(page).toHaveURL(/\/membership-plans$/);
@@ -62,8 +79,12 @@ test('add a Subscription plan (classesIncluded/scopedClass hidden), then edit it
 
   await page.getByRole('row', { name: /Monthly Unlimited/ }).getByRole('button', { name: 'Edit' }).click();
   await expect(page.getByRole('heading', { name: 'Edit membership plan' })).toBeVisible();
+  // Edit lands on step 1 too, but the Title field it needs is right there —
+  // no step navigation required to make a small fix.
   await expect(page.getByLabel('Title')).toHaveValue('Monthly Unlimited');
   await page.getByLabel('Title').fill('Monthly Unlimited (Updated)');
+  // Jump straight to the final step rather than clicking Next three times.
+  await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
   await expect(page.getByRole('cell', { name: 'Monthly Unlimited (Updated)' })).toBeVisible();
@@ -74,9 +95,14 @@ test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) =
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByLabel('Type').selectOption('CLASS_PACK');
   await page.getByLabel('Title').fill('5-Class Pack');
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  // Step 2: Pricing & Access — Class Pack fields now show.
   await page.getByLabel('Price').fill('2000');
   await page.getByLabel('Classes included').fill('5');
   await page.getByLabel('Scoped to Class').selectOption({ label: 'Open Mat' });
+
+  await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
   await expect(page.getByRole('cell', { name: '5-Class Pack' })).toBeVisible();
@@ -87,7 +113,10 @@ test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) =
 
   await page.getByRole('row', { name: /5-Class Pack/ }).getByRole('button', { name: 'Duplicate' }).click();
   await expect(page.getByRole('heading', { name: 'Add membership plan' })).toBeVisible();
+  // Duplicate prefills from the source plan — step 1 (Basics) shows the
+  // copied title immediately; step 2 needs a click to see its copied fields.
   await expect(page.getByLabel('Title')).toHaveValue('5-Class Pack (copy)');
+  await page.getByRole('button', { name: '2. Pricing & Access' }).click();
   await expect(page.getByLabel('Classes included')).toHaveValue('5');
   await page.getByRole('button', { name: 'Save' }).click();
 

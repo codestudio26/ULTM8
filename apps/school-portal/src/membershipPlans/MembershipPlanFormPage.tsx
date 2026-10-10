@@ -47,6 +47,22 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Wizard steps — one per existing section, same order. Each step's Card is
+// rendered alone when active (conditional mounting), not all stacked, with a
+// clickable pill row to jump directly to any step — not strictly linear,
+// since an Edit shouldn't require clicking Next four times to reach one
+// field. Kept page-local rather than promoted to @ultm8/ui: no Stepper/
+// Wizard primitive exists anywhere in this codebase yet, same "don't invent
+// a shared design-system primitive for one page" precedent Decision 201
+// already set for a Toggle/Switch control.
+const STEPS = [
+  { label: 'Basics' },
+  { label: 'Pricing & Access' },
+  { label: 'Policies' },
+  { label: 'Disciplines & Lessons' },
+  { label: 'Visibility' },
+] as const;
+
 export function MembershipPlanFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
@@ -170,6 +186,7 @@ function MembershipPlanForm({
   // when free) until the owner sets it.
   const [includesLessons, setIncludesLessons] = useState<boolean | null>(initial?.includesLessons ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [stepIndex, setStepIndex] = useState(0);
 
   const priced = form.type !== 'FRIEND_PASS' && Number(form.price) > 0;
   const lessonsOn = includesLessons ?? priced;
@@ -208,6 +225,23 @@ function MembershipPlanForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // The previous single-view form relied on every field — including
+    // Title/Price's native `required` — always being mounted, so the
+    // browser's own constraint validation caught a blank one on submit.
+    // With only the active step's Card mounted now, an unmounted step's
+    // `required` field no longer blocks submission, so these two are
+    // checked explicitly instead, jumping back to the step that needs
+    // attention.
+    if (!form.title.trim()) {
+      setStepIndex(0);
+      setError('Title is required.');
+      return;
+    }
+    if (!form.price.trim()) {
+      setStepIndex(1);
+      setError('Price is required.');
+      return;
+    }
     try {
       await onSubmit({
         type: form.type,
@@ -240,8 +274,21 @@ function MembershipPlanForm({
       </div>
       <PageHeader title={mode === 'edit' ? 'Edit membership plan' : 'Add membership plan'} />
       {error ? <ErrorBanner message={error} /> : null}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+        {STEPS.map((step, i) => (
+          <Button
+            key={step.label}
+            type="button"
+            variant={i === stepIndex ? 'primary' : 'secondary'}
+            onClick={() => setStepIndex(i)}
+          >
+            {i + 1}. {step.label}
+          </Button>
+        ))}
+      </div>
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {stepIndex === 0 ? (
         <Card className="ultm8-field-group">
           <SectionTitle>Basics</SectionTitle>
           <Field label="Type" htmlFor="plan-type" hint={PLAN_TYPES.find((t) => t.value === form.type)?.caption}>
@@ -255,7 +302,9 @@ function MembershipPlanForm({
             <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
           </Field>
         </Card>
+        ) : null}
 
+        {stepIndex === 1 ? (
         <Card className="ultm8-field-group">
           <SectionTitle>Pricing &amp; Access</SectionTitle>
           <Field
@@ -329,7 +378,9 @@ function MembershipPlanForm({
             </Field>
           ) : null}
         </Card>
+        ) : null}
 
+        {stepIndex === 2 ? (
         <Card className="ultm8-field-group">
           <SectionTitle>Policies</SectionTitle>
           <Field label="Refund/credit cutoff" htmlFor="plan-refundFeeDate" hint="Leave blank to clear.">
@@ -357,7 +408,9 @@ function MembershipPlanForm({
             onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
           />
         </Card>
+        ) : null}
 
+        {stepIndex === 3 ? (
         <Card className="ultm8-field-group">
           <SectionTitle>Disciplines &amp; Lessons</SectionTitle>
           {disciplines.length > 0 ? (
@@ -383,7 +436,9 @@ function MembershipPlanForm({
             Members on this plan can watch the lessons of its styles. On by default when the plan has a price, off when it's free.
           </p>
         </Card>
+        ) : null}
 
+        {stepIndex === 4 ? (
         <Card className="ultm8-field-group">
           <SectionTitle>Visibility</SectionTitle>
           <Checkbox
@@ -392,15 +447,29 @@ function MembershipPlanForm({
             onChange={(e) => setForm((f) => ({ ...f, visible: e.target.checked }))}
           />
         </Card>
+        ) : null}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            Save
-          </Button>
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {stepIndex > 0 ? (
+              <Button type="button" variant="secondary" onClick={() => setStepIndex((i) => i - 1)}>
+                Back
+              </Button>
+            ) : null}
+            <Button type="button" variant="secondary" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+          {stepIndex < STEPS.length - 1 ? (
+            <Button type="button" onClick={() => setStepIndex((i) => i + 1)}>
+              Next
+            </Button>
+          ) : (
+            <Button type="submit" loading={submitting}>
+              Save
+            </Button>
+          )}
         </div>
       </form>
     </>
