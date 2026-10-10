@@ -1,6 +1,8 @@
 import {
   AttendedClass,
   boardColumn,
+  boardMove,
+  snapCountForFloor,
   bookingAccess,
   computeEligibility,
   countClasses,
@@ -470,5 +472,45 @@ describe('grading engine — booking access (Decision 173)', () => {
   it('a style where nothing is set is open throughout', () => {
     const plain = flattenLadder([{ id: 'r', order: 0, stripeTiers: [tier({ id: 'a', order: 0 })] }]);
     expect(bookingAccess(plain, 'a', 'Anything')).toBe('OPEN');
+  });
+});
+
+describe('grading engine — moving a student on the board (Decisions 128 item 13, 174)', () => {
+  it('snapCountForFloor never rounds back below the floor (prototype)', () => {
+    expect(snapCountForFloor(8, 66)).toBe(6); // 5/8 would show 63%
+    for (let total = 1; total <= 400; total++) {
+      for (const floor of [33, 66]) {
+        const n = snapCountForFloor(total, floor);
+        // Re-displayed, it is never below the column it was dropped on.
+        expect(Math.round((n / total) * 100)).toBeGreaterThanOrEqual(floor);
+        expect(n).toBeLessThanOrEqual(total);
+      }
+      expect(snapCountForFloor(total, 0)).toBe(0);
+    }
+  });
+
+  const eachLadder = flattenLadder([
+    {
+      id: 'r',
+      order: 0,
+      stripeTiers: [
+        tier({ id: 'a', order: 0 }),
+        tier({ id: 'b', order: 1, classCountMode: 'EACH_TYPE', eligibleClassTypes: ['F', 'S'], classTypeRequirements: [{ classType: 'F', classesRequired: 20 }, { classType: 'S', classesRequired: 10 }] }),
+      ],
+    },
+  ]);
+
+  it('"each type": every type set to the column\'s % of its own number (Decision 174)', () => {
+    expect(boardMove(requirementFor(eachLadder, 'a'), 'READY_TO_GRADE')).toEqual({ kind: 'CLASSES', total: 21, byType: { F: 14, S: 7 } });
+    expect(boardMove(requirementFor(eachLadder, 'a'), 'JUST_STARTING')).toEqual({ kind: 'CLASSES', total: 0, byType: { F: 0, S: 0 } });
+  });
+
+  it('a time-only rung moves the days in rank; the top rung or nothing required can\'t move', () => {
+    const ladder = flattenLadder(ibjjfLadder());
+    expect(boardMove(requirementFor(ladder, 'black-0'), 'GETTING_THERE')).toEqual({ kind: 'DAYS', daysInRank: snapCountForFloor(1095, 33) });
+    expect(boardMove(requirementFor(ladder, 'white-1'), 'READY_TO_GRADE')).toEqual({ kind: 'CLASSES', total: snapCountForFloor(40, 66), byType: null });
+    expect(boardMove(requirementFor(ladder, 'black-6'), 'READY_TO_GRADE')).toEqual({ kind: 'NOT_MOVABLE' });
+    const zero = flattenLadder([{ id: 'r', order: 0, stripeTiers: [tier({ id: 'a', order: 0 }), tier({ id: 'b', order: 1 })] }]);
+    expect(boardMove(requirementFor(zero, 'a'), 'READY_TO_GRADE')).toEqual({ kind: 'NOT_MOVABLE' });
   });
 });

@@ -15,6 +15,19 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — grading Phase 3b: Grading Board** (Decisions 128, 136, 152, 168,
+  174–176). `GET /schools/{id}/grading-board?disciplineId=` lists every
+  student with a next rank in a style, highest progress first, with readiness,
+  board column, "currently attending" (active membership, or the manual
+  per-style switch) and whether grading is blocked by missing skills; search
+  and active-only filters. The owner sees every student; coaches see their
+  branch's students (the whole School when it has no branches). New writes,
+  each needing grading permission: `board-move` (drag: rewrites the class
+  count — per type on "each type" rungs — or the rank date on a time-only
+  rung, recorded on the history), `log-class` (a class type from the next
+  rank's, always counted, recorded) and `board-active` (the Active switch).
+  Two narrow read-only database rules let coaches see which students are
+  theirs (Decision 176). `packages/api-client` regenerated.
 - **api + school-portal — grading Phase 3a: grade actions** (Decisions 127,
   128, 174). Promote can target any higher rung (skipped rungs recorded:
   "Skipped N ranks in between"); downgrade any lower rung (with a reason, dated

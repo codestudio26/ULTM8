@@ -16,6 +16,19 @@ import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
 // type=Subscription... auto-recurring billing has no Cash/Bank Transfer equivalent").
 const CASH_BANK_ELIGIBLE_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP'] as const;
 
+/** A membership in effect now: ACTIVE, not past its expiry date (a
+ * live-computed predicate, Decision 26), and not a used-up pack. Shared with
+ * the Grading Board's "currently attending" (Decision 152). */
+export function isMembershipLive(
+  m: { status: string; expiryDate: Date | null; classesRemaining: number | null },
+  now: Date = new Date(),
+): boolean {
+  if (m.status !== 'ACTIVE') return false;
+  if (m.expiryDate && m.expiryDate < now) return false;
+  if (m.classesRemaining !== null && m.classesRemaining <= 0) return false;
+  return true;
+}
+
 @Injectable()
 export class MembershipsService {
   constructor(
@@ -495,12 +508,7 @@ export class MembershipsService {
     );
     if (memberships.length === 0) return 'NONE';
     const now = new Date();
-    const hasActive = memberships.some((m) => {
-      if (m.status !== 'ACTIVE') return false;
-      if (m.expiryDate && m.expiryDate < now) return false; // live-computed predicate (Decision 26)
-      if (m.classesRemaining !== null && m.classesRemaining <= 0) return false;
-      return true;
-    });
+    const hasActive = memberships.some((m) => isMembershipLive(m, now));
     return hasActive ? 'ACTIVE' : 'EXPIRED';
   }
 }

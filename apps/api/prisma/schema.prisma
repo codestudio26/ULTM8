@@ -2092,6 +2092,10 @@ model StudentRank {
   /// change (not the back-datable rank date). Classes before it belong to the
   /// previous rung; the weekly cap only looks at classes after it.
   countingSince DateTime @default(now())
+  /// Grading Board "currently attending" (Decisions 152, 175): null follows
+  /// whether the student has an active membership; true/false is the manual
+  /// Active/Inactive switch for this style, overriding it.
+  boardActiveOverride Boolean?
 
   // Self-declared ranks (grading foundation PR 6, Decisions 137, 147).
   verificationStatus RankVerificationStatus @default(VERIFIED)
