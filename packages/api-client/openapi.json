@@ -5418,6 +5418,49 @@
         ]
       }
     },
+    "/v1/students/{id}/ranks/declare-options": {
+      "get": {
+        "operationId": "GradingController_findDeclareOptions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclareOptionsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/declare": {
       "post": {
         "operationId": "GradingController_declareRank",
@@ -13324,6 +13367,90 @@
           "reason"
         ]
       },
+      "DeclareRungDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The stripe's own name, e.g. \"Blue Belt · 2 Stripes\"."
+          },
+          "beltName": {
+            "type": "string"
+          },
+          "primaryColour": {
+            "type": "string"
+          },
+          "secondaryColour": {
+            "type": "string",
+            "nullable": true
+          },
+          "stripeColour": {
+            "type": "string",
+            "description": "Stripe colour."
+          },
+          "stripeCount": {
+            "type": "number"
+          },
+          "timeOnly": {
+            "type": "boolean"
+          },
+          "rankId": {
+            "type": "string",
+            "description": "The belt (Rank) this rung belongs to; send it with the rung id to declare."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "beltName",
+          "primaryColour",
+          "stripeColour",
+          "stripeCount",
+          "timeOnly",
+          "rankId"
+        ]
+      },
+      "DeclareStyleOptionDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string"
+          },
+          "ladder": {
+            "description": "Lowest first. The first rung is the plain first belt, verified automatically (Decision 147).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeclareRungDto"
+            }
+          }
+        },
+        "required": [
+          "disciplineId",
+          "disciplineName",
+          "ladder"
+        ]
+      },
+      "DeclareOptionsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Styles the student has no rank in yet. Empty while the School has ranks switched off.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeclareStyleOptionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "DeclareRankDto": {
         "type": "object",
         "properties": {
@@ -14591,6 +14718,21 @@
           "items"
         ]
       },
+      "AcademyBranchDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
       "AcademyMembershipPlanDto": {
         "type": "object",
         "properties": {
@@ -14730,6 +14872,13 @@
             "type": "string",
             "nullable": true
           },
+          "branches": {
+            "description": "The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AcademyBranchDto"
+            }
+          },
           "membershipPlans": {
             "type": "array",
             "items": {
@@ -14748,6 +14897,7 @@
           "name",
           "activities",
           "facilities",
+          "branches",
           "membershipPlans",
           "upcomingClasses"
         ]

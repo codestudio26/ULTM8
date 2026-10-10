@@ -271,3 +271,25 @@ export class StudentGradingOverviewResponseDto {
   @ApiProperty({ type: [StudentGradingStyleDto] })
   items!: StudentGradingStyleDto[];
 }
+
+/** A rung offered when a student declares their belt (Decision 137). */
+export class DeclareRungDto extends GradingLadderRungDto {
+  @ApiProperty({ description: 'The belt (Rank) this rung belongs to; send it with the rung id to declare.' })
+  rankId!: string;
+}
+
+export class DeclareStyleOptionDto {
+  @ApiProperty()
+  disciplineId!: string;
+
+  @ApiProperty()
+  disciplineName!: string;
+
+  @ApiProperty({ type: [DeclareRungDto], description: 'Lowest first. The first rung is the plain first belt, verified automatically (Decision 147).' })
+  ladder!: DeclareRungDto[];
+}
+
+export class DeclareOptionsResponseDto {
+  @ApiProperty({ type: [DeclareStyleOptionDto], description: 'Styles the student has no rank in yet. Empty while the School has ranks switched off.' })
+  items!: DeclareStyleOptionDto[];
+}

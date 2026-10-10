@@ -10,6 +10,9 @@ export type AppStackParamList = {
   Home: undefined;
   Academies: undefined;
   AcademyDetail: { academyId: string; name: string };
+  /** Join a School (or add a belt at one already joined), for oneself or a
+   * guardian's child: home branch, then current belt per style (Decisions 137, 209). */
+  JoinSchool: { academyId: string; name: string; beltsFor?: { studentId: string; name: string } };
   MyBookings: undefined;
   Notifications: undefined;
   MyMemberships: undefined;

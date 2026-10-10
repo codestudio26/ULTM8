@@ -5,7 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
 import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
-import { PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentGradingOverviewResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
+import { DeclareOptionsResponseDto, PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentGradingOverviewResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
@@ -149,6 +149,19 @@ export class GradingController {
   @Patch('students/:id/skills/:skillId')
   cycleSkillSignOff(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Param('skillId', ParseUUIDPipe) skillId: string) {
     return this.gradingService.cycleSkillSignOff(user.sub, id, skillId);
+  }
+
+  /** The styles and belts a student (or their guardian) can choose from when
+   * declaring their current belt at a School they've joined (Decision 137). */
+  @ApiOkResponse({ type: DeclareOptionsResponseDto })
+  @ApiQuery({ name: 'schoolId', required: true })
+  @Get('students/:id/ranks/declare-options')
+  findDeclareOptions(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('schoolId') schoolId: string,
+  ) {
+    return this.gradingService.findDeclareOptions(user.sub, id, schoolId);
   }
 
   /** The student (or their guardian) declares their current rung when joining

@@ -19,6 +19,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   now sees students who have no home branch yet in their own group above the
   columns (no branch coach sees them) and gives each one a branch there. Board
   items carry `noHomeBranch` (owner only).
+- **Joining a School from the app, with a home branch and a current belt**
+  (Decisions 137, 147, 209). A School's public page now lists its branch
+  names, name only, so a student can choose a home branch before joining.
+  New `GET /students/{id}/ranks/declare-options` lists the styles a student
+  can still declare a belt in, with their belts, for the student or their
+  guardian. The app's join screen is Track B (`docs/TRACK-B-ROADMAP.md`).
 - **Lesson access is also checked by the database** (Decision 208). A
   lesson's description, video and captions now live in their own table,
   which the database only lets staff, everyone at the School for a free

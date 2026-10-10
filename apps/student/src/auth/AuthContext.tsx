@@ -20,6 +20,9 @@ interface AuthContextValue {
    * credential, not a step-up factor alongside OTP. */
   login: (email: string, passcode: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Swap in a fresh access token the API handed back, e.g. after joining a
+   * School, whose new STUDENT grant only exists in a newly minted token. */
+  applyAccessToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -88,8 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   const value = useMemo(
-    () => ({ loading, accessToken, claims, login, logout }),
-    [loading, accessToken, claims, login, logout],
+    () => ({ loading, accessToken, claims, login, logout, applyAccessToken: applyToken }),
+    [loading, accessToken, claims, login, logout, applyToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
