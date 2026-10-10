@@ -10,8 +10,8 @@ import { RanksService } from './ranks.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { RequestContext } from '../common/request-context';
-import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
-import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
+import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
+import { GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
 import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone } from './grading-eligibility';
 import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, LogClassDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
@@ -57,7 +57,7 @@ export class GradingService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly ranksService: RanksService,
     private readonly guardiansService: GuardiansService,
-    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
+    @InjectQueue(GRADING_NOTIFICATIONS_QUEUE) private readonly gradingNotificationsQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -314,11 +314,10 @@ export class GradingService {
    *
    * Promotion-notification wiring (grading foundation gap closed independently
    * of this phase's own roadmap): after a successful PROMOTION/DOWNGRADE/
-   * STRIPE_AWARD, notifies the Student directly via NOTIFICATION_FANOUT_QUEUE
-   * (the same @InjectQueue-from-a-plain-HTTP-service pattern BookingsService/
-   * WaiversService/PaymentsService already use) — see
-   * notifyStudentOfGradingAction's own comment for why this is scoped to
-   * these three types only.
+   * STRIPE_AWARD, notifies the Student, or a minor's guardians, through the
+   * grading-notifications job — see notifyOfGradingAction's own comment for
+   * why this is scoped to these three types only. Clears "ready to grade" and
+   * checks the new rung (Decision 178).
    */
   private async changeRung(
     callerId: string,
@@ -447,6 +446,8 @@ export class GradingService {
         classesAttendedTowardCheckpoint: startingTotal,
         classesAttendedByType: startingByType ?? {},
         countingSince: now,
+        // "Ready to grade" is once per rank (Decision 178).
+        readyNotifiedAt: null,
       };
       let studentRank;
       if (existing) {
@@ -496,17 +497,15 @@ export class GradingService {
       return { studentRank, promotionEvent, toRungName: to.name };
     });
 
-    await this.notifyStudentOfGradingAction(
+    const isStripe = type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD';
+    await this.notifyOfGradingAction({
+      promotionEventId: result.promotionEvent.id,
       studentId,
-      discipline.name,
-      result.promotionEvent.id,
-      type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD' ? 'New stripe!' : type === 'PROMOTION' ? 'Promoted!' : 'Rank updated',
-      type === 'STRIPE_AWARD' || bulk?.eventType === 'BULK_STRIPE_AWARD'
-        ? `You've earned ${result.toRungName}.`
-        : type === 'PROMOTION'
-          ? `You've been promoted to ${result.toRungName}.`
-          : `Your rank has been adjusted to ${result.toRungName}.`,
-    );
+      disciplineName: discipline.name,
+      toRungName: result.toRungName,
+      kind: isStripe ? 'STRIPE' : type === 'PROMOTION' ? 'PROMOTED' : 'ADJUSTED',
+    });
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId, disciplineId);
 
     return result;
   }
@@ -548,28 +547,26 @@ export class GradingService {
     return { total: dto.startingClasses ?? 0, byType: null };
   }
 
-  /** Promotion-notification wiring: notifies the Student directly for a
-   * PROMOTION/DOWNGRADE/STRIPE_AWARD only — not SELF_DECLARED (the student's
-   * own action, no one "did" it to them) and not RANK_CORRECTION/ADJUSTMENT
-   * (administrative corrections, not a "you were graded" moment). */
-  private async notifyStudentOfGradingAction(
-    studentId: string,
-    disciplineName: string,
-    promotionEventId: string,
-    title: string,
-    body: string,
-  ): Promise<void> {
-    await this.notificationFanoutQueue.add(
-      'notify',
-      {
-        notificationId: `grading-${promotionEventId}`,
-        userId: studentId,
-        title,
-        body: `${body} (${disciplineName})`,
-        type: 'GRADING_RANK_CHANGE',
-      } satisfies NotificationFanoutJobData,
-      { jobId: `grading-${promotionEventId}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
-    );
+  /** Promotion-notification wiring: a PROMOTION/DOWNGRADE/STRIPE_AWARD only —
+   * not SELF_DECLARED (the student's own action, no one "did" it to them) and
+   * not RANK_CORRECTION/ADJUSTMENT (administrative corrections, not a "you
+   * were graded" moment). The grading-notifications job sends it to the
+   * student, or to a minor's guardians (Decision 145, item 2): GuardianLink
+   * is readable only by the guardian here, so the job (ultm8_jobs) routes it. */
+  private async notifyOfGradingAction(data: GradingPromotedJobData): Promise<void> {
+    await this.gradingNotificationsQueue.add('promoted', data, {
+      jobId: `grading-promoted-${data.promotionEventId}`,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
+  }
+
+  /** After a grading action commits, check whether the student is now ready
+   * for their next rung (Decisions 145, 178). */
+  private async thenCheckReady<T>(studentId: string, disciplineId: string, action: Promise<T>): Promise<T> {
+    const result = await action;
+    await queueReadyCheck(this.gradingNotificationsQueue, studentId, disciplineId);
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -919,7 +916,7 @@ export class GradingService {
    * own number (Decision 174) — or, on a time-only rung, the rank date, and
    * records an ADJUSTMENT entry. */
   async moveOnBoard(callerId: string, studentId: string, disciplineId: string, dto: BoardMoveDto) {
-    return this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { studentRank: sr, ladder, timeZone }) => {
+    return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { studentRank: sr, ladder, timeZone }) => {
       const current = eligibilityOnLadder(ladder, sr, timeZone);
       if (current.hasNext && current.boardColumn === dto.column) {
         throw new BadRequestException('This student is already in that column.');
@@ -949,7 +946,7 @@ export class GradingService {
       }
       const promotionEvent = await this.adjustmentEvent(tx, callerId, sr, `Progress adjusted by hand on the Grading Board: ${what} (moved to "${label}").`);
       return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent };
-    });
+    }));
   }
 
   /** "Log a class" (Decision 128 item 6, Decision 176): staff add one class by
@@ -957,7 +954,7 @@ export class GradingService {
    * counts — the weekly cap is for attendance, not a deliberate entry — and it
    * is written to the history. */
   async logClass(callerId: string, studentId: string, disciplineId: string, dto: LogClassDto) {
-    return this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder }) => {
+    return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder }) => {
       const req = requirementFor(ladder, sr.currentStripeId ?? '');
       if (req.kind !== 'NEXT') throw new BadRequestException('This student has no next rank to count classes toward.');
       if (req.timeOnly) throw new BadRequestException('The current rank counts time only, so classes are not counted (Decision 128, item 3).');
@@ -985,7 +982,7 @@ export class GradingService {
         `Class logged by hand: ${classType ?? 'no class type'} (classes ${sr.classesAttendedTowardCheckpoint} → ${sr.classesAttendedTowardCheckpoint + 1}).`,
       );
       return { studentRank: await tx.studentRank.findUniqueOrThrow({ where: { id: sr.id } }), promotionEvent };
-    });
+    }));
   }
 
   /** The manual Active/Inactive switch for this style (Decisions 152, 176);
@@ -1012,7 +1009,7 @@ export class GradingService {
     await this.assertCanGrade(callerId, skill.schoolId, skill.disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, skill.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, skill.disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const studentRank = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId: skill.disciplineId } },
       });
@@ -1069,7 +1066,7 @@ export class GradingService {
           status: next,
         },
       });
-    });
+    }));
   }
 
   // ---------------------------------------------------------------------------
@@ -1135,7 +1132,7 @@ export class GradingService {
       throw new BadRequestException('date must be a real calendar date, as YYYY-MM-DD.');
     }
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       // Days are the student's local days (home branch, else School, else
       // UTC), the same days the engine counts time in rank with.
       const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
@@ -1202,7 +1199,7 @@ export class GradingService {
       });
       const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
       return { studentRank, promotionEvent };
-    });
+    }));
   }
 
   private nextSkillStatus(current: string): 'NOT_STARTED' | 'LEARNING' | 'SIGNED_OFF' {
@@ -1247,7 +1244,7 @@ export class GradingService {
     }
     await this.assertSchoolAcceptsGradingWrites(studentId, discipline.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const tier = await tx.rankStripeTier.findFirst({
         where: { id: dto.stripeTierId, rankId: dto.rankId, rank: { disciplineId } },
         select: { id: true, rankId: true },
@@ -1303,7 +1300,7 @@ export class GradingService {
         },
       });
       return { studentRank, promotionEvent };
-    });
+    }));
   }
 
   /** Verify a self-declared rank, or correct it to the right rung while
@@ -1322,7 +1319,7 @@ export class GradingService {
     await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId);
     await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
 
-    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+    return this.thenCheckReady(studentId, disciplineId, this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } } });
       if (!existing) {
         throw new BadRequestException('This student has no rank in this style to verify.');
@@ -1359,6 +1356,8 @@ export class GradingService {
           verifiedById: callerId,
           currentRankId: target.rankId,
           currentStripeId: target.stripeTierId,
+          // A corrected rung is a new rank: "ready to grade" may notify again (Decision 178).
+          ...(corrected ? { readyNotifiedAt: null } : {}),
         },
       });
       if (updated.count === 0) {
@@ -1388,7 +1387,7 @@ export class GradingService {
       }
       const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
       return { studentRank, promotionEvent };
-    });
+    }));
   }
 
   /** Ranks waiting to be verified at a School, for the notice shown at login

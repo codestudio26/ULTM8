@@ -2117,3 +2117,17 @@ Raised by Claude while auditing open gaps against the current, merged state of t
 2. **Schools without branches: the School is the branch** (Decisions 168, 169). That School's INSTRUCTOR/BRANCH_STAFF can **read** its STUDENT role grants (who is enrolled), nothing else, and only while the School has no branch. Gus: *"Yes, the school is the branch"*.
 
 Both are read-only (`FOR SELECT`) and scoped to the caller's own active grant, and they follow impersonation scoping. Each student's grading data (rank, memberships, name) is still read under that student's own context, after this check. Built in `20261021000000_grading_board` (`student_home_branch_staff_read`, `rolegrant_branchless_staff_student_read`, `is_staff_of_school_without_branches()`), with tests for leaks across branches and Schools, for writes, for revoked grants, and for the rule switching off once a branch exists.
+
+---
+
+## Decision 178 — "Ready to grade": after grading actions and daily, once per rank; the background job may read grading data
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 145's two grading notifications are delivered. Raised while building them.
+
+1. **When "ready to grade" is checked.** Right after anything that can make a student ready (a check-in, "Log a class", a skill sign-off, a board drag, a rank-date edit, a grade, a declared or verified rank), **and** in a daily sweep, which catches students who become ready by time alone. Gus: *"Actions + daily check, once per rank"*.
+2. **Once per rank.** The owner and coaches are told once when a student meets everything for their next rung (classes, minimum days and required skills, per the engine). Every rank change clears it, so the next rung can notify again. Stored as `StudentRank.readyNotifiedAt`.
+3. **Who is told** (Decision 145, with Decisions 138, 139, 168): the School owner(s), and the staff with grading permission for that style who cover the student's branch (in a School with no branches, all such staff; a student with no home branch is the owner's alone). Only for an enrolled student, at an open School with ranks switched on.
+4. **"You've been promoted"** goes to the student, or, when the student is a Guardian-linked minor, to each linked guardian instead (Decision 145, item 2). Text for a guardian: "Sam has been promoted to Blue Belt."
+5. **The background job may read grading data.** These checks run as the background-job role (`ultm8_jobs`), which until now could not read grading tables, and guardian links are readable only by the guardian. With Gus's approval, that role gets **read-only** access to student ranks and skill sign-offs, the ladder (ranks, rungs, rung skills), disciplines, home branches, grading permissions and guardian links, plus students' first name and surname. Its only write is `StudentRank.readyNotifiedAt`. Gus: *"Yes, read-only grants"*. Built in `20261022000000_grading_ready_notification`; the alternative (the job acting as each user) was declined.
+
+Delivery is in-app and email, as for every notification until push is built (Decision 95).
