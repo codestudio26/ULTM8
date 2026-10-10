@@ -7,7 +7,8 @@ import { GradingService } from './grading.service';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
-import { BoardActiveDto, BoardMoveDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
+import { DisciplineResponseDto } from './dto/discipline-response.dto';
 import { Throttle } from '@nestjs/throttler';
 
 // StudentRank reads + grading actions. `schoolId` is a required query param on
@@ -163,6 +164,12 @@ export class GradingController {
     @Query('activeOnly') activeOnly?: string,
   ) {
     return this.gradingService.getGradingBoard(user.sub, schoolId, disciplineId, { search, activeOnly: activeOnly === 'true' });
+  }
+
+  @ApiOkResponse({ type: DisciplineResponseDto, description: 'The style, with its new board columns.' })
+  @Put('disciplines/:id/board-thresholds')
+  setBoardThresholds(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: BoardThresholdsDto) {
+    return this.gradingService.setBoardThresholds(user.sub, id, dto);
   }
 
   /** Drag on the Grading Board (Decision 128 item 13, Decision 174). */

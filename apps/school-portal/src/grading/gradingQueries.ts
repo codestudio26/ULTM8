@@ -168,3 +168,20 @@ export function useBulkPromote(schoolId: string) {
     },
   });
 }
+
+/** A style's Grading Board columns (Decisions 75, 136, 181). */
+export function useSetBoardThresholds(disciplineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { gettingThere: number; readyToGrade: number }) =>
+      unwrap(apiClient.PUT('/v1/disciplines/{id}/board-thresholds', { params: { path: { id: disciplineId } }, body })),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['disciplines'] }),
+        queryClient.invalidateQueries({ queryKey: ['discipline', disciplineId] }),
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading'] }),
+      ]);
+    },
+  });
+}

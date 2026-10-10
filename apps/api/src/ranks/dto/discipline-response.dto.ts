@@ -16,6 +16,12 @@ export class DisciplineResponseDto {
   @ApiProperty({ description: '"Skills required" switch (Decision 128, item 10).' })
   skillsRequiredToGrade!: boolean;
 
+  @ApiProperty({ description: 'Grading Board: "Getting There" from this % (Decisions 75, 136). Default 33.' })
+  boardGettingThere!: number;
+
+  @ApiProperty({ description: 'Grading Board: "Ready to Grade" from this % (Decisions 75, 136). Default 66.' })
+  boardReadyToGrade!: number;
+
   @ApiProperty()
   createdAt!: string;
 

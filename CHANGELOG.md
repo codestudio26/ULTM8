@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Grading Board columns per style** (Decisions 75, 136, 181). Each style
+  keeps its own split, 33% / 66% by default. On the Grading Board, **Change %**
+  sets "Getting There" and "Ready to Grade" (whole %, 1–99, Getting There
+  below Ready to Grade), and each column shows its range. The board, a
+  student's readiness and moving a student to a column all use the style's
+  own %. **api:** `Discipline.boardGettingThere` / `boardReadyToGrade`
+  (migration `20261024000000`, with a database check) and
+  `PUT /disciplines/{id}/board-thresholds`, for the owner or a coach with
+  "Change board %" for the style. `packages/api-client` regenerated.
 - **Grading permissions: seven toggles per coach per style** (Decision 181).
   New **Grading Permissions** page in the School Portal: for each Instructor
   and Branch Staff member, the styles they may grade in and, per style,

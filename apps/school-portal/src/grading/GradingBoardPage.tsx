@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useDisciplines } from '../disciplines/disciplineQueries';
+import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { BeltChip } from './BeltChip';
 import { flattenLadder, type Rung } from './ladder';
-import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard } from './gradingQueries';
+import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useSetBoardThresholds } from './gradingQueries';
 import { BulkPromoteModal } from './BulkPromoteModal';
 
 export const COLUMNS: Array<{ key: BoardColumn; label: string }> = [
@@ -38,6 +38,7 @@ export function GradingBoardPage() {
   const [moving, setMoving] = useState<{ item: GradingBoardItem; to?: BoardColumn } | null>(null);
   const [promoting, setPromoting] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [editingThresholds, setEditingThresholds] = useState(false);
 
   useEffect(() => {
     if (!disciplineId && styles.length > 0) setDisciplineId(styles[0].id);
@@ -99,6 +100,16 @@ export function GradingBoardPage() {
                   <span className="ultm8-field__hint"> {board.data.hiddenInactive} inactive hidden</span>
                 ) : null}
               </div>
+              {style ? (
+                <div style={{ paddingBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span className="ultm8-field__hint">
+                    Columns at {style.boardGettingThere}% / {style.boardReadyToGrade}%
+                  </span>
+                  <Button variant="secondary" onClick={() => setEditingThresholds(true)}>
+                    Change %
+                  </Button>
+                </div>
+              ) : null}
               <div style={{ flex: 1 }} />
               <div style={{ paddingBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
                 {selectedItems.length > 0 ? <strong>{selectedItems.length} selected</strong> : null}
@@ -135,6 +146,15 @@ export function GradingBoardPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
                         <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
                           {col.label} <Badge>{list.length}</Badge>
+                          {style ? (
+                            <span className="ultm8-field__hint" style={{ fontWeight: 400, marginLeft: 6 }}>
+                              {col.key === 'JUST_STARTING'
+                                ? `under ${style.boardGettingThere}%`
+                                : col.key === 'GETTING_THERE'
+                                  ? `${style.boardGettingThere}–${style.boardReadyToGrade - 1}%`
+                                  : `${style.boardReadyToGrade}%+`}
+                            </span>
+                          ) : null}
                         </h2>
                         {pickable.length > 0 ? (
                           <Checkbox
@@ -176,6 +196,7 @@ export function GradingBoardPage() {
       )}
 
       {moving && disciplineId ? <MoveDialog disciplineId={disciplineId} item={moving.item} initialTo={moving.to} onClose={() => setMoving(null)} /> : null}
+      {editingThresholds && style ? <ThresholdsDialog style={style} onClose={() => setEditingThresholds(false)} /> : null}
       {promoting && style && schoolId ? (
         <BulkPromoteModal
           schoolId={schoolId}
@@ -321,6 +342,74 @@ function MoveDialog({
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={move.isPending}>
             Move
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Change this style's columns (Decisions 75, 136, 181): the owner, or a
+ * coach with "Change board %" for the style. Whole percentages; "Getting
+ * There" starts below "Ready to Grade". */
+function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClose: () => void }) {
+  const set = useSetBoardThresholds(style.id);
+  const [gettingThere, setGettingThere] = useState(String(style.boardGettingThere));
+  const [readyToGrade, setReadyToGrade] = useState(String(style.boardReadyToGrade));
+  const [error, setError] = useState<string | null>(null);
+  const g = Number(gettingThere);
+  const r = Number(readyToGrade);
+  const valid = Number.isInteger(g) && Number.isInteger(r) && g >= 1 && r <= 99 && g < r;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await set.mutateAsync({ gettingThere: g, readyToGrade: r });
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+    }
+  }
+
+  return (
+    <Modal title={`Board columns — ${style.name}`} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        {error ? <ErrorBanner message={error} /> : null}
+        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+          Progress is classes attended out of classes required (time at the rank for a time-only rank). Skills and minimum days aren't part of it.
+        </p>
+        <Field label='"Getting There" from (%)' htmlFor="threshold-getting-there">
+          <TextField type="number" min={1} max={98} step={1} required value={gettingThere} onChange={(e) => setGettingThere(e.target.value)} />
+        </Field>
+        <Field label='"Ready to Grade" from (%)' htmlFor="threshold-ready">
+          <TextField type="number" min={2} max={99} step={1} required value={readyToGrade} onChange={(e) => setReadyToGrade(e.target.value)} />
+        </Field>
+        {valid ? (
+          <p className="ultm8-field__hint">
+            Just Starting: under {g}% · Getting There: {g}–{r - 1}% · Ready to Grade: {r}% and up
+          </p>
+        ) : (
+          <p role="alert" className="ultm8-field__error">
+            Whole numbers from 1 to 99, with "Getting There" below "Ready to Grade".
+          </p>
+        )}
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <Button type="submit" loading={set.isPending} disabled={!valid}>
+            Save
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setGettingThere('33');
+              setReadyToGrade('66');
+            }}
+          >
+            Back to 33% / 66%
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel

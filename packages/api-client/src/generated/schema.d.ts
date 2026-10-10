@@ -1556,6 +1556,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/disciplines/{id}/board-thresholds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingController_setBoardThresholds"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/board-move": {
         parameters: {
             query?: never;
@@ -3246,6 +3262,10 @@ export interface components {
             classTypesOffered: string[];
             /** @description "Skills required" switch (Decision 128, item 10). */
             skillsRequiredToGrade: boolean;
+            /** @description Grading Board: "Getting There" from this % (Decisions 75, 136). Default 33. */
+            boardGettingThere: number;
+            /** @description Grading Board: "Ready to Grade" from this % (Decisions 75, 136). Default 66. */
+            boardReadyToGrade: number;
             createdAt: string;
             updatedAt: string;
         };
@@ -3667,6 +3687,15 @@ export interface components {
             items: components["schemas"]["GradingBoardItemDto"][];
             /** @description Students left out by activeOnly. */
             hiddenInactive: number;
+        };
+        BoardThresholdsDto: {
+            /** @example 33 */
+            gettingThere: number;
+            /**
+             * @description Must be above gettingThere.
+             * @example 66
+             */
+            readyToGrade: number;
         };
         BoardMoveDto: {
             /** @enum {string} */
@@ -6906,6 +6935,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GradingBoardResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_setBoardThresholds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardThresholdsDto"];
+            };
+        };
+        responses: {
+            /** @description The style, with its new board columns. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
                 };
             };
         };
