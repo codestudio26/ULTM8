@@ -20,4 +20,7 @@ export type AppStackParamList = {
   KidModeBooking: undefined;
   PendingReview: undefined;
   QrCheckIn: undefined;
+  CoachDashboard: undefined;
+  GradingBoard: { schoolId: string; disciplineId: string; name: string };
+  CoachStudent: { schoolId: string; disciplineId: string; studentId: string; name: string; styleName: string };
 };
