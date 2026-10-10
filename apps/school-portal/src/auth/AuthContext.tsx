@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { sessionStorageTokenStore, decodeJwtPayload } from '@ultm8/auth';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { markVerifyNoticeDue } from './verifyNoticeFlag';
 import type { JwtClaims } from './types';
 
 interface AuthContextValue {
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, passcode: string) => {
       const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
       applyToken(result.accessToken);
+      markVerifyNoticeDue();
     },
     [applyToken],
   );

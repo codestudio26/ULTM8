@@ -153,3 +153,41 @@ export class StudentEligibilityListResponseDto {
   @ApiProperty({ type: [StudentEligibilityResponseDto] })
   items!: StudentEligibilityResponseDto[];
 }
+
+/** A self-declared belt waiting to be verified (Decisions 137, 189). */
+export class PendingVerificationDto {
+  @ApiProperty()
+  studentRankId!: string;
+
+  @ApiProperty()
+  studentId!: string;
+
+  @ApiProperty()
+  firstName!: string;
+
+  @ApiProperty()
+  surname!: string;
+
+  @ApiProperty()
+  disciplineId!: string;
+
+  @ApiProperty()
+  disciplineName!: string;
+
+  @ApiProperty()
+  currentRankId!: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  currentStripeId!: string | null;
+
+  @ApiProperty({ enum: ['UNVERIFIED'] })
+  verificationStatus!: 'UNVERIFIED';
+
+  @ApiProperty({ description: 'When the student declared it.' })
+  declaredAt!: Date;
+}
+
+export class PendingVerificationListResponseDto {
+  @ApiProperty({ type: [PendingVerificationDto] })
+  items!: PendingVerificationDto[];
+}

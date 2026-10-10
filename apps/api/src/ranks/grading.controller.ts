@@ -5,7 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
 import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
-import { StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
+import { PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
@@ -141,8 +141,11 @@ export class GradingController {
     return this.gradingService.verifyRank(user.sub, id, disciplineId, dto);
   }
 
-  /** Owner only for now: ranks waiting to be verified (Decision 137, item 4). */
-  @ApiOkResponse({ type: StudentRankListResponseDto })
+  /** Belts waiting to be verified, for the notice at login (Decisions 137,
+   * 189): the owner sees every one; a coach or Branch Staff member sees those
+   * in the styles they may verify, for the students they cover; anyone else
+   * an empty list. */
+  @ApiOkResponse({ type: PendingVerificationListResponseDto })
   @Get('schools/:schoolId/rank-verifications')
   findPendingVerifications(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string) {
     return this.gradingService.findPendingVerifications(user.sub, schoolId);

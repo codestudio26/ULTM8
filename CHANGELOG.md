@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Belts waiting to be verified: a notice at login** (Decisions 137, 189).
+  When the owner, or a coach or Branch Staff member who may verify belts, logs
+  in to the School Portal, a notice lists the students whose self-declared belt
+  is waiting to be verified, each linking to the student's grading page; it
+  shows once per login and not at all when nothing is waiting. **api:**
+  `GET /schools/{id}/rank-verifications` is no longer owner-only: coaches get
+  the styles where they have "Verify ranks", for the students of their own
+  branches (the Grading Board's read path); other staff get an empty list.
+  Each item now carries the student's name and the style's name.
 - **Belts and stripes, not "rungs"** (Decision 187). Screens and messages now
   say belt and stripe: the belt editor lists a belt's **Stripes** ("Stripe name",
   "Add stripe", "Reorder stripes?"), the ladder shows each belt's number of
