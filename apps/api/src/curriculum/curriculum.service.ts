@@ -10,7 +10,8 @@ import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { OrderCategoryLessonsDto, OrderLessonCategoriesDto } from './dto/lesson-category.dto';
 
-const LESSON_INCLUDE = { skills: { include: { skill: { select: { disciplineId: true } } } }, category: { select: { name: true } } } as const;
+/** `content` is null when the database doesn't let the caller read it (Decision 208). */
+const LESSON_INCLUDE = { skills: { include: { skill: { select: { disciplineId: true } } } }, category: { select: { name: true } }, content: true } as const;
 
 /** What a caller may watch (Decisions 154, 190, 195): staff everything; a
  * student, or a guardian on their behalf, free lessons and those of the styles
@@ -29,17 +30,16 @@ const LESSON_ORDER: Prisma.LessonOrderByWithRelationInput[] = [{ category: { ord
  * the integration, and no credentials for either are provisioned in this working
  * environment, same precedent as every other unprovisioned vendor in this
  * codebase (Stripe/Cognito/R2/Twilio). videoRef/captionStatus/captionTrackRef
- * exist on the model and response shape, but nothing here ever writes them beyond
+ * exist on the response shape (stored in LessonContent, Decision 208), but nothing here ever writes them beyond
  * the schema default (captionStatus PENDING, everything else null) — that's a
  * later phase's work, once real credentials exist to build and verify against.
  *
  * Writes (create/update) require Staff/Instructor (assertStaffAtSchool — Decision
  * 58's own "an instructor uploads", resolved as Decision 104 to mean ordinary
- * tenant Staff, not Platform Admin). Reads have no additional check beyond RLS
- * itself (lesson_tenant_isolation admits any active RoleGrant at the School,
- * Student included — Decision 58's own "surfacing automatically... a student's
- * profile"), same "School/Branch RLS admits any role, business-layer narrows
- * writes" split already established for Discipline/Rank/Skill.
+ * tenant Staff, not Platform Admin). Reads: lesson_tenant_isolation admits any
+ * active RoleGrant at the School to the lesson itself; its content
+ * (LessonContent) only to those who may watch it (Decisions 154, 190, 195,
+ * 208), checked here and by the database.
  */
 @Injectable()
 export class CurriculumService {
@@ -78,10 +78,10 @@ export class CurriculumService {
           order: await this.nextOrderIn(tx, schoolId, categoryId),
           free: dto.free ?? false,
           durationSeconds: dto.durationSeconds,
-          description: dto.description,
           format: dto.format,
         },
       });
+      await tx.lessonContent.create({ data: { lessonId, description: dto.description } });
       await tx.lessonSkill.createMany({
         data: dto.skillIds.map((skillId) => ({ lessonId, skillId })),
       });
@@ -180,6 +180,7 @@ export class CurriculumService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
       await tx.lessonSkill.deleteMany({ where: { lessonId } });
+      await tx.lessonContent.deleteMany({ where: { lessonId } });
       await tx.lesson.delete({ where: { id: lessonId } });
     });
   }
@@ -212,11 +213,17 @@ export class CurriculumService {
           free: dto.free,
           ...(moving ? { categoryId: dto.categoryId, order: await this.nextOrderIn(tx, existing.schoolId, dto.categoryId ?? null) } : {}),
           durationSeconds: dto.durationSeconds,
-          description: dto.description,
           format: dto.format,
           instructorId: dto.instructorId,
         },
       });
+      if (dto.description !== undefined) {
+        await tx.lessonContent.upsert({
+          where: { lessonId },
+          create: { lessonId, description: dto.description },
+          update: { description: dto.description },
+        });
+      }
       // REPLACE semantics for the full skillIds set, same convention as
       // UpdateRankDto's own requiredSkillIds (RanksService.updateRank).
       if (dto.skillIds) {
@@ -238,16 +245,20 @@ export class CurriculumService {
   // ---------------------------------------------------------------------------
 
   private shapeLessonResponse(lesson: Prisma.LessonGetPayload<{ include: typeof LESSON_INCLUDE }>, access: LessonAccess = 'all') {
-    const { skills, category, ...rest } = lesson;
+    const { skills, category, content, ...rest } = lesson;
     // A lesson's styles are its skills' styles (Decision 195).
     const locked = access !== 'all' && !lesson.free && !skills.some((s) => access.has(s.skill.disciplineId));
+    // A locked lesson shows what it is, not its content. The database applies
+    // the same rule (Decision 208): content it won't give is null either way.
+    const shown = locked ? null : content;
     return {
       ...rest,
       category: category?.name ?? null,
       skillIds: skills.map((s) => s.skillId),
       locked,
-      // A locked lesson shows what it is, not its content.
-      ...(locked ? { description: null, videoRef: null, captionTrackRef: null } : {}),
+      description: shown?.description ?? null,
+      videoRef: shown?.videoRef ?? null,
+      captionTrackRef: shown?.captionTrackRef ?? null,
     };
   }
 

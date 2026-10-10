@@ -2614,3 +2614,17 @@ Written up directly at the user's request ("we need to send the new user a log i
 **Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Completes:** Decision 199, which left this flag out because it wasn't part of that question.
 
 Asked whether the belt-level "years in rank" switch can go like the weekly cap and skills, Gus: *"yes"*. Each rung has its own "time in rank only" switch, with the years stored as minimum days (Decision 128, item 3), and grading reads only that, so nothing changes for students. `Rank.yearsInRankFlag` is dropped (migration `20261103000000_remove_years_in_rank_flag`) and a belt no longer takes or returns it.
+
+---
+
+## Decision 208 — Lesson access is also enforced by the database
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Completes:** Decisions 154, 190 and 195, which the API enforced alone.
+
+Gus: *"yes add the database check"*.
+
+1. **What it does.** A lesson's content (description, video and captions) moves to its own table, `LessonContent`. The database gives it only to: staff at the School (Owner/Manager, Branch Staff, Instructor); anyone at the School when the lesson is free; a student whose live membership (active, not expired, credits left) is on a plan that includes lessons and covers one of the lesson's styles. A guardian reads through the child's context, as the API already does. Same rule as the API's (Decisions 154, 190, 195).
+2. **What doesn't change.** The lesson itself (title, category, order, styles, "free") stays readable by anyone at the School, so a locked lesson still shows what it is. Nothing changes for users: they see exactly what the API showed before. Only staff write content.
+3. **Why.** A second layer: if a future server change forgot the check, the database would still not hand out a locked lesson's content. When the two disagree, the database wins.
+
+Built in migration `20261104000000_lesson_content_access` (`can_view_lesson_content`, `is_lesson_staff`); existing content is copied into the new table.

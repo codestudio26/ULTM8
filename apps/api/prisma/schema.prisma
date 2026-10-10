@@ -2011,21 +2011,36 @@ model Lesson {
   /// not (Decision 190). Set by the owner.
   free            Boolean         @default(false)
   durationSeconds Int?
-  description     String?
   format          LessonFormat
 
-  videoRef        String?
-  captionStatus   CaptionStatus @default(PENDING)
-  captionTrackRef String?
+  captionStatus CaptionStatus @default(PENDING)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  skills LessonSkill[]
+  skills  LessonSkill[]
+  /// What only those who may watch the lesson can read (Decision 208).
+  content LessonContent?
 
   @@index([schoolId])
   @@index([instructorId])
   @@index([categoryId])
+}
+
+/// A lesson's watchable content, apart from the lesson itself so the database
+/// can decide who reads it (Decision 208): the description, the video and its
+/// captions. The lesson's title, category, order, styles and "free" stay on
+/// Lesson, readable by anyone at the School, so a locked lesson still shows what
+/// it is. RLS (`can_view_lesson_content`): staff at the School; anyone at the
+/// School when the lesson is free; a student whose live membership is on a plan
+/// that includes lessons and covers one of the lesson's styles (Decisions 154,
+/// 190, 195). A guardian reads under the student's context, as the API does.
+model LessonContent {
+  lessonId        String  @id
+  lesson          Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  description     String?
+  videoRef        String?
+  captionTrackRef String?
 }
 
 /// Lesson categories (Decisions 128.15, 191): a list per School with its own
