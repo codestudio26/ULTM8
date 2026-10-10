@@ -206,6 +206,7 @@ export async function cleanup() {
   await db.rank.deleteMany({ where });
   await db.skill.deleteMany({ where });
   await db.discipline.deleteMany({ where });
+  await db.timetableSlot.deleteMany({ where });
   await db.coachInvite.deleteMany({ where });
   await db.staffPermission.deleteMany({ where });
   await db.roleGrant.deleteMany({ where: { userId: { in: userIds } } });

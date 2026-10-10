@@ -5473,6 +5473,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/grading-permissions/me": {
+      "get": {
+        "operationId": "GradingPermissionsController_findMine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGradingPermissionsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/grading-permissions": {
       "get": {
         "operationId": "GradingPermissionsController_findAll",
@@ -12489,6 +12524,25 @@
           "canVoidHistory",
           "canChangeBoardThresholds",
           "createdAt"
+        ]
+      },
+      "MyGradingPermissionsResponseDto": {
+        "type": "object",
+        "properties": {
+          "isOwner": {
+            "type": "boolean",
+            "description": "The School owner may do everything, in every style; items is then empty."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingPermissionResponseDto"
+            }
+          }
+        },
+        "required": [
+          "isOwner",
+          "items"
         ]
       },
       "GradingStaffDto": {

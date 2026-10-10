@@ -41,6 +41,7 @@ export function CoachInvitePage() {
     return (
       <AuthCard title="Coach invite">
         <SuccessBanner message={`You're now a coach at ${where}.`} />
+        <Button onClick={() => navigate('/coach')}>Go to your coach dashboard</Button>
       </AuthCard>
     );
   }

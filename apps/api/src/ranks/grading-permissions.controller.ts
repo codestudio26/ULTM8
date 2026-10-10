@@ -4,15 +4,22 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingPermissionsService } from './grading-permissions.service';
-import { GradingPermissionListResponseDto, SetGradingPermissionsDto } from './dto/grading-permission.dto';
+import { GradingPermissionListResponseDto, MyGradingPermissionsResponseDto, SetGradingPermissionsDto } from './dto/grading-permission.dto';
 
-// Grading permission per discipline (Decision 138). School owner only.
+// Grading permission per discipline (Decision 138). School owner only, except
+// "mine" (Decision 184): any staff member's own.
 @ApiTags('ranks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class GradingPermissionsController {
   constructor(private readonly gradingPermissionsService: GradingPermissionsService) {}
+
+  @ApiOkResponse({ type: MyGradingPermissionsResponseDto })
+  @Get('schools/:schoolId/grading-permissions/me')
+  findMine(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.gradingPermissionsService.findMine(user.sub, schoolId);
+  }
 
   @ApiOkResponse({ type: GradingPermissionListResponseDto })
   @Get('schools/:schoolId/grading-permissions')

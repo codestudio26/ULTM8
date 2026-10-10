@@ -2190,3 +2190,20 @@ Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT 
 7. **The coach dashboard** (grading, their classes, notifications, their own student info), in the web portal and the mobile app, is Decision 184 and is built separately.
 
 Built in the API as `CoachInvite` and `StaffPermission` with the endpoints listed in the CHANGELOG, and in the School Portal as **Invite a coach** and **Who can invite coaches** on the Staff page, plus the invite link page `/coach-invite/{token}`.
+
+---
+
+## Decision 184 — The coach dashboard, on the web portal and the mobile app
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** what a coach sees after signing in. Gus: *"We need to create a coaches dashboard, similar to the students, carrying the coaches info too such as, Grading, their classes, messages, plus their students info if they are a students"*; *"Both Mobile app and Web Portal, just like the students portal"*.
+
+1. **Where:** both the School Portal (web) and the mobile app. The web portal is built first; the mobile app's coach screens follow on the Track B branch.
+2. **What it shows:**
+   - **Grading:** the styles the coach grades in (Decision 181), with how many of their students are ready to grade and getting there, and the Grading Board and student panels for them.
+   - **Their classes:** the weekly timetable slots and upcoming classes where they are the instructor.
+   - **Messages:** their notifications for now. There is no messaging between people yet; that is its own feature later. Gus: *"Notifications for now"*.
+   - **Their own training:** when they also train at the School, their ranks and progress (Decision 183: a coach keeps their student side).
+3. **Only what they may do.** A coach sees the Grading Board and student panels for their styles only, and only the actions their toggles allow (promote, move down, sign off skills, adjust progress, verify, void, change board %). The API enforces this regardless (Decision 181). They see students of their own branches only (Decision 168).
+4. **Sign-in and menu:** a coach who doesn't own the School lands on their dashboard, with a menu of Dashboard, Grading Board and Notifications; the header shows "Coach". A coach at several Schools sees the first one for now (no School switcher yet).
+
+Built in the API as `GET /schools/{id}/grading-permissions/me` (the caller's own styles and toggles; the owner gets `isOwner: true`), and in the School Portal as `/coach`, with the Grading Board and student panel working for coaches.

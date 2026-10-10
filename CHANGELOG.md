@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Coach dashboard on the web portal** (Decision 184). A coach who signs in
+  lands on **Coach dashboard**: the styles they grade in, with how many
+  students are ready to grade or getting there; their weekly classes and
+  upcoming classes; their latest notifications; and, if they also train
+  there, their own ranks and progress. Their menu is Dashboard, Grading
+  Board and Notifications, and the header shows "Coach". The **Grading
+  Board** and **student panel** now work for coaches: only the styles they
+  grade in, and only the actions their grading permission allows. After
+  accepting an invite, **Go to your coach dashboard** takes them there.
+  **api:** `GET /schools/{id}/grading-permissions/me`. `packages/api-client`
+  regenerated. The mobile app's coach screens follow separately.
 - **Coach invites** (Decision 183). On the Staff page, **Invite a coach**
   emails one person a link to coach at the School (choosing the branch when it
   has branches). The link works once, for 7 days, and can be cancelled; the

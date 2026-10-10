@@ -1796,6 +1796,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/grading-permissions/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingPermissionsController_findMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/grading-permissions": {
         parameters: {
             query?: never;
@@ -3961,6 +3977,11 @@ export interface components {
             canVoidHistory: boolean;
             canChangeBoardThresholds: boolean;
             createdAt: string;
+        };
+        MyGradingPermissionsResponseDto: {
+            /** @description The School owner may do everything, in every style; items is then empty. */
+            isOwner: boolean;
+            items: components["schemas"]["GradingPermissionResponseDto"][];
         };
         GradingStaffDto: {
             userId: string;
@@ -7480,6 +7501,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkPromoteResponseDto"];
+                };
+            };
+        };
+    };
+    GradingPermissionsController_findMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyGradingPermissionsResponseDto"];
                 };
             };
         };

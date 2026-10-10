@@ -1,15 +1,23 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { TopBar } from './TopBar';
+
+/** A coach who doesn't own the School sees their own screens (Decision 184). */
+const COACH_NAV = [
+  { label: 'Dashboard', to: '/coach' },
+  { label: 'Grading Board', to: '/grading' },
+  { label: 'Notifications', to: '/notifications' },
+];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { logout } = useAuth();
+  const isCoachOnly = !useOwnedSchoolId() && !!useCoachSchoolId();
   return (
     <AppShell
       brand="ULTM8 School Portal"
       header={<TopBar />}
-      navItems={[
+      navItems={isCoachOnly ? COACH_NAV : [
         { label: 'School', to: '/school' },
         { label: 'Branches', to: '/branches' },
         { label: 'Staff', to: '/staff' },
