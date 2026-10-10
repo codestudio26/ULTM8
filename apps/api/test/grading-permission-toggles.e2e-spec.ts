@@ -205,4 +205,18 @@ describeIfDb('Grading permission toggles (Decision 181)', () => {
       .send({ styles: [{ disciplineId: bjj.id, ...NONE, canPromote: true }] });
     expect(res.status).toBe(403);
   });
+  it('a grant written the way grants were before the toggles existed has every toggle on (Decision 181.4)', async () => {
+    // Only the columns a grant had before 20261023000000; the database fills
+    // the rest, as it did for the grants that already existed.
+    const id = randomUUID();
+    await superuser.$executeRaw`
+      INSERT INTO "GradingPermission" ("id", "schoolId", "userId", "disciplineId")
+      VALUES (${id}, ${school.id}, ${student.id}, ${judo.id})`;
+    const row = await superuser.gradingPermission.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({
+      canPromote: true, canDowngrade: true, canSignOffSkills: true, canAdjustProgress: true,
+      canVerifyRanks: true, canVoidHistory: true, canChangeBoardThresholds: true,
+    });
+    await superuser.gradingPermission.delete({ where: { id } });
+  });
 });
