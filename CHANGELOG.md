@@ -15,6 +15,24 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Coach invites** (Decision 183). On the Staff page, **Invite a coach**
+  emails one person a link to coach at the School (choosing the branch when it
+  has branches). The link works once, for 7 days, and can be cancelled; the
+  page lists each invite as Waiting, Accepted, Cancelled or Expired. Opening
+  the link asks the person to log in, or create their account, with the
+  invited email, then **Accept invite** makes them a coach; a student keeps
+  their student account. **Who can invite coaches**: the owner ticks which
+  Branch Staff may also invite, for their own branches (coaches can't, per
+  Spec 55 §8.2). Email only for now. **api:** `CoachInvite` and
+  `StaffPermission` (migration `20261025000000`, with RLS: the owner, staff
+  with the permission for their branches, and the link holder for its own
+  invite; only the token's SHA-256 is stored);
+  `POST/GET /schools/{id}/coach-invites`, `POST /coach-invites/{id}/cancel`,
+  `GET /coach-invite-links/{token}` (no sign-in needed),
+  `POST /coach-invite-links/{token}/accept`,
+  `GET /schools/{id}/staff-permissions`,
+  `PUT /schools/{id}/staff-permissions/{userId}`. New setting
+  `PORTAL_BASE_URL` for the link. `packages/api-client` regenerated.
 - **Grading Board columns per style** (Decisions 75, 136, 181). Each style
   keeps its own split, 33% / 66% by default. On the Grading Board, **Change %**
   sets "Getting There" and "Ready to Grade" (whole %, 1–99, Getting There

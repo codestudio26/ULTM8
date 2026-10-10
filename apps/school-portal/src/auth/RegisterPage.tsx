@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, TextField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -9,9 +9,11 @@ import { apiClient } from '../api';
  * (ultm8-domain-rules §3) are optional here exactly as they're optional on the DTO. */
 export function RegisterPage() {
   const navigate = useNavigate();
+  // A coach invite link passes the invited email along (Decision 183).
+  const invitedEmail = (useLocation() as { state?: { email?: string } }).state?.email ?? '';
 
   const [form, setForm] = useState({
-    email: '',
+    email: invitedEmail,
     phone: '',
     firstName: '',
     surname: '',

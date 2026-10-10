@@ -356,6 +356,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/coach-invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CoachInvitesController_list"];
+        put?: never;
+        post: operations["CoachInvitesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach-invites/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CoachInvitesController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach-invite-links/{token}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CoachInvitesController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CoachInvitesController_listStaffPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff-permissions/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CoachInvitesController_setStaffPermission"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/coach-invite-links/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CoachInviteLinksController_preview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/guardians/me/minors": {
         parameters: {
             query?: never;
@@ -514,6 +610,70 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["GuardiansController_confirmPendingReviewBooking"];
+        trace?: never;
+    };
+    "/v1/notifications/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NotificationsController_findAllForCaller"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["NotificationsController_markRead"];
+        trace?: never;
+    };
+    "/v1/notifications/device-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_registerDeviceToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/device-tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["NotificationsController_deregisterDeviceToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/schools/{schoolId}/classes": {
@@ -1988,70 +2148,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/notifications/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["NotificationsController_findAllForCaller"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/notifications/{id}/read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["NotificationsController_markRead"];
-        trace?: never;
-    };
-    "/v1/notifications/device-tokens": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["NotificationsController_registerDeviceToken"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/notifications/device-tokens/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["NotificationsController_deregisterDeviceToken"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/franchises/{id}/fee-charges": {
         parameters: {
             query?: never;
@@ -2559,6 +2655,86 @@ export interface components {
             logoUrl?: string | null;
             bannerUrl?: string | null;
         };
+        CreateCoachInviteDto: {
+            email: string;
+            /** @description Required when the School has branches; the branch they will coach at. */
+            branchId?: string;
+        };
+        CreatedCoachInviteResponseDto: {
+            id: string;
+            schoolId: string;
+            branchId: string | null;
+            branchName: string | null;
+            email: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
+            invitedById: string | null;
+            /** @description First name and surname of who sent it. */
+            invitedByName: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            acceptedAt: string | null;
+            /** Format: date-time */
+            cancelledAt: string | null;
+            /** @description False when the email could not be sent; cancel and invite again. */
+            emailSent: boolean;
+        };
+        CoachInviteResponseDto: {
+            id: string;
+            schoolId: string;
+            branchId: string | null;
+            branchName: string | null;
+            email: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
+            invitedById: string | null;
+            /** @description First name and surname of who sent it. */
+            invitedByName: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            acceptedAt: string | null;
+            /** Format: date-time */
+            cancelledAt: string | null;
+        };
+        CoachInviteListResponseDto: {
+            items: components["schemas"]["CoachInviteResponseDto"][];
+        };
+        AcceptCoachInviteResponseDto: {
+            schoolId: string;
+            branchId: string | null;
+            /** @description A new access token that includes the coach role. */
+            accessToken: string;
+        };
+        StaffPermissionResponseDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            /** @description Branches where they are Branch Staff. */
+            branchIds: string[];
+            canInviteCoaches: boolean;
+        };
+        StaffPermissionListResponseDto: {
+            items: components["schemas"]["StaffPermissionResponseDto"][];
+        };
+        SetStaffPermissionDto: {
+            canInviteCoaches: boolean;
+        };
+        CoachInvitePreviewDto: {
+            schoolName: string;
+            branchName: string | null;
+            /** @description The email the invite was sent to; sign in or sign up with it. */
+            email: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
+            /** Format: date-time */
+            expiresAt: string;
+        };
         CreateMinorDto: {
             firstName: string;
             surname: string;
@@ -2623,6 +2799,35 @@ export interface components {
         ConfirmPendingReviewBookingDto: {
             /** @description The linked minor Student this pending-review Booking belongs to. */
             studentId: string;
+        };
+        NotificationResponseDto: {
+            id: string;
+            userId: string;
+            title: string;
+            body: string;
+            read: boolean;
+            /** @description Developer-level discriminator — not spec-confirmed, see the Prisma model comment. */
+            type?: string | null;
+            createdAt: string;
+        };
+        NotificationListResponseDto: {
+            items: components["schemas"]["NotificationResponseDto"][];
+            /** @description Cursor for the next page, or null if this is the last page. */
+            nextCursor?: string | null;
+        };
+        RegisterDeviceTokenDto: {
+            /** @enum {string} */
+            platform: "IOS" | "ANDROID";
+            token: string;
+        };
+        DeviceTokenResponseDto: {
+            id: string;
+            userId: string;
+            /** @enum {string} */
+            platform: "IOS" | "ANDROID";
+            token: string;
+            lastSeenAt: string;
+            createdAt: string;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */
@@ -4018,35 +4223,6 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
-        NotificationResponseDto: {
-            id: string;
-            userId: string;
-            title: string;
-            body: string;
-            read: boolean;
-            /** @description Developer-level discriminator — not spec-confirmed, see the Prisma model comment. */
-            type?: string | null;
-            createdAt: string;
-        };
-        NotificationListResponseDto: {
-            items: components["schemas"]["NotificationResponseDto"][];
-            /** @description Cursor for the next page, or null if this is the last page. */
-            nextCursor?: string | null;
-        };
-        RegisterDeviceTokenDto: {
-            /** @enum {string} */
-            platform: "IOS" | "ANDROID";
-            token: string;
-        };
-        DeviceTokenResponseDto: {
-            id: string;
-            userId: string;
-            /** @enum {string} */
-            platform: "IOS" | "ANDROID";
-            token: string;
-            lastSeenAt: string;
-            createdAt: string;
-        };
         FranchiseFeeChargeResponseDto: {
             id: string;
             franchiseId: string;
@@ -4843,6 +5019,162 @@ export interface operations {
             };
         };
     };
+    CoachInvitesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachInviteListResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInvitesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCoachInviteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedCoachInviteResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInvitesController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachInviteResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInvitesController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptCoachInviteResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInvitesController_listStaffPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPermissionListResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInvitesController_setStaffPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetStaffPermissionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPermissionResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInviteLinksController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachInvitePreviewDto"];
+                };
+            };
+        };
+    };
     GuardiansController_findMyMinors: {
         parameters: {
             query?: never;
@@ -5067,6 +5399,92 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NotificationsController_findAllForCaller: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationListResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_registerDeviceToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDeviceTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceTokenResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_deregisterDeviceToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7652,92 +8070,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AcademyTimetableListResponseDto"];
                 };
-            };
-        };
-    };
-    NotificationsController_findAllForCaller: {
-        parameters: {
-            query?: {
-                /** @description Opaque cursor from a previous page's nextCursor. */
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationListResponseDto"];
-                };
-            };
-        };
-    };
-    NotificationsController_markRead: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotificationResponseDto"];
-                };
-            };
-        };
-    };
-    NotificationsController_registerDeviceToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterDeviceTokenDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeviceTokenResponseDto"];
-                };
-            };
-        };
-    };
-    NotificationsController_deregisterDeviceToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

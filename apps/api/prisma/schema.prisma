@@ -327,6 +327,11 @@ model User {
   homeBranchesAssigned     StudentHomeBranch[] @relation("StudentHomeBranchAssignedBy")
   gradingPermissions       GradingPermission[] @relation("GradingPermissionUser")
   gradingPermissionsGiven  GradingPermission[] @relation("GradingPermissionGrantedBy")
+  staffPermissions         StaffPermission[]   @relation("StaffPermissionUser")
+  staffPermissionsGiven    StaffPermission[]   @relation("StaffPermissionGrantedBy")
+  coachInvitesSent         CoachInvite[]       @relation("CoachInviteInvitedBy")
+  coachInvitesAccepted     CoachInvite[]       @relation("CoachInviteAcceptedBy")
+  coachInvitesCancelled    CoachInvite[]       @relation("CoachInviteCancelledBy")
   waiverSignatures         WaiverSignature[] @relation("WaiverSignatureStudent")
   waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
   bookings                 Booking[]         @relation("BookingStudent")
@@ -732,6 +737,8 @@ model School {
   platformCharges     PlatformCharge[]
   studentHomeBranches StudentHomeBranch[]
   gradingPermissions  GradingPermission[]
+  staffPermissions    StaffPermission[]
+  coachInvites        CoachInvite[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -767,6 +774,7 @@ model Branch {
   timetableSlots TimetableSlot[]
   instructors    Instructor[]
   homeStudents   StudentHomeBranch[]
+  coachInvites   CoachInvite[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -2965,4 +2973,67 @@ model GradingPermission {
   @@unique([userId, disciplineId])
   @@index([schoolId])
   @@index([disciplineId])
+}
+
+/// Staff permissions beyond grading (Decision 183), one row per Branch Staff
+/// member per School. "Can invite coaches" lets them send coach invites for
+/// their own branches. The owner sets it; Instructors can't hold it (Spec 55
+/// §8.2: no instructor management). RLS: the owner, or the user themselves.
+model StaffPermission {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("StaffPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  canInviteCoaches Boolean @default(false)
+
+  grantedById String?
+  grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, userId])
+  @@index([userId])
+}
+
+/// A coach invite (Decision 183): one person, by email, to coach at a School
+/// (and a branch when it has branches). The link holds a random token; only
+/// its SHA-256 is stored. Single use, 7 days, cancellable. Accepting it, signed
+/// in with the invited email, gives an INSTRUCTOR RoleGrant; any other role the
+/// person holds is kept. RLS: the owner; Branch Staff with "Can invite coaches"
+/// for their own branches; the token holder (by its hash) to accept.
+model CoachInvite {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  /// Lower-cased.
+  email     String
+  tokenHash String @unique
+
+  invitedById String?
+  invitedBy   User?   @relation("CoachInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  expiresAt DateTime
+
+  acceptedAt   DateTime?
+  acceptedById String?
+  acceptedBy   User?     @relation("CoachInviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("CoachInviteCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, email])
+  @@index([branchId])
 }

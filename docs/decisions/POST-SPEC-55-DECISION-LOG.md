@@ -2174,3 +2174,19 @@ Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT 
 3. **"Ready to grade" notifications** (Decisions 145, 178) go to coaches who may **Promote** in that style.
 4. **Existing grants keep every toggle on.** Nobody uses the system live yet (Gus).
 5. **A Grading permissions page** in the School Portal lists the school's Instructors and Branch Staff, with "May grade" per style and the seven toggles. The API's permission list includes that staff list (owner only), since no staff roster endpoint existed.
+
+---
+
+## Decision 183 — Coach invites: one emailed link per coach, single use, 7 days; "Can invite coaches" for Branch Staff
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how a coach joins a School. Spec 55 §8.2 says Instructors are "provisioned by School invite, not self-registration"; until now the only invite was the owner granting the role to an existing account (Decisions 80, 116).
+
+1. **Coaches have an ordinary account**, like students and parents, and don't buy a membership to coach. They become a coach in one of two ways: the owner grants the role to their existing account (unchanged), or they accept an invite link. Gus: *"account owner will upgrade the account to coaches level or school owner will send an coaches invitation link, which will auto link the coaches to a coaches account"*.
+2. **The invite link:** one per person, sent by **email**; it works **once**, for **7 days**, and can be **cancelled**. Gus: *"Single use, 7-day expiry, cancellable"*. Text-message invites need a new Twilio Messaging integration and come later. Gus: *"Email now, text later"*.
+3. **Accepting:** the person opens the link, logs in (or creates their account) **with the invited email**, and accepts. Their account gets an INSTRUCTOR grant at the School, at the branch chosen in the invite when the School has branches (Decision 169). Matching the email stops a forwarded link being used by someone else.
+4. **A coach keeps their student side.** Any role the account already holds, such as STUDENT, is kept (Spec 55: a person may hold more than one role). Gus: *"A coach keeps their student side"*.
+5. **Who can invite:** the owner, and Branch Staff the owner has given **"Can invite coaches"**, set per staff member. Gus: *"owner and those who have been granted the access to the invitation area… a school operator could be assigned this job"*; *"Can invite coaches toggle"*. **Branch Staff only:** Spec 55 §8.2 rules out instructor management for Instructors, and a decision can't override the spec outside grading. Gus: *"Branch Staff only"*. **Own branches only** for staff; the owner can invite to any branch. Gus: *"Own branches only"*.
+6. **Security:** only the token's SHA-256 is stored. Row-level security lets the owner manage all of the School's invites, staff with the permission manage their own branches' invites, and the link holder read and accept only that one invite. Whoever sends an invite must have a verified phone (Decision 81).
+7. **The coach dashboard** (grading, their classes, notifications, their own student info), in the web portal and the mobile app, is Decision 184 and is built separately.
+
+Built in the API as `CoachInvite` and `StaffPermission` with the endpoints listed in the CHANGELOG, and in the School Portal as **Invite a coach** and **Who can invite coaches** on the Staff page, plus the invite link page `/coach-invite/{token}`.

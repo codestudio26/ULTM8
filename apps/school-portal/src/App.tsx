@@ -7,6 +7,7 @@ import { RegisterPage } from './auth/RegisterPage';
 import { VerifyOtpPage } from './auth/VerifyOtpPage';
 import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
+import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
@@ -44,6 +45,7 @@ export function App() {
       <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/forgot-passcode" element={<ForgotPasscodePage />} />
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
+      <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
       <Route
