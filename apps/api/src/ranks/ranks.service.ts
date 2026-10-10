@@ -52,7 +52,7 @@ export class RanksService {
     const id = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.discipline.create({
-        data: { id, schoolId, name: dto.name, classTypesOffered: dto.classTypesOffered ?? [] },
+        data: { id, schoolId, name: dto.name, classTypesOffered: dto.classTypesOffered ?? [], skillsRequiredToGrade: dto.skillsRequiredToGrade ?? false },
       }),
     );
   }
@@ -79,7 +79,7 @@ export class RanksService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     await this.assertRanksEnabled(callerId, existing.schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.discipline.update({ where: { id: disciplineId }, data: { name: dto.name, classTypesOffered: dto.classTypesOffered } }),
+      tx.discipline.update({ where: { id: disciplineId }, data: { name: dto.name, classTypesOffered: dto.classTypesOffered, skillsRequiredToGrade: dto.skillsRequiredToGrade } }),
     );
   }
 

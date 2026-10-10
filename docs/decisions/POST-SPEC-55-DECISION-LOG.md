@@ -2061,7 +2061,18 @@ Built as `RankStripeTier.bookingUnlocksClassTypes` (kept when omitted on an edit
 
 ---
 
-## Decision 174 — Age-13 minor limited-login: closed as superseded by Kid Mode, not built
+## Decision 174 — "Each type required" rungs: starting classes per type, and the board drag sets the same % for each type
+
+**Date:** 9 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how Decision 128's "starting classes" (item 9) and board drag (item 13) work on a rung that counts each class type separately (Decision 149). The prototype has one class count per student, so it doesn't say. Raised while building roadmap Phase 3.
+
+1. **Starting classes, per type.** When the student's new next rung counts each type separately (for example 20 Fundamentals + 10 Sparring), the coach enters a number per type when grading (Fundamentals 5, Sparring 2). For an "any type" rung it stays one number. A time-only new rank takes none. Gus: *"A number per type"*.
+2. **Board drag, same % for each type.** Dragging a student on such a rung to a column sets every type to that column's percentage of its own number. For example, Ready to Grade at 66% gives Fundamentals 14/20 and Sparring 7/10. Gus: *"Same % for each type"*.
+
+Item 1 is built in roadmap Phase 3a: the `startingClassesByType` grading field, recorded on the history entry. Item 2 comes with the Grading Board in Phase 3b.
+
+---
+
+## Decision 175 — Age-13 minor limited-login: closed as superseded by Kid Mode, not built
 
 **Date:** 9 Oct 2026
 **Status:** Product-owner decision, made directly with the user

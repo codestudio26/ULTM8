@@ -52,6 +52,14 @@ export class PromotionEventResponseDto {
   @ApiProperty({ type: Number, nullable: true, description: '"Starting classes" entered when grading (Decision 128, item 9).' })
   startingClasses!: number | null;
 
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    nullable: true,
+    description: 'Starting classes per type, when the new next rung counts each type separately (Decision 174).',
+  })
+  startingClassesByType!: Record<string, number> | null;
+
   @ApiProperty({ type: String, nullable: true, description: 'Set when the entry has been voided (Decision 129).' })
   voidedAt!: string | null;
 
