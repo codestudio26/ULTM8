@@ -15,4 +15,10 @@ export class InviteCandidateResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   surname!: string | null;
+
+  /** v1.2 backlog (Instructor/Student Invite) — the mockups' "Found: {name}" card and
+   * "an invite would be sent to {{candidateEmail}}" copy need a real email this
+   * endpoint didn't previously return. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  email!: string | null;
 }

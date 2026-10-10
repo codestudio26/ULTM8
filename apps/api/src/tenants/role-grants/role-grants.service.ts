@@ -159,13 +159,13 @@ export class RoleGrantsService {
       where: {
         OR: [...(query.email ? [{ email: query.email }] : []), ...(query.phone ? [{ phone: query.phone }] : [])],
       },
-      select: { id: true, firstName: true, surname: true },
+      select: { id: true, firstName: true, surname: true, email: true },
     });
 
     if (!candidate) {
-      return { found: false, id: null, firstName: null, surname: null };
+      return { found: false, id: null, firstName: null, surname: null, email: null };
     }
-    return { found: true, id: candidate.id, firstName: candidate.firstName, surname: candidate.surname };
+    return { found: true, id: candidate.id, firstName: candidate.firstName, surname: candidate.surname, email: candidate.email };
   }
 
   /** List a user's role grants — RLS shows the caller their own grants, or (as of this

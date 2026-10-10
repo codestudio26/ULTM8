@@ -91,18 +91,42 @@ export class InstructorsService {
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.instructor.findMany({ ...args, where: { schoolId } }), cursor, limit),
     );
-    const names = await resolveUserNames(
-      this.prismaAuth,
-      page.items.map((i) => i.userId),
-    );
+    const userIds = page.items.map((i) => i.userId);
+    const names = await resolveUserNames(this.prismaAuth, userIds);
+    const statuses = await this.resolveInstructorStatuses(callerId, schoolId, userIds);
     return {
       ...page,
       items: page.items.map((i) => ({
         ...i,
         firstName: names.get(i.userId)?.firstName ?? '',
         surname: names.get(i.userId)?.surname ?? '',
+        email: names.get(i.userId)?.email ?? '',
+        status: statuses.get(i.userId) ?? 'REVOKED',
       })),
     };
+  }
+
+  /** Active/Revoked pill (v1.2 backlog, Instructors page) — whether the linked User
+   * still holds a non-revoked INSTRUCTOR RoleGrant at this School, same "active"
+   * definition assertValidInstructor already uses (revokedAt: null), just without its
+   * Branch-matching concern since this is a display status, not an authorization
+   * check. Batched in one query, same shape as resolveUserNames, not per-row. */
+  private async resolveInstructorStatuses(
+    callerId: string,
+    schoolId: string,
+    userIds: string[],
+  ): Promise<Map<string, 'ACTIVE' | 'REVOKED'>> {
+    const uniqueIds = [...new Set(userIds)];
+    if (uniqueIds.length === 0) return new Map();
+    const activeGrants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId: { in: uniqueIds }, schoolId, role: 'INSTRUCTOR', revokedAt: null },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+    );
+    const activeIds = new Set(activeGrants.map((g) => g.userId));
+    return new Map(uniqueIds.map((id) => [id, activeIds.has(id) ? 'ACTIVE' : 'REVOKED']));
   }
 
   /** Candidate pool for InstructorFormModal's picker (Decision 115) — Users holding an
@@ -134,15 +158,30 @@ export class InstructorsService {
     if (!found) {
       throw new NotFoundException('Instructor profile not found');
     }
-    return found;
+    // Resolved the same way findAllForSchool() does (v1.2 backlog) — findOne() never
+    // actually resolved firstName/surname either, despite InstructorResponseDto
+    // declaring them required; Instructor Detail was silently relying on
+    // InstructorsPage's list fetch for names until now.
+    const names = await resolveUserNames(this.prismaAuth, [found.userId]);
+    const statuses = await this.resolveInstructorStatuses(callerId, found.schoolId, [found.userId]);
+    return {
+      ...found,
+      firstName: names.get(found.userId)?.firstName ?? '',
+      surname: names.get(found.userId)?.surname ?? '',
+      email: names.get(found.userId)?.email ?? '',
+      status: statuses.get(found.userId) ?? 'REVOKED',
+    };
   }
 
   /** School Owner/Manager only — resolved via the profile's own schoolId, not a route param. */
   async update(callerId: string, instructorId: string, dto: UpdateInstructorDto) {
     // Reuses findOne() rather than re-running the same fetch-and-404 query a second
-    // time in this file — safe here (unlike TimetableService's update(), which can't
-    // do this) because findOne() applies no transform: it returns the raw Prisma row,
-    // exactly the shape this method needs.
+    // time in this file (unlike TimetableService's update(), which can't do this).
+    // findOne() now resolves firstName/surname/email/status onto the row (v1.2
+    // backlog) — still safe to reuse here since this method only reads the raw
+    // Instructor columns (schoolId/branchId/userId) off it, all of which survive that
+    // resolution untouched; see the return below for where the resolved fields
+    // themselves get carried into this method's own response.
     const existing = await this.findOne(callerId, instructorId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
@@ -179,7 +218,7 @@ export class InstructorsService {
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       // Replaced when sent, kept when omitted (Decision 152).
       const specs = await resolveInstructorSpecializations(tx, existing.schoolId, dto.specializationStyleIds, dto.specializations);
-      return tx.instructor.update({
+      const updated = await tx.instructor.update({
         where: { id: instructorId },
         data: {
           branchId: dto.branchId,
@@ -191,6 +230,12 @@ export class InstructorsService {
           bio: dto.bio,
         },
       });
+      // InstructorResponseDto declares firstName/surname/email/status required, but
+      // none of this patch can change any of them (they're User/RoleGrant-derived,
+      // not Instructor columns) — carried over from the already-resolved `existing`
+      // rather than re-querying resolveUserNames/resolveInstructorStatuses for values
+      // that can't have changed.
+      return { ...updated, firstName: existing.firstName, surname: existing.surname, email: existing.email, status: existing.status };
     });
   }
 

@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Instructor roster/detail now show a real email and Active/Revoked
+  status, and the invite-candidate lookup now returns a real email**
+  (v1.2 backend backlog). `GET /instructors` and `GET /instructors/:id`
+  resolve `email` alongside `firstName`/`surname`, plus a `status` derived
+  from whether the linked User still holds a non-revoked INSTRUCTOR
+  RoleGrant at this School; `GET .../role-grants/invite-candidate` now also
+  returns `email` (`null` when no match). **api:** `InstructorResponseDto`
+  gains `email`/`status`; `InviteCandidateResponseDto` gains `email`.
+  `packages/api-client` regenerated.
 - **Lesson access is also checked by the database** (Decision 208). A
   lesson's description, video and captions now live in their own table,
   which the database only lets staff, everyone at the School for a free

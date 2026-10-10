@@ -2849,6 +2849,7 @@ export interface components {
             id?: string | null;
             firstName?: string | null;
             surname?: string | null;
+            email?: string | null;
         };
         CreateFranchiseDto: {
             name: string;
@@ -3514,6 +3515,9 @@ export interface components {
             userId: string;
             firstName: string;
             surname: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "REVOKED";
             schoolId: string;
             branchId?: string | null;
             photoUrl?: string | null;
