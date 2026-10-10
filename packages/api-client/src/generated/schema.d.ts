@@ -1604,6 +1604,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/grading": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_findGradingOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/rank-history": {
         parameters: {
             query?: never;
@@ -4045,6 +4061,44 @@ export interface components {
         };
         StudentEligibilityListResponseDto: {
             items: components["schemas"]["StudentEligibilityResponseDto"][];
+        };
+        GradingLadderRungDto: {
+            id: string;
+            /** @description The stripe's own name, e.g. "Blue Belt · 2 Stripes". */
+            name: string;
+            beltName: string;
+            primaryColour: string;
+            secondaryColour?: string | null;
+            /** @description Stripe colour. */
+            stripeColour: string;
+            stripeCount: number;
+            timeOnly: boolean;
+        };
+        GradingSkillDto: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            status: "NOT_STARTED" | "LEARNING" | "SIGNED_OFF";
+            /** @description Required for the next grade; false when optional (time-only stripes). */
+            required: boolean;
+        };
+        StudentGradingStyleDto: {
+            schoolId: string;
+            schoolName: string;
+            disciplineId: string;
+            disciplineName: string;
+            currentStripeId?: string | null;
+            /** Format: date-time */
+            dateOfCurrentRank: string;
+            /** @enum {string} */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            ladder: components["schemas"]["GradingLadderRungDto"][];
+            eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description The skills for the next grade. */
+            skills: components["schemas"]["GradingSkillDto"][];
+        };
+        StudentGradingOverviewResponseDto: {
+            items: components["schemas"]["StudentGradingStyleDto"][];
         };
         PromotionEventResponseDto: {
             id: string;
@@ -7572,6 +7626,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentEligibilityListResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_findGradingOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentGradingOverviewResponseDto"];
                 };
             };
         };

@@ -50,8 +50,8 @@ afterwards.
 | 137.4: login notice for belts waiting verification | Decision 189, built in #140. |
 | SKILL.md lines that contradicted the log | Corrected with this page. |
 | CHANGELOG entries that claimed more than was built | Corrected with this page (the Branch Staff ones by #135). |
-| 142, 155 — the student app shows progress, skills and history | **Not built yet** (Track B, the app's next release). |
-| 184 — the coach dashboard in the mobile app | **Not built yet** (Track B). |
+| 142, 155 — the student app shows progress, skills and history | Built: the app's **My grading** screen and `GET /students/{id}/grading`. |
+| 184 — the coach dashboard in the mobile app | Built in #150. |
 | 164 — belt-level skills, weekly cap and years flag still written by the API, ignored by grading | **Open.** No decision covers removing them. |
 | IMPLEMENTED-UNTESTED rows (16) | Unchanged; each names the missing test. |
 | One pending invite per School, branch and email, not per person | Unchanged; behaves as built. |

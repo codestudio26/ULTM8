@@ -133,6 +133,86 @@ export class GradingService {
     });
   }
 
+  /** The student app's grading view (Decisions 132, 142, 155, 161): for the
+   * student or a guardian of theirs, every style they hold a rank in at every
+   * School they're a student at, with the names, ladder and skill names the
+   * app can't read itself (a guardian holds no role at the School). Read
+   * under the student's own context, like the rest of these reads. Progress
+   * and "Ready to grade" are always shown (Decision 161). History comes from
+   * GET /students/{id}/rank-history per School. */
+  async findGradingOverview(callerId: string, studentId: string) {
+    if (callerId !== studentId) {
+      try {
+        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        throw new ForbiddenException('You may not view this Student\'s grading.');
+      }
+    }
+    const impersonationSchoolId = RequestContext.getImpersonationSchoolId();
+    const grants = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId: studentId, role: 'STUDENT', revokedAt: null, schoolId: impersonationSchoolId ?? { not: null } },
+        select: { schoolId: true, school: { select: { name: true } } },
+        distinct: ['schoolId'],
+      }),
+    );
+    const items: Array<Record<string, unknown>> = [];
+    for (const grant of grants.sort((a, b) => (a.school?.name ?? '').localeCompare(b.school?.name ?? ''))) {
+      const schoolId = grant.schoolId!;
+      const { items: ranks } = await this.findEligibilityForStudent(studentId, studentId, schoolId);
+      if (ranks.length === 0) continue;
+      const catalog = await this.prismaApp.withTenantContext(studentId, async (tx) => ({
+        styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+        belts: await tx.rank.findMany({ where: { schoolId }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
+        skills: await tx.skill.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+      }));
+      for (const row of ranks as Array<{
+        disciplineId: string;
+        currentStripeId: string | null;
+        dateOfCurrentRank: Date;
+        verificationStatus: 'VERIFIED' | 'UNVERIFIED';
+        skillStatuses: Array<{ skillId: string; status: string }>;
+        eligibility: { requiredSkillIds?: string[]; optionalSkillIds?: string[] };
+      }>) {
+        const ladder = catalog.belts
+          .filter((b) => b.disciplineId === row.disciplineId)
+          .flatMap((b) =>
+            b.stripeTiers.map((t) => ({
+              id: t.id,
+              name: t.name,
+              beltName: b.name,
+              primaryColour: b.primaryColour,
+              secondaryColour: b.secondaryColour,
+              stripeColour: t.colour,
+              stripeCount: t.count,
+              timeOnly: t.timeOnly,
+            })),
+          );
+        const status = new Map(row.skillStatuses.map((s) => [s.skillId, s.status]));
+        const skill = (id: string, required: boolean) => ({
+          id,
+          name: catalog.skills.find((s) => s.id === id)?.name ?? '',
+          status: status.get(id) ?? 'NOT_STARTED',
+          required,
+        });
+        items.push({
+          schoolId,
+          schoolName: grant.school?.name ?? '',
+          disciplineId: row.disciplineId,
+          disciplineName: catalog.styles.find((d) => d.id === row.disciplineId)?.name ?? '',
+          currentStripeId: row.currentStripeId,
+          dateOfCurrentRank: row.dateOfCurrentRank,
+          verificationStatus: row.verificationStatus,
+          ladder,
+          eligibility: row.eligibility,
+          skills: [...(row.eligibility.requiredSkillIds ?? []).map((id) => skill(id, true)), ...(row.eligibility.optionalSkillIds ?? []).map((id) => skill(id, false))],
+        });
+      }
+    }
+    return { items };
+  }
+
   /** Voided entries are hidden from the normal history (Decision 129). Staff
    * may ask for them with `includeVoided`; a Student or Guardian may not. */
   async findRankHistoryForStudent(

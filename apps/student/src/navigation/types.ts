@@ -21,6 +21,9 @@ export type AppStackParamList = {
   PendingReview: undefined;
   QrCheckIn: undefined;
   CoachDashboard: undefined;
+  /** No params: the signed-in student's own grading; a guardian passes the minor's id. */
+  MyGrading: { studentId: string; name: string } | undefined;
+  GradingHistory: { studentId: string; schoolId: string; title: string };
   GradingBoard: { schoolId: string; disciplineId: string; name: string };
   CoachStudent: { schoolId: string; disciplineId: string; studentId: string; name: string; styleName: string };
 };
