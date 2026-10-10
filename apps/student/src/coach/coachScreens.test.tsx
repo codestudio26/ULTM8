@@ -30,6 +30,10 @@ jest.mock('./coachQueries', () => ({
   useLogClass: jest.fn(),
 }));
 
+// The first render here loads every React Native component these screens use;
+// on a busy CI runner that alone has taken over jest's default 5 s.
+jest.setTimeout(30_000);
+
 /** Screens read only data/isLoading/error off each query. */
 const ok = (data: unknown) => ({ data, isLoading: false, error: null, isError: false }) as never;
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
