@@ -1,12 +1,22 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CreateMinorDto } from './dto/create-minor.dto';
 import { GrantConsentDto } from './dto/grant-consent.dto';
 
 const BCRYPT_ROUNDS = 12;
+
+// Decision 123 — same "named, explicit, Developer-level placeholder" tier of
+// judgment call as QR_ATTENDANCE_TOKEN_TTL_SECONDS/
+// PLATFORM_ADMIN_IMPERSONATION_TTL_SECONDS. Short enough that a captured/stale
+// Kid-Mode token is useless quickly on its own — BookingsController's live
+// BookingDelegation re-check (mintKidModeToken()'s own comment) is the real
+// backstop, this is a second, independent one.
+const KID_MODE_TOKEN_TTL_SECONDS = Number(process.env.KID_MODE_TOKEN_TTL_SECONDS ?? 300);
 
 /**
  * Phase 12 scope: Guardian linking a minor Student + two-tier ConsentRecord
@@ -43,6 +53,7 @@ export class GuardiansService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaJobs: PrismaJobsService,
+    private readonly jwt: JwtService,
   ) {}
 
   /**
@@ -309,5 +320,174 @@ export class GuardiansService {
     }
 
     return this.prismaApp.withTenantContext(guardianId, (tx) => tx.consentRecord.findUniqueOrThrow({ where: { id: consentRecordId } }));
+  }
+
+  /** POST /guardians/me/minors/{studentId}/booking-delegation (Decision 123).
+   * Upserts — same re-grant-after-withdrawal shape grantConsent() already
+   * established, since @@unique([guardianId, studentId]) would otherwise reject
+   * a second INSERT outright. */
+  async grantBookingDelegation(guardianId: string, studentId: string) {
+    const link = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.guardianLink.findUnique({ where: { guardianId_studentId: { guardianId, studentId } } }),
+    );
+    if (!link || link.revokedAt) {
+      throw new BadRequestException('This Guardian has no active link to this Student.');
+    }
+
+    return this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.bookingDelegation.upsert({
+        where: { guardianId_studentId: { guardianId, studentId } },
+        create: { id: randomUUID(), guardianId, studentId },
+        update: { status: 'ACTIVE', grantedAt: new Date(), withdrawnAt: null },
+      }),
+    );
+  }
+
+  /** PATCH /guardians/me/booking-delegation/{id}/withdraw (Decision 123). Per the
+   * approved design, revoking delegation neither auto-keeps nor auto-cancels an
+   * already-made Kid-Mode booking — it flags every still-UPCOMING Booking this
+   * minor made via Kid Mode (bookedViaKidMode: true) as pendingGuardianReview,
+   * routing it back to the Guardian for an explicit Confirm/Cancel.
+   *
+   * Same ordering discipline withdrawConsent() already established for its own
+   * BASELINE cascade: the side effect runs FIRST — under the MINOR's own tenant
+   * context, since the Guardian's own context has no direct visibility into
+   * Booking at all (no School RoleGrant, Decision 92) — and only once it has
+   * genuinely succeeded does BookingDelegation flip to WITHDRAWN. If the
+   * flagging step fails, the record stays ACTIVE and a retry safely redoes
+   * everything; both steps are idempotent (re-flagging an already-flagged
+   * Booking, or re-revoking an already-WITHDRAWN delegation, are harmless
+   * no-ops the second time).
+   */
+  async withdrawBookingDelegation(guardianId: string, id: string) {
+    const existing = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.bookingDelegation.findUnique({ where: { id } }),
+    );
+    if (!existing || existing.guardianId !== guardianId) {
+      throw new NotFoundException('Booking delegation not found');
+    }
+    if (existing.status !== 'ACTIVE') {
+      throw new ConflictException('This booking delegation is already Withdrawn.');
+    }
+
+    await this.prismaApp.withTenantContext(existing.studentId, (tx) =>
+      tx.booking.updateMany({
+        where: { studentId: existing.studentId, status: 'UPCOMING', bookedViaKidMode: true },
+        data: { pendingGuardianReview: true },
+      }),
+    );
+
+    const result = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.bookingDelegation.updateMany({
+        where: { id, status: 'ACTIVE' },
+        data: { status: 'WITHDRAWN', withdrawnAt: new Date() },
+      }),
+    );
+    if (result.count === 0) {
+      // Lost a race against a concurrent withdrawal of the same record — the
+      // flagging side effect above already ran (harmlessly redundant with the
+      // other request's own), same benign-race shape withdrawConsent() already
+      // documents for itself.
+      throw new ConflictException('This booking delegation is already Withdrawn.');
+    }
+
+    return this.prismaApp.withTenantContext(guardianId, (tx) => tx.bookingDelegation.findUniqueOrThrow({ where: { id } }));
+  }
+
+  /** GET /guardians/me/booking-delegation (Decision 123). */
+  async findMyBookingDelegations(guardianId: string) {
+    const items = await this.prismaApp.withTenantContext(guardianId, (tx) => tx.bookingDelegation.findMany({ where: { guardianId } }));
+    return { items };
+  }
+
+  /** Shared authorization primitive for BookingsController's live pre-booking
+   * check (Decision 123) — same "re-check live, never trust the JWT claim alone"
+   * discipline assertGuardianOfStudent() already establishes for GuardianLink;
+   * a Kid-Mode token's own `kidMode.studentId` claim is necessary but never
+   * sufficient on its own. */
+  async assertBookingDelegationActive(guardianId: string, studentId: string): Promise<void> {
+    const delegation = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.bookingDelegation.findUnique({ where: { guardianId_studentId: { guardianId, studentId } } }),
+    );
+    if (!delegation || delegation.status !== 'ACTIVE') {
+      throw new ForbiddenException('This Guardian has no active booking delegation for this Student.');
+    }
+  }
+
+  /** POST /guardians/me/minors/{studentId}/kid-mode-token (Decision 123). Checks
+   * BOTH the GuardianLink and the BookingDelegation live before signing —
+   * deliberately not assuming an active BookingDelegation implies an active
+   * GuardianLink, even though withdrawBookingDelegation() is the only place that
+   * writes WITHDRAWN today; re-verifying both independently costs one extra
+   * query and removes the assumption entirely. See the module-level
+   * KID_MODE_TOKEN_TTL_SECONDS comment for why this token is deliberately
+   * short-lived. `grants: []` matches every other Guardian token this codebase
+   * already issues (Decision 92 — a Guardian holds zero RoleGrant anywhere).
+   */
+  async mintKidModeToken(guardianId: string, studentId: string) {
+    await this.assertGuardianOfStudent(guardianId, studentId);
+    await this.assertBookingDelegationActive(guardianId, studentId);
+
+    const guardian = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: guardianId }, select: { email: true } }),
+    );
+
+    const payload: JwtPayload = { sub: guardianId, email: guardian.email, grants: [], kidMode: { studentId } };
+    const accessToken = this.jwt.sign(payload, { expiresIn: KID_MODE_TOKEN_TTL_SECONDS });
+    const expiresAt = new Date(Date.now() + KID_MODE_TOKEN_TTL_SECONDS * 1000);
+    return { accessToken, expiresAt: expiresAt.toISOString() };
+  }
+
+  /** GET /guardians/me/bookings-pending-review (Decision 123). Loops across
+   * every linked minor's own tenant context — same shape findMyMinors() already
+   * established — since the Guardian's own context has no direct visibility
+   * into Booking at all (no School RoleGrant, Decision 92). Narrow projection
+   * (id/studentId/classId/status only), not the full Booking shape — the review
+   * screen only needs enough to render a row and target cancelBooking()'s
+   * existing on-behalf-of path.
+   */
+  async findPendingReviewBookings(guardianId: string) {
+    const links = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.guardianLink.findMany({ where: { guardianId, revokedAt: null } }),
+    );
+    if (links.length === 0) return { items: [] };
+
+    const perMinor = await Promise.all(
+      links.map((link) =>
+        this.prismaApp.withTenantContext(link.studentId, (tx) =>
+          tx.booking.findMany({
+            where: { studentId: link.studentId, pendingGuardianReview: true },
+            select: { id: true, studentId: true, classId: true, status: true },
+          }),
+        ),
+      ),
+    );
+    return { items: perMinor.flat() };
+  }
+
+  /** PATCH /guardians/me/bookings-pending-review/{bookingId}/confirm (Decision
+   * 123). `studentId` is the same CancelBookingDto-style hint every other
+   * Guardian-on-behalf-of consumer needs — the Guardian's own context can't see
+   * the Booking directly to resolve it itself — already known to the client
+   * from findPendingReviewBookings()'s own response, so required here rather
+   * than optional. Confirm never touches refundResolution/credit: the Booking
+   * was never cancelled, this only clears the review flag so it stops
+   * surfacing — Cancel instead reuses cancelBooking()'s existing on-behalf-of
+   * path unchanged.
+   */
+  async confirmPendingReviewBooking(guardianId: string, bookingId: string, studentId: string) {
+    await this.assertGuardianOfStudent(guardianId, studentId);
+
+    const result = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.booking.updateMany({
+        where: { id: bookingId, studentId, pendingGuardianReview: true },
+        data: { pendingGuardianReview: false },
+      }),
+    );
+    if (result.count === 0) {
+      throw new NotFoundException('No pending-review Booking found with this id for this Student.');
+    }
+
+    return this.prismaApp.withTenantContext(studentId, (tx) => tx.booking.findUniqueOrThrow({ where: { id: bookingId } }));
   }
 }

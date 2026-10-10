@@ -11,7 +11,8 @@
     "web": "expo start --web",
     "dev": "expo start",
     "build": "tsc -p tsconfig.json --noEmit",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "jest"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",
@@ -24,18 +25,35 @@
     "@ultm8/api-client": "*",
     "expo": "~57.0.23",
     "expo-constants": "~57.0.18",
+    "expo-modules-core": "~57.0.18",
     "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
+    "react-native-qrcode-svg": "^6.3.26",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-svg": "^15.15.5",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
+    "jest-expo": "^57.0.5",
+    "react-test-renderer": "^19.2.3",
     "typescript": "~6.0.3"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^react$": "<rootDir>/node_modules/react",
+      "^react/jsx-runtime$": "<rootDir>/node_modules/react/jsx-runtime",
+      "^react/jsx-dev-runtime$": "<rootDir>/node_modules/react/jsx-dev-runtime",
+      "^react-dom$": "<rootDir>/node_modules/react-dom"
+    }
   }
 }

@@ -68,6 +68,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/forgot-password": {
         parameters: {
             query?: never;
@@ -141,6 +173,22 @@ export interface paths {
         };
         get: operations["SchoolsController_findStudents"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/students/{studentId}/home-branch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SchoolsController_setStudentHomeBranch"];
         post?: never;
         delete?: never;
         options?: never;
@@ -370,6 +418,102 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["GuardiansController_withdrawConsent"];
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/booking-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuardiansController_grantBookingDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/booking-delegation/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GuardiansController_withdrawBookingDelegation"];
+        trace?: never;
+    };
+    "/v1/guardians/me/booking-delegation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardiansController_findMyBookingDelegations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/kid-mode-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuardiansController_mintKidModeToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/bookings-pending-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardiansController_findPendingReviewBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/bookings-pending-review/{bookingId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GuardiansController_confirmPendingReviewBooking"];
         trace?: never;
     };
     "/v1/schools/{schoolId}/classes": {
@@ -1220,6 +1364,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/rank-history/{eventId}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_voidPromotionEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/rank-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GradingController_editRankDate"];
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/promote": {
         parameters: {
             query?: never;
@@ -1282,6 +1458,86 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["GradingController_cycleSkillSignOff"];
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/declare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_declareRank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/ranks/{disciplineId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_verifyRank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rank-verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_findPendingVerifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/grading-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingPermissionsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/grading-permissions/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingPermissionsController_setForUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/schools/{schoolId}/waivers": {
@@ -1870,6 +2126,10 @@ export interface components {
         };
         LoginResponseDto: {
             accessToken: string;
+            refreshToken: string;
+        };
+        RefreshTokenDto: {
+            refreshToken: string;
         };
         RequestPasscodeResetDto: {
             /** @description E.164 format */
@@ -1895,6 +2155,8 @@ export interface components {
             defaultLanguage?: string;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
+            /** @description IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string;
             description?: string;
             logoUrl?: string;
             bannerUrl?: string;
@@ -1921,6 +2183,8 @@ export interface components {
             ranksToggle: boolean;
             defaultLanguage?: string | null;
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
@@ -1963,6 +2227,8 @@ export interface components {
             defaultLanguage?: string | null;
             /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
+            /** @description IANA timezone name. Same field as Branch.timezone (Decisions 76, 172). */
+            timezone?: string | null;
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
@@ -1977,9 +2243,24 @@ export interface components {
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
         };
+        SetHomeBranchDto: {
+            /** @description A branch of this School. */
+            branchId: string;
+        };
+        StudentHomeBranchResponseDto: {
+            id: string;
+            schoolId: string;
+            studentId: string;
+            branchId: string;
+            assignedById: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
         JoinSchoolDto: {
             /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
             studentId?: string;
+            /** @description The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none. */
+            branchId?: string;
         };
         JoinSchoolResponseDto: {
             id: string;
@@ -2187,14 +2468,50 @@ export interface components {
         ConsentRecordListResponseDto: {
             items: components["schemas"]["ConsentRecordResponseDto"][];
         };
+        BookingDelegationResponseDto: {
+            id: string;
+            guardianId: string;
+            studentId: string;
+            status: string;
+            grantedAt: string;
+            withdrawnAt?: string | null;
+        };
+        BookingDelegationListResponseDto: {
+            items: components["schemas"]["BookingDelegationResponseDto"][];
+        };
+        KidModeTokenResponseDto: {
+            accessToken: string;
+            expiresAt: string;
+        };
+        PendingReviewBookingResponseDto: {
+            id: string;
+            studentId: string;
+            classId: string;
+            status: string;
+        };
+        PendingReviewBookingListResponseDto: {
+            items: components["schemas"]["PendingReviewBookingResponseDto"][];
+        };
+        ConfirmPendingReviewBookingDto: {
+            /** @description The linked minor Student this pending-review Booking belongs to. */
+            studentId: string;
+        };
+        ClassStyleInputDto: {
+            /** @description A style (Discipline) of this School. */
+            disciplineId: string;
+            /** @description A class type from this style's classTypesOffered. Required when the style lists class types; not allowed when it lists none. */
+            classType?: string | null;
+        };
         CreateClassDto: {
             /** @description Branch to scope this Class to. Omit for a School-wide Class. */
             branchId?: string;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. */
             instructorId?: string;
             title: string;
-            /** @description At least one activity/discipline this Class covers. */
-            activities: string[];
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
+            activities?: string[];
+            /** @description The styles this Class belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed Class lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             bannerUrl?: string;
             description?: string;
             /** @description ISO 8601 date-time. */
@@ -2219,6 +2536,10 @@ export interface components {
              */
             membershipInclusion: boolean;
         };
+        ClassStyleResponseDto: {
+            disciplineId: string;
+            classType: string | null;
+        };
         ClassResponseDto: {
             id: string;
             schoolId: string;
@@ -2226,6 +2547,8 @@ export interface components {
             instructorId?: string | null;
             title: string;
             activities: string[];
+            /** @description Styles with their class types (Decisions 143, 152, 170). */
+            styles: components["schemas"]["ClassStyleResponseDto"][];
             bannerUrl?: string | null;
             description?: string | null;
             startDate: string;
@@ -2249,8 +2572,10 @@ export interface components {
         };
         UpdateClassDto: {
             title?: string;
-            /** @description At least one activity/discipline this Class covers. */
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
             activities?: string[];
+            /** @description The styles this Class belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed Class lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             /** @description ISO 8601 date-time. */
             startDate?: string;
             /** @description ISO 8601 date-time. */
@@ -2448,8 +2773,10 @@ export interface components {
              */
             status: "ON" | "OFF";
             title: string;
-            /** @description At least one activity/discipline this slot covers. */
-            activities: string[];
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
+            activities?: string[];
+            /** @description The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             /** @description Nullable/omitted = unlimited. */
             capacity?: number;
             description?: string;
@@ -2487,6 +2814,8 @@ export interface components {
             status: "ON" | "OFF";
             title: string;
             activities: string[];
+            /** @description Styles with their class types (Decisions 143, 152, 170). */
+            styles: components["schemas"]["ClassStyleResponseDto"][];
             capacity?: number | null;
             description?: string | null;
             bannerUrl?: string | null;
@@ -2527,8 +2856,10 @@ export interface components {
              */
             status: "ON" | "OFF";
             title?: string;
-            /** @description At least one activity/discipline this slot covers. */
+            /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
             activities?: string[];
+            /** @description The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several. */
+            styles?: components["schemas"]["ClassStyleInputDto"][];
             /** @default false */
             termsWaiverRequired: boolean;
             /**
@@ -2562,6 +2893,8 @@ export interface components {
             /** @description Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system. */
             beltRanking?: string;
             specializations?: string[];
+            /** @description The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names. */
+            specializationStyleIds?: string[];
             /** @description School-facing contact number, E.164 — distinct from this User's own login phone. */
             phone?: string;
             yearsOfExperience?: number;
@@ -2577,6 +2910,8 @@ export interface components {
             photoUrl?: string | null;
             beltRanking?: string | null;
             specializations: string[];
+            /** @description The School's styles this instructor specialises in (Decision 152). */
+            specializationStyleIds: string[];
             phone?: string | null;
             yearsOfExperience?: number | null;
             bio?: string | null;
@@ -2599,6 +2934,8 @@ export interface components {
         };
         UpdateInstructorDto: {
             specializations?: string[];
+            /** @description The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names. */
+            specializationStyleIds?: string[];
             /** @description Branch to scope this profile to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             photoUrl?: string | null;
@@ -2805,20 +3142,56 @@ export interface components {
             /** @description e.g. "Kids Fundamentals", "Adult Sparring", "Competition Team". */
             classTypesOffered?: string[];
         };
+        StripeSegmentInputDto: {
+            count: number;
+            colour: string;
+        };
+        ClassTypeRequirementInputDto: {
+            /** @description A class type ticked in this rung's eligibleClassTypes. */
+            classType: string;
+            /** @description Classes of this type needed for this rung. */
+            classesRequired: number;
+        };
         RankStripeTierInputDto: {
             /** @description Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order: number;
             count: number;
+            /** @description Stripe colour. When the rung has stripes, the stored value is the colour of the first entry in `stripeSegments` (Decision 165); this value is only used to build the segments when they are omitted on a new rung. */
             colour: string;
             classesRequired?: number;
             minimumDaysInRank?: number;
             eligibleClassTypes?: string[];
+            /** @description Rung name, e.g. "Blue Belt · 2 Stripes". When omitted: generated from the belt name and stripe count on a new rung; kept on an existing rung (a generated name is regenerated). */
+            name?: string;
+            /** @description Mixed stripe colours on this rung, in tip order (e.g. 3 yellow + 1 red). Counts must add up to `count`. The only place this rung's stripe colours are set; the `colour` field follows the first entry (Decision 165). When omitted: one segment of `count` x `colour` on a new rung; kept on an existing rung while `count` and `colour` are unchanged. */
+            stripeSegments?: components["schemas"]["StripeSegmentInputDto"][];
+            /** @description Max classes per week that count toward this rung. */
+            weeklyClassCountCap?: number;
+            /** @description "Time in rank only" (Decision 128): classes not counted, skills optional; the years are held in minimumDaysInRank. When omitted: false on a new rung; kept on an existing rung. */
+            timeOnly?: boolean;
+            /**
+             * @description ANY_TYPE (the default): a class of any ticked type counts toward classesRequired. EACH_TYPE: each ticked type has its own number in classTypeRequirements. When omitted: ANY_TYPE on a new rung; kept on an existing rung.
+             * @enum {string}
+             */
+            classCountMode?: "ANY_TYPE" | "EACH_TYPE";
+            /** @description EACH_TYPE only: one entry per ticked class type in eligibleClassTypes, with its number. Must be empty for ANY_TYPE. When omitted: empty on a new rung; kept on an existing rung. */
+            classTypeRequirements?: components["schemas"]["ClassTypeRequirementInputDto"][];
+            /** @description Class types this rung unlocks for booking, for it and every rung above (Decision 173). A type no rung unlocks is open to everyone. When omitted: empty on a new rung; kept on an existing rung. */
+            bookingUnlocksClassTypes?: string[];
+            /** @description Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted. */
+            requiredSkillIds?: string[];
         };
         CreateRankDto: {
             /** @description Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order: number;
+            /** @description Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted. */
+            name?: string;
             primaryColour: string;
             secondaryColour?: string;
+            /** @description Drawing only: colour of the tag sewn on the belt tip (e.g. red on Black Belt). */
+            tagColour?: string;
+            /** @description Drawing only: silver/gold accent of the coral belts. */
+            coralAccent?: string;
             weeklyClassCountCap?: number;
             /**
              * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
@@ -2829,6 +3202,10 @@ export interface components {
             /** @description Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements. */
             requiredSkillIds?: string[];
         };
+        StripeSegmentResponseDto: {
+            count: number;
+            colour: string;
+        };
         RankStripeTierResponseDto: {
             id: string;
             order: number;
@@ -2837,14 +3214,35 @@ export interface components {
             classesRequired?: number | null;
             minimumDaysInRank?: number | null;
             eligibleClassTypes: string[];
+            /** @description Class types this rung unlocks for booking, for it and every rung above (Decision 173). */
+            bookingUnlocksClassTypes: string[];
+            /**
+             * @description Which classes count (Decisions 140, 149).
+             * @enum {string}
+             */
+            classCountMode: "ANY_TYPE" | "EACH_TYPE";
+            /** @description EACH_TYPE: [{ classType, classesRequired }] per ticked type (Decision 149). */
+            classTypeRequirements: {
+                classType?: string;
+                classesRequired?: number;
+            }[];
+            name: string;
+            stripeSegments: components["schemas"]["StripeSegmentResponseDto"][];
+            weeklyClassCountCap?: number | null;
+            timeOnly: boolean;
+            /** @description Skills required to be promoted INTO this rung. */
+            requiredSkillIds: string[];
         };
         RankResponseDto: {
             id: string;
             disciplineId: string;
             schoolId: string;
             order: number;
+            name: string;
             primaryColour: string;
             secondaryColour?: string | null;
+            tagColour?: string | null;
+            coralAccent?: string | null;
             weeklyClassCountCap?: number | null;
             yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
@@ -2859,6 +3257,8 @@ export interface components {
         UpdateRankDto: {
             /** @description Position in the discipline's ordered ladder — must be unique and contiguous (enforced in the service layer, §5). */
             order?: number;
+            /** @description Belt name, e.g. "Blue Belt". Defaults to "Belt {order+1}" when omitted. */
+            name?: string;
             primaryColour?: string;
             /**
              * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
@@ -2870,6 +3270,8 @@ export interface components {
             requiredSkillIds?: string[];
             secondaryColour?: string | null;
             weeklyClassCountCap?: number | null;
+            tagColour?: string | null;
+            coralAccent?: string | null;
         };
         CreateSkillDto: {
             name: string;
@@ -2904,6 +3306,20 @@ export interface components {
             currentStripeId?: string | null;
             dateOfCurrentRank: string;
             classesAttendedTowardCheckpoint: number;
+            /** @description Classes counted toward the next rung, per class type, e.g. {"Fundamentals": 18, "Sparring": 4} (Decisions 149, 171). */
+            classesAttendedByType: {
+                [key: string]: number;
+            };
+            /** @description When counting toward the current rung began: the moment of the last rank change. */
+            countingSince: string;
+            /**
+             * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
+             * @enum {string}
+             */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            verifiedAt?: string | null;
+            /** @description Empty when verified automatically (the first rung) or the verifier's account was deleted. */
+            verifiedById?: string | null;
             skillStatuses: components["schemas"]["StudentRankSkillStatusResponseDto"][];
             createdAt: string;
             updatedAt: string;
@@ -2911,27 +3327,165 @@ export interface components {
         StudentRankListResponseDto: {
             items: components["schemas"]["StudentRankResponseDto"][];
         };
+        TypeProgressResponseDto: {
+            classType: string;
+            required: number;
+            counted: number;
+        };
+        EligibilityResponseDto: {
+            hasNext: boolean;
+            /** @description The student's rung could not be found on the ladder (bad data), as opposed to the top of the ladder. */
+            dataError?: boolean;
+            /** @description The next rung (stripe tier id). */
+            nextRungId?: string;
+            /** @description The current rung is time-only: days are the only gate (Decision 128, item 3). */
+            timeOnly?: boolean;
+            elapsedDays?: number;
+            requiredDays?: number;
+            requiredClasses?: number;
+            countedClasses?: number;
+            /** @description "Each ticked type required" rungs only (Decision 149). */
+            byType?: components["schemas"]["TypeProgressResponseDto"][];
+            classesOk?: boolean;
+            daysOk?: boolean;
+            skillsOk?: boolean;
+            /** @description Classes, days and skills all met. */
+            eligible?: boolean;
+            requiredSkillIds?: string[];
+            /** @description Shown but optional: the next rung's skills when the current rung is time-only. */
+            optionalSkillIds?: string[];
+            missingSkillIds?: string[];
+            /** @description 0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136). */
+            progressPercent?: number;
+            /**
+             * @description Grading Board column at the default 33% / 66% (Decision 136).
+             * @enum {string}
+             */
+            boardColumn?: "JUST_STARTING" | "GETTING_THERE" | "READY_TO_GRADE";
+        };
+        StudentEligibilityResponseDto: {
+            id: string;
+            studentId: string;
+            disciplineId: string;
+            schoolId: string;
+            currentRankId: string;
+            currentStripeId?: string | null;
+            dateOfCurrentRank: string;
+            classesAttendedTowardCheckpoint: number;
+            /** @description Classes counted toward the next rung, per class type, e.g. {"Fundamentals": 18, "Sparring": 4} (Decisions 149, 171). */
+            classesAttendedByType: {
+                [key: string]: number;
+            };
+            /** @description When counting toward the current rung began: the moment of the last rank change. */
+            countingSince: string;
+            /**
+             * @description UNVERIFIED: self-declared and waiting for staff (Decisions 137, 147).
+             * @enum {string}
+             */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            verifiedAt?: string | null;
+            /** @description Empty when verified automatically (the first rung) or the verifier's account was deleted. */
+            verifiedById?: string | null;
+            skillStatuses: components["schemas"]["StudentRankSkillStatusResponseDto"][];
+            createdAt: string;
+            updatedAt: string;
+            eligibility: components["schemas"]["EligibilityResponseDto"];
+        };
+        StudentEligibilityListResponseDto: {
+            items: components["schemas"]["StudentEligibilityResponseDto"][];
+        };
         PromotionEventResponseDto: {
             id: string;
             studentRankId: string;
             studentId: string;
             schoolId: string;
+            /** @description PROMOTION, DOWNGRADE, STRIPE_AWARD, BULK_PROMOTION, BULK_STRIPE_AWARD, or ADJUSTMENT (a correction; the rank does not change). */
             type: string;
-            performedById: string;
+            /** @description Who graded. Empty when that account has been deleted: show "Former instructor" (Decision 141). */
+            performedById: string | null;
             fromRankId?: string | null;
             toRankId?: string | null;
             fromStripeTierId?: string | null;
             toStripeTierId?: string | null;
             acknowledgedWithoutSkillSignoff: boolean;
+            /** @description The grading date shown on the history; may be earlier than createdAt (Decision 128, item 8). */
+            effectiveDate: string;
+            /** @description Downgrade reason (Decision 128, item 11). */
+            reason: string | null;
+            /** @description Note written by the system, e.g. a rank-date correction. */
+            systemNote: string | null;
+            /** @description The grader's own note. */
+            note: string | null;
+            /** @description Rungs skipped by this grade (Decision 128, item 7). */
+            rungsSkipped: number;
+            /** @description "Starting classes" entered when grading (Decision 128, item 9). */
+            startingClasses: number | null;
+            /** @description Set when the entry has been voided (Decision 129). */
+            voidedAt: string | null;
+            voidedById: string | null;
+            voidReason: string | null;
+            /** @description When the entry was written (audit timestamp). */
             createdAt: string;
         };
         PromotionEventListResponseDto: {
             items: components["schemas"]["PromotionEventResponseDto"][];
             nextCursor?: string | null;
         };
+        VoidPromotionEventDto: {
+            /** @description Why this entry is being voided. Required. */
+            reason: string;
+        };
+        EditRankDateDto: {
+            /**
+             * @description The corrected date, as YYYY-MM-DD. Not in the future, and not before the student's previous grading on their history (Decision 166).
+             * @example 2026-03-01
+             */
+            date: string;
+            /** @description An optional note for the history entry. */
+            note?: string;
+        };
         GradingActionDto: {
             /** @default false */
             acknowledgeWithoutSkillSignoff: boolean;
+            /** @description The grader's own note on this history entry (Decision 128, item 11). */
+            note?: string;
+        };
+        DowngradeActionDto: {
+            /** @default false */
+            acknowledgeWithoutSkillSignoff: boolean;
+            /** @description The grader's own note on this history entry (Decision 128, item 11). */
+            note?: string;
+            /** @description Why the student is being moved down. Required. */
+            reason: string;
+        };
+        DeclareRankDto: {
+            /** @description The belt (Rank) of this style. */
+            rankId: string;
+            /** @description The rung (stripe tier) of that belt. */
+            stripeTierId: string;
+        };
+        VerifyRankDto: {
+            /** @description To correct the rank: the right belt. Send with stripeTierId. */
+            rankId?: string;
+            /** @description To correct the rank: the right rung of that belt. Send with rankId. */
+            stripeTierId?: string;
+            /** @description An optional note for the history. */
+            note?: string;
+        };
+        GradingPermissionResponseDto: {
+            id: string;
+            schoolId: string;
+            userId: string;
+            disciplineId: string;
+            grantedById: string | null;
+            createdAt: string;
+        };
+        GradingPermissionListResponseDto: {
+            items: components["schemas"]["GradingPermissionResponseDto"][];
+        };
+        SetGradingPermissionsDto: {
+            /** @description Disciplines (styles) this staff member may grade in. Replaces the current list. */
+            disciplineIds: string[];
         };
         CreateWaiverDto: {
             title: string;
@@ -3397,6 +3951,52 @@ export interface operations {
             };
         };
     };
+    AuthController_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthMessageResponseDto"];
+                };
+            };
+        };
+    };
     AuthController_requestPasscodeReset: {
         parameters: {
             query?: never;
@@ -3552,6 +4152,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentListResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_setStudentHomeBranch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetHomeBranchDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentHomeBranchResponseDto"];
                 };
             };
         };
@@ -4016,6 +4642,130 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConsentRecordResponseDto"];
                 };
+            };
+        };
+    };
+    GuardiansController_grantBookingDelegation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingDelegationResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_withdrawBookingDelegation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingDelegationResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_findMyBookingDelegations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingDelegationListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_mintKidModeToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KidModeTokenResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_findPendingReviewBookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingReviewBookingListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_confirmPendingReviewBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPendingReviewBookingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5556,7 +6306,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                    "application/json": components["schemas"]["StudentEligibilityListResponseDto"];
                 };
             };
         };
@@ -5567,6 +6317,8 @@ export interface operations {
                 schoolId: string;
                 cursor: string;
                 limit: number;
+                /** @description Staff only: also return voided entries (Decision 129). */
+                includeVoided?: boolean;
             };
             header?: never;
             path: {
@@ -5582,6 +6334,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotionEventListResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_voidPromotionEvent: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidPromotionEventDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_editRankDate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditRankDateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
                 };
             };
         };
@@ -5624,7 +6430,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GradingActionDto"];
+                "application/json": components["schemas"]["DowngradeActionDto"];
             };
         };
         responses: {
@@ -5681,6 +6487,122 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GradingController_declareRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareRankDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_verifyRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyRankDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GradingController_findPendingVerifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                };
+            };
+        };
+    };
+    GradingPermissionsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingPermissionListResponseDto"];
+                };
+            };
+        };
+    };
+    GradingPermissionsController_setForUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetGradingPermissionsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingPermissionListResponseDto"];
+                };
             };
         };
     };

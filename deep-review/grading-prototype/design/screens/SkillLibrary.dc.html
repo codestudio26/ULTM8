@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Work+Sans:wght@400;500;600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Work Sans", ui-sans-serif, system-ui, sans-serif; background: oklch(98% 0.004 95); color: oklch(22% 0.01 95); }
+    h1, h2, h3 { font-family: "Manrope", ui-sans-serif, system-ui, sans-serif; margin: 0; }
+    a { color: oklch(50% 0.13 250); text-decoration: none; }
+    a:hover { color: oklch(40% 0.13 250); }
+    button { font-family: inherit; cursor: pointer; }
+  </style>
+</helmet>
+
+<div style="display:flex; width:1440px; min-height:1040px; background:oklch(98% 0.004 95);">
+
+  <div style="width:236px; flex:0 0 236px; background:oklch(19% 0.02 265); display:flex; flex-direction:column; padding:20px 14px; gap:2px;">
+    <div style="display:flex; align-items:center; gap:10px; padding:6px 10px 22px 10px;">
+      <div style="width:30px; height:30px; border-radius:8px; background:{{accent}}; display:flex; align-items:center; justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(19% 0.02 265)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>
+      </div>
+      <div style="font-family:'Manrope'; font-weight:800; font-size:16px; color:oklch(96% 0.01 265); letter-spacing:-0.01em;">Dojo<span style="color:{{accent}};">HQ</span></div>
+    </div>
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:oklch(50% 0.02 265); text-transform:uppercase; padding:12px 10px 6px;">Workspace</div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Dashboard</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Students</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:oklch(80% 0.01 265);"><span style="font-size:13.5px; font-weight:500;">Attendance</span></div>
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:oklch(50% 0.02 265); text-transform:uppercase; padding:16px 10px 6px;">Grading</div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Styles &amp; Ranks</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; background:oklch(27% 0.03 265); color:oklch(97% 0.01 265);"><span style="font-size:13.5px; font-weight:600;">Skill Library</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Grading Events</span></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 10px 9px 22px; border-radius:8px; color:oklch(70% 0.015 265);"><span style="font-size:13.5px; font-weight:500;">Settings</span></div>
+    <div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px; border-top:1px solid oklch(30% 0.02 265); margin-top:20px;">
+      <div style="width:28px; height:28px; border-radius:999px; background:oklch(45% 0.03 265); flex:0 0 auto;"></div>
+      <div>
+        <div style="font-size:13px; font-weight:600; color:oklch(94% 0.01 265);">Riverside Martial Arts</div>
+        <div style="font-size:11.5px; color:oklch(58% 0.02 265);">Owner · Gus</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; flex:0 0 60px; border-bottom:1px solid oklch(90% 0.006 95); display:flex; align-items:center; padding:0 28px; background:oklch(100% 0 0);">
+      <div style="font-size:13px; color:oklch(48% 0.012 95); display:flex; align-items:center; gap:6px;">
+        <span>Grading</span><span style="opacity:0.5;">/</span><span style="color:oklch(22% 0.01 95); font-weight:600;">Skill Library</span>
+      </div>
+    </div>
+
+    <div style="padding:28px; display:flex; flex-direction:column; gap:20px; flex:1;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+        <div>
+          <h1 style="font-size:22px; font-weight:800; letter-spacing:-0.01em;">Skill Library</h1>
+          <div style="font-size:13.5px; color:oklch(48% 0.012 95); margin-top:4px;">Reusable skills you can attach to any rank, across any style. Reused skills stay in sync everywhere they're linked.</div>
+        </div>
+        <button onClick="{{toggleNew}}" style="display:flex; align-items:center; gap:8px; background:{{accent}}; border:none; color:oklch(19% 0.02 265); font-weight:700; font-size:13.5px; padding:10px 16px; border-radius:9px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          New Skill
+        </button>
+      </div>
+
+      <div style="display:flex; gap:4px; background:oklch(96% 0.005 95); padding:4px; border-radius:9px; width:fit-content;">
+        <sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+          <button onClick="{{f.select}}" style="border:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; background:{{f.bg}}; color:{{f.color}};">{{f.label}}</button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{newOpen}}" hint-placeholder-val="{{false}}">
+      <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:14px; padding:22px; display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <h3 style="font-size:16px; font-weight:700;">New Skill</h3>
+          <button onClick="{{toggleNew}}" style="background:none; border:none; color:oklch(48% 0.012 95);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">Skill name</div>
+              <div style="border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:10px 12px; font-size:13.5px; color:oklch(60% 0.012 95);">e.g. Triangle Choke</div>
+            </div>
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">Description (also shown to students in Study)</div>
+              <div style="border:1px solid oklch(85% 0.008 95); border-radius:8px; padding:10px 12px; font-size:13.5px; color:oklch(60% 0.012 95); min-height:64px;">Set up from mount or guard, control the head and pull the leg over the shoulder to finish.</div>
+            </div>
+            <div>
+              <div style="font-size:11.5px; font-weight:600; color:oklch(40% 0.012 95); margin-bottom:6px;">Style</div>
+              <div style="display:flex; gap:8px;">
+                <span style="border:1.5px solid {{accent}}; background:oklch(98% 0.03 75); font-size:12.5px; font-weight:600; padding:6px 12px; border-radius:999px;">Brazilian Jiu-Jitsu</span>
+                <span style="border:1px solid oklch(88% 0.006 95); font-size:12.5px; font-weight:600; padding:6px 12px; border-radius:999px; color:oklch(48% 0.012 95);">Kickboxing</span>
+              </div>
+            </div>
+          </div>
+          <div style="border:1.5px dashed oklch(85% 0.008 95); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:oklch(55% 0.012 95); padding:20px;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            <div style="font-size:12.5px; font-weight:600;">Drop a demo photo or video</div>
+            <div style="font-size:11px; color:oklch(60% 0.012 95);">Optional — powers the student Study view</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button style="background:none; border:1px solid oklch(85% 0.008 95); color:oklch(30% 0.012 95); font-weight:600; font-size:13px; padding:9px 16px; border-radius:9px;">Cancel</button>
+          <button style="background:{{accent}}; border:none; color:oklch(19% 0.02 265); font-weight:700; font-size:13px; padding:9px 18px; border-radius:9px;">Save skill</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <div style="border:1px solid oklch(90% 0.006 95); background:oklch(100% 0 0); border-radius:12px; overflow:hidden;">
+        <sc-for list="{{skills}}" as="sk" hint-placeholder-count="6">
+          <div style="border-bottom:1px solid oklch(94% 0.006 95);">
+            <button onClick="{{sk.toggle}}" style="width:100%; text-align:left; border:none; background:none; padding:14px 18px; display:flex; align-items:center; gap:14px;">
+              <div style="width:34px; height:34px; border-radius:9px; background:oklch(96% 0.02 200); display:flex; align-items:center; justify-content:center; flex:0 0 auto;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="oklch(38% 0.1 200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              </div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:14px; font-weight:600;">{{sk.name}}</div>
+                <div style="font-size:12px; color:oklch(48% 0.012 95); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{sk.description}}</div>
+              </div>
+              <span style="font-size:11px; font-weight:700; background:oklch(96% 0.006 95); color:oklch(40% 0.012 95); padding:4px 9px; border-radius:999px; flex:0 0 auto;">{{sk.styleLabel}}</span>
+              <span style="font-size:11px; font-weight:700; background:oklch(95% 0.02 200); color:oklch(38% 0.1 200); padding:4px 9px; border-radius:999px; flex:0 0 auto;">used in {{sk.rankCount}} ranks</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(55% 0.012 95)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:{{sk.chevronRotate}};"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <sc-if value="{{sk.expanded}}" hint-placeholder-val="{{false}}">
+            <div style="padding:0 18px 16px 66px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font-size:12px; color:oklch(40% 0.012 95); max-width:640px;">{{sk.description}}</div>
+              <div>
+                <div style="font-size:11px; font-weight:600; color:oklch(48% 0.012 95); margin-bottom:6px;">Attached to</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <sc-for list="{{sk.ranks}}" as="rk" hint-placeholder-count="3">
+                    <span style="border:1px solid oklch(88% 0.006 95); font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px;">{{rk.name}}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"oklch(72% 0.15 75)","options":["oklch(72% 0.15 75)","oklch(70% 0.13 200)","oklch(64% 0.15 148)","oklch(60% 0.15 300)"]}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { activeFilter: 'all', newOpen: false, expandedId: 'rnc' };
+  }
+  toggleNew = () => this.setState({ newOpen: !this.state.newOpen });
+
+  renderVals() {
+    const accent = this.props.accent ?? 'oklch(72% 0.15 75)';
+    const filterDefs = [
+      { id: 'all', label: 'All styles' },
+      { id: 'bjj', label: 'Brazilian Jiu-Jitsu' },
+      { id: 'kb', label: 'Kickboxing' }
+    ];
+    const filters = filterDefs.map(f => {
+      const on = f.id === this.state.activeFilter;
+      return { ...f, bg: on ? 'oklch(100% 0 0)' : 'transparent', color: on ? 'oklch(22% 0.01 95)' : 'oklch(48% 0.012 95)', select: () => this.setState({ activeFilter: f.id }) };
+    });
+
+    const skillDefs = [
+      { id: 'rnc', name: 'Rear Naked Choke', description: 'Back control finish — seatbelt grip, choke with the forearm across the neck.', style: 'bjj', styleLabel: 'BJJ', ranks: [{ name: 'Blue Belt' }, { name: 'Blue Belt · 4 Stripes' }] },
+      { id: 'ss', name: 'Scissor Sweep', description: 'Classic guard sweep using a scissoring leg motion to off-balance the opponent.', style: 'bjj', styleLabel: 'BJJ', ranks: [{ name: 'White Belt · 4 Stripes' }, { name: 'Blue Belt' }] },
+      { id: 'gr', name: 'Guard Retention', description: 'Recover guard and frame against a passing opponent under live pressure.', style: 'bjj', styleLabel: 'BJJ', ranks: [{ name: 'Blue Belt' }] },
+      { id: 'jc', name: 'Jab-Cross-Hook Combo', description: 'Basic three-strike boxing combination thrown on pads with correct footwork.', style: 'kb', styleLabel: 'Kickboxing', ranks: [{ name: 'Yellow Belt' }] },
+      { id: 'tk', name: 'Teep (Push Kick)', description: 'Range-control front kick used to stop an advancing opponent.', style: 'kb', styleLabel: 'Kickboxing', ranks: [{ name: 'Yellow Belt' }, { name: 'Orange Belt' }] },
+      { id: 'td', name: 'Takedown Defense', description: 'Sprawl and frame to stop a double-leg attempt.', style: 'bjj', styleLabel: 'BJJ', ranks: [{ name: 'Blue Belt' }, { name: 'Purple Belt' }] }
+    ];
+    const filtered = skillDefs.filter(s => this.state.activeFilter === 'all' || s.style === this.state.activeFilter);
+    const skills = filtered.map(s => {
+      const expanded = this.state.expandedId === s.id;
+      return {
+        ...s,
+        rankCount: s.ranks.length,
+        expanded,
+        chevronRotate: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+        toggle: () => this.setState({ expandedId: expanded ? null : s.id })
+      };
+    });
+
+    return { accent, filters, newOpen: this.state.newOpen, toggleNew: this.toggleNew, skills };
+  }
+}
+</script>
+</body>
+</html>

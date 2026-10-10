@@ -48,6 +48,9 @@ export class SchoolResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   defaultCurrency!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'IANA timezone name.' })
+  timezone!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   description!: string | null;
 

@@ -43,3 +43,6 @@ dump.rdb
 *.p12
 *.key
 *.mobileprovision
+
+# Claude Code agent worktrees (local, per-session scratch checkouts — never project content)
+.claude/worktrees/

@@ -73,6 +73,21 @@ export class RoleGrantsService {
       throw new NotFoundException('School not found');
     }
 
+    // Decision 169: an instructor always belongs to something. In a School
+    // with branches that is a branch (one grant per branch for an instructor
+    // who teaches at several, Decision 168); a School with no branches is
+    // itself the branch, so the grant stays School-wide.
+    if (dto.role === 'INSTRUCTOR' && !dto.branchId) {
+      const anyBranch = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.branch.findFirst({ where: { schoolId: dto.schoolId }, select: { id: true } }),
+      );
+      if (anyBranch) {
+        throw new BadRequestException(
+          'This School has branches: choose the branch this instructor belongs to (branchId). Add one grant per branch for an instructor who teaches at several.',
+        );
+      }
+    }
+
     if (dto.branchId) {
       const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
         tx.branch.findUnique({ where: { id: dto.branchId }, select: { id: true, schoolId: true } }),

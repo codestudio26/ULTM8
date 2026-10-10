@@ -54,6 +54,39 @@ in-scope is deliberately deferred, not forgotten.
   check beyond a valid Student JWT) — a real security risk, must close before V1 ships.
 - Extract the shared paginated-list component (now duplicated 4x across
   `ClassBookingRow`/`NotificationRow`/`MembershipRow`/the underlying list-screen shape).
+  ✅ **DONE (2026-09-22), with a correction**: the screen-shell extraction this line
+  describes had already shipped as `PaginatedListScreen.tsx` (used correctly by
+  Academies/My Bookings/Notifications/My Memberships). `ClassBookingRow`/
+  `MembershipPlanRow` were never pagination logic at all — they render a School's
+  embedded array from a single `useAcademy` fetch, not a `useInfiniteQuery`. What
+  remained was the follow-up already named below: 4 near-identical `useInfiniteQuery`
+  hook bodies (`academyQueries`/`bookingQueries`/`membershipQueries`/
+  `notificationQueries`), collapsed into one `usePaginatedQuery(queryKey, fetchPage,
+  options?)` helper in `apps/student/src/lib/usePaginatedQuery.ts` — each call site
+  keeps its own typed `apiClient.GET`/`unwrap` call, only the `useInfiniteQuery`
+  wiring (initialPageParam/getNextPageParam) is shared. Net -14 lines across 4 files.
+  Query keys are unchanged, so `PERSISTED_QUERY_KEY_PREFIXES`'s allowlist in
+  `queryPersister.ts` is unaffected.
+
+  **Also fixed in the same pass**, since it sits in a function this touched and was
+  already named below as a spawned follow-up: the pre-existing timetable pagination
+  bug. `AcademyDetailScreen` destructured only `useAcademyTimetable`'s `data`, never
+  wiring `fetchNextPage`/`hasNextPage` — so any School with more Timetable slots than
+  the server's default page size silently showed only the first page, with no
+  indication more existed. Fixed with a "Load more" `Button` (reusing the existing
+  `variant="secondary"`/`loading` props), not `onEndReached`-style infinite scroll —
+  this screen is a `ScrollView` holding several sections (Activities/Plans/
+  Rank/Classes/Timetable), not a single `PaginatedListScreen`-style `FlatList`.
+
+  **Verified**: `npx turbo run lint build --filter=@ultm8/student` (`tsc --noEmit`
+  both ways) passes clean, run together this time — no repeat of the earlier
+  transient OOM some other slices hit running lint+build in parallel. **Not**
+  interactively click-tested via `expo start --web` — no mock backend server exists
+  in this checkout for this session, and standing one up was judged disproportionate
+  for a mechanical hook-signature refactor plus a `fetchNextPage` wiring fix that
+  reuses an already-proven pattern (`PaginatedListScreen`'s own identical
+  fetchNextPage/hasNextPage/isFetchingNextPage usage, and `Button`'s already-used
+  `loading` prop) rather than new logic. Flagged here rather than silently assumed.
 - A real staging deployment of `apps/api` + Postgres (+ Redis) on Railway, so V1 is
   verified against the genuine backend, not indefinitely against throwaway mocks.
   Pending: the user creating a Railway account and connecting the GitHub repo — this
@@ -282,6 +315,40 @@ The drawn-signature capture enhancement for Waivers (a different, still-genuinel
 blocked half of the original combined gap) remains parked — Decision 74 flags it as
 "still undesigned... for the Architect / design work before this can be built," and
 would need a `WaiverSignature` schema change besides.
+
+**Guardian "Kid Mode" booking delegation — proposed, stress-tested, approved, and
+shipped (Decision 123, 2026-10-06).** The user asked whether a Guardian could let a
+linked minor book a class themselves; proposed as a design (not inferred from any
+existing designs — a genuinely new question), adversarially stress-tested across two
+passes, and approved with 7 explicit open questions resolved directly by the user
+before any code was written. Full mechanism, scope, and the stress-test findings are
+in Decision 123 itself, not duplicated here.
+
+**What was built**: `BookingDelegation` (new model, per-minor, mirrors
+`ConsentRecord`'s grant/withdraw shape), a `kidMode` JWT claim + `JwtStrategy`
+route/body restriction (a Kid-Mode token may only call `POST /classes/:id/book`,
+only for the one studentId it was minted for), a live `BookingDelegation` re-check
+inside `BookingsController` (never trust the JWT claim alone — the same discipline
+`assertGuardianOfStudent()` already established), and `bookedViaKidMode`/
+`pendingGuardianReview` columns on `Booking` for the revoke→review-queue flow. On
+`apps/student`: `BookingDelegationRow` (off each minor's own settings screen,
+alongside `ConsentTierRow`), `KidModePinScreen` (a device-local handoff PIN —
+explicitly not the security boundary, see `kidModePinStore.ts`'s own comment),
+`KidModeBookingScreen` (a dedicated, isolated API client bound to the scoped
+token — never the shared `apiClient` singleton, see `kidModeClient.ts`), and
+`PendingReviewScreen` (the Guardian's Confirm/Cancel queue).
+
+**Verified**: `npx tsc --noEmit` and `nest build` clean on `apps/api`; the new
+`booking-delegation.e2e-spec.ts` (12/12) plus the full existing e2e suite
+(377 passed / 22 pre-existing unrelated skips / 0 failures) against a real local
+Postgres 16 — proving the live re-check, the route/body restriction, the
+revoke-flags-pendingGuardianReview flow, and RLS isolation between two Guardians'
+own delegations, not just reading the code. `apps/student`: `npx tsc --noEmit` and
+`npx expo export --platform web` both clean. No test infrastructure exists yet on
+this branch for `apps/student` (that's `feature/student-qr-checkin`'s own
+still-open, unmerged work) — this slice's frontend is typecheck/build-verified
+only, not unit-tested, same honestly-stated gap as every pre-Jest Track B slice
+before it.
 
 ---
 
@@ -811,7 +878,8 @@ section and each item's own section above for the current, accurate status.
 
 **Shipped**: Slices 1, 2, 3, 4a, 5, 6a; the Guardian consent candidate (My Minors +
 consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read-only
-offline caching (Phase 7); the Membership authorization-check fix.
+offline caching (Phase 7); the Membership authorization-check fix; Guardian "Kid
+Mode" booking delegation (Decision 123).
 
 **Scoped, not yet built**: QR check-in (Phase 5) — the backend endpoint it needs
 already exists (`POST /attendance/scan`); what's left is a `apps/school-portal` QR
@@ -828,7 +896,106 @@ per-School white-label branding.
 Several follow-ups are already spawned and tracked outside this doc (visible as task
 chips in the session): the waitlist notification-dispatch backend gap, the
 StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
-gaps, a pre-existing timetable pagination bug, a shared `usePaginatedQuery` hook
-extraction, proper multi-School support for the Waivers screen, a deep-link from
-booking errors to the Waivers screen, a `formatDate` timezone bug, and a
-severity-proportional confirmation for BASELINE consent withdrawal.
+gaps, and a deep-link from booking errors to the Waivers screen.
+
+**Note on the deep-link follow-up**: checked, not built this pass. `bookings.service.ts`'s
+unsigned-Waiver rejection is a plain `BadRequestException(message)` with no distinct
+error `code` (`HttpExceptionFilter` falls back to the generic `BAD_REQUEST` code
+shared by every other 400) — the only signal available client-side to detect "this
+specific error" is matching the free-text message, which is fragile and not something
+to build silently. Needs either a backend change (a stable error code) or an explicit
+decision to accept text-matching; left open rather than guessed at.
+
+**Severity-proportional BASELINE withdrawal confirmation ✅ FIXED (2026-09-22).**
+Found something worse than "not severity-proportional" while looking at this:
+`Alert.alert` — used for both tiers' withdraw confirmation — is a documented no-op on
+React Native Web, this app's own interactive-test target, so tapping "Withdraw" did
+nothing at all on web, for either tier, not just BASELINE. Replaced with an inline
+confirmation panel (`ConsentTierRow.tsx`) — plain Views/Text, no native dialog API, so
+it renders identically on every platform. BASELINE's panel additionally requires an
+explicit tap-to-acknowledge ("I understand this deactivates the account") before its
+Confirm button enables; CAMERA's panel only needs the one warning read + tap, matching
+its narrower, non-account-affecting effect. Added a `destructive` variant to the
+shared `Button` component (`components/ui.tsx`) for the confirm action's styling.
+
+**MyBookingsScreen's cancel flow ✅ ALSO FIXED (2026-09-22), same pass.** Unlike
+ConsentTierRow (a pending-approval candidate screen), this one is already-shipped V1
+functionality — its `Alert.alert`-based "Cancel booking?" confirmation had the
+identical no-op-on-web problem, meaning the Cancel button did nothing at all on web.
+Fixed with the same inline-panel pattern and the new `destructive` Button variant.
+Confirmed with a repo-wide grep afterward: no `Alert.alert` usage remains anywhere in
+`apps/student`.
+
+**Proper multi-School support for the Waivers screen ✅ FIXED (2026-09-22).**
+Previously `useEnrolledSchoolId` resolved to exactly one School (deterministically
+sorted, but still only the first) — a Student enrolled at more than one School (a
+real, confirmed case per SKILL.md §6.1/§8.3) never saw the other Schools' Waivers at
+all. Replaced with `useEnrolledSchoolIds` (`AuthContext.tsx`, the only caller was
+WaiversScreen, so the old singular hook is fully removed, not left dead) returning
+every School the caller holds a STUDENT grant at, deduplicated and sorted.
+
+`WaiversScreen` now fetches every enrolled School's Waivers via a new
+`useAllEnrolledSchoolWaivers` (`waiverQueries.ts`), using react-query's `useQueries`
+— not N individual `useInfiniteQuery` calls, which the Rules of Hooks forbid for a
+dynamic-length list. Each School is fetched as one wide page (`limit: 100`, not
+cursor-paginated) — merging N independently cursor-paginated lists into one
+scrollable view has no clean "next page" meaning, and this mirrors the exact
+precedent `useMyWaiverSignatures` already established for the same reason. Each
+returned Waiver is tagged with its `schoolId` (the response DTO doesn't carry it
+itself, since a single-School fetch has it implied by the path param) so the screen
+can group by School. A School name label (`useEnrolledSchoolNames`) reuses the exact
+`['academy', schoolId]` query key `useAcademy` already uses — confirmed via
+`apps/api/src/academies/academies.service.ts` that `academyId` IS `schoolId`
+(`findOne(schoolId)` looks up the School row directly) — so a name already cached
+from browsing AcademyDetailScreen is free here, and vice versa. The screen only
+shows School headers when there's more than one enrolled School, to avoid a
+pointless single-item grouping for the common case.
+
+The offline-cache persistence allowlist is unaffected: the new `school-waivers-all`
+key was never added to it (Waiver query keys are deliberately excluded, per Phase
+7's own decision above), and `academy` was already allowlisted before this change.
+
+**Verified**: `npx turbo run lint build --filter=@ultm8/student` clean — including
+the `.name` field access on the academy response, which TypeScript would have
+rejected at compile time had it not existed on the generated DTO. Not click-tested
+(same reasoning as this pass's earlier fixes — no mock backend in this checkout);
+traced by hand instead: an empty `schoolIds` array short-circuits before any query
+fires (no wasted requests pre-enrollment); a School that fails to load while others
+succeed doesn't blank the whole screen (same `isError && items.length === 0` gate as
+`PaginatedListScreen`); the Waivers/signatures loading gate is preserved exactly as
+the single-School version had it, so the pre-existing "no false Sign button before
+signature status is known" protection against a 409 still holds.
+
+**Verified**: `npx turbo run lint build --filter=@ultm8/student` clean. **Not**
+click-tested — no mock backend or component-test harness exists in this checkout
+(no jest config, no `react-test-renderer` installed in `apps/student`), and adding
+test infrastructure wasn't judged proportionate to verify one component's local state
+machine. Verified instead by tracing every transition by hand: open→cancel resets
+`acknowledged`; open→confirm is blocked pre-mutate for BASELINE until acknowledged;
+a failed withdraw still surfaces via the pre-existing `withdraw.isError` banner
+(rendered outside the confirm/active branch, so unaffected by which one is showing);
+a successful withdraw's `granted` becomes `undefined` immediately (existing
+`withdraw.isSuccess` derivation, untouched), which hides the whole active/confirm
+block regardless of `confirming`'s leftover value.
+
+**`formatDate` timezone bug ✅ FIXED (2026-09-22).** Confirmed against
+`apps/api/prisma/schema.prisma`: only `Minor.dateOfBirth` is a calendar-only
+`@db.Date` column (line 211) — `Class.startDate/endDate`, `Membership.expiryDate`,
+and `WaiverSignature.signedDate` are all genuine `DateTime` timestamps, where
+`formatDate`'s existing local-timezone rendering is correct (a Class really does
+start at a specific instant). Only the DOB display was wrong: the backend
+serializes a `@db.Date` as UTC midnight, and `formatDate`'s local-timezone
+`Intl.DateTimeFormat` shifted it back a calendar day for any viewer west of UTC
+(verified: `2015-06-01T00:00:00.000Z` rendered as "May 31, 2015" in
+`America/Los_Angeles`). Added `formatDateOnly` (`apps/student/src/lib/
+formatDate.ts`), pinning `timeZone: 'UTC'` so the rendered day always matches the
+stored one regardless of viewer timezone, and swapped `MyMinorsScreen.tsx`'s
+`Born {formatDate(minor.dateOfBirth)}` to it — confirmed via the same Node check
+that this renders "Jun 1, 2015" correctly. The three genuine-timestamp call sites
+(`ClassBookingRow`, `MyMembershipsScreen`, `WaiverRow`) and `RegisterScreen`'s
+typed-text DOB input (never round-tripped through `formatDate`) were left
+untouched — confirmed as out of scope for this bug, not overlooked.
+
+**Verified**: `npx turbo run lint build --filter=@ultm8/student` (`tsc --noEmit`)
+clean, plus a standalone `node -e` check (above) proving the actual Intl output
+difference, not just that it typechecks.

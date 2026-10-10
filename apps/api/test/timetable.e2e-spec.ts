@@ -72,7 +72,7 @@ describeIfDb('TimetableModule — HTTP-level cross-tenant isolation', () => {
         data: {
           id: randomUUID(),
           email: `timetable-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -234,7 +234,7 @@ describeIfDb('TimetableModule — HTTP-level cross-tenant isolation', () => {
       data: {
         id: randomUUID(),
         email: `timetable-http-instructor-a2-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Instructor',
         surname: 'A2',
         passcodeHash: 'x',
@@ -260,5 +260,33 @@ describeIfDb('TimetableModule — HTTP-level cross-tenant isolation', () => {
     expect(patched.status).toBe(400);
 
     await superuser.user.delete({ where: { id: branchInstructor.id } }).catch(() => undefined);
+  });
+  it('in a School with styles, a slot picks its styles and class types like a class does; a slot with none is refused (Decision 170)', async () => {
+    const schoolS = await superuser.school.create({ data: { id: randomUUID(), name: 'Timetable HTTP Styles School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: schoolS.id } });
+    const bjj = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: schoolS.id, name: 'BJJ', classTypesOffered: ['Fundamentals'] } });
+    const tokenOwnerS = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolS.id, branchId: null }]);
+    try {
+      const post = (body: Record<string, unknown>) =>
+        request(app.getHttpServer()).post(`/v1/schools/${schoolS.id}/timetable`).set('Authorization', `Bearer ${tokenOwnerS}`).send(slotBody(body));
+      expect((await post({})).status).toBe(400); // free text only
+      expect((await post({ activities: undefined, styles: [{ disciplineId: bjj.id }] })).status).toBe(400); // no class type
+      const res = await post({ activities: undefined, styles: [{ disciplineId: bjj.id, classType: 'Fundamentals' }] });
+      expect(res.status).toBe(201);
+      expect(res.body.styles).toEqual([{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
+      expect(res.body.activities).toEqual(['BJJ']);
+
+      const kept = await request(app.getHttpServer())
+        .patch(`/v1/timetable/${res.body.id}`)
+        .set('Authorization', `Bearer ${tokenOwnerS}`)
+        .send({ title: 'Renamed' });
+      expect(kept.status).toBe(200);
+      expect(kept.body.styles).toEqual([{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
+    } finally {
+      await superuser.timetableSlot.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.discipline.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolS.id } });
+      await superuser.school.delete({ where: { id: schoolS.id } });
+    }
   });
 });

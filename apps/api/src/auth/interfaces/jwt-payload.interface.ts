@@ -32,9 +32,28 @@ export interface ImpersonationClaim {
   schoolId: string;
 }
 
+/**
+ * Decision 123 — Guardian "Kid Mode" booking delegation. Present ONLY on a token
+ * GuardiansService.mintKidModeToken() signs; absent on every ordinary tenant
+ * login/register/refresh token, including the Guardian's own normal one. `sub`
+ * above is still the Guardian's own id (this is never a separate minor
+ * identity/login — see BookingDelegation's own model comment) — `studentId`
+ * here is the ONE linked minor this token may book for, fixed at mint time from
+ * a live BookingDelegation check, never widened after issuance. Same
+ * "JwtStrategy.validate() is the one central choke point" reasoning
+ * ImpersonationClaim already established: a Kid-Mode token making any request
+ * other than the single-Class booking-create endpoint, or naming a different
+ * studentId than this claim's own, is rejected before it ever reaches a
+ * controller.
+ */
+export interface KidModeClaim {
+  studentId: string; // User.id of the one linked minor this token may book for
+}
+
 export interface JwtPayload {
   sub: string; // User.id
   email: string;
   grants: RoleGrantClaim[];
   impersonation?: ImpersonationClaim;
+  kidMode?: KidModeClaim;
 }

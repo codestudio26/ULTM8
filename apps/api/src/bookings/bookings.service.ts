@@ -2,7 +2,8 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { randomUUID } from 'crypto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { assertBookingUnlocked } from '../ranks/booking-unlocks';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -78,7 +79,16 @@ export class BookingsService {
    * already effectively relies on the target being enrolled for anyway, so this
    * changes no existing behavior, only adds a fallback for the genuinely new case.
    */
-  async bookClass(callerId: string, classId: string, dto: BookClassDto) {
+  /**
+   * `viaKidMode` (Decision 123) — set by BookingsController only when the
+   * caller's JWT itself carried a `kidMode` claim, after its own live
+   * `GuardiansService.assertBookingDelegationActive()` re-check already passed.
+   * Threaded through as a plain flag rather than this method re-deriving it
+   * from `callerId` alone, since a Kid-Mode token's `sub` is indistinguishable
+   * from an ordinary Guardian token's `sub` — same guardianId either way,
+   * exactly the point of reusing the existing on-behalf-of path unchanged.
+   */
+  async bookClass(callerId: string, classId: string, dto: BookClassDto, viaKidMode = false) {
     const studentId = dto.studentId ?? callerId;
     const isOnBehalfOf = dto.studentId !== undefined && dto.studentId !== callerId;
 
@@ -180,6 +190,7 @@ export class BookingsService {
             sourceMembershipId: sourceMembership.id,
             overriddenById: dto.overrideReason ? callerId : null,
             overrideReason: dto.overrideReason ?? null,
+            bookedViaKidMode: viaKidMode,
           },
         });
       } catch (err) {
@@ -389,71 +400,12 @@ export class BookingsService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /** Rank gate (SKILL.md §9, quoted): "a Rank/stripe tier's eligibleClassTypes...
-   * governs which class types a Student may book, cumulative by ladder order."
-   *
-   * BRIDGING INFERENCE, not §9-confirmed — flagged prominently, recorded as Decision
-   * 90 (docs/decisions/POST-SPEC-55-DECISION-LOG.md): SKILL.md §4 itself flags that
-   * `Class.activities` and `Discipline` are "not formally reconciled into one
-   * controlled list." This method bridges them the only implementable way available
-   * without inventing a new reconciliation table: matching a Class's `activities`
-   * strings against `Discipline.name` at the same School. A Class whose activities
-   * don't match any Discipline has nothing to gate against and is silently allowed
-   * through (not a confirmed exemption — simply nothing to check). This means the
-   * rank gate is NOT reliably enforced for every Class, only for ones whose
-   * activities happen to name a real Discipline exactly — flagged for Architect
-   * confirmation, not asserted as a complete implementation of §9.
-   *
-   * "Cumulative by ladder order" is read as: every RankStripeTier belonging to a
-   * LOWER-ordered Rank in the same Discipline, PLUS every RankStripeTier at or below
-   * the Student's own current stripe-tier order within their CURRENT Rank — i.e. the
-   * full sequence of tiers the Student has already progressed through, not just their
-   * single current tier in isolation.
-   */
-  private async assertRankEligible(
-    tx: TenantTx,
-    studentId: string,
-    cls: { id: string; schoolId: string; activities: string[] },
-  ): Promise<void> {
-    if (cls.activities.length === 0) return;
-
-    const disciplines = await tx.discipline.findMany({ where: { schoolId: cls.schoolId, name: { in: cls.activities } } });
-    if (disciplines.length === 0) return;
-
-    const cumulativeEligible = new Set<string>();
-    for (const discipline of disciplines) {
-      const studentRank = await tx.studentRank.findUnique({
-        where: { studentId_disciplineId: { studentId, disciplineId: discipline.id } },
-        include: { currentRank: true, currentStripe: true },
-      });
-      if (!studentRank) {
-        throw new ForbiddenException(
-          `This Student has no Rank in the "${discipline.name}" Discipline required for this Class. A Staff member can override this per-Booking.`,
-        );
-      }
-
-      const tiers = await tx.rankStripeTier.findMany({
-        where: { rank: { disciplineId: discipline.id } },
-        include: { rank: true },
-      });
-      for (const tier of tiers) {
-        const passedLowerRank = tier.rank.order < studentRank.currentRank.order;
-        const passedCurrentRankTier =
-          tier.rank.order === studentRank.currentRank.order &&
-          studentRank.currentStripe !== null &&
-          tier.order <= studentRank.currentStripe.order;
-        if (passedLowerRank || passedCurrentRankTier) {
-          tier.eligibleClassTypes.forEach((t) => cumulativeEligible.add(t));
-        }
-      }
-    }
-
-    const uncovered = cls.activities.filter((a) => !cumulativeEligible.has(a));
-    if (uncovered.length > 0) {
-      throw new ForbiddenException(
-        `This Student's current Rank does not permit booking a Class with activities: ${uncovered.join(', ')}. A Staff member can override this per-Booking.`,
-      );
-    }
+  // Booking rank gate (SKILL.md §9, Decision 173): for each style the class
+  // lists, its class type must be open or unlocked by the student's rung or a
+  // rung below, as the school owner sets per rung. Replaces Decision 90's
+  // activities <-> Discipline.name bridge.
+  private async assertRankEligible(tx: TenantTx, studentId: string, cls: { styles: Prisma.JsonValue }): Promise<void> {
+    await assertBookingUnlocked(tx, studentId, cls, ' A Staff member can override this per-Booking.');
   }
 
   /** "A Class's Full status counts every attendee across all Bookings... including

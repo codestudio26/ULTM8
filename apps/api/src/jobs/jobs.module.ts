@@ -14,6 +14,7 @@ import { NotificationFanoutProcessor } from './notification-fanout.processor';
 import { FranchiseFeeUsageReportingProcessor, FranchiseFeeUsageReportingScheduler } from './franchise-fee-usage-reporting.processor';
 import { TenantLifecyclePurgeProcessor, TenantLifecyclePurgeScheduler } from './tenant-lifecycle-purge.processor';
 import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-restriction.processor';
+import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from './membership-expiry-sweep.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -70,6 +71,36 @@ import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-rest
  * — QueueModule already registers the new queue (added alongside the others),
  * and the new processor's own NOTIFICATION_FANOUT_QUEUE injection is covered by
  * the same QueueModule import already in this module.
+ *
+ * Closes a real gap flagged since Phase 11/15: WaitlistCascadeProcessingProcessor
+ * now also injects NOTIFICATION_FANOUT_QUEUE, the same cross-queue @InjectQueue
+ * pattern every prior addition above already established, so a freed seat
+ * actually notifies the Student (in-app + email) instead of only flipping the
+ * WaitlistEntry's own status. No new module import needed — QueueModule already
+ * registers NOTIFICATION_FANOUT_QUEUE from the Phase 15 wiring above.
+ *
+ * Decision 122 extends StripeWebhookProcessingProcessor once more, closing the
+ * "same-day sweep cancels the Student's own future Bookings" half of Spec 55
+ * §6.1's Membership-expiry rule (deferred since Phase 8 first wrote this file,
+ * before Booking existed) — it now also injects WAITLIST_CASCADE_PROCESSING_QUEUE
+ * to notify the waitlist for each seat a cancellation frees, the same
+ * cross-queue @InjectQueue pattern BookingNoShowProcessingProcessor already
+ * established for that exact queue. No new module import needed — QueueModule
+ * already registers WAITLIST_CASCADE_PROCESSING_QUEUE (confirmed above, Phase 11).
+ *
+ * Closes the other half of that same gap, flagged by Decision 122's own "What
+ * this does NOT resolve" note: MembershipExpirySweepProcessor/Scheduler add the
+ * missing Booking-cancellation sweep for a Membership that Expires by its own
+ * expiryDate passing (no Stripe event involved) — the one Membership-expiry
+ * path Decision 122 explicitly left untouched. Deliberately does NOT persist
+ * Membership.status for this path — Decision 26 confirms that stays
+ * live-computed-only, never a scheduled batch flip; see the processor's own
+ * header comment for a real bug this distinction caught before merge. Reuses
+ * the exact Booking-cancellation helper Decision 122 wrote, now extracted to
+ * its own file (membership-booking-cancellation.ts) so both the Stripe-driven
+ * and date-based paths share one implementation. No new module import needed
+ * — same PrismaJobsService/WAITLIST_CASCADE_PROCESSING_QUEUE dependencies every sweep
+ * above it already uses.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -89,6 +120,8 @@ import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-rest
     TenantLifecyclePurgeProcessor,
     TenantLifecyclePurgeScheduler,
     ChargebackPatternRestrictionProcessor,
+    MembershipExpirySweepProcessor,
+    MembershipExpirySweepScheduler,
   ],
 })
 export class JobsModule {}

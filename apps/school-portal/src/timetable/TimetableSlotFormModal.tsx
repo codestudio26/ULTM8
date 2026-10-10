@@ -5,6 +5,8 @@ import type { BranchResponse } from '../branches/branchQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import { titleCase } from '../lib/text';
 import type { TimetableSlotResponse } from './timetableQueries';
+import type { DisciplineResponse } from '../disciplines/disciplineQueries';
+import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
 
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
@@ -28,7 +30,11 @@ export interface TimetableSlotFormValues {
   /** Always populated — defaults to 'ON', never undefined. */
   status: 'ON' | 'OFF';
   title: string;
-  activities: string[];
+  /** Free text, for a School with no styles. Omitted when styles are picked
+   * (the API fills it in from the styles' names). */
+  activities?: string[];
+  /** For a School with styles (Decision 170); copied onto every generated Class. */
+  styles?: StyleSelection[];
   capacity?: number | null;
   description?: string | null;
   bannerUrl?: string | null;
@@ -54,6 +60,7 @@ export function TimetableSlotFormModal({
   initial,
   branches,
   instructors,
+  disciplines,
   submitting,
   onSubmit,
   onClose,
@@ -62,6 +69,8 @@ export function TimetableSlotFormModal({
   initial?: Partial<TimetableSlotResponse>;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
+  /** The School's styles (Decisions 143, 152, 170). */
+  disciplines: DisciplineResponse[];
   submitting: boolean;
   onSubmit: (values: TimetableSlotFormValues) => Promise<void>;
   onClose: () => void;
@@ -87,6 +96,10 @@ export function TimetableSlotFormModal({
     refundCutoffHoursBeforeStart: initial?.refundCutoffHoursBeforeStart?.toString() ?? '',
     cancellationCharge: initial?.cancellationCharge?.toString() ?? '',
   });
+  const [styles, setStyles] = useState<StyleSelection[]>(
+    initial?.styles?.length ? initial.styles.map((s) => ({ disciplineId: s.disciplineId, classType: s.classType ?? null })) : [{ disciplineId: '', classType: null }],
+  );
+  const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -100,7 +113,13 @@ export function TimetableSlotFormModal({
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    if (activities.length === 0) {
+    if (usesStyles) {
+      const problem = styleSelectionProblem(disciplines, styles);
+      if (problem) {
+        setError(problem);
+        return;
+      }
+    } else if (activities.length === 0) {
       setError('At least one activity is required.');
       return;
     }
@@ -119,7 +138,7 @@ export function TimetableSlotFormModal({
         breakEnd: form.breakEnd || undefined,
         status: form.status,
         title: form.title,
-        activities,
+        ...(usesStyles ? { styles } : { activities }),
         capacity: form.capacity ? Number(form.capacity) : null,
         description: form.description || null,
         bannerUrl: form.bannerUrl || null,
@@ -146,13 +165,17 @@ export function TimetableSlotFormModal({
         <Field label="Title" htmlFor="slot-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
-        <Field label="Activities" htmlFor="slot-activities" hint="Comma-separated, at least one">
-          <TextField
-            required
-            value={form.activities}
-            onChange={(e) => setForm((f) => ({ ...f, activities: e.target.value }))}
-          />
-        </Field>
+        {usesStyles ? (
+          <StylePicker idPrefix="slot" disciplines={disciplines} value={styles} onChange={setStyles} />
+        ) : (
+          <Field label="Activities" htmlFor="slot-activities" hint="Comma-separated, at least one">
+            <TextField
+              required
+              value={form.activities}
+              onChange={(e) => setForm((f) => ({ ...f, activities: e.target.value }))}
+            />
+          </Field>
+        )}
         <Field label="Weekday" htmlFor="slot-weekday">
           <SelectField
             value={form.weekday}

@@ -2,7 +2,7 @@ import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsUrl, MaxLength } from 'class-validator';
 import { CreateSchoolDto } from './create-school.dto';
 
-const NULLABLE_ON_UPDATE = ['mobileNumber', 'address', 'businessType', 'defaultLanguage', 'defaultCurrency', 'description', 'logoUrl', 'bannerUrl'] as const;
+const NULLABLE_ON_UPDATE = ['mobileNumber', 'address', 'businessType', 'defaultLanguage', 'defaultCurrency', 'timezone', 'description', 'logoUrl', 'bannerUrl'] as const;
 
 /**
  * FOUND PROACTIVELY (Phase 18, mirroring the identical fix applied to
@@ -54,6 +54,12 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @IsString()
   @MaxLength(100)
   defaultCurrency?: string | null;
+
+  @ApiPropertyOptional({ description: 'IANA timezone name. Same field as Branch.timezone (Decisions 76, 172).', type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  timezone?: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()

@@ -70,7 +70,7 @@ describeIfDb('GuardianModule — HTTP-level linking, consent, and RLS', () => {
         data: {
           id: randomUUID(),
           email: `guardians-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',

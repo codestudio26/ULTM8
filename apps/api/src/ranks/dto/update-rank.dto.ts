@@ -2,7 +2,7 @@ import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, Min, MaxLength } from 'class-validator';
 import { CreateRankDto } from './create-rank.dto';
 
-const NULLABLE_ON_UPDATE = ['secondaryColour', 'weeklyClassCountCap'] as const;
+const NULLABLE_ON_UPDATE = ['secondaryColour', 'weeklyClassCountCap', 'tagColour', 'coralAccent'] as const;
 
 /**
  * If `stripeTiers` is provided, it REPLACES the Rank's entire existing set (not
@@ -42,4 +42,16 @@ export class UpdateRankDto extends PartialType(OmitType(CreateRankDto, NULLABLE_
   @IsInt()
   @Min(0)
   weeklyClassCountCap?: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  tagColour?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  coralAccent?: string | null;
 }

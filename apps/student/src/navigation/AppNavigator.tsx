@@ -9,6 +9,10 @@ import { NotificationsScreen } from '../notifications/NotificationsScreen';
 import { WaiversScreen } from '../waivers/WaiversScreen';
 import { MinorConsentScreen } from '../guardians/MinorConsentScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
+import { KidModePinScreen } from '../kidmode/KidModePinScreen';
+import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
+import { PendingReviewScreen } from '../kidmode/PendingReviewScreen';
+import { QrCheckInScreen } from '../attendance/QrCheckInScreen';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -29,6 +33,10 @@ export function AppNavigator() {
       <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
       <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: 'My Minors' }} />
       <Stack.Screen name="MinorConsent" component={MinorConsentScreen} options={({ route }) => ({ title: route.params.name })} />
+      <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: 'Kid Mode' }} />
+      <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: 'Kid Mode' }} />
+      <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: 'Needs Your Review' }} />
+      <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: 'Check In' }} />
     </Stack.Navigator>
   );
 }

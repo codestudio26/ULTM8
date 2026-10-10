@@ -116,7 +116,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
         data: {
           id: randomUUID(),
           email: `attendance-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -148,7 +148,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     subscriptionPlanId = plan.id;
 
     discipline = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Judo' } });
-    rank = await superuser.rank.create({ data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, primaryColour: 'white' } });
+    rank = await superuser.rank.create({ data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, name: 'White Belt', primaryColour: 'white' } });
   });
 
   afterAll(async () => {
@@ -175,7 +175,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       });
       const future = new Date(Date.now() + 3_600_000);
       const cls = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school.id, title: 'Judo Class', activities: ['Judo'], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
+        data: { id: randomUUID(), schoolId: school.id, title: 'Judo Class', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: null }], startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
       });
       const membership = await mkActiveMembership(studentA.id);
       await mkBooking(studentA.id, cls.id, membership.id);

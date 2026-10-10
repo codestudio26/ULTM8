@@ -101,22 +101,23 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-/** Mirrors apps/school-portal/src/auth/AuthContext.tsx's own `useOwnedSchoolId` —
- * same shape, STUDENT role instead of SCHOOL_OWNER_MANAGER. Resolves to exactly
- * ONE School, sorted deterministically (not "first in the array") since a person
- * can hold the same role at more than one School (skills/ultm8-domain-rules/
- * SKILL.md §6.1/§8.3, [CONFIRMED]) and the JWT's `grants` array has no guaranteed
- * order (AuthService's token issuance has no `orderBy` on the RoleGrants it
- * signs in). A known, deliberate scope limit for a multi-School Student, not a
- * silent shortcut — proper multi-School support is a separate follow-up. */
-export function useEnrolledSchoolId(): string | null {
+/** Every School a Student holds a STUDENT RoleGrant at — a person can hold the same
+ * role at more than one School (skills/ultm8-domain-rules/SKILL.md §6.1/§8.3,
+ * [CONFIRMED]). Deduplicated (a School could in principle appear via more than one
+ * grant row) and sorted deterministically, since the JWT's `grants` array has no
+ * guaranteed order (AuthService's token issuance has no `orderBy` on the RoleGrants
+ * it signs in) — a caller that only needs one stable id can still take `[0]`.
+ * Previously resolved to a single School only (`useEnrolledSchoolId`, replaced
+ * here) — WaiversScreen is the only caller, and now handles every enrolled School
+ * itself rather than silently dropping the rest for a multi-School Student. */
+export function useEnrolledSchoolIds(): string[] {
   const { claims } = useAuth();
-  if (!claims) return null;
-  const schoolIds = claims.grants.filter((g) => g.role === 'STUDENT' && g.schoolId).map((g) => g.schoolId as string);
-  return schoolIds.sort()[0] ?? null;
+  if (!claims) return [];
+  const schoolIds = new Set(claims.grants.filter((g) => g.role === 'STUDENT' && g.schoolId).map((g) => g.schoolId as string));
+  return Array.from(schoolIds).sort();
 }
 
-/** Same "derive from claims.grants" shape as useEnrolledSchoolId, for the
+/** Same "derive from claims.grants" shape as useEnrolledSchoolIds, for the
  * one other role check this app makes — Guardian is a boolean presence
  * check (any active GUARDIAN grant, not scoped to a School) rather than a
  * value to resolve, so this returns boolean instead of string | null. */

@@ -126,7 +126,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         data: {
           id: randomUUID(),
           email: `bookings-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
@@ -175,12 +175,12 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability', body: 'Risks acknowledged.' } });
 
-    discipline = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Judo' } });
+    discipline = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Judo', classTypesOffered: ['Fundamentals'] } });
     rank = await superuser.rank.create({
-      data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, primaryColour: 'white' },
+      data: { id: randomUUID(), disciplineId: discipline.id, schoolId: school.id, order: 0, name: 'White Belt', primaryColour: 'white' },
     });
     stripeTier = await superuser.rankStripeTier.create({
-      data: { id: randomUUID(), rankId: rank.id, schoolId: school.id, order: 0, count: 1, colour: 'white', eligibleClassTypes: ['Judo'] },
+      data: { id: randomUUID(), rankId: rank.id, schoolId: school.id, order: 0, name: 'White Belt · 1 Stripe', count: 1, colour: 'white', bookingUnlocksClassTypes: ['Fundamentals'] },
     });
 
     const future = new Date(Date.now() + 24 * 3_600_000);
@@ -193,7 +193,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: { id: randomUUID(), schoolId: school.id, title: 'Sparring', startDate: future, endDate: new Date(future.getTime() + 3_600_000), termsWaiverRequired: true },
     });
     classRankGated = await superuser.class.create({
-      data: { id: randomUUID(), schoolId: school.id, title: 'Judo Fundamentals', activities: ['Judo'], startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      data: { id: randomUUID(), schoolId: school.id, title: 'Judo Fundamentals', activities: ['Judo'], styles: [{ disciplineId: discipline.id, classType: 'Fundamentals' }], startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
     });
     classFull = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Small Group', capacity: 1, startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
@@ -312,7 +312,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-revoked-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'revoked-student',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -359,7 +359,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-branch-b-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'branch-b-staff',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -432,7 +432,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-dual-grant-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'dual-grant-staff',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -611,7 +611,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         data: {
           id: randomUUID(),
           email: `bookings-http-race-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Racer',
           passcodeHash: 'x',
@@ -711,7 +711,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-revoked-waitlist-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'revoked-waitlist-student',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -758,7 +758,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-waitlist-branch-b-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'waitlist-branch-b-staff',
         surname: 'Tenant',
         passcodeHash: 'x',
@@ -803,7 +803,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       data: {
         id: randomUUID(),
         email: `bookings-http-waitlist-dual-grant-staff-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'waitlist-dual-grant-staff',
         surname: 'Tenant',
         passcodeHash: 'x',

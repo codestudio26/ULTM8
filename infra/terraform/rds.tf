@@ -45,8 +45,13 @@ resource "aws_db_instance" "main" {
   backup_window      = "03:00-04:00"
   maintenance_window = "mon:04:30-mon:05:30"
 
-  # Required for RDS Proxy (Decision 63) to broker IAM/Secrets-Manager-based auth —
-  # RDS Proxy cannot front an instance with this disabled.
+  # Standard accidental-deletion safeguard for a production database. NOT an RDS
+  # Proxy requirement — checked directly against AWS's own RDS Proxy docs before
+  # writing this comment (an earlier version of it claimed otherwise): RDS Proxy's
+  # real prerequisites are a shared VPC across >=2 AZs, a supported engine, and (only
+  # for the IAM auth scheme, which this stack doesn't use — see rds_proxy.tf's own
+  # `iam_auth = "DISABLED"`) IAM DB authentication enabled on the instance. Deletion
+  # protection isn't among them.
   deletion_protection = var.environment == "production"
 
   skip_final_snapshot       = var.environment != "production"

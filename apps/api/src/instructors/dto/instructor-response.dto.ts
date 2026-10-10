@@ -37,6 +37,9 @@ export class InstructorResponseDto {
   @ApiProperty({ type: [String] })
   specializations!: string[];
 
+  @ApiProperty({ type: [String], description: "The School's styles this instructor specialises in (Decision 152)." })
+  specializationStyleIds!: string[];
+
   @ApiPropertyOptional({ type: String, nullable: true })
   phone!: string | null;
 

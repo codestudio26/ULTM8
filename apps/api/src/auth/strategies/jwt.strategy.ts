@@ -7,6 +7,12 @@ import { RequestContext } from '../../common/request-context';
 
 const READ_ONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+// Decision 123 — the ONE route a Kid-Mode-scoped token may ever call. Matched
+// against req.path (includes the 'v1' global prefix, main.ts's own
+// setGlobalPrefix) rather than req.route, since passport's strategy runs before
+// Nest's router has resolved a route match.
+const KID_MODE_ALLOWED_PATH = /^\/v1\/classes\/[^/]+\/book$/;
+
 /**
  * Validates the access token and hands back its claims as `req.user`. 15-minute
  * access-token TTL for customer identities is confirmed (Spec §8.3) — configured via
@@ -57,6 +63,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     if (payload.impersonation) {
       RequestContext.setImpersonationSchoolId(payload.impersonation.schoolId);
+    }
+    // Decision 123 — a Kid-Mode token may only create a Booking for the one
+    // linked minor it was minted for, nothing else. Rejecting here, before any
+    // controller/service runs, mirrors the impersonation read-only check above
+    // rather than relying on the client to simply not call another endpoint.
+    // Still re-verified live against BookingDelegation inside BookingsController
+    // itself (never trust the claim alone) — this check only narrows WHICH
+    // request shape is even allowed through.
+    if (payload.kidMode) {
+      const isAllowedRoute = req.method === 'POST' && KID_MODE_ALLOWED_PATH.test(req.path);
+      const bodyStudentId = (req.body as Record<string, unknown> | undefined)?.studentId;
+      const bodyOverrideReason = (req.body as Record<string, unknown> | undefined)?.overrideReason;
+      if (!isAllowedRoute || bodyStudentId !== payload.kidMode.studentId || bodyOverrideReason !== undefined) {
+        throw new ForbiddenException(
+          'This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for (Decision 123).',
+        );
+      }
     }
     return payload;
   }

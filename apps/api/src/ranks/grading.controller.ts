@@ -1,11 +1,11 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
-import { GradingActionDto } from './dto/grading-action.dto';
-import { StudentRankListResponseDto } from './dto/student-rank-response.dto';
+import { DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { StudentEligibilityListResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
 
 // StudentRank reads + grading actions. `schoolId` is a required query param on
@@ -31,13 +31,14 @@ export class GradingController {
     return { items: (await this.gradingService.findRanksForStudent(user.sub, id, schoolId)).items };
   }
 
-  @ApiOkResponse({ type: StudentRankListResponseDto })
+  @ApiOkResponse({ type: StudentEligibilityListResponseDto })
   @Get('students/:id/eligibility')
-  async findEligibilityForStudent(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query('schoolId') schoolId: string) {
-    return { items: (await this.gradingService.findEligibilityForStudent(user.sub, id, schoolId)).items };
+  findEligibilityForStudent(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query('schoolId') schoolId: string) {
+    return this.gradingService.findEligibilityForStudent(user.sub, id, schoolId);
   }
 
   @ApiOkResponse({ type: PromotionEventListResponseDto })
+  @ApiQuery({ name: 'includeVoided', required: false, type: Boolean, description: 'Staff only: also return voided entries (Decision 129).' })
   @Get('students/:id/rank-history')
   findRankHistoryForStudent(
     @CurrentUser() user: JwtPayload,
@@ -45,8 +46,32 @@ export class GradingController {
     @Query('schoolId') schoolId: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
+    @Query('includeVoided') includeVoided?: string,
   ) {
-    return this.gradingService.findRankHistoryForStudent(user.sub, id, schoolId, cursor, limit);
+    return this.gradingService.findRankHistoryForStudent(user.sub, id, schoolId, cursor, limit, includeVoided === 'true');
+  }
+
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Post('students/:id/rank-history/:eventId/void')
+  voidPromotionEvent(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+    @Query('schoolId') schoolId: string,
+    @Body() dto: VoidPromotionEventDto,
+  ) {
+    return this.gradingService.voidPromotionEvent(user.sub, id, schoolId, eventId, dto);
+  }
+
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Patch('students/:id/ranks/:disciplineId/rank-date')
+  editRankDate(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('disciplineId') disciplineId: string,
+    @Body() dto: EditRankDateDto,
+  ) {
+    return this.gradingService.editRankDate(user.sub, id, disciplineId, dto);
   }
 
   @ApiOkResponse({ type: PromotionEventResponseDto })
@@ -66,7 +91,7 @@ export class GradingController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
     @Param('disciplineId') disciplineId: string,
-    @Body() dto: GradingActionDto,
+    @Body() dto: DowngradeActionDto,
   ) {
     return this.gradingService.downgrade(user.sub, id, disciplineId, dto);
   }
@@ -85,5 +110,36 @@ export class GradingController {
   @Patch('students/:id/skills/:skillId')
   cycleSkillSignOff(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('skillId') skillId: string) {
     return this.gradingService.cycleSkillSignOff(user.sub, id, skillId);
+  }
+
+  /** The student (or their guardian) declares their current rung when joining
+   * (Decision 137). UNVERIFIED unless it is the style's first rung (Decision 147). */
+  @Post('students/:id/ranks/:disciplineId/declare')
+  declareRank(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('disciplineId') disciplineId: string,
+    @Body() dto: DeclareRankDto,
+  ) {
+    return this.gradingService.declareRank(user.sub, id, disciplineId, dto);
+  }
+
+  /** Staff with grading permission verify a self-declared rank, optionally
+   * correcting it (Decision 147). */
+  @Post('students/:id/ranks/:disciplineId/verify')
+  verifyRank(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('disciplineId') disciplineId: string,
+    @Body() dto: VerifyRankDto,
+  ) {
+    return this.gradingService.verifyRank(user.sub, id, disciplineId, dto);
+  }
+
+  /** Owner only for now: ranks waiting to be verified (Decision 137, item 4). */
+  @ApiOkResponse({ type: StudentRankListResponseDto })
+  @Get('schools/:schoolId/rank-verifications')
+  findPendingVerifications(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.gradingService.findPendingVerifications(user.sub, schoolId);
   }
 }

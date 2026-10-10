@@ -113,7 +113,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
       data: {
         id: randomUUID(),
         email: `impersonation-http-student-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Impersonated',
         surname: 'Student',
         passcodeHash: 'x',
@@ -136,7 +136,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
       data: {
         id: randomUUID(),
         email: `impersonation-http-instructor-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'MultiSchool',
         surname: 'Instructor',
         passcodeHash: 'x',
@@ -337,7 +337,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
         data: {
           id: randomUUID(),
           email: `impersonation-http-${label}-${randomUUID()}@example.test`,
-          phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Manager',
           passcodeHash: 'x',
@@ -397,7 +397,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
       data: {
         id: randomUUID(),
         email: `impersonation-http-franchise-owner-${randomUUID()}@example.test`,
-        phone: `+1555${Math.floor(1000000 + Math.random() * 8999999)}`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
         firstName: 'Franchise',
         surname: 'Owner',
         passcodeHash: 'x',

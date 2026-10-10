@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
@@ -9,6 +9,7 @@ import { GuardiansService } from '../../guardians/guardians.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
+import { SetHomeBranchDto } from './dto/home-branch.dto';
 
 @Injectable()
 export class SchoolsService {
@@ -49,6 +50,7 @@ export class SchoolsService {
           ranksToggle: dto.ranksToggle ?? false,
           defaultLanguage: dto.defaultLanguage,
           defaultCurrency: dto.defaultCurrency,
+          timezone: dto.timezone,
           description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
@@ -161,8 +163,9 @@ export class SchoolsService {
         throw new NotFoundException('School not found');
       }
 
+      let created;
       try {
-        return await tx.roleGrant.create({
+        created = await tx.roleGrant.create({
           data: {
             id: roleGrantId,
             role: 'STUDENT',
@@ -179,6 +182,27 @@ export class SchoolsService {
         }
         throw err;
       }
+
+      // Home branch (Decisions 139, 168): chosen when joining a School that
+      // has branches; a School with none is one branch, so there is nothing
+      // to choose. Checked after the STUDENT grant above, in the same
+      // transaction: that grant is what lets this context see the School's
+      // branches (Branch RLS), and any refusal here rolls it back.
+      const branches = await tx.branch.findMany({ where: { schoolId }, select: { id: true } });
+      if (branches.length > 0) {
+        if (!dto?.branchId) {
+          throw new BadRequestException('This School has branches: choose your home branch (branchId).');
+        }
+        if (!branches.some((b) => b.id === dto.branchId)) {
+          throw new BadRequestException('branchId must be a branch of this School.');
+        }
+        await tx.studentHomeBranch.create({
+          data: { id: randomUUID(), schoolId, studentId, branchId: dto.branchId, assignedById: callerId },
+        });
+      } else if (dto?.branchId) {
+        throw new BadRequestException('This School has no branches, so no branch can be chosen.');
+      }
+      return created;
     });
 
     if (isGuardianAction) {
@@ -377,6 +401,7 @@ export class SchoolsService {
           ranksToggle: dto.ranksToggle,
           defaultLanguage: dto.defaultLanguage,
           defaultCurrency: dto.defaultCurrency,
+          timezone: dto.timezone,
           description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
@@ -391,4 +416,28 @@ export class SchoolsService {
   // No delete method — general tenant offboarding is [UNRESOLVED]
   // (ultm8-app-publishing §4 — not ultm8-domain-rules §2, which covers Franchise/
   // School/Branch structure, not offboarding). Do not add one without a decision.
+
+  /** The School owner assigns or changes a student's home branch (Decision
+   * 148: students who joined before branches existed get one from the
+   * owner; until then only the owner sees and grades them, Decision 168). */
+  async setStudentHomeBranch(callerId: string, schoolId: string, studentId: string, dto: SetHomeBranchDto) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const enrolled = await tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      if (!enrolled) {
+        throw new NotFoundException('This person is not a Student at this School.');
+      }
+      return tx.studentHomeBranch.upsert({
+        where: { schoolId_studentId: { schoolId, studentId } },
+        create: { id: randomUUID(), schoolId, studentId, branchId: dto.branchId, assignedById: callerId },
+        update: { branchId: dto.branchId, assignedById: callerId },
+      });
+    });
+  }
 }

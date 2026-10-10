@@ -16,4 +16,8 @@ export type AppStackParamList = {
   Waivers: undefined;
   MyMinors: undefined;
   MinorConsent: { studentId: string; name: string };
+  KidModePin: undefined;
+  KidModeBooking: undefined;
+  PendingReview: undefined;
+  QrCheckIn: undefined;
 };
