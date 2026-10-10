@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **school-portal — Grading Board** (roadmap Phase 4, item 3; Decisions 128,
+  130, 136, 152, 176). New **Grading Board** page: pick a style and see every
+  student with a next rank in three columns (Just Starting / Getting There /
+  Ready to Grade, at 33% / 66%), with their belt, progress and flags (skills
+  not signed off, days short, inactive, not verified). Search; "currently
+  attending only" with the number hidden. Move a student to another column
+  by dragging the card or with its Move button, after a confirmation (it
+  rewrites their progress and is recorded). Tick students (or a whole
+  column) and **Promote selected**: set the calling order by dragging or
+  with Up/Down, one date and one note; the API checks the batch first and
+  the window shows "Needs a look" students with the reason, promoted only
+  with one acknowledgement tick, and skips those who can't be promoted;
+  afterwards a **printable report** lists the promotions in calling order.
+  Students blocked by the style's "skills required" switch can't be ticked.
+  The student panel gains **Log a class (+1)** and the per-style "Grading
+  Board" attending switch (follow membership, or Active/Inactive by hand).
 - **school-portal — student grading panel** (roadmap Phase 4, item 2;
   Decision 179). Open a student from the Students list to see, for each
   style: their rank (with a belt picture) and since when, whether it's
