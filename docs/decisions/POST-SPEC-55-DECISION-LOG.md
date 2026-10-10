@@ -2220,7 +2220,162 @@ Built in the API as `CoachInvite` and `StaffPermission` with the endpoints liste
 
 Built in the API as `GET /schools/{id}/grading-permissions/me` (the caller's own styles and toggles; the owner gets `isOwner: true`), and in the School Portal as `/coach`, with the Grading Board and student panel working for coaches.
 
-## Decision 185 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
+---
+
+## Decision 185 — Grading hardening: one-rung default steps, no downgrade notice, grades tied to the rung the grader saw
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** questions raised by the Phase 7 hardening round (Gus's scenarios re-run against the API, and the grading stress test).
+
+1. **Default step is one rung.** A promote with no target rung goes to the next rung; a downgrade with no target goes to the rung just below, as the prototype's windows do. Before, the API defaulted to the next (or previous) belt's first rung. The portal always sends a target, so this matters for direct API callers such as the coach mobile app. Gus: *"Next rung, like the prototype"*.
+2. **No notification on a downgrade.** Only "ready to grade" and "promoted" / "new stripe" are sent (Decision 145); a downgrade shows in the student's history. Gus: *"Remove it"*.
+3. **A grade refers to the rung the grader saw.** Grading requests may carry the student's current rung as the grader sees it; if the student has moved since, the request is refused (409) and the grader reloads. The portal always sends it, and bulk promote uses the rung from its own plan, so a batch can't undo a downgrade made in the meantime or give two rungs at once (Decision 130: one rung each). Two coaches awarding the same stripe at once: one wins, the other is told to reload.
+4. **Only the School's students are graded.** Grading actions refuse anyone without an active student role at the School (404), checked after the caller's own rights.
+
+Also fixed in the same round, with no new rule: rank history is listed newest first by grading date; the board's "N inactive hidden" counts every inactive student in the style whatever the search (Gus's 7 Oct fix); ladder edits of one style take turns instead of deadlocking; bad ids and out-of-range starting classes are refused with 400.
+
+---
+
+## Decision 186 — Branch Staff use the coach screens
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** a gap found in the Phase 7 decision review. Decision 181 counts Instructors and Branch Staff as "coaches" for grading permissions, but the coach invite and coach dashboard (Decisions 183, 184) were built for Instructors only, so Branch Staff given grading toggles or "Can invite coaches" had no portal screens to use them.
+
+1. **Branch Staff get the same screens as coaches** in the School Portal: they land on the coach dashboard, use the Grading Board and student panel for the styles they may grade (only the actions their toggles allow, students of their own branches), and see their notifications. Gus: *"Same coach screens"*.
+2. **Branch Staff with "Can invite coaches"** also get **Invite coaches**, limited to their own branches; the owner keeps inviting from the Staff page, where "Who can invite coaches" stays owner only.
+
+Built in the API as `GET /schools/{id}/staff-permissions/me` (the caller's own invite rights), and in the School Portal as the coach screens for Branch Staff plus `/coach-invites`.
+
+---
+
+## Decision 187 — Words on screen: belts and stripes, not "rungs"
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** wording. Gus: *"The division between belts are called stripes."*
+
+Every word a user reads (School Portal, Student app, emails, notifications, API error messages) says **belt** and **stripe**: a student holds a belt with a number of stripes (e.g. "Blue Belt, 2 stripes"). "Rung" stays only as an internal name in code and in earlier entries of this log, where it means one step of the ladder: a belt with a given number of stripes.
+
+---
+
+## Decision 188 — Instructors choose their own belt per style; the owner verifies it
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the V1 specifics Decision 108 left open. Gus: *"Just like students, they will choose and school owner will verify"*, and chose *"Per style, from the School's belts"*.
+
+1. **The instructor chooses**, on their own profile page in the School Portal, a belt and stripes **for each style**, from that style's belts at the School, the same way a student self-declares at signup (Decision 137).
+2. **It is unverified until the School Owner verifies it, or corrects it.** Until then it shows as "Not verified".
+3. Linking an instructor's belt to their grading history (Decision 108's V2) stays out of scope.
+
+---
+
+## Decision 189 — Belts waiting to be verified: a notice at login for grading staff only
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** Decision 137.4. Gus chose *"Staff only"*.
+
+When the School Owner, or a coach or Branch Staff member with grading permission, logs in to the School Portal, a notice lists the students whose self-declared belts are waiting to be verified, limited to the styles and students they may grade (Decisions 138, 168, 181). Students and guardians see no such notice.
+
+---
+
+## Decision 190 — Lessons need a paid membership, unless the owner makes a lesson free
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Adds to:** Decision 154. Gus: *"yes, unless it is free of charge set by the school owner"*, and chose *"Each lesson"*.
+
+1. A lesson is watchable by students and guardians with an active paid membership for that activity (Decision 154).
+2. **The School Owner can mark any single lesson as free**; a free lesson is watchable by every student and guardian at the School.
+
+---
+
+## Decision 191 — Lesson categories: confirmed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** Decision 128.15. Gus: *"Yes"*.
+
+Lesson categories are a real list with an order, and lessons are ordered within their category.
+
+---
+
+## Decision 192 — Notes in a student's grading history can be edited and hidden; every change is kept
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Adds to:** Decision 128.11. Gus: *"Yes … but records changes and it can be hidden"*, and chose *"Graders edit; hidden from student"*.
+
+1. **Who:** the School Owner, and anyone who may grade that student in that style (Decisions 138, 168, 181).
+2. **Edit:** the note's text can be changed. Every change is kept: who, when, the old text and the new text.
+3. **Hide:** a note can be hidden, and shown again. A hidden note is not shown to the student or guardian; staff still see it, marked as hidden. Hiding and showing are kept in the same change record.
+4. System notes (written by ULTM8, e.g. "Bulk promotion") and the downgrade reason (Decision 128.11) are not edited this way.
+
+---
+
+## Decision 193 — A staff member given a role again starts with today's permissions
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** L1 from the Phase 7 security review. Gus: *"they should get the new permission given at the present time"*.
+
+When an Instructor or Branch Staff role is removed, that person's grading permissions and "Can invite coaches" at that School are cleared. If they are given the role again later, they start with no extra permissions, and the owner grants whatever applies now.
+
+---
+
+## Decision 194 — The board's "inactive hidden" count includes students on the top stripe
+
+**Date:** 10 Oct 2026 · **Status:** Follows Gus's prototype (Decision 124); offered to Gus as the default on 10 Oct 2026. **Resolves:** the question left in the Phase 7 acceptance report (D3).
+
+The Grading Board hides inactive students and shows how many it hid. That count includes inactive students on the last stripe of the top belt, who never appear on the board because they have nothing left to be promoted to, as the prototype does.
+
+---
+
+## Decision 195 — Lessons: membership plans say which styles they cover and whether they include lessons
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how a membership maps to an activity (left open by Decision 154) and "paid" (Decision 190). Gus chose *"Plans tick their styles"*, then for free passes: *"any one with pass, or if better when we set up the free pass and can give access to the curriculum or not"*, and agreed to *"Yes, switch per plan"*.
+
+1. **Each membership plan ticks the styles it covers.**
+2. **Each plan has an "Includes lessons" switch.** It starts on for plans with a price and off for free plans (Friend Pass, £0 plans); the owner can change it on any plan.
+3. **A lesson's styles are the styles of the skills it teaches.**
+4. **Who can watch a lesson:** a student, or a guardian of that student, with a live membership (active, not expired, credits left for packs) on a plan that includes lessons and covers one of the lesson's styles. A lesson the owner marked free (Decision 190) is watchable by every student and guardian at the School. Staff always see every lesson.
+
+Replaces "paid membership" in Decisions 154 and 190 with this per-plan switch.
+
+---
+
+## Decision 196 — The owner's typed "Belt ranking" on an instructor is removed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · Gus: *"correct remove the old one"*.
+
+Instructors choose their own belt per style (Decision 188), so the owner's free-text "Belt ranking" on the Instructor profile goes, with its stored values.
+
+---
+
+## Decision 197 — Who edits history notes: confirmed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** the reading of Decision 192 built in PR #145. Gus: *"yes"*.
+
+"Anyone who may grade that student in that style" means the School Owner, or a coach with "Promote" or "Move down" for that style who covers the student's branch.
+
+---
+
+## Decision 198 — Deleting: only what has never been used
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the acceptance pass's Q2 (Gus's prototype can delete a style, a belt, a skill and a lesson; ULTM8 could not). Asked what fits best, Gus chose the recommended rule: *"Delete if never used"*.
+
+The School owner can delete what no student's record uses; anything that is part of a record stays, and the portal says why. Owner only, with a confirmation.
+
+1. **Lesson:** always (nothing in a student's record points to a lesson).
+2. **Skill:** when no student has ever been marked on it (Learning or Signed off, now or in the sign-off log). It comes off the stripes that required it and the lessons that list it; refused if it is a lesson's only skill.
+3. **Belt:** when nobody holds it or any of its stripes, it is not in anyone's grading history, and no instructor has declared it (Decision 188). Its stripes go with it and the belts after it move up one place. (Decision 152: a stripe a student holds still can't be removed.)
+4. **Style:** when nobody has ever held a rank in it, no instructor has declared a belt in it, and no class, timetable slot or lesson uses it. Its belts, skills and coach grading permissions go with it, and it is taken off membership plans (Decision 195) and instructors' styles.
+
+Not in this decision: archiving a used style or belt (hide it, keep the records). Offered and not chosen for now.
+
+Built as `DELETE /disciplines/{id}`, `/ranks/{id}`, `/skills/{id}`, `/lessons/{id}` (204, or 409 with the reason), with **Delete** buttons on the Disciplines, style and Curriculum pages.
+
+---
+
+## Decision 199 — The belt-level weekly cap and required skills are removed; the plain belt keeps its own on its rung
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** the open item left by Decision 164 (belt-level required skills, and the belt-level weekly cap, still written by the API but ignored by grading since roadmap Phase 2).
+
+Asked whether they can be removed, Gus: *"Yes as longer we have that on the non stripe belts for exemple brown belt! Not brown belt 1 stripe"*.
+
+1. **Removed:** `Rank.weeklyClassCountCap` and the `RankRequiredSkill` table, and the belt-level `weeklyClassCountCap` / `requiredSkillIds` in the ranks API (sending them is now a 400).
+2. **Kept, as Gus asked:** the plain belt (e.g. "Brown Belt", no stripes) is a rung of its own, with its own weekly cap and required skills (Decision 126), edited like every other rung. Its skills are what it takes to reach that belt (Decision 127).
+3. **Nothing changes for students.** Decision 164 had already copied each belt's cap onto its rungs and its skills onto the next belt's first rung, and grading reads only the rungs, so nothing is copied again; the migration logs what it drops.
+4. **Not removed:** the belt-level "years in rank" flag (also unused by grading since Decision 128 item 3 made "time in rank only" a per-rung switch). It wasn't part of the question; left until asked.
+
+Built in migration `20261102000000_remove_belt_level_settings`.
+
+## Decision 200 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
 
 **Date:** 26 Sep 2026
 **Status:** Developer-level finding, escalated — **not resolved**, flagged for Architect decision before any backend work starts
@@ -2252,7 +2407,7 @@ Logged in `docs/v1.2-backend-backlog.md` ("Timetable page (mockup — click-to-b
 
 Surfaced while implementing the user's explicit request to add a click-to-book function to the Timetable page (Daily/Weekly/Monthly) — escalated per this project's standing rule (never fill an `[UNRESOLVED]` domain gap with a plausible-sounding guess), 26 Sep 2026.
 
-## Decision 186 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
+## Decision 201 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
 
 **Date:** 26 Sep 2026
 **Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts; the codegen finding is a Developer-level workaround, not an Architect ruling
@@ -2285,10 +2440,10 @@ Logged in `docs/v1.2-backend-backlog.md` ("Membership Plans page") and as `note2
 
 Implemented per the user's explicit choice of Concept 5 and instruction to "build [what's real], and... anything that is not on the back end now... to a list with notes to be done by the dev team back end team," 26 Sep 2026.
 
-## Decision 187 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
+## Decision 202 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
 
 **Date:** 27 Sep 2026
-**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 186, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 201, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
 **Resolves:** the user picked Concept 2 (Stats Ribbon + List) and asked for the same "build what's real, log the rest" treatment as Membership Plans
 
 ### What was built (real, in `TransactionsPage.tsx`)
@@ -2299,7 +2454,7 @@ One correctness detail worth recording: **Total revenue is grouped by currency, 
 
 ### What was deliberately not built
 
-Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 186's same reasoning for why a real read-only page shouldn't grow dead action buttons).
+Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 201's same reasoning for why a real read-only page shouldn't grow dead action buttons).
 
 ### Verification
 
@@ -2311,9 +2466,9 @@ Logged as `note2` on the "Transactions — 5 concepts" canvas artifact. No `docs
 
 ### Recorded by
 
-Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 186, 27 Sep 2026.
+Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 201, 27 Sep 2026.
 
-## Decision 188 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
+## Decision 203 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
 
 **Date:** 27 Sep 2026
 **Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decisions 123/124: `https://claude.ai/artifact/MctvsgBry9WEkEK2Fqq5QL`); the signature-status finding below is a Developer-level investigation, escalated — not resolved here
@@ -2349,7 +2504,7 @@ Logged in `docs/v1.2-backend-backlog.md` ("Waivers page") with the full three-la
 
 Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concept 3") plus a follow-up request for a signature/signed-status field; shape and build-scope confirmed via AskUserQuestion, then built per the user's "build and create the notes for the dev team" answer, continuing the same policy established in Decisions 123/124, 27 Sep 2026.
 
-## Decision 189 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
+## Decision 204 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
 
 **Date:** 27 Sep 2026
 **Status:** Developer-level finding, escalated — the backlog below is logged for the dev/backend team; no real code was changed as part of this entry (design/documentation only)
@@ -2357,7 +2512,7 @@ Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concep
 
 ### What was found (verified directly against `NotificationsController`/`NotificationsService`/`schema.prisma`, not assumed)
 
-The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 188): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
+The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 203): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
 
 Two smaller, independent gaps were also found: `Notification` has no snoozed/deferred state of any kind (only `read`, a plain boolean), and no delete endpoint exists. Push notification delivery itself is real only at the registration step — `DeviceToken` registration works, but actual push SEND is, per that model's own header comment, "deliberately NOT built this phase," so no delivery-rate or read-time metric can be computed even in principle from what the schema stores today (`Notification.read` has no timestamp — no `readAt` column).
 
@@ -2376,10 +2531,10 @@ Full backend requirements (a new broadcast/compose endpoint and its open product
 
 Requested directly by the user ("Give 5 great ideas... look at other softwares ideas" pattern, continuing Decisions 123/124/125's process), recommendation given via AskUserQuestion-free direct comparison, then the full non-real inventory logged per the user's explicit "any that is not real add to the note for the dev... to do the back end" instruction, 27 Sep 2026.
 
-## Decision 190 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
+## Decision 205 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
 
 **Date:** 27 Sep 2026
-**Status:** Developer-level correction of an earlier overstated finding (Decision 185), verified directly against `BookingsService`/`SchoolsService` before changing anything
+**Status:** Developer-level correction of an earlier overstated finding (Decision 200), verified directly against `BookingsService`/`SchoolsService` before changing anything
 **Resolves:** the user's own second-guess on the Timetable mockup's "Book" action ("this is the school view, not the students... does not make sense for academies") — investigated rather than agreed with by default, since the premise turned out to be wrong
 
 ### What was found (verified directly, not assumed)
@@ -2394,7 +2549,7 @@ Added a required "Student" field to the Book confirmation dialog (all three view
 
 ### What's still not real, and why that hasn't changed
 
-Decision 185's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
+Decision 200's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
 
 ### Tracking
 
@@ -2406,7 +2561,7 @@ Investigated in response to the user questioning the Book action's fit for the S
 
 ---
 
-## Decision 191 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
+## Decision 206 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
 
 **Date:** 28 Sep 2026
 **Status:** Developer-level proposed design, **not approved, not built** — flagged for Architect/product-owner confirmation before any of this is implemented. Recorded because the user asked directly for the logic to be worked out and written down, not because it's been signed off.

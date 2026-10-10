@@ -17,6 +17,9 @@ describe('AuthService', () => {
       // confirmPasscodeReset()'s mass-revoke updateMany() — both now called
       // unconditionally on their respective success paths.
       refreshToken: { create: jest.fn(), findUnique: jest.fn(), updateMany: jest.fn() },
+      // refresh() rotates and issues the successor in one transaction; the
+      // mock runs it against the same client.
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prismaAuth)),
     };
     prismaApp = {
       withTenantContext: jest.fn((_id: string, fn: any) =>

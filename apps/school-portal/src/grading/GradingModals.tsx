@@ -4,6 +4,8 @@ import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { type Rung, startingClassesFor } from './ladder';
 import {
+  useChangeHistoryNote,
+  useHistoryNoteLog,
   type Eligibility,
   useDowngrade,
   useEditRankDate,
@@ -96,7 +98,8 @@ export function GradeModal({
     e.preventDefault();
     if (!target) return;
     setError(null);
-    const body: Parameters<typeof promote.mutateAsync>[0] = { acknowledgeWithoutSkillSignoff: needsAck };
+    // The rung the coach is looking at: refused if someone else graded first (Decision 185).
+    const body: Parameters<typeof promote.mutateAsync>[0] = { acknowledgeWithoutSkillSignoff: needsAck, expectedCurrentRungId: current?.id ?? null };
     if (date && date !== todayLocal()) body.effectiveDate = date;
     if (note.trim()) body.note = note.trim();
     if (starting.kind === 'TOTAL' && startingTotal !== '') body.startingClasses = Number(startingTotal);
@@ -222,7 +225,13 @@ export function DowngradeModal({
     e.preventDefault();
     setError(null);
     try {
-      await downgrade.mutateAsync({ acknowledgeWithoutSkillSignoff: false, targetRungId: targetId, reason: reason.trim(), ...(note.trim() ? { note: note.trim() } : {}) });
+      await downgrade.mutateAsync({
+        acknowledgeWithoutSkillSignoff: false,
+        targetRungId: targetId,
+        expectedCurrentRungId: current.id,
+        reason: reason.trim(),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      });
       onClose();
     } catch (err) {
       setError(errorText(err));
@@ -450,6 +459,82 @@ export function LogClassModal({
         <p className="ultm8-field__hint">Adds one class. It always counts, even past the weekly limit, and is recorded on the history.</p>
         <Actions submitting={logClass.isPending} label="Log class" onClose={onClose} />
       </form>
+    </Modal>
+  );
+}
+
+/** Edit a history entry's note (Decision 192). Every change is kept; the
+ * School owner can read them. */
+export function EditNoteModal({
+  studentId,
+  schoolId,
+  eventId,
+  summary,
+  note,
+  onClose,
+}: {
+  studentId: string;
+  schoolId: string;
+  eventId: string;
+  summary: string;
+  note: string | null;
+  onClose: () => void;
+}) {
+  const change = useChangeHistoryNote(studentId, schoolId);
+  const [text, setText] = useState(note ?? '');
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await change.mutateAsync({ eventId, note: text.trim() || null });
+      onClose();
+    } catch (err) {
+      setError(errorText(err));
+    }
+  }
+
+  return (
+    <Modal title="Edit note" onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        {error ? <ErrorBanner message={error} /> : null}
+        <p style={{ marginTop: 0 }}>{summary}</p>
+        <Field label="Note" htmlFor="history-note" hint="Leave empty to remove it. The change is recorded.">
+          <TextArea id="history-note" maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} />
+        </Field>
+        <Actions submitting={change.isPending} disabled={text.trim() === (note ?? '')} label="Save note" onClose={onClose} />
+      </form>
+    </Modal>
+  );
+}
+
+const CHANGE_LABEL = { EDITED: 'Edited', HIDDEN: 'Hidden from the student', SHOWN: 'Shown to the student again' } as const;
+
+/** Every change to an entry's note, oldest first (Decision 192). Owner only. */
+export function NoteLogModal({ studentId, schoolId, eventId, summary, onClose }: { studentId: string; schoolId: string; eventId: string; summary: string; onClose: () => void }) {
+  const log = useHistoryNoteLog(studentId, schoolId, eventId);
+  const items = log.data?.items ?? [];
+  return (
+    <Modal title="Note changes" onClose={onClose}>
+      <p style={{ marginTop: 0 }}>{summary}</p>
+      {log.error ? <ErrorBanner message={errorText(log.error)} /> : null}
+      {!log.isLoading && items.length === 0 ? <p className="ultm8-field__hint">No changes yet.</p> : null}
+      <ol aria-label="Note changes" style={{ paddingLeft: 20 }}>
+        {items.map((c) => (
+          <li key={c.id} style={{ marginBottom: 8 }}>
+            <strong>{CHANGE_LABEL[c.change]}</strong> · {new Date(c.createdAt).toLocaleString()} · by {c.changedByName ?? 'Former staff'}
+            {c.change === 'EDITED' ? (
+              <div className="ultm8-field__hint">
+                From “{c.oldNote ?? '(no note)'}” to “{c.newNote ?? '(no note)'}”
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+      <Button type="button" onClick={onClose}>
+        Close
+      </Button>
     </Modal>
   );
 }

@@ -36,12 +36,17 @@ export function useRankHistory(studentId: string | null, schoolId: string | null
   });
 }
 
-/** Every grading write refreshes the whole panel: rank, readiness and history. */
+/** Every grading write refreshes the whole panel: rank, readiness and history,
+ * and the list of belts waiting to be verified. */
 function useGradingMutation<TVars>(studentId: string, fn: (vars: TVars) => Promise<unknown>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
+        queryClient.invalidateQueries({ queryKey: ['pending-verifications'] }),
+      ]),
   });
 }
 
@@ -91,6 +96,39 @@ export function useVoidEntry(studentId: string, schoolId: string) {
       }),
     ),
   );
+}
+
+/** Edit a history entry's note, or hide or show it (Decision 192). */
+export function useChangeHistoryNote(studentId: string, schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventId, ...body }: { eventId: string; note?: string | null; hidden?: boolean }) =>
+      unwrap(
+        apiClient.PATCH('/v1/students/{id}/rank-history/{eventId}/note', {
+          params: { path: { id: studentId, eventId }, query: { schoolId } },
+          body,
+        }),
+      ),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['student-grading', studentId] }),
+        queryClient.invalidateQueries({ queryKey: ['history-note-log', studentId] }),
+      ]),
+  });
+}
+
+/** Every change to one entry's note, for the School owner (Decision 192). */
+export function useHistoryNoteLog(studentId: string, schoolId: string, eventId: string | null) {
+  return useQuery({
+    queryKey: ['history-note-log', studentId, eventId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/students/{id}/rank-history/{eventId}/note-log', {
+          params: { path: { id: studentId, eventId: eventId! }, query: { schoolId } },
+        }),
+      ),
+    enabled: !!eventId,
+  });
 }
 
 export type GradingBoard = components['schemas']['GradingBoardResponseDto'];
@@ -216,4 +254,14 @@ export function useMyGrading(schoolId: string | null) {
   };
   const mayGradeStyle = (disciplineId: string) => isOwner || styleIds.has(disciplineId);
   return { isLoading: query.isLoading, error: query.error, isOwner, can, mayGradeStyle };
+}
+
+/** Belts waiting to be verified that this person may verify (Decisions 137,
+ * 189): every student's for the owner; their styles and branches for a coach. */
+export function usePendingVerifications(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['pending-verifications', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/rank-verifications', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
 }

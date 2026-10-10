@@ -53,6 +53,16 @@ export function useSetCanInviteCoaches(schoolId: string) {
   });
 }
 
+/** The caller's own invite rights (Decision 184): owner, or Branch Staff with
+ * "Can invite coaches" for their own branches. */
+export function useMyStaffPermission(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['staff-permissions', 'me', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/staff-permissions/me', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
 /** The invite link's page: works before sign-in. */
 export function useCoachInviteLink(token: string) {
   return useQuery({

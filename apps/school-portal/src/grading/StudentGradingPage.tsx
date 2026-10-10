@@ -16,13 +16,14 @@ import {
   type GradingToggle,
   type PromotionEvent,
   type StudentEligibility,
+  useChangeHistoryNote,
   useCycleSkill,
   useRankHistory,
   useSetBoardActive,
   useMyGrading,
   useStudentEligibility,
 } from './gradingQueries';
-import { DowngradeModal, GradeModal, LogClassModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
+import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
 
 type Lesson = { id: string; title: string; skillIds: string[] };
 
@@ -116,6 +117,7 @@ export function StudentGradingPage() {
             historyLoading={history.isLoading}
             performerName={performerName}
             can={(toggle) => my.can(discipline.id, toggle)}
+            isOwner={my.isOwner}
           />
         ))
       )}
@@ -124,7 +126,16 @@ export function StudentGradingPage() {
   );
 }
 
-type Dialog = 'grade' | 'downgrade' | 'date' | 'verify' | 'log-class' | { voidEventId: string; summary: string } | null;
+type Dialog =
+  | 'grade'
+  | 'downgrade'
+  | 'date'
+  | 'verify'
+  | 'log-class'
+  | { voidEventId: string; summary: string }
+  | { noteEventId: string; summary: string; note: string | null }
+  | { logEventId: string; summary: string }
+  | null;
 
 function DisciplineGradingCard({
   studentId,
@@ -136,6 +147,7 @@ function DisciplineGradingCard({
   historyLoading,
   performerName,
   can,
+  isOwner,
 }: {
   studentId: string;
   schoolId: string;
@@ -147,10 +159,15 @@ function DisciplineGradingCard({
   performerName: (userId: string | null | undefined) => string;
   /** What the caller may do in this style; actions they can't use are hidden. */
   can: (toggle: GradingToggle) => boolean;
+  isOwner: boolean;
 }) {
   const ranks = useRanks(discipline.id);
   const skills = useSkills(discipline.id);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const changeNote = useChangeHistoryNote(studentId, schoolId);
+  const [noteError, setNoteError] = useState<string | null>(null);
+  // Who may grade this student in this style may edit or hide notes (Decision 192).
+  const mayEditNotes = can('canPromote') || can('canDowngrade');
 
   const ladder = useMemo(() => flattenLadder(ranks.data?.items ?? []), [ranks.data]);
   const current = studentRank ? ladder.find((r) => r.id === studentRank.currentStripeId) ?? null : null;
@@ -245,6 +262,21 @@ function DisciplineGradingCard({
             rungName={rungName}
             performerName={performerName}
             onVoid={can('canVoidHistory') ? (e, summary) => setDialog({ voidEventId: e.id, summary }) : undefined}
+            onEditNote={mayEditNotes ? (e, summary) => setDialog({ noteEventId: e.id, summary, note: e.note ?? null }) : undefined}
+            onToggleHidden={
+              mayEditNotes
+                ? async (e) => {
+                    setNoteError(null);
+                    try {
+                      await changeNote.mutateAsync({ eventId: e.id, hidden: !e.noteHiddenAt });
+                    } catch (err) {
+                      setNoteError(err instanceof ApiError ? err.message : 'Could not change the note.');
+                    }
+                  }
+                : undefined
+            }
+            onNoteLog={isOwner ? (e, summary) => setDialog({ logEventId: e.id, summary }) : undefined}
+            noteError={noteError}
           />
         ) : null}
       </Card>
@@ -264,8 +296,14 @@ function DisciplineGradingCard({
       {dialog === 'verify' && current ? (
         <VerifyRankModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} onClose={() => setDialog(null)} />
       ) : null}
-      {dialog && typeof dialog === 'object' ? (
+      {dialog && typeof dialog === 'object' && 'voidEventId' in dialog ? (
         <VoidEntryModal studentId={studentId} schoolId={schoolId} eventId={dialog.voidEventId} summary={dialog.summary} onClose={() => setDialog(null)} />
+      ) : null}
+      {dialog && typeof dialog === 'object' && 'noteEventId' in dialog ? (
+        <EditNoteModal studentId={studentId} schoolId={schoolId} eventId={dialog.noteEventId} summary={dialog.summary} note={dialog.note} onClose={() => setDialog(null)} />
+      ) : null}
+      {dialog && typeof dialog === 'object' && 'logEventId' in dialog ? (
+        <NoteLogModal studentId={studentId} schoolId={schoolId} eventId={dialog.logEventId} summary={dialog.summary} onClose={() => setDialog(null)} />
       ) : null}
     </section>
   );
@@ -468,6 +506,10 @@ function History({
   rungName,
   performerName,
   onVoid,
+  onEditNote,
+  onToggleHidden,
+  onNoteLog,
+  noteError,
 }: {
   entries: PromotionEvent[];
   loading: boolean;
@@ -475,10 +517,17 @@ function History({
   performerName: (userId: string | null | undefined) => string;
   /** Absent when the caller may not void history in this style. */
   onVoid?: (entry: PromotionEvent, summary: string) => void;
+  /** Absent when the caller may not edit or hide notes here (Decision 192). */
+  onEditNote?: (entry: PromotionEvent, summary: string) => void;
+  onToggleHidden?: (entry: PromotionEvent) => void;
+  /** The owner's view of every change to a note. */
+  onNoteLog?: (entry: PromotionEvent, summary: string) => void;
+  noteError?: string | null;
 }) {
   return (
     <div style={{ marginTop: 16 }}>
       <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>History</h3>
+      {noteError ? <ErrorBanner message={noteError} /> : null}
       {loading ? (
         <Spinner />
       ) : entries.length === 0 ? (
@@ -508,7 +557,32 @@ function History({
                 {e.acknowledgedWithoutSkillSignoff ? <div className="ultm8-field__hint">Graded without all skills signed off (acknowledged).</div> : null}
                 {e.reason ? <div>Reason: {e.reason}</div> : null}
                 {e.systemNote ? <div className="ultm8-field__hint">{e.systemNote}</div> : null}
-                {e.note ? <div>Note: {e.note}</div> : null}
+                {e.note ? (
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span>Note: {e.note}</span>
+                    {e.noteEditedAt ? <Badge>Edited {formatDay(e.noteEditedAt)}</Badge> : null}
+                    {e.noteHiddenAt ? <Badge variant="danger">Hidden from the student</Badge> : null}
+                  </div>
+                ) : null}
+                {!e.voidedAt && (onEditNote || onNoteLog) ? (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    {onEditNote ? (
+                      <Button variant="secondary" onClick={() => onEditNote(e, summary)} aria-label={`${e.note ? 'Edit' : 'Add'} note: ${summary}`}>
+                        {e.note ? 'Edit note' : 'Add note'}
+                      </Button>
+                    ) : null}
+                    {onToggleHidden && e.note ? (
+                      <Button variant="secondary" onClick={() => onToggleHidden(e)} aria-label={`${e.noteHiddenAt ? 'Show' : 'Hide'} note: ${summary}`}>
+                        {e.noteHiddenAt ? 'Show note to student' : 'Hide note from student'}
+                      </Button>
+                    ) : null}
+                    {onNoteLog && (e.note || e.noteEditedAt) ? (
+                      <Button variant="secondary" onClick={() => onNoteLog(e, summary)} aria-label={`Note changes: ${summary}`}>
+                        Note changes
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
                 {e.voidedAt ? (
                   <div className="ultm8-field__hint">
                     Voided {formatDay(e.voidedAt)} by {performerName(e.voidedById)}: {e.voidReason}

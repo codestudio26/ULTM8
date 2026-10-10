@@ -2,7 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Screen } from '../components/ui';
-import { useAuth, useIsGuardian } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import type { AppStackParamList } from './types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
@@ -18,12 +18,16 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
 export function HomeScreen({ navigation }: Props) {
   const { logout } = useAuth();
   const isGuardian = useIsGuardian();
+  const isCoach = !!useCoachSchoolId();
+  const isStudent = useEnrolledSchoolIds().length > 0;
 
   return (
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>ULTM8 Student</Text>
+      {isCoach ? <Button title="Coach dashboard" onPress={() => navigation.navigate('CoachDashboard')} /> : null}
       <Button title="Browse academies" onPress={() => navigation.navigate('Academies')} />
       <Button title="Check in" onPress={() => navigation.navigate('QrCheckIn')} />
+      {isStudent ? <Button title="My grading" onPress={() => navigation.navigate('MyGrading')} /> : null}
       <Button title="My bookings" onPress={() => navigation.navigate('MyBookings')} />
       <Button title="My memberships" onPress={() => navigation.navigate('MyMemberships')} />
       <Button title="Waivers" onPress={() => navigation.navigate('Waivers')} />

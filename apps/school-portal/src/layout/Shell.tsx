@@ -1,23 +1,32 @@
 import React from 'react';
 import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 import { TopBar } from './TopBar';
+import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
 
-/** A coach who doesn't own the School sees their own screens (Decision 184). */
+/** A coach or Branch Staff member who doesn't own the School sees their own
+ * screens (Decision 184), and "Invite coaches" when they may (Decision 183). */
 const COACH_NAV = [
   { label: 'Dashboard', to: '/coach' },
   { label: 'Grading Board', to: '/grading' },
   { label: 'Notifications', to: '/notifications' },
 ];
+const INVITE_NAV = { label: 'Invite coaches', to: '/coach-invites' };
+/** Instructors choose their own belt per style (Decision 188). */
+const MY_BELTS_NAV = { label: 'My belts', to: '/my-belts' };
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { logout } = useAuth();
-  const isCoachOnly = !useOwnedSchoolId() && !!useCoachSchoolId();
+  const { logout, claims } = useAuth();
+  const coachSchoolId = useCoachSchoolId();
+  const isCoachOnly = !useOwnedSchoolId() && !!coachSchoolId;
+  const mayInvite = useMyStaffPermission(isCoachOnly ? coachSchoolId : null).data?.canInviteCoaches ?? false;
+  const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
   return (
     <AppShell
       brand="ULTM8 School Portal"
       header={<TopBar />}
-      navItems={isCoachOnly ? COACH_NAV : [
+      navItems={isCoachOnly ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]] : [
         { label: 'School', to: '/school' },
         { label: 'Branches', to: '/branches' },
         { label: 'Staff', to: '/staff' },
@@ -41,6 +50,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </Button>
       }
     >
+      <VerifyBeltsNotice />
       {children}
     </AppShell>
   );

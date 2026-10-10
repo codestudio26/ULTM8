@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { sessionStorageTokenStore, decodeJwtPayload } from '@ultm8/auth';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { markVerifyNoticeDue } from './verifyNoticeFlag';
 import type { JwtClaims } from './types';
 
 interface AuthContextValue {
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, passcode: string) => {
       const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
       applyToken(result.accessToken);
+      markVerifyNoticeDue();
     },
     [applyToken],
   );
@@ -92,13 +94,15 @@ export function useOwnedSchoolId(): string | null {
   return grant?.schoolId ?? null;
 }
 
-/** The School a coach works at (Decision 184): their first INSTRUCTOR grant's
- * School. A display hint only, like useOwnedSchoolId; the API re-checks. A
- * coach at several Schools sees the first one (no School switcher yet). */
+/** The School a coach or Branch Staff member works at (Decision 184; Branch
+ * Staff get the same screens, Phase 7): their first INSTRUCTOR or BRANCH_STAFF
+ * grant's School. A display hint only, like useOwnedSchoolId; the API
+ * re-checks. Someone at several Schools sees the first one (no School
+ * switcher yet). */
 export function useCoachSchoolId(): string | null {
   const { claims } = useAuth();
   if (!claims) return null;
-  return claims.grants.find((g) => g.role === 'INSTRUCTOR' && g.schoolId)?.schoolId ?? null;
+  return claims.grants.find((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId)?.schoolId ?? null;
 }
 
 /** The School the grading screens work in: the owner's, else the coach's. */

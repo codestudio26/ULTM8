@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -71,6 +71,14 @@ export class RanksController {
     return this.ranksService.updateDiscipline(user.sub, id, dto);
   }
 
+  @ApiNoContentResponse({ description: 'Deleted (Decision 198).' })
+  @ApiConflictResponse({ description: 'The style is in use: someone holds a rank in it, or classes, slots or lessons use it.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('disciplines/:id')
+  async deleteDiscipline(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.ranksService.deleteDiscipline(user.sub, id);
+  }
+
   // ---- Rank — confirmed route literal is "/styles/{id}/ranks" (Spec 55 §7);
   // "styles" and "disciplineId" refer to the same Discipline resource, see
   // domain-rules §16's own terminology table. ----
@@ -111,6 +119,14 @@ export class RanksController {
     return this.ranksService.updateRank(user.sub, id, dto);
   }
 
+  @ApiNoContentResponse({ description: 'Deleted (Decision 198).' })
+  @ApiConflictResponse({ description: 'Someone holds the belt, or it is in grading history.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('ranks/:id')
+  async deleteRank(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.ranksService.deleteRank(user.sub, id);
+  }
+
   // ---- Skill — nested under the same Discipline resource; no dedicated route
   // literal given in Spec 55's own §7 table beyond "PATCH /students/{id}/
   // skills/{skillId}" for sign-off cycling (GradingController) — CRUD itself is
@@ -132,5 +148,13 @@ export class RanksController {
   @Patch('skills/:id')
   updateSkill(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateSkillDto) {
     return this.ranksService.updateSkill(user.sub, id, dto);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted (Decision 198).' })
+  @ApiConflictResponse({ description: 'Students have been marked on the skill, or it is a lesson\'s only skill.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('skills/:id')
+  async deleteSkill(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.ranksService.deleteSkill(user.sub, id);
   }
 }

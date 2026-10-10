@@ -404,6 +404,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff-permissions/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CoachInvitesController_myStaffPermission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff-permissions": {
         parameters: {
             query?: never;
@@ -1454,7 +1470,7 @@ export interface paths {
         get: operations["RanksController_findOneDiscipline"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["RanksController_deleteDiscipline"];
         options?: never;
         head?: never;
         patch: operations["RanksController_updateDiscipline"];
@@ -1518,7 +1534,7 @@ export interface paths {
         get: operations["RanksController_findOneRank"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["RanksController_deleteRank"];
         options?: never;
         head?: never;
         patch: operations["RanksController_updateRank"];
@@ -1550,7 +1566,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["RanksController_deleteSkill"];
         options?: never;
         head?: never;
         patch: operations["RanksController_updateSkill"];
@@ -1588,6 +1604,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/grading": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_findGradingOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/rank-history": {
         parameters: {
             query?: never;
@@ -1614,6 +1646,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["GradingController_voidPromotionEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/rank-history/{eventId}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GradingController_changeHistoryNote"];
+        trace?: never;
+    };
+    "/v1/students/{id}/rank-history/{eventId}/note-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_findHistoryNoteLog"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1886,6 +1950,70 @@ export interface paths {
         get?: never;
         put: operations["GradingPermissionsController_setForUser"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorBeltsController_findMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts/me/{disciplineId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["InstructorBeltsController_declareMine"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorBeltsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts/{userId}/{disciplineId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorBeltsController_verify"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2318,10 +2446,90 @@ export interface paths {
         get: operations["CurriculumController_findOneLesson"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["CurriculumController_deleteLesson"];
         options?: never;
         head?: never;
         patch: operations["CurriculumController_updateLesson"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findCategories"];
+        put?: never;
+        post: operations["CurriculumController_createCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CurriculumController_renameCategory"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/categories/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CurriculumController_orderCategories"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/categories/{id}/lessons/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CurriculumController_orderCategoryLessons"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findLessonsForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/translations": {
@@ -2774,6 +2982,12 @@ export interface components {
             branchId: string | null;
             /** @description A new access token that includes the coach role. */
             accessToken: string;
+        };
+        MyStaffPermissionResponseDto: {
+            isOwner: boolean;
+            canInviteCoaches: boolean;
+            /** @description Branches they may invite to; empty for the owner (any branch) or when they can't invite. */
+            branchIds: string[];
         };
         StaffPermissionResponseDto: {
             userId: string;
@@ -3287,8 +3501,6 @@ export interface components {
             /** @description Branch to scope this profile to. Omit for a School-wide profile. */
             branchId?: string;
             photoUrl?: string;
-            /** @description Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system. */
-            beltRanking?: string;
             specializations?: string[];
             /** @description The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names. */
             specializationStyleIds?: string[];
@@ -3305,7 +3517,6 @@ export interface components {
             schoolId: string;
             branchId?: string | null;
             photoUrl?: string | null;
-            beltRanking?: string | null;
             specializations: string[];
             /** @description The School's styles this instructor specialises in (Decision 152). */
             specializationStyleIds: string[];
@@ -3336,8 +3547,6 @@ export interface components {
             /** @description Branch to scope this profile to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             photoUrl?: string | null;
-            /** @description Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system. */
-            beltRanking?: string | null;
             /** @description School-facing contact number, E.164 — distinct from this User's own login phone. Pass null to clear. */
             phone?: string | null;
             yearsOfExperience?: number | null;
@@ -3412,6 +3621,10 @@ export interface components {
             cancellationCharge?: number;
             /** @default false */
             termsWaiverRequired: boolean;
+            /** @description The School's styles this plan covers (Decision 195). */
+            disciplineIds?: string[];
+            /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
+            includesLessons?: boolean;
         };
         MembershipPlanResponseDto: {
             id: string;
@@ -3427,6 +3640,10 @@ export interface components {
             refundFeeDate?: string | null;
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
+            /** @description The styles this plan covers (Decision 195). */
+            disciplineIds: string[];
+            /** @description Whether a live membership on this plan can watch its styles' lessons (Decision 195). */
+            includesLessons: boolean;
             createdAt: string;
             updatedAt: string;
         };
@@ -3448,6 +3665,10 @@ export interface components {
             refundFeeDate?: string;
             /** @default false */
             termsWaiverRequired: boolean;
+            /** @description The School's styles this plan covers (Decision 195). */
+            disciplineIds?: string[];
+            /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
+            includesLessons?: boolean;
             /** @description One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear. */
             currency?: string | null;
             /** @description Computes each purchased Membership's expiry date at creation time. Pass null to clear. */
@@ -3617,15 +3838,12 @@ export interface components {
             tagColour?: string;
             /** @description Drawing only: silver/gold accent of the coral belts. */
             coralAccent?: string;
-            weeklyClassCountCap?: number;
             /**
              * @description Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold.
              * @default false
              */
             yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierInputDto"][];
-            /** @description Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements. */
-            requiredSkillIds?: string[];
         };
         StripeSegmentResponseDto: {
             count: number;
@@ -3668,11 +3886,8 @@ export interface components {
             secondaryColour?: string | null;
             tagColour?: string | null;
             coralAccent?: string | null;
-            weeklyClassCountCap?: number | null;
             yearsInRankFlag: boolean;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
-            /** @description Required Skill ids. */
-            requiredSkillIds: string[];
             createdAt: string;
             updatedAt: string;
         };
@@ -3709,10 +3924,7 @@ export interface components {
              */
             yearsInRankFlag: boolean;
             stripeTiers?: components["schemas"]["RankStripeTierInputDto"][];
-            /** @description Skill ids required at this Rank, alongside classes-required/time-in-rank/stripe requirements. */
-            requiredSkillIds?: string[];
             secondaryColour?: string | null;
-            weeklyClassCountCap?: number | null;
             tagColour?: string | null;
             coralAccent?: string | null;
         };
@@ -3841,6 +4053,44 @@ export interface components {
         StudentEligibilityListResponseDto: {
             items: components["schemas"]["StudentEligibilityResponseDto"][];
         };
+        GradingLadderRungDto: {
+            id: string;
+            /** @description The stripe's own name, e.g. "Blue Belt · 2 Stripes". */
+            name: string;
+            beltName: string;
+            primaryColour: string;
+            secondaryColour?: string | null;
+            /** @description Stripe colour. */
+            stripeColour: string;
+            stripeCount: number;
+            timeOnly: boolean;
+        };
+        GradingSkillDto: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            status: "NOT_STARTED" | "LEARNING" | "SIGNED_OFF";
+            /** @description Required for the next grade; false when optional (time-only stripes). */
+            required: boolean;
+        };
+        StudentGradingStyleDto: {
+            schoolId: string;
+            schoolName: string;
+            disciplineId: string;
+            disciplineName: string;
+            currentStripeId?: string | null;
+            /** Format: date-time */
+            dateOfCurrentRank: string;
+            /** @enum {string} */
+            verificationStatus: "VERIFIED" | "UNVERIFIED";
+            ladder: components["schemas"]["GradingLadderRungDto"][];
+            eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description The skills for the next grade. */
+            skills: components["schemas"]["GradingSkillDto"][];
+        };
+        StudentGradingOverviewResponseDto: {
+            items: components["schemas"]["StudentGradingStyleDto"][];
+        };
         PromotionEventResponseDto: {
             id: string;
             studentRankId: string;
@@ -3875,6 +4125,11 @@ export interface components {
             voidedAt: string | null;
             voidedById: string | null;
             voidReason: string | null;
+            /** @description When the note was last edited (Decision 192). */
+            noteEditedAt: string | null;
+            noteEditedById: string | null;
+            /** @description When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden. */
+            noteHiddenAt: string | null;
             /** @description When the entry was written (audit timestamp). */
             createdAt: string;
         };
@@ -3885,6 +4140,25 @@ export interface components {
         VoidPromotionEventDto: {
             /** @description Why this entry is being voided. Required. */
             reason: string;
+        };
+        ChangeHistoryNoteDto: {
+            note?: string | null;
+            /** @description true hides the note from the student and guardian; false shows it again. */
+            hidden?: boolean;
+        };
+        PromotionEventNoteLogEntryDto: {
+            id: string;
+            /** @enum {string} */
+            change: "EDITED" | "HIDDEN" | "SHOWN";
+            oldNote: string | null;
+            newNote: string | null;
+            changedById: string | null;
+            /** @description First name and surname of who made the change. */
+            changedByName: string | null;
+            createdAt: string;
+        };
+        PromotionEventNoteLogResponseDto: {
+            items: components["schemas"]["PromotionEventNoteLogEntryDto"][];
         };
         EditRankDateDto: {
             /**
@@ -3900,8 +4174,10 @@ export interface components {
             acknowledgeWithoutSkillSignoff: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
-            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award. */
+            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award. */
             targetRungId?: string;
+            /** @description The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185). */
+            expectedCurrentRungId?: string | null;
             /**
              * @description Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.
              * @example 2026-03-01
@@ -3919,8 +4195,10 @@ export interface components {
             acknowledgeWithoutSkillSignoff: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
-            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award. */
+            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award. */
             targetRungId?: string;
+            /** @description The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185). */
+            expectedCurrentRungId?: string | null;
             /**
              * @description Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.
              * @example 2026-03-01
@@ -3948,6 +4226,26 @@ export interface components {
             stripeTierId?: string;
             /** @description An optional note for the history. */
             note?: string;
+        };
+        PendingVerificationDto: {
+            studentRankId: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            currentRankId: string;
+            currentStripeId: string | null;
+            /** @enum {string} */
+            verificationStatus: "UNVERIFIED";
+            /**
+             * Format: date-time
+             * @description When the student declared it.
+             */
+            declaredAt: string;
+        };
+        PendingVerificationListResponseDto: {
+            items: components["schemas"]["PendingVerificationDto"][];
         };
         GradingBoardItemDto: {
             studentId: string;
@@ -4081,6 +4379,44 @@ export interface components {
             styles?: components["schemas"]["StylePermissionInputDto"][];
             /** @description Older form: styles with every toggle on. Use `styles` instead. */
             disciplineIds?: string[];
+        };
+        InstructorBeltResponseDto: {
+            id: string;
+            userId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            rankId: string;
+            stripeTierId: string;
+            /** @description The name of the belt and stripe, as the School typed it. */
+            beltName: string;
+            /** @enum {string} */
+            verificationStatus: "UNVERIFIED" | "VERIFIED";
+            /** Format: date-time */
+            declaredAt: string;
+            /** Format: date-time */
+            verifiedAt: string | null;
+        };
+        InstructorBeltListResponseDto: {
+            items: components["schemas"]["InstructorBeltResponseDto"][];
+        };
+        DeclareInstructorBeltDto: {
+            rankId: string;
+            stripeTierId: string;
+        };
+        SchoolInstructorDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+        };
+        SchoolInstructorBeltsResponseDto: {
+            items: components["schemas"]["InstructorBeltResponseDto"][];
+            instructors: components["schemas"]["SchoolInstructorDto"][];
+        };
+        VerifyInstructorBeltDto: {
+            rankId?: string;
+            stripeTierId?: string;
         };
         CreateWaiverDto: {
             title: string;
@@ -4340,8 +4676,8 @@ export interface components {
         };
         CreateLessonDto: {
             title: string;
-            /** @description Plain field only — Spec 55's own "Belongs to a Category" relationship note has no corresponding Category entity anywhere else in the document; treated as a doc inconsistency, not built as a relation. */
-            category?: string;
+            /** @description One of this School's lesson categories (Decisions 128.15, 191); the lesson goes to the end of it. */
+            categoryId?: string;
             durationSeconds?: number;
             description?: string;
             /** @enum {string} */
@@ -4350,13 +4686,23 @@ export interface components {
             instructorId?: string;
             /** @description Skill ids this Lesson teaches — must all belong to this School. */
             skillIds: string[];
+            /** @description Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only. */
+            free?: boolean;
         };
         LessonResponseDto: {
             id: string;
             schoolId: string;
             instructorId?: string | null;
             title: string;
+            /** @description Its category's name, or null. */
             category?: string | null;
+            categoryId?: string | null;
+            /** @description Its place within its category, from 0. */
+            order: number;
+            /** @description Watchable by every student and guardian at the School (Decision 190). */
+            free: boolean;
+            /** @description The caller may not watch it (Decision 195): no membership of theirs covers it. Its description and video are left out. */
+            locked: boolean;
             durationSeconds?: number | null;
             description?: string | null;
             /** @enum {string} */
@@ -4375,13 +4721,34 @@ export interface components {
         };
         UpdateLessonDto: {
             title?: string;
-            category?: string;
+            /** @description Move it to another of this School's categories (to the end), or null for none. */
+            categoryId?: string | null;
             durationSeconds?: number;
             description?: string;
             /** @enum {string} */
             format?: "PRERECORDED" | "LIVE";
             instructorId?: string;
             skillIds?: string[];
+            /** @description Watchable by every student and guardian at the School, membership or not (Decision 190). School owner only. */
+            free?: boolean;
+        };
+        LessonCategoryResponseDto: {
+            id: string;
+            schoolId: string;
+            name: string;
+            order: number;
+        };
+        LessonCategoryListResponseDto: {
+            items: components["schemas"]["LessonCategoryResponseDto"][];
+        };
+        LessonCategoryNameDto: {
+            name: string;
+        };
+        OrderLessonCategoriesDto: {
+            categoryIds: string[];
+        };
+        OrderCategoryLessonsDto: {
+            lessonIds: string[];
         };
         TranslationResponseDto: {
             id: string;
@@ -5188,6 +5555,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcceptCoachInviteResponseDto"];
+                };
+            };
+        };
+    };
+    CoachInvitesController_myStaffPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyStaffPermissionResponseDto"];
                 };
             };
         };
@@ -6952,6 +7340,33 @@ export interface operations {
             };
         };
     };
+    RanksController_deleteDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The style is in use: someone holds a rank in it, or classes, slots or lessons use it. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     RanksController_updateDiscipline: {
         parameters: {
             query?: never;
@@ -7091,6 +7506,33 @@ export interface operations {
             };
         };
     };
+    RanksController_deleteRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Someone holds the belt, or it is in grading history. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     RanksController_updateRank: {
         parameters: {
             query?: never;
@@ -7159,6 +7601,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SkillResponseDto"];
                 };
+            };
+        };
+    };
+    RanksController_deleteSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Students have been marked on the skill, or it is a lesson's only skill. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -7233,6 +7702,27 @@ export interface operations {
             };
         };
     };
+    GradingController_findGradingOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentGradingOverviewResponseDto"];
+                };
+            };
+        };
+    };
     GradingController_findRankHistoryForStudent: {
         parameters: {
             query: {
@@ -7285,6 +7775,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_changeHistoryNote: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeHistoryNoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_findHistoryNoteLog: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventNoteLogResponseDto"];
                 };
             };
         };
@@ -7477,7 +8019,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                    "application/json": components["schemas"]["PendingVerificationListResponseDto"];
                 };
             };
         };
@@ -7700,6 +8242,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GradingPermissionListResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_findMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltListResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_declareMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareInstructorBeltDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolInstructorBeltsResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyInstructorBeltDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltResponseDto"];
                 };
             };
         };
@@ -8430,6 +9067,26 @@ export interface operations {
             };
         };
     };
+    CurriculumController_deleteLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). Owner only. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     CurriculumController_updateLesson: {
         parameters: {
             query?: never;
@@ -8451,6 +9108,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LessonResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonCategoryNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_renameCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonCategoryNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_orderCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderLessonCategoriesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonCategoryListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_orderCategoryLessons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderCategoryLessonsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findLessonsForStudent: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonListResponseDto"];
                 };
             };
         };

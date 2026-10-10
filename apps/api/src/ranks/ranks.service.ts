@@ -16,9 +16,16 @@ import { UpdateSkillDto } from './dto/update-skill.dto';
 
 /** The one include every Rank read uses, so shapeRankResponse() always gets
  * stripe tiers (in ladder order) with their per-rung required Skills. */
+/** Ladder edits of one style take turns (stress round, finding 4): two edits
+ * listing the same belts or rungs in different orders otherwise lock rows in
+ * opposite orders and deadlock. Locks the style's row until the transaction
+ * ends. */
+async function lockLadder(tx: Pick<Prisma.TransactionClient, '$queryRaw'>, disciplineId: string): Promise<void> {
+  await tx.$queryRaw`SELECT "id" FROM "Discipline" WHERE "id" = ${disciplineId} FOR UPDATE`;
+}
+
 const RANK_INCLUDE = {
   stripeTiers: { orderBy: { order: 'asc' as const }, include: { requiredSkills: true } },
-  requiredSkills: true,
 } satisfies Prisma.RankInclude;
 
 /**
@@ -148,11 +155,9 @@ export class RanksService {
       }
       const ranks = await tx.rank.findMany({ where: { disciplineId }, include: RANK_INCLUDE, orderBy: { order: 'asc' } });
       for (const rank of ranks) {
-        const { id: _id, disciplineId: _d, createdAt: _c, updatedAt: _u, stripeTiers, requiredSkills, ...rankFields } = rank;
+        const { id: _id, disciplineId: _d, createdAt: _c, updatedAt: _u, stripeTiers, ...rankFields } = rank;
         const rankId = randomUUID();
         await tx.rank.create({ data: { ...rankFields, id: rankId, disciplineId: copy.id } });
-        const beltSkills = requiredSkills.map((r) => skillMap.get(r.skillId)).filter((id): id is string => !!id);
-        if (beltSkills.length) await tx.rankRequiredSkill.createMany({ data: beltSkills.map((skillId) => ({ rankId, skillId })) });
         for (const tier of stripeTiers) {
           const { id: _tid, rankId: _r, createdAt: _tc, updatedAt: _tu, requiredSkills: tierSkills, ...tierFields } = tier;
           const tierId = randomUUID();
@@ -199,8 +204,55 @@ export class RanksService {
     );
   }
 
-  // No delete method — same reasoning ClassesModule/School/Branch/MembershipPlan/
-  // Waiver already established (general tenant offboarding is [UNRESOLVED]).
+  /** Deleting (Decision 198): only what has never been used. A style goes only
+   * when nobody has ever held a rank in it, no instructor has declared a belt
+   * in it, and no class, timetable slot or lesson uses it; its belts, skills
+   * and coach permissions go with it, and it is taken off membership plans and
+   * instructors' styles. Owner only. */
+  async deleteDiscipline(callerId: string, disciplineId: string): Promise<void> {
+    const discipline = await this.findOneDiscipline(callerId, disciplineId);
+    await this.tenantAuth.assertSchoolOwner(callerId, discipline.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, discipline.schoolId);
+    await this.assertRanksEnabled(callerId, discipline.schoolId);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, disciplineId);
+      const students = await tx.studentRank.count({ where: { disciplineId } });
+      if (students > 0) throw new ConflictException(`${students} student${students === 1 ? ' has' : 's have'} a rank in this style, so it can't be deleted.`);
+      const instructors = await tx.instructorBelt.count({ where: { disciplineId } });
+      if (instructors > 0) throw new ConflictException('An instructor has declared their belt in this style, so it can\'t be deleted.');
+      const styleJson = JSON.stringify([{ disciplineId }]);
+      const [{ n: classes }] = await tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM "Class" WHERE "schoolId" = ${discipline.schoolId} AND "styles" @> ${styleJson}::jsonb`;
+      const [{ n: slots }] = await tx.$queryRaw<Array<{ n: number }>>`SELECT count(*)::int AS n FROM "TimetableSlot" WHERE "schoolId" = ${discipline.schoolId} AND "styles" @> ${styleJson}::jsonb`;
+      if (classes + slots > 0) throw new ConflictException('Classes or timetable slots use this style. Change or remove them first.');
+      const skills = await tx.skill.findMany({ where: { disciplineId }, select: { id: true } });
+      const skillIds = skills.map((sk) => sk.id);
+      const lessons = await tx.lessonSkill.count({ where: { skillId: { in: skillIds } } });
+      if (lessons > 0) throw new ConflictException('Lessons use this style\'s skills. Change or delete those lessons first.');
+
+      await tx.gradingPermission.deleteMany({ where: { disciplineId } });
+      await tx.rankStripeTierRequiredSkill.deleteMany({ where: { skillId: { in: skillIds } } });
+      await tx.skill.deleteMany({ where: { disciplineId } });
+      const belts = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
+      await tx.rankStripeTier.deleteMany({ where: { rankId: { in: belts.map((b) => b.id) } } });
+      await tx.rank.deleteMany({ where: { disciplineId } });
+      // Taken off the plans and instructors that listed it (an unticked box).
+      const plans = await tx.membershipPlan.findMany({ where: { schoolId: discipline.schoolId, disciplineIds: { has: disciplineId } }, select: { id: true, disciplineIds: true } });
+      for (const plan of plans) {
+        await tx.membershipPlan.update({ where: { id: plan.id }, data: { disciplineIds: plan.disciplineIds.filter((d) => d !== disciplineId) } });
+      }
+      const instructorRows = await tx.instructor.findMany({
+        where: { schoolId: discipline.schoolId, specializationStyleIds: { has: disciplineId } },
+        select: { id: true, specializationStyleIds: true, specializations: true },
+      });
+      for (const ins of instructorRows) {
+        await tx.instructor.update({
+          where: { id: ins.id },
+          data: { specializationStyleIds: ins.specializationStyleIds.filter((d) => d !== disciplineId), specializations: ins.specializations.filter((n) => n !== discipline.name) },
+        });
+      }
+      await tx.discipline.delete({ where: { id: disciplineId } });
+    });
+  }
 
   // ---------------------------------------------------------------------------
   // Rank CRUD (with nested stripe tiers) — School Owner/Manager only.
@@ -214,7 +266,7 @@ export class RanksService {
     await this.assertRanksEnabled(callerId, discipline.schoolId);
     this.assertContiguousStripeTiers(dto.stripeTiers.map((t) => t.order));
     if (dto.stripeTiers.some((t) => t.id !== undefined)) {
-      throw new BadRequestException('A new belt has only new rungs; rung ids are for updating a belt.');
+      throw new BadRequestException('A new belt has only new stripes; stripe ids are for updating a belt.');
     }
 
     const existingOrders = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -222,9 +274,6 @@ export class RanksService {
     );
     this.assertContiguousOrder(existingOrders.map((r) => r.order), dto.order);
 
-    if (dto.requiredSkillIds?.length) {
-      await this.assertSkillsBelongToDiscipline(callerId, dto.requiredSkillIds, disciplineId);
-    }
     await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, disciplineId);
     const rankName = dto.name ?? `Belt ${dto.order + 1}`;
     const tierData = dto.stripeTiers.map((tier) => this.tierFields(tier, rankName));
@@ -249,7 +298,6 @@ export class RanksService {
           secondaryColour: dto.secondaryColour,
           tagColour: dto.tagColour,
           coralAccent: dto.coralAccent,
-          weeklyClassCountCap: dto.weeklyClassCountCap,
           yearsInRankFlag: dto.yearsInRankFlag ?? false,
         },
       });
@@ -263,11 +311,6 @@ export class RanksService {
             data: tier.requiredSkillIds.map((skillId) => ({ stripeTierId: tierId, skillId })),
           });
         }
-      }
-      if (dto.requiredSkillIds?.length) {
-        await tx.rankRequiredSkill.createMany({
-          data: dto.requiredSkillIds.map((skillId) => ({ rankId, skillId })),
-        });
       }
       // FOUND ON REVIEW: `rank` here is only the bare row from the
       // `tx.rank.create()` call above — no `stripeTiers`/`requiredSkillIds`
@@ -317,8 +360,8 @@ export class RanksService {
     // UpdateRankDto's PartialType re-adds @IsOptional(), which lets `null`
     // past validation; refused here so it is a 400, not a 500 (found on
     // independent review, PR 2).
-    if (dto.name === null || dto.requiredSkillIds === null || dto.stripeTiers === null) {
-      throw new BadRequestException('name, requiredSkillIds and stripeTiers cannot be null; omit them to leave them unchanged.');
+    if (dto.name === null || dto.stripeTiers === null) {
+      throw new BadRequestException('name and stripeTiers cannot be null; omit them to leave them unchanged.');
     }
 
     if (dto.order !== undefined) {
@@ -330,9 +373,6 @@ export class RanksService {
     if (dto.stripeTiers) {
       this.assertContiguousStripeTiers(dto.stripeTiers.map((t) => t.order));
     }
-    if (dto.requiredSkillIds?.length) {
-      await this.assertSkillsBelongToDiscipline(callerId, dto.requiredSkillIds, existing.disciplineId);
-    }
     const rankName = dto.name ?? existing.name;
     if (dto.stripeTiers) {
       await this.assertTierSkillsBelongToDiscipline(callerId, dto.stripeTiers, existing.disciplineId);
@@ -342,6 +382,7 @@ export class RanksService {
     // call (already one transaction), not a nested tx.$transaction — the same
     // fix applies here.
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, existing.disciplineId);
       const rank = await tx.rank.update({
         where: { id: rankId },
         data: {
@@ -351,7 +392,6 @@ export class RanksService {
           secondaryColour: dto.secondaryColour,
           tagColour: dto.tagColour,
           coralAccent: dto.coralAccent,
-          weeklyClassCountCap: dto.weeklyClassCountCap,
           yearsInRankFlag: dto.yearsInRankFlag,
         },
       });
@@ -384,10 +424,10 @@ export class RanksService {
         if (byId) {
           const sentIds = dto.stripeTiers.filter((t) => t.id !== undefined).map((t) => t.id as string);
           if (new Set(sentIds).size !== sentIds.length) {
-            throw new BadRequestException('Each rung id can appear only once.');
+            throw new BadRequestException('Each stripe id can appear only once.');
           }
           if (sentIds.some((id) => !existingById.has(id))) {
-            throw new BadRequestException('A rung id is not a rung of this belt. Rungs can only be reordered within their own belt (Decision 180).');
+            throw new BadRequestException('A stripe id is not one of this belt\'s stripes. Stripes can only be reordered within their own belt (Decision 180).');
           }
         }
         const previousFor = (tier: (typeof dto.stripeTiers)[number]) =>
@@ -404,7 +444,7 @@ export class RanksService {
           });
           if (holders.length) {
             const names = holders.map((h) => `${h.student.firstName} ${h.student.surname}`.trim());
-            const rungs = [...new Set(holders.map((h) => existingById.get(h.currentStripeId as string)?.name ?? 'a rung'))];
+            const rungs = [...new Set(holders.map((h) => existingById.get(h.currentStripeId as string)?.name ?? 'a stripe'))];
             throw new ConflictException(
               `Students hold ${rungs.join(', ')}, so it can't be removed: ${names.join(', ')}. Move them to another rank first (Decision 152).`,
             );
@@ -436,7 +476,7 @@ export class RanksService {
             });
           }
           // Per-rung required Skills: replaced when sent, left alone when
-          // omitted (same convention as the belt-level requiredSkillIds below).
+          // omitted.
           if (tier.requiredSkillIds !== undefined) {
             await tx.rankStripeTierRequiredSkill.deleteMany({ where: { stripeTierId: tierId } });
             if (tier.requiredSkillIds.length) {
@@ -454,14 +494,6 @@ export class RanksService {
           if (t.name === RanksService.generatedTierName(existing.name, t.count)) {
             await tx.rankStripeTier.update({ where: { id: t.id }, data: { name: RanksService.generatedTierName(dto.name, t.count) } });
           }
-        }
-      }
-      if (dto.requiredSkillIds !== undefined) {
-        await tx.rankRequiredSkill.deleteMany({ where: { rankId } });
-        if (dto.requiredSkillIds.length) {
-          await tx.rankRequiredSkill.createMany({
-            data: dto.requiredSkillIds.map((skillId) => ({ rankId, skillId })),
-          });
         }
       }
       // FOUND ON REVIEW: same gap as createRank() — `rank` is only the bare
@@ -486,6 +518,7 @@ export class RanksService {
     await this.assertRanksEnabled(callerId, discipline.schoolId);
 
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, disciplineId);
       const ranks = await tx.rank.findMany({ where: { disciplineId }, select: { id: true } });
       const ids = new Set(ranks.map((r) => r.id));
       if (dto.rankIds.length !== ids.size || dto.rankIds.some((id) => !ids.has(id))) {
@@ -500,6 +533,36 @@ export class RanksService {
       }
       const full = await tx.rank.findMany({ where: { disciplineId }, include: RANK_INCLUDE, orderBy: { order: 'asc' } });
       return full.map((r) => this.shapeRankResponse(r));
+    });
+  }
+
+  /** Deleting a belt (Decision 198): only when nobody holds it or any of its
+   * stripes now, it isn't in anyone's grading history, and no instructor has
+   * declared it. The belts after it move up one place. Owner only. */
+  async deleteRank(callerId: string, rankId: string): Promise<void> {
+    const rank = await this.prismaApp.withTenantContext(callerId, (tx) => tx.rank.findUnique({ where: { id: rankId }, include: { stripeTiers: { select: { id: true } } } }));
+    if (!rank) throw new NotFoundException('Rank not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, rank.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, rank.schoolId);
+    await this.assertRanksEnabled(callerId, rank.schoolId);
+    const tierIds = rank.stripeTiers.map((t) => t.id);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, rank.disciplineId);
+      const holders = await tx.studentRank.count({ where: { OR: [{ currentRankId: rankId }, { currentStripeId: { in: tierIds } }] } });
+      if (holders > 0) throw new ConflictException(`${holders} student${holders === 1 ? ' holds' : 's hold'} this belt, so it can't be deleted.`);
+      const history = await tx.promotionEvent.count({
+        where: { OR: [{ fromRankId: rankId }, { toRankId: rankId }, { fromStripeTierId: { in: tierIds } }, { toStripeTierId: { in: tierIds } }] },
+      });
+      if (history > 0) throw new ConflictException('This belt is in students\' grading history, so it can\'t be deleted.');
+      const declared = await tx.instructorBelt.count({ where: { OR: [{ rankId }, { stripeTierId: { in: tierIds } }] } });
+      if (declared > 0) throw new ConflictException('An instructor has declared this belt, so it can\'t be deleted.');
+
+      await tx.rankStripeTier.deleteMany({ where: { rankId } });
+      await tx.rank.delete({ where: { id: rankId } });
+      // Close the gap: positions stay 0..N-1 (park first, they're unique per style).
+      const rest = await tx.rank.findMany({ where: { disciplineId: rank.disciplineId }, orderBy: { order: 'asc' }, select: { id: true } });
+      for (const [i, r] of rest.entries()) await tx.rank.update({ where: { id: r.id }, data: { order: -1 - i } });
+      for (const [i, r] of rest.entries()) await tx.rank.update({ where: { id: r.id }, data: { order: i } });
     });
   }
 
@@ -524,11 +587,6 @@ export class RanksService {
     }
     return { items: [...byRung.entries()].map(([rungId, students]) => ({ rungId, students })) };
   }
-
-  // No delete method — same reasoning as Discipline above, doubly so here:
-  // deleting a Rank Students currently hold is blocked at the DB level anyway
-  // (StudentRank.currentRankId is ON DELETE RESTRICT — see the migration's own
-  // comment).
 
   // ---------------------------------------------------------------------------
   // Skill CRUD — School Owner/Manager only.
@@ -570,6 +628,32 @@ export class RanksService {
     );
   }
 
+  /** Deleting a skill (Decision 198): only when no student has ever had it
+   * marked (Learning or Signed off, now or in the sign-off log). It comes off
+   * the stripes that required it and the lessons that list it, unless it is a
+   * lesson's only skill. Owner only. */
+  async deleteSkill(callerId: string, skillId: string): Promise<void> {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.skill.findUnique({ where: { id: skillId } }));
+    if (!existing) throw new NotFoundException('Skill not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    await this.assertRanksEnabled(callerId, existing.schoolId);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, existing.disciplineId);
+      const marked = (await tx.studentRankSkillStatus.count({ where: { skillId } })) + (await tx.skillSignOffLog.count({ where: { skillId } }));
+      if (marked > 0) throw new ConflictException('Students have been marked on this skill, so it can\'t be deleted.');
+      const links = await tx.lessonSkill.findMany({ where: { skillId }, select: { lessonId: true } });
+      for (const { lessonId } of links) {
+        if ((await tx.lessonSkill.count({ where: { lessonId } })) === 1) {
+          throw new ConflictException('A lesson has this as its only skill. Give that lesson another skill, or delete it, first.');
+        }
+      }
+      await tx.lessonSkill.deleteMany({ where: { skillId } });
+      await tx.rankStripeTierRequiredSkill.deleteMany({ where: { skillId } });
+      await tx.skill.delete({ where: { id: skillId } });
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Shared response shaping
   // ---------------------------------------------------------------------------
@@ -597,10 +681,9 @@ export class RanksService {
   private shapeRankResponse(
     rank: Prisma.RankGetPayload<{ include: typeof RANK_INCLUDE }>,
   ) {
-    const { requiredSkills, stripeTiers, ...rest } = rank;
+    const { stripeTiers, ...rest } = rank;
     return {
       ...rest,
-      requiredSkillIds: requiredSkills.map((s) => s.skillId),
       stripeTiers: stripeTiers.map(({ requiredSkills: tierSkills, ...tier }) => ({
         ...tier,
         requiredSkillIds: tierSkills.map((s) => s.skillId),

@@ -153,3 +153,121 @@ export class StudentEligibilityListResponseDto {
   @ApiProperty({ type: [StudentEligibilityResponseDto] })
   items!: StudentEligibilityResponseDto[];
 }
+
+/** A self-declared belt waiting to be verified (Decisions 137, 189). */
+export class PendingVerificationDto {
+  @ApiProperty()
+  studentRankId!: string;
+
+  @ApiProperty()
+  studentId!: string;
+
+  @ApiProperty()
+  firstName!: string;
+
+  @ApiProperty()
+  surname!: string;
+
+  @ApiProperty()
+  disciplineId!: string;
+
+  @ApiProperty()
+  disciplineName!: string;
+
+  @ApiProperty()
+  currentRankId!: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  currentStripeId!: string | null;
+
+  @ApiProperty({ enum: ['UNVERIFIED'] })
+  verificationStatus!: 'UNVERIFIED';
+
+  @ApiProperty({ description: 'When the student declared it.' })
+  declaredAt!: Date;
+}
+
+export class PendingVerificationListResponseDto {
+  @ApiProperty({ type: [PendingVerificationDto] })
+  items!: PendingVerificationDto[];
+}
+
+/** One stripe of a style's ladder, in ladder order, for the student app. */
+export class GradingLadderRungDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ description: 'The stripe\'s own name, e.g. "Blue Belt · 2 Stripes".' })
+  name!: string;
+
+  @ApiProperty()
+  beltName!: string;
+
+  @ApiProperty()
+  primaryColour!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  secondaryColour?: string | null;
+
+  @ApiProperty({ description: 'Stripe colour.' })
+  stripeColour!: string;
+
+  @ApiProperty()
+  stripeCount!: number;
+
+  @ApiProperty()
+  timeOnly!: boolean;
+}
+
+export class GradingSkillDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty({ enum: ['NOT_STARTED', 'LEARNING', 'SIGNED_OFF'] })
+  status!: string;
+
+  @ApiProperty({ description: 'Required for the next grade; false when optional (time-only stripes).' })
+  required!: boolean;
+}
+
+/** A student's grading in one style at one School: what the student app shows
+ * read-only to the student and their guardians (Decisions 132, 142, 155, 161). */
+export class StudentGradingStyleDto {
+  @ApiProperty()
+  schoolId!: string;
+
+  @ApiProperty()
+  schoolName!: string;
+
+  @ApiProperty()
+  disciplineId!: string;
+
+  @ApiProperty()
+  disciplineName!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  currentStripeId?: string | null;
+
+  @ApiProperty()
+  dateOfCurrentRank!: Date;
+
+  @ApiProperty({ enum: ['VERIFIED', 'UNVERIFIED'] })
+  verificationStatus!: 'VERIFIED' | 'UNVERIFIED';
+
+  @ApiProperty({ type: [GradingLadderRungDto] })
+  ladder!: GradingLadderRungDto[];
+
+  @ApiProperty({ type: EligibilityResponseDto })
+  eligibility!: EligibilityResponseDto;
+
+  @ApiProperty({ type: [GradingSkillDto], description: 'The skills for the next grade.' })
+  skills!: GradingSkillDto[];
+}
+
+export class StudentGradingOverviewResponseDto {
+  @ApiProperty({ type: [StudentGradingStyleDto] })
+  items!: StudentGradingStyleDto[];
+}

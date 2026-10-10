@@ -22,7 +22,7 @@ test('start a style from an IBJJF template', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Start from a template' });
   await expect(dialog.getByRole('button', { name: 'Create style' })).toBeDisabled();
   await dialog.getByRole('radio', { name: /IBJJF Adult & Kid \(White & Red Stripes\)/ }).check();
-  await expect(dialog.getByText('139 rungs')).toBeVisible();
+  await expect(dialog.getByText('139 grades (each belt and each stripe)')).toBeVisible();
   await dialog.getByLabel('Style name').fill('Kids BJJ');
   await dialog.getByRole('button', { name: 'Create style' }).click();
 
@@ -43,7 +43,7 @@ test('duplicate a style: ladder and skills, no students', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Duplicate' }).click();
 
   await expect(page.getByRole('heading', { name: 'BJJ (Copy)' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Armbar' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Armbar', exact: true })).toBeVisible();
 
   const copy = await db.discipline.findFirstOrThrow({ where: { schoolId: s.schoolId, name: 'BJJ (Copy)' } });
   expect(await db.rankStripeTier.count({ where: { rank: { disciplineId: copy.id } } })).toBe(

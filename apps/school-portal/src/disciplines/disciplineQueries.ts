@@ -50,6 +50,15 @@ export function useUpdateDiscipline(schoolId: string, disciplineId: string) {
   });
 }
 
+/** Deletes a style nobody has used (Decision 198). */
+export function useDeleteDiscipline(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (disciplineId: string) => unwrap(apiClient.DELETE('/v1/disciplines/{id}', { params: { path: { id: disciplineId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['disciplines', schoolId] }),
+  });
+}
+
 export type StyleTemplate = components['schemas']['StyleTemplateDto'];
 export type StyleTemplateId = components['schemas']['CreateStyleFromTemplateDto']['templateId'];
 

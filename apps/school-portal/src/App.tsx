@@ -2,6 +2,8 @@ import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useCoachSchoolId, useOwnedSchoolId } from './auth/AuthContext';
 import { CoachDashboardPage } from './coach/CoachDashboardPage';
+import { CoachInvitesPage } from './coach/CoachInvitesPage';
+import { MyBeltsPage } from './coach/MyBeltsPage';
 import { RequireAuth } from './auth/RequireAuth';
 import { LoginPage } from './auth/LoginPage';
 import { RegisterPage } from './auth/RegisterPage';
@@ -66,6 +68,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <CoachDashboardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/my-belts"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MyBeltsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/coach-invites"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CoachInvitesPage />
             </Shell>
           </RequireAuth>
         }
