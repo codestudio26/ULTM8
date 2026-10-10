@@ -142,12 +142,15 @@ describeIfDb('Grading hardening (Phase 7, Decision 185)', () => {
   it('"N inactive hidden" counts every inactive student in the style, whatever the search', async () => {
     await student('Quinn', 4, { active: false, surname: 'Silva' });
     await student('Rae', 5, { active: false, surname: 'Other' });
-    await student('Sol', 11, { active: false, surname: 'Top' }); // the top rung: not on the board, still inactive
     const board = (search?: string) =>
       http()
         .get(`/v1/schools/${school.id}/grading-board?disciplineId=${bjj.id}&activeOnly=true${search ? `&search=${search}` : ''}`)
         .set('Authorization', `Bearer ${ownerToken}`);
+    const before = await board();
+    // The top stripe: never on the board, but counted when inactive (Decision 194).
+    await student('Sol', 11, { active: false, surname: 'Top' });
     const all = await board();
+    expect(all.body.hiddenInactive).toBe(before.body.hiddenInactive + 1);
     const searched = await board('silva');
     expect(all.status).toBe(200);
     expect(all.body.hiddenInactive).toBeGreaterThanOrEqual(3);

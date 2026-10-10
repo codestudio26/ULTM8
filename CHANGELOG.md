@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff given a role again start fresh** (Decision 193). Removing someone's
+  last Instructor or Branch Staff role at a School now clears their grading
+  permissions there, and removing their Branch Staff role clears "Can invite
+  coaches", so if they're added again later the owner grants what applies now.
+  Losing one branch while they still coach at another keeps their grading
+  permissions. The board's "inactive hidden" count already includes students on
+  the top stripe (Decision 194); a test now pins it.
 - **Grading hardening, performance** (Phase 7 stress round). The Grading
   Board for coaches and staff loads in one query instead of one per student:
   a coach with 769 students went from 7.4 s to 0.1 s, and a coach at a
