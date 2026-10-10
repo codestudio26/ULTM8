@@ -7,6 +7,7 @@ import { nullsToUndefined } from '../lib/nullableFields';
 import {
   useCreateLesson,
   useCreateLessonCategory,
+  useDeleteLesson,
   useLessonCategories,
   useLessons,
   useOrderCategoryLessons,
@@ -18,6 +19,7 @@ import {
   type LessonCategory,
   type LessonResponse,
 } from './curriculumQueries';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { LessonFormModal } from './LessonFormModal';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
@@ -39,6 +41,8 @@ export function CurriculumPage() {
   const orderLessons = useOrderCategoryLessons(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<LessonResponse | null>(null);
+  const [deleting, setDeleting] = useState<LessonResponse | null>(null);
+  const deleteLesson = useDeleteLesson(schoolId ?? '');
   const [renaming, setRenaming] = useState<LessonCategory | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
 
@@ -127,6 +131,9 @@ export function CurriculumPage() {
             <Button variant="secondary" onClick={() => setEditing(l)} aria-label={`Edit ${l.title}`}>
               Edit
             </Button>
+            <Button variant="secondary" onClick={() => setDeleting(l)} aria-label={`Delete ${l.title}`}>
+              Delete
+            </Button>
           </div>
         );
       },
@@ -187,6 +194,15 @@ export function CurriculumPage() {
             setCreating(false);
           }}
           onClose={() => setCreating(false)}
+        />
+      ) : null}
+
+      {deleting ? (
+        <ConfirmDeleteModal
+          title={`Delete ${deleting.title}?`}
+          description="The lesson is removed for everyone. Students' grading isn't affected."
+          onConfirm={() => deleteLesson.mutateAsync(deleting.id)}
+          onClose={() => setDeleting(null)}
         />
       ) : null}
 

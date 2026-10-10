@@ -37,6 +37,15 @@ export function useUpdateRank(disciplineId: string, rankId: string) {
   });
 }
 
+/** Deletes a belt nobody holds or has held (Decision 198). */
+export function useDeleteRank(disciplineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rankId: string) => unwrap(apiClient.DELETE('/v1/ranks/{id}', { params: { path: { id: rankId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ranks', disciplineId] }),
+  });
+}
+
 /** Who holds each rung of a style (Decision 152), for the editor's
  * confirmations. Owner only. */
 export function useRungHolders(disciplineId: string | null) {

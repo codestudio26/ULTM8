@@ -37,6 +37,15 @@ export function useUpdateLesson(schoolId: string, lessonId: string) {
   });
 }
 
+/** Deletes a lesson (Decision 198). Owner only. */
+export function useDeleteLesson(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (lessonId: string) => unwrap(apiClient.DELETE('/v1/lessons/{id}', { params: { path: { id: lessonId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
+  });
+}
+
 export type LessonCategory = components['schemas']['LessonCategoryResponseDto'];
 
 /** The School's lesson categories, in order (Decisions 128.15, 191). */

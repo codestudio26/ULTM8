@@ -171,6 +171,19 @@ export class CurriculumService {
     return new Set(memberships.filter((m) => m.membershipPlan.includesLessons && isMembershipLive(m, now)).flatMap((m) => m.membershipPlan.disciplineIds));
   }
 
+  /** Deleting a lesson (Decision 198): nothing in a student's record points to
+   * a lesson, so the owner can always delete one. */
+  async deleteLesson(callerId: string, lessonId: string): Promise<void> {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
+    if (!existing) throw new NotFoundException('Lesson not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await tx.lessonSkill.deleteMany({ where: { lessonId } });
+      await tx.lesson.delete({ where: { id: lessonId } });
+    });
+  }
+
   async updateLesson(callerId: string, lessonId: string, dto: UpdateLessonDto) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
     if (!existing) {

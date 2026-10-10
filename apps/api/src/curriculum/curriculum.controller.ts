@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -55,6 +55,13 @@ export class CurriculumController {
   @Get('lessons/:id')
   findOneLesson(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.curriculumService.findOneLesson(user.sub, id);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted (Decision 198). Owner only.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('lessons/:id')
+  async deleteLesson(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.curriculumService.deleteLesson(user.sub, id);
   }
 
   @ApiOkResponse({ type: LessonResponseDto })

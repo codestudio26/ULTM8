@@ -21,7 +21,7 @@ afterwards.
 | D3 — "N inactive hidden" changed with the search | Fixed in #132; students on the top stripe counted too, in #139 (Decision 194). |
 | Q1 — edit a history note later | Decision 192, built in #145. |
 | Q2 — lesson categories with order | Decision 191, built in #144. |
-| Q2 — deleting a style, belt, skill or lesson | **Open.** Not asked yet; nothing built. Deleting a stripe students hold stays blocked (Decision 152). |
+| Q2 — deleting a style, belt, skill or lesson | Decision 198: only what has never been used. Built with this decision. |
 | Q3 — default promote/downgrade target | Decision 185.1: one stripe, built in #132. |
 | E1, E2 — throttling and shared Redis in the test run | Test environment only. The CI test samples the sweep to stay well under the throttle. |
 

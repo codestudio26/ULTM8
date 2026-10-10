@@ -1470,7 +1470,7 @@ export interface paths {
         get: operations["RanksController_findOneDiscipline"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["RanksController_deleteDiscipline"];
         options?: never;
         head?: never;
         patch: operations["RanksController_updateDiscipline"];
@@ -1534,7 +1534,7 @@ export interface paths {
         get: operations["RanksController_findOneRank"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["RanksController_deleteRank"];
         options?: never;
         head?: never;
         patch: operations["RanksController_updateRank"];
@@ -1566,7 +1566,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["RanksController_deleteSkill"];
         options?: never;
         head?: never;
         patch: operations["RanksController_updateSkill"];
@@ -2446,7 +2446,7 @@ export interface paths {
         get: operations["CurriculumController_findOneLesson"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["CurriculumController_deleteLesson"];
         options?: never;
         head?: never;
         patch: operations["CurriculumController_updateLesson"];
@@ -7349,6 +7349,33 @@ export interface operations {
             };
         };
     };
+    RanksController_deleteDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The style is in use: someone holds a rank in it, or classes, slots or lessons use it. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     RanksController_updateDiscipline: {
         parameters: {
             query?: never;
@@ -7488,6 +7515,33 @@ export interface operations {
             };
         };
     };
+    RanksController_deleteRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Someone holds the belt, or it is in grading history. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     RanksController_updateRank: {
         parameters: {
             query?: never;
@@ -7556,6 +7610,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SkillResponseDto"];
                 };
+            };
+        };
+    };
+    RanksController_deleteSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Students have been marked on the skill, or it is a lesson's only skill. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -8992,6 +9073,26 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LessonResponseDto"];
                 };
+            };
+        };
+    };
+    CurriculumController_deleteLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted (Decision 198). Owner only. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
