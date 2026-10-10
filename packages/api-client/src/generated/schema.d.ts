@@ -1076,6 +1076,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/classes/{id}/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AttendanceController_getRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/attendance-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_instructorCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/attendance-scan/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AttendanceController_undoInstructorCheckIn"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -2213,6 +2261,19 @@ export interface components {
         };
         ScanAttendanceDto: {
             bookingId: string;
+        };
+        ClassRosterEntryResponseDto: {
+            bookingId: string;
+            studentId: string;
+            studentName: string;
+            status: string;
+            checkedInById?: string | null;
+        };
+        ClassRosterResponseDto: {
+            items: components["schemas"]["ClassRosterEntryResponseDto"][];
+        };
+        InstructorCheckInDto: {
+            studentId: string;
         };
         AcademySummaryDto: {
             id: string;
@@ -4425,6 +4486,74 @@ export interface operations {
                 "application/json": components["schemas"]["ScanAttendanceDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_getRoster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassRosterResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_instructorCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstructorCheckInDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_undoInstructorCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

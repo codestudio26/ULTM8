@@ -1,21 +1,36 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
+import { InstructorCheckInDto } from './dto/instructor-check-in.dto';
+import { ClassRosterResponseDto } from './dto/class-roster-response.dto';
+
+// Same shape PrismaAppService#withTenantContext hands its callback — matches
+// BookingsService's own alias for the identical need.
+type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
 /**
- * Phase 13 scope only: self-service QR check-in (`POST /attendance/scan`). See
- * the Phase 13 kickoff prompt for the full scoping rationale. Deliberately NOT
- * built: the QR code's own generation/rotation mechanism (SKILL.md §12,
- * unresolved as a screen), the Instructor roll-call scan (`POST /classes/{id}/
- * attendance-scan`, Decision 71, mechanics undesigned), and any Staff/
- * accessibility check-in override for a Student blocked by withdrawn camera
- * consent — SKILL.md §14 names an "Instructor/Staff-scoped booking-override
- * endpoint" as that fallback, but the only endpoint matching that name built so
- * far (`PATCH /bookings/{id}/override`, Phase 11) is explicitly scoped to
- * amending an existing rank-gate override's justification text, never
- * `Booking.status` — extending it (or building a new one) needs its own
- * confirmation, not assumed here.
+ * Phase 13 scope: self-service QR check-in (`POST /attendance/scan`). See the
+ * Phase 13 kickoff prompt for the full scoping rationale.
+ *
+ * Phase 17 scope (added after Phase 13): the Instructor roll-call check-in
+ * (`POST /classes/{id}/attendance-scan`, `GET /classes/{id}/roster`, `DELETE
+ * /classes/{id}/attendance-scan/{studentId}`) — Decision 71's named concept,
+ * resolved with the product owner to be a plain per-Student roster tap, not a
+ * literal QR scan (the endpoint keeps its spec-given name regardless). This
+ * also closes the accessibility/no-alternative gap SKILL.md §14 describes:
+ * since it needs no Student camera or device at all, a Student whose
+ * camera-tier consent is withdrawn now has a real path to being checked in,
+ * where previously none of the endpoints matching that description actually
+ * touched `Booking.status` (see this file's git history for the full
+ * before/after).
+ *
+ * Deliberately NOT built: the QR code's own generation/rotation mechanism
+ * (SKILL.md §12, unresolved as a screen — apps/school-portal's CheckInPage owns
+ * that), and the camera-tier-consent check this roster path doesn't need (see
+ * instructorCheckIn's own comment for why).
  *
  * No dedicated Attendance entity — confirmed as intentional (SKILL.md §11): a
  * successful scan marks the matching Booking Completed, and that Completed
@@ -34,6 +49,7 @@ export class AttendanceService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaJobs: PrismaJobsService,
+    private readonly tenantAuth: TenantAuthorizationService,
   ) {}
 
   async scan(callerId: string, dto: ScanAttendanceDto) {
@@ -95,33 +111,170 @@ export class AttendanceService {
         );
       }
 
-      // StudentRank increment — reuses the SAME Class.activities <->
-      // Discipline.name bridging heuristic Decision 90 already established for
-      // the rank gate (Phase 11), applied here for a new purpose (Decision 93).
-      // Two DIFFERENT cases both silently increment nothing, deliberately: a
-      // Class whose activities don't match any Discipline (the same "nothing to
-      // bridge against" fallback Decision 90 established), AND a Discipline
-      // that DOES match but where this Student has no StudentRank row for it
-      // yet. The second case is a genuine, intentional divergence from
-      // BookingsService.assertRankEligible, which THROWS in that situation —
-      // attendance check-in is confirmed to happen regardless of ranking
-      // (§11's own text never conditions it on holding a Rank), unlike booking
-      // eligibility, which is explicitly rank-gated. Not an oversight; flagged
-      // explicitly since the two call sites otherwise look identical.
-      if (booking.class.activities.length > 0) {
-        const disciplines = await tx.discipline.findMany({
-          where: { schoolId: booking.schoolId, name: { in: booking.class.activities } },
-          select: { id: true },
-        });
-        for (const discipline of disciplines) {
-          await tx.studentRank.updateMany({
-            where: { studentId: callerId, disciplineId: discipline.id },
-            data: { classesAttendedTowardCheckpoint: { increment: 1 } },
-          });
-        }
-      }
+      await this.adjustRankProgress(tx, callerId, booking.schoolId, booking.class.activities, 1);
 
       return tx.booking.findUniqueOrThrow({ where: { id: dto.bookingId }, include: { attendees: true } });
     });
+  }
+
+  /** GET /classes/{id}/roster — Staff-only. Every Booking a Student could
+   * plausibly need checking into/out of for this Class: UPCOMING (not yet
+   * checked in), COMPLETED (already checked in, self-service or roster), and
+   * NO_SHOW (the background sweep already ran before the Instructor got to
+   * roll call — still correctable from here, see instructorCheckIn's own
+   * comment). CANCELLED is excluded: that Student isn't attending, nothing to
+   * roll-call. `studentName` is resolved via the same broad "shared School"
+   * User-visibility RLS every other Staff-facing name lookup in this codebase
+   * already relies on (user_self_or_shared_school) — no new access needed. */
+  async getClassRoster(callerId: string, classId: string): Promise<ClassRosterResponseDto> {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId);
+
+    const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findMany({
+        where: { classId, status: { in: ['UPCOMING', 'COMPLETED', 'NO_SHOW'] } },
+        include: { student: { select: { firstName: true, surname: true } } },
+        orderBy: { id: 'asc' },
+      }),
+    );
+
+    return {
+      items: bookings.map((b) => ({
+        bookingId: b.id,
+        studentId: b.studentId,
+        studentName: `${b.student.firstName} ${b.student.surname}`,
+        status: b.status,
+        checkedInById: b.checkedInById,
+      })),
+    };
+  }
+
+  /** POST /classes/{id}/attendance-scan — Staff-only. See this file's own
+   * header comment for why this is a roster tap, not a literal scan, and why
+   * it closes the accessibility-fallback gap. No camera-tier consent check
+   * (unlike self-service `scan()` above): that check exists to stop a
+   * consent-withdrawn Student's OWN camera/device from being used for
+   * self-service check-in — it has nothing to say about Staff marking
+   * attendance by eye, which needs no Student camera or device at all. Runs
+   * the actual write under the target Student's own tenant context (same
+   * established "Staff acts, target Student's RLS governs the write"
+   * precedent BookingsService.bookClass's override path already uses) — the
+   * broad Staff-read policy on Booking is SELECT-only, so Staff's own tenant
+   * context can see this row (getClassRoster above) but can't update it. */
+  async instructorCheckIn(callerId: string, classId: string, dto: InstructorCheckInDto) {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId);
+    this.assertWithinGraceWindow(cls.endDate);
+
+    return this.prismaApp.withTenantContext(dto.studentId, async (tx) => {
+      const booking = await tx.booking.findFirst({ where: { classId, studentId: dto.studentId } });
+      if (!booking) {
+        throw new NotFoundException('This Student has no Booking for this Class.');
+      }
+      if (booking.status === 'CANCELLED') {
+        throw new BadRequestException('This Booking was Cancelled — nothing to check in.');
+      }
+
+      // Same optimistic-concurrency shape as self-service scan() — UPCOMING or
+      // NO_SHOW (the sweep beat the Instructor to it) both mean "not yet
+      // confirmed present," and roll-call is the authoritative correction for
+      // either. Already-COMPLETED isn't in the where-clause at all: re-tapping
+      // an already-checked-in Student is a silent no-op here, not an error —
+      // the roster UI's own toggle state already prevents a normal double-tap,
+      // this is just defense against a stale/duplicate request.
+      const result = await tx.booking.updateMany({
+        where: { id: booking.id, status: { in: ['UPCOMING', 'NO_SHOW'] } },
+        data: { status: 'COMPLETED', checkedInById: callerId },
+      });
+      if (result.count === 0) {
+        return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
+      }
+
+      await this.adjustRankProgress(tx, dto.studentId, cls.schoolId, cls.activities, 1);
+
+      return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
+    });
+  }
+
+  /** DELETE /classes/{id}/attendance-scan/{studentId} — Staff-only. Undoes a
+   * mis-tap on the roster. Deliberately scoped to ONLY a Booking this exact
+   * mechanism checked in (`checkedInById` set) — reverting a genuine
+   * self-service check-in via this Staff-facing endpoint would be a much
+   * bigger, unrequested capability than "fix my own roll-call mistake," so
+   * it's left out of scope rather than silently allowed. */
+  async undoInstructorCheckIn(callerId: string, classId: string, studentId: string) {
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls) {
+      throw new NotFoundException('Class not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId);
+    this.assertWithinGraceWindow(cls.endDate);
+
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const booking = await tx.booking.findFirst({ where: { classId, studentId } });
+      if (!booking) {
+        throw new NotFoundException('This Student has no Booking for this Class.');
+      }
+
+      const result = await tx.booking.updateMany({
+        where: { id: booking.id, status: 'COMPLETED', checkedInById: { not: null } },
+        data: { status: 'UPCOMING', checkedInById: null },
+      });
+      if (result.count === 0) {
+        throw new ConflictException('This Booking was not checked in via the roster, or is no longer Completed — nothing to undo.');
+      }
+
+      await this.adjustRankProgress(tx, studentId, cls.schoolId, cls.activities, -1);
+
+      return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
+    });
+  }
+
+  /** Same-day grace window (product decision, Phase 17): roll-call can
+   * complete any time up to 24h after the Class's own end — forgiving for a
+   * busy Instructor without allowing backdating to a different day.
+   * Timezone-agnostic by design rather than reaching for Branch.timezone,
+   * which is optional and frequently null (a School-wide Class may have no
+   * Branch at all) — "within 24h of class end" approximates "the same day"
+   * closely enough for this purpose without depending on data that often
+   * isn't there. */
+  private assertWithinGraceWindow(classEndDate: Date): void {
+    const graceDeadline = new Date(classEndDate.getTime() + 24 * 60 * 60 * 1000);
+    if (new Date() > graceDeadline) {
+      throw new BadRequestException('The roll-call window for this Class has closed (same-day only).');
+    }
+  }
+
+  /** Shared by self-service scan() and the Instructor roster path — same
+   * Class.activities <-> Discipline.name bridging heuristic Decision 90
+   * established for the rank gate (Phase 11), reused here for attendance
+   * (Decision 93). `delta` is 1 for a check-in, -1 to reverse one on undo.
+   * Two DIFFERENT cases both silently adjust nothing, deliberately: a Class
+   * whose activities don't match any Discipline (the same "nothing to bridge
+   * against" fallback Decision 90 established), AND a Discipline that DOES
+   * match but where this Student has no StudentRank row for it yet. The
+   * second case is a genuine, intentional divergence from
+   * BookingsService.assertRankEligible, which THROWS in that situation —
+   * attendance check-in is confirmed to happen regardless of ranking (§11's
+   * own text never conditions it on holding a Rank), unlike booking
+   * eligibility, which is explicitly rank-gated. */
+  private async adjustRankProgress(tx: TenantTx, studentId: string, schoolId: string, classActivities: string[], delta: 1 | -1): Promise<void> {
+    if (classActivities.length === 0) return;
+    const disciplines = await tx.discipline.findMany({
+      where: { schoolId, name: { in: classActivities } },
+      select: { id: true },
+    });
+    for (const discipline of disciplines) {
+      await tx.studentRank.updateMany({
+        where: { studentId, disciplineId: discipline.id },
+        data: { classesAttendedTowardCheckpoint: { increment: delta } },
+      });
+    }
   }
 }
