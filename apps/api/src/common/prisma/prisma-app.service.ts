@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { RequestContext } from '../request-context';
 
@@ -19,7 +19,7 @@ import { RequestContext } from '../request-context';
  * Swagger) even when no Postgres instance is reachable, rather than crashing startup.
  */
 @Injectable()
-export class PrismaAppService extends PrismaClient {
+export class PrismaAppService extends PrismaClient implements OnModuleDestroy {
   private readonly logger = new Logger(PrismaAppService.name);
 
   constructor() {
@@ -141,6 +141,13 @@ export class PrismaAppService extends PrismaClient {
       };
       return fn(tx, setContext);
     });
+  }
+
+  /** Close this client's connection pool when the app shuts down (app.close(),
+   * SIGTERM), so a restarted process or a test suite that starts the app
+   * repeatedly doesn't leave connections open until the process exits. */
+  async onModuleDestroy(): Promise<void> {
+    await this.$disconnect();
   }
 }
 

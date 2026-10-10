@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — database connections closed on shutdown.** The five Prisma
+  services now disconnect when the app shuts down (`onModuleDestroy`), so a
+  restarted process or a test run that starts the app many times no longer
+  leaves connection pools open. The full e2e run had reached Postgres's
+  100-connection limit; it now peaks at about 27.
 - **api — grading Phase 3b: Grading Board** (Decisions 128, 136, 152, 168,
   174, 176, 177). `GET /schools/{id}/grading-board?disciplineId=` lists every
   student with a next rank in a style, highest progress first, with readiness,

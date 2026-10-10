@@ -10714,7 +10714,7 @@
           "boardActiveOverride": {
             "type": "boolean",
             "nullable": true,
-            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 175)."
+            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176)."
           },
           "verificationStatus": {
             "type": "string",
@@ -10924,7 +10924,7 @@
           "boardActiveOverride": {
             "type": "boolean",
             "nullable": true,
-            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 175)."
+            "description": "Grading Board Active/Inactive switch for this style; null follows membership (Decisions 152, 176)."
           },
           "verificationStatus": {
             "type": "string",
