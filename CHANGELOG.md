@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Belts and stripes can be reordered by dragging** (Decision 152.2). Each
+  belt in the ladder, and each stripe line in the belt editor, has a drag
+  handle; dropping it on another row moves it there. The ↑/↓ buttons stay for
+  the keyboard, and saving asks for the same confirmation naming the students
+  affected.
 - **Joining a School from the app, with a home branch and a current belt**
   (Decisions 137, 147, 209). A School's public page now lists its branch
   names, name only, so a student can choose a home branch before joining.

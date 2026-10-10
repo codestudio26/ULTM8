@@ -5,6 +5,7 @@ import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import type { SkillResponse } from '../skills/skillQueries';
 import { BeltChip } from '../grading/BeltChip';
 import { BeltEditorModal, type BeltValues } from './BeltEditorModal';
+import { moveItem, useDragReorder } from './dragReorder';
 import { type RankResponse, useCreateRank, useDeleteRank, useReorderRanks, useRungHolders, useUpdateRank } from './rankQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 
@@ -14,7 +15,7 @@ type Holder = { studentId: string; firstName: string; surname: string };
 
 /**
  * The style's ladder (roadmap Phase 4, item 1; Decisions 152, 180): belts in
- * order, each with its rungs. Belts are reordered with ↑/↓ and saved after a
+ * order, each with its rungs. Belts are reordered by dragging or with ↑/↓ and saved after a
  * confirmation that lists the students on the belts that move; their rung
  * stays the same, only its place in the ladder changes. Add and edit open the
  * belt editor. Owner only, like every ladder edit.
@@ -41,6 +42,8 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
   const shown = order ? order.map((id) => saved.find((r) => r.id === id)).filter((r): r is RankResponse => !!r) : saved;
   const changed = !!order && order.some((id, i) => saved[i]?.id !== id);
   const holdersOfBelt = (rank: RankResponse) => rank.stripeTiers.flatMap((t) => holders.get(t.id) ?? []);
+
+  const drag = useDragReorder((from, to) => setOrder(moveItem(order ?? saved.map((r) => r.id), from, to)));
 
   function move(i: number, delta: number) {
     const ids = (order ?? saved.map((r) => r.id)).slice();
@@ -104,8 +107,14 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
             const tiers = [...rank.stripeTiers].sort((a, b) => a.order - b.order);
             const onBelt = holdersOfBelt(rank).length;
             return (
-              <li key={rank.id} aria-label={`${i + 1}. ${rank.name}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+              <li
+                key={rank.id}
+                aria-label={`${i + 1}. ${rank.name}`}
+                {...drag.targetProps(i)}
+                style={{ border: `1px solid ${drag.over === i ? 'var(--fill-accent)' : 'var(--border)'}`, borderRadius: 8, padding: 10 }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span {...drag.handleProps(i, rank.name)}>⠿</span>
                   <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
                   {tiers[0] ? <BeltChip rung={{ id: tiers[0].id, rankId: rank.id, rank, tier: tiers[0], index: 0, name: tiers[0].name }} /> : null}
                   <strong style={{ flex: 1, minWidth: 120 }}>{rank.name}</strong>

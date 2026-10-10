@@ -3,6 +3,7 @@ import { Badge, Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextFi
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import type { SkillResponse } from '../skills/skillQueries';
+import { moveItem, useDragReorder } from './dragReorder';
 import type { RankResponse, RankStripeTierInput } from './rankQueries';
 
 type Holder = { studentId: string; firstName: string; surname: string };
@@ -183,6 +184,8 @@ export function BeltEditorModal({
       return next;
     });
 
+  const drag = useDragReorder((from, to) => setRungs((rs) => moveItem(rs, from, to)));
+
   /** Students on rungs whose position in this belt changes (Decision 152). */
   function affectedByMove(): Holder[] {
     const out: Holder[] = [];
@@ -287,8 +290,14 @@ export function BeltEditorModal({
             const label = r.name.trim() || generatedName(name || 'Rank', total(r.segments));
             const open = openKey === r.key;
             return (
-              <li key={r.key} aria-label={`Stripe line ${i + 1}: ${label}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+              <li
+                key={r.key}
+                aria-label={`Stripe line ${i + 1}: ${label}`}
+                {...drag.targetProps(i)}
+                style={{ border: `1px solid ${drag.over === i ? 'var(--fill-accent)' : 'var(--border)'}`, borderRadius: 8, padding: 10 }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span {...drag.handleProps(i, label)}>⠿</span>
                   <strong style={{ flex: 1, minWidth: 140 }}>
                     {i + 1}. {label}
                   </strong>
