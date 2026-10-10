@@ -127,7 +127,7 @@ export function LessonFormModal({
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
               { value: '', label: 'None' },
-              ...instructors.map((i) => ({ value: i.userId, label: i.beltRanking ? `${i.userId} (${i.beltRanking})` : i.userId })),
+              ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() || i.userId })),
             ]}
           />
         </Field>
