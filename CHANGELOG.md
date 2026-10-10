@@ -26,6 +26,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (the owner assigns it, Decision 148); a sent invite's email, branch and
   token can't be changed, only its outcome; coaches at a School without
   branches see current students only (migration `20261026000000`).
+- **Grading hardening, correctness** (Phase 7; Decision 185). From the
+  hardening round: a promote or downgrade with no target now moves one rung
+  (was a whole belt); a downgrade no longer notifies the student; grading
+  requests can carry the rung the grader saw and are refused (409) if the
+  student moved since, which the portal always sends and bulk promote uses,
+  so two coaches can't award the same stripe twice and a batch can't undo a
+  downgrade made meanwhile; only the School's own students can be graded
+  (404 otherwise); rank history is newest first by grading date; the board's
+  "N inactive hidden" ignores the search; belt reorders and edits at the same
+  time no longer deadlock (409 instead of 500 if they clash); bad ids and
+  starting classes over 10,000 are a 400. `packages/api-client` regenerated.
 - **Coach dashboard on the web portal** (Decision 184). A coach who signs in
   lands on **Coach dashboard**: the styles they grade in, with how many
   students are ready to grade or getting there; their weekly classes and
