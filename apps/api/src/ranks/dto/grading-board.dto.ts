@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsString, MaxLength, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayNotEmpty, ArrayUnique, IsArray, IsBoolean, IsEnum, IsISO8601, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
 import { EligibilityResponseDto } from './student-rank-response.dto';
 
 export const BOARD_COLUMNS = ['JUST_STARTING', 'GETTING_THERE', 'READY_TO_GRADE'] as const;
@@ -77,4 +77,74 @@ export class GradingBoardResponseDto {
 
   @ApiProperty({ description: 'Students left out by activeOnly.' })
   hiddenInactive!: number;
+}
+
+/** Bulk promote (Decision 130): each student moves up one rung, on one date. */
+export class BulkPromoteDto {
+  @ApiProperty()
+  @IsUUID()
+  disciplineId!: string;
+
+  @ApiProperty({ type: [String], description: 'Up to 200 students (Spec 55).', maxItems: 200 })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(200)
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
+  studentIds!: string[];
+
+  @ApiPropertyOptional({ description: 'One grading date for the whole batch, YYYY-MM-DD; it must suit every student (Decision 128, item 8). Default today.', example: '2026-03-01' })
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  @MaxLength(10)
+  effectiveDate?: string;
+
+  @ApiPropertyOptional({ description: 'A note for every student\'s history entry, e.g. "Spring Grading Day".' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'The flagged students ("Needs a look": skills not signed off or days short) the coach acknowledges with one tick (Decision 130). Every flagged student must be here or removed from the batch.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @IsUUID('all', { each: true })
+  acknowledgedStudentIds?: string[];
+
+  @ApiPropertyOptional({ description: 'Check only: return what would happen, change nothing.' })
+  @IsOptional()
+  @IsBoolean()
+  dryRun?: boolean;
+}
+
+export class BulkPromoteStudentDto {
+  @ApiProperty()
+  studentId!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  fromRungId?: string | null;
+
+  @ApiPropertyOptional()
+  toRungId?: string;
+
+  @ApiProperty({ type: [String], description: 'Why this student needs a look, or why they can\'t be promoted.' })
+  reasons!: string[];
+
+  @ApiPropertyOptional({ description: 'Set on a promoted student: their history entry.' })
+  promotionEventId?: string;
+}
+
+export class BulkPromoteResponseDto {
+  @ApiProperty({ type: [BulkPromoteStudentDto], description: 'Nothing missing (dry run), or promoted.' })
+  ready!: BulkPromoteStudentDto[];
+
+  @ApiProperty({ type: [BulkPromoteStudentDto], description: 'Dry run: promoted only with the acknowledgement. After a real run: empty (they are in `ready`).' })
+  needsAcknowledgement!: BulkPromoteStudentDto[];
+
+  @ApiProperty({ type: [BulkPromoteStudentDto], description: 'Skipped: no next rank, blocked by the style\'s "skills required" switch, not yours to grade, or changed at the same time.' })
+  cannotPromote!: BulkPromoteStudentDto[];
 }
