@@ -65,12 +65,6 @@ export class CreateInstructorDto {
   @IsUrl()
   photoUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system.' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  beltRanking?: string;
-
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()

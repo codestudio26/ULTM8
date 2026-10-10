@@ -65,7 +65,6 @@ export class InstructorsService {
           schoolId,
           branchId: dto.branchId,
           photoUrl: dto.photoUrl,
-          beltRanking: dto.beltRanking,
           specializations: specs?.specializations ?? [],
           specializationStyleIds: specs?.specializationStyleIds ?? [],
           phone: dto.phone,
@@ -185,7 +184,6 @@ export class InstructorsService {
         data: {
           branchId: dto.branchId,
           photoUrl: dto.photoUrl,
-          beltRanking: dto.beltRanking,
           specializations: specs?.specializations,
           specializationStyleIds: specs?.specializationStyleIds,
           phone: dto.phone,
