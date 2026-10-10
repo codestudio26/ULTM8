@@ -3900,8 +3900,10 @@ export interface components {
             acknowledgeWithoutSkillSignoff: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
-            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award. */
+            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award. */
             targetRungId?: string;
+            /** @description The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185). */
+            expectedCurrentRungId?: string | null;
             /**
              * @description Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.
              * @example 2026-03-01
@@ -3919,8 +3921,10 @@ export interface components {
             acknowledgeWithoutSkillSignoff: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
-            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next belt's first rung. Downgrade: any lower rung; default the previous belt's first rung. Not used by stripe award. */
+            /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award. */
             targetRungId?: string;
+            /** @description The rung (stripe tier id) the student is on as the grader sees it, or null for no rank yet. When sent, the change is refused (409) if the student has moved since, so two coaches can't both grade the same step (Decision 185). */
+            expectedCurrentRungId?: string | null;
             /**
              * @description Back-dated grading date, YYYY-MM-DD in the student's local time: not in the future, not before the current rank date (Decision 128, item 8). Default today. Promote and stripe award only.
              * @example 2026-03-01
