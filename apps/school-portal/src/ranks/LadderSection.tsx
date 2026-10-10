@@ -194,9 +194,6 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
               secondaryColour: values.secondaryColour ?? undefined,
               tagColour: values.tagColour ?? undefined,
               order: saved.length,
-              // The old belt-level "years in rank" flag; nothing uses it now
-              // that each rung has "time in rank only" (Decision 128, item 3).
-              yearsInRankFlag: values.stripeTiers.some((t) => t.timeOnly),
             });
             setAdding(false);
           }}
@@ -231,7 +228,7 @@ function EditBelt({
       holders={holders}
       submitting={update.isPending}
       onSubmit={async (values) => {
-        await update.mutateAsync({ ...values, yearsInRankFlag: rank.yearsInRankFlag });
+        await update.mutateAsync(values);
         onClose();
       }}
       onClose={onClose}
