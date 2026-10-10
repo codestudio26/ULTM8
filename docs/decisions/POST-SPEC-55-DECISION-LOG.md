@@ -2131,3 +2131,13 @@ Both are read-only (`FOR SELECT`) and scoped to the caller's own active grant, a
 5. **The background job may read grading data.** These checks run as the background-job role (`ultm8_jobs`), which until now could not read grading tables, and guardian links are readable only by the guardian. With Gus's approval, that role gets **read-only** access to student ranks and skill sign-offs, the ladder (ranks, rungs, rung skills), disciplines, home branches, grading permissions and guardian links, plus students' first name and surname. Its only write is `StudentRank.readyNotifiedAt`. Gus: *"Yes, read-only grants"*. Built in `20261022000000_grading_ready_notification`; the alternative (the job acting as each user) was declined.
 
 Delivery is in-app and email, as for every notification until push is built (Decision 95).
+
+---
+
+## Decision 179 — Grading portal screens are built in English first; translations come later, for more languages
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how the grading roadmap's Phase 4 exit criterion "translations for all 4 languages including Arabic RTL" applies while the portal has no translation support (Decision 146 already treats that as separate work).
+
+1. The grading screens in the School Portal (student grading panel, Grading Board, ladder editor, grading settings) are built **in English now**. Translation is its own piece of work afterwards. Gus: *"Ok"*.
+2. Translations will cover **more than the four languages** named so far, including Asian languages. Which languages, and how, is to be decided then. Gus: *"also the translations will be for more languages, like asian languages, but we will look into this after"*.
+3. Browser tests: each screen is tested in Chromium here (desktop and tablet widths, keyboard-only). Firefox and WebKit runs are left to an environment that has those browsers. Gus: *"ok"*.

@@ -4195,15 +4195,16 @@
           },
           {
             "name": "cursor",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "nextCursor from the previous page.",
             "schema": {
               "type": "string"
             }
           },
           {
             "name": "limit",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
               "type": "number"
