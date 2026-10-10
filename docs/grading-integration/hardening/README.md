@@ -53,5 +53,6 @@ afterwards.
 | 142, 155 — the student app shows progress, skills and history | Built: the app's **My grading** screen and `GET /students/{id}/grading`. |
 | 184 — the coach dashboard in the mobile app | Built in #150. |
 | 164 — belt-level skills, weekly cap and years flag still written by the API, ignored by grading | Decisions 199, 207: belt-level skills, weekly cap and years flag removed (the plain belt's rung keeps its own). |
+| 148.2 — students with no home branch were mixed into the owner's columns | Built: an owner-only **No branch** group above the columns, with **Assign** to give each a branch. |
 | IMPLEMENTED-UNTESTED rows (16) | Unchanged; each names the missing test. |
 | One pending invite per School, branch and email, not per person | Unchanged; behaves as built. |

@@ -256,6 +256,39 @@ describeIfDb('Grading Board (Phase 3b)', () => {
     expect((await write('carla', 'ben', 'board-active', {}, 'put')).status).toBe(400);
   });
 
+  it('a student with no home branch shows as "No branch" to the owner only, until the owner assigns one (Decision 148.2)', async () => {
+    const ida = await mkUser('ida');
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: ida.id, schoolId: school.id } });
+    await superuser.studentRank.create({
+      data: { id: randomUUID(), studentId: ida.id, disciplineId: bjj.id, schoolId: school.id, currentRankId: rung['white-0'].rankId, currentStripeId: rung['white-0'].id, classesAttendedTowardCheckpoint: 3 },
+    });
+    const flag = (res: request.Response, name: string) => res.body.items.find((i: { firstName: string }) => i.firstName === name)?.noHomeBranch;
+
+    let res = await board('owner');
+    expect(flag(res, 'ida')).toBe(true);
+    expect(flag(res, 'ana')).toBe(false);
+    expect(flag(res, 'cat')).toBe(false);
+    expect(names(await board('carla'))).not.toContain('ida');
+
+    const assign = await request(app.getHttpServer())
+      .put(`/v1/schools/${school.id}/students/${ida.id}/home-branch`)
+      .set('Authorization', `Bearer ${token.owner}`)
+      .send({ branchId: downtown.id });
+    expect(assign.status).toBe(200);
+    res = await board('owner');
+    expect(flag(res, 'ida')).toBe(false);
+    const carlaRes = await board('carla');
+    expect(names(carlaRes)).toContain('ida');
+    expect(flag(carlaRes, 'ida')).toBe(false);
+
+    // A coach can't assign one.
+    const byCoach = await request(app.getHttpServer())
+      .put(`/v1/schools/${school.id}/students/${ida.id}/home-branch`)
+      .set('Authorization', `Bearer ${token.carla}`)
+      .send({ branchId: riverside.id });
+    expect(byCoach.status).toBe(403);
+  });
+
   describe('the two read-only rules coaches need (Decision 168, approved for the board)', () => {
     it('a coach reads the home-branch rows of their own branches only, and cannot change them', async () => {
       const carla = await superuser.user.findFirstOrThrow({ where: { id: { in: userIds }, firstName: 'carla' } });

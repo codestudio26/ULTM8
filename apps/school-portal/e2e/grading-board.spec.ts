@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { randomUUID } from 'crypto';
 import { addStudent, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
@@ -69,6 +70,26 @@ test('dragging a card to another column asks to confirm first', async ({ page })
   await expect(dialog.getByLabel('Move to')).toHaveValue('JUST_STARTING');
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toBeVisible();
+});
+
+test('students with no home branch are in the owner\'s "No branch" group until given one (Decision 148.2)', async ({ page }) => {
+  const north = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'North' } });
+  await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'South' } });
+  for (const id of [s.student.id, ben.id]) {
+    await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: id, branchId: north.id } });
+  }
+  await page.goto('/grading');
+  const group = page.getByRole('region', { name: 'No branch' });
+  await expect(group.getByRole('link', { name: cat.name })).toBeVisible();
+  await expect(group.getByRole('link', { name: ben.name })).toHaveCount(0);
+  await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toHaveCount(0);
+
+  await group.getByLabel(`Home branch for ${cat.name}`).selectOption({ label: 'South' });
+  await group.getByRole('button', { name: `Assign ${cat.name} to this branch` }).click();
+  await expect(group).toBeHidden();
+  await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toBeVisible();
+  const home = await db.studentHomeBranch.findFirst({ where: { schoolId: s.schoolId, studentId: cat.id }, include: { branch: true } });
+  expect(home?.branch.name).toBe('South');
 });
 
 test('bulk promote: calling order, "Needs a look" acknowledgement, and the printable report', async ({ page }) => {

@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **"No branch" group on the Grading Board** (Decision 148.2). The owner
+  now sees students who have no home branch yet in their own group above the
+  columns (no branch coach sees them) and gives each one a branch there. Board
+  items carry `noHomeBranch` (owner only).
 - **Lesson access is also checked by the database** (Decision 208). A
   lesson's description, video and captions now live in their own table,
   which the database only lets staff, everyone at the School for a free
