@@ -1396,6 +1396,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/style-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RanksController_listTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/disciplines/from-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_createFromTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/disciplines/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_duplicateDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/disciplines/{id}": {
         parameters: {
             query?: never;
@@ -3493,6 +3541,22 @@ export interface components {
         DisciplineListResponseDto: {
             items: components["schemas"]["DisciplineResponseDto"][];
             nextCursor?: string | null;
+        };
+        StyleTemplateDto: {
+            id: string;
+            name: string;
+            description: string;
+            /** @description Number of rungs. */
+            rungs: number;
+        };
+        StyleTemplateListResponseDto: {
+            items: components["schemas"]["StyleTemplateDto"][];
+        };
+        CreateStyleFromTemplateDto: {
+            /** @enum {string} */
+            templateId: "ibjjf" | "ibjjf_kids_red" | "ibjjf_kids_yellow";
+            /** @description The style's name. Default: the template's name. */
+            name?: string;
         };
         UpdateDisciplineDto: {
             name?: string;
@@ -6790,6 +6854,73 @@ export interface operations {
             };
         };
         responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_listTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StyleTemplateListResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_createFromTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStyleFromTemplateDto"];
+            };
+        };
+        responses: {
+            /** @description The new style, built from the template (Decisions 131, 182). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_duplicateDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The copy, named "… (Copy)" (Decision 182). */
             201: {
                 headers: {
                     [name: string]: unknown;

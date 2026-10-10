@@ -9,6 +9,8 @@ import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { CreateRankDto, RankStripeTierInputDto } from './dto/create-rank.dto';
 import { UpdateRankDto } from './dto/update-rank.dto';
 import { ReorderRanksDto } from './dto/ladder.dto';
+import { CreateStyleFromTemplateDto } from './dto/style-template.dto';
+import { buildIbjjfTemplate, IBJJF_CLASS_TYPES, TEMPLATES } from './templates/ibjjf';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 
@@ -56,6 +58,119 @@ export class RanksService {
         data: { id, schoolId, name: dto.name, classTypesOffered: dto.classTypesOffered ?? [], skillsRequiredToGrade: dto.skillsRequiredToGrade ?? false },
       }),
     );
+  }
+
+  /** The ladder templates a style can start from (Decision 131). */
+  listTemplates() {
+    return { items: TEMPLATES.map((t) => ({ ...t, rungs: buildIbjjfTemplate(t.id).reduce((sum, b) => sum + b.rungs.length, 0) })) };
+  }
+
+  /** A new style from an IBJJF template (Decisions 131, 182): the prototype's
+   * belts, rungs, numbers and class types, as the school's own copy to edit
+   * freely. Owner only, like every ladder edit. */
+  async createFromTemplate(callerId: string, schoolId: string, dto: CreateStyleFromTemplateDto) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    await this.assertRanksEnabled(callerId, schoolId);
+    const template = TEMPLATES.find((t) => t.id === dto.templateId)!;
+    const belts = buildIbjjfTemplate(dto.templateId);
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const discipline = await tx.discipline.create({
+        data: { id: randomUUID(), schoolId, name: dto.name ?? template.name, classTypesOffered: [...IBJJF_CLASS_TYPES] },
+      });
+      for (const [order, belt] of belts.entries()) {
+        const rankId = randomUUID();
+        await tx.rank.create({
+          data: {
+            id: rankId,
+            disciplineId: discipline.id,
+            schoolId,
+            order,
+            name: belt.name,
+            primaryColour: belt.primaryColour,
+            secondaryColour: belt.secondaryColour,
+            tagColour: belt.tagColour,
+            coralAccent: belt.coralAccent,
+            yearsInRankFlag: belt.rungs.some((r) => r.timeOnly),
+          },
+        });
+        await tx.rankStripeTier.createMany({
+          data: belt.rungs.map((r, i) => ({
+            id: randomUUID(),
+            rankId,
+            schoolId,
+            order: i,
+            name: r.name,
+            count: r.segments.reduce((sum, seg) => sum + seg.count, 0),
+            colour: r.segments[0]?.colour ?? '#FFFFFF',
+            stripeSegments: r.segments,
+            timeOnly: r.timeOnly,
+            classesRequired: r.classesRequired,
+            minimumDaysInRank: r.minimumDaysInRank,
+            weeklyClassCountCap: r.weeklyClassCountCap,
+            eligibleClassTypes: r.eligibleClassTypes,
+          })),
+        });
+      }
+      return discipline;
+    });
+  }
+
+  /** Duplicate a style (Decision 182, prototype duplicateStyle): its belts and
+   * rungs with all their rules, its skills (re-linked to the copied rungs),
+   * class types, "skills required" switch and board %. Not its students, their
+   * ranks, lesson links or coach permissions. Named "… (Copy)". Owner only. */
+  async duplicateDiscipline(callerId: string, disciplineId: string) {
+    const source = await this.findOneDiscipline(callerId, disciplineId);
+    await this.tenantAuth.assertSchoolOwner(callerId, source.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, source.schoolId);
+    await this.assertRanksEnabled(callerId, source.schoolId);
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const copy = await tx.discipline.create({
+        data: {
+          id: randomUUID(),
+          schoolId: source.schoolId,
+          name: `${source.name} (Copy)`,
+          classTypesOffered: source.classTypesOffered,
+          skillsRequiredToGrade: source.skillsRequiredToGrade,
+          boardGettingThere: source.boardGettingThere,
+          boardReadyToGrade: source.boardReadyToGrade,
+        },
+      });
+      const skillMap = new Map<string, string>();
+      for (const skill of await tx.skill.findMany({ where: { disciplineId } })) {
+        const id = randomUUID();
+        skillMap.set(skill.id, id);
+        await tx.skill.create({ data: { id, disciplineId: copy.id, schoolId: source.schoolId, name: skill.name, description: skill.description } });
+      }
+      const ranks = await tx.rank.findMany({ where: { disciplineId }, include: RANK_INCLUDE, orderBy: { order: 'asc' } });
+      for (const rank of ranks) {
+        const { id: _id, disciplineId: _d, createdAt: _c, updatedAt: _u, stripeTiers, requiredSkills, ...rankFields } = rank;
+        const rankId = randomUUID();
+        await tx.rank.create({ data: { ...rankFields, id: rankId, disciplineId: copy.id } });
+        const beltSkills = requiredSkills.map((r) => skillMap.get(r.skillId)).filter((id): id is string => !!id);
+        if (beltSkills.length) await tx.rankRequiredSkill.createMany({ data: beltSkills.map((skillId) => ({ rankId, skillId })) });
+        for (const tier of stripeTiers) {
+          const { id: _tid, rankId: _r, createdAt: _tc, updatedAt: _tu, requiredSkills: tierSkills, ...tierFields } = tier;
+          const tierId = randomUUID();
+          await tx.rankStripeTier.create({
+            data: {
+              ...tierFields,
+              id: tierId,
+              rankId,
+              stripeSegments: tierFields.stripeSegments as Prisma.InputJsonValue,
+              classTypeRequirements: tierFields.classTypeRequirements as Prisma.InputJsonValue,
+            },
+          });
+          const ids = tierSkills.map((r) => skillMap.get(r.skillId)).filter((id): id is string => !!id);
+          if (ids.length) await tx.rankStripeTierRequiredSkill.createMany({ data: ids.map((skillId) => ({ stripeTierId: tierId, skillId })) });
+        }
+      }
+      return copy;
+    });
   }
 
   async findAllDisciplines(callerId: string, schoolId: string) {
