@@ -2628,3 +2628,240 @@ Gus: *"yes add the database check"*.
 3. **Why.** A second layer: if a future server change forgot the check, the database would still not hand out a locked lesson's content. When the two disagree, the database wins.
 
 Built in migration `20261104000000_lesson_content_access` (`can_view_lesson_content`, `is_lesson_staff`); existing content is copied into the new table.
+
+---
+
+## Decision 209 — TimetableSlot↔Class relationship: already resolved by existing code, not an open question
+
+**Date:** 10 Oct 2026 · **Status:** Confirmed by reading the code, not a new design
+**Resolves:** the `[UNRESOLVED]` flag in `skills/ultm8-domain-rules/SKILL.md` §9 and the "blocking architectural gap" `docs/v1.2-backend-backlog.md`'s Timetable section had been carrying.
+
+Asked how `TimetableSlot` should relate to `Class` for real Timetable click-to-book, the user asked to see how Classes are actually created today before deciding. Reading `apps/api/src/jobs/class-occurrence-generation.processor.ts` directly (not assumed) showed this was already built: a daily repeatable BullMQ job materializes real, dated `Class` rows from every active `TimetableSlot` up to `WEEKS_AHEAD` (4) weeks ahead, each carrying `timetableSlotId` and `occurrenceDate` as real columns. There is no remaining architecture question — `ClassesController`/`ClassesService` simply don't yet expose a lookup by `timetableSlotId`+`occurrenceDate`, which is the one small thing Timetable's "Book" action needs to resolve a clicked slot+date to its already-materialized `Class` and book it via the existing Staff-on-behalf-of `bookClass()` path.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s Timetable section to be corrected to reflect this — the blocker was a missing read endpoint, not an open relationship question.
+
+### Recorded by
+
+Investigated at the user's direct request ("not sure — need to see how Classes are created today first") during the v1.2 backlog unblocking pass, 10 Oct 2026.
+
+---
+
+## Decision 210 — Instructor "Add Manually" account-claim invitation (Decision 206) approved for build
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Promotes:** Decision 206 from proposed design to approved
+
+Decision 206's account-claim invitation design (new `AccountInvitation` entity, two unauthenticated token-gated endpoints, claim-link email reusing `NotificationDeliveryService`, a "Complete Your Registration" screen) is approved for build as specified there. This is the blocking dependency for Instructor Add Manually to work end-to-end.
+
+### Recorded by
+
+User, choosing "Build Decision 128 now" [renumbered 206] when asked how to unblock the v1.2 backlog's Instructor Add Manually item, 10 Oct 2026.
+
+---
+
+## Decision 211 — Address-lookup/geocoding provider: Google Places
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the open gap `docs/v1.2-backend-backlog.md` flagged — zero geocoding/address-lookup provider confirmed anywhere in Spec 55 or this log, unlike the spec's other named infra gaps which all had a resolved vendor.
+
+Address fields across Branch/Franchise/Instructor Add/Update forms will be backed by Google Places (autocomplete + validation). **Needs a Google Cloud API key provisioned by the user before this can be built** — not something a Developer session can provision itself.
+
+### Recorded by
+
+User, choosing "Google Places" when asked which provider should back the Address fields, 10 Oct 2026.
+
+---
+
+## Decision 212 — Confirmed currency list: modest expansion, starting with CAD
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the mismatch flagged in `docs/v1.2-backend-backlog.md` — Branch/Franchise/School demo data across the redesign canvas is consistently Toronto/Vaughan-based (CAD), but CAD was never one of the 6 confirmed launch currencies (GBP/EUR/USD/BRL/AED/MYR).
+
+The user's first answer ("we will add all the currencies") was broader than the yes/no asked, so it was checked again rather than assumed: full ISO 4217 support (~180 currencies, touching every Price/amount field, Stripe currency-support checks, and every currency-formatting call site) is materially bigger than adding CAD to the existing curated list. Re-asked, the user confirmed a modest expansion of the curated list — CAD specifically, matching the demo data, not a dynamic world-currency selector. Further named additions beyond CAD can be added the same way on request; none are added here without being named, per this project's standing rule against inventing unspecified scope.
+
+### Recorded by
+
+User, choosing "Modest expansion (recommended)" after the broader first answer was checked back, 10 Oct 2026.
+
+---
+
+## Decision 213 — Waiver signed-state: diff against the real Student roster, not an explicit Pending row
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Depends on:** Decision 214 (real Student enrollment)
+**Resolves:** the first of the three layered gaps Decision 125's own waiver-signed-state finding described, for `docs/v1.2-backend-backlog.md`'s Waivers section.
+
+Asked for a recommendation between (a) diffing signed `WaiverSignature` rows against the real Student roster once it's real, or (b) writing an explicit `Pending`/`Unsigned` row per assignment up front: both approaches were checked and found to depend on the same underlying gap — writing a Pending row still requires knowing which Students to write one for, which still needs real enrollment data, so it doesn't avoid the dependency, it just moves where it's hit. Recommended, and approved: diff against the real roster (Decision 214) once built — no new write path, no stale-row risk if a Student later leaves the School.
+
+### Recorded by
+
+User, confirming the Developer recommendation given during the v1.2 backlog unblocking pass, 10 Oct 2026.
+
+---
+
+## Decision 214 — Build the real Student enrollment path now
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the gap `WaiverSignatureRequestsProcessor`'s own header comment, Decision 95, and the project roadmap already flagged — no endpoint anywhere creates a `STUDENT` RoleGrant through the real API; every e2e test seeds one directly with a superuser Prisma client.
+
+`SchoolsService.join()` already has the self-service path (Decision 96) and the Guardian-on-behalf-of branch (Phase 38) designed and precedented — this closes the gap by actually exercising that real path end-to-end rather than test-seeding around it, and unblocks both Decision 213 (Waiver signed-state) and Student Invite's enroll step.
+
+### Recorded by
+
+User, choosing "Yes, build it now (recommended)" when asked directly, 10 Oct 2026.
+
+---
+
+## Decision 215 — Waiver enforcement scope confirmed: any signed waiver at the School
+
+**Date:** 10 Oct 2026 · **Status:** Confirmed by product owner, zero code change
+**Resolves:** the `[UNRESOLVED]` note in `skills/ultm8-domain-rules/SKILL.md` §13 that Decision 125 had already found was actually resolved in code but not yet confirmed as intended.
+
+`BookingsService` already checks at booking time whether the Student holds *any* `SIGNED` `WaiverSignature` at that School, not one scoped to a specific required Waiver (`Class` has no field linking it to one canonical Waiver — only the boolean `termsWaiverRequired`). Confirmed as the intended behavior, not an oversight — no code change needed, this closes the `[UNRESOLVED]` flag.
+
+### Recorded by
+
+User, choosing "Any signed waiver at the School (matches current code)", 10 Oct 2026.
+
+---
+
+## Decision 216 — Build all four Instructor missing fields (Address, a second Activities list, Certification upload, consent)
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Depends on:** Decision 217 (upload pipeline) for Certification
+**Resolves:** the Add/Update/Detail Instructor gaps `docs/v1.2-backend-backlog.md` catalogued — none of Address, a second Activities-distinct-from-Specializations list, a Certification file, or consent/terms checkboxes exist on `Instructor` today.
+
+All four approved for build, a larger scope than the Developer recommendation (defer) given. Certification is a file upload, so it's sequenced behind Decision 217.
+
+### Recorded by
+
+User, choosing "Build all four now" when asked whether to build or defer, 10 Oct 2026.
+
+---
+
+## Decision 217 — File/image upload pipeline: S3-compatible object storage
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the app-wide gap shared by Instructor/Student/Branch/Franchise photo fields and the new Instructor Certification field (Decision 216) — no real upload pipeline exists anywhere in ULTM8 today; every photo field is settable only as a plain URL string.
+
+S3-compatible object storage, presigned upload URLs — the same pattern `WaiversController`'s existing `POST /waivers/:id/signature-upload-url` already uses, extended rather than building a second mechanism. **Needs a real S3 bucket (or equivalent) and access credentials provisioned by the user** before this can be built.
+
+### Recorded by
+
+User, choosing "S3-compatible object storage (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 218 — Instructor belt/rank reuses the Student rank system
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the gap flagged for Instructor's `beltRanking` field (free text only, e.g. "Black Belt, 3rd Dan") against the template's structured ranking dropdown.
+
+Rather than a separate Instructor-only rank structure, Instructor profiles will carry the same Discipline/Rank/Stripe structure Students already have via `StudentRank`. A real design/migration pass is still needed to work out how an Instructor-shaped rank record attaches (Instructor isn't a Student), left to implementation.
+
+### Recorded by
+
+User, choosing "Yes, reuse the Student rank system", 10 Oct 2026.
+
+---
+
+## Decision 219 — Build Student Measurements as real fields
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** Student Detail's Measurements fields (Weight Category, Kimono Size, Belt Size), which `docs/v1.2-backend-backlog.md` had flagged as having zero grounding anywhere in Spec 55, the domain-rules skill, or the schema.
+
+Approved for build as real fields on `User` or `StudentRank` (implementation's call which), overriding the Developer recommendation to drop them for lack of grounding. Recorded per this project's own "ask rather than guess" rule — flagged as ungrounded before building, decision made directly with the product owner rather than silently dropped or silently built.
+
+### Recorded by
+
+User, choosing "Build them as real fields" over the Developer recommendation to drop, 10 Oct 2026.
+
+---
+
+## Decision 220 — Skip the IP-geolocation smart default on the Mobile Number picker
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Mobile Number searchable picker's "Based on your location" default (added 7 Oct), which `docs/v1.2-backend-backlog.md` flagged as Proposed/Illustrative with no IP-geolocation provider confirmed anywhere.
+
+Drop the smart default; the picker keeps its fixed per-locale default. No vendor, no new cost.
+
+### Recorded by
+
+User, choosing "Skip the smart default (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 221 — Build Notifications Snooze
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Snooze gap in Concept 3 (Priority Inbox) that Decision 126 had catalogued — no snoozed/deferred state exists on `Notification` today.
+
+Approved for build: a `snoozedUntil` timestamp column plus a job to return it to the unread list when it elapses, overriding the Developer recommendation to drop it for now.
+
+### Recorded by
+
+User, choosing "Build it" over the Developer recommendation to defer, 10 Oct 2026.
+
+---
+
+## Decision 222 — Build real push notification SEND (FCM/APNs)
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the gap `DeviceToken`'s own header comment flagged ("deliberately NOT built this phase") and the Push delivery rate / Read-within-24h placeholder tiles Decision 126 catalogued.
+
+Approved for build, a larger scope than the two metric tiles alone: real FCM (Android)/APNs (iOS) dispatch, not just the device-token registration that already exists. **Needs real Firebase Cloud Messaging and Apple Push Notification service credentials provisioned by the user** before this can be built. The delivery-rate and read-within-24h metrics (plus a new `readAt` column for the latter) follow once SEND is real.
+
+### Recorded by
+
+User, choosing "Build real push SEND now (FCM/APNs)" over the Developer recommendation to defer both metric tiles, 10 Oct 2026.
+
+---
+
+## Decision 223 — Dashboard discipline grouping ships against raw `Class.activities` strings
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** how the Bookings-This-Week drill-down's day×discipline grouping should work, given `Class.activities` is a free-text string array, not a canonical Discipline FK (the same unreconciled gap `skills/ultm8-domain-rules/SKILL.md` §4 and Decision 90 already flag).
+
+Ship the Dashboard drill-down now, grouping by whatever strings are actually in `Class.activities`, with the known caveat that spelling/casing isn't guaranteed canonical — rather than waiting on the larger, separate Decision 90 Discipline-FK fix.
+
+### Recorded by
+
+User, choosing "Ship against raw strings now (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 224 — Curriculum video upload/caption integration folds into the Curriculum redesign scoping
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** whether to provision Cloudflare Stream/AWS Transcribe credentials (picked, Decision 101) now as a standalone item.
+
+Rather than wiring video upload/caption dispatch as a parallel, separate effort, it folds into the Curriculum learner-facing redesign scoping work (Decision 226) already approved — the video integration is one part of that larger design, not independent of it.
+
+### Recorded by
+
+User, choosing "Fold into the Curriculum scoping work (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 225 — Tenant offboarding (16 entities): approved to scope, design in progress
+
+**Date:** 10 Oct 2026 · **Status:** Approved to scope by product owner — **design not yet written, not built**
+**Resolves:** whether Branches/Franchises' missing Delete action should be addressed narrowly or as the larger, project-wide tenant-offboarding gap it's actually part of (16 entities share this per the decision log's existing notes).
+
+Approved to scope the full tenant-offboarding design now (cascade behavior, soft-delete vs. hard-delete, data-retention implications — this also touches Decision 110's still-pending Waiver-retention question), rather than a narrower one-off Delete for just Branch/Franchise that would leave an inconsistent pattern against the other 14 entities. This entry records the scope decision; the actual design is a separate, dedicated pass, not written here.
+
+### Recorded by
+
+User, choosing "Scope full tenant offboarding now" over the Developer recommendation to keep deferring, 10 Oct 2026.
+
+---
+
+## Decision 226 — Curriculum learner-facing redesign: approved to scope, design in progress
+
+**Date:** 10 Oct 2026 · **Status:** Approved to scope by product owner — **design not yet written, not built**
+**Resolves:** whether the three Curriculum mockups' proposed redesign (turning the already-shipped admin Lesson CRUD into a learner-facing video-library browse experience — Category, Favorite, Playlist, WatchHistory, Comment, all new entities) should be scoped now, deferred, or narrowed to just video playback.
+
+Approved to scope the full redesign now, at the same Architect tier as Decisions 58/101/104, rather than deferring it or building only video playback first. Decision 224's video upload/caption integration folds into this scoping work rather than running separately. This entry records the scope decision; the actual entity/relationship design is a separate, dedicated pass, not written here.
+
+### Recorded by
+
+User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct 2026.
