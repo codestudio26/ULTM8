@@ -23,6 +23,22 @@ export class GradingPermissionsService {
     private readonly tenantAuth: TenantAuthorizationService,
   ) {}
 
+  /** The caller's own grading permissions here (Decision 184): owner, or
+   * staff with their rows (RLS: grading_permission_self_read). */
+  async findMine(callerId: string, schoolId: string) {
+    this.assertUuids(schoolId);
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const owner = await tx.roleGrant.findFirst({
+        where: { userId: callerId, schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+        select: { id: true },
+      });
+      if (owner) return { isOwner: true, items: [] };
+      const items = await tx.gradingPermission.findMany({ where: { schoolId, userId: callerId }, orderBy: { disciplineId: 'asc' } });
+      return { isOwner: false, items };
+    });
+  }
+
   async findAllForSchool(callerId: string, schoolId: string) {
     this.assertUuids(schoolId);
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);

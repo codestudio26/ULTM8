@@ -2175,7 +2175,52 @@ Built in the API as: rung ids on `PATCH /ranks/{id}` (`stripeTiers[].id`), `PUT 
 4. **Existing grants keep every toggle on.** Nobody uses the system live yet (Gus).
 5. **A Grading permissions page** in the School Portal lists the school's Instructors and Branch Staff, with "May grade" per style and the seven toggles. The API's permission list includes that staff list (owner only), since no staff roster endpoint existed.
 
-## Decision 182 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
+---
+
+## Decision 182 — Templates use the prototype's numbers; Duplicate copies the ladder, skills and settings
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how the three IBJJF templates (Decision 131) and "Duplicate style" are built.
+
+1. **Templates start with the prototype's numbers.** A style created from one of the three IBJJF templates gets the prototype's belts, stripes, classes required, minimum days, weekly caps, eligible class types and black-belt degree years (`buildIbjjfLadder`), plus its five class types. Each belt's totals are spread over its five stripe rungs, as in the prototype. The school then edits everything as its own; the template is not linked afterwards. Gus: *"Prototype numbers, then edit"*.
+2. **Duplicate copies the ladder, skills and settings.** The copy, named "… (Copy)", gets every belt and rung with all their rules, every skill (re-linked to the copied belts and rungs), the class types, the "skills required" switch and the board %. It does not copy students, their ranks or history, lesson links, or coach grading permissions. Gus: *"Ladder + skills + settings"*.
+3. **Owner only**, like every ladder edit.
+
+Built in the API as `GET /style-templates`, `POST /schools/{id}/disciplines/from-template` and `POST /disciplines/{id}/duplicate`; in the School Portal as **Start from template** and **Duplicate** on the Disciplines page.
+
+---
+
+## Decision 183 — Coach invites: one emailed link per coach, single use, 7 days; "Can invite coaches" for Branch Staff
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how a coach joins a School. Spec 55 §8.2 says Instructors are "provisioned by School invite, not self-registration"; until now the only invite was the owner granting the role to an existing account (Decisions 80, 116).
+
+1. **Coaches have an ordinary account**, like students and parents, and don't buy a membership to coach. They become a coach in one of two ways: the owner grants the role to their existing account (unchanged), or they accept an invite link. Gus: *"account owner will upgrade the account to coaches level or school owner will send an coaches invitation link, which will auto link the coaches to a coaches account"*.
+2. **The invite link:** one per person, sent by **email**; it works **once**, for **7 days**, and can be **cancelled**. Gus: *"Single use, 7-day expiry, cancellable"*. Text-message invites need a new Twilio Messaging integration and come later. Gus: *"Email now, text later"*.
+3. **Accepting:** the person opens the link, logs in (or creates their account) **with the invited email**, and accepts. Their account gets an INSTRUCTOR grant at the School, at the branch chosen in the invite when the School has branches (Decision 169). Matching the email stops a forwarded link being used by someone else.
+4. **A coach keeps their student side.** Any role the account already holds, such as STUDENT, is kept (Spec 55: a person may hold more than one role). Gus: *"A coach keeps their student side"*.
+5. **Who can invite:** the owner, and Branch Staff the owner has given **"Can invite coaches"**, set per staff member. Gus: *"owner and those who have been granted the access to the invitation area… a school operator could be assigned this job"*; *"Can invite coaches toggle"*. **Branch Staff only:** Spec 55 §8.2 rules out instructor management for Instructors, and a decision can't override the spec outside grading. Gus: *"Branch Staff only"*. **Own branches only** for staff; the owner can invite to any branch. Gus: *"Own branches only"*.
+6. **Security:** only the token's SHA-256 is stored. Row-level security lets the owner manage all of the School's invites, staff with the permission manage their own branches' invites, and the link holder read and accept only that one invite. Whoever sends an invite must have a verified phone (Decision 81).
+7. **The coach dashboard** (grading, their classes, notifications, their own student info), in the web portal and the mobile app, is Decision 184 and is built separately.
+
+Built in the API as `CoachInvite` and `StaffPermission` with the endpoints listed in the CHANGELOG, and in the School Portal as **Invite a coach** and **Who can invite coaches** on the Staff page, plus the invite link page `/coach-invite/{token}`.
+
+---
+
+## Decision 184 — The coach dashboard, on the web portal and the mobile app
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** what a coach sees after signing in. Gus: *"We need to create a coaches dashboard, similar to the students, carrying the coaches info too such as, Grading, their classes, messages, plus their students info if they are a students"*; *"Both Mobile app and Web Portal, just like the students portal"*.
+
+1. **Where:** both the School Portal (web) and the mobile app. The web portal is built first; the mobile app's coach screens follow on the Track B branch.
+2. **What it shows:**
+   - **Grading:** the styles the coach grades in (Decision 181), with how many of their students are ready to grade and getting there, and the Grading Board and student panels for them.
+   - **Their classes:** the weekly timetable slots and upcoming classes where they are the instructor.
+   - **Messages:** their notifications for now. There is no messaging between people yet; that is its own feature later. Gus: *"Notifications for now"*.
+   - **Their own training:** when they also train at the School, their ranks and progress (Decision 183: a coach keeps their student side).
+3. **Only what they may do.** A coach sees the Grading Board and student panels for their styles only, and only the actions their toggles allow (promote, move down, sign off skills, adjust progress, verify, void, change board %). The API enforces this regardless (Decision 181). They see students of their own branches only (Decision 168).
+4. **Sign-in and menu:** a coach who doesn't own the School lands on their dashboard, with a menu of Dashboard, Grading Board and Notifications; the header shows "Coach". A coach at several Schools sees the first one for now (no School switcher yet).
+
+Built in the API as `GET /schools/{id}/grading-permissions/me` (the caller's own styles and toggles; the owner gets `isOwner: true`), and in the School Portal as `/coach`, with the Grading Board and student panel working for coaches.
+
+## Decision 185 — Timetable "click-to-book" UI surfaces the TimetableSlot ↔ Class relationship as a real blocker, not just a citation
 
 **Date:** 26 Sep 2026
 **Status:** Developer-level finding, escalated — **not resolved**, flagged for Architect decision before any backend work starts
@@ -2207,7 +2252,7 @@ Logged in `docs/v1.2-backend-backlog.md` ("Timetable page (mockup — click-to-b
 
 Surfaced while implementing the user's explicit request to add a click-to-book function to the Timetable page (Daily/Weekly/Monthly) — escalated per this project's standing rule (never fill an `[UNRESOLVED]` domain gap with a plausible-sounding guess), 26 Sep 2026.
 
-## Decision 183 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
+## Decision 186 — Membership Plans page rebuilt around a Stats Ribbon; Visibility made an inline, real toggle; a systemic codegen gap found and worked around
 
 **Date:** 26 Sep 2026
 **Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts; the codegen finding is a Developer-level workaround, not an Architect ruling
@@ -2240,10 +2285,10 @@ Logged in `docs/v1.2-backend-backlog.md` ("Membership Plans page") and as `note2
 
 Implemented per the user's explicit choice of Concept 5 and instruction to "build [what's real], and... anything that is not on the back end now... to a list with notes to be done by the dev team back end team," 26 Sep 2026.
 
-## Decision 184 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
+## Decision 187 — Transactions page rebuilt around a Stats Ribbon; no backend gap this time
 
 **Date:** 27 Sep 2026
-**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 183, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
+**Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decision 186, applied to Transactions this time: `https://claude.ai/artifact/1vc4HExuUryXohNCwah86P`)
 **Resolves:** the user picked Concept 2 (Stats Ribbon + List) and asked for the same "build what's real, log the rest" treatment as Membership Plans
 
 ### What was built (real, in `TransactionsPage.tsx`)
@@ -2254,7 +2299,7 @@ One correctness detail worth recording: **Total revenue is grouped by currency, 
 
 ### What was deliberately not built
 
-Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 183's same reasoning for why a real read-only page shouldn't grow dead action buttons).
+Nothing was left out this time — Concept 2 carried no proposed elements (unlike Concept 1/3/4/5's Refund/Download-invoice/kebab-menu items, all explicitly flagged proposed on their own boards, per Decision 186's same reasoning for why a real read-only page shouldn't grow dead action buttons).
 
 ### Verification
 
@@ -2266,9 +2311,9 @@ Logged as `note2` on the "Transactions — 5 concepts" canvas artifact. No `docs
 
 ### Recorded by
 
-Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 183, 27 Sep 2026.
+Implemented per the user's explicit choice of Concept 2 ("ok lets go with Concept 2"), continuing the same build-what's-real policy established in Decision 186, 27 Sep 2026.
 
-## Decision 185 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
+## Decision 188 — Waivers page rebuilt around a Split-Pane Reader; per-waiver signature status confirmed not buildable today, at a deeper level than previously flagged
 
 **Date:** 27 Sep 2026
 **Status:** Developer-level implementation of a design direction the user picked from 5 researched concepts (same research-first process as Decisions 123/124: `https://claude.ai/artifact/MctvsgBry9WEkEK2Fqq5QL`); the signature-status finding below is a Developer-level investigation, escalated — not resolved here
@@ -2304,7 +2349,7 @@ Logged in `docs/v1.2-backend-backlog.md` ("Waivers page") with the full three-la
 
 Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concept 3") plus a follow-up request for a signature/signed-status field; shape and build-scope confirmed via AskUserQuestion, then built per the user's "build and create the notes for the dev team" answer, continuing the same policy established in Decisions 123/124, 27 Sep 2026.
 
-## Decision 186 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
+## Decision 189 — Notifications page explored as 5 concepts; the session's widest real-vs-proposed gap found — no compose/broadcast capability exists at all
 
 **Date:** 27 Sep 2026
 **Status:** Developer-level finding, escalated — the backlog below is logged for the dev/backend team; no real code was changed as part of this entry (design/documentation only)
@@ -2312,7 +2357,7 @@ Implemented per the user's explicit choice of Concept 3 ("ok lets go with Concep
 
 ### What was found (verified directly against `NotificationsController`/`NotificationsService`/`schema.prisma`, not assumed)
 
-The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 185): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
+The real API surface for Notifications is the narrowest of any page redesigned this session: `GET /notifications/me` (list, self-scoped — not School-scoped; Staff and Students share the same endpoint) and `PATCH /notifications/:id/read` (mark read). That is the entire write surface. Every real `Notification` row is written only by the internal `notification-fanout` background job, itself triggered by exactly three system events today (`WAIVER_SIGNATURE_REQUEST`, `PAYMENT_DISPUTE`, `CHARGEBACK_PATTERN_RESTRICTION`) — **there is no endpoint anywhere for a School Owner/Staff member to compose or broadcast a message to their Students.** This is a wider gap than any other page's finding this session (wider than Waivers' missing signature-list endpoint, Decision 188): Waivers was missing a way to *read* an existing capability's data; Notifications is missing the *write* capability itself, for what a school-communication product's core value proposition (per this session's own ClassDojo/Bloomz research) actually is.
 
 Two smaller, independent gaps were also found: `Notification` has no snoozed/deferred state of any kind (only `read`, a plain boolean), and no delete endpoint exists. Push notification delivery itself is real only at the registration step — `DeviceToken` registration works, but actual push SEND is, per that model's own header comment, "deliberately NOT built this phase," so no delivery-rate or read-time metric can be computed even in principle from what the schema stores today (`Notification.read` has no timestamp — no `readAt` column).
 
@@ -2331,10 +2376,10 @@ Full backend requirements (a new broadcast/compose endpoint and its open product
 
 Requested directly by the user ("Give 5 great ideas... look at other softwares ideas" pattern, continuing Decisions 123/124/125's process), recommendation given via AskUserQuestion-free direct comparison, then the full non-real inventory logged per the user's explicit "any that is not real add to the note for the dev... to do the back end" instruction, 27 Sep 2026.
 
-## Decision 187 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
+## Decision 190 — Timetable's "Book" action corrected: Staff-on-behalf-of booking is real; a Student field was missing, not the whole feature
 
 **Date:** 27 Sep 2026
-**Status:** Developer-level correction of an earlier overstated finding (Decision 182), verified directly against `BookingsService`/`SchoolsService` before changing anything
+**Status:** Developer-level correction of an earlier overstated finding (Decision 185), verified directly against `BookingsService`/`SchoolsService` before changing anything
 **Resolves:** the user's own second-guess on the Timetable mockup's "Book" action ("this is the school view, not the students... does not make sense for academies") — investigated rather than agreed with by default, since the premise turned out to be wrong
 
 ### What was found (verified directly, not assumed)
@@ -2349,7 +2394,7 @@ Added a required "Student" field to the Book confirmation dialog (all three view
 
 ### What's still not real, and why that hasn't changed
 
-Decision 182's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
+Decision 185's actual blocker stands exactly as before: `bookClass()` takes a `classId`, and this page renders `TimetableSlot` — the recurring weekly template, not a dated `Class` occurrence — and the domain-rules skill's `[UNRESOLVED]` citation on how the two relate is unaffected by anything found here. Adding a real Student field didn't (and couldn't) resolve that; the two gaps were always independent, just previously described as one bigger, vaguer gap than either actually is.
 
 ### Tracking
 
@@ -2361,7 +2406,7 @@ Investigated in response to the user questioning the Book action's fit for the S
 
 ---
 
-## Decision 188 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
+## Decision 191 — Proposed design: how a manually-added Instructor gets a real login (account-claim invitation, not admin-set credentials)
 
 **Date:** 28 Sep 2026
 **Status:** Developer-level proposed design, **not approved, not built** — flagged for Architect/product-owner confirmation before any of this is implemented. Recorded because the user asked directly for the logic to be worked out and written down, not because it's been signed off.

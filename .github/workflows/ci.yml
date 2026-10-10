@@ -172,3 +172,90 @@ jobs:
 
       - name: Unit tests
         run: npx turbo run test
+
+  # The School Portal's browser tests (Playwright, apps/school-portal/e2e):
+  # real API, Postgres and Redis, in Chromium at desktop and tablet widths
+  # (grading roadmap Phase 4 exit criteria; Decision 179). Firefox and WebKit
+  # projects exist in playwright.config.ts but aren't run here yet.
+  portal-browser-tests:
+    name: Portal browser tests (Chromium)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ultm8
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Same throwaway values as the isolation gate above (see its comments).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ultm8?schema=public
+      DATABASE_URL_APP: postgresql://ultm8_app:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_JOBS: postgresql://ultm8_jobs:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_DISCOVERY: postgresql://ultm8_discovery:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_PLATFORM_ADMIN: postgresql://ultm8_platform_admin:changeme@localhost:5432/ultm8?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
+      PLATFORM_ADMIN_JWT_SECRET: ci-test-platform-admin-secret-not-for-production-use-32-chars-min
+      STRIPE_SECRET_KEY: sk_test_ci_dummy_not_a_real_stripe_key
+      STRIPE_WEBHOOK_SECRET: ci-test-webhook-secret-not-a-real-stripe-secret
+      QR_CLASS_TOKEN_SECRET: ci-test-qr-class-token-secret-not-for-production-use-32-chars
+      QR_STUDENT_TOKEN_SECRET: ci-test-qr-student-token-secret-not-for-production-32-chars
+      # Playwright starts the API and the portal itself (playwright.config.ts);
+      # CI=true makes it start fresh servers instead of reusing running ones.
+      CI: 'true'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: Apply migrations
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: Build the API
+        run: npx turbo run build --filter=@ultm8/api
+
+      - name: Install Chromium for Playwright
+        working-directory: apps/school-portal
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the portal browser tests
+        working-directory: apps/school-portal
+        run: npm run e2e -- --project=chromium-desktop --project=chromium-tablet
+
+      - name: Keep the traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-playwright-results
+          path: apps/school-portal/test-results
+          retention-days: 7

@@ -12,6 +12,8 @@ function roleLabel(grants: RoleGrantClaim[] | undefined): string {
   if (!grants?.length) return '';
   if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return 'School Owner';
   if (grants.some((g) => g.role === 'BRANCH_STAFF')) return 'Branch Staff';
+  if (grants.some((g) => g.role === 'INSTRUCTOR')) return 'Coach';
+  if (grants.some((g) => g.role === 'STUDENT')) return 'Student';
   return grants[0].role;
 }
 

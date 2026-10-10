@@ -15,6 +15,53 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Coach dashboard on the web portal** (Decision 184). A coach who signs in
+  lands on **Coach dashboard**: the styles they grade in, with how many
+  students are ready to grade or getting there; their weekly classes and
+  upcoming classes; their latest notifications; and, if they also train
+  there, their own ranks and progress. Their menu is Dashboard, Grading
+  Board and Notifications, and the header shows "Coach". The **Grading
+  Board** and **student panel** now work for coaches: only the styles they
+  grade in, and only the actions their grading permission allows. After
+  accepting an invite, **Go to your coach dashboard** takes them there.
+  **api:** `GET /schools/{id}/grading-permissions/me`. `packages/api-client`
+  regenerated. The mobile app's coach screens follow separately.
+- **Coach invites** (Decision 183). On the Staff page, **Invite a coach**
+  emails one person a link to coach at the School (choosing the branch when it
+  has branches). The link works once, for 7 days, and can be cancelled; the
+  page lists each invite as Waiting, Accepted, Cancelled or Expired. Opening
+  the link asks the person to log in, or create their account, with the
+  invited email, then **Accept invite** makes them a coach; a student keeps
+  their student account. **Who can invite coaches**: the owner ticks which
+  Branch Staff may also invite, for their own branches (coaches can't, per
+  Spec 55 §8.2). Email only for now. **api:** `CoachInvite` and
+  `StaffPermission` (migration `20261025000000`, with RLS: the owner, staff
+  with the permission for their branches, and the link holder for its own
+  invite; only the token's SHA-256 is stored);
+  `POST/GET /schools/{id}/coach-invites`, `POST /coach-invites/{id}/cancel`,
+  `GET /coach-invite-links/{token}` (no sign-in needed),
+  `POST /coach-invite-links/{token}/accept`,
+  `GET /schools/{id}/staff-permissions`,
+  `PUT /schools/{id}/staff-permissions/{userId}`. New setting
+  `PORTAL_BASE_URL` for the link. `packages/api-client` regenerated.
+- **Style templates and Duplicate** (Decisions 131, 182). On the Disciplines
+  page, **Start from template** creates a style from one of the three IBJJF
+  ladders (White Stripes, 90 rungs; White & Red Stripes, 139; Yellow Stripes,
+  175) with the prototype's numbers and class types, ready to edit.
+  **Duplicate** copies a style's belts, rungs and their rules, skills, class
+  types, "skills required" switch and board %, as "… (Copy)"; no students,
+  ranks or coach permissions. Owner only. **api:** `GET /style-templates`,
+  `POST /schools/{id}/disciplines/from-template`,
+  `POST /disciplines/{id}/duplicate`. `packages/api-client` regenerated.
+- **Grading Board columns per style** (Decisions 75, 136, 181). Each style
+  keeps its own split, 33% / 66% by default. On the Grading Board, **Change %**
+  sets "Getting There" and "Ready to Grade" (whole %, 1–99, Getting There
+  below Ready to Grade), and each column shows its range. The board, a
+  student's readiness and moving a student to a column all use the style's
+  own %. **api:** `Discipline.boardGettingThere` / `boardReadyToGrade`
+  (migration `20261024000000`, with a database check) and
+  `PUT /disciplines/{id}/board-thresholds`, for the owner or a coach with
+  "Change board %" for the style. `packages/api-client` regenerated.
 - **Grading permissions: seven toggles per coach per style** (Decision 181).
   New **Grading Permissions** page in the School Portal: for each Instructor
   and Branch Staff member, the styles they may grade in and, per style,

@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useDisciplines } from '../disciplines/disciplineQueries';
+import { useGradingSchoolId } from '../auth/AuthContext';
+import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { BeltChip } from './BeltChip';
 import { flattenLadder, type Rung } from './ladder';
-import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard } from './gradingQueries';
+import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useMyGrading, useSetBoardThresholds } from './gradingQueries';
 import { BulkPromoteModal } from './BulkPromoteModal';
 
 export const COLUMNS: Array<{ key: BoardColumn; label: string }> = [
@@ -28,9 +28,11 @@ export const fullName = (i: { firstName: string; surname: string }) => `${i.firs
  * progress and is recorded on their history.
  */
 export function GradingBoardPage() {
-  const schoolId = useOwnedSchoolId();
+  const schoolId = useGradingSchoolId();
   const disciplines = useDisciplines(schoolId);
-  const styles = disciplines.data?.items ?? [];
+  const my = useMyGrading(schoolId);
+  // A coach sees only the styles they grade in (Decisions 181, 184).
+  const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const [disciplineId, setDisciplineId] = useState<string | null>(null);
   const [activeOnly, setActiveOnly] = useState(false);
   const [search, setSearch] = useState('');
@@ -38,6 +40,7 @@ export function GradingBoardPage() {
   const [moving, setMoving] = useState<{ item: GradingBoardItem; to?: BoardColumn } | null>(null);
   const [promoting, setPromoting] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [editingThresholds, setEditingThresholds] = useState(false);
 
   useEffect(() => {
     if (!disciplineId && styles.length > 0) setDisciplineId(styles[0].id);
@@ -49,8 +52,11 @@ export function GradingBoardPage() {
   const style = styles.find((d) => d.id === disciplineId) ?? null;
 
   if (!schoolId) return null;
-  if (disciplines.isLoading) return <Spinner />;
+  if (disciplines.isLoading || my.isLoading) return <Spinner />;
   if (disciplines.error) return <ErrorBanner message={disciplines.error instanceof ApiError ? disciplines.error.message : 'Could not load styles.'} />;
+  if (my.error) return <ErrorBanner message={my.error instanceof ApiError ? my.error.message : 'Could not load your grading permissions.'} />;
+  const canPromote = my.can(disciplineId, 'canPromote');
+  const canMove = my.can(disciplineId, 'canAdjustProgress');
 
   const items = board.data?.items ?? [];
   const term = search.trim().toLowerCase();
@@ -70,7 +76,11 @@ export function GradingBoardPage() {
       />
       {styles.length === 0 ? (
         <Card>
-          <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page first." />
+          {my.isOwner ? (
+            <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page first." />
+          ) : (
+            <EmptyState title="No styles to grade yet" description="The School owner hasn't given you grading in any style yet." />
+          )}
         </Card>
       ) : (
         <>
@@ -99,12 +109,26 @@ export function GradingBoardPage() {
                   <span className="ultm8-field__hint"> {board.data.hiddenInactive} inactive hidden</span>
                 ) : null}
               </div>
+              {style ? (
+                <div style={{ paddingBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span className="ultm8-field__hint">
+                    Columns at {style.boardGettingThere}% / {style.boardReadyToGrade}%
+                  </span>
+                  {my.can(style.id, 'canChangeBoardThresholds') ? (
+                    <Button variant="secondary" onClick={() => setEditingThresholds(true)}>
+                      Change %
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
               <div style={{ flex: 1 }} />
               <div style={{ paddingBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
-                {selectedItems.length > 0 ? <strong>{selectedItems.length} selected</strong> : null}
-                <Button onClick={() => setPromoting(true)} disabled={selectedItems.length === 0}>
-                  Promote selected
-                </Button>
+                {canPromote && selectedItems.length > 0 ? <strong>{selectedItems.length} selected</strong> : null}
+                {canPromote ? (
+                  <Button onClick={() => setPromoting(true)} disabled={selectedItems.length === 0}>
+                    Promote selected
+                  </Button>
+                ) : null}
               </div>
             </div>
           </Card>
@@ -123,9 +147,12 @@ export function GradingBoardPage() {
                   <section
                     key={col.key}
                     aria-label={col.label}
-                    onDragOver={(e) => e.preventDefault()}
+                    onDragOver={(e) => {
+                      if (canMove) e.preventDefault();
+                    }}
                     onDrop={(e) => {
                       e.preventDefault();
+                      if (!canMove) return;
                       const item = items.find((i) => i.studentId === draggingId);
                       setDraggingId(null);
                       if (item && item.eligibility.boardColumn !== col.key) setMoving({ item, to: col.key });
@@ -135,8 +162,17 @@ export function GradingBoardPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
                         <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
                           {col.label} <Badge>{list.length}</Badge>
+                          {style ? (
+                            <span className="ultm8-field__hint" style={{ fontWeight: 400, marginLeft: 6 }}>
+                              {col.key === 'JUST_STARTING'
+                                ? `under ${style.boardGettingThere}%`
+                                : col.key === 'GETTING_THERE'
+                                  ? `${style.boardGettingThere}–${style.boardReadyToGrade - 1}%`
+                                  : `${style.boardReadyToGrade}%+`}
+                            </span>
+                          ) : null}
                         </h2>
-                        {pickable.length > 0 ? (
+                        {canPromote && pickable.length > 0 ? (
                           <Checkbox
                             label="Select all"
                             aria-label={`Select all in ${col.label}`}
@@ -159,8 +195,8 @@ export function GradingBoardPage() {
                               item={item}
                               rung={ladder.find((r) => r.id === item.currentStripeId) ?? null}
                               selected={isSelected(item.studentId)}
-                              onToggle={() => toggle(item.studentId)}
-                              onMove={() => setMoving({ item })}
+                              onToggle={canPromote ? () => toggle(item.studentId) : undefined}
+                              onMove={canMove ? () => setMoving({ item }) : undefined}
                               onDragStart={() => setDraggingId(item.studentId)}
                             />
                           ))}
@@ -176,6 +212,7 @@ export function GradingBoardPage() {
       )}
 
       {moving && disciplineId ? <MoveDialog disciplineId={disciplineId} item={moving.item} initialTo={moving.to} onClose={() => setMoving(null)} /> : null}
+      {editingThresholds && style ? <ThresholdsDialog style={style} onClose={() => setEditingThresholds(false)} /> : null}
       {promoting && style && schoolId ? (
         <BulkPromoteModal
           schoolId={schoolId}
@@ -202,8 +239,10 @@ function BoardCard({
   item: GradingBoardItem;
   rung: Rung | null;
   selected: boolean;
-  onToggle: () => void;
-  onMove: () => void;
+  /** Absent when the caller may not promote in this style. */
+  onToggle?: () => void;
+  /** Absent when the caller may not adjust progress in this style. */
+  onMove?: () => void;
   onDragStart: () => void;
 }) {
   const name = fullName(item);
@@ -213,7 +252,7 @@ function BoardCard({
   const daysShort = e.daysOk === false ? (e.requiredDays ?? 0) - (e.elapsedDays ?? 0) : 0;
   return (
     <li
-      draggable
+      draggable={!!onMove}
       onDragStart={(ev) => {
         ev.dataTransfer.effectAllowed = 'move';
         ev.dataTransfer.setData('text/plain', item.studentId);
@@ -225,22 +264,24 @@ function BoardCard({
         background: selected ? 'var(--bg-accent)' : 'var(--surface-1)',
         borderRadius: 10,
         padding: 12,
-        cursor: 'grab',
+        cursor: onMove ? 'grab' : undefined,
         opacity: item.active ? 1 : 0.7,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <input
-          type="checkbox"
-          checked={selected}
-          disabled={item.hardBlocked}
-          onChange={onToggle}
-          aria-label={item.hardBlocked ? `${name} can't be selected: required skills not signed off` : `Select ${name}`}
-          title={item.hardBlocked ? 'This style requires every skill for the next rank to be signed off first.' : undefined}
-        />
+        {onToggle ? (
+          <input
+            type="checkbox"
+            checked={selected}
+            disabled={item.hardBlocked}
+            onChange={onToggle}
+            aria-label={item.hardBlocked ? `${name} can't be selected: required skills not signed off` : `Select ${name}`}
+            title={item.hardBlocked ? 'This style requires every skill for the next rank to be signed off first.' : undefined}
+          />
+        ) : null}
         {rung ? <BeltChip rung={rung} /> : null}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Link to={`/students/${item.studentId}`} style={{ fontWeight: 700 }}>
+          <Link to={`/students/${item.studentId}`} state={{ name }} style={{ fontWeight: 700 }}>
             {name}
           </Link>
           <div className="ultm8-field__hint">{rung?.name ?? 'Rank not on the ladder'}</div>
@@ -266,9 +307,11 @@ function BoardCard({
         {item.active ? null : <Badge>Inactive</Badge>}
         {item.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">Not verified</Badge> : null}
         <span style={{ flex: 1 }} />
-        <Button variant="secondary" onClick={onMove} aria-label={`Move ${name} to another column`}>
-          Move
-        </Button>
+        {onMove ? (
+          <Button variant="secondary" onClick={onMove} aria-label={`Move ${name} to another column`}>
+            Move
+          </Button>
+        ) : null}
       </div>
     </li>
   );
@@ -321,6 +364,74 @@ function MoveDialog({
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={move.isPending}>
             Move
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Change this style's columns (Decisions 75, 136, 181): the owner, or a
+ * coach with "Change board %" for the style. Whole percentages; "Getting
+ * There" starts below "Ready to Grade". */
+function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClose: () => void }) {
+  const set = useSetBoardThresholds(style.id);
+  const [gettingThere, setGettingThere] = useState(String(style.boardGettingThere));
+  const [readyToGrade, setReadyToGrade] = useState(String(style.boardReadyToGrade));
+  const [error, setError] = useState<string | null>(null);
+  const g = Number(gettingThere);
+  const r = Number(readyToGrade);
+  const valid = Number.isInteger(g) && Number.isInteger(r) && g >= 1 && r <= 99 && g < r;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await set.mutateAsync({ gettingThere: g, readyToGrade: r });
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+    }
+  }
+
+  return (
+    <Modal title={`Board columns — ${style.name}`} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        {error ? <ErrorBanner message={error} /> : null}
+        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+          Progress is classes attended out of classes required (time at the rank for a time-only rank). Skills and minimum days aren't part of it.
+        </p>
+        <Field label='"Getting There" from (%)' htmlFor="threshold-getting-there">
+          <TextField type="number" min={1} max={98} step={1} required value={gettingThere} onChange={(e) => setGettingThere(e.target.value)} />
+        </Field>
+        <Field label='"Ready to Grade" from (%)' htmlFor="threshold-ready">
+          <TextField type="number" min={2} max={99} step={1} required value={readyToGrade} onChange={(e) => setReadyToGrade(e.target.value)} />
+        </Field>
+        {valid ? (
+          <p className="ultm8-field__hint">
+            Just Starting: under {g}% · Getting There: {g}–{r - 1}% · Ready to Grade: {r}% and up
+          </p>
+        ) : (
+          <p role="alert" className="ultm8-field__error">
+            Whole numbers from 1 to 99, with "Getting There" below "Ready to Grade".
+          </p>
+        )}
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <Button type="submit" loading={set.isPending} disabled={!valid}>
+            Save
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setGettingThere('33');
+              setReadyToGrade('66');
+            }}
+          >
+            Back to 33% / 66%
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel

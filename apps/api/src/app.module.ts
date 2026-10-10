@@ -28,12 +28,20 @@ import { CurriculumModule } from './curriculum/curriculum.module';
 import { TranslationsModule } from './translations/translations.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
 
+/** Requests per minute per IP on every route (THROTTLE_IP_LIMIT_PER_MINUTE,
+ * default 60). Only the browser tests raise it: they drive the whole portal
+ * from one address. A missing or invalid value keeps the default. */
+function ipLimitPerMinute(): number {
+  const n = Number(process.env.THROTTLE_IP_LIMIT_PER_MINUTE);
+  return Number.isInteger(n) && n > 0 ? n : 60;
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot({
       throttlers: [
-        { ttl: 60_000, limit: 60 }, // generous IP-keyed default; auth endpoints override tighter
+        { ttl: 60_000, limit: ipLimitPerMinute() }, // generous IP-keyed default; auth endpoints override tighter
         // Per-user/per-IP throttling (Decision 17) — the "per-user" dimension. Generous
         // here so every other route is unaffected; auth (Decision 12, decoupled from IP)
         // and booking/waitlist/credit-restore (Decision 17) override this tighter via

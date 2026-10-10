@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayNotEmpty, ArrayUnique, IsArray, IsBoolean, IsEnum, IsISO8601, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, ArrayNotEmpty, ArrayUnique, IsArray, IsBoolean, IsEnum, IsISO8601, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { EligibilityResponseDto } from './student-rank-response.dto';
 
 export const BOARD_COLUMNS = ['JUST_STARTING', 'GETTING_THERE', 'READY_TO_GRADE'] as const;
@@ -147,4 +147,20 @@ export class BulkPromoteResponseDto {
 
   @ApiProperty({ type: [BulkPromoteStudentDto], description: 'Skipped: no next rank, blocked by the style\'s "skills required" switch, not yours to grade, or changed at the same time.' })
   cannotPromote!: BulkPromoteStudentDto[];
+}
+
+/** A style's Grading Board columns (Decisions 75, 136, 181): Getting There
+ * from `gettingThere` %, Ready to Grade from `readyToGrade` %. */
+export class BoardThresholdsDto {
+  @ApiProperty({ minimum: 1, maximum: 98, example: 33 })
+  @IsInt()
+  @Min(1)
+  @Max(98)
+  gettingThere!: number;
+
+  @ApiProperty({ minimum: 2, maximum: 99, example: 66, description: 'Must be above gettingThere.' })
+  @IsInt()
+  @Min(2)
+  @Max(99)
+  readyToGrade!: number;
 }

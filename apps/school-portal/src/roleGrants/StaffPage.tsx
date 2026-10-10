@@ -11,6 +11,7 @@ import {
   type InviteCandidateResponse,
   type RoleGrantResponse,
 } from './roleGrantQueries';
+import { CoachInvitesSection } from './CoachInvitesSection';
 
 /**
  * Invite / revoke Instructor or Branch Staff — the one confirmed RoleGrant authority
@@ -200,6 +201,8 @@ export function StaffPage() {
           </form>
         )}
       </Card>
+
+      <CoachInvitesSection schoolId={schoolId} />
 
       <Card>
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>

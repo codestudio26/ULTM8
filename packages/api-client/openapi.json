@@ -1149,6 +1149,272 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/coach-invites": {
+      "post": {
+        "operationId": "CoachInvitesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCoachInviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedCoachInviteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CoachInvitesController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachInviteListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach-invites/{id}/cancel": {
+      "post": {
+        "operationId": "CoachInvitesController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachInviteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach-invite-links/{token}/accept": {
+      "post": {
+        "operationId": "CoachInvitesController_accept",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptCoachInviteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff-permissions": {
+      "get": {
+        "operationId": "CoachInvitesController_listStaffPermissions",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissionListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff-permissions/{userId}": {
+      "put": {
+        "operationId": "CoachInvitesController_setStaffPermission",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetStaffPermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPermissionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/coach-invite-links/{token}": {
+      "get": {
+        "operationId": "CoachInviteLinksController_preview",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachInvitePreviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "coach-invites"
+        ]
+      }
+    },
     "/v1/guardians/me/minors": {
       "post": {
         "operationId": "GuardiansController_createMinor",
@@ -1502,6 +1768,152 @@
         },
         "tags": [
           "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/me": {
+      "get": {
+        "operationId": "NotificationsController_findAllForCaller",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/device-tokens": {
+      "post": {
+        "operationId": "NotificationsController_registerDeviceToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceTokenResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/device-tokens/{id}": {
+      "delete": {
+        "operationId": "NotificationsController_deregisterDeviceToken",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
         ],
         "security": [
           {
@@ -3730,6 +4142,112 @@
         ]
       }
     },
+    "/v1/style-templates": {
+      "get": {
+        "operationId": "RanksController_listTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleTemplateListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/disciplines/from-template": {
+      "post": {
+        "operationId": "RanksController_createFromTemplate",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStyleFromTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new style, built from the template (Decisions 131, 182).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/duplicate": {
+      "post": {
+        "operationId": "RanksController_duplicateDiscipline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The copy, named \"… (Copy)\" (Decision 182).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/disciplines/{id}": {
       "get": {
         "operationId": "RanksController_findOneDiscipline",
@@ -4819,6 +5337,51 @@
         ]
       }
     },
+    "/v1/disciplines/{id}/board-thresholds": {
+      "put": {
+        "operationId": "GradingController_setBoardThresholds",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardThresholdsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style, with its new board columns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/ranks/{disciplineId}/board-move": {
       "post": {
         "operationId": "GradingController_moveOnBoard",
@@ -5001,6 +5564,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BulkPromoteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/grading-permissions/me": {
+      "get": {
+        "operationId": "GradingPermissionsController_findMine",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGradingPermissionsResponseDto"
                 }
               }
             }
@@ -6085,152 +6683,6 @@
         },
         "tags": [
           "academies"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/me": {
-      "get": {
-        "operationId": "NotificationsController_findAllForCaller",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "Opaque cursor from a previous page's nextCursor.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/{id}/read": {
-      "patch": {
-        "operationId": "NotificationsController_markRead",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/device-tokens": {
-      "post": {
-        "operationId": "NotificationsController_registerDeviceToken",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterDeviceTokenDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceTokenResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/device-tokens/{id}": {
-      "delete": {
-        "operationId": "NotificationsController_deregisterDeviceToken",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "notifications"
         ],
         "security": [
           {
@@ -7968,6 +8420,297 @@
           }
         }
       },
+      "CreateCoachInviteDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when the School has branches; the branch they will coach at."
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "CreatedCoachInviteResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "invitedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "invitedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "First name and surname of who sent it."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "emailSent": {
+            "type": "boolean",
+            "description": "False when the email could not be sent; cancel and invite again."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "branchName",
+          "email",
+          "status",
+          "invitedById",
+          "invitedByName",
+          "createdAt",
+          "expiresAt",
+          "acceptedAt",
+          "cancelledAt",
+          "emailSent"
+        ]
+      },
+      "CoachInviteResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "invitedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "invitedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "First name and surname of who sent it."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "branchName",
+          "email",
+          "status",
+          "invitedById",
+          "invitedByName",
+          "createdAt",
+          "expiresAt",
+          "acceptedAt",
+          "cancelledAt"
+        ]
+      },
+      "CoachInviteListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoachInviteResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcceptCoachInviteResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "A new access token that includes the coach role."
+          }
+        },
+        "required": [
+          "schoolId",
+          "branchId",
+          "accessToken"
+        ]
+      },
+      "StaffPermissionResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "branchIds": {
+            "description": "Branches where they are Branch Staff.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "canInviteCoaches": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "branchIds",
+          "canInviteCoaches"
+        ]
+      },
+      "StaffPermissionListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffPermissionResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SetStaffPermissionDto": {
+        "type": "object",
+        "properties": {
+          "canInviteCoaches": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "canInviteCoaches"
+        ]
+      },
+      "CoachInvitePreviewDto": {
+        "type": "object",
+        "properties": {
+          "schoolName": {
+            "type": "string"
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "The email the invite was sent to; sign in or sign up with it."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CANCELLED",
+              "EXPIRED"
+            ]
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolName",
+          "branchName",
+          "email",
+          "status",
+          "expiresAt"
+        ]
+      },
       "CreateMinorDto": {
         "type": "object",
         "properties": {
@@ -8216,6 +8959,115 @@
         },
         "required": [
           "studentId"
+        ]
+      },
+      "NotificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true,
+            "description": "Developer-level discriminator — not spec-confirmed, see the Prisma model comment."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "title",
+          "body",
+          "read",
+          "createdAt"
+        ]
+      },
+      "NotificationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for the next page, or null if this is the last page."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RegisterDeviceTokenDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "IOS",
+              "ANDROID"
+            ]
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "DeviceTokenResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "IOS",
+              "ANDROID"
+            ]
+          },
+          "token": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "platform",
+          "token",
+          "lastSeenAt",
+          "createdAt"
         ]
       },
       "ClassStyleInputDto": {
@@ -10234,6 +11086,14 @@
             "type": "boolean",
             "description": "\"Skills required\" switch (Decision 128, item 10)."
           },
+          "boardGettingThere": {
+            "type": "number",
+            "description": "Grading Board: \"Getting There\" from this % (Decisions 75, 136). Default 33."
+          },
+          "boardReadyToGrade": {
+            "type": "number",
+            "description": "Grading Board: \"Ready to Grade\" from this % (Decisions 75, 136). Default 66."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -10247,6 +11107,8 @@
           "name",
           "classTypesOffered",
           "skillsRequiredToGrade",
+          "boardGettingThere",
+          "boardReadyToGrade",
           "createdAt",
           "updatedAt"
         ]
@@ -10267,6 +11129,64 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "StyleTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rungs": {
+            "type": "number",
+            "description": "Number of rungs."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "rungs"
+        ]
+      },
+      "StyleTemplateListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StyleTemplateDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateStyleFromTemplateDto": {
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "enum": [
+              "ibjjf",
+              "ibjjf_kids_red",
+              "ibjjf_kids_yellow"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The style's name. Default: the template's name."
+          }
+        },
+        "required": [
+          "templateId"
         ]
       },
       "UpdateDisciplineDto": {
@@ -11548,6 +12468,28 @@
           "hiddenInactive"
         ]
       },
+      "BoardThresholdsDto": {
+        "type": "object",
+        "properties": {
+          "gettingThere": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 98,
+            "example": 33
+          },
+          "readyToGrade": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 99,
+            "example": 66,
+            "description": "Must be above gettingThere."
+          }
+        },
+        "required": [
+          "gettingThere",
+          "readyToGrade"
+        ]
+      },
       "BoardMoveDto": {
         "type": "object",
         "properties": {
@@ -11746,6 +12688,25 @@
           "canVoidHistory",
           "canChangeBoardThresholds",
           "createdAt"
+        ]
+      },
+      "MyGradingPermissionsResponseDto": {
+        "type": "object",
+        "properties": {
+          "isOwner": {
+            "type": "boolean",
+            "description": "The School owner may do everything, in every style; items is then empty."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradingPermissionResponseDto"
+            }
+          }
+        },
+        "required": [
+          "isOwner",
+          "items"
         ]
       },
       "GradingStaffDto": {
@@ -12695,115 +13656,6 @@
         },
         "required": [
           "items"
-        ]
-      },
-      "NotificationResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "body": {
-            "type": "string"
-          },
-          "read": {
-            "type": "boolean"
-          },
-          "type": {
-            "type": "string",
-            "nullable": true,
-            "description": "Developer-level discriminator — not spec-confirmed, see the Prisma model comment."
-          },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "userId",
-          "title",
-          "body",
-          "read",
-          "createdAt"
-        ]
-      },
-      "NotificationListResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NotificationResponseDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true,
-            "description": "Cursor for the next page, or null if this is the last page."
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "RegisterDeviceTokenDto": {
-        "type": "object",
-        "properties": {
-          "platform": {
-            "type": "string",
-            "enum": [
-              "IOS",
-              "ANDROID"
-            ]
-          },
-          "token": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "platform",
-          "token"
-        ]
-      },
-      "DeviceTokenResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "platform": {
-            "type": "string",
-            "enum": [
-              "IOS",
-              "ANDROID"
-            ]
-          },
-          "token": {
-            "type": "string"
-          },
-          "lastSeenAt": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "userId",
-          "platform",
-          "token",
-          "lastSeenAt",
-          "createdAt"
         ]
       },
       "FranchiseFeeChargeResponseDto": {

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
-import { boardColumn, BoardColumn, computeEligibility, Eligibility, localDay, requirementFor, Rung } from './engine';
+import { boardColumn, BoardColumn, BoardThresholds, computeEligibility, DEFAULT_BOARD_THRESHOLDS, Eligibility, localDay, requirementFor, Rung } from './engine';
 import { loadLadder } from './grading-attendance';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -11,9 +11,8 @@ export type StudentEligibility = Eligibility & { boardColumn?: BoardColumn };
  * Roadmap Phase 2c: a student's readiness for their next rung in one style,
  * from the grading engine (Decisions 127, 136, 149, 171). Days are counted in
  * the student's local time: their home branch's time zone, else the School's,
- * else UTC (Decision 172). The board column uses the default 33% / 66%
- * thresholds (Decision 136); per-school thresholds come with the grading
- * settings screen.
+ * else UTC (Decision 172). The board column uses the style's own
+ * thresholds (Decisions 75, 136, 181), 33% / 66% unless changed.
  */
 export async function studentEligibility(
   tx: TenantTx,
@@ -27,8 +26,9 @@ export async function studentEligibility(
   },
   timeZone: string,
   now: Date = new Date(),
+  thresholds: BoardThresholds = DEFAULT_BOARD_THRESHOLDS,
 ): Promise<StudentEligibility> {
-  return eligibilityOnLadder(await loadLadder(tx, studentRank.disciplineId), studentRank, timeZone, now);
+  return eligibilityOnLadder(await loadLadder(tx, studentRank.disciplineId), studentRank, timeZone, now, thresholds);
 }
 
 /** As studentEligibility, on a ladder already loaded (the Grading Board loads
@@ -38,6 +38,7 @@ export function eligibilityOnLadder(
   studentRank: Parameters<typeof studentEligibility>[1],
   timeZone: string,
   now: Date = new Date(),
+  thresholds: BoardThresholds = DEFAULT_BOARD_THRESHOLDS,
 ): StudentEligibility {
   const req = requirementFor(ladder, studentRank.currentStripeId ?? '');
   const eligibility = computeEligibility(req, {
@@ -49,7 +50,12 @@ export function eligibilityOnLadder(
     },
     signedSkillIds: studentRank.skillStatuses.filter((s) => s.status === 'SIGNED_OFF').map((s) => s.skillId),
   });
-  return eligibility.hasNext ? { ...eligibility, boardColumn: boardColumn(eligibility.progressPercent) } : eligibility;
+  return eligibility.hasNext ? { ...eligibility, boardColumn: boardColumn(eligibility.progressPercent, thresholds) } : eligibility;
+}
+
+/** A style's Grading Board thresholds (Decisions 75, 136, 181). */
+export function thresholdsOf(discipline: { boardGettingThere: number; boardReadyToGrade: number }): BoardThresholds {
+  return { gettingThere: discipline.boardGettingThere, readyToGrade: discipline.boardReadyToGrade };
 }
 
 /** The student's local time zone at a School: home branch, else School, else UTC. */

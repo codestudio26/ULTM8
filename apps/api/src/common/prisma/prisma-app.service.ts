@@ -85,6 +85,23 @@ export class PrismaAppService extends PrismaClient implements OnModuleDestroy {
     );
   }
 
+  /**
+   * withTenantContext plus the coach invite token's hash (Decision 183), so
+   * CoachInvite's token-holder policies let the caller read and accept that one
+   * invite. The hash is SHA-256 hex, checked before it is set.
+   */
+  async withCoachInviteToken<T>(
+    userId: string,
+    tokenHash: string,
+    fn: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>,
+  ): Promise<T> {
+    if (!/^[0-9a-f]{64}$/.test(tokenHash)) throw new Error('Invalid coach invite token hash');
+    return this.withTenantContext(userId, async (tx) => {
+      await tx.$executeRawUnsafe(`SET LOCAL app.coach_invite_token_hash = '${tokenHash}'`);
+      return fn(tx);
+    });
+  }
+
   /** Shared by withTenantContext/withMultiTenantContext — see withTenantContext's own
    * header comment for the full Phase 47 account. Same UUID validation as userId
    * above, and for the identical reason (SET LOCAL can't bind-parameter an

@@ -168,3 +168,52 @@ export function useBulkPromote(schoolId: string) {
     },
   });
 }
+
+/** A style's Grading Board columns (Decisions 75, 136, 181). */
+export function useSetBoardThresholds(disciplineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { gettingThere: number; readyToGrade: number }) =>
+      unwrap(apiClient.PUT('/v1/disciplines/{id}/board-thresholds', { params: { path: { id: disciplineId } }, body })),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['disciplines'] }),
+        queryClient.invalidateQueries({ queryKey: ['discipline', disciplineId] }),
+        queryClient.invalidateQueries({ queryKey: ['grading-board'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-grading'] }),
+      ]);
+    },
+  });
+}
+
+export type MyGradingPermissions = components['schemas']['MyGradingPermissionsResponseDto'];
+export type GradingToggle =
+  | 'canPromote'
+  | 'canDowngrade'
+  | 'canSignOffSkills'
+  | 'canAdjustProgress'
+  | 'canVerifyRanks'
+  | 'canVoidHistory'
+  | 'canChangeBoardThresholds';
+
+/** What the caller may do in each style (Decisions 181, 184): the owner
+ * everything; a coach only their own styles and toggles. The API enforces it
+ * either way; this only hides what they can't use. */
+export function useMyGrading(schoolId: string | null) {
+  const query = useQuery({
+    queryKey: ['grading-permissions', 'me', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/grading-permissions/me', { params: { path: { schoolId: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+  const data = query.data;
+  const isOwner = data?.isOwner ?? false;
+  const styleIds = new Set((data?.items ?? []).map((p) => p.disciplineId));
+  const can = (disciplineId: string | null | undefined, toggle: GradingToggle) => {
+    if (!data || !disciplineId) return false;
+    if (data.isOwner) return true;
+    const row = data.items.find((p) => p.disciplineId === disciplineId);
+    return !!row && row[toggle];
+  };
+  const mayGradeStyle = (disciplineId: string) => isOwner || styleIds.has(disciplineId);
+  return { isLoading: query.isLoading, error: query.error, isOwner, can, mayGradeStyle };
+}

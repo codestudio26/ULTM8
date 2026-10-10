@@ -1,12 +1,14 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useOwnedSchoolId } from './auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from './auth/AuthContext';
+import { CoachDashboardPage } from './coach/CoachDashboardPage';
 import { RequireAuth } from './auth/RequireAuth';
 import { LoginPage } from './auth/LoginPage';
 import { RegisterPage } from './auth/RegisterPage';
 import { VerifyOtpPage } from './auth/VerifyOtpPage';
 import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
+import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
@@ -31,9 +33,12 @@ import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
+/** Owners land on their School; coaches on their dashboard (Decision 184);
+ * anyone else on creating a School. */
 function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
-  return <Navigate to={schoolId ? '/school' : '/onboarding'} replace />;
+  const coachSchoolId = useCoachSchoolId();
+  return <Navigate to={schoolId ? '/school' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
 }
 
 export function App() {
@@ -44,6 +49,7 @@ export function App() {
       <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/forgot-passcode" element={<ForgotPasscodePage />} />
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
+      <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
       <Route
@@ -51,6 +57,16 @@ export function App() {
         element={
           <RequireAuth>
             <CreateSchoolPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/coach"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CoachDashboardPage />
+            </Shell>
           </RequireAuth>
         }
       />
