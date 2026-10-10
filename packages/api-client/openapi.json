@@ -10860,10 +10860,6 @@
           "photoUrl": {
             "type": "string"
           },
-          "beltRanking": {
-            "type": "string",
-            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system."
-          },
           "specializations": {
             "type": "array",
             "items": {
@@ -10916,10 +10912,6 @@
             "nullable": true
           },
           "photoUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "beltRanking": {
             "type": "string",
             "nullable": true
           },
@@ -11046,11 +11038,6 @@
           },
           "photoUrl": {
             "type": "string",
-            "nullable": true
-          },
-          "beltRanking": {
-            "type": "string",
-            "description": "Plain display text (e.g. \"Black Belt, 3rd Dan\") — not a live reference into the grading system.",
             "nullable": true
           },
           "phone": {

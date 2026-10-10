@@ -1017,10 +1017,8 @@ model Instructor {
 
   photoUrl String?
 
-  /// Plain display text, NOT a live reference into StudentRank/Rank — RanksModule
-  /// doesn't exist yet, and nothing confirms an Instructor's shown rank must be sourced
-  /// from that system rather than self-reported text.
-  beltRanking String?
+  // The owner's typed beltRanking was removed (Decision 196): instructors choose
+  // their own belt per style instead (InstructorBelt, Decision 188).
 
   specializations        String[] @default([])
   /// The School's styles this instructor specialises in (Decision 152, item 1).

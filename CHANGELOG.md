@@ -28,6 +28,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `includesLessons` and `Lesson.free` (migration `20261101000000`); lesson
   responses add `free` and `locked`; new `GET /students/{id}/lessons` for the
   student or their guardian; only the owner sets `free`.
+- **The typed "Belt / ranking" on an instructor is gone** (Decision 196).
+  Instructors choose their own belt per style on "My belts" (Decision 188), so
+  the owner's free-text field on the Instructor form is removed, with its
+  stored values. The lesson form's instructor list now shows names. **api:**
+  `beltRanking` removed from the instructor create/update/response shapes
+  (migration `20261031000000` drops the column).
 - **History notes can be edited and hidden; every change is kept** (Decision
   192). On a student's grading page, the owner and anyone who may grade that
   student in that style ("Promote" or "Move down") can edit a history entry's

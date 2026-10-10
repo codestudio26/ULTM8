@@ -44,7 +44,6 @@ export function InstructorFormModal({
      * which has nothing to clear. */
     branchId?: string | null;
     photoUrl?: string | null;
-    beltRanking?: string | null;
     specializations?: string[];
     specializationStyleIds?: string[];
     phone?: string | null;
@@ -58,7 +57,6 @@ export function InstructorFormModal({
     userId: initial?.userId ?? '',
     branchId: initial?.branchId ?? '',
     photoUrl: initial?.photoUrl ?? '',
-    beltRanking: initial?.beltRanking ?? '',
     specializations: (initial?.specializations ?? []).join(', '),
     phone: initial?.phone ?? '',
     yearsOfExperience: initial?.yearsOfExperience?.toString() ?? '',
@@ -76,7 +74,6 @@ export function InstructorFormModal({
         userId: form.userId,
         branchId: form.branchId || null,
         photoUrl: form.photoUrl || null,
-        beltRanking: form.beltRanking || null,
         ...(usesStyles
           ? { specializationStyleIds: styleIds }
           : {
@@ -127,9 +124,6 @@ export function InstructorFormModal({
         </Field>
         <Field label="Photo URL" htmlFor="instructor-photo">
           <TextField value={form.photoUrl} onChange={(e) => setForm((f) => ({ ...f, photoUrl: e.target.value }))} />
-        </Field>
-        <Field label="Belt / ranking" htmlFor="instructor-belt" hint='Display text, e.g. "Black Belt, 3rd Dan".'>
-          <TextField value={form.beltRanking} onChange={(e) => setForm((f) => ({ ...f, beltRanking: e.target.value }))} />
         </Field>
         {usesStyles ? (
           <Field label="Specializations" htmlFor="instructor-specializations" hint="The styles this instructor teaches.">

@@ -2313,3 +2313,32 @@ When an Instructor or Branch Staff role is removed, that person's grading permis
 **Date:** 10 Oct 2026 · **Status:** Follows Gus's prototype (Decision 124); offered to Gus as the default on 10 Oct 2026. **Resolves:** the question left in the Phase 7 acceptance report (D3).
 
 The Grading Board hides inactive students and shows how many it hid. That count includes inactive students on the last stripe of the top belt, who never appear on the board because they have nothing left to be promoted to, as the prototype does.
+
+---
+
+## Decision 195 — Lessons: membership plans say which styles they cover and whether they include lessons
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Resolves:** how a membership maps to an activity (left open by Decision 154) and "paid" (Decision 190). Gus chose *"Plans tick their styles"*, then for free passes: *"any one with pass, or if better when we set up the free pass and can give access to the curriculum or not"*, and agreed to *"Yes, switch per plan"*.
+
+1. **Each membership plan ticks the styles it covers.**
+2. **Each plan has an "Includes lessons" switch.** It starts on for plans with a price and off for free plans (Friend Pass, £0 plans); the owner can change it on any plan.
+3. **A lesson's styles are the styles of the skills it teaches.**
+4. **Who can watch a lesson:** a student, or a guardian of that student, with a live membership (active, not expired, credits left for packs) on a plan that includes lessons and covers one of the lesson's styles. A lesson the owner marked free (Decision 190) is watchable by every student and guardian at the School. Staff always see every lesson.
+
+Replaces "paid membership" in Decisions 154 and 190 with this per-plan switch.
+
+---
+
+## Decision 196 — The owner's typed "Belt ranking" on an instructor is removed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · Gus: *"correct remove the old one"*.
+
+Instructors choose their own belt per style (Decision 188), so the owner's free-text "Belt ranking" on the Instructor profile goes, with its stored values.
+
+---
+
+## Decision 197 — Who edits history notes: confirmed
+
+**Date:** 10 Oct 2026 · **Status:** Product-owner decision (Gus) · **Confirms:** the reading of Decision 192 built in PR #145. Gus: *"yes"*.
+
+"Anyone who may grade that student in that style" means the School Owner, or a coach with "Promote" or "Move down" for that style who covers the student's branch.

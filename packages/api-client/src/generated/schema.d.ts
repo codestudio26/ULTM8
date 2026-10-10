@@ -3485,8 +3485,6 @@ export interface components {
             /** @description Branch to scope this profile to. Omit for a School-wide profile. */
             branchId?: string;
             photoUrl?: string;
-            /** @description Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system. */
-            beltRanking?: string;
             specializations?: string[];
             /** @description The School's styles this instructor specialises in (Decision 152). Used instead of free-text specializations when the School has styles; specializations is then filled in from their names. */
             specializationStyleIds?: string[];
@@ -3503,7 +3501,6 @@ export interface components {
             schoolId: string;
             branchId?: string | null;
             photoUrl?: string | null;
-            beltRanking?: string | null;
             specializations: string[];
             /** @description The School's styles this instructor specialises in (Decision 152). */
             specializationStyleIds: string[];
@@ -3534,8 +3531,6 @@ export interface components {
             /** @description Branch to scope this profile to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             photoUrl?: string | null;
-            /** @description Plain display text (e.g. "Black Belt, 3rd Dan") — not a live reference into the grading system. */
-            beltRanking?: string | null;
             /** @description School-facing contact number, E.164 — distinct from this User's own login phone. Pass null to clear. */
             phone?: string | null;
             yearsOfExperience?: number | null;
