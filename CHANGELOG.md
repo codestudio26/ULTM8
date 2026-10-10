@@ -15,6 +15,21 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **school-portal — student grading panel** (roadmap Phase 4, item 2;
+  Decision 179). Open a student from the Students list to see, for each
+  style: their rank (with a belt picture) and since when, whether it's
+  self-declared; progress toward the next rank (classes, per class type where
+  the rank counts each type, time at the rank, skills); the skills for the
+  next rank with Not started → Learning → Signed off and linked lessons; and
+  the rank history with notes, reasons and voided entries on request.
+  Actions: Grade (any higher rank, a back-dated date, starting classes, the
+  skills acknowledgement or block; the next stripe is recorded as a stripe
+  award), Give first rank, Move down (with a reason), Correct date, Verify a
+  self-declared rank (or correct it), and Void a history entry. English only
+  for now. First browser tests for the portal (Playwright, `npm run e2e` in
+  `apps/school-portal`), run in Chromium at desktop and tablet widths and
+  keyboard-only. API docs: the rank-history `cursor` and `limit` are marked
+  optional; `packages/api-client` regenerated.
 - **api — "ready to grade" notification** (Decisions 145, 178). The School
   owner and the coaches with grading permission for the style who cover the
   student's branch are told, in-app and by email, when a student meets

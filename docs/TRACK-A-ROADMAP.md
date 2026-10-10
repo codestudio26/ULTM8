@@ -558,7 +558,7 @@ cover — building it speculatively is exactly what Decision 105 says not to do.
 Still lands directly on Admin Users. Low priority; nothing yet to summarize on a
 landing page until more of the admin surface exists.
 
-### 7. Book-from-Timetable — blocked on the `TimetableSlot` ↔ `Class` relationship (Decision 179)
+### 7. Book-from-Timetable — blocked on the `TimetableSlot` ↔ `Class` relationship (Decision 180)
 
 The school-portal Timetable design-canvas mockup gained a "Book this class" preview
 on every slot (Daily/Weekly/Monthly), but it's a review-only dialog, not a real
@@ -566,7 +566,7 @@ flow — `Booking` belongs to `Class` (`Class *—* Booking`), not `TimetableSlo
 `skills/ultm8-domain-rules/SKILL.md` §9 already flags the `TimetableSlot` ↔ `Class`
 relationship itself as `[UNRESOLVED]`. Nothing to build here until the Architect
 answers whether a slot resolves to an existing dated `Class` occurrence or one gets
-created/looked-up on demand — see Decision 179 for the full writeup and the exact
+created/looked-up on demand — see Decision 180 for the full writeup and the exact
 questions that need answering.
 
 ### 8. ~~`chargeback-pattern-restriction` job~~ — DONE (Decision 68/112, Phase B)
@@ -600,7 +600,7 @@ responsive bugs — mobile-nav collapse and table horizontal-overflow (PR #31).
 3. Decision 109 (Transaction Student-name resolution, PR #61) is still a
    Developer-level inference, flagged in the decision log but not yet given an
    Architect confirmation — worth a short pass, though nothing is blocked on it.
-4. Book-from-Timetable (item 7 above, Decision 179) needs the Architect's call on
+4. Book-from-Timetable (item 7 above, Decision 180) needs the Architect's call on
    the `TimetableSlot` ↔ `Class` relationship before any endpoint design starts —
    nothing to queue here until that lands.
 5. Everything else in "What's actually left" needs a decision, design pass, or both
