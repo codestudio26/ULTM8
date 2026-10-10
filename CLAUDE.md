@@ -53,10 +53,13 @@ When sources disagree, resolve in this order, highest first:
 
 ## Current phase
 
-**Updated 25 Sep 2026** (verified against the repository, not assumed):
+**Updated 10 Oct 2026** (verified against the repository, not assumed):
 
 - **Track A — V1 frozen** as `v1.0.0` (see "Versioning" above): `apps/api` (NestJS + Prisma + Postgres RLS, covering tenancy, auth, Students/Instructors/Guardians, grading, classes/bookings/waitlist, memberships/payments, waivers, QR attendance, notifications, and Platform Admin), `apps/school-portal` (School Owner/Staff web app), and `apps/platform-admin`. Post-Spec-55 decisions run 70–121 as of V1 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`).
-- **Post-V1 work on `master`:** page-by-page redesign of `apps/school-portal` plus new features, starting with the Instructors page and app-shell header — planned as **v1.1** (the user decides which pages complete it; nothing is tagged until they say so). See `CHANGELOG.md` → Unreleased.
+- **Post-V1 work on `master`:** page-by-page redesign of `apps/school-portal` plus new features, planned as **v1.1** (the user decides which pages complete it; nothing is tagged until they say so). See `CHANGELOG.md` → Unreleased.
+  - **Redesigned pages shipped for real**, not just mockups (PR #78, PR #114): Instructors + a real app-shell header, the Auth flow (Login/Register/Reset Passcode/Verify OTP), Membership Plans, Transactions, Waivers (Split-Pane Reader), Staff invite flow, and a new Students roster page.
+  - **Still mockup-only in the design canvas**, with the exact backend gap logged per page: Branches, Franchises, Classes, Curriculum, Timetable, Dashboard, Notifications, the new Bookings page, Disciplines, and the new Student Detail/Invite pages. `docs/v1.2-backend-backlog.md` is the durable, in-repo source of truth for this (41 items, each effort-tagged) — read it before starting any of this work. A live status tracker also exists at https://claude.ai/artifact/KffxgELbjxWefsC9kid7uj (private; the user can share it from the artifact's own Share menu if a session can't open it) — useful for current status, but the markdown doc is the one every session can always reach.
+- **A large, separate grading-engine feature effort has also merged extensively into `master`** in parallel with the redesign work above (belt/rank grading criteria and ladders, coach dashboard and invites, Kid Mode booking delegation, and more) — Post-Spec-55 decisions now run well past 199. `docs/decisions/POST-SPEC-55-DECISION-LOG.md` is the current authoritative count; deliberately not restated here as a number, since that goes stale fast and this paragraph already did once.
 - **Track B — `apps/student`** (Student/Guardian React Native app): in active development, not part of V1. A partial copy is on `master` (PR #81); later work is on `track-b-student-app-pka8oo` / PR #82. See `docs/TRACK-B-ROADMAP.md` on that branch for its own status.
 - Known V1 gaps and deliberately deferred items are listed in `CHANGELOG.md` under v1.0.0.
 
