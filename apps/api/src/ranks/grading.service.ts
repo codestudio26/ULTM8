@@ -438,7 +438,7 @@ export class GradingService {
       throw new BadRequestException('A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.');
     }
     if (type === 'STRIPE_AWARD' && dto.targetRungId !== undefined) {
-      throw new BadRequestException('A stripe award moves to the next stripe tier; to grade to a chosen rung, use promote with targetRungId.');
+      throw new BadRequestException('A stripe award moves to the next stripe; to grade to a chosen belt or stripe, use promote with targetRungId.');
     }
 
     const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -456,7 +456,7 @@ export class GradingService {
       // --- Where from, where to.
       const fromIndex = existing?.currentStripeId ? rungIndex(ladder, existing.currentStripeId) : -1;
       if (existing && fromIndex < 0) {
-        throw new BadRequestException('This Student\'s current rung can\'t be found on the ladder; correct their rank first.');
+        throw new BadRequestException('This Student\'s current belt and stripe can\'t be found on the ladder; correct their rank first.');
       }
       if (!existing && type !== 'PROMOTION') {
         throw new BadRequestException(
@@ -472,12 +472,12 @@ export class GradingService {
       let toIndex: number;
       if (dto.targetRungId !== undefined) {
         toIndex = rungIndex(ladder, dto.targetRungId);
-        if (toIndex < 0) throw new BadRequestException('targetRungId is not a rung of this style.');
+        if (toIndex < 0) throw new BadRequestException('targetRungId is not a belt or stripe of this style.');
         if (from && type === 'PROMOTION' && toIndex <= fromIndex) {
-          throw new BadRequestException('Promote only moves up; pick a higher rung (Decision 128, item 12). Use downgrade to move down.');
+          throw new BadRequestException('Promote only moves up; pick a higher belt or stripe (Decision 128, item 12). Use downgrade to move down.');
         }
         if (from && type === 'DOWNGRADE' && toIndex >= fromIndex) {
-          throw new BadRequestException('Downgrade only moves down; pick a lower rung (Decision 128, item 12).');
+          throw new BadRequestException('Downgrade only moves down; pick a lower belt or stripe (Decision 128, item 12).');
         }
       } else if (!from) {
         toIndex = 0; // a first grade starts on the style's first rung
@@ -1391,7 +1391,7 @@ export class GradingService {
         select: { id: true, rankId: true },
       });
       if (!tier) {
-        throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+        throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its stripes.');
       }
       if (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId } }, select: { id: true } })) {
         throw new ConflictException('This student already has a rank in this style; only staff can change it.');
@@ -1436,7 +1436,7 @@ export class GradingService {
           toRankId: tier.rankId,
           toStripeTierId: tier.id,
           systemNote: autoVerified
-            ? 'Declared when joining: the first rung, verified automatically (Decision 147).'
+            ? 'Declared when joining: the plain first belt, verified automatically (Decision 147).'
             : 'Declared when joining: waiting to be verified by the School (Decision 137).',
         },
       });
@@ -1476,7 +1476,7 @@ export class GradingService {
           select: { id: true, rankId: true },
         });
         if (!tier) {
-          throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its rungs.');
+          throw new BadRequestException('rankId and stripeTierId must be a belt of this style and one of its stripes.');
         }
         target = { rankId: tier.rankId, stripeTierId: tier.id };
       }
