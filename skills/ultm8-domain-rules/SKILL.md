@@ -80,7 +80,7 @@ Source: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 124–163, and G
 - Each rung carries: name, stripe count and colour segments (mixed colours allowed), classes required, minimum days, which class types count, weekly cap, required skills, and the "time in rank only" switch with its years stored as minimum days (Decisions 126, 128).
 - A rung's stripe colours are set only in its stripe list; its single colour is filled in from the **first** stripe in the list (the newest colour, the one the rung is named after), so the two never disagree (Decision 165).
 - Rungs can be reordered by drag with a confirmation listing affected students; a rung students hold cannot be deleted (Decision 152). Belts reorder within a style and stripes within their own belt, never across belts; a moved rung keeps its students (Decision 180).
-- Styles are created from the three IBJJF templates only (90 / 139 / 175 rungs), built from scratch, or duplicated with their skills (Decision 131).
+- Styles are created from the three IBJJF templates only (90 / 139 / 175 rungs), built from scratch, or duplicated with their skills (Decision 131). A template gives the prototype's numbers and class types, which the school then edits; Duplicate copies the ladder, skills, class types, "skills required" switch and board %, but no students, ranks or coach permissions (Decision 182). Owner only.
 
 **Requirements and progress**
 - A rung's requirements are what it takes to be promoted **into** it. Exception: promotion into a time-only rung uses the current rung's numbers; a time-only rung uses its own minimum days, and the next rung's skills are optional (Decision 127).

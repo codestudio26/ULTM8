@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Style templates and Duplicate** (Decisions 131, 182). On the Disciplines
+  page, **Start from template** creates a style from one of the three IBJJF
+  ladders (White Stripes, 90 rungs; White & Red Stripes, 139; Yellow Stripes,
+  175) with the prototype's numbers and class types, ready to edit.
+  **Duplicate** copies a style's belts, rungs and their rules, skills, class
+  types, "skills required" switch and board %, as "… (Copy)"; no students,
+  ranks or coach permissions. Owner only. **api:** `GET /style-templates`,
+  `POST /schools/{id}/disciplines/from-template`,
+  `POST /disciplines/{id}/duplicate`. `packages/api-client` regenerated.
 - **Grading Board columns per style** (Decisions 75, 136, 181). Each style
   keeps its own split, 33% / 66% by default. On the Grading Board, **Change %**
   sets "Getting There" and "Ready to Grade" (whole %, 1–99, Getting There
