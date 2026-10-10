@@ -23,8 +23,8 @@ const NULLABLE_ON_UPDATE = ['secondaryColour', 'tagColour', 'coralAccent'] as co
  * "reorder" path through this endpoint at all today, only a no-op "send
  * back what it already was." Not something a null-widening on this field
  * could fix — flagged as a real, separate backend gap, not silently
- * presented as reorderable), `primaryColour`/`yearsInRankFlag` (required/
- * boolean, nothing to clear), or `stripeTiers` (a whole-
+ * presented as reorderable), `primaryColour` (required,
+ * nothing to clear), or `stripeTiers` (a whole-
  * array-replace field — an empty array `[]` already unambiguously means
  * "none," so there's no null-vs-undefined ambiguity for these to begin
  * with, the same reasoning already established for Class.activities/

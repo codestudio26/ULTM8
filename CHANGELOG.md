@@ -23,7 +23,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   visible to everyone at the School, as before; nothing changes on screen.
   **api:** `LessonContent` (migration `20261104000000`, with RLS:
   `can_view_lesson_content`, `is_lesson_staff`); existing content copied.
-
+- **Belt-level "years in rank" flag removed** (Decision 207). Each stripe
+  has its own "time in rank only" switch, which grading uses; nothing changes
+  for students. **api:** `Rank.yearsInRankFlag` dropped (migration
+  `20261103000000`); a belt no longer takes or returns it.
+  `packages/api-client` regenerated.
 - **Belt-level weekly cap and required skills removed** (Decision 199). They
   live on each stripe, the plain belt's own (e.g. "Brown Belt", no stripes)
   included, and grading reads only those, so no student's requirements

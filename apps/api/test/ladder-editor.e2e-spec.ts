@@ -178,7 +178,7 @@ describeIfDb('Ladder editor (Decisions 152, 180)', () => {
     const create = await http()
       .post(`/v1/styles/${bjj.id}/ranks`)
       .set('Authorization', `Bearer ${ownerToken}`)
-      .send({ order: 3, name: 'Brown', primaryColour: '#8B4513', yearsInRankFlag: false, stripeTiers: [tierBody(rung['Purple 0'], 0, 0, 'Brown 0')] });
+      .send({ order: 3, name: 'Brown', primaryColour: '#8B4513', stripeTiers: [tierBody(rung['Purple 0'], 0, 0, 'Brown 0')] });
     expect(create.status).toBe(400);
   });
 

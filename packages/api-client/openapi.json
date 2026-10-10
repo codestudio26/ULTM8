@@ -12131,11 +12131,6 @@
             "type": "string",
             "description": "Drawing only: silver/gold accent of the coral belts."
           },
-          "yearsInRankFlag": {
-            "type": "boolean",
-            "default": false,
-            "description": "Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold."
-          },
           "stripeTiers": {
             "minItems": 1,
             "type": "array",
@@ -12296,9 +12291,6 @@
             "type": "string",
             "nullable": true
           },
-          "yearsInRankFlag": {
-            "type": "boolean"
-          },
           "stripeTiers": {
             "type": "array",
             "items": {
@@ -12319,7 +12311,6 @@
           "order",
           "name",
           "primaryColour",
-          "yearsInRankFlag",
           "stripeTiers",
           "createdAt",
           "updatedAt"
@@ -12420,11 +12411,6 @@
           },
           "primaryColour": {
             "type": "string"
-          },
-          "yearsInRankFlag": {
-            "type": "boolean",
-            "default": false,
-            "description": "Black Belt and above — see the schema's own comment on why this is a boolean only, no numeric threshold."
           },
           "stripeTiers": {
             "minItems": 1,

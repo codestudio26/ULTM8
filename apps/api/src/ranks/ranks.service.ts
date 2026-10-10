@@ -100,7 +100,6 @@ export class RanksService {
             secondaryColour: belt.secondaryColour,
             tagColour: belt.tagColour,
             coralAccent: belt.coralAccent,
-            yearsInRankFlag: belt.rungs.some((r) => r.timeOnly),
           },
         });
         await tx.rankStripeTier.createMany({
@@ -298,7 +297,6 @@ export class RanksService {
           secondaryColour: dto.secondaryColour,
           tagColour: dto.tagColour,
           coralAccent: dto.coralAccent,
-          yearsInRankFlag: dto.yearsInRankFlag ?? false,
         },
       });
       for (const [i, tier] of dto.stripeTiers.entries()) {
@@ -392,7 +390,6 @@ export class RanksService {
           secondaryColour: dto.secondaryColour,
           tagColour: dto.tagColour,
           coralAccent: dto.coralAccent,
-          yearsInRankFlag: dto.yearsInRankFlag,
         },
       });
       if (dto.stripeTiers) {

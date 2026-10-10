@@ -83,9 +83,6 @@ export class RankResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   coralAccent!: string | null;
 
-  @ApiProperty()
-  yearsInRankFlag!: boolean;
-
   @ApiProperty({ type: [RankStripeTierResponseDto] })
   stripeTiers!: RankStripeTierResponseDto[];
 

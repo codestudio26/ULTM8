@@ -988,7 +988,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       const portalPayload = (rank: { primaryColour: string; stripeTiers: Tier[] }) => ({
         primaryColour: rank.primaryColour,
         secondaryColour: null,
-        yearsInRankFlag: false,
         stripeTiers: rank.stripeTiers.map((t) => ({
           order: t.order,
           count: t.count,
