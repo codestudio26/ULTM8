@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Discipline, Prisma, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
@@ -42,6 +42,27 @@ const RANK_CHANGE_TYPES = ['PROMOTION', 'DOWNGRADE', 'STRIPE_AWARD', 'BULK_PROMO
 
 // Same pattern MembershipsService.getMembershipStatus() uses for its :id check.
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A timestamp from Postgres JSON (to_jsonb of a timestamp without time zone,
+ * which Prisma stores as UTC): "2026-10-10T07:00:00.123" → Date. */
+function dbDate(value: unknown): Date | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value);
+  return new Date(/(Z|[+-]\d\d:?\d\d)$/.test(text) ? text : `${text}Z`);
+}
+
+/** StudentRank's DateTime fields, from the Prisma schema. */
+const STUDENT_RANK_DATE_FIELDS = Prisma.dmmf.datamodel.models
+  .find((m) => m.name === 'StudentRank')!
+  .fields.filter((f) => f.type === 'DateTime')
+  .map((f) => f.name);
+
+/** A StudentRank row (with its skill sign-offs) from grading_board_rows(). */
+function studentRankFromJson(json: Record<string, unknown>) {
+  const row: Record<string, unknown> = { ...json };
+  for (const field of STUDENT_RANK_DATE_FIELDS) if (field in row) row[field] = dbDate(row[field]);
+  return row as unknown as Prisma.StudentRankGetPayload<{ include: { skillStatuses: { select: { skillId: true; status: true } } } }>;
+}
 
 /**
  * Phase 10b scope only: single-Student grading actions (promote/downgrade/
@@ -223,9 +244,22 @@ export class GradingService {
    * assertStaffAtSchool() check, which admitted all staff to every grading
    * action and was flagged [UNRESOLVED] in this file. */
   async assertCanGrade(callerId: string, schoolId: string, disciplineId: string, studentId: string, toggle: PermissionToggle): Promise<void> {
+    const authorize = await this.gradeAuthorizer(callerId, schoolId, disciplineId, toggle);
+    await authorize(studentId);
+  }
+
+  /** assertCanGrade for many students (bulk promote): what concerns only the
+   * caller — owner or not, staff grant, the permission and its toggle, their
+   * branches — is read once; each student is then checked for branch and
+   * enrollment (stress round, finding 2). Same rules, same messages. */
+  private async gradeAuthorizer(
+    callerId: string,
+    schoolId: string,
+    disciplineId: string,
+    toggle: PermissionToggle,
+  ): Promise<(studentId: string) => Promise<void>> {
     if (await this.isSchoolOwner(callerId, schoolId)) {
-      await this.assertEnrolledStudent(studentId, schoolId);
-      return;
+      return (studentId) => this.assertEnrolledStudent(studentId, schoolId);
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -238,8 +272,11 @@ export class GradingService {
     if (!permission[toggle]) {
       throw new ForbiddenException(`Your grading permission for this style doesn't include this: ${TOGGLE_LABELS[toggle]}. The School owner can turn it on.`);
     }
-    await this.assertBranchCoversStudent(callerId, schoolId, studentId);
-    await this.assertEnrolledStudent(studentId, schoolId);
+    const coverage = await this.branchCoverage(callerId, schoolId);
+    return async (studentId) => {
+      await this.assertBranchCoversStudent(coverage, schoolId, studentId);
+      await this.assertEnrolledStudent(studentId, schoolId);
+    };
   }
 
   /** Grading is for the School's own students (stress round, finding 8): an
@@ -258,7 +295,7 @@ export class GradingService {
   private async assertStaffCanSeeStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
     if (await this.isSchoolOwner(callerId, schoolId)) return;
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
-    await this.assertBranchCoversStudent(callerId, schoolId, studentId);
+    await this.assertBranchCoversStudent(await this.branchCoverage(callerId, schoolId), schoolId, studentId);
   }
 
   /** Decision 168 (with 139 and 148):
@@ -269,27 +306,36 @@ export class GradingService {
    *   branch; a coach may hold several). A staff grant with no branch covers
    *   no students there, and a student with no home branch yet is the
    *   owner's alone until the owner assigns one. */
-  private async assertBranchCoversStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
-    // Under the caller's context, Branch RLS shows a staff member at least
-    // their own branch, so any row means the School has branches.
-    const anyBranch = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.branch.findFirst({ where: { schoolId }, select: { id: true } }),
-    );
-    if (!anyBranch) return;
+  /** Which branches a staff member covers at a School (Decisions 168, 169):
+   * none needed when it has no branches; otherwise their staff grants'
+   * branches. Under the caller's context, Branch RLS shows a staff member at
+   * least their own branch, so any row means the School has branches. */
+  private async branchCoverage(callerId: string, schoolId: string): Promise<{ hasBranches: boolean; branchIds: Set<string> }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const anyBranch = await tx.branch.findFirst({ where: { schoolId }, select: { id: true } });
+      if (!anyBranch) return { hasBranches: false, branchIds: new Set<string>() };
+      const grants = await tx.roleGrant.findMany({
+        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: { not: null } },
+        select: { branchId: true },
+      });
+      return { hasBranches: true, branchIds: new Set(grants.map((g) => g.branchId as string)) };
+    });
+  }
 
+  private async assertBranchCoversStudent(
+    coverage: { hasBranches: boolean; branchIds: Set<string> },
+    schoolId: string,
+    studentId: string,
+  ): Promise<void> {
+    if (!coverage.hasBranches) return;
+    if (!UUID_PATTERN.test(studentId)) throw new BadRequestException('studentId must be a valid UUID');
     const home = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.studentHomeBranch.findUnique({ where: { schoolId_studentId: { schoolId, studentId } }, select: { branchId: true } }),
     );
     if (!home) {
       throw new ForbiddenException('This student has no home branch yet. Only the School owner can see or grade them until one is assigned.');
     }
-    const assignment = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findFirst({
-        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: home.branchId },
-        select: { id: true },
-      }),
-    );
-    if (!assignment) {
+    if (!coverage.branchIds.has(home.branchId)) {
       throw new ForbiddenException('This student belongs to a branch you are not assigned to.');
     }
   }
@@ -372,13 +418,21 @@ export class GradingService {
     type: 'PROMOTION' | 'DOWNGRADE' | 'STRIPE_AWARD',
     // Bulk promote (Decision 130) records its own history type and note.
     bulk?: { eventType: 'BULK_PROMOTION' | 'BULK_STRIPE_AWARD'; systemNote: string },
+    // Bulk promote checks the style, the School and the caller once for the
+    // batch and loads the ladder once; each student is still authorized.
+    batch?: { discipline: Discipline; ladder: Rung[]; authorize: (studentId: string) => Promise<void> },
   ) {
-    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    const discipline =
+      batch?.discipline ?? (await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } })));
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' ? 'canDowngrade' : 'canPromote');
-    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    if (batch) {
+      await batch.authorize(studentId);
+    } else {
+      await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' ? 'canDowngrade' : 'canPromote');
+      await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId);
+    }
 
     if (type === 'DOWNGRADE' && (dto.effectiveDate !== undefined || dto.startingClasses !== undefined || dto.startingClassesByType !== undefined)) {
       throw new BadRequestException('A downgrade is dated today and starts with no classes; effectiveDate and starting classes are for grading up.');
@@ -392,7 +446,7 @@ export class GradingService {
         where: { studentId_disciplineId: { studentId, disciplineId } },
         include: { skillStatuses: true },
       });
-      const ladder = await loadLadder(tx, disciplineId);
+      const ladder = batch?.ladder ?? (await loadLadder(tx, disciplineId));
       if (ladder.length === 0) {
         throw new BadRequestException('This Discipline has no Ranks configured yet.');
       }
@@ -658,9 +712,20 @@ export class GradingService {
     const cannotPromote: Row[] = [];
     const dateProblems: string[] = [];
 
+    // The caller, their permission and the ladder: once for the batch.
+    let authorize: (studentId: string) => Promise<void>;
+    try {
+      authorize = await this.gradeAuthorizer(callerId, schoolId, dto.disciplineId, 'canPromote');
+    } catch (err) {
+      if (!(err instanceof ForbiddenException)) throw err;
+      authorize = () => Promise.reject(err);
+    }
+    const ladder = await this.prismaApp.withTenantContext(callerId, (tx) => loadLadder(tx, dto.disciplineId));
+    const batch = { discipline, ladder, authorize };
+
     for (const studentId of dto.studentIds) {
       try {
-        await this.assertCanGrade(callerId, schoolId, dto.disciplineId, studentId, 'canPromote');
+        await authorize(studentId);
       } catch (err) {
         if (err instanceof ForbiddenException || err instanceof NotFoundException || err instanceof BadRequestException) {
           cannotPromote.push({ studentId, reasons: ['not a student you can grade in this style'] });
@@ -674,7 +739,6 @@ export class GradingService {
           include: { skillStatuses: { select: { skillId: true, status: true } } },
         });
         if (!sr) return { cannot: 'no rank in this style' };
-        const ladder = await loadLadder(tx, dto.disciplineId);
         const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
         const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;
         if (!next) return { cannot: 'no next rank' };
@@ -743,6 +807,7 @@ export class GradingService {
           },
           'PROMOTION',
           { eventType: row.sameBelt ? 'BULK_STRIPE_AWARD' : 'BULK_PROMOTION', systemNote },
+          batch,
         );
         promoted.push({ ...strip(row), promotionEventId: result.promotionEvent.id });
       } catch (err) {
@@ -782,18 +847,10 @@ export class GradingService {
     const owner = await this.isSchoolOwner(callerId, schoolId);
     if (!owner) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
 
-    const { ladder, schoolTimeZone, hasBranches, myBranchIds } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const mine = await tx.roleGrant.findMany({
-        where: { userId: callerId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null, branchId: { not: null } },
-        select: { branchId: true },
-      });
-      return {
-        ladder: await loadLadder(tx, disciplineId),
-        schoolTimeZone: (await tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }))?.timezone ?? null,
-        hasBranches: (await tx.branch.findFirst({ where: { schoolId }, select: { id: true } })) !== null,
-        myBranchIds: [...new Set(mine.map((m) => m.branchId as string))],
-      };
-    });
+    const { ladder, schoolTimeZone } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+      ladder: await loadLadder(tx, disciplineId),
+      schoolTimeZone: (await tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }))?.timezone ?? null,
+    }));
 
     type Row = {
       student: { id: string; firstName: string; surname: string };
@@ -816,44 +873,39 @@ export class GradingService {
           tx.studentHomeBranch.findMany({ where: { schoolId, studentId: { in: ids } }, select: { studentId: true, branch: { select: { timezone: true } } } }),
           tx.membership.findMany({ where: { schoolId, studentId: { in: ids } }, select: membershipSelect }),
         ]);
+        // Keyed by student, not searched per student (stress round, finding 3).
+        const rankOf = new Map(ranks.map((r) => [r.studentId, r]));
+        const zoneOf = new Map(homes.map((h) => [h.studentId, h.branch.timezone]));
+        const membershipsOf = new Map<string, typeof memberships>();
+        for (const m of memberships) membershipsOf.set(m.studentId, [...(membershipsOf.get(m.studentId) ?? []), m]);
         for (const g of grants) {
-          const sr = ranks.find((r) => r.studentId === g.user.id);
+          const sr = rankOf.get(g.user.id);
           if (!sr) continue;
-          rows.push({
-            student: g.user,
-            studentRank: sr,
-            homeTimeZone: homes.find((h) => h.studentId === g.user.id)?.branch.timezone ?? null,
-            memberships: memberships.filter((m) => m.studentId === g.user.id),
-          });
+          rows.push({ student: g.user, studentRank: sr, homeTimeZone: zoneOf.get(g.user.id) ?? null, memberships: membershipsOf.get(g.user.id) ?? [] });
         }
       });
     } else {
-      // Who this staff member may see (Decision 168): the students whose home
-      // branch is one of theirs, or, in a School with no branches, every
-      // enrolled student — read through the two narrow read-only policies
-      // added for this board (20261021000000_grading_board).
-      const candidateIds = await this.prismaApp.withTenantContext(callerId, async (tx) =>
-        hasBranches
-          ? (await tx.studentHomeBranch.findMany({ where: { schoolId, branchId: { in: myBranchIds } }, select: { studentId: true } })).map((h) => h.studentId)
-          : (await tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, distinct: ['userId'], select: { userId: true } })).map((g) => g.userId),
+      // Who this staff member may see (Decisions 168, 169, 177): the students
+      // whose home branch is one of theirs, or, in a School with no branches,
+      // every enrolled student. One query through grading_board_rows()
+      // (20261027000000), which applies that rule for the caller; it replaced
+      // reading each student in their own transaction (stress round, finding 1).
+      const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.$queryRaw<
+          Array<{ studentId: string; firstName: string; surname: string; homeTimeZone: string | null; studentRank: Record<string, unknown>; memberships: Array<Record<string, unknown>> }>
+        >`SELECT * FROM grading_board_rows(${schoolId}, ${disciplineId})`,
       );
-      for (const studentId of candidateIds) {
-        const row = await this.prismaApp.withTenantContext(studentId, async (tx) => {
-          const enrolled = await tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
-          if (!enrolled) return null;
-          const studentRank = await tx.studentRank.findUnique({
-            where: { studentId_disciplineId: { studentId, disciplineId } },
-            include: { skillStatuses: { select: { skillId: true, status: true } } },
-          });
-          if (!studentRank) return null;
-          const [user, home, memberships] = await Promise.all([
-            tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { id: true, firstName: true, surname: true } }),
-            tx.studentHomeBranch.findUnique({ where: { schoolId_studentId: { schoolId, studentId } }, select: { branch: { select: { timezone: true } } } }),
-            tx.membership.findMany({ where: { schoolId, studentId }, select: membershipSelect }),
-          ]);
-          return { student: user, studentRank, homeTimeZone: home?.branch.timezone ?? null, memberships };
+      for (const r of found) {
+        rows.push({
+          student: { id: r.studentId, firstName: r.firstName, surname: r.surname },
+          studentRank: studentRankFromJson(r.studentRank),
+          homeTimeZone: r.homeTimeZone,
+          memberships: r.memberships.map((m) => ({
+            status: m.status as string,
+            expiryDate: dbDate(m.expiryDate),
+            classesRemaining: (m.classesRemaining as number | null) ?? null,
+          })),
         });
-        if (row) rows.push(row);
       }
     }
 
