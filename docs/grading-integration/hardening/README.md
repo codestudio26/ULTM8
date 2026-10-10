@@ -54,6 +54,7 @@ afterwards.
 | 184 — the coach dashboard in the mobile app | Built in #150. |
 | 164 — belt-level skills, weekly cap and years flag still written by the API, ignored by grading | Decisions 199, 207: belt-level skills, weekly cap and years flag removed (the plain belt's rung keeps its own). |
 | 137.1 — a student declares their belt at signup: the API existed, no screen called it | Built in #158: the app's **Join this School** screen asks for the home branch, then the belt per style (Decision 209 shows branch names to people browsing). |
-| 148.2 — students with no home branch were mixed into the owner's columns | Built: an owner-only **No branch** group above the columns, with **Assign** to give each a branch. |
+| 148.2 — students with no home branch were mixed into the owner's columns | Built in #159: an owner-only **No branch** group above the columns, with **Assign** to give each a branch. |
+| 152.2 — rungs reordered with ↑/↓ buttons, not by drag | Built: drag handles on belts and stripe lines; ↑/↓ kept for the keyboard. |
 | IMPLEMENTED-UNTESTED rows (16) | Unchanged; each names the missing test. |
 | One pending invite per School, branch and email, not per person | Unchanged; behaves as built. |
