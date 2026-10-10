@@ -79,7 +79,7 @@ Source: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` Decisions 124–163, and G
 - Every belt and every stripe is its own rung and its own grade. Stored as `Rank` + `RankStripeTier`; each (belt, tier) is one rung (Decision 126).
 - Each rung carries: name, stripe count and colour segments (mixed colours allowed), classes required, minimum days, which class types count, weekly cap, required skills, and the "time in rank only" switch with its years stored as minimum days (Decisions 126, 128).
 - A rung's stripe colours are set only in its stripe list; its single colour is filled in from the **first** stripe in the list (the newest colour, the one the rung is named after), so the two never disagree (Decision 165).
-- Rungs can be reordered by drag with a confirmation listing affected students; a rung students hold cannot be deleted (Decision 152).
+- Rungs can be reordered by drag with a confirmation listing affected students; a rung students hold cannot be deleted (Decision 152). Belts reorder within a style and stripes within their own belt, never across belts; a moved rung keeps its students (Decision 180).
 - Styles are created from the three IBJJF templates only (90 / 139 / 175 rungs), built from scratch, or duplicated with their skills (Decision 131).
 
 **Requirements and progress**

@@ -3886,6 +3886,86 @@
         ]
       }
     },
+    "/v1/styles/{disciplineId}/ranks/order": {
+      "put": {
+        "operationId": "RanksController_reorderRanks",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRanksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style's belts in their new order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{disciplineId}/rung-holders": {
+      "get": {
+        "operationId": "RanksController_findRungHolders",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RungHoldersResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/ranks/{id}": {
       "get": {
         "operationId": "RanksController_findOneRank",
@@ -10244,6 +10324,10 @@
       "RankStripeTierInputDto": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "Updating a belt only: the id of an existing rung of this belt. The rung keeps its id, and the students holding it, while its position, name or rules change (Decision 180). Omit for a new rung. When any rung in the list has an id, rungs left out are removed; a rung that students hold can't be removed (Decision 152)."
+          },
           "order": {
             "type": "number",
             "description": "Position within this Rank's stripe ladder — must be unique and contiguous (enforced in the service layer, §5)."
@@ -10570,6 +10654,74 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RankResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReorderRanksDto": {
+        "type": "object",
+        "properties": {
+          "rankIds": {
+            "description": "Every belt id of this style, in the new order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "rankIds"
+        ]
+      },
+      "RungHolderDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname"
+        ]
+      },
+      "RungHoldersDto": {
+        "type": "object",
+        "properties": {
+          "rungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id)."
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RungHolderDto"
+            }
+          }
+        },
+        "required": [
+          "rungId",
+          "students"
+        ]
+      },
+      "RungHoldersResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Only rungs that someone holds.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RungHoldersDto"
             }
           }
         },
