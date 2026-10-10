@@ -1738,6 +1738,10 @@ model Discipline {
 
   name              String
   classTypesOffered String[] @default([])
+  /// Per-style "skills required" switch (Decision 128, item 10): off — grading
+  /// with required skills not signed off needs a written acknowledgement; on —
+  /// it is blocked with no override.
+  skillsRequiredToGrade Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2196,6 +2200,9 @@ model PromotionEvent {
   rungsSkipped    Int      @default(0)
   // "Starting classes" entered when grading (Decision 128, item 9).
   startingClasses Int?
+  // Starting classes per type, when the new next rung counts each type
+  // separately (Decision 174), e.g. {"Fundamentals": 5, "Sparring": 2}.
+  startingClassesByType Json?
   // Void with a reason, never delete (Decision 129).
   voidedAt        DateTime?
   voidedById      String?
