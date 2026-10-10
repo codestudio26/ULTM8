@@ -332,6 +332,8 @@ model User {
   coachInvitesSent             CoachInvite[]       @relation("CoachInviteInvitedBy")
   coachInvitesAccepted         CoachInvite[]       @relation("CoachInviteAcceptedBy")
   coachInvitesCancelled        CoachInvite[]       @relation("CoachInviteCancelledBy")
+  instructorBelts              InstructorBelt[]    @relation("InstructorBeltUser")
+  instructorBeltsVerified      InstructorBelt[]    @relation("InstructorBeltVerifiedBy")
   waiverSignatures             WaiverSignature[]   @relation("WaiverSignatureStudent")
   waiverSignaturesSigned       WaiverSignature[]   @relation("WaiverSignatureSignedBy")
   bookings                     Booking[]           @relation("BookingStudent")
@@ -740,6 +742,7 @@ model School {
   staffPermissions    StaffPermission[]
   coachInvites        CoachInvite[]
   lessonCategories    LessonCategory[]
+  instructorBelts     InstructorBelt[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1763,6 +1766,7 @@ model Discipline {
   skills             Skill[]
   studentRanks       StudentRank[]
   gradingPermissions GradingPermission[]
+  instructorBelts    InstructorBelt[]
 
   @@index([schoolId])
 }
@@ -1827,6 +1831,7 @@ model Rank {
   studentRanksCurrent StudentRank[]    @relation("StudentRankCurrentRank")
   promotionEventsFrom PromotionEvent[] @relation("PromotionEventFromRank")
   promotionEventsTo   PromotionEvent[] @relation("PromotionEventToRank")
+  instructorBelts     InstructorBelt[]
 
   @@unique([disciplineId, order])
   @@index([schoolId])
@@ -1890,6 +1895,7 @@ model RankStripeTier {
   studentRanksCurrentStripe StudentRank[]    @relation("StudentRankCurrentStripe")
   promotionEventsFrom       PromotionEvent[] @relation("PromotionEventFromStripeTier")
   promotionEventsTo         PromotionEvent[] @relation("PromotionEventToStripeTier")
+  instructorBelts           InstructorBelt[]
 
   @@unique([rankId, order])
   @@index([schoolId])
@@ -3062,4 +3068,44 @@ model CoachInvite {
 
   @@index([schoolId, email])
   @@index([branchId])
+}
+
+/// An instructor's own belt in one style at a School (Decisions 108, 188):
+/// chosen by the instructor from that style's belts, unverified until the
+/// School Owner verifies it or corrects it. One per instructor per style.
+/// Belongs to the person (an active INSTRUCTOR grant), not to an Instructor
+/// profile, since coaches who joined by invite have no profile.
+/// RLS: the owner manages all; the instructor reads theirs and may declare or
+/// change their own, always as unverified.
+model InstructorBelt {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("InstructorBeltUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  /// The belt and the stripe on it. Removing that stripe from the ladder
+  /// removes this row; the instructor chooses again.
+  rankId       String
+  rank         Rank           @relation(fields: [rankId], references: [id], onDelete: Cascade)
+  stripeTierId String
+  stripeTier   RankStripeTier @relation(fields: [stripeTierId], references: [id], onDelete: Cascade)
+
+  verificationStatus RankVerificationStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  verifiedById       String?
+  verifiedBy         User?                  @relation("InstructorBeltVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  /// When the instructor last chose it.
+  declaredAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, disciplineId])
+  @@index([schoolId])
+  @@index([disciplineId])
 }

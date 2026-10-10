@@ -1908,6 +1908,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/instructor-belts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorBeltsController_findMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts/me/{disciplineId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["InstructorBeltsController_declareMine"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorBeltsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructor-belts/{userId}/{disciplineId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorBeltsController_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/waivers": {
         parameters: {
             query?: never;
@@ -4039,6 +4103,26 @@ export interface components {
             /** @description An optional note for the history. */
             note?: string;
         };
+        PendingVerificationDto: {
+            studentRankId: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            currentRankId: string;
+            currentStripeId: string | null;
+            /** @enum {string} */
+            verificationStatus: "UNVERIFIED";
+            /**
+             * Format: date-time
+             * @description When the student declared it.
+             */
+            declaredAt: string;
+        };
+        PendingVerificationListResponseDto: {
+            items: components["schemas"]["PendingVerificationDto"][];
+        };
         GradingBoardItemDto: {
             studentId: string;
             firstName: string;
@@ -4171,6 +4255,44 @@ export interface components {
             styles?: components["schemas"]["StylePermissionInputDto"][];
             /** @description Older form: styles with every toggle on. Use `styles` instead. */
             disciplineIds?: string[];
+        };
+        InstructorBeltResponseDto: {
+            id: string;
+            userId: string;
+            firstName: string;
+            surname: string;
+            disciplineId: string;
+            disciplineName: string;
+            rankId: string;
+            stripeTierId: string;
+            /** @description The name of the belt and stripe, as the School typed it. */
+            beltName: string;
+            /** @enum {string} */
+            verificationStatus: "UNVERIFIED" | "VERIFIED";
+            /** Format: date-time */
+            declaredAt: string;
+            /** Format: date-time */
+            verifiedAt: string | null;
+        };
+        InstructorBeltListResponseDto: {
+            items: components["schemas"]["InstructorBeltResponseDto"][];
+        };
+        DeclareInstructorBeltDto: {
+            rankId: string;
+            stripeTierId: string;
+        };
+        SchoolInstructorDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+        };
+        SchoolInstructorBeltsResponseDto: {
+            items: components["schemas"]["InstructorBeltResponseDto"][];
+            instructors: components["schemas"]["SchoolInstructorDto"][];
+        };
+        VerifyInstructorBeltDto: {
+            rankId?: string;
+            stripeTierId?: string;
         };
         CreateWaiverDto: {
             title: string;
@@ -7611,7 +7733,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StudentRankListResponseDto"];
+                    "application/json": components["schemas"]["PendingVerificationListResponseDto"];
                 };
             };
         };
@@ -7834,6 +7956,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GradingPermissionListResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_findMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltListResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_declareMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareInstructorBeltDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolInstructorBeltsResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorBeltsController_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+                disciplineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyInstructorBeltDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorBeltResponseDto"];
                 };
             };
         };

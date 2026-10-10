@@ -30,6 +30,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   /schools/{id}/curriculum/categories`, `PATCH /curriculum/categories/{id}`,
   `PUT /schools/{id}/curriculum/categories/order` and
   `PUT /curriculum/categories/{id}/lessons/order`.
+- **Instructors choose their own belt; the owner verifies it** (Decisions 108,
+  188). Instructors get a **My belts** page in the School Portal where they
+  choose their belt and stripe in each of the School's styles; it shows "Not
+  verified" until the owner verifies it, and choosing another belt makes it
+  unverified again. The owner's Instructors page gains **Instructors' belts**:
+  verify each, or correct it to the right belt (saving verifies it), and see who
+  hasn't chosen yet. **api:** `InstructorBelt` (migration `20261028000000`),
+  one per instructor per style, with RLS: the owner manages all; an instructor
+  reads theirs and writes their own only as unverified while they hold an
+  active Instructor role. Endpoints `GET|PUT /schools/{id}/instructor-belts/me`,
+  `GET /schools/{id}/instructor-belts` and
+  `POST /schools/{id}/instructor-belts/{userId}/{disciplineId}/verify`.
+- **Belts waiting to be verified: a notice at login** (Decisions 137, 189).
+  When the owner, or a coach or Branch Staff member who may verify belts, logs
+  in to the School Portal, a notice lists the students whose self-declared belt
+  is waiting to be verified, each linking to the student's grading page; it
+  shows once per login and not at all when nothing is waiting. **api:**
+  `GET /schools/{id}/rank-verifications` is no longer owner-only: coaches get
+  the styles where they have "Verify ranks", for the students of their own
+  branches (the Grading Board's read path); other staff get an empty list.
+  Each item now carries the student's name and the style's name.
 - **Belts and stripes, not "rungs"** (Decision 187). Screens and messages now
   say belt and stripe: the belt editor lists a belt's **Stripes** ("Stripe name",
   "Add stripe", "Reorder stripes?"), the ladder shows each belt's number of
