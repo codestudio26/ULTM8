@@ -8686,6 +8686,9 @@
           "name": {
             "type": "string"
           },
+          "type": {
+            "type": "string"
+          },
           "address": {
             "type": "string"
           },
@@ -8697,6 +8700,25 @@
             "description": "IANA timezone name."
           },
           "currencyOverride": {
+            "type": "string"
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1)."
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
             "type": "string"
           },
           "logoUrl": {
@@ -8722,6 +8744,10 @@
           "name": {
             "type": "string"
           },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
           "address": {
             "type": "string",
             "nullable": true
@@ -8736,6 +8762,26 @@
             "description": "IANA timezone name."
           },
           "currencyOverride": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
             "type": "string",
             "nullable": true
           },
@@ -8758,6 +8804,8 @@
           "id",
           "schoolId",
           "name",
+          "activities",
+          "facilities",
           "createdAt",
           "updatedAt"
         ]
@@ -8786,6 +8834,22 @@
           "name": {
             "type": "string"
           },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
           "address": {
             "type": "string",
             "nullable": true
@@ -8800,6 +8864,15 @@
             "nullable": true
           },
           "currencyOverride": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).",
+            "nullable": true
+          },
+          "description": {
             "type": "string",
             "nullable": true
           },

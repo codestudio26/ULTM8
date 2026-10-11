@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **A Branch now has its own Type, Activities, Facilities, Default
+  Language, and Description** (Decision 238, v1.2 backend backlog), the
+  same independent fields School and Franchise already have. These were
+  already shown on the Branch Add/Update/Detail mockups for structural
+  parity with Franchise; they can now actually be saved. **api:**
+  `Branch` gains `type`/`activities`/`facilities`/`defaultLanguage`/
+  `description` columns; `CreateBranchDto`/`UpdateBranchDto`/
+  `BranchResponseDto` extended to match. `packages/api-client`
+  regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

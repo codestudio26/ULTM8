@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 /**
  * Field set per Decision 76 (docs/decisions/POST-SPEC-55-DECISION-LOG.md) — Branch
@@ -12,6 +12,15 @@ import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
  * Decision 76's "mirrors School" framing, and why Branch is still built against
  * Decision 76's literal list rather than School's full one.
  *
+ * type/activities/facilities/defaultLanguage/description (Decision 238) extend that
+ * list — each is an independent field already given to School and Franchise, with no
+ * derivation between the three levels; see schema.prisma's own Branch model comment.
+ * `type` mirrors Franchise's column name (CreateFranchiseDto's own comment explains why
+ * Franchise itself uses `type` rather than School's `businessType`); activities/
+ * facilities use the exact same `ArrayMaxSize(20)`/`IsString({ each: true })` shape as
+ * CreateFranchiseDto's own fields, for the same reason (one convention, not re-derived
+ * per model).
+ *
  * schoolId is a route param (`/schools/:schoolId/branches`), not a body field.
  *
  * Length/format limits (later hardening pass): every short free-text field capped at
@@ -20,14 +29,21 @@ import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
  * (currency/mobileNumber/contactPhone) rather than listing every field in every DTO by
  * name; treated as the same category here for consistency rather than left
  * unvalidated by omission — flagging the interpretation, not silently assuming it.
- * address at 500, logoUrl/bannerUrl capped at 2048 chars and validated as actual URLs.
- * UpdateBranchDto (PartialType(CreateBranchDto)) inherits all of these automatically.
+ * address/description at 500, logoUrl/bannerUrl capped at 2048 chars and validated as
+ * actual URLs. UpdateBranchDto (PartialType(CreateBranchDto)) inherits all of these
+ * automatically.
  */
 export class CreateBranchDto {
   @ApiProperty()
   @IsString()
   @MaxLength(100)
   name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  type?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -52,6 +68,32 @@ export class CreateBranchDto {
   @IsString()
   @MaxLength(100)
   currencyOverride?: string;
+
+  @ApiPropertyOptional({ description: 'One of the 4 confirmed languages — free text, matching School.defaultLanguage\'s existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  defaultLanguage?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  activities?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  facilities?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
