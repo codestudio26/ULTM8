@@ -10,6 +10,7 @@ import { RegisterPage } from './auth/RegisterPage';
 import { VerifyOtpPage } from './auth/VerifyOtpPage';
 import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
+import { FirstLoginPasscodeChangePage } from './auth/FirstLoginPasscodeChangePage';
 import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
@@ -18,6 +19,7 @@ import { StaffPage } from './roleGrants/StaffPage';
 import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
+import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
 import { StudentsPage } from './students/StudentsPage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
@@ -53,6 +55,7 @@ export function App() {
       <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/forgot-passcode" element={<ForgotPasscodePage />} />
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
+      <Route path="/first-login-passcode-change" element={<FirstLoginPasscodeChangePage />} />
       <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
@@ -90,6 +93,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <CoachInvitesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/complete-instructor-profile"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CompleteInstructorProfilePage />
             </Shell>
           </RequireAuth>
         }
