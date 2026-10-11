@@ -48,6 +48,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   returns `email` (`null` when no match). **api:** `InstructorResponseDto`
   gains `email`/`status`; `InviteCandidateResponseDto` gains `email`.
   `packages/api-client` regenerated.
+- **Student roster rows now show a profile photo** (Decision 232, v1.2
+  backend backlog). `GET /schools/:id/students` resolves `photoUrl` from
+  the Student's own `User.profilePhotoUrl` (`null` when unset). **api:**
+  `StudentSummaryResponseDto` gains `photoUrl`. `packages/api-client`
+  regenerated.
 - **Joining a School from the app, with a home branch and a current belt**
   (Decisions 137, 147, 209). A School's public page now lists its branch
   names, name only, so a student can choose a home branch before joining.

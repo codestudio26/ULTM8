@@ -8511,6 +8511,10 @@
           "email": {
             "type": "string"
           },
+          "photoUrl": {
+            "type": "object",
+            "nullable": true
+          },
           "enrolledAt": {
             "type": "string"
           }
@@ -8520,6 +8524,7 @@
           "firstName",
           "surname",
           "email",
+          "photoUrl",
           "enrolledAt"
         ]
       },

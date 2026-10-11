@@ -373,12 +373,19 @@ export class SchoolsService {
         orderBy: { grantedAt: 'asc' },
         select: {
           grantedAt: true,
-          user: { select: { id: true, firstName: true, surname: true, email: true } },
+          user: { select: { id: true, firstName: true, surname: true, email: true, profilePhotoUrl: true } },
         },
       }),
     );
     return {
-      items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt })),
+      items: grants.map((g) => ({
+        id: g.user.id,
+        firstName: g.user.firstName,
+        surname: g.user.surname,
+        email: g.user.email,
+        photoUrl: g.user.profilePhotoUrl,
+        enrolledAt: g.grantedAt,
+      })),
     };
   }
 
