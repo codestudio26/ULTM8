@@ -16,11 +16,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
 - **Staff can enroll an existing User as a Student on the School's behalf**
-  (Decision 228, v1.2 backend backlog — "Invite a Student"'s enroll step).
+  (Decision 235, v1.2 backend backlog — "Invite a Student"'s enroll step).
   `POST /schools/:id/join` gains a third actor alongside self-service and
   Guardian-on-behalf-of: a School Owner/Manager naming an existing,
   already-registered User's `studentId`. Same home-branch assignment as
   the other two paths; no access token minted for the enrolled User.
+- **Create/Update Membership Plan is now a dedicated page, built as a
+  multi-step wizard** (Decision 228) — the first entity in the app to move
+  off the List + Modal pattern, given how large this form is (12 fields,
+  several type-driven rules). Its 5 field groups (Basics / Pricing & Access
+  / Policies / Disciplines & Lessons / Visibility) show one at a time, with
+  a clickable step row that jumps straight to any step. The fields a
+  selected Plan Type doesn't use (e.g. "Classes included" for a
+  Subscription) hide automatically, and picking a "Scoped to Class" now
+  locks Classes included to 1 immediately instead of only catching the
+  conflict on Save. Currency is now a dropdown of the platform's 6
+  supported currencies instead of free text. A new **Duplicate** action on
+  the Membership Plans list pre-fills the Add page from an existing plan.
+  **api:** fixed a bug where clearing a plan's refund/credit cutoff date on
+  Edit silently did nothing; `UpdateMembershipPlanDto.refundFeeDate` is now
+  nullable. `packages/api-client` regenerated.
 - **Belts and stripes can be reordered by dragging** (Decision 152.2). Each
   belt in the ladder, and each stripe line in the belt editor, has a drag
   handle; dropping it on another row moves it there. The ↑/↓ buttons stay for
