@@ -164,6 +164,21 @@ describeIfDb('Coach invites (Decision 183)', () => {
     expect((await invite('owner', { email: 'not-an-email', branchId: north.id })).status).toBe(400);
   });
 
+  it('an inviter whose phone isn\'t verified is refused, and nothing is sent (Decision 81, 183.6)', async () => {
+    const before = sent.length;
+    const email = `unverified-inviter-${randomUUID()}@example.test`;
+    await superuser.user.update({ where: { id: user.owner.id }, data: { phoneVerifiedAt: null } });
+    try {
+      const res = await invite('owner', { email, branchId: south.id });
+      expect(res.status).toBe(403);
+      expect(res.body.error.message).toContain('phone verification');
+    } finally {
+      await superuser.user.update({ where: { id: user.owner.id }, data: { phoneVerifiedAt: new Date() } });
+    }
+    expect(sent).toHaveLength(before);
+    expect(await superuser.coachInvite.count({ where: { email } })).toBe(0);
+  });
+
   it('anyone with the link sees the School and branch; a bad link is 404', async () => {
     const res = await http().get(`/v1/coach-invite-links/${lastLinkToken()}`);
     expect(res.status).toBe(200);

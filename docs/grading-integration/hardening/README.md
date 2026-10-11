@@ -53,5 +53,30 @@ afterwards.
 | 142, 155 — the student app shows progress, skills and history | Built: the app's **My grading** screen and `GET /students/{id}/grading`. |
 | 184 — the coach dashboard in the mobile app | Built in #150. |
 | 164 — belt-level skills, weekly cap and years flag still written by the API, ignored by grading | Decisions 199, 207: belt-level skills, weekly cap and years flag removed (the plain belt's rung keeps its own). |
-| IMPLEMENTED-UNTESTED rows (16) | Unchanged; each names the missing test. |
+| 137.1 — a student declares their belt at signup: the API existed, no screen called it | Built in #158: the app's **Join this School** screen asks for the home branch, then the belt per style (Decision 209 shows branch names to people browsing). |
+| 148.2 — students with no home branch were mixed into the owner's columns | Built in #159: an owner-only **No branch** group above the columns, with **Assign** to give each a branch. |
+| 152.2 — rungs reordered with ↑/↓ buttons, not by drag | Built in #161: drag handles on belts and stripe lines; ↑/↓ kept for the keyboard. |
+| IMPLEMENTED-UNTESTED rows (16) | 15 now tested, no behaviour changed (see below); 164 superseded. |
 | One pending invite per School, branch and email, not per person | Unchanged; behaves as built. |
+
+### The 16 rows that were built but untested
+
+Each now has a test, except 164. No test found a bug; nothing in the code changed.
+
+| Row | Test |
+|---|---|
+| 87 — switching ranks off blocks the newer grading writes | `grading-board.e2e-spec.ts`: board move, log a class, active switch, board %, bulk promote, void, edit rank date and verify all refused, nothing changed |
+| 130 — remove a student from a bulk promotion in one click | Playwright `grading-board.spec.ts`: Remove, then only the others are promoted |
+| 137.3 — an unverified belt still books | `booking-unlocks.e2e-spec.ts` |
+| 144, 159.2, 162 — a grading-day pass books only its own class | `booking-unlocks.e2e-spec.ts` |
+| 148.1 — a class at another branch counts | `grading-attendance.e2e-spec.ts` |
+| 159.1 — ULTM8 takes nothing from what students pay | `src/payments/payments.service.spec.ts`: one-off passes and subscriptions are charged on the School's own Stripe account, with no application fee or transfer |
+| 164 — belt-level skills copied to the first stripe of the next belt | Superseded: Decision 199 removed belt-level skills and their table, so there is nothing left to copy or test |
+| 173 — the waitlist claim uses the booking rank gate | `booking-unlocks.e2e-spec.ts` |
+| 178.1 — the ready check runs after a check-in, sign-off, board drag, rank-date edit, declare and verify | `grading-ready-notification.e2e-spec.ts`, one test each |
+| 178.3 — no "ready" notice while ranks are off or the School is archived | `grading-ready-notification.e2e-spec.ts` |
+| 178.5 — the jobs role can only mark a student as notified | `grading-ready-notification.e2e-spec.ts`: other updates and deletes refused by the database |
+| 181.3 — "ready" goes only to coaches who may Promote | `grading-ready-notification.e2e-spec.ts`: a coach with Promote off is left out |
+| 181.4 — grants that existed before the toggles have every toggle on | `grading-permission-toggles.e2e-spec.ts`: a grant written with the old columns only |
+| 183.6 — an inviter needs a verified phone | `coach-invites.e2e-spec.ts` |
+

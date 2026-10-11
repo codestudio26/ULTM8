@@ -109,6 +109,36 @@ test('reordering rungs names the students affected, and they keep their rung', a
   expect(sam.currentStripeId).toBe(before[1].id);
 });
 
+test('belts can be reordered by dragging, with the same confirmation (Decision 152.2)', async ({ page }) => {
+  await page.goto(`/disciplines/${s.disciplineId}`);
+  await page.getByTitle('Drag to reorder Blue').dragTo(ladder(page).getByRole('listitem', { name: '1. White' }));
+  await expect(ladder(page).getByRole('listitem', { name: '1. Blue' })).toBeVisible();
+  await expect(page.getByText("The new order isn't saved yet.")).toBeVisible();
+  await page.getByRole('button', { name: 'Save order' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Reorder belts?' });
+  await expect(dialog.getByText('Sam Lee')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Save order' }).click();
+  await expect(dialog).toBeHidden();
+  expect(await beltOrder()).toEqual(['Blue', 'White']);
+});
+
+test('stripes can be reordered by dragging within their belt, with the same confirmation (Decision 152.2)', async ({ page }) => {
+  const before = await rungsOf('White');
+  await page.goto(`/disciplines/${s.disciplineId}`);
+  await page.getByRole('button', { name: 'Edit White' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Edit White' });
+  // White 2 to the place of White 1.
+  await dialog.getByTitle('Drag to reorder White 2').dragTo(dialog.getByRole('listitem', { name: 'Stripe line 2: White 1' }));
+  await expect(dialog.getByRole('listitem', { name: 'Stripe line 2: White 2' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+
+  const confirm = page.getByRole('dialog', { name: 'Reorder stripes?' });
+  await expect(confirm.getByText('Sam Lee')).toBeVisible();
+  await confirm.getByRole('button', { name: 'Save' }).click();
+  await expect(confirm).toBeHidden();
+  expect((await rungsOf('White')).map((t) => t.id)).toEqual([before[0].id, before[2].id, before[1].id]);
+});
+
 test('adds a belt at the top of the ladder, with mixed stripe colours', async ({ page }) => {
   await page.goto(`/disciplines/${s.disciplineId}`);
   await page.getByRole('button', { name: 'Add rank' }).click();

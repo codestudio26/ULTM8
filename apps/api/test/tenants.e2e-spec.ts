@@ -369,6 +369,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       id: verifiedInvitee.id,
       firstName: 'invitee',
       surname: 'Tenant',
+      email: verifiedInvitee.email,
     });
   });
 
@@ -380,6 +381,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(200);
     expect(res.body.found).toBe(true);
     expect(res.body.id).toBe(verifiedInvitee.id);
+    expect(res.body.email).toBe(verifiedInvitee.email);
   });
 
   it('returns found:false for an email/phone with no matching account — never a 404', async () => {
@@ -388,7 +390,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .query({ email: `nobody-${randomUUID()}@example.test` })
       .set('Authorization', `Bearer ${tokenOwnerA}`);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ found: false, id: null, firstName: null, surname: null });
+    expect(res.body).toEqual({ found: false, id: null, firstName: null, surname: null, email: null });
   });
 
   it('invite candidate lookup requires email or phone', async () => {

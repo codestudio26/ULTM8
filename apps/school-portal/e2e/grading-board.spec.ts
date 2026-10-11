@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { randomUUID } from 'crypto';
 import { addStudent, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
@@ -71,6 +72,26 @@ test('dragging a card to another column asks to confirm first', async ({ page })
   await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toBeVisible();
 });
 
+test('students with no home branch are in the owner\'s "No branch" group until given one (Decision 148.2)', async ({ page }) => {
+  const north = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'North' } });
+  await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'South' } });
+  for (const id of [s.student.id, ben.id]) {
+    await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: id, branchId: north.id } });
+  }
+  await page.goto('/grading');
+  const group = page.getByRole('region', { name: 'No branch' });
+  await expect(group.getByRole('link', { name: cat.name })).toBeVisible();
+  await expect(group.getByRole('link', { name: ben.name })).toHaveCount(0);
+  await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toHaveCount(0);
+
+  await group.getByLabel(`Home branch for ${cat.name}`).selectOption({ label: 'South' });
+  await group.getByRole('button', { name: `Assign ${cat.name} to this branch` }).click();
+  await expect(group).toBeHidden();
+  await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toBeVisible();
+  const home = await db.studentHomeBranch.findFirst({ where: { schoolId: s.schoolId, studentId: cat.id }, include: { branch: true } });
+  expect(home?.branch.name).toBe('South');
+});
+
 test('bulk promote: calling order, "Needs a look" acknowledgement, and the printable report', async ({ page }) => {
   await page.goto('/grading');
   await page.getByLabel(`Select ${s.student.name}`).check();
@@ -108,6 +129,25 @@ test('bulk promote: calling order, "Needs a look" acknowledgement, and the print
   const events = await db.promotionEvent.findMany({ where: { studentId: s.student.id, type: 'BULK_STRIPE_AWARD' } });
   expect(events).toHaveLength(1);
   expect(events[0]).toMatchObject({ acknowledgedWithoutSkillSignoff: true, note: 'Spring Grading Day' });
+});
+
+test('bulk promote: one click removes a student from the batch (Decision 130)', async ({ page }) => {
+  await page.goto('/grading');
+  await page.getByLabel(`Select ${s.student.name}`).check();
+  await page.getByLabel(`Select ${ben.name}`).check();
+  await page.getByRole('button', { name: 'Promote selected' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Promote these students' });
+  const order = dialog.getByRole('list', { name: 'Calling order' });
+  await expect(order.getByRole('listitem')).toHaveCount(2);
+
+  await dialog.getByRole('button', { name: `Remove ${s.student.name} from this batch` }).click();
+  await expect(order.getByRole('listitem')).toHaveCount(1);
+  await expect(order.getByRole('listitem').first()).toHaveAttribute('aria-label', `1. ${ben.name}`);
+  // Sam was the one needing a look; with him gone, Ben can be promoted straight away.
+  await dialog.getByRole('button', { name: 'Promote 1 student' }).click();
+  await expect(page.getByRole('dialog', { name: 'Students promoted' })).toBeVisible();
+  const promoted = await db.promotionEvent.findMany({ where: { schoolId: s.schoolId, voidedAt: null, type: { in: ['BULK_PROMOTION', 'BULK_STRIPE_AWARD'] } } });
+  expect(promoted.map((e) => e.studentId)).toEqual([ben.id]);
 });
 
 test('a style that requires skills: a student missing them can\'t be ticked', async ({ page }) => {

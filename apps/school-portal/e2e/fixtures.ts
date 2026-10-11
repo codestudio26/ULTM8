@@ -211,6 +211,7 @@ export async function cleanup() {
   await db.staffPermission.deleteMany({ where });
   await db.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
   await db.roleGrant.deleteMany({ where });
+  await db.studentHomeBranch.deleteMany({ where });
   await db.branch.deleteMany({ where });
   // Grading actions queue notifications ("Promoted!", "ready to grade") that
   // the API's job worker writes a moment later, possibly after the delete at

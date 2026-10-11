@@ -881,6 +881,17 @@ Lessons in the app wait for video hosting (Decision 155).
 ### Verified
 `tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
 
+## Join a School and declare a belt (Decisions 137, 147, 209) — DONE
+
+### What was built
+- **Join this School** on a School's page (`src/academies/JoinSchoolScreen.tsx`). The app had no way to join a School before this; the API's `POST /schools/{id}/join` had no caller. Choose who is joining (yourself, or a linked child for a guardian), then the home branch when the School has branches, then **Join**. Joining yourself swaps in the new token the API returns, so the new Student grant takes effect at once.
+- **Your current belt**, straight after joining: each style the School teaches, with its belts lowest first and "I don't train this" chosen by default. Choosing the plain first belt means never graded and is verified straight away; any other belt waits for the School to check it (Decision 147). **Not now** skips it.
+- **Add my belt** on the School's page, for a student who joined without adding one, while a style is still open to them. A guardian adds a child's belt by joining the child again: the app sees the child is already a student and goes straight to the belts.
+- **API:** `GET /academies/{id}` now lists the School's branch names (Decision 209), and `GET /students/{id}/ranks/declare-options?schoolId=` (new) lists the styles still open and their belts, read under the student's own context because a guardian holds no role at the School. Declaring uses the existing `POST /students/{id}/ranks/{disciplineId}/declare`.
+
+### Verified
+`tsc --noEmit`; jest `src/academies/joinSchool.test.tsx` (5); API e2e `join-declare.e2e-spec.ts` (6) and `academies.e2e-spec.ts` (branch names to a non-member, and the database refusing the discovery role a branch's address).
+
 ## Explicitly blocked — do not scope a slice for these yet
 
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own

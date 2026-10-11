@@ -22,6 +22,17 @@ export class InstructorResponseDto {
   @ApiProperty()
   surname!: string;
 
+  /** Resolved via resolveUserNames.ts alongside firstName/surname — not a raw
+   * Instructor column. */
+  @ApiProperty()
+  email!: string;
+
+  /** Whether the linked User still holds an active (non-revoked) INSTRUCTOR RoleGrant
+   * at this School — resolved from RoleGrant.revokedAt, not a raw Instructor column
+   * (Instructor itself is never the source of truth for role-holding). */
+  @ApiProperty({ enum: ['ACTIVE', 'REVOKED'] })
+  status!: 'ACTIVE' | 'REVOKED';
+
   @ApiProperty()
   schoolId!: string;
 

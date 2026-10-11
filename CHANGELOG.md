@@ -15,18 +15,45 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Create/Update Membership Plan is now a dedicated page, not a modal**
-  (Decision 209) — the first entity in the app to move off the
-  List + Modal pattern, given how large this form is (12 fields, several
-  type-driven rules). Fields are grouped into sections, and the ones a
+- **Create/Update Membership Plan is now a dedicated page, built as a
+  multi-step wizard** (Decision 228) — the first entity in the app to move
+  off the List + Modal pattern, given how large this form is (12 fields,
+  several type-driven rules). Its 5 field groups (Basics / Pricing & Access
+  / Policies / Disciplines & Lessons / Visibility) show one at a time, with
+  a clickable step row that jumps straight to any step. The fields a
   selected Plan Type doesn't use (e.g. "Classes included" for a
-  Subscription) hide automatically. Currency is now a dropdown of the
-  platform's 6 supported currencies instead of free text. A new
-  **Duplicate** action on the Membership Plans list pre-fills the Add page
-  from an existing plan. **api:** fixed a bug where clearing a plan's
-  refund/credit cutoff date on Edit silently did nothing;
-  `UpdateMembershipPlanDto.refundFeeDate` is now nullable.
+  Subscription) hide automatically, and picking a "Scoped to Class" now
+  locks Classes included to 1 immediately instead of only catching the
+  conflict on Save. Currency is now a dropdown of the platform's 6
+  supported currencies instead of free text. A new **Duplicate** action on
+  the Membership Plans list pre-fills the Add page from an existing plan.
+  **api:** fixed a bug where clearing a plan's refund/credit cutoff date on
+  Edit silently did nothing; `UpdateMembershipPlanDto.refundFeeDate` is now
+  nullable. `packages/api-client` regenerated.
+- **Belts and stripes can be reordered by dragging** (Decision 152.2). Each
+  belt in the ladder, and each stripe line in the belt editor, has a drag
+  handle; dropping it on another row moves it there. The ↑/↓ buttons stay for
+  the keyboard, and saving asks for the same confirmation naming the students
+  affected.
+- **"No branch" group on the Grading Board** (Decision 148.2). The owner
+  now sees students who have no home branch yet in their own group above the
+  columns (no branch coach sees them) and gives each one a branch there. Board
+  items carry `noHomeBranch` (owner only).
+- **Instructor roster/detail now show a real email and Active/Revoked
+  status, and the invite-candidate lookup now returns a real email**
+  (v1.2 backend backlog). `GET /instructors` and `GET /instructors/:id`
+  resolve `email` alongside `firstName`/`surname`, plus a `status` derived
+  from whether the linked User still holds a non-revoked INSTRUCTOR
+  RoleGrant at this School; `GET .../role-grants/invite-candidate` now also
+  returns `email` (`null` when no match). **api:** `InstructorResponseDto`
+  gains `email`/`status`; `InviteCandidateResponseDto` gains `email`.
   `packages/api-client` regenerated.
+- **Joining a School from the app, with a home branch and a current belt**
+  (Decisions 137, 147, 209). A School's public page now lists its branch
+  names, name only, so a student can choose a home branch before joining.
+  New `GET /students/{id}/ranks/declare-options` lists the styles a student
+  can still declare a belt in, with their belts, for the student or their
+  guardian. The app's join screen is Track B (`docs/TRACK-B-ROADMAP.md`).
 - **Lesson access is also checked by the database** (Decision 208). A
   lesson's description, video and captions now live in their own table,
   which the database only lets staff, everyone at the School for a free
