@@ -445,6 +445,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(row.surname).toBe('Tenant');
     expect(row.email).toBe(studentUser.email);
     expect(row.enrolledAt).toBeDefined();
+    expect(row.status).toBe('ACTIVE');
 
     // The Student themselves is not School Staff (Owner/Manager, Branch Staff,
     // or Instructor) — cannot read the roster.
@@ -459,6 +460,118 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .get(`/v1/schools/${schoolA.id}/students`)
       .set('Authorization', `Bearer ${tokenOwnerB}`);
     expect(res.status).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Student roster Active/Inactive/All filtering (v1.2 backend backlog). No
+  // real Student-revoke endpoint exists yet (DELETE /users/:id/role-grants
+  // only revokes INSTRUCTOR/BRANCH_STAFF — RoleGrantsService.revoke()'s own
+  // GRANTABLE_ROLES check), so a revoked row is seeded directly, the same
+  // "no real endpoint for this yet" convention this suite already uses
+  // elsewhere — this tests the roster QUERY, not how a grant gets revoked.
+  // ---------------------------------------------------------------------------
+
+  describe('Student roster status filtering', () => {
+    let statusSchool: { id: string };
+    let statusOwner: { id: string; email: string };
+    let studentActive: { id: string; email: string };
+    let studentInactive: { id: string; email: string };
+    let studentReEnrolled: { id: string; email: string };
+    let tokenStatusOwner: string;
+    let reEnrolledActiveGrantedAt: Date;
+
+    beforeAll(async () => {
+      statusSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Status Filter School' } });
+      const mk = (label: string) =>
+        superuser.user.create({
+          data: {
+            id: randomUUID(),
+            email: `tenants-http-status-${label}-${randomUUID()}@example.test`,
+            phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+            firstName: label,
+            surname: 'StatusTenant',
+            passcodeHash: 'x',
+            dateOfBirth: new Date('2000-01-01'),
+            phoneVerifiedAt: new Date(),
+          },
+        });
+      statusOwner = await mk('owner');
+      studentActive = await mk('active');
+      studentInactive = await mk('inactive');
+      studentReEnrolled = await mk('re-enrolled');
+
+      const dayAgo = new Date(Date.now() - 86_400_000);
+      reEnrolledActiveGrantedAt = new Date();
+      await superuser.roleGrant.createMany({
+        data: [
+          { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: statusOwner.id, schoolId: statusSchool.id },
+          { id: randomUUID(), role: 'STUDENT', userId: studentActive.id, schoolId: statusSchool.id, grantedAt: dayAgo },
+          { id: randomUUID(), role: 'STUDENT', userId: studentInactive.id, schoolId: statusSchool.id, grantedAt: dayAgo, revokedAt: new Date() },
+        ],
+      });
+      // studentReEnrolled: an OLDER revoked row plus a NEWER active one — the
+      // roster must resolve them as ACTIVE, using the newer row's own
+      // enrolledAt, not the older revoked row just because it's "first".
+      await superuser.roleGrant.create({
+        data: { id: randomUUID(), role: 'STUDENT', userId: studentReEnrolled.id, schoolId: statusSchool.id, grantedAt: dayAgo, revokedAt: dayAgo },
+      });
+      await superuser.roleGrant.create({
+        data: { id: randomUUID(), role: 'STUDENT', userId: studentReEnrolled.id, schoolId: statusSchool.id, grantedAt: reEnrolledActiveGrantedAt },
+      });
+
+      tokenStatusOwner = signAccessToken(statusOwner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: statusSchool.id, branchId: null }]);
+    });
+
+    afterAll(async () => {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: statusSchool.id } });
+      await superuser.school.delete({ where: { id: statusSchool.id } });
+    });
+
+    it('with no status param (and with status=ACTIVE explicitly), only active enrollments are returned — unchanged default behavior', async () => {
+      for (const qs of ['', '?status=ACTIVE']) {
+        const res = await request(app.getHttpServer())
+          .get(`/v1/schools/${statusSchool.id}/students${qs}`)
+          .set('Authorization', `Bearer ${tokenStatusOwner}`);
+        expect(res.status).toBe(200);
+        const ids = res.body.items.map((s: { id: string }) => s.id);
+        expect(ids).toContain(studentActive.id);
+        expect(ids).toContain(studentReEnrolled.id);
+        expect(ids).not.toContain(studentInactive.id);
+
+        const reEnrolledRow = res.body.items.find((s: { id: string }) => s.id === studentReEnrolled.id);
+        expect(reEnrolledRow.status).toBe('ACTIVE');
+        expect(new Date(reEnrolledRow.enrolledAt).getTime()).toBe(reEnrolledActiveGrantedAt.getTime());
+      }
+    });
+
+    it('status=INACTIVE returns only revoked enrollments, including their revoked row\'s own enrolledAt', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${statusSchool.id}/students?status=INACTIVE`)
+        .set('Authorization', `Bearer ${tokenStatusOwner}`);
+      expect(res.status).toBe(200);
+      const ids = res.body.items.map((s: { id: string }) => s.id);
+      expect(ids).toEqual([studentInactive.id]);
+      expect(res.body.items[0].status).toBe('INACTIVE');
+    });
+
+    it('status=ALL returns every enrollment ever, each with its own correctly-resolved status', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${statusSchool.id}/students?status=ALL`)
+        .set('Authorization', `Bearer ${tokenStatusOwner}`);
+      expect(res.status).toBe(200);
+      const byId = new Map(res.body.items.map((s: { id: string; status: string }) => [s.id, s.status]));
+      expect(byId.get(studentActive.id)).toBe('ACTIVE');
+      expect(byId.get(studentInactive.id)).toBe('INACTIVE');
+      expect(byId.get(studentReEnrolled.id)).toBe('ACTIVE'); // not INACTIVE, despite also holding a revoked row
+      expect(res.body.items).toHaveLength(3);
+    });
+
+    it('an invalid status value is rejected — 400, not silently ignored', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${statusSchool.id}/students?status=BOGUS`)
+        .set('Authorization', `Bearer ${tokenStatusOwner}`);
+      expect(res.status).toBe(400);
+    });
   });
 
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {
