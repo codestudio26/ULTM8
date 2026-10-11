@@ -1188,6 +1188,22 @@ export interface paths {
         patch: operations["TimetableController_update"];
         trace?: never;
     };
+    "/v1/timetable/{id}/occurrences/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_resolveOccurrence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/instructors": {
         parameters: {
             query?: never;
@@ -3511,6 +3527,12 @@ export interface components {
             refundCutoffHoursBeforeStart?: number | null;
             /** @description Minor currency unit (e.g. cents). Pass null to clear. */
             cancellationCharge?: number | null;
+        };
+        TimetableSlotOccurrenceResponseDto: {
+            classId: string;
+            title: string;
+            startDate: string;
+            endDate: string;
         };
         CreateInstructorDto: {
             /** @description The User this profile belongs to. Must already hold an active INSTRUCTOR RoleGrant at this School (matching branchId, if set). */
@@ -6831,6 +6853,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_resolveOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableSlotOccurrenceResponseDto"];
                 };
             };
         };

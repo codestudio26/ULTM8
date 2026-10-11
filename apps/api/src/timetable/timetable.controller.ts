@@ -8,6 +8,7 @@ import { TimetableService } from './timetable.service';
 import { CreateTimetableSlotDto } from './dto/create-timetable-slot.dto';
 import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
 import { TimetableSlotListResponseDto, TimetableSlotResponseDto } from './dto/timetable-slot-response.dto';
+import { TimetableSlotOccurrenceResponseDto } from './dto/timetable-slot-occurrence-response.dto';
 
 // TimetableSlot CRUD only — no delete, same reasoning as School/Branch/Class (general
 // tenant offboarding is [UNRESOLVED]). The class-occurrence-generation job that
@@ -49,5 +50,11 @@ export class TimetableController {
   @Patch('timetable/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateTimetableSlotDto) {
     return this.timetableService.update(user.sub, id, dto);
+  }
+
+  @ApiOkResponse({ type: TimetableSlotOccurrenceResponseDto })
+  @Get('timetable/:id/occurrences/:date')
+  resolveOccurrence(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Param('date') date: string) {
+    return this.timetableService.resolveOccurrence(user.sub, id, date);
   }
 }

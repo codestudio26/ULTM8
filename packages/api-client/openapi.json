@@ -3384,6 +3384,49 @@
         ]
       }
     },
+    "/v1/timetable/{id}/occurrences/{date}": {
+      "get": {
+        "operationId": "TimetableController_resolveOccurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotOccurrenceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/instructors": {
       "post": {
         "operationId": "InstructorsController_create",
@@ -11040,6 +11083,29 @@
             "description": "Minor currency unit (e.g. cents). Pass null to clear."
           }
         }
+      },
+      "TimetableSlotOccurrenceResponseDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "classId",
+          "title",
+          "startDate",
+          "endDate"
+        ]
       },
       "CreateInstructorDto": {
         "type": "object",

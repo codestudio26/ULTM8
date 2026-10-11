@@ -2918,3 +2918,23 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 235 — TimetableSlot occurrence lookup: exposes an architecture already decided and shipped, not a new decision
+
+**Date:** 11 Oct 2026 · **Status:** Developer-level implementation, closing `docs/v1.2-backend-backlog.md`'s Timetable page "Blocking architectural gap" item — which this entry finds was never actually blocked.
+
+1. **The backlog doc's own "Blocking architectural gap" framing is stale.** It poses the TimetableSlot↔Class relationship as needing Architect resolution first ("does selecting a slot resolve to an existing dated Class/occurrence... or does one need to be created/looked up on demand"), quoting `skills/ultm8-domain-rules/SKILL.md` §9's `[UNRESOLVED]` tag on the same question. Direct inspection of the shipped code (`src/jobs/class-occurrence-generation.processor.ts`, running on a daily schedule since Phase 5) shows this was already decided and built: exactly one `Class` row is materialized per `(TimetableSlot, occurrenceDate)` pair, ahead of time on a rolling basis, enforced by `Class`'s own `@@unique([timetableSlotId, occurrenceDate])` constraint — the first of the backlog doc's two posed options, not "create on demand." This is existing-code authority per `CLAUDE.md`'s source-of-truth hierarchy, not a Developer re-decision of the architecture.
+2. **New endpoint:** `GET /timetable/:id/occurrences/:date` — resolves a TimetableSlot occurrence to the already-materialized `Class` row for that date (`classId`, `title`, `startDate`, `endDate`), so the Timetable page's "Book" dialog (Decision 205's own real Staff-on-behalf-of capability) and a Student's self-booking can both proceed against a real `classId` via the existing booking endpoints. This lookup does not itself create a Booking.
+3. **No Staff-only gate** — mirrors `TimetableService.findOne()`'s own precedent exactly: both `TimetableSlot` and `Class` share the identical any-active-RoleGrant-holder RLS shape, and a Student resolving their own self-booking needs this exact same lookup, not just Staff on-behalf-of.
+4. **404, not a silent on-demand generation,** for a date nothing has materialized for yet (outside the job's own rolling window, or not matching the slot's weekday) — generating one here would reintroduce the "on demand" architecture the job's own design already rejected.
+5. **Flagged, not edited:** `skills/ultm8-domain-rules/SKILL.md` §9's `[UNRESOLVED]` tag on this exact question is stale relative to the shipped job and should be retired — not done here, since that file is Architect-maintained only (per its own header). This decision is the flag.
+
+### Verified
+
+`npx tsc --noEmit` clean; new `timetable-occurrence.e2e-spec.ts` (resolves to the materialized Class for both a School Owner and a Student; 404s for a not-yet-materialized date, a nonexistent slot id, and a different School's Owner; 400s for a malformed date) plus the full existing e2e suite — all green, zero regressions.
+
+### Recorded by
+
+Developer (this session), continuing the v1.2 backend backlog per the user's standing instruction to build it sequentially, verify, and move on — the final item in `docs/v1.2-backend-backlog.md`'s tracked gap list.
+
