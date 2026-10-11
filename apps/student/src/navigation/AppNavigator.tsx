@@ -8,6 +8,7 @@ import { MyBookingsScreen } from '../bookings/MyBookingsScreen';
 import { MyMembershipsScreen } from '../memberships/MyMembershipsScreen';
 import { NotificationsScreen } from '../notifications/NotificationsScreen';
 import { WaiversScreen } from '../waivers/WaiversScreen';
+import { LessonsScreen } from '../curriculum/LessonsScreen';
 import { MinorConsentScreen } from '../guardians/MinorConsentScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
 import { KidModePinScreen } from '../kidmode/KidModePinScreen';
@@ -42,6 +43,7 @@ export function AppNavigator() {
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: 'My Memberships' }} />
       <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
+      <Stack.Screen name="Lessons" component={LessonsScreen} options={{ title: 'Lessons' }} />
       <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: 'My Minors' }} />
       <Stack.Screen name="MinorConsent" component={MinorConsentScreen} options={({ route }) => ({ title: route.params.name })} />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: 'Kid Mode' }} />
