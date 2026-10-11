@@ -791,7 +791,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RoleGrantResponseDto"
+                  "$ref": "#/components/schemas/CreateRoleGrantResponseDto"
                 }
               }
             }
@@ -8834,6 +8834,77 @@
         "required": [
           "role",
           "schoolId"
+        ]
+      },
+      "CreateRoleGrantResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "SCHOOL_OWNER_MANAGER",
+              "BRANCH_STAFF",
+              "INSTRUCTOR",
+              "FRANCHISE_OWNER",
+              "GUARDIAN"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userFirstName": {
+            "type": "string"
+          },
+          "userSurname": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "emailSent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "userId",
+          "userFirstName",
+          "userSurname",
+          "grantedAt",
+          "createdAt",
+          "updatedAt",
+          "emailSent"
         ]
       },
       "RoleGrantResponseDto": {

@@ -7,6 +7,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { RoleGrantsService } from './role-grants.service';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { RoleGrantListResponseDto, RoleGrantResponseDto } from './dto/role-grant-response.dto';
+import { CreateRoleGrantResponseDto } from './dto/create-role-grant-response.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 import { InviteCandidateResponseDto } from './dto/invite-candidate-response.dto';
 
@@ -25,7 +26,7 @@ import { InviteCandidateResponseDto } from './dto/invite-candidate-response.dto'
 export class RoleGrantsController {
   constructor(private readonly roleGrantsService: RoleGrantsService) {}
 
-  @ApiCreatedResponse({ type: RoleGrantResponseDto })
+  @ApiCreatedResponse({ type: CreateRoleGrantResponseDto })
   @Post('users/:userId/role-grants')
   create(
     @CurrentUser() user: JwtPayload,

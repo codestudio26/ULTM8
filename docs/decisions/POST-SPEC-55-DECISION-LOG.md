@@ -2882,6 +2882,24 @@ User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct
 
 ---
 
+## Decision 229 — Role-grant creation now sends an email notification
+
+**Date:** 11 Oct 2026 · **Status:** Built · **Resolves:** the "Granting a role sends no notification today" gap `docs/v1.2-backend-backlog.md`'s Instructors section flagged.
+
+`RoleGrantsService.create()` (Instructor/Branch Staff invite — the "Grant Instructor Role & Send Invite" mockup action) now notifies the target by email after the `RoleGrant` commits — Postmark primary / AWS SES fallback, both already wired for every other notification this codebase sends (`NotificationDeliveryService`, Spec §11.4). SMS and WhatsApp were both already ruled out by the backlog doc's own note (no SMS-sending capability exists beyond Twilio Verify's OTP-only scope; no WhatsApp integration at all) — not revisited here.
+
+Same "don't fail the grant over a notification side effect, tell the caller whether it actually went out" shape `CoachInvitesService.invite()` already established: a send failure is caught, logged, and reported back as `emailSent: false` on the response — the `RoleGrant` itself is already durably committed by the time this runs.
+
+**Found and fixed in passing, same bug class PR #160 already fixed for Instructor:** `create()`'s own `@ApiCreatedResponse` declared `RoleGrantResponseDto`, which requires `userFirstName`/`userSurname` — but the method returned the raw `RoleGrant` Prisma row, which has neither (they're not columns on that model). The same query that now resolves the target's email for the notification also resolves these two fields, closing both gaps in one pass. New `CreateRoleGrantResponseDto` (extends `RoleGrantResponseDto`, adds `emailSent`).
+
+`apps/api/src/tenants/role-grants/role-grants.service.ts`, `role-grants.controller.ts`, new `dto/create-role-grant-response.dto.ts`. `tenants.e2e-spec.ts` adds the `NotificationDeliveryService` stub `coach-invites.e2e-spec.ts` already established (Postmark/SES aren't configured in this suite), extends the existing successful-grant test to assert `emailSent`/`userFirstName`/`userSurname`/the sent email's recipient and subject, and adds a dedicated failure-path test. Full e2e suite green against real Postgres/Redis, aside from the same pre-existing, unrelated `grading-ready-notification.e2e-spec.ts` failure PR #160 already documented on clean `master` (confirmed again here: reproduces identically in isolation, zero references to role-grants anywhere in that file); `packages/api-client` regenerated; `turbo build` clean.
+
+### Recorded by
+
+Continuing autonomously through the v1.2 backlog per the user's own instruction to work it "one after another... build, deep dive check... until confident," 11 Oct 2026.
+
+---
+
 ## Decision 228 — Create/Update Membership Plan rebuilt as a full-page wizard; currency becomes a confirmed dropdown; two bugs fixed
 
 **Date:** 10 Oct 2026 · **Status:** Developer-level implementation of a direction the user picked after dedicated research (competitor review + a direct Spec 55 verification) and a follow-up re-answer (wizard over single scrollable view); flagged items below are for Architect confirmation, not decided here. Renumbered from this branch's original "Decision 209," which collided with Decision 209 above (assigned independently on `master` first).
