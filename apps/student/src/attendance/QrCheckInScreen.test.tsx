@@ -1,12 +1,17 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { ApiError } from '@ultm8/api-client';
 import { QrCheckInScreen } from './QrCheckInScreen';
 import { useMyQrToken, type QrTokenResponse } from './attendanceQueries';
 
 jest.mock('./attendanceQueries', () => ({
   useMyQrToken: jest.fn(),
+  useScanAttendance: jest.fn(),
+}));
+jest.mock('expo-camera', () => ({
+  useCameraPermissions: jest.fn(() => [{ granted: false }, jest.fn(), jest.fn()]),
+  CameraView: () => null,
 }));
 
 const mockUseMyQrToken = useMyQrToken as jest.Mock<typeof useMyQrToken>;
@@ -83,5 +88,23 @@ describe('QrCheckInScreen', () => {
 
     expect(queryByText('boom')).toBeNull();
     expect(getByText(/show this to your instructor to check in/i)).toBeTruthy();
+  });
+
+  it('defaults to "Show my code"; tapping "Scan to check in" switches to the scanner, hiding the display view', async () => {
+    mockUseMyQrToken.mockReturnValue(fakeResult({
+      data: { token: 'student-abc123', expiresAt: new Date().toISOString() },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isRefetching: false,
+    }));
+
+    const { getByText, queryByText } = await render(<QrCheckInScreen />);
+    expect(getByText(/show this to your instructor to check in/i)).toBeTruthy();
+
+    await fireEvent.press(getByText('Scan to check in'));
+
+    expect(queryByText(/show this to your instructor to check in/i)).toBeNull();
+    expect(getByText('Allow camera access')).toBeTruthy();
   });
 });
