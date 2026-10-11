@@ -83,6 +83,9 @@ export function ClassesPage() {
                     <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/qr-code`)}>
                       Show QR
                     </Button>
+                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/roll-call`)}>
+                      Roll call
+                    </Button>
                     <Button variant="secondary" onClick={() => setEditing(c)}>
                       Edit
                     </Button>

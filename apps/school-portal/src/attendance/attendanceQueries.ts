@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -27,5 +27,26 @@ export function useClassQrToken(classId: string | null) {
     // A stale token is worthless the moment it expires — never serve a cached
     // one on remount instead of fetching fresh.
     staleTime: 0,
+  });
+}
+
+/** Backs RollCallPage — `POST /classes/{id}/attendance-scan` (Decision 107's
+ * own named concept, mechanics shipped Phase 51). `studentToken` present means
+ * the Instructor scanned the Student's own personal QR (decoded client-side by
+ * `QrScanModal`, the raw string `GET /attendance/my-qr-token` minted);
+ * omitted means a manual, camera-free confirmation by name. The backend
+ * verifies the decoded token actually belongs to `studentId` — this hook
+ * never pre-validates that match, just forwards whichever the caller passed. */
+export function useInstructorScan(classId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ studentId, studentToken }: { studentId: string; studentToken?: string }) =>
+      unwrap(
+        apiClient.POST('/v1/classes/{id}/attendance-scan', {
+          params: { path: { id: classId } },
+          body: { studentId, studentToken },
+        }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['classBookings', classId] }),
   });
 }
