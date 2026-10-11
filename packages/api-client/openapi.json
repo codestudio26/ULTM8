@@ -8941,6 +8941,28 @@
           "currencyOverride": {
             "type": "string"
           },
+          "type": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1)."
+          },
+          "description": {
+            "type": "string"
+          },
           "logoUrl": {
             "type": "string"
           },
@@ -8981,6 +9003,30 @@
             "type": "string",
             "nullable": true
           },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
           "logoUrl": {
             "type": "string",
             "nullable": true
@@ -9000,6 +9046,8 @@
           "id",
           "schoolId",
           "name",
+          "activities",
+          "facilities",
           "createdAt",
           "updatedAt"
         ]
@@ -9028,6 +9076,18 @@
           "name": {
             "type": "string"
           },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "facilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "address": {
             "type": "string",
             "nullable": true
@@ -9042,6 +9102,19 @@
             "nullable": true
           },
           "currencyOverride": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).",
+            "nullable": true
+          },
+          "description": {
             "type": "string",
             "nullable": true
           },

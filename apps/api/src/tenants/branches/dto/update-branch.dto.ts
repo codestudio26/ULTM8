@@ -2,7 +2,17 @@ import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 import { CreateBranchDto } from './create-branch.dto';
 
-const NULLABLE_ON_UPDATE = ['address', 'contactPhone', 'timezone', 'currencyOverride', 'logoUrl', 'bannerUrl'] as const;
+const NULLABLE_ON_UPDATE = [
+  'address',
+  'contactPhone',
+  'timezone',
+  'currencyOverride',
+  'type',
+  'defaultLanguage',
+  'description',
+  'logoUrl',
+  'bannerUrl',
+] as const;
 
 /**
  * FOUND PROACTIVELY (Phase 18, prompted by the altitude review's own check for
@@ -22,7 +32,13 @@ const NULLABLE_ON_UPDATE = ['address', 'contactPhone', 'timezone', 'currencyOver
  * Fixed here alongside the frontend form itself, not left for a future
  * "someone eventually clicks Edit Branch and notices" discovery.
  *
- * Deliberately NOT widened: `name` (required — nothing to "clear").
+ * Deliberately NOT widened: `name` (required — nothing to "clear"); `activities`/
+ * `facilities` (arrays — same reasoning as UpdateFranchiseDto's own array
+ * fields, a client sends a real, possibly-empty array, never undefined-as-clear).
+ *
+ * Decision 231's four new fields (`type`/`activities`/`facilities`/
+ * `defaultLanguage`/`description`) follow the exact same nullable-vs-array
+ * split UpdateFranchiseDto already established for its own identical fields.
  */
 export class UpdateBranchDto extends PartialType(OmitType(CreateBranchDto, NULLABLE_ON_UPDATE)) {
   @ApiPropertyOptional({ type: String, nullable: true })
@@ -48,6 +64,24 @@ export class UpdateBranchDto extends PartialType(OmitType(CreateBranchDto, NULLA
   @IsString()
   @MaxLength(100)
   currencyOverride?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  type?: string | null;
+
+  @ApiPropertyOptional({ description: 'One of the 4 confirmed languages — free text, matching School.defaultLanguage\'s existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).', type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  defaultLanguage?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()

@@ -794,8 +794,21 @@ model Branch {
   contactPhone     String?
   timezone         String? // IANA tz name, per the glossary convention (Spec §14)
   currencyOverride String?
-  logoUrl          String?
-  bannerUrl        String?
+
+  /// Decision 231 — Branch field-level settings screen. These four mirror
+  /// Franchise's own identically-named/typed columns field-for-field
+  /// (schema.prisma's Franchise model), per the decision's own scoping to
+  /// "four new columns needed to back fields already drawn in the Branch
+  /// mockups". Display-only mirror no longer — Branch now really has its own
+  /// independent values, not a copy of its Franchise's.
+  type            String?
+  activities      String[] @default([])
+  facilities      String[] @default([])
+  defaultLanguage String?
+  description     String?
+
+  logoUrl   String?
+  bannerUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
