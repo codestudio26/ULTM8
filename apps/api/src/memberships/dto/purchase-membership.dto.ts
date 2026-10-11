@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsBoolean, IsOptional, IsUUID } from 'class-validator';
 
 /**
  * POST /membership-plans/{id}/purchase body (Phase 39 — this route had no
@@ -12,19 +12,29 @@ import { IsOptional, IsUUID } from 'class-validator';
  *
  * A Guardian-driven purchase still collects payment the exact same way a
  * self-purchase does today — fresh, client-side, via Stripe Elements against
- * the returned `clientSecret` (PaymentsService.charge()/subscribe()'s own
- * header comment: no persisted PaymentMethod/saved-card concept exists
- * anywhere in this codebase yet) — so "whose card pays" is not a design
- * question this DTO needs to answer: whoever completes the resulting Stripe
- * payment (in practice, the Guardian, since the minor cannot log in at all —
- * see GuardiansService.createMinor()'s own comment) simply does so in their
- * own app session, same as any purchase flow already works. This will need
- * revisiting once a saved-PaymentMethod feature is eventually built (flagged
- * for the Architect in this phase's own PR description, not solved here).
+ * the returned `clientSecret` — `payWithSavedCard` below is rejected outright
+ * for a Guardian-driven purchase (MembershipsService.purchase()'s own check):
+ * the saved-payment-method endpoints (PaymentsController) are self-only, so a
+ * linked minor, who never logs in, can never have one to reuse.
+ *
+ * Decision 236's own flagged follow-up — `payWithSavedCard` (Decision 238's
+ * `chargeOffSession()`, gated by step-up re-authentication) lets a
+ * SELF-purchasing Student reuse their saved card instead of entering a fresh
+ * one. Scoped to CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only — SUBSCRIPTION
+ * is explicitly rejected too: `PaymentsService.subscribe()`'s own header
+ * comment already flags that it creates a throwaway Stripe Customer on every
+ * call, never wired to `StudentPaymentMethod` — reusing a saved card for a
+ * Subscription would need that fixed first, which is its own separate piece
+ * of work, not bundled in here.
  */
 export class PurchaseMembershipDto {
   @ApiPropertyOptional({ description: 'Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller.' })
   @IsOptional()
   @IsUUID()
   studentId?: string;
+
+  @ApiPropertyOptional({ description: 'Self-purchase only: charge the saved payment method (Decision 238) instead of collecting a fresh card. Requires the X-Step-Up-Token header (Decision 236).' })
+  @IsOptional()
+  @IsBoolean()
+  payWithSavedCard?: boolean;
 }

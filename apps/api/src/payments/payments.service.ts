@@ -632,6 +632,28 @@ export class PaymentsService {
   }
 
   /**
+   * Decision 236's own follow-up — MembershipsService.purchase()'s saved-card
+   * reuse branch calls this when chargeOffSession() above already captured a
+   * real charge but the Membership it was paying for then lost the
+   * two-simultaneous-Active-general-access-Membership race (the same P2002
+   * createMembershipAndReturn() already catches). Unlike that race when it
+   * happens via the async webhook path (StripeWebhookProcessingProcessor's
+   * own resolveMembershipCollision, which has a dedicated queue+idempotency-
+   * key mechanism), this one is synchronous — chargeOffSession() already ran
+   * BEFORE any DB write (same "an external Stripe call has no place holding a
+   * DB transaction open" discipline this codebase enforces everywhere else),
+   * so by the time the collision is detected here, real money has already
+   * moved and nothing else will refund it. No idempotency key is set — this
+   * is called at most once per purchase() invocation, synchronously, never
+   * retried by a queue the way the webhook path's own equivalent is.
+   */
+  async refundOffSessionCharge(studentId: string, schoolId: string, paymentIntentId: string): Promise<void> {
+    const account = await this.resolveStripePaymentAccount(studentId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    await stripe.refunds.create({ payment_intent: paymentIntentId });
+  }
+
+  /**
    * A School's single configured PaymentAccount must be STRIPE-provider and fully
    * onboarded (stripeConnectedAccountId set) before it can charge/subscribe anyone —
    * derived, not client-chosen (see MembershipPlan's own schema comment for the full

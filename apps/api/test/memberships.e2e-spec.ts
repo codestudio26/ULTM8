@@ -560,6 +560,125 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.school.delete({ where: { id: stripeSchool.id } });
   });
 
+  // ---------------------------------------------------------------------------
+  // Decision 236's own follow-up — payWithSavedCard, gated by step-up
+  // re-authentication. Same "no live Stripe credentials in CI" limitation as
+  // the Decision 68/112 test above — every assertion here is reachable BEFORE
+  // MembershipsService.purchaseWithSavedCard() ever makes a real Stripe call
+  // (PaymentsService.chargeOffSession()'s own `studentPaymentMethod.findUnique`
+  // check, which NoSavedPaymentMethodError below exercises, runs before any
+  // Stripe client is ever touched — see that method's own comment). A
+  // successful saved-card charge, and the collision+refund branch
+  // (purchaseWithSavedCard's own catch block), are NOT exercised here for the
+  // same reason; the refund call shape itself is unit-tested directly
+  // (payments.service.spec.ts).
+  // ---------------------------------------------------------------------------
+
+  it('payWithSavedCard requires a fresh step-up proof, then 400s with no Stripe call when nothing is saved', async () => {
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (saved-card)' } });
+    const stripePaymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: stripeSchool.id } });
+    const tokenStudentAAtStripeSchool = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
+    const stripePlan = await superuser.membershipPlan.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'CLASS_PACK', title: 'Saved-Card Pack', price: 3000, classesIncluded: 3 },
+    });
+
+    const noTokenRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${stripePlan.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentAAtStripeSchool}`)
+      .send({ payWithSavedCard: true });
+    expect(noTokenRes.status).toBe(403);
+    expect(noTokenRes.body.error.code).toBe('STEP_UP_REQUIRED');
+
+    const expiredToken = jwt.sign({ sub: studentA.id, scope: 'GUARDIAN_SENSITIVE_ACTION' }, { expiresIn: -10 });
+    const expiredTokenRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${stripePlan.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentAAtStripeSchool}`)
+      .set('X-Step-Up-Token', expiredToken)
+      .send({ payWithSavedCard: true });
+    expect(expiredTokenRes.status).toBe(403);
+    expect(expiredTokenRes.body.error.code).toBe('STEP_UP_REQUIRED');
+
+    // A valid step-up proof — minted directly (same technique
+    // guardians.e2e-spec.ts's own "expired token" test uses), not via the
+    // real POST /auth/step-up/verify passcode flow: this fixture's own
+    // passcodeHash is the literal string 'x', not a real bcrypt hash.
+    const validToken = jwt.sign({ sub: studentA.id, scope: 'GUARDIAN_SENSITIVE_ACTION' }, { expiresIn: 300 });
+    const noSavedCardRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${stripePlan.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentAAtStripeSchool}`)
+      .set('X-Step-Up-Token', validToken)
+      .send({ payWithSavedCard: true });
+    expect(noSavedCardRes.status).toBe(400);
+    expect(noSavedCardRes.body.error.message).toContain('no saved payment method');
+
+    await superuser.membershipPlan.delete({ where: { id: stripePlan.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: studentA.id, schoolId: stripeSchool.id } });
+    await superuser.paymentAccount.delete({ where: { id: stripePaymentAccount.id } });
+    await superuser.school.delete({ where: { id: stripeSchool.id } });
+  });
+
+  it('payWithSavedCard on a SUBSCRIPTION plan is rejected — 400, before any step-up check or Stripe call', async () => {
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (subscription)' } });
+    const stripePaymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: stripeSchool.id } });
+    const tokenStudentBAtStripeSchool = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
+    const subscriptionPlan = await superuser.membershipPlan.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 },
+    });
+
+    // No X-Step-Up-Token header at all — if this still 403'd on STEP_UP_REQUIRED
+    // rather than 400, the SUBSCRIPTION block below wouldn't actually be
+    // running before the step-up check, which matters: a Student should never
+    // be asked to re-enter their passcode for a combination that's rejected
+    // outright regardless.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${subscriptionPlan.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentBAtStripeSchool}`)
+      .send({ payWithSavedCard: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('Subscription with a saved card');
+
+    await superuser.membershipPlan.delete({ where: { id: subscriptionPlan.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: studentB.id, schoolId: stripeSchool.id } });
+    await superuser.paymentAccount.delete({ where: { id: stripePaymentAccount.id } });
+    await superuser.school.delete({ where: { id: stripeSchool.id } });
+  });
+
+  it('payWithSavedCard for a Guardian-driven purchase is rejected — 400, before any plan lookup', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Guardian Saved-Card Pack', price: 1500, currency: 'gbp', classesIncluded: 1 });
+    membershipPlanIds.push(planRes.body.id);
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenGuardian}`)
+      .send({ studentId: minor.id, payWithSavedCard: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('Guardian-driven purchase');
+  });
+
+  it('payWithSavedCard at a Cash/Bank-provider School is rejected — 400', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Cash-Bank Saved-Card Pack', price: 1500, currency: 'gbp', classesIncluded: 1 });
+    membershipPlanIds.push(planRes.body.id);
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({ payWithSavedCard: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('Stripe-configured School');
+  });
+
   it('a Student (not School Owner/Manager) cannot confirm a Transaction — 403', async () => {
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)

@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -58,10 +58,25 @@ export class MembershipsController {
     return this.membershipsService.updatePlan(user.sub, id, dto);
   }
 
+  // Decision 236's own follow-up — required only when dto.payWithSavedCard is
+  // true (MembershipsService.purchase()'s own call to StepUpService.
+  // assertVerified()), same optional-at-this-layer shape
+  // GuardiansController.withdrawConsent() already established for this exact
+  // mechanism's first consumer.
   @ApiOkResponse({ type: PurchaseMembershipResponseDto })
+  @ApiHeader({
+    name: 'x-step-up-token',
+    required: false,
+    description: 'Required only when payWithSavedCard is true (Decision 236) — from POST /auth/step-up/verify.',
+  })
   @Post('membership-plans/:id/purchase')
-  purchase(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: PurchaseMembershipDto) {
-    return this.membershipsService.purchase(user.sub, id, dto);
+  purchase(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: PurchaseMembershipDto,
+    @Headers('x-step-up-token') stepUpToken?: string,
+  ) {
+    return this.membershipsService.purchase(user.sub, id, dto, stepUpToken);
   }
 
   @ApiOkResponse({ type: MembershipListResponseDto })

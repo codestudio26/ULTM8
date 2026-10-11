@@ -3944,6 +3944,8 @@ export interface components {
         PurchaseMembershipDto: {
             /** @description Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller. */
             studentId?: string;
+            /** @description Self-purchase only: charge the saved payment method (Decision 238) instead of collecting a fresh card. Requires the X-Step-Up-Token header (Decision 236). */
+            payWithSavedCard?: boolean;
         };
         MembershipResponseDto: {
             id: string;
@@ -3967,7 +3969,7 @@ export interface components {
             clientSecret?: string;
             /** @description Present only when outcome is active. */
             membership?: components["schemas"]["MembershipResponseDto"];
-            /** @description The created Transaction id — present for requires_payment and pending_confirmation. */
+            /** @description The created Transaction id — present for requires_payment, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236). */
             transactionId?: string;
         };
         MembershipListResponseDto: {
@@ -7608,7 +7610,10 @@ export interface operations {
     MembershipsController_purchase: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Required only when payWithSavedCard is true (Decision 236) — from POST /auth/step-up/verify. */
+                "x-step-up-token"?: string;
+            };
             path: {
                 id: string;
             };

@@ -1,11 +1,12 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
-import { PaymentsService } from '../payments/payments.service';
+import { PaymentsService, NoSavedPaymentMethodError } from '../payments/payments.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
+import { StepUpService } from '../auth/step-up.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
@@ -31,6 +32,8 @@ export function isMembershipLive(
 
 @Injectable()
 export class MembershipsService {
+  private readonly logger = new Logger(MembershipsService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
@@ -38,6 +41,7 @@ export class MembershipsService {
     private readonly paymentsService: PaymentsService,
     private readonly guardiansService: GuardiansService,
     private readonly subscriptionGate: SubscriptionGateService,
+    private readonly stepUpService: StepUpService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -284,11 +288,20 @@ export class MembershipsService {
    * a genuinely small follow-on next (selectAndConsumeMembership() already
    * keys purely off the target Student, with zero changes needed there).
    */
-  async purchase(callerId: string, planId: string, dto?: PurchaseMembershipDto) {
+  async purchase(callerId: string, planId: string, dto?: PurchaseMembershipDto, stepUpToken?: string) {
     const studentId = dto?.studentId ?? callerId;
     const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
     if (isGuardianAction) {
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    }
+    // Decision 236's own follow-up — the saved-payment-method endpoints
+    // (PaymentsController) are self-only, so a Guardian-driven minor, who
+    // never logs in, can never have a saved card to reuse here. Checked
+    // early, before any plan/payment-account lookup, same "fail loudly on an
+    // unsupported combination rather than silently fall back" discipline the
+    // FRIEND_PASS check below already follows.
+    if (dto?.payWithSavedCard && isGuardianAction) {
+      throw new BadRequestException('Paying with a saved card is not supported for a Guardian-driven purchase — pay with a new card instead.');
     }
 
     const plan = await this.findOnePlan(studentId, planId);
@@ -321,6 +334,17 @@ export class MembershipsService {
     }
     if (plan.type === 'SUBSCRIPTION' && paymentAccount.provider !== 'STRIPE') {
       throw new BadRequestException('SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.');
+    }
+    // Decision 236's own follow-up, scoped deliberately: PaymentsService.
+    // subscribe()'s own header comment already flags that it creates a
+    // throwaway Stripe Customer on every call, never wired to
+    // StudentPaymentMethod — reusing a saved card for a Subscription needs
+    // that fixed first, a separate piece of work, not bundled into this one.
+    if (dto?.payWithSavedCard && plan.type === 'SUBSCRIPTION') {
+      throw new BadRequestException('Paying a Subscription with a saved card is not supported yet — pay with a new card instead.');
+    }
+    if (dto?.payWithSavedCard && paymentAccount.provider !== 'STRIPE') {
+      throw new BadRequestException('Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.');
     }
 
     // £0-immediate path (Spec 55 §6.1: "any Cash/Bank-eligible plan priced at 0...
@@ -389,6 +413,14 @@ export class MembershipsService {
         return { outcome: 'requires_payment' as const, clientSecret, transactionId };
       }
 
+      // Decision 236's own follow-up — reuse the saved card (Decision 238)
+      // instead of collecting a fresh one, gated by a fresh step-up proof.
+      // SUBSCRIPTION already took its own branch above and never reaches
+      // here; CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only.
+      if (dto?.payWithSavedCard) {
+        return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, stepUpToken);
+      }
+
       const { paymentIntentId, clientSecret } = await this.paymentsService.charge(studentId, plan.schoolId, plan.price, currency, plan.title);
       await this.prismaApp.withTenantContext(studentId, (tx) =>
         tx.transaction.create({
@@ -431,6 +463,107 @@ export class MembershipsService {
       }),
     );
     return { outcome: 'pending_confirmation' as const, transactionId };
+  }
+
+  /**
+   * Decision 236's own follow-up — `purchase()`'s `payWithSavedCard` branch.
+   * Gated on a fresh step-up proof (`callerId` here is always `studentId`,
+   * since a Guardian-driven `payWithSavedCard` purchase is rejected before
+   * this is ever called), then charges the Student's saved payment method
+   * (Decision 238's `chargeOffSession()`) synchronously — unlike the fresh-
+   * card branch above, there is no client-side confirmation step and no
+   * webhook to wait for; the outcome is known immediately.
+   */
+  private async purchaseWithSavedCard(
+    studentId: string,
+    callerId: string,
+    plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null; price: number; title: string },
+    paymentAccountId: string,
+    currency: string,
+    stepUpToken?: string,
+  ) {
+    this.stepUpService.assertVerified(callerId, stepUpToken);
+
+    let chargeResult: { succeeded: boolean; paymentIntentId: string };
+    try {
+      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, plan.price, currency, plan.title);
+    } catch (err) {
+      if (err instanceof NoSavedPaymentMethodError) {
+        throw new BadRequestException('You have no saved payment method at this School — add a card first, or pay with a new card.');
+      }
+      throw err;
+    }
+
+    const transactionId = randomUUID();
+    if (!chargeResult.succeeded) {
+      // Recorded for audit even though it failed — same "a Transaction row
+      // always exists once a real charge attempt was made" discipline the
+      // fresh-card/Subscription branches already follow (PENDING there,
+      // FAILED here since chargeOffSession() already knows the outcome
+      // synchronously — no webhook needed to tell this branch what already
+      // happened).
+      await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.transaction.create({
+          data: {
+            id: transactionId,
+            schoolId: plan.schoolId,
+            studentId,
+            paymentAccountId,
+            membershipPlanId: plan.id,
+            amount: plan.price,
+            currency,
+            status: 'FAILED',
+            paymentMethod: 'STRIPE',
+            stripePaymentIntentId: chargeResult.paymentIntentId || undefined,
+          },
+        }),
+      );
+      throw new BadRequestException('Your saved card was declined — try a different payment method.');
+    }
+
+    await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.transaction.create({
+        data: {
+          id: transactionId,
+          schoolId: plan.schoolId,
+          studentId,
+          paymentAccountId,
+          membershipPlanId: plan.id,
+          amount: plan.price,
+          currency,
+          status: 'SUCCESSFUL',
+          paymentMethod: 'STRIPE',
+          stripePaymentIntentId: chargeResult.paymentIntentId,
+        },
+      }),
+    );
+
+    try {
+      const result = await this.createMembershipAndReturn(studentId, plan, null);
+      await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.transaction.update({ where: { id: transactionId }, data: { membershipId: result.membership.id } }),
+      );
+      return { ...result, transactionId };
+    } catch (err) {
+      if (err instanceof ConflictException) {
+        // The charge already succeeded (real money moved) before this
+        // Membership-creation race was even attempted — chargeOffSession()
+        // runs outside any DB transaction (the same "an external Stripe call
+        // has no place holding a DB transaction open" discipline this
+        // codebase enforces everywhere else), so there is no transaction to
+        // roll the charge back with. Refunded explicitly here rather than
+        // left orphaned — see PaymentsService.refundOffSessionCharge()'s own
+        // header comment for why this is a synchronous, one-shot refund, not
+        // the async webhook path's queued/idempotency-keyed equivalent
+        // (resolveMembershipCollision, stripe-webhook-processing.processor.ts).
+        await this.paymentsService.refundOffSessionCharge(studentId, plan.schoolId, chargeResult.paymentIntentId);
+        await this.prismaApp.withTenantContext(studentId, (tx) =>
+          tx.transaction.update({ where: { id: transactionId }, data: { status: 'REFUNDED', refundedAmount: plan.price } }),
+        );
+        throw new ConflictException('This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.');
+      }
+      throw err;
+    }
   }
 
   /**
