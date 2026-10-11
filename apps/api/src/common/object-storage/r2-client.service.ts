@@ -11,20 +11,23 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
  * use" convention StripeClientService/TwilioVerifyService/CognitoTokenVerifierService
  * already established for every other unconfigured external dependency here.
  *
- * FIRST use of R2 anywhere in this codebase (drawn-signature-capture images for
- * WaiverSignature, Decision 74/78 — see that model's own schema comment and
- * SignWaiverDto's own header comment for the full history). School/Franchise/
- * Branch/Class logoUrl/bannerUrl fields are NOT wired to this — they stay
- * plain pasted-URL fields (verified against every one of those DTOs before writing
- * this comment: `@IsUrl() @MaxLength(2048)`, no upload path exists for them) — this
- * service exists narrowly for waiver signature images, not as a general asset
- * pipeline other modules should assume is already wired up for their own fields.
+ * FIRST use of R2 was drawn-signature-capture images for WaiverSignature
+ * (Decision 74/78 — see that model's own schema comment and SignWaiverDto's
+ * own header comment for the full history). School/Franchise/Branch/Class
+ * logoUrl/bannerUrl fields are still NOT wired to this — they stay plain
+ * pasted-URL fields — this service isn't assumed wired up for every object/
+ * image field in the app just because it's shared.
  *
- * Lives inside src/waivers/, not src/common/ — same "wait for a real second caller
- * before generalizing" discipline StripeClientService's own header comment already
- * documents for its own scopedClient() method. If a second module genuinely needs
- * R2 later (e.g. School logo uploads), extract then, against that real caller, not
- * speculatively now.
+ * Moved to src/common/ (Decision 1/217 — Instructor certification upload) once
+ * a real second caller arrived, per this file's own prior "wait for a real
+ * second caller before generalizing" note (same discipline
+ * StripeClientService's own header comment documents for its own
+ * scopedClient() method). Each consuming module (WaiversModule,
+ * InstructorsModule) lists this as its own provider rather than importing a
+ * shared module for it — same "duplicate the registration, not the dependency
+ * edge" convention GuardiansModule's own header comment already established
+ * for its independent JwtModule.register() — this is stateless/config-only,
+ * so two separate instances cost nothing and keep the module graph flat.
  *
  * Bucket/object access is deliberately PRIVATE, not R2's public-bucket-URL feature:
  * a signature image is closer to the "legal record" category Spec 55 §11.3 already
