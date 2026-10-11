@@ -39,7 +39,26 @@ export function FranchisesPage() {
           <Table<FranchiseResponse>
             rows={franchises}
             columns={[
-              { key: 'name', header: 'Name', render: (f) => f.name },
+              {
+                key: 'name',
+                header: 'Name',
+                render: (f) => (
+                  <button
+                    onClick={() => navigate(`/franchises/${f.id}`)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      font: 'inherit',
+                      color: 'var(--text-accent)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {f.name}
+                  </button>
+                ),
+              },
               {
                 key: 'activities',
                 header: 'Activities',
