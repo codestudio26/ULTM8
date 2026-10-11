@@ -7,12 +7,23 @@ export type ClassResponse = components['schemas']['ClassResponseDto'];
 export type CreateClassInput = components['schemas']['CreateClassDto'];
 export type UpdateClassInput = components['schemas']['UpdateClassDto'];
 
-/** No pagination in this UI yet — same established convention as
- * useBranches/useDisciplines/useInstructors (see their own header comments). */
-export function useClasses(schoolId: string | null) {
+/** `cursor` is optional and defaults to the first page — TimetablePage and
+ * MembershipPlansPage (see the Phase 18 note below) both call this with no
+ * cursor and need the same first-page behavior they already get today;
+ * only ClassesPage's own pager (v1.2 backend backlog, Decision 242) passes
+ * one. Still no `limit`/filter params wired into this shared hook — those
+ * stay ClassesPage-only, passed straight to the fetch call below rather
+ * than threaded through this hook's own signature, so the two other
+ * unfiltered callers are unaffected. */
+export function useClasses(schoolId: string | null, cursor?: string) {
   return useQuery({
-    queryKey: ['classes', schoolId],
-    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/classes', { params: { path: { schoolId: schoolId! } } })),
+    queryKey: ['classes', schoolId, cursor],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/classes', {
+          params: { path: { schoolId: schoolId! }, query: cursor ? { cursor } : undefined },
+        }),
+      ),
     enabled: !!schoolId,
     // FOUND ON REVIEW (Phase 18): MembershipPlansPage now also depends on
     // this hook (to populate the "Scoped to Class" dropdown/label) alongside

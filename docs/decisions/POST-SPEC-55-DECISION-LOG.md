@@ -2918,3 +2918,22 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 242 — Classes list gains real Prev/Next pagination
+
+**Date:** 11 Oct 2026 · **Status:** Built and verified this session. Frontend only — the cursor/`nextCursor` mechanism itself has existed server-side since Phase 4; `ClassesPage.tsx` simply never wired a pager to it.
+
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "Prev/Next pagination — decorative" gap.
+
+1. **`useClasses(schoolId, cursor?)` gains an optional `cursor` param**, defaulting to the first page when omitted. This hook is shared with `TimetablePage` and `MembershipPlansPage` (the latter for its "Scoped to Class" dropdown, Phase 18) — both call it with no cursor and keep their existing first-page-only behavior unchanged; only `ClassesPage`'s own pager passes one.
+2. **`ClassesPage.tsx` keeps a simple cursor-history stack** (`cursorHistory: Array<string | undefined>`), since the API only ever returns a forward `nextCursor`, never a `prevCursor`. Next pushes the current cursor and advances to `nextCursor`; Prev pops the last entry back off. `undefined` always means page 1.
+
+### Verified
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`; `vite build` clean; manually verified end-to-end in a real Chromium browser against the real dev API, seeded with 25 Classes (default page size 20): page 1 showed 20 rows with Prev disabled/Next enabled, Next advanced to page 2's remaining 5 rows with zero overlap and Prev now enabled, and Prev returned to the exact original page-1 set. Also manually confirmed `TimetablePage` and `MembershipPlansPage` (the hook's other two consumers) still load without error. Full e2e suite regression-clean (659/659, backend untouched by this change); `turbo build` clean across Track A.
+
+### Recorded by
+
+Developer (this session), continuing the user's standing instruction to build the v1.2 backend backlog sequentially.
+
