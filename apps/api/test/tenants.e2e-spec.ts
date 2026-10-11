@@ -461,6 +461,159 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(404);
   });
 
+  // ---------------------------------------------------------------------------
+  // PATCH /schools/{id}/students/{studentId} — Staff-on-behalf-of edit of a
+  // Student's own profile (SchoolsService.updateStudentProfile), the "Update
+  // Student" page's v1.2 backend backlog gap. Owner-only, same gate
+  // setStudentHomeBranch above already uses.
+  // ---------------------------------------------------------------------------
+
+  it('PATCH /schools/:id/students/:studentId — the Owner can edit a Student\'s profile; an Instructor cannot', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-update-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'update-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const studentToken = signAccessToken(studentUser, []);
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({ branchId: branchA.id });
+    expect(joinRes.status).toBe(201);
+
+    const instructor = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-update-instructor-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'update-instructor',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'INSTRUCTOR', userId: instructor.id, schoolId: schoolA.id },
+    });
+    const instructorToken = signAccessToken(instructor, [{ role: 'INSTRUCTOR', franchiseId: null, schoolId: schoolA.id, branchId: null }]);
+
+    // Instructor is Staff but not the Owner — this is an administrative action
+    // (SKILL.md §3), same exclusion join()'s Staff-on-behalf-of branch and
+    // revokeEnrollment already enforce for the identical class of action.
+    const instructorRes = await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}/students/${studentUser.id}`)
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ surname: 'Should Not Apply' });
+    expect(instructorRes.status).toBe(403);
+
+    const ownerRes = await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}/students/${studentUser.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({
+        surname: 'Edited-By-Staff',
+        gender: 'female',
+        nationality: 'British',
+        language: 'en-GB',
+        currency: 'GBP',
+        address: '1 Staff-Edited Street',
+        profilePhotoUrl: 'https://example.test/staff-edited.jpg',
+      });
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.id).toBe(studentUser.id);
+    expect(ownerRes.body.surname).toBe('Edited-By-Staff');
+    expect(ownerRes.body.gender).toBe('female');
+    expect(ownerRes.body.nationality).toBe('British');
+    expect(ownerRes.body.language).toBe('en-GB');
+    expect(ownerRes.body.currency).toBe('GBP');
+    expect(ownerRes.body.address).toBe('1 Staff-Edited Street');
+    expect(ownerRes.body.profilePhotoUrl).toBe('https://example.test/staff-edited.jpg');
+    // firstName untouched — only the fields sent were edited.
+    expect(ownerRes.body.firstName).toBe('update-student');
+
+    // The Student can log in and see the Staff-made edit reflected on their
+    // own self-service profile — proves the write landed on the real row,
+    // not some side-channel copy.
+    const meRes = await request(app.getHttpServer()).get('/v1/users/me').set('Authorization', `Bearer ${studentToken}`);
+    expect(meRes.body.surname).toBe('Edited-By-Staff');
+  });
+
+  it('PATCH /schools/:id/students/:studentId — rejects an explicit null on firstName/surname/dateOfBirth; rejects a duplicate username; a non-Student or cross-tenant target is rejected', async () => {
+    const studentA2 = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-update-student-a2-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'update-student-a2',
+        surname: 'Tenant',
+        username: `taken-${randomUUID().slice(0, 20)}`,
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: studentA2.id, schoolId: schoolA.id },
+    });
+    const studentB2 = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-update-student-b2-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'update-student-b2',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: studentB2.id, schoolId: schoolA.id },
+    });
+
+    const nullSurnameRes = await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}/students/${studentB2.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ surname: null });
+    expect(nullSurnameRes.status).toBe(400);
+
+    const duplicateUsernameRes = await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}/students/${studentB2.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ username: studentA2.username });
+    expect(duplicateUsernameRes.status).toBe(409);
+
+    // Never enrolled anywhere — not a Student at this School at all.
+    const neverEnrolled = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-update-never-enrolled-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'never-enrolled',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    const notEnrolledRes = await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}/students/${neverEnrolled.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ surname: 'Irrelevant' });
+    expect(notEnrolledRes.status).toBe(404);
+
+    // tokenOwnerB is a real School Owner, just not of schoolA.
+    const crossTenantRes = await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}/students/${studentB2.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`)
+      .send({ surname: 'Irrelevant' });
+    expect(crossTenantRes.status).toBe(403);
+  });
+
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')

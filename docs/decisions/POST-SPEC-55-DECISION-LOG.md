@@ -2905,3 +2905,26 @@ Full stress test run locally (Postgres/Redis stood up in-sandbox, not part of th
 ### Recorded by
 
 Developer (this session), per the user's instruction to view the built pages, stress-test the flow, fix anything found, and merge once logic is verified.
+
+---
+
+## Decision 237 — Student Update page: Staff-on-behalf-of profile edit, `assertSchoolOwner` over the backlog's own suggestion
+
+**Date:** 11 Oct 2026 · **Status:** Built and verified this session.
+
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "Update Student page (`StudentUpdate.dc.html`)" gap — no backend capability existed for a School Owner/Staff member to edit a Student's profile on the Student's behalf; the only existing profile-edit endpoint, `PATCH /users/me`, is explicitly self-service only.
+
+1. **New endpoint: `PATCH /schools/:id/students/:studentId`**, reusing `UpdateUserDto` verbatim (same field set `PATCH /users/me` already validates) rather than a new DTO, as the backlog itself asked for.
+2. **`assertSchoolOwner`, not the backlog's suggested "`assertStaffAtSchool`-equivalent."** This deliberately follows this session's own established precedent (Decisions 232/233/236, etc.) that administrative Student-at-School actions — enroll, home-branch assignment, revoke enrollment, and now profile edit — sit with the Owner/Manager tier, not plain Staff/Instructor. `ultm8-domain-rules` §3 scopes Instructor's permissions to attendance/grading/booking-override only; nothing in the confirmed rules extends Instructor into editing a Student's personal profile fields (name, DOB, address, etc.), so the narrower tier was chosen over the backlog doc's own wording.
+3. **`UsersService` generalized rather than duplicated**: the existing self-service `updateMe(callerId, dto)` is now a thin wrapper around a new `updateProfile(targetId, dto)`, which `SchoolsService.updateStudentProfile()` calls directly after its own authorization + active-enrollment check. This keeps the one real business rule set (null-rejection on firstName/surname/dateOfBirth, username-uniqueness) in one place rather than forking it.
+4. **The write runs under `withTenantContext(studentId, ...)`, not the caller's `callerId`** — verified directly against the RLS migration, not assumed: `User`'s `user_self_or_shared_school` policy (`20260902000000_init/migration.sql:235-254`) has no `FOR` clause (applies to all commands) and its `WITH CHECK` clause is `"id" = current_setting('app.current_user_id', true)` only. An UPDATE run under the Owner's own context would pass the `USING` visibility check but fail `WITH CHECK`, since the row being written isn't the caller's own. Running the write under the target Student's id is the same on-behalf-of pattern already established in `SchoolsService.join()`'s Guardian branch.
+5. **`UsersModule` now exports `UsersService`**, imported one-directionally into `TenantsModule` (confirmed no cycle: `UsersModule` itself imports nothing) so `SchoolsService` can inject it — the same due-diligence already documented in `tenants.module.ts`'s own header comment for `AuthModule`/`GuardiansModule`/`NotificationsModule`.
+6. **Authorization and enrollment checks precede the generalized update**: `assertSchoolOwner` → `assertSchoolNotArchived` → an active `STUDENT`-role `RoleGrant` lookup (404 if the target isn't currently enrolled at this School) → `UsersService.updateProfile()`. A cross-tenant or never-enrolled target, and a non-Owner caller, are both rejected before any write is attempted.
+
+### Verified
+
+`npx tsc --noEmit` clean; targeted e2e tests (new cases + `users.e2e-spec.ts` + `platform-admin-users.e2e-spec.ts`) green; full e2e suite 660/660 passing (no regressions); `packages/api-client` regenerated (163 paths); `turbo build` clean across all packages.
+
+### Recorded by
+
+Developer (this session), continuing the user's standing instruction to build the v1.2 backend backlog sequentially.

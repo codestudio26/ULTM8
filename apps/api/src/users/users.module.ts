@@ -15,5 +15,9 @@ import { UsersService } from './users.service';
 @Module({
   controllers: [UsersController],
   providers: [UsersService],
+  // Exported so TenantsModule can inject UsersService into SchoolsService
+  // (Staff-on-behalf-of Student profile edit, v1.2 backend backlog) — see
+  // UsersService.updateProfile's own header comment.
+  exports: [UsersService],
 })
 export class UsersModule {}

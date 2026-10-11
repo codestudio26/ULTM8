@@ -13,6 +13,7 @@ import { TenantAuthorizationService } from './tenant-authorization.service';
 import { CoachInviteLinksController, CoachInvitesController } from './coach-invites/coach-invites.controller';
 import { CoachInvitesService } from './coach-invites/coach-invites.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 /**
  * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
@@ -45,6 +46,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
  * Coach invites (Decision 183) live here too: they end in a RoleGrant. Imports
  * NotificationsModule for the invite email (NotificationsModule imports nothing).
  *
+ * Imports UsersModule (v1.2 backend backlog's "Update Student" page) so
+ * SchoolsService can call UsersService.updateProfile() for a Staff-on-behalf-of
+ * Student profile edit — one-directional, confirmed the same way: UsersModule
+ * imports nothing from tenants.
+ *
  * Exports SchoolsService, FranchisesService, and TenantAuthorizationService so other
  * modules can reuse them rather than duplicating existence/authorization checks —
  * PaymentsModule now uses FranchisesService.findOne() the same way it already used
@@ -52,7 +58,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
  * yet" gap PaymentsService.createForFranchise/findForFranchise both flagged in Phase 8).
  */
 @Module({
-  imports: [AuthModule, GuardiansModule, NotificationsModule],
+  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
   providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService],
