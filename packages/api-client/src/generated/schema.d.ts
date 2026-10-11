@@ -2196,6 +2196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findAllForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/waitlist": {
         parameters: {
             query?: never;
@@ -4557,6 +4573,33 @@ export interface components {
         };
         BookingListResponseDto: {
             items: components["schemas"]["BookingResponseDto"][];
+            nextCursor?: string | null;
+        };
+        StudentBookingResponseDto: {
+            id: string;
+            studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
+            classId: string;
+            schoolId: string;
+            branchId?: string | null;
+            status: string;
+            sourceMembershipId: string;
+            overriddenById?: string | null;
+            overrideReason?: string | null;
+            checkInMethod?: string | null;
+            checkedInById?: string | null;
+            refundResolution?: string | null;
+            resolvedById?: string | null;
+            attendees: components["schemas"]["BookingAttendeeResponseDto"][];
+            createdAt: string;
+            updatedAt: string;
+            classTitle: string;
+            classStartDate: string;
+            classEndDate: string;
+        };
+        StudentBookingListResponseDto: {
+            items: components["schemas"]["StudentBookingResponseDto"][];
             nextCursor?: string | null;
         };
         JoinWaitlistDto: {
@@ -8693,6 +8736,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findAllForStudent: {
+        parameters: {
+            query: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBookingListResponseDto"];
                 };
             };
         };

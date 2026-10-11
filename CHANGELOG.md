@@ -48,6 +48,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   returns `email` (`null` when no match). **api:** `InstructorResponseDto`
   gains `email`/`status`; `InviteCandidateResponseDto` gains `email`.
   `packages/api-client` regenerated.
+- **A per-Student Bookings view for the Student Detail page** (Decision 233,
+  v1.2 backend backlog). `GET /students/:id/bookings?schoolId=...`
+  (Staff-only) returns a Student's own Bookings at one School, with the
+  Class's title/startDate/endDate joined in. **api:** new
+  `StudentBookingResponseDto`/`StudentBookingListResponseDto`.
+  `packages/api-client` regenerated.
 - **Joining a School from the app, with a home branch and a current belt**
   (Decisions 137, 147, 209). A School's public page now lists its branch
   names, name only, so a student can choose a home branch before joining.
