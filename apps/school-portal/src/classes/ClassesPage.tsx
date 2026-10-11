@@ -13,7 +13,12 @@ import { ClassFormModal } from './ClassFormModal';
 export function ClassesPage() {
   const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
-  const { data, isLoading, error } = useClasses(schoolId);
+  // Prev/Next pagination (v1.2 backend backlog, Decision 242) — a simple
+  // history stack of cursors, since the API gives only a forward
+  // `nextCursor`, never a `prevCursor`. `undefined` always means page 1.
+  const [cursorHistory, setCursorHistory] = useState<Array<string | undefined>>([]);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const { data, isLoading, error } = useClasses(schoolId, cursor);
   const { data: branchData } = useBranches(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
   const { data: disciplineData } = useDisciplines(schoolId);
@@ -26,6 +31,21 @@ export function ClassesPage() {
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Classes.'} />;
 
   const classes = data?.items ?? [];
+  const nextCursor = data?.nextCursor ?? null;
+
+  function goNext() {
+    if (!nextCursor) return;
+    setCursorHistory((h) => [...h, cursor]);
+    setCursor(nextCursor);
+  }
+
+  function goPrev() {
+    setCursorHistory((h) => {
+      const prev = h[h.length - 1];
+      setCursor(prev);
+      return h.slice(0, -1);
+    });
+  }
   const branches = branchData?.items ?? [];
   const instructors = instructorData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
@@ -93,6 +113,17 @@ export function ClassesPage() {
           />
         )}
       </Card>
+
+      {classes.length > 0 ? (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+          <Button variant="secondary" disabled={cursorHistory.length === 0} onClick={goPrev}>
+            Prev
+          </Button>
+          <Button variant="secondary" disabled={!nextCursor} onClick={goNext}>
+            Next
+          </Button>
+        </div>
+      ) : null}
 
       {creating ? (
         <ClassFormModal
