@@ -972,6 +972,23 @@ upload-url step; the actual PUT to R2 and the WebView canvas on a real device ar
 unverified in this sandbox (no real R2 credentials, no Expo Go device available) —
 flagged, not asserted as device-verified.
 
+**Instructor roll-call — DONE (11 Oct 2026).** `apps/school-portal`'s `RollCallPage`
+(reached via a "Roll call" action on `ClassesPage`, alongside "Show QR"/"View
+bookings") is the client UI for Phase 51/Decision 107's `POST /classes/{id}/
+attendance-scan`, confirmed unbuilt anywhere before this. Shows the Class's roster
+(the already-existing `GET /classes/{id}/bookings` — no backend change needed) and
+offers both of Decision 107's modes per UPCOMING row: "Scan" (`QrScanModal`, a
+`getUserMedia` camera view decoding the Student's own personal QR via the
+dependency-free `qr-scanner`, recorded `INSTRUCTOR_SCAN`) and "Confirm present" (no
+camera, `INSTRUCTOR_MANUAL` — the deliberate fallback for withdrawn camera consent or
+an accessibility need). Verified end-to-end against the real running API: the
+roster endpoint's real shape, a real Instructor-scan call using the Student's own
+genuinely-minted personal QR token, and the manual-confirm path — both correctly
+flip the Booking to `COMPLETED` with the right `checkInMethod`/`checkedInById`. The
+`getUserMedia` camera permission prompt and a real device camera are unverified in
+this sandbox (no camera hardware/browser UI available here) — flagged, not asserted
+as device-verified.
+
 Several follow-ups are already spawned and tracked outside this doc (visible as task
 chips in the session): the waitlist notification-dispatch backend gap, the
 StudentRank-detail-denormalization question, the Membership authorization/Stripe-signal
