@@ -28,6 +28,7 @@ import { ClassQrCodePage } from './attendance/ClassQrCodePage';
 import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
+import { MembershipPlanFormPage } from './membershipPlans/MembershipPlanFormPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { WaiversPage } from './waivers/WaiversPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
@@ -248,6 +249,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <MembershipPlansPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/membership-plans/new"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MembershipPlanFormPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/membership-plans/:id/edit"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MembershipPlanFormPage />
             </Shell>
           </RequireAuth>
         }
