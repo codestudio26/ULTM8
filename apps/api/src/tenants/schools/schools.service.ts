@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
@@ -15,6 +16,7 @@ import { SetHomeBranchDto } from './dto/home-branch.dto';
 export class SchoolsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
@@ -104,8 +106,35 @@ export class SchoolsService {
    * OUT OF SCOPE in that decision's own "what this does not resolve"
    * section. Phase 38 closed that gap: `dto.studentId` is the same
    * on-behalf-of shape `SignWaiverDto` (Phase 37) already established.
-   * `isGuardianAction` asserts an active GuardianLink instead of relying on
-   * the caller's own tenant context, then runs the existence check AND the
+   *
+   * v1.2 backend backlog ("Invite a Student" — StudentInvite.dc.html) added a
+   * THIRD on-behalf-of actor: a School Owner/Manager enrolling an existing,
+   * already-registered User the Invite flow's own lookup
+   * (`GET .../role-grants/invite-candidate`, Decision 116) already found —
+   * never a brand-new account (same `join()` never creates a User, only a
+   * RoleGrant, as always). Gated by `assertSchoolOwner`, mirroring
+   * `RoleGrantsService.create()`'s own gate for the identical class of action
+   * (staff granting a role to someone else) — deliberately NOT
+   * `assertStaffAtSchool`, which would wrongly admit Instructor: SKILL.md §3
+   * confirms Instructor's permissions stop at "attendance scan, grading...,
+   * booking override only — never payments, School settings, or instructor
+   * management," and enrolling a Student is that same class of
+   * administrative action. `isOnBehalfOf` first tries the Guardian branch
+   * (unchanged); only once that's definitively ruled out (a real
+   * ForbiddenException, not some other failure) does it fall back to
+   * requiring School Owner — so a caller who is NEITHER a Guardian of this
+   * Student NOR this School's Owner still gets exactly the Owner gate's own
+   * 403, not a confusing Guardian-flavored one. Unlike the Guardian branch,
+   * the target User's mere existence is NOT already implied by anything
+   * checked so far (a GuardianLink row can only exist if its Student does;
+   * an arbitrary studentId a caller cleared as School Owner carries no such
+   * guarantee) — checked explicitly via `PrismaAuthService`, the same
+   * pre-tenant-context existence check `RoleGrantsService.create()` already
+   * uses for exactly this reason (see that method's own comment).
+   *
+   * `isOnBehalfOf` (generalized from `isGuardianAction`) asserts the caller's
+   * authority instead of relying on the caller's own tenant context, then
+   * runs the existence check AND the
    * RoleGrant write under the TARGET Student's own tenant context — for an
    * ordinary self-join that's a no-op (studentId === callerId already), but
    * for a Guardian it's load-bearing for the exact same reason
@@ -148,9 +177,28 @@ export class SchoolsService {
    */
   async join(callerId: string, schoolId: string, dto?: JoinSchoolDto) {
     const studentId = dto?.studentId ?? callerId;
-    const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
-    if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
+    if (isOnBehalfOf) {
+      try {
+        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) {
+          throw err;
+        }
+        // Not a Guardian of this Student — the only other authority this
+        // method recognizes is the School's own Owner/Manager (see this
+        // method's own header comment for why not assertStaffAtSchool).
+        // Falling through to this gate's own 403 if that fails too.
+        await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+        // Unlike the Guardian branch, nothing checked so far implies
+        // studentId refers to a real User — checked explicitly (see header
+        // comment) so a bad id 404s cleanly instead of surfacing as a raw
+        // FK-constraint failure from the RoleGrant insert below.
+        const target = await this.prismaAuth.user.findUnique({ where: { id: studentId }, select: { id: true } });
+        if (!target) {
+          throw new NotFoundException('User not found');
+        }
+      }
     }
 
     const roleGrantId = randomUUID();
@@ -177,7 +225,7 @@ export class SchoolsService {
       } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
           throw new ConflictException(
-            isGuardianAction ? 'This Student is already enrolled at this School.' : 'You are already a Student at this School.',
+            isOnBehalfOf ? 'This Student is already enrolled at this School.' : 'You are already a Student at this School.',
           );
         }
         throw err;
@@ -205,10 +253,15 @@ export class SchoolsService {
       return created;
     });
 
-    if (isGuardianAction) {
-      // No access token to mint — see JoinSchoolResponseDto's own comment: a
-      // Guardian-managed minor's account is permanently blocked from
-      // independent login, so there is nothing a token would ever be used for.
+    if (isOnBehalfOf) {
+      // No access token to mint — the enrolled User isn't the caller, so
+      // there's nothing of the CALLER's own session to refresh here. For the
+      // Guardian-managed-minor case specifically, see JoinSchoolResponseDto's
+      // own comment: that minor's account is permanently blocked from
+      // independent login, so there's no token concept to mint at all; for
+      // the Staff-on-behalf-of case, the enrolled User already has their own
+      // independent login and session — this endpoint simply isn't theirs to
+      // refresh on their behalf.
       return roleGrant;
     }
 

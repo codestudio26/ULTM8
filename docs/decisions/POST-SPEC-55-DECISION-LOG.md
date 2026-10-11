@@ -2882,6 +2882,24 @@ User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct
 
 ---
 
+## Decision 235 — Staff-on-behalf-of Student enroll, built as a third branch on `join()`
+
+**Date:** 11 Oct 2026 · **Status:** Built · **Resolves:** the "Invite a Student" enroll-step gap `docs/v1.2-backend-backlog.md`'s Students section flagged — the `STUDENT` RoleGrant had no on-behalf-of path for an existing User a School Owner found via the Invite flow's own lookup (`GET .../role-grants/invite-candidate`, Decision 116). **Renumbered from this branch's original "Decision 228,"** which collided with Decision 228 below (the Membership Plan wizard, assigned independently and merged to `master` first) and with Decision 234 (PR #163's own independent "228," renumbered first) — same precedent as Decisions 98/209's own prior collisions.
+
+`SchoolsService.join()` gains a third actor, alongside self-service (Decision 96) and Guardian-on-behalf-of (Phase 38): a School Owner/Manager enrolling an existing, already-registered User. `isOnBehalfOf` tries the Guardian branch first (unchanged); only once that's definitively ruled out does it fall back to requiring `assertSchoolOwner` — so a caller who is neither a Guardian of the named Student nor that School's Owner still gets the Owner gate's own 403, not a confusing Guardian-flavored one.
+
+**Deliberately `assertSchoolOwner`, not `assertStaffAtSchool`.** The latter would wrongly admit Instructor — `skills/ultm8-domain-rules/SKILL.md` §3 confirms Instructor's permissions stop at "attendance scan, grading..., booking override only — never payments, School settings, or instructor management," and enrolling a Student is that same class of administrative action. Mirrors `RoleGrantsService.create()`'s own gate for the identical class of action (staff granting a role to someone else), not a new authority invented for this.
+
+Unlike the Guardian branch, the target User's existence isn't already implied by anything checked so far (a GuardianLink row can only exist if its Student does; an arbitrary `studentId` a School Owner names carries no such guarantee) — checked explicitly via `PrismaAuthService`, the same pre-tenant-context existence check `RoleGrantsService.create()` already uses, so a bad id 404s cleanly instead of surfacing as a raw FK-constraint failure. No access token is minted for the enrolled User (they have their own independent login already — this endpoint simply isn't theirs to refresh on their behalf), same absent-`accessToken` shape the Guardian branch already established for a different reason.
+
+`apps/api/src/tenants/schools/schools.service.ts` (`join()`), `dto/join-school.dto.ts`, `dto/join-school-response.dto.ts` (docs only, no field/shape changes). `tenants.e2e-spec.ts` adds a dedicated cluster: Instructor rejected (confirming the deliberate exclusion), a nonexistent `studentId` 404s cleanly, the Owner enrolls successfully with no token minted, and a repeat enroll 409s. Full e2e suite (665 tests) green against real Postgres/Redis — the one suite-level failure (`grading-ready-notification.e2e-spec.ts`'s own teardown) is the same pre-existing, unrelated flake PR #160 already documented; `packages/api-client` regenerated; `turbo build` clean.
+
+### Recorded by
+
+Built at the user's direct request ("Build the Student enrollment path and Waiver signed-state together"), continuing autonomously through the v1.2 backlog per the user's own instruction to work it "one after another... build, deep dive check... until confident," 11 Oct 2026.
+
+---
+
 ## Decision 228 — Create/Update Membership Plan rebuilt as a full-page wizard; currency becomes a confirmed dropdown; two bugs fixed
 
 **Date:** 10 Oct 2026 · **Status:** Developer-level implementation of a direction the user picked after dedicated research (competitor review + a direct Spec 55 verification) and a follow-up re-answer (wizard over single scrollable view); flagged items below are for Architect confirmation, not decided here. Renumbered from this branch's original "Decision 209," which collided with Decision 209 above (assigned independently on `master` first).
