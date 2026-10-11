@@ -396,6 +396,50 @@ export class BookingsService {
     };
   }
 
+  /**
+   * GET students/:id/bookings?schoolId=... — Staff-facing per-Student bookings view
+   * for the Student Detail page's "Upcoming Booking" card (v1.2 backend backlog's
+   * own "a real per-Student bookings view needs a new endpoint" gap). Joins Class
+   * for title/startDate/endDate — bare `classId` has nothing for a drill-down card
+   * to show. The much larger, School-wide date-range/discipline-groupable Bookings
+   * aggregation flagged in the same backlog doc is a separate, not-yet-scoped piece
+   * of work; this only resolves the single-Student case.
+   *
+   * Same `schoolId` query-param convention `MembershipsService.getMembershipStatus`
+   * already established for a Student-scoped endpoint over a School-scoped resource
+   * (a Student may be enrolled at more than one School) — required, not optional,
+   * here enforced by FindStudentBookingsQueryDto's own `@IsUUID()` (that method
+   * predates this one and had no DTO to lean on, hence its own manual check).
+   * Runs entirely under the CALLER's own tenant context, unlike that method —
+   * Booking already carries the broad `booking_staff_read` policy (Decision 89)
+   * `findAllForClass` above relies on, so there is no RLS gap here to work around
+   * with a target-context switch.
+   */
+  async findAllForStudent(callerId: string, studentId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) =>
+          tx.booking.findMany({
+            ...args,
+            where: { studentId, schoolId },
+            include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
+          }),
+        cursor,
+        limit,
+      ),
+    );
+    return {
+      ...page,
+      items: page.items.map(({ class: cls, ...booking }) => ({
+        ...booking,
+        classTitle: cls.title,
+        classStartDate: cls.startDate,
+        classEndDate: cls.endDate,
+      })),
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------

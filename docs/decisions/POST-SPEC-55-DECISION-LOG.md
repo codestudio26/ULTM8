@@ -2905,3 +2905,18 @@ Full stress test run locally (Postgres/Redis stood up in-sandbox, not part of th
 ### Recorded by
 
 Developer (this session), per the user's instruction to view the built pages, stress-test the flow, fix anything found, and merge once logic is verified.
+
+---
+
+## Decision 233 — `GET students/:id/bookings`: a dedicated per-Student bookings endpoint
+
+**Date:** 11 Oct 2026 · **Status:** Built
+**Resolves:** `docs/v1.2-backend-backlog.md`'s Student Detail "Upcoming Booking" gap — "`GET classes/:id/bookings` is per-Class, not per-School, so there's no cheap list to filter by `studentId` without an N+1 call per Class. A real per-Student bookings view needs a new endpoint."
+
+`GET students/:id/bookings?schoolId=...` (Staff-only — School Owner/Manager, Branch Staff, or Instructor, same gate `findAllForClass` already uses) returns a Student's own Bookings at one School, with the Class's `title`/`startDate`/`endDate` joined in — bare `classId` has nothing for a drill-down card to show. Runs entirely under the caller's own tenant context: Booking already carries the broad `booking_staff_read` policy (Decision 89), so there is no RLS gap here to work around the way `MembershipsService.getMembershipStatus` has to for the narrower Membership policy.
+
+**Deliberately not the same thing as the backlog's separate, much larger "School-scoped date-range Bookings aggregation" gap** (Dashboard/Bookings-page drill-down, day/discipline-groupable, still an open design question for the team). This endpoint only resolves the single-Student case; `BookingResponseDto` itself is untouched — a new `StudentBookingResponseDto` extends it rather than widening every existing Booking-list response with fields only this one view needs.
+
+### Recorded by
+
+Developer, building from the backlog's own confirmed gap — no product-owner decision needed; the endpoint shape (Staff-only, `schoolId` required query param, Class title/dates joined in) follows established precedent (`findAllForClass`'s own Staff gate, `getMembershipStatus`'s own `schoolId` convention, `InstructorClassResponseDto`'s own extend-don't-widen pattern), 11 Oct 2026.

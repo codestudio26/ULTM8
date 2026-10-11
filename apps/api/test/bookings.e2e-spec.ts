@@ -472,6 +472,88 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     await superuser.branch.deleteMany({ where: { id: { in: [branchA.id, branchB.id] } } });
   });
 
+  // ---------------------------------------------------------------------------
+  // GET /students/{id}/bookings — the per-Student bookings view (BookingsService.
+  // findAllForStudent) for the Student Detail page's "Upcoming Booking" card
+  // (v1.2 backend backlog). Staff-gated the same way findAllForClass is above,
+  // but filtered by studentId instead of classId, and joins Class for
+  // title/startDate/endDate since bare classId has nothing for a card to show.
+  // ---------------------------------------------------------------------------
+
+  it('GET /students/:id/bookings — Staff see only the named Student\'s own Bookings, with the Class title/dates joined in', async () => {
+    // A second Student's Booking on the SAME Class, to prove filtering actually
+    // scopes by studentId and isn't just "every Booking on Classes this School owns."
+    const otherMembership = await mkActiveMembership(studentB.id, subscriptionPlanId, null);
+    const otherBooking = await superuser.booking.create({
+      data: {
+        id: randomUUID(),
+        studentId: studentB.id,
+        classId: classBasic.id,
+        schoolId: school.id,
+        sourceMembershipId: otherMembership.id,
+        status: 'UPCOMING',
+      },
+    });
+    bookingIds.push(otherBooking.id);
+
+    const ownerRes = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/bookings`)
+      .query({ schoolId: school.id })
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.items.length).toBeGreaterThan(0);
+    expect(ownerRes.body.items.every((b: { studentId: string }) => b.studentId === studentA.id)).toBe(true);
+    expect(ownerRes.body.items.some((b: { studentId: string }) => b.studentId === studentB.id)).toBe(false);
+    const row = ownerRes.body.items.find((b: { classId: string }) => b.classId === classBasic.id);
+    expect(row.classTitle).toBe('Open Mat');
+    expect(row.classStartDate).toBeDefined();
+    expect(row.classEndDate).toBeDefined();
+
+    const staffRes = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/bookings`)
+      .query({ schoolId: school.id })
+      .set('Authorization', `Bearer ${tokenBranchStaff}`);
+    expect(staffRes.status).toBe(200);
+
+    // Cleaned up immediately, not left for this file's own bulk afterAll — later
+    // tests ("spend order" among them) need studentB with NO Active Membership of
+    // their own yet, and this fixture's only job was proving the filter above
+    // excludes them. The Membership matters as much as the Booking here: a
+    // leftover ACTIVE general-access Membership would silently outrank every
+    // Class Pack in selectAndConsumeMembership's own spend-order preference,
+    // breaking "spend order" test's own "the ONLY eligible Membership" premise
+    // two tests later — not just a tidiness nicety.
+    await superuser.booking.delete({ where: { id: otherBooking.id } });
+    await superuser.membership.delete({ where: { id: otherMembership.id } });
+  });
+
+  it('GET /students/:id/bookings — Staff-only (Spec §7); the Student themselves and an outsider both get 403', async () => {
+    const studentRes = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/bookings`)
+      .query({ schoolId: school.id })
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(studentRes.status).toBe(403);
+
+    const outsiderRes = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/bookings`)
+      .query({ schoolId: school.id })
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(outsiderRes.status).toBe(403);
+  });
+
+  it('GET /students/:id/bookings — a missing or non-UUID schoolId is a 400, not a 500 or a silently-wrong result', async () => {
+    const missingRes = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/bookings`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(missingRes.status).toBe(400);
+
+    const malformedRes = await request(app.getHttpServer())
+      .get(`/v1/students/${studentA.id}/bookings`)
+      .query({ schoolId: 'not-a-uuid' })
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(malformedRes.status).toBe(400);
+  });
+
   it('a duplicate active Booking for the same Student/Class is rejected — 409', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/classes/${classBasic.id}/book`)
