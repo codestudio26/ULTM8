@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addBranch, addCoach, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Instructor "Add Manually" (Decision 1/230/237) and self-service profile
@@ -74,4 +74,64 @@ test("an Instructor completes their own profile's deferred fields", async ({ pag
   const updated = await db.instructor.findFirstOrThrow({ where: { userId: coach.id, schoolId: s.schoolId } });
   expect(updated.address).toBe('123 Mat Street');
   expect(updated.activities).toEqual(['BJJ', 'Judo']);
+});
+
+// ---------------------------------------------------------------------------
+// v1.2 backend backlog — Instructor Detail (new page): the real "Instructor
+// Class" grid (server-computed enrolledCount) and "Revoke Enrollment".
+// ---------------------------------------------------------------------------
+
+test('Instructor Detail shows the Instructor\'s own Classes with a real enrolled count, and the owner can revoke enrollment', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  const coach = await addCoach(s, 'Dana', 'Coach');
+  const profile = await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
+
+  const cls = await db.class.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      instructorId: coach.id, // Class.instructorId is a User.id FK, not Instructor.id
+      title: 'Taught by Dana',
+      startDate: new Date(Date.now() + 24 * 3_600_000),
+      endDate: new Date(Date.now() + 25 * 3_600_000),
+    },
+  });
+  const plan = await db.membershipPlan.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 },
+  });
+  const membership = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'RECURRING' },
+  });
+  const booking = await db.booking.create({
+    data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: membership.id, status: 'UPCOMING' },
+  });
+
+  try {
+    await page.goto('/instructors');
+    const row = page.getByRole('row', { name: /Dana Coach/ });
+    await expect(row).toBeVisible();
+    await row.getByRole('button', { name: 'View' }).click();
+    await expect(page).toHaveURL(new RegExp(`/instructors/${profile.id}$`));
+    await expect(page.getByRole('heading', { level: 1, name: 'Dana Coach' })).toBeVisible();
+    await expect(page.getByText('Taught by Dana')).toBeVisible();
+    // No capacity set on this fixture Class, so the badge reads "1  booked"
+    // (enrolledCount, no "/<capacity>" segment — see InstructorDetailPage's
+    // own render).
+    await expect(page.getByText(/^1\s+booked$/)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Revoke enrollment' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Revoke Dana Coach\'s enrollment?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Revoke' }).click();
+
+    await expect(page).toHaveURL(/\/instructors$/);
+    const grant = await db.roleGrant.findFirstOrThrow({ where: { userId: coach.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } });
+    expect(grant.revokedAt).not.toBeNull();
+  } finally {
+    await db.booking.delete({ where: { id: booking.id } });
+    await db.membership.delete({ where: { id: membership.id } });
+    await db.membershipPlan.delete({ where: { id: plan.id } });
+    await db.class.delete({ where: { id: cls.id } });
+    await db.instructor.delete({ where: { id: profile.id } });
+  }
 });
