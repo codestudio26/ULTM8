@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useBranches, useCreateBranch, useUpdateBranch, type BranchResponse } from './branchQueries';
+import { useBranches, useCreateBranch, type BranchResponse } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
 
 export function BranchesPage() {
   const schoolId = useOwnedSchoolId();
+  const navigate = useNavigate();
   const { data, isLoading, error } = useBranches(schoolId);
   const createBranch = useCreateBranch(schoolId ?? '');
   const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<BranchResponse | null>(null);
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
@@ -41,8 +42,10 @@ export function BranchesPage() {
                 key: 'actions',
                 header: '',
                 render: (b) => (
-                  <Button variant="secondary" onClick={() => setEditing(b)}>
-                    Edit
+                  // Decision 231 — a dedicated settings screen replaces the
+                  // previous edit-via-modal path.
+                  <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
+                    Settings
                   </Button>
                 ),
               },
@@ -64,28 +67,6 @@ export function BranchesPage() {
           onClose={() => setCreating(false)}
         />
       ) : null}
-
-      {editing ? (
-        <EditBranchModal schoolId={schoolId} branch={editing} onClose={() => setEditing(null)} />
-      ) : null}
     </>
-  );
-}
-
-function EditBranchModal({ schoolId, branch, onClose }: { schoolId: string; branch: BranchResponse; onClose: () => void }) {
-  const updateBranch = useUpdateBranch(schoolId, branch.id);
-  return (
-    <BranchFormModal
-      title="Edit branch"
-      initial={branch}
-      submitting={updateBranch.isPending}
-      onSubmit={async (values) => {
-        // Passed straight through, nulls included — UpdateBranchDto accepts
-        // null on these fields to mean "clear it".
-        await updateBranch.mutateAsync(values);
-        onClose();
-      }}
-      onClose={onClose}
-    />
   );
 }

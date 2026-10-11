@@ -7,6 +7,17 @@ export type BranchResponse = components['schemas']['BranchResponseDto'];
 export type CreateBranchInput = components['schemas']['CreateBranchDto'];
 export type UpdateBranchInput = components['schemas']['UpdateBranchDto'];
 
+/** Single-Branch fetch — for the Decision 231 Branch settings page, which
+ * needs the Branch's own fields without re-fetching the whole list (same
+ * shape as useFranchise's identical single-fetch hook). */
+export function useBranch(branchId: string | null) {
+  return useQuery({
+    queryKey: ['branch', branchId],
+    queryFn: () => unwrap(apiClient.GET('/v1/branches/{id}', { params: { path: { id: branchId! } } })),
+    enabled: !!branchId,
+  });
+}
+
 export function useBranches(schoolId: string | null) {
   return useQuery({
     queryKey: ['branches', schoolId],
@@ -39,6 +50,9 @@ export function useUpdateBranch(schoolId: string, branchId: string) {
   return useMutation({
     mutationFn: (body: UpdateBranchInput) =>
       unwrap(apiClient.PATCH('/v1/branches/{id}', { params: { path: { id: branchId } }, body })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['branches', schoolId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branches', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['branch', branchId] });
+    },
   });
 }

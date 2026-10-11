@@ -15,6 +15,7 @@ import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
 import { BranchesPage } from './branches/BranchesPage';
+import { BranchSettingsPage } from './branches/BranchSettingsPage';
 import { StaffPage } from './roleGrants/StaffPage';
 import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
@@ -123,6 +124,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <BranchesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/branches/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <BranchSettingsPage />
             </Shell>
           </RequireAuth>
         }
