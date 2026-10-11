@@ -445,6 +445,16 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(row.surname).toBe('Tenant');
     expect(row.email).toBe(studentUser.email);
     expect(row.enrolledAt).toBeDefined();
+    expect(row.status).toBe('ACTIVE');
+
+    // Omitting `status` entirely behaves exactly like `status=ACTIVE` — the
+    // pre-existing default, unchanged by this filter's addition.
+    const defaultRosterRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .query({ status: 'ACTIVE' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(defaultRosterRes.status).toBe(200);
+    expect(defaultRosterRes.body.items).toEqual(rosterRes.body.items);
 
     // The Student themselves is not School Staff (Owner/Manager, Branch Staff,
     // or Instructor) — cannot read the roster.
@@ -459,6 +469,75 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .get(`/v1/schools/${schoolA.id}/students`)
       .set('Authorization', `Bearer ${tokenOwnerB}`);
     expect(res.status).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /schools/{id}/students?status=INACTIVE|ALL — v1.2 backend backlog,
+  // "Students page" Active/Inactive gap: findAllStudentsForSchool previously
+  // hard-coded `revokedAt: null`, so a revoked enrollment had no way to ever
+  // appear in this roster at all.
+  // ---------------------------------------------------------------------------
+
+  it('status=INACTIVE/ALL surface a Student whose only STUDENT RoleGrant at this School is revoked; status=ACTIVE (the default) still excludes them', async () => {
+    const revokedStudent = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-roster-revoked-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'revoked-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    // Seeded directly as an already-revoked STUDENT RoleGrant (same convention
+    // grading-security-hardening.e2e-spec.ts already uses for a "former Student"
+    // fixture) — there is no Staff-facing endpoint to revoke a STUDENT grant
+    // (RoleGrantsService.revoke()'s own GRANTABLE_ROLES is INSTRUCTOR/BRANCH_STAFF
+    // only; "Revoke Enrollment" is tracked separately as its own, still-open v1.2
+    // backend backlog item, not something this filter depends on or builds).
+    await superuser.roleGrant.create({
+      data: {
+        id: randomUUID(),
+        role: 'STUDENT',
+        userId: revokedStudent.id,
+        schoolId: schoolA.id,
+        grantedById: revokedStudent.id,
+        revokedAt: new Date(),
+      },
+    });
+
+    // Default (status omitted) — still Active-only, so the now-revoked Student
+    // never appears. This is the exact pre-existing behavior, unchanged.
+    const activeRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(activeRes.status).toBe(200);
+    expect(activeRes.body.items.map((s: { id: string }) => s.id)).not.toContain(revokedStudent.id);
+
+    // status=INACTIVE — surfaces them, with status: 'INACTIVE'.
+    const inactiveRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .query({ status: 'INACTIVE' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(inactiveRes.status).toBe(200);
+    const inactiveRow = inactiveRes.body.items.find((s: { id: string }) => s.id === revokedStudent.id);
+    expect(inactiveRow).toBeDefined();
+    expect(inactiveRow.status).toBe('INACTIVE');
+
+    // status=ALL — surfaces them too, alongside any still-Active Student.
+    const allRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .query({ status: 'ALL' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(allRes.status).toBe(200);
+    const allIds = allRes.body.items.map((s: { id: string }) => s.id);
+    expect(allIds).toContain(revokedStudent.id);
+
+    // A Student with no STUDENT RoleGrant at this School at all (never joined)
+    // never appears under any status value.
+    expect(inactiveRes.body.items.map((s: { id: string }) => s.id)).not.toContain(ownerB.id);
   });
 
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {
@@ -763,6 +842,68 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
     await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /franchises?feeModel=&activity= — server-side filters (School Portal's
+  // Franchises page). FranchisesService.findAllForCaller previously ignored both;
+  // the page filtered an already-fetched list client-side (v1.2 backend backlog,
+  // "Franchises page", "Fee model / Activity filters").
+  // ---------------------------------------------------------------------------
+
+  it('filters GET /franchises by feeModel and by activity, independently and together', async () => {
+    const flatJiuJitsu = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Filter Franchise Flat JiuJitsu', feeModel: 'FLAT', activities: ['Jiu Jitsu'] });
+    const headcountKarate = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Filter Franchise Headcount Karate', feeModel: 'PER_HEADCOUNT', activities: ['Karate'] });
+    expect(flatJiuJitsu.status).toBe(201);
+    expect(headcountKarate.status).toBe(201);
+    const ids = [flatJiuJitsu.body.id, headcountKarate.body.id];
+
+    try {
+      const byFeeModel = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ feeModel: 'PER_HEADCOUNT' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byFeeModel.status).toBe(200);
+      const feeModelIds = byFeeModel.body.items.map((f: { id: string }) => f.id);
+      expect(feeModelIds).toContain(headcountKarate.body.id);
+      expect(feeModelIds).not.toContain(flatJiuJitsu.body.id);
+
+      const byActivity = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ activity: 'Jiu Jitsu' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byActivity.status).toBe(200);
+      const activityIds = byActivity.body.items.map((f: { id: string }) => f.id);
+      expect(activityIds).toContain(flatJiuJitsu.body.id);
+      expect(activityIds).not.toContain(headcountKarate.body.id);
+
+      const byBoth = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ feeModel: 'FLAT', activity: 'Karate' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byBoth.status).toBe(200);
+      const bothIds = byBoth.body.items.map((f: { id: string }) => f.id);
+      expect(bothIds).not.toContain(flatJiuJitsu.body.id); // wrong activity
+      expect(bothIds).not.toContain(headcountKarate.body.id); // wrong feeModel
+
+      // Omitted entirely — both still present, exactly as before either filter existed.
+      const unfiltered = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(unfiltered.status).toBe(200);
+      const unfilteredIds = unfiltered.body.items.map((f: { id: string }) => f.id);
+      expect(unfilteredIds).toContain(flatJiuJitsu.body.id);
+      expect(unfilteredIds).toContain(headcountKarate.body.id);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: ids } } });
+      await superuser.franchise.deleteMany({ where: { id: { in: ids } } });
+    }
   });
 
   it('PATCH /franchises/:id with explicit null clears an optional String field; omitting it leaves it unchanged (UpdateFranchiseDto, Phase 23)', async () => {

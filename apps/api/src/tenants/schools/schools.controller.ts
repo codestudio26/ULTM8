@@ -12,6 +12,7 @@ import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
+import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
@@ -49,11 +50,13 @@ export class SchoolsController {
     return this.schoolsService.update(user.sub, id, dto);
   }
 
-  /** The Student roster — Staff-only, see SchoolsService.findAllStudentsForSchool. */
+  /** The Student roster — Staff-only, see SchoolsService.findAllStudentsForSchool.
+   * `status` (Active/Inactive/All) defaults to ACTIVE when omitted — the exact
+   * pre-existing behavior (StudentRosterQueryDto). */
   @ApiOkResponse({ type: StudentListResponseDto })
   @Get(':id/students')
-  findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.schoolsService.findAllStudentsForSchool(user.sub, id);
+  findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: StudentRosterQueryDto) {
+    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status);
   }
 
   /** School Owner/Manager only — assign or change a student's home branch

@@ -7,17 +7,30 @@ export type FranchiseResponse = components['schemas']['FranchiseResponseDto'];
 export type CreateFranchiseInput = components['schemas']['CreateFranchiseDto'];
 export type UpdateFranchiseInput = components['schemas']['UpdateFranchiseDto'];
 export type FranchiseFeeChargeResponse = components['schemas']['FranchiseFeeChargeResponseDto'];
+export type FeeModel = components['schemas']['FranchiseResponseDto']['feeModel'];
+
+export interface FranchisesFilter {
+  feeModel?: FeeModel;
+  activity?: string;
+}
 
 /** Every Franchise the caller owns — GET /franchises is already scoped this way
  * server-side (franchise_tenant_isolation RLS restricts it to the caller's own
  * FRANCHISE_OWNER grants, see FranchisesService.findAllForCaller's own header
  * comment), so this is never a School-wide or platform-wide list. No
  * pagination in this UI yet — same established convention as
- * useBranches/useDisciplines/useInstructors. */
-export function useFranchises() {
+ * useBranches/useDisciplines/useInstructors.
+ *
+ * `filter.feeModel`/`filter.activity` — additive, optional server-side filters
+ * (Franchises page's Fee model / Activity filters, now wired to the real
+ * GET /franchises?feeModel=&activity= query params instead of filtering an
+ * already-fetched list client-side). Both omitted behaves exactly as before
+ * either filter existed. */
+export function useFranchises(filter: FranchisesFilter = {}) {
   return useQuery({
-    queryKey: ['franchises'],
-    queryFn: () => unwrap(apiClient.GET('/v1/franchises', {})),
+    queryKey: ['franchises', filter.feeModel ?? null, filter.activity ?? null],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/franchises', { params: { query: { feeModel: filter.feeModel, activity: filter.activity } } })),
   });
 }
 

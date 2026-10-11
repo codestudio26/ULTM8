@@ -18,11 +18,20 @@ export function useBranch(branchId: string | null) {
   });
 }
 
-export function useBranches(schoolId: string | null) {
+/** `city` — additive, optional filter (Branches page's City filter, now wired to the
+ * real `GET /schools/:schoolId/branches?city=` server-side filter instead of
+ * filtering an already-fetched list client-side). Omitted (the default, used by
+ * every other caller of this hook — Instructors/Classes/Timetable's Branch
+ * dropdowns), behaves exactly as before this filter existed. */
+export function useBranches(schoolId: string | null, city?: string) {
   return useQuery({
-    queryKey: ['branches', schoolId],
+    queryKey: ['branches', schoolId, city ?? null],
     queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/branches', { params: { path: { schoolId: schoolId! } } })),
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/branches', {
+          params: { path: { schoolId: schoolId! }, query: { city: city || undefined } },
+        }),
+      ),
     enabled: !!schoolId,
     // FOUND ON REVIEW (Phase 17): Instructors/Classes/Timetable all call this
     // same hook to populate a Branch dropdown, and the global QueryClient

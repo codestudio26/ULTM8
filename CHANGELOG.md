@@ -15,6 +15,27 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Real server-side filters and pagination for the Branches, Franchises,
+  Classes, and Students portal pages** (`docs/v1.2-backend-backlog.md`) —
+  four pages whose list/filter controls previously only worked against an
+  already-fully-fetched list client-side, or not at all:
+  - **Branches** — the City filter now sends `GET
+    /schools/:schoolId/branches?city=`, a case-insensitive substring match
+    against `Branch.address` (Branch has no dedicated city column).
+  - **Franchises** — Fee model and Activity filters now send `GET
+    /franchises?feeModel=&activity=`. The Rows table's Name/logo cell is now
+    itself a link to the Franchise detail page, not only the row's "View
+    details" action.
+  - **Classes** — the Discipline filter and "Search classes" box now send
+    `GET /schools/:schoolId/classes?activities=&search=`; a Prev/Next pager
+    is wired to the already-real `ClassListResponseDto.nextCursor`.
+  - **Students** — a new Active/Inactive/All filter (`GET
+    /schools/:id/students?status=`), defaulting to Active (the exact
+    pre-existing behavior). `findAllStudentsForSchool` previously hard-coded
+    `revokedAt: null`, so a revoked enrollment had no way to ever be seen;
+    `StudentSummaryResponseDto` now carries a real `status`.
+  All four are additive — a caller that sends none of the new query params
+  sees unchanged behavior. `packages/api-client` regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

@@ -491,6 +491,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Defaults to ACTIVE (the pre-existing behavior) when omitted.",
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "ALL"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -766,6 +780,15 @@
               "maximum": 100,
               "default": 20,
               "type": "number"
+            }
+          },
+          {
+            "name": "city",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Branch.address (no dedicated city column exists).",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1118,6 +1141,27 @@
               "maximum": 100,
               "default": 20,
               "type": "number"
+            }
+          },
+          {
+            "name": "feeModel",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "FLAT",
+                "PER_HEADCOUNT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "required": false,
+            "in": "query",
+            "description": "Exact match against one element of Franchise.activities.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -2146,6 +2190,24 @@
               "maximum": 100,
               "default": 20,
               "type": "number"
+            }
+          },
+          {
+            "name": "activities",
+            "required": false,
+            "in": "query",
+            "description": "Exact match against one element of Class.activities.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Class.title.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -8912,6 +8974,13 @@
           }
         }
       },
+      "StudentStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "INACTIVE"
+        ]
+      },
       "StudentSummaryResponseDto": {
         "type": "object",
         "properties": {
@@ -8929,6 +8998,9 @@
           },
           "enrolledAt": {
             "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StudentStatus"
           }
         },
         "required": [
@@ -8936,7 +9008,8 @@
           "firstName",
           "surname",
           "email",
-          "enrolledAt"
+          "enrolledAt",
+          "status"
         ]
       },
       "StudentListResponseDto": {

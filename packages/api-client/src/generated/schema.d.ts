@@ -2900,12 +2900,15 @@ export interface components {
             logoUrl?: string | null;
             bannerUrl?: string | null;
         };
+        /** @enum {string} */
+        StudentStatus: "ACTIVE" | "INACTIVE";
         StudentSummaryResponseDto: {
             id: string;
             firstName: string;
             surname: string;
             email: string;
             enrolledAt: string;
+            status: components["schemas"]["StudentStatus"];
         };
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
@@ -5393,7 +5396,10 @@ export interface operations {
     };
     SchoolsController_findStudents: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Defaults to ACTIVE (the pre-existing behavior) when omitted. */
+                status?: "ACTIVE" | "INACTIVE" | "ALL";
+            };
             header?: never;
             path: {
                 id: string;
@@ -5515,6 +5521,8 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Case-insensitive substring match against Branch.address (no dedicated city column exists). */
+                city?: string;
             };
             header?: never;
             path: {
@@ -5708,6 +5716,9 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                feeModel?: "FLAT" | "PER_HEADCOUNT";
+                /** @description Exact match against one element of Franchise.activities. */
+                activity?: string;
             };
             header?: never;
             path?: never;
@@ -6318,6 +6329,10 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Exact match against one element of Class.activities. */
+                activities?: string;
+                /** @description Case-insensitive substring match against Class.title. */
+                search?: string;
             };
             header?: never;
             path: {
