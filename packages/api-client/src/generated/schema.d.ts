@@ -5827,7 +5827,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Required only for a BASELINE-tier record (Decision 9) — from POST /auth/step-up/verify. */
+                /** @description Required only for a BASELINE-tier record (Decision 236) — from POST /auth/step-up/verify. */
                 "x-step-up-token"?: string;
             };
             path: {

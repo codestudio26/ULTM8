@@ -5,7 +5,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useVerifyStepUp } from './stepUpQueries';
 
 /**
- * Decision 9 — re-enters the caller's own passcode to confirm a sensitive
+ * Decision 236 — re-enters the caller's own passcode to confirm a sensitive
  * action already in progress (today: Guardian BASELINE consent withdrawal).
  * Inline, not a full Screen — meant to render in place of/alongside whatever
  * destructive-action confirmation already asked the user to proceed (mirrors

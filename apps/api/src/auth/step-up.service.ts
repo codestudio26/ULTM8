@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { StepUpVerifyDto } from './dto/step-up-verify.dto';
 
-// Decision 9 — Developer-level choice, same tier as every other named *_TTL
+// Decision 236 — Developer-level choice, same tier as every other named *_TTL
 // constant in this codebase. Short enough that a captured/leaked step-up token
 // is useless quickly, long enough to complete the one request it gates without
 // the user re-entering their passcode a second time.
@@ -17,9 +17,9 @@ interface StepUpPayload {
 }
 
 /**
- * Decision 9 — a short-lived re-authentication proof for an already-logged-in
+ * Decision 236 — a short-lived re-authentication proof for an already-logged-in
  * user confirming a sensitive action. Today's one consumer is Guardian BASELINE
- * consent withdrawal (GuardiansService.withdrawConsent()); Decision 9's own
+ * consent withdrawal (GuardiansService.withdrawConsent()); Decision 236's own
  * approved text also names "any charge against a saved payment method" as a
  * second, not-yet-built consumer — this service is deliberately generic
  * (lives in AuthModule, not GuardiansModule) so that can reuse it later

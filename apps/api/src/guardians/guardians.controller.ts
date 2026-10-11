@@ -55,16 +55,16 @@ export class GuardiansController {
     return this.guardiansService.findMyConsentRecords(user.sub);
   }
 
-  // Decision 9 — BASELINE withdrawal requires a fresh step-up proof; CAMERA
+  // Decision 236 — BASELINE withdrawal requires a fresh step-up proof; CAMERA
   // withdrawal does not (reversible, a plain confirm is proportionate per
-  // Decision 9's own text). The header is optional at this layer — whether it
+  // Decision 236's own text). The header is optional at this layer — whether it
   // was actually required is GuardiansService.withdrawConsent()'s own call,
   // based on the record's tier.
   @ApiOkResponse({ type: ConsentRecordResponseDto })
   @ApiHeader({
     name: 'x-step-up-token',
     required: false,
-    description: 'Required only for a BASELINE-tier record (Decision 9) — from POST /auth/step-up/verify.',
+    description: 'Required only for a BASELINE-tier record (Decision 236) — from POST /auth/step-up/verify.',
   })
   @Patch('consent/:id/withdraw')
   withdrawConsent(

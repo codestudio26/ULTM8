@@ -3006,3 +3006,18 @@ Extends the existing `QrTokenService` to also derive a short, human-typeable 6-d
 
 User, approving the Developer recommendation, 11 Oct 2026.
 
+---
+
+## Decision 236 — Guardian consent-management screen promoted to approved and built; BASELINE withdrawal gated by step-up re-authentication
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner, built — recorded retroactively; this entry was missed when #189 merged, and every "(Decision 9, ...)" citation that PR's code/docs left behind (none of which referred to a real numbered entry in this log) is corrected to cite this one.
+**Resolves:** the v1.1/v1.2 open-decisions review's item 9 — `skills/ultm8-domain-rules/SKILL.md` §14's confirmed gap that no Guardian-facing screen exposed `ConsentRecord`'s already-built withdraw/grant behavior, and the separate gap that only the Owner tier had step-up MFA (Decision 12), leaving Guardian's irreversible, account-revoking BASELINE withdrawal behind nothing but the device's own biometric re-lock.
+
+1. **The consent screen itself** (`apps/student/src/guardians/MinorConsentScreen.tsx`/`ConsentTierRow.tsx`) is promoted from "candidate UI, pending approval" (drafted 22 Sep 2026, per `docs/TRACK-B-ROADMAP.md`) to approved and prioritized ahead of ordinary v1.2 backlog — a real, confirmed legal-compliance gap (GDPR Art. 7(3)/8, COPPA's 22 Apr 2026 deadline), not a nice-to-have.
+2. **Step-up re-authentication** is required before BASELINE consent withdrawal: the Guardian re-enters their own passcode (`POST /auth/step-up/verify`, a new generic `StepUpService` in `AuthModule`) and the resulting short-lived proof gates `GuardiansService.withdrawConsent()`'s BASELINE path. CAMERA withdrawal — reversible, no account impact — does not require it; a plain confirm stays proportionate.
+3. **Not built here, flagged as a separate follow-up:** the same approval also named step-up for "any charge against a saved payment method" as a second consumer of this mechanism. `StepUpService` is deliberately generic/reusable so that follow-up doesn't need a second implementation, but it isn't scoped or built yet.
+
+### Recorded by
+
+User, approving the Developer recommendation (screen + step-up, prioritized ahead of backlog), 11 Oct 2026; this log entry itself written up after the fact, 11 Oct 2026, on discovering PR #189 shipped citing a decision number that was never actually recorded here.
+
