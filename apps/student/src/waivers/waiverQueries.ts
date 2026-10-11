@@ -78,19 +78,61 @@ export function useMyWaiverSignatures(enabled: boolean) {
   });
 }
 
-/** POST /waivers/{id}/sign — typed name + typed signature text only (Spec 55's
- * confirmed baseline mechanism; see SignWaiverDto's own header comment — drawn/
- * canvas signature capture isn't part of the confirmed contract yet). */
+/** Step 1+2 of drawn-signature capture (Phase 34, Decision 74/78): request a
+ * presigned R2 PUT URL from `POST /waivers/{id}/signature-upload-url`, then
+ * upload the signature-pad's base64 PNG data URI directly there. Fetching a
+ * `data:` URI and reading its `.blob()` is a standard React Native (and
+ * react-native-web) pattern for turning a base64 payload into a binary upload
+ * body — no extra base64-decoding dependency needed. Returns the `objectKey`
+ * to pass as `signatureImageKey` on the actual `sign()` call (step 3) — this
+ * function never calls sign() itself, so a Student who only typed a signature
+ * (no drawing) skips this step entirely. */
+async function uploadDrawnSignature(waiverId: string, base64Png: string): Promise<string> {
+  const { uploadUrl, objectKey } = await unwrap(
+    apiClient.POST('/v1/waivers/{id}/signature-upload-url', {
+      params: { path: { id: waiverId } },
+      body: {},
+    }),
+  );
+  const blob = await (await fetch(base64Png)).blob();
+  const putRes = await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/png' } });
+  if (!putRes.ok) {
+    throw new Error(`Signature image upload failed (HTTP ${putRes.status})`);
+  }
+  return objectKey;
+}
+
+/** POST /waivers/{id}/sign — typed full name + typed signature text (the
+ * confirmed baseline, still required) plus an OPTIONAL drawn signature
+ * (Phase 34/37's real shipped mechanism: a presigned-upload-URL dance against
+ * R2, not a base64 blob in the request body — see uploadDrawnSignature's own
+ * comment). `signatureImage` is the signature-pad's raw base64 PNG data URI,
+ * or null if the Student only typed a signature; the upload step above only
+ * runs when it's present. Guardian-on-behalf-of signing (`studentId` on the
+ * real DTO) stays out of scope here — Student self-signing only, per the
+ * scope confirmed with the user. */
 export function useSignWaiver() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ waiverId, signerFullName, signatureText }: { waiverId: string; signerFullName: string; signatureText: string }) =>
-      unwrap(
+    mutationFn: async ({
+      waiverId,
+      signerFullName,
+      signatureText,
+      signatureImage,
+    }: {
+      waiverId: string;
+      signerFullName: string;
+      signatureText: string;
+      signatureImage: string | null;
+    }) => {
+      const signatureImageKey = signatureImage ? await uploadDrawnSignature(waiverId, signatureImage) : undefined;
+      return unwrap(
         apiClient.POST('/v1/waivers/{id}/sign', {
           params: { path: { id: waiverId } },
-          body: { signerFullName, signatureText },
+          body: { signerFullName, signatureText, signatureImageKey },
         }),
-      ),
+      );
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-waiver-signatures'] }),
   });
 }
