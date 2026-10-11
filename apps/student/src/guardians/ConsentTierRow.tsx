@@ -9,7 +9,7 @@ import { useGrantConsent, useWithdrawConsent } from './guardianQueries';
 type ConsentRecord = components['schemas']['ConsentRecordResponseDto'];
 type ConsentTier = 'BASELINE' | 'CAMERA';
 
-/** Approved screen (Decision 9, 11 Oct 2026 — "build the screen now, with
+/** Approved screen (Decision 236, 11 Oct 2026 — "build the screen now, with
  * step-up re-authentication, prioritized ahead of ordinary v1.2 backlog"),
  * per docs/TRACK-B-ROADMAP.md's own "candidate committed" entry for this
  * slice. `CURRENT_POLICY_VERSION` is still a placeholder standing in for
@@ -52,7 +52,7 @@ export function ConsentTierRow({
   const copy = TIER_COPY[tier];
   const [confirming, setConfirming] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
-  // Decision 9 — BASELINE withdrawal needs a fresh step-up proof before the
+  // Decision 236 — BASELINE withdrawal needs a fresh step-up proof before the
   // mutation fires; CAMERA goes straight from the warning+confirm panel to
   // withdraw.mutate(), same as before this change.
   const [steppingUp, setSteppingUp] = useState(false);
@@ -111,7 +111,7 @@ export function ConsentTierRow({
     // discipline elsewhere in this file.
     if (!granted || withdraw.isPending) return;
     if (tier === 'BASELINE' && !acknowledged) return;
-    // Decision 9 — BASELINE doesn't withdraw yet here; it moves to the
+    // Decision 236 — BASELINE doesn't withdraw yet here; it moves to the
     // step-up prompt below, which fires the actual mutation once verified.
     // CAMERA withdraws immediately, as before.
     if (tier === 'BASELINE') {

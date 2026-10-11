@@ -294,7 +294,7 @@ describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
     expect(unknown.status).toBe(201);
   });
 
-  // Decision 9 — step-up re-authentication. The richer scenarios (wrong
+  // Decision 236 — step-up re-authentication. The richer scenarios (wrong
   // caller's token, expired token, actually gating a withdrawal) live in
   // guardians.e2e-spec.ts, against the one real consumer; this only confirms
   // AuthController's own wiring — the route is genuinely behind JwtAuthGuard,

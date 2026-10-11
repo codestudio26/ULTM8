@@ -36,9 +36,9 @@ import { GuardiansService } from './guardians.service';
  * costs nothing and keeps the dependency graph one-directional, matching this
  * module's own existing "one-directional, not a cycle" note above.
  *
- * Decision 9 — DOES import AuthModule (for its exported StepUpService),
+ * Decision 236 — DOES import AuthModule (for its exported StepUpService),
  * unlike the Kid-Mode case above: step-up re-authentication is a generic Auth
- * concern Decision 9's own text already names a second consumer for (saved-
+ * concern Decision 236's own text already names a second consumer for (saved-
  * payment-method reuse), not a Guardian-specific mechanism worth
  * reimplementing locally. Still one-directional, not a cycle — AuthModule does
  * not import GuardiansModule.

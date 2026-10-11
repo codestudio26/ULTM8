@@ -36,7 +36,7 @@ const PHONE_AUTH_THROTTLE = {
   default: { limit: 20, ttl: 60_000 },
   identity: { limit: 5, ttl: 60_000, getTracker: bodyIdentityTracker('phone') },
 };
-// Decision 9 — same identity-only strictness as login's own passcode guess
+// Decision 236 — same identity-only strictness as login's own passcode guess
 // (EMAIL_AUTH_THROTTLE above); keyed by the caller's already-authenticated
 // `sub`, not email/phone, since this route sits behind JwtAuthGuard.
 const STEP_UP_VERIFY_THROTTLE = {
@@ -110,7 +110,7 @@ export class AuthController {
     return this.authService.confirmPasscodeReset(dto);
   }
 
-  // Decision 9 — step-up re-authentication for an already-logged-in user
+  // Decision 236 — step-up re-authentication for an already-logged-in user
   // confirming a sensitive action (today: Guardian BASELINE consent
   // withdrawal). Behind JwtAuthGuard, unlike every other route in this
   // controller — the caller must already hold a valid session; this only

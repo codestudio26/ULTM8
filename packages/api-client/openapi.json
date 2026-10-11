@@ -1633,7 +1633,7 @@
             "name": "x-step-up-token",
             "required": false,
             "in": "header",
-            "description": "Required only for a BASELINE-tier record (Decision 9) — from POST /auth/step-up/verify.",
+            "description": "Required only for a BASELINE-tier record (Decision 236) — from POST /auth/step-up/verify.",
             "schema": {
               "type": "string"
             }

@@ -256,11 +256,11 @@ export class GuardiansService {
    * regardless of any other Guardian's own consent state (Decision 92), not an
    * invented "unless someone else still consents" exception.
    *
-   * Decision 9 — BASELINE withdrawal (the irreversible, account-revoking path)
+   * Decision 236 — BASELINE withdrawal (the irreversible, account-revoking path)
    * requires a fresh step-up proof (`StepUpService.assertVerified()`, checked
    * BEFORE the record is looked up for tier, see below) minted by
    * `POST /auth/step-up/verify`; CAMERA withdrawal does not, since it's
-   * reversible and a plain confirm is proportionate (Decision 9's own text).
+   * reversible and a plain confirm is proportionate (Decision 236's own text).
    * The tier gate happens only once `existing` is loaded — this is still a
    * single combined check, not two round-trips, since StepUpService.
    * assertVerified() does no DB I/O of its own.

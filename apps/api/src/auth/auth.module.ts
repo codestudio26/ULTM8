@@ -27,7 +27,7 @@ import { QueueModule } from '../jobs/queue.module';
   // TwilioVerifyService exported so JobsModule's OtpDeliveryProcessor can call its
   // sendOtpNow() — the actual Twilio call now lives behind the queue, not in front of
   // it. StepUpService exported so GuardiansModule can gate BASELINE consent
-  // withdrawal on it (Decision 9) without duplicating the step-up mechanism —
+  // withdrawal on it (Decision 236) without duplicating the step-up mechanism —
   // one-directional (AuthModule doesn't import GuardiansModule), not a cycle.
   exports: [AuthService, StepUpService, TwilioVerifyService],
 })

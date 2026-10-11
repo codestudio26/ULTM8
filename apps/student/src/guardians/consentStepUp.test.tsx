@@ -24,13 +24,13 @@ const RECORD = {
 };
 
 /**
- * Decision 9 — BASELINE withdrawal must go through StepUpPrompt before the
+ * Decision 236 — BASELINE withdrawal must go through StepUpPrompt before the
  * actual withdraw mutation fires; CAMERA must never show that prompt at all.
  * Mirrors coachScreens.test.tsx's own house style: mock every query module
  * entirely, inline fixtures, render + fireEvent (both awaited, per this
  * project's React-19/RTL-v14 convention), no real react-query/network.
  */
-describe('ConsentTierRow — Decision 9 step-up gate', () => {
+describe('ConsentTierRow — Decision 236 step-up gate', () => {
   const mkVerifyStepUp = () => ({
     mutate: jest.fn((_passcode: string, opts?: { onSuccess?: (data: { stepUpToken: string }) => void }) => {
       opts?.onSuccess?.({ stepUpToken: 'step-up-token-abc' });

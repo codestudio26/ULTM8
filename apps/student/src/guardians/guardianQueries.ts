@@ -59,7 +59,7 @@ export function useGrantConsent() {
  * self-service QR check-in. The UI must make this consequence explicit before
  * calling this, not just say "withdraw."
  *
- * Decision 9 — BASELINE withdrawal also needs a fresh step-up proof
+ * Decision 236 — BASELINE withdrawal also needs a fresh step-up proof
  * (StepUpPrompt/useVerifyStepUp), sent as the `X-Step-Up-Token` header;
  * `stepUpToken` is optional here since CAMERA withdrawal never needs one —
  * the server is the one that actually enforces which tier requires it. */

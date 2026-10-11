@@ -17,7 +17,7 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
-// Decision 9 — the real passcode behind both Guardians' bcrypt hashes below,
+// Decision 236 — the real passcode behind both Guardians' bcrypt hashes below,
 // needed to exercise POST /auth/step-up/verify over real HTTP rather than
 // minting a step-up token directly.
 const TEST_PASSCODE = '424242';
@@ -191,7 +191,7 @@ describeIfDb('GuardianModule — HTTP-level linking, consent, and RLS', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Decision 9 — BASELINE withdrawal requires a fresh step-up proof; CAMERA
+  // Decision 236 — BASELINE withdrawal requires a fresh step-up proof; CAMERA
   // (tested above) never does. See StepUpService's own header comment for why
   // the token is verified directly here, never through JwtStrategy.
   // ---------------------------------------------------------------------------
