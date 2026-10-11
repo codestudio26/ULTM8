@@ -876,10 +876,25 @@ Skipping stripes, back-dating, starting classes, bulk promote, dragging between 
 - **API:** `GET /students/{id}/grading` (new), because a guardian holds no role at the School and so can't read its styles, belts or skills; it sends the names with the grading, read under the student's own context, for the student or their guardian only. History uses the existing `GET /students/{id}/rank-history`.
 
 ### Not yet
-Lessons in the app wait for video hosting (Decision 155).
+Nothing — see the new Lessons section below, which closes this gap for metadata/lock state (video itself still waits on the hosting pipeline).
 
 ### Verified
 `tsc --noEmit`; jest `src/grading/myGrading.test.tsx` (5); API e2e `student-grading-overview.e2e-spec.ts` (4): student and guardian see the same, strangers and other students are refused, a School the student left isn't shown.
+
+## Lessons, metadata + lock state (Decisions 101, 154, 190, 195, 208) — DONE
+
+The CurriculumModule's (Phase 44) Student/Guardian-facing endpoint had no UI anywhere in the app — this closes that, for everything the backend can actually show today.
+
+### What was built
+- **Lessons** (`src/curriculum/LessonsScreen.tsx`), from the student home for anyone with a Student grant. Every enrolled School (grouped when there's more than one), then by category in the School's own authored order (a second fetch, `GET /schools/{id}/curriculum/categories`, since the Student-facing Lesson response only carries a category's name, not its position — that endpoint is readable by anyone at the School, same RLS as everything else here). Each Lesson shows its title, Free/Live-or-Prerecorded/duration chips, and its description when unlocked; a locked Lesson (Decision 195: no membership of the Student's covers it) shows that instead, exactly what the backend already strips.
+- **API:** nothing new — `GET /students/{id}/lessons?schoolId=` and `GET /schools/{id}/curriculum/categories` both already existed (the latter backing the Staff-side `CurriculumPage.tsx`).
+
+### Not yet
+- **Video/caption playback** — Decision 101 named Cloudflare Stream/AWS Transcribe as vendors but the integration itself isn't built; `videoRef`/`captionTrackRef` are always null, so there's nothing to play. This screen only ever shows metadata and lock state.
+- **Guardian viewing a linked minor's Lessons** — unlike grading, this endpoint requires a `schoolId` the caller must already know, and nothing client-visible resolves which School(s) a linked minor is enrolled at (`MinorResponseDto` carries no `schoolId`; `useEnrolledSchoolIds` only ever reads the caller's own JWT claims). A real gap, not scoped here — would need either a new "minor's enrolled Schools" endpoint or `MinorResponseDto` growing a schoolIds field.
+
+### Verified
+`tsc --noEmit`.
 
 ## Join a School and declare a belt (Decisions 137, 147, 209) — DONE
 
