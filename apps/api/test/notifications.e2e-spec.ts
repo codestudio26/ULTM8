@@ -192,6 +192,42 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     expect(readAgain.body.read).toBe(true);
   });
 
+  it('DELETE /notifications/:id hard-deletes the caller\'s own Notification; self-only — a cross-caller delete and a repeat delete both 404', async () => {
+    const mine = await superuser.notification.create({
+      data: { id: randomUUID(), userId: studentA.id, title: 'Delete me', body: 'body' },
+    });
+    const forB = await superuser.notification.create({
+      data: { id: randomUUID(), userId: studentB.id, title: 'Not yours', body: 'body B' },
+    });
+    notificationIds.push(forB.id);
+
+    const crossDelete = await request(app.getHttpServer())
+      .delete(`/v1/notifications/${forB.id}`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(crossDelete.status).toBe(404);
+    // Untouched — the cross-caller attempt above did nothing.
+    expect(await superuser.notification.findUnique({ where: { id: forB.id } })).not.toBeNull();
+
+    const deleteRes = await request(app.getHttpServer())
+      .delete(`/v1/notifications/${mine.id}`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(deleteRes.status).toBe(204);
+    expect(await superuser.notification.findUnique({ where: { id: mine.id } })).toBeNull();
+
+    // Gone from the list too, not just the DB row — proves the same
+    // self-scoped query path, not a different read mechanism.
+    const listAfter = await request(app.getHttpServer())
+      .get('/v1/notifications/me')
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(listAfter.body.items.map((n: { id: string }) => n.id)).not.toContain(mine.id);
+
+    // Repeat delete of the now-gone row is a 404, not a second success.
+    const repeatDelete = await request(app.getHttpServer())
+      .delete(`/v1/notifications/${mine.id}`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(repeatDelete.status).toBe(404);
+  });
+
   // ---------------------------------------------------------------------------
   // DeviceToken registration
   // ---------------------------------------------------------------------------
