@@ -13,6 +13,12 @@ const READ_ONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 // Nest's router has resolved a route match.
 const KID_MODE_ALLOWED_PATH = /^\/v1\/classes\/[^/]+\/book$/;
 
+// Decision 1/230 — the ONE route a passcode-change-purpose token (minted by
+// AuthService.login() when mustChangePasscode is true) may ever call. Same
+// route-allowlist mechanism as KID_MODE_ALLOWED_PATH above — this token
+// carries zero grants and must never reach any ordinary tenant endpoint.
+const PASSCODE_CHANGE_ALLOWED_PATH = /^\/v1\/auth\/passcode-change\/first-login$/;
+
 /**
  * Validates the access token and hands back its claims as `req.user`. 15-minute
  * access-token TTL for customer identities is confirmed (Spec §8.3) — configured via
@@ -78,6 +84,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (!isAllowedRoute || bodyStudentId !== payload.kidMode.studentId || bodyOverrideReason !== undefined) {
         throw new ForbiddenException(
           'This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for (Decision 123).',
+        );
+      }
+    }
+    // Decision 1/230 — same "one central choke point" reasoning as Kid Mode
+    // above: a passcode-change-purpose token may only call the one endpoint
+    // that consumes it, never anything else, even though it technically
+    // verifies against the same secret as an ordinary access token.
+    if (payload.passcodeChangePurpose) {
+      const isAllowedRoute = req.method === 'POST' && PASSCODE_CHANGE_ALLOWED_PATH.test(req.path);
+      if (!isAllowedRoute) {
+        throw new ForbiddenException(
+          'This token only confirms a forced passcode change — it cannot be used for anything else.',
         );
       }
     }

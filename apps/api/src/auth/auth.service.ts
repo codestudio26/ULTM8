@@ -21,6 +21,7 @@ import { LoginDto } from './dto/login.dto';
 import { RequestPasscodeResetDto } from './dto/request-passcode-reset.dto';
 import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 
 const BCRYPT_ROUNDS = 12;
@@ -177,10 +178,10 @@ export class AuthService {
    * below — recordFailure() never fires for an already-locked account, same as before
    * this reorder; only the DB-lookup timing changed, not this control flow.
    */
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string } | { mustChangePasscode: true; passcodeChangeToken: string }> {
     const user = await this.prismaAuth.user.findUnique({
       where: { email: dto.email },
-      select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true },
+      select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true },
     });
 
     if (this.loginAttempts.isLocked(dto.email)) {
@@ -198,16 +199,65 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or passcode');
     }
 
-    if (!user.phoneVerifiedAt) {
+    // Decision 1/230 — a User created via Instructor "Add Manually" has no
+    // phone at all (deferred to self-service completion after their first
+    // login); there's nothing to verify, so this gate doesn't apply to them.
+    // This is the one documented exception — every other account still has a
+    // phone and still must verify it.
+    if (user.phone && !user.phoneVerifiedAt) {
       throw new ForbiddenException('Phone not verified — complete registration via POST /auth/otp/verify');
     }
 
     this.loginAttempts.recordSuccess(dto.email);
 
+    // Decision 1/230 — a server-generated temp passcode was issued on this
+    // User's behalf; short-circuit to a narrow, single-purpose token instead
+    // of an ordinary session until they've actually chosen their own.
+    if (user.mustChangePasscode) {
+      return { mustChangePasscode: true, passcodeChangeToken: this.issuePasscodeChangeToken(user.id, user.email) };
+    }
+
     // FOUND ON REVIEW: these two are independent — different tables, different
     // connections (prismaApp vs. prismaAuth) — so there's no reason to pay the
     // sum of both round-trips in sequence instead of the slower of the two.
     const [accessToken, refreshToken] = await Promise.all([this.issueAccessToken(user.id), this.issueRefreshToken(user.id)]);
+    return { accessToken, refreshToken };
+  }
+
+  /** Decision 1/230 — 10 minutes, same "named, explicit Developer-level
+   * choice" tier as every other short-lived special-purpose token in this
+   * codebase (Kid Mode, step-up). `grants: []` — this token authenticates the
+   * User, nothing else; JwtStrategy.validate()'s PASSCODE_CHANGE_ALLOWED_PATH
+   * is what actually confines it to the one route that consumes it. */
+  private issuePasscodeChangeToken(userId: string, email: string): string {
+    const payload: JwtPayload = { sub: userId, email, grants: [], passcodeChangePurpose: true };
+    return this.jwt.sign(payload, { expiresIn: '10m' });
+  }
+
+  /**
+   * POST /auth/passcode-change/first-login (Decision 1/230) — the one route a
+   * passcodeChangePurpose token may call. Validates the caller's own
+   * mustChangePasscode is still set (defensive — the token's own
+   * 10-minute TTL is the primary bound, this guards the edge case of the
+   * flag somehow already having been cleared), sets the new passcode,
+   * revokes any existing refresh tokens (same compromise-recovery precedent
+   * confirmPasscodeReset() already established — belt-and-braces here, since
+   * no real session exists yet for this account), and returns a real
+   * accessToken/refreshToken pair directly — no second login call needed.
+   */
+  async changePasscodeFirstLogin(callerId: string, dto: ChangePasscodeFirstLoginDto): Promise<{ accessToken: string; refreshToken: string }> {
+    const user = await this.prismaAuth.user.findUnique({ where: { id: callerId }, select: { mustChangePasscode: true } });
+    if (!user?.mustChangePasscode) {
+      throw new BadRequestException('No forced passcode change is pending for this account.');
+    }
+
+    const passcodeHash = await bcrypt.hash(dto.newPasscode, BCRYPT_ROUNDS);
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.user.update({ where: { id: callerId }, data: { passcodeHash, mustChangePasscode: false } }),
+    );
+    await this.revokeAllRefreshTokensForUser(callerId);
+
+    const [accessToken, refreshToken] = await Promise.all([this.issueAccessToken(callerId), this.issueRefreshToken(callerId)]);
     return { accessToken, refreshToken };
   }
 
