@@ -25,6 +25,7 @@ import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
 import { ClassesPage } from './classes/ClassesPage';
 import { ClassDetailPage } from './classes/ClassDetailPage';
 import { ClassQrCodePage } from './attendance/ClassQrCodePage';
+import { RollCallPage } from './attendance/RollCallPage';
 import { CurriculumPage } from './curriculum/CurriculumPage';
 import { TimetablePage } from './timetable/TimetablePage';
 import { MembershipPlansPage } from './membershipPlans/MembershipPlansPage';
@@ -218,6 +219,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <ClassQrCodePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/classes/:id/roll-call"
+        element={
+          <RequireAuth>
+            <Shell>
+              <RollCallPage />
             </Shell>
           </RequireAuth>
         }
