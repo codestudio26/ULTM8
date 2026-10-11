@@ -1316,6 +1316,22 @@ export interface paths {
         patch: operations["InstructorsController_update"];
         trace?: never;
     };
+    "/v1/instructors/{id}/classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorsController_findClasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/instructors/add-manually": {
         parameters: {
             query?: never;
@@ -1458,6 +1474,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["MembershipsController_updatePlan"];
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/active-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_getActiveCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/membership-plans/{id}/purchase": {
@@ -2180,6 +2212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/waivers/{id}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_findSignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/me": {
         parameters: {
             query?: never;
@@ -2316,6 +2364,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["BookingsController_findAllForClass"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findAllForStudent"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3745,6 +3809,24 @@ export interface components {
             yearsOfExperience?: number | null;
             bio?: string | null;
         };
+        InstructorClassResponseDto: {
+            id: string;
+            branchId?: string | null;
+            title: string;
+            activities: string[];
+            bannerUrl?: string | null;
+            description?: string | null;
+            startDate: string;
+            endDate: string;
+            /** @description null = unlimited (domain-rules §9). */
+            capacity?: number | null;
+            /** @description Every attendee across every UPCOMING Booking for this Class — same definition as "Full" (domain-rules §9). */
+            enrolledCount: number;
+        };
+        InstructorClassListResponseDto: {
+            items: components["schemas"]["InstructorClassResponseDto"][];
+            nextCursor?: string | null;
+        };
         CreateInstructorManuallyDto: {
             firstName: string;
             surname: string;
@@ -3922,6 +4004,9 @@ export interface components {
             cancellationCharge?: number | null;
             /** @description ISO 8601 date-time. Pass null to clear. */
             refundFeeDate?: string | null;
+        };
+        MembershipPlanActiveCountResponseDto: {
+            activeCount: number;
         };
         PurchaseMembershipDto: {
             /** @description Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller. */
@@ -4787,6 +4872,29 @@ export interface components {
         };
         BookingListResponseDto: {
             items: components["schemas"]["BookingResponseDto"][];
+            nextCursor?: string | null;
+        };
+        StudentBookingResponseDto: {
+            id: string;
+            studentId: string;
+            classId: string;
+            classTitle: string;
+            classStartDate: string;
+            classEndDate: string;
+            schoolId: string;
+            branchId?: string | null;
+            status: string;
+            sourceMembershipId: string;
+            overriddenById?: string | null;
+            overrideReason?: string | null;
+            checkInMethod?: string | null;
+            refundResolution?: string | null;
+            attendees: components["schemas"]["BookingAttendeeResponseDto"][];
+            createdAt: string;
+            updatedAt: string;
+        };
+        StudentBookingListResponseDto: {
+            items: components["schemas"]["StudentBookingResponseDto"][];
             nextCursor?: string | null;
         };
         JoinWaitlistDto: {
@@ -7319,6 +7427,31 @@ export interface operations {
             };
         };
     };
+    InstructorsController_findClasses: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorClassListResponseDto"];
+                };
+            };
+        };
+    };
     InstructorsController_createManually: {
         parameters: {
             query?: never;
@@ -7585,6 +7718,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipPlanResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_getActiveCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanActiveCountResponseDto"];
                 };
             };
         };
@@ -8896,6 +9050,32 @@ export interface operations {
             };
         };
     };
+    WaiversController_findSignatures: {
+        parameters: {
+            query?: {
+                /** @description nextCursor from the previous page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverSignatureListResponseDto"];
+                };
+            };
+        };
+    };
     WaiversController_findMySignatures: {
         parameters: {
             query?: {
@@ -9134,6 +9314,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findAllForStudent: {
+        parameters: {
+            query: {
+                schoolId: string;
+                /** @description nextCursor from the previous page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBookingListResponseDto"];
                 };
             };
         };

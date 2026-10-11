@@ -1399,6 +1399,9 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
         // Another Student's own Booking at the same School must not leak in.
         expect(res.body.items.some((b: { studentId: string }) => b.studentId === studentB.id)).toBe(false);
       } finally {
+        // Booking must go first — Booking_classId_fkey would otherwise reject
+        // deleting the Class while this fixture Booking still references it.
+        await superuser.booking.delete({ where: { id: booking.id } });
         await superuser.class.delete({ where: { id: classForStudentBookingsRead.id } });
       }
     });
