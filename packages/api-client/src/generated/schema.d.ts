@@ -644,6 +644,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/me/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NotificationsController_getCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -3109,6 +3125,12 @@ export interface components {
             items: components["schemas"]["NotificationResponseDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        NotificationCountResponseDto: {
+            /** @description The caller's total Notification count. */
+            total: number;
+            /** @description The caller's unread Notification count. */
+            unread: number;
         };
         RegisterDeviceTokenDto: {
             /** @enum {string} */
@@ -5939,6 +5961,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationListResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_getCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationCountResponseDto"];
                 };
             };
         };
