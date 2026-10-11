@@ -13,6 +13,7 @@ import { TenantAuthorizationService } from './tenant-authorization.service';
 import { CoachInviteLinksController, CoachInvitesController } from './coach-invites/coach-invites.controller';
 import { CoachInvitesService } from './coach-invites/coach-invites.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { StripeClientService } from '../payments/stripe-client.service';
 
 /**
  * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
@@ -45,6 +46,13 @@ import { NotificationsModule } from '../notifications/notifications.module';
  * Coach invites (Decision 183) live here too: they end in a RoleGrant. Imports
  * NotificationsModule for the invite email (NotificationsModule imports nothing).
  *
+ * Registers its own independent StripeClientService provider (Decision 232,
+ * SchoolsService.leaveFranchise's own best-effort subscription cancellation) rather
+ * than importing PaymentsModule — PaymentsModule already imports TenantsModule, so
+ * the reverse edge would be circular. Same "duplicate a stateless/config-only
+ * registration rather than add a cross-module dependency edge" convention
+ * WaiversModule/InstructorsModule already established for R2ClientService.
+ *
  * Exports SchoolsService, FranchisesService, and TenantAuthorizationService so other
  * modules can reuse them rather than duplicating existence/authorization checks —
  * PaymentsModule now uses FranchisesService.findOne() the same way it already used
@@ -54,7 +62,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
-  providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService],
+  providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService],
 })
 export class TenantsModule {}

@@ -39,3 +39,24 @@ export function useUpdateSchool(schoolId: string) {
     },
   });
 }
+
+/** Decision 98 — one-way join (409 if already affiliated). "Switch" is this
+ * hook called again after useLeaveFranchise() below, not a separate call. */
+export function useJoinFranchise(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (franchiseId: string) =>
+      unwrap(apiClient.POST('/v1/schools/{id}/join-franchise', { params: { path: { id: schoolId } }, body: { franchiseId } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
+  });
+}
+
+/** Decision 232 — leave the current Franchise (PaymentAccount/MembershipPlan
+ * untouched; the old Stripe subscription is cancelled best-effort server-side). */
+export function useLeaveFranchise(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(apiClient.POST('/v1/schools/{id}/leave-franchise', { params: { path: { id: schoolId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['school', schoolId] }),
+  });
+}

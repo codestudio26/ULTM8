@@ -1,11 +1,13 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
+import { StripeClientService } from '../../payments/stripe-client.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
@@ -13,11 +15,15 @@ import { SetHomeBranchDto } from './dto/home-branch.dto';
 
 @Injectable()
 export class SchoolsService {
+  private readonly logger = new Logger(SchoolsService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
+    private readonly stripeClient: StripeClientService,
   ) {}
 
   /**
@@ -322,6 +328,84 @@ export class SchoolsService {
       }
       return tx.school.findUniqueOrThrow({ where: { id: schoolId } });
     });
+  }
+
+  /**
+   * A School's own leave/switch-Franchise path — School Owner/Manager initiated,
+   * self-service, closing the gap `joinFranchise()`'s own header comment deliberately
+   * left open pending the user's "revisit when the project is done" conversation
+   * (Decision 97). That conversation happened (Decision 232): `PaymentAccount` and
+   * `MembershipPlan` carry over completely unchanged — both already School-owned,
+   * with no franchise linkage to sever, so neither needs any write here.
+   * `FranchiseFeeCharge` history is retained as an immutable record — this method
+   * never touches those rows either. The one real reconciliation point is the live
+   * Stripe subscription (`School.stripeFranchiseFeeSubscriptionId`): cancelled here,
+   * at departure; a School that then calls `joinFranchise()` again gets a new one
+   * created lazily by franchise-fee-usage-reporting's own `ensureSubscription`, the
+   * same path every first-time join already goes through. "Switch Franchise" is
+   * deliberately NOT a separate combined endpoint — it's this method followed by an
+   * ordinary `joinFranchise()` call, which already works again once this clears
+   * `franchiseId` back to null.
+   *
+   * Idempotency/guard: the same conditional `updateMany` shape `joinFranchise()`
+   * already established — `count === 0` means the School's `franchiseId` moved out
+   * from under this call between the read below and the write (another concurrent
+   * leave, or the grant itself was revoked), surfaced as a 409 rather than a silent
+   * no-op, for the identical reasoning that method's own header comment gives.
+   *
+   * The Stripe cancellation is deliberately best-effort, not a precondition: it runs
+   * via `PrismaJobsService` (ultm8_jobs) AFTER the `franchiseId` write commits —
+   * same "the caller's own RLS context can't see a Franchise it holds no grant on"
+   * reasoning, and the same service, `GuardiansService.withdrawConsent()`'s own
+   * BASELINE cascade already established for an analogous problem (a School Owner
+   * has no FRANCHISE_OWNER grant on the Franchise they're leaving, so `franchise_
+   * tenant_isolation`/`payment_account_tenant_isolation` would hide its PaymentAccount
+   * from this caller's own tenant context entirely). Ordered AFTER the commit, not
+   * before: leaving the Franchise relationship is the actual feature being asked
+   * for, and must succeed even if Stripe is unreachable or the subscription is
+   * already gone — a stale, uncancelled Stripe subscription is a real but narrow
+   * billing-cleanup gap, logged loudly here, not a reason to trap a School in a
+   * Franchise it has already, authoritatively, left.
+   */
+  async leaveFranchise(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const current = await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    if (!current.franchiseId) {
+      throw new BadRequestException('This School is not affiliated with any Franchise.');
+    }
+    const { franchiseId: oldFranchiseId, stripeFranchiseFeeSubscriptionId: oldSubscriptionId } = current;
+
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.updateMany({
+        where: { id: schoolId, franchiseId: oldFranchiseId },
+        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null },
+      }),
+    );
+    if (count === 0) {
+      throw new ConflictException('This School already left its Franchise — nothing to do.');
+    }
+
+    if (oldSubscriptionId) {
+      try {
+        const oldFranchise = await this.prismaJobs.franchise.findUnique({
+          where: { id: oldFranchiseId },
+          include: { paymentAccount: true },
+        });
+        const account = oldFranchise?.paymentAccount;
+        if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
+          await this.stripeClient.scopedClient(account.stripeConnectedAccountId).subscriptions.cancel(oldSubscriptionId);
+        }
+      } catch (err) {
+        this.logger.error(
+          `School ${schoolId} left Franchise ${oldFranchiseId}, but cancelling its standing Stripe subscription (${oldSubscriptionId}) failed — it may need manual cancellation.`,
+          err as Error,
+        );
+      }
+    }
+
+    return this.findOne(callerId, schoolId);
   }
 
   /** Schools visible to the caller — RLS already restricts this to Schools where the
