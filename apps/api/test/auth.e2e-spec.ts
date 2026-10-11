@@ -186,7 +186,7 @@ describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
     });
     userIds.push(user.id);
     const loginRes = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: PASSCODE });
-    return { user, refreshToken: loginRes.body.refreshToken as string };
+    return { user, refreshToken: loginRes.body.refreshToken as string, accessToken: loginRes.body.accessToken as string };
   }
 
   it('POST /auth/login returns a refreshToken alongside the accessToken', async () => {
@@ -292,5 +292,34 @@ describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
     expect(second.status).toBe(201);
     const unknown = await request(app.getHttpServer()).post('/v1/auth/logout').send({ refreshToken: 'never-issued' });
     expect(unknown.status).toBe(201);
+  });
+
+  // Decision 9 — step-up re-authentication. The richer scenarios (wrong
+  // caller's token, expired token, actually gating a withdrawal) live in
+  // guardians.e2e-spec.ts, against the one real consumer; this only confirms
+  // AuthController's own wiring — the route is genuinely behind JwtAuthGuard,
+  // and a correct/incorrect passcode are routed to StepUpService correctly.
+  it('POST /auth/step-up/verify requires an existing session — 401 with no Authorization header', async () => {
+    const res = await request(app.getHttpServer()).post('/v1/auth/step-up/verify').send({ passcode: PASSCODE });
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /auth/step-up/verify mints a token for the correct passcode and rejects the wrong one', async () => {
+    const { accessToken } = await mkLoggedInUser('step-up');
+
+    const wrong = await request(app.getHttpServer())
+      .post('/v1/auth/step-up/verify')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ passcode: '000000' });
+    expect(wrong.status).toBe(403);
+    expect(wrong.body.error.code).toBe('INVALID_PASSCODE');
+
+    const right = await request(app.getHttpServer())
+      .post('/v1/auth/step-up/verify')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ passcode: PASSCODE });
+    expect(right.status).toBe(201);
+    expect(typeof right.body.stepUpToken).toBe('string');
+    expect(typeof right.body.expiresAt).toBe('string');
   });
 });

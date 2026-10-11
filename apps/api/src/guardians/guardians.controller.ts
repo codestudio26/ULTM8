@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -55,10 +55,24 @@ export class GuardiansController {
     return this.guardiansService.findMyConsentRecords(user.sub);
   }
 
+  // Decision 9 — BASELINE withdrawal requires a fresh step-up proof; CAMERA
+  // withdrawal does not (reversible, a plain confirm is proportionate per
+  // Decision 9's own text). The header is optional at this layer — whether it
+  // was actually required is GuardiansService.withdrawConsent()'s own call,
+  // based on the record's tier.
   @ApiOkResponse({ type: ConsentRecordResponseDto })
+  @ApiHeader({
+    name: 'x-step-up-token',
+    required: false,
+    description: 'Required only for a BASELINE-tier record (Decision 9) — from POST /auth/step-up/verify.',
+  })
   @Patch('consent/:id/withdraw')
-  withdrawConsent(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.guardiansService.withdrawConsent(user.sub, id);
+  withdrawConsent(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Headers('x-step-up-token') stepUpToken?: string,
+  ) {
+    return this.guardiansService.withdrawConsent(user.sub, id, stepUpToken);
   }
 
   // Decision 123 — Guardian "Kid Mode" booking delegation. See

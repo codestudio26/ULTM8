@@ -57,12 +57,22 @@ export function useGrantConsent() {
  * §14): BASELINE triggers the full RoleGrant-revocation cascade for that one
  * Student; CAMERA-only clears the stored profile photo and blocks future
  * self-service QR check-in. The UI must make this consequence explicit before
- * calling this, not just say "withdraw." */
+ * calling this, not just say "withdraw."
+ *
+ * Decision 9 — BASELINE withdrawal also needs a fresh step-up proof
+ * (StepUpPrompt/useVerifyStepUp), sent as the `X-Step-Up-Token` header;
+ * `stepUpToken` is optional here since CAMERA withdrawal never needs one —
+ * the server is the one that actually enforces which tier requires it. */
 export function useWithdrawConsent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (consentRecordId: string) =>
-      unwrap(apiClient.PATCH('/v1/guardians/me/consent/{id}/withdraw', { params: { path: { id: consentRecordId } } })),
+    mutationFn: ({ consentRecordId, stepUpToken }: { consentRecordId: string; stepUpToken?: string }) =>
+      unwrap(
+        apiClient.PATCH('/v1/guardians/me/consent/{id}/withdraw', {
+          params: { path: { id: consentRecordId } },
+          headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
+        }),
+      ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-consent-records'] }),
   });
 }

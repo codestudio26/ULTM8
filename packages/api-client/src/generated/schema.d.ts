@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/step-up/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_verifyStepUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools": {
         parameters: {
             query?: never;
@@ -2655,6 +2671,15 @@ export interface components {
             /** @description Exactly 6 digits */
             newPasscode: string;
         };
+        StepUpVerifyDto: {
+            /** @description Exactly 6 digits — the caller's own current passcode */
+            passcode: string;
+        };
+        StepUpResponseDto: {
+            /** @description Short-lived proof — send as the X-Step-Up-Token header on the one request it gates */
+            stepUpToken: string;
+            expiresAt: string;
+        };
         CreateSchoolDto: {
             name: string;
             mobileNumber?: string;
@@ -5017,6 +5042,29 @@ export interface operations {
             };
         };
     };
+    AuthController_verifyStepUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StepUpVerifyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StepUpResponseDto"];
+                };
+            };
+        };
+    };
     SchoolsController_findAll: {
         parameters: {
             query?: {
@@ -5778,7 +5826,10 @@ export interface operations {
     GuardiansController_withdrawConsent: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Required only for a BASELINE-tier record (Decision 9) — from POST /auth/step-up/verify. */
+                "x-step-up-token"?: string;
+            };
             path: {
                 id: string;
             };

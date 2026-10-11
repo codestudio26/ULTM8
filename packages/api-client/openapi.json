@@ -249,6 +249,42 @@
         ]
       }
     },
+    "/v1/auth/step-up/verify": {
+      "post": {
+        "operationId": "AuthController_verifyStepUp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUpVerifyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepUpResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools": {
       "post": {
         "operationId": "SchoolsController_create",
@@ -1589,6 +1625,15 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-step-up-token",
+            "required": false,
+            "in": "header",
+            "description": "Required only for a BASELINE-tier record (Decision 9) — from POST /auth/step-up/verify.",
             "schema": {
               "type": "string"
             }
@@ -8210,6 +8255,34 @@
           "phone",
           "code",
           "newPasscode"
+        ]
+      },
+      "StepUpVerifyDto": {
+        "type": "object",
+        "properties": {
+          "passcode": {
+            "type": "string",
+            "description": "Exactly 6 digits — the caller's own current passcode"
+          }
+        },
+        "required": [
+          "passcode"
+        ]
+      },
+      "StepUpResponseDto": {
+        "type": "object",
+        "properties": {
+          "stepUpToken": {
+            "type": "string",
+            "description": "Short-lived proof — send as the X-Step-Up-Token header on the one request it gates"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stepUpToken",
+          "expiresAt"
         ]
       },
       "CreateSchoolDto": {

@@ -3,18 +3,19 @@ import { Pressable, Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { StepUpPrompt } from '../auth/StepUpPrompt';
 import { useGrantConsent, useWithdrawConsent } from './guardianQueries';
 
 type ConsentRecord = components['schemas']['ConsentRecordResponseDto'];
 type ConsentTier = 'BASELINE' | 'CAMERA';
 
-/** CANDIDATE UI, pending your approval per docs/TRACK-B-ROADMAP.md's "path
- * forward" — the underlying API (GuardiansController/Service) is real and
- * confirmed; what's undesigned is this exact screen/copy, which is why this
- * isn't committed yet. `CURRENT_POLICY_VERSION` is a placeholder standing in for
+/** Approved screen (Decision 9, 11 Oct 2026 — "build the screen now, with
+ * step-up re-authentication, prioritized ahead of ordinary v1.2 backlog"),
+ * per docs/TRACK-B-ROADMAP.md's own "candidate committed" entry for this
+ * slice. `CURRENT_POLICY_VERSION` is still a placeholder standing in for
  * whatever real, approved privacy-notice text/version the product/legal side
  * would actually supply — not invented legal content, just a value to make the
- * confirmed `policyVersion` field wire up for this prototype. */
+ * confirmed `policyVersion` field wire up. */
 const CURRENT_POLICY_VERSION = '1.0-placeholder';
 
 /** Copy quotes SKILL.md §14's own confirmed description of what each tier
@@ -51,6 +52,10 @@ export function ConsentTierRow({
   const copy = TIER_COPY[tier];
   const [confirming, setConfirming] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  // Decision 9 — BASELINE withdrawal needs a fresh step-up proof before the
+  // mutation fires; CAMERA goes straight from the warning+confirm panel to
+  // withdraw.mutate(), same as before this change.
+  const [steppingUp, setSteppingUp] = useState(false);
 
   // Same "derive from the mutation's own result, don't wait on a round-tripped
   // prop" discipline as WaiverRow's `effectiveSignature` (found on that slice's
@@ -90,12 +95,14 @@ export function ConsentTierRow({
   function openConfirm() {
     if (!granted || withdraw.isPending) return;
     setAcknowledged(false);
+    setSteppingUp(false);
     setConfirming(true);
   }
 
   function cancelConfirm() {
     setConfirming(false);
     setAcknowledged(false);
+    setSteppingUp(false);
   }
 
   function confirmWithdraw() {
@@ -104,10 +111,26 @@ export function ConsentTierRow({
     // discipline elsewhere in this file.
     if (!granted || withdraw.isPending) return;
     if (tier === 'BASELINE' && !acknowledged) return;
+    // Decision 9 — BASELINE doesn't withdraw yet here; it moves to the
+    // step-up prompt below, which fires the actual mutation once verified.
+    // CAMERA withdraws immediately, as before.
+    if (tier === 'BASELINE') {
+      setSteppingUp(true);
+      return;
+    }
     setConfirming(false);
     setAcknowledged(false);
     grant.reset();
-    withdraw.mutate(granted.id);
+    withdraw.mutate({ consentRecordId: granted.id });
+  }
+
+  function handleStepUpVerified(stepUpToken: string) {
+    if (!granted) return;
+    setConfirming(false);
+    setAcknowledged(false);
+    setSteppingUp(false);
+    grant.reset();
+    withdraw.mutate({ consentRecordId: granted.id, stepUpToken });
   }
 
   return (
@@ -144,20 +167,24 @@ export function ConsentTierRow({
               <Text style={{ fontSize: 13, flex: 1 }}>I understand this deactivates the account</Text>
             </Pressable>
           ) : null}
-          <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <Button title="Cancel" variant="secondary" onPress={cancelConfirm} />
+          {steppingUp ? (
+            <StepUpPrompt onVerified={handleStepUpVerified} onCancel={cancelConfirm} />
+          ) : (
+            <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Button title="Cancel" variant="secondary" onPress={cancelConfirm} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Confirm withdraw"
+                  variant="destructive"
+                  onPress={confirmWithdraw}
+                  loading={withdraw.isPending}
+                  disabled={tier === 'BASELINE' && !acknowledged}
+                />
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Button
-                title="Confirm withdraw"
-                variant="destructive"
-                onPress={confirmWithdraw}
-                loading={withdraw.isPending}
-                disabled={tier === 'BASELINE' && !acknowledged}
-              />
-            </View>
-          </View>
+          )}
         </View>
       ) : granted ? (
         <>
