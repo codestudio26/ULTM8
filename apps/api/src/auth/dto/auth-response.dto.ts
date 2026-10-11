@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Response-shape DTOs — added in Phase 3 so packages/api-client's generated client is
@@ -20,11 +20,25 @@ export class AuthMessageResponseDto {
  * Shared by login() and refresh() — both mint the identical pair (a fresh
  * 15-minute accessToken plus a fresh, rotated refreshToken), so one response
  * shape covers both rather than two near-duplicate DTOs.
+ *
+ * Decision 1/230 — login() returns a DIFFERENT shape (mustChangePasscode +
+ * passcodeChangeToken, no accessToken/refreshToken at all) when the target
+ * User's mustChangePasscode flag is set. Modeled here as one DTO with every
+ * field optional rather than a oneOf/union schema — same "flag if the field
+ * lists... drift from AuthService's actual return shapes" tolerance this
+ * file's own header comment already accepts for response DTOs; a frontend
+ * caller distinguishes the two shapes by checking which fields are present.
  */
 export class LoginResponseDto {
-  @ApiProperty()
-  accessToken!: string;
+  @ApiPropertyOptional()
+  accessToken?: string;
 
-  @ApiProperty()
-  refreshToken!: string;
+  @ApiPropertyOptional()
+  refreshToken?: string;
+
+  @ApiPropertyOptional({ description: 'True when a forced passcode change is required before normal tokens are issued.' })
+  mustChangePasscode?: true;
+
+  @ApiPropertyOptional({ description: 'Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else.' })
+  passcodeChangeToken?: string;
 }

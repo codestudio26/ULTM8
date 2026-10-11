@@ -11,6 +11,7 @@ import { LoginDto } from './dto/login.dto';
 import { RequestPasscodeResetDto } from './dto/request-passcode-reset.dto';
 import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.dto';
 import { StepUpVerifyDto } from './dto/step-up-verify.dto';
 import { AuthMessageResponseDto, LoginResponseDto } from './dto/auth-response.dto';
 import { StepUpResponseDto } from './dto/step-up-response.dto';
@@ -40,6 +41,13 @@ const PHONE_AUTH_THROTTLE = {
 // (EMAIL_AUTH_THROTTLE above); keyed by the caller's already-authenticated
 // `sub`, not email/phone, since this route sits behind JwtAuthGuard.
 const STEP_UP_VERIFY_THROTTLE = {
+  identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker },
+};
+// Decision 1/230 — same reasoning as STEP_UP_VERIFY_THROTTLE above: this also
+// sits behind JwtAuthGuard, so it's keyed by the caller's own `sub`, not a
+// request-body field (bodyIdentityTracker('phone') would just fall back to
+// IP here — this body has no phone field at all).
+const PASSCODE_CHANGE_THROTTLE = {
   identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker },
 };
 
@@ -122,5 +130,17 @@ export class AuthController {
   @Post('step-up/verify')
   verifyStepUp(@CurrentUser() user: JwtPayload, @Body() dto: StepUpVerifyDto) {
     return this.stepUpService.verify(user.sub, dto);
+  }
+
+  // Decision 1/230 — the one route a passcodeChangePurpose token (minted by
+  // login() when mustChangePasscode is set) may call — see
+  // JwtStrategy.validate()'s PASSCODE_CHANGE_ALLOWED_PATH.
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiCreatedResponse({ type: LoginResponseDto })
+  @Throttle(PASSCODE_CHANGE_THROTTLE)
+  @Post('passcode-change/first-login')
+  changePasscodeFirstLogin(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasscodeFirstLoginDto) {
+    return this.authService.changePasscodeFirstLogin(user.sub, dto);
   }
 }

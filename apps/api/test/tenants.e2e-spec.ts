@@ -50,7 +50,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   let branchB: { id: string };
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
-  let verifiedInvitee: { id: string; email: string; phone: string };
+  let verifiedInvitee: { id: string; email: string; phone: string | null };
   let tokenOwnerA: string;
   let tokenOwnerB: string;
 

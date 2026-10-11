@@ -13,7 +13,7 @@ import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url.dto';
-import { R2ClientService } from './r2-client.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 
 /**
  * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read of
@@ -276,11 +276,23 @@ export class WaiversService {
 
   /** See sign()'s own header comment. Age-of-majority (18) computed from
    * User.dateOfBirth — a plain calendar-based calculation, not a rolling
-   * 365.25-day approximation, so a Student who turns 18 today already passes. */
+   * 365.25-day approximation, so a Student who turns 18 today already passes.
+   *
+   * `dateOfBirth` is nullable on `User` since Decision 1/230 (Instructor "Add
+   * Manually" defers it to self-service profile completion) — but every real
+   * Student-enrollment path still sets it at creation (register(),
+   * GuardiansService.createMinor(), SchoolsService.join()), so a null value
+   * here means this caller was never actually enrolled as a Student with a
+   * known age; treated the same as under-18, not silently allowed. */
   private async assertSelfAttestedAdult(callerId: string): Promise<void> {
     const student = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
     );
+    if (!student.dateOfBirth) {
+      throw new ForbiddenException(
+        'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
+      );
+    }
     const today = new Date();
     let age = today.getUTCFullYear() - student.dateOfBirth.getUTCFullYear();
     const hasHadBirthdayThisYear =

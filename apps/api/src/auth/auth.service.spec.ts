@@ -71,13 +71,13 @@ describe('AuthService', () => {
   describe('login', () => {
     it('rejects when locked out — after paying the DB lookup, but before recordFailure', async () => {
       loginAttempts.isLocked.mockReturnValue(true);
-      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: 'x', phoneVerifiedAt: new Date() });
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: 'x', phoneVerifiedAt: new Date(), phone: '+15551234567', mustChangePasscode: false });
       await expect(service.login({ email: 'a@example.test', passcode: '123456' })).rejects.toThrow(ForbiddenException);
       // The DB lookup now runs before the lock check (timing-gap fix) — confirm it
       // actually happened, not skipped.
       expect(prismaAuth.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'a@example.test' },
-        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true },
+        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true },
       });
       // The lock check must still reject before ever reaching the compare-and-record
       // step — recordFailure() must not fire for an already-locked account, same as
@@ -95,21 +95,49 @@ describe('AuthService', () => {
 
     it('rejects a wrong passcode and records the failure', async () => {
       const hash = await bcrypt.hash('123456', 4);
-      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: new Date() });
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: new Date(), phone: '+15551234567', mustChangePasscode: false });
       await expect(service.login({ email: 'a@example.test', passcode: '000000' })).rejects.toThrow(UnauthorizedException);
       expect(loginAttempts.recordFailure).toHaveBeenCalledWith('a@example.test');
     });
 
     it('blocks login until the phone is verified', async () => {
       const hash = await bcrypt.hash('123456', 4);
-      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: null });
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: null, phone: '+15551234567', mustChangePasscode: false });
       await expect(service.login({ email: 'a@example.test', passcode: '123456' })).rejects.toThrow(ForbiddenException);
+    });
+
+    // Decision 1/230 — a User created via Instructor "Add Manually" has no
+    // phone at all; the verification gate must not apply to them.
+    it('does NOT require phone verification when the User has no phone at all', async () => {
+      const hash = await bcrypt.hash('123456', 4);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: null, phone: null, mustChangePasscode: false });
+      const result = await service.login({ email: 'a@example.test', passcode: '123456' });
+      if (!('accessToken' in result)) throw new Error('expected real tokens, got a must-change-passcode response');
+      expect(result.accessToken).toBe('signed.jwt.token');
+    });
+
+    // Decision 1/230 — a server-generated temp passcode short-circuits to a
+    // narrow passcode-change token instead of an ordinary session.
+    it('returns mustChangePasscode + a passcodeChangeToken instead of ordinary tokens when mustChangePasscode is set', async () => {
+      const hash = await bcrypt.hash('123456', 4);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: null, phone: null, mustChangePasscode: true });
+      const result = await service.login({ email: 'a@example.test', passcode: '123456' });
+      if (!('mustChangePasscode' in result)) throw new Error('expected a must-change-passcode response');
+      expect(result.mustChangePasscode).toBe(true);
+      expect(result.passcodeChangeToken).toBe('signed.jwt.token');
+      expect(jwt.sign).toHaveBeenCalledWith(
+        expect.objectContaining({ sub: 'u1', email: 'a@example.test', grants: [], passcodeChangePurpose: true }),
+        { expiresIn: '10m' },
+      );
+      // Not an ordinary session — no refresh token minted for this short-circuit.
+      expect(prismaAuth.refreshToken.create).not.toHaveBeenCalled();
     });
 
     it('returns a signed access token built from active RoleGrants on success', async () => {
       const hash = await bcrypt.hash('123456', 4);
-      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: new Date() });
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: new Date(), phone: '+15551234567', mustChangePasscode: false });
       const result = await service.login({ email: 'a@example.test', passcode: '123456' });
+      if (!('accessToken' in result)) throw new Error('expected real tokens, got a must-change-passcode response');
       expect(result.accessToken).toBe('signed.jwt.token');
       expect(typeof result.refreshToken).toBe('string');
       expect(result.refreshToken.length).toBeGreaterThan(0);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
@@ -8,12 +8,14 @@ import { nullsToUndefined } from '../lib/nullableFields';
 import { Avatar } from '../lib/Avatar';
 import {
   useCreateInstructor,
+  useCreateInstructorManually,
   useEligibleInstructorUsers,
   useInstructors,
   useUpdateInstructor,
   type InstructorResponse,
 } from './instructorQueries';
 import { InstructorFormModal } from './InstructorFormModal';
+import { AddInstructorManuallyModal } from './AddInstructorManuallyModal';
 import { InstructorBeltsSection } from './InstructorBeltsSection';
 
 /** Up to 3 specialization badges, then a "+N" overflow badge — keeps a long
@@ -40,8 +42,14 @@ export function InstructorsPage() {
   const { data: disciplineData } = useDisciplines(schoolId);
   const { data: eligibleUsersData } = useEligibleInstructorUsers(schoolId);
   const createInstructor = useCreateInstructor(schoolId ?? '');
+  const createInstructorManually = useCreateInstructorManually(schoolId ?? '');
   const [creating, setCreating] = useState(false);
+  const [addingManually, setAddingManually] = useState(false);
   const [editing, setEditing] = useState<InstructorResponse | null>(null);
+  // Decision 1/230/237 — emailSent is non-blocking: the Instructor record
+  // was created either way, same "save the write, warn about the side
+  // effect" treatment CoachInvitesSection already gives this exact flag.
+  const [addManuallyNotice, setAddManuallyNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
@@ -53,10 +61,19 @@ export function InstructorsPage() {
 
   return (
     <>
+      {addManuallyNotice?.kind === 'ok' ? <SuccessBanner message={addManuallyNotice.text} /> : null}
+      {addManuallyNotice?.kind === 'warn' ? <ErrorBanner message={addManuallyNotice.text} /> : null}
       <PageHeader
         title="Instructors"
         subtitle="Instructor profiles at your School. The User must already hold an Instructor role — invite them on the Staff page first."
-        actions={<Button onClick={() => setCreating(true)}>Add instructor</Button>}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setAddingManually(true)}>
+              Add manually
+            </Button>
+            <Button onClick={() => setCreating(true)}>Add instructor</Button>
+          </>
+        }
       />
       <Card>
         {instructors.length === 0 ? (
@@ -131,6 +148,23 @@ export function InstructorsPage() {
 
       {editing ? (
         <EditInstructorModal schoolId={schoolId} branches={branches} disciplines={disciplines} instructor={editing} onClose={() => setEditing(null)} />
+      ) : null}
+
+      {addingManually ? (
+        <AddInstructorManuallyModal
+          branches={branches}
+          submitting={createInstructorManually.isPending}
+          onSubmit={async (values) => {
+            const created = await createInstructorManually.mutateAsync(values);
+            setAddManuallyNotice(
+              created.emailSent
+                ? { kind: 'ok', text: `${created.firstName} ${created.surname} was added — a temporary passcode was emailed to ${created.email}.` }
+                : { kind: 'warn', text: `${created.firstName} ${created.surname} was added, but the email couldn't be sent. They'll need the temporary passcode another way.` },
+            );
+            setAddingManually(false);
+          }}
+          onClose={() => setAddingManually(false)}
+        />
       ) : null}
     </>
   );

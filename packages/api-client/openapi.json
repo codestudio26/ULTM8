@@ -285,6 +285,42 @@
         ]
       }
     },
+    "/v1/auth/passcode-change/first-login": {
+      "post": {
+        "operationId": "AuthController_changePasscodeFirstLogin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasscodeFirstLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools": {
       "post": {
         "operationId": "SchoolsController_create",
@@ -3625,6 +3661,123 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/instructors/add-manually": {
+      "post": {
+        "operationId": "InstructorsController_createManually",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInstructorManuallyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateInstructorManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/me/profile": {
+      "patch": {
+        "operationId": "InstructorsController_completeMyProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteInstructorProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/me/certification-upload-url": {
+      "post": {
+        "operationId": "InstructorsController_requestCertificationUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestCertificationUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificationUploadUrlResponseDto"
                 }
               }
             }
@@ -8205,12 +8358,16 @@
           },
           "refreshToken": {
             "type": "string"
+          },
+          "mustChangePasscode": {
+            "type": "boolean",
+            "description": "True when a forced passcode change is required before normal tokens are issued."
+          },
+          "passcodeChangeToken": {
+            "type": "string",
+            "description": "Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else."
           }
-        },
-        "required": [
-          "accessToken",
-          "refreshToken"
-        ]
+        }
       },
       "RefreshTokenDto": {
         "type": "object",
@@ -8283,6 +8440,18 @@
         "required": [
           "stepUpToken",
           "expiresAt"
+        ]
+      },
+      "ChangePasscodeFirstLoginDto": {
+        "type": "object",
+        "properties": {
+          "newPasscode": {
+            "type": "string",
+            "description": "Exactly 6 digits"
+          }
+        },
+        "required": [
+          "newPasscode"
         ]
       },
       "CreateSchoolDto": {
@@ -11218,6 +11387,25 @@
             "type": "string",
             "nullable": true
           },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "certificationKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "certificationConsentedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set once this Instructor has consented to holding a certification record."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -11235,6 +11423,7 @@
           "schoolId",
           "specializations",
           "specializationStyleIds",
+          "activities",
           "createdAt",
           "updatedAt"
         ]
@@ -11335,6 +11524,191 @@
             "nullable": true
           }
         }
+      },
+      "CreateInstructorManuallyDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when the School has branches (Decision 169) — same rule RoleGrantsService.create() already applies for an INSTRUCTOR grant."
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "email"
+        ]
+      },
+      "CreateInstructorManuallyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "REVOKED"
+            ]
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "specializations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "specializationStyleIds": {
+            "description": "The School's styles this instructor specialises in (Decision 152).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "yearsOfExperience": {
+            "type": "number",
+            "nullable": true
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "certificationKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "certificationConsentedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set once this Instructor has consented to holding a certification record."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "emailSent": {
+            "type": "boolean",
+            "description": "False if the temp-passcode email could not be sent — the Instructor profile was still created."
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "status",
+          "schoolId",
+          "specializations",
+          "specializationStyleIds",
+          "activities",
+          "createdAt",
+          "updatedAt",
+          "emailSent"
+        ]
+      },
+      "CompleteInstructorProfileDto": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "certificationKey": {
+            "type": "string",
+            "description": "The key returned by POST /instructors/me/certification-upload-url, after uploading to it."
+          },
+          "certificationConsent": {
+            "type": "boolean",
+            "description": "Set true to record consent to holding a certification record. Can only move from unset to set — not a way to withdraw it."
+          }
+        }
+      },
+      "RequestCertificationUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/png",
+              "image/jpeg"
+            ]
+          }
+        },
+        "required": [
+          "contentType"
+        ]
+      },
+      "CertificationUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned PUT URL, valid for 5 minutes — upload the certification file directly here, with the exact Content-Type this endpoint was called with."
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "Pass this back as certificationKey when calling PATCH /instructors/me/profile."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "objectKey"
+        ]
       },
       "UserResponseDto": {
         "type": "object",

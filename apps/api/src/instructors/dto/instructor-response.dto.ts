@@ -57,6 +57,25 @@ export class InstructorResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   bio!: string | null;
 
+  /** Decision 1/217 — distinct from User.address, same "deliberately separate"
+   * treatment as `phone` above. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  address!: string | null;
+
+  /** Decision 1/217 — deliberately distinct from `specializations` above (that
+   * one is School-style-scoped); this is the Instructor's own free-text
+   * activities list. */
+  @ApiProperty({ type: [String] })
+  activities!: string[];
+
+  /** Decision 1/217/218 — R2 object key, never a direct URL (presigned-only
+   * access, same convention as WaiverSignature.signatureImageKey). */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  certificationKey!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Set once this Instructor has consented to holding a certification record.' })
+  certificationConsentedAt!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

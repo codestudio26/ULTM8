@@ -4,7 +4,7 @@ import { QueueModule } from '../jobs/queue.module';
 import { GuardiansModule } from '../guardians/guardians.module';
 import { WaiversController } from './waivers.controller';
 import { WaiversService } from './waivers.service';
-import { R2ClientService } from './r2-client.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 
 /**
  * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read. Phase

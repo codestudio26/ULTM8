@@ -266,17 +266,37 @@ enum TransactionStatus {
 /// Owner/Manager, Branch Staff, Instructor, Franchise Owner, Guardian). Role/scope is
 /// NEVER a column here — RoleGrant is the sole source of truth (domain-rules §3).
 model User {
-  id    String @id @default(uuid())
-  email String @unique
-  phone String @unique // E.164, validated at the DTO layer
+  id    String  @id @default(uuid())
+  email String  @unique
+  /// E.164, validated at the DTO layer. Nullable since Decision 1/230 (Instructor
+  /// "Add Manually"): that path creates a real User immediately from just
+  /// name+email, with phone deferred to self-service profile completion —
+  /// Postgres allows multiple NULLs under a unique index, so this stays unique
+  /// for every row that does have one. Login's own phone-verification gate
+  /// (AuthService.login()) is skipped entirely while this is null — there is
+  /// nothing to verify yet, not a bypassed check.
+  phone String? @unique
 
   firstName String
   surname   String
   username  String? @unique // mobile-only per confirmed field list; nullable elsewhere
 
   /// bcrypt hash of the 6-digit passcode — the account's sole login credential
-  /// (Decision 72). Never store the raw passcode.
+  /// (Decision 72). Never store the raw passcode. A server-generated temp
+  /// passcode (Decision 1/230) is hashed here exactly the same way as a
+  /// self-chosen one — see `mustChangePasscode` below for how that's forced to
+  /// be replaced.
   passcodeHash String
+
+  /// Decision 1/230 — set when a server-generated temp passcode was issued on
+  /// this User's behalf (Instructor "Add Manually") instead of the account
+  /// holder choosing their own, same as every other account. Checked by
+  /// AuthService.login(): while true, login short-circuits to a narrow,
+  /// passcode-change-only token instead of ordinary access/refresh tokens, and
+  /// cleared the moment AuthService.changePasscodeFirstLogin() succeeds. Never
+  /// set for any other path — this is specifically the "someone else set this
+  /// account's first passcode" marker, not a general force-reset mechanism.
+  mustChangePasscode Boolean @default(false)
 
   /// Set once Twilio Verify OTP confirms this phone (Spec §8.1's registerScreen ->
   /// verificationPin flow). NOT a confirmed schema field — a Developer-added column
@@ -297,7 +317,12 @@ model User {
   /// oversight.
   paymentRestrictedAt DateTime?
 
-  dateOfBirth     DateTime @db.Date // ISO 8601 date, no time component (confirmed)
+  /// ISO 8601 date, no time component (confirmed). Nullable since Decision
+  /// 1/230 — same deferred-to-self-service-completion reasoning as `phone`
+  /// above; `UsersService.updateMe()` already refuses to ever CLEAR a
+  /// once-set value (its own `dto.dateOfBirth === null` guard), so this only
+  /// ever moves from null to set, never back.
+  dateOfBirth     DateTime? @db.Date
   gender          String?
   nationality     String?
   language        String? // one of the 4 confirmed languages; stored as free text pending
@@ -1033,6 +1058,35 @@ model Instructor {
 
   yearsOfExperience Int?
   bio               String?
+
+  /// Decision 1/217 — distinct, free-text postal address for this Instructor
+  /// profile at this School, same "deliberately separate, not assumed
+  /// identical" treatment `phone` above already gets against User.phone;
+  /// User.address is a different, personal-account field.
+  address String?
+
+  /// Decision 1/217 — "a second Activities list," deliberately distinct from
+  /// `specializations` above: `specializations` is scoped to THIS School's own
+  /// style roster (Decision 152); this is the Instructor's own free-text
+  /// activities/disciplines list, same shape as School.activities/
+  /// Class.activities elsewhere in this schema, not reconciled against either.
+  activities String[] @default([])
+
+  /// Decision 1/217/218 — R2 object key for an uploaded certification file
+  /// (private bucket, presigned-URL-only access — same convention
+  /// WaiverSignature.signatureImageKey already established). Null until the
+  /// Instructor uploads one via their own self-service profile completion;
+  /// never set directly from a caller-supplied string, same
+  /// upload-then-confirm discipline R2ClientService.objectExists() already
+  /// enforces for waiver signatures.
+  certificationKey String?
+
+  /// Decision 1/217 — timestamp of the Instructor's own consent/terms
+  /// acknowledgement for holding a certification record, modeled as a single
+  /// boolean-shaped timestamp (set = consented), same shape
+  /// ConsentRecord.consentedAt uses. Revisit if more than one distinct consent
+  /// item is ever actually needed here.
+  certificationConsentedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

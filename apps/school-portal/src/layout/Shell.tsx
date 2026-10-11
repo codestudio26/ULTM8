@@ -15,6 +15,10 @@ const COACH_NAV = [
 const INVITE_NAV = { label: 'Invite coaches', to: '/coach-invites' };
 /** Instructors choose their own belt per style (Decision 188). */
 const MY_BELTS_NAV = { label: 'My belts', to: '/my-belts' };
+/** Decision 1/217/237 — self-service completion of the fields "Add
+ * Manually" leaves blank; not a blocking gate, so it's an ordinary nav item,
+ * not a forced redirect. */
+const COMPLETE_PROFILE_NAV = { label: 'Complete your profile', to: '/complete-instructor-profile' };
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { logout, claims } = useAuth();
@@ -26,7 +30,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <AppShell
       brand="ULTM8 School Portal"
       header={<TopBar />}
-      navItems={isCoachOnly ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]] : [
+      navItems={isCoachOnly ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]] : [
         { label: 'School', to: '/school' },
         { label: 'Branches', to: '/branches' },
         { label: 'Staff', to: '/staff' },

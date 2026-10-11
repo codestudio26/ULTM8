@@ -21,7 +21,11 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, passcode);
+      const result = await login(email, passcode);
+      if (result?.mustChangePasscode) {
+        navigate('/first-login-passcode-change', { state: { passcodeChangeToken: result.passcodeChangeToken } });
+        return;
+      }
       setLoggedIn(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');

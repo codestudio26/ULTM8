@@ -43,8 +43,8 @@ describeIfDb('UsersModule — GET/PATCH /users/me', () => {
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
 
-  let userA: { id: string; email: string; phone: string };
-  let userB: { id: string; email: string; phone: string };
+  let userA: { id: string; email: string; phone: string | null };
+  let userB: { id: string; email: string; phone: string | null };
   let tokenA: string;
   let tokenB: string;
 

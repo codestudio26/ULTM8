@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/passcode-change/first-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_changePasscodeFirstLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools": {
         parameters: {
             query?: never;
@@ -1250,6 +1266,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["InstructorsController_update"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/instructors/add-manually": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorsController_createManually"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/instructors/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["InstructorsController_completeMyProfile"];
+        trace?: never;
+    };
+    "/v1/instructors/me/certification-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorsController_requestCertificationUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/users/me": {
@@ -2653,8 +2717,12 @@ export interface components {
             passcode: string;
         };
         LoginResponseDto: {
-            accessToken: string;
-            refreshToken: string;
+            accessToken?: string;
+            refreshToken?: string;
+            /** @description True when a forced passcode change is required before normal tokens are issued. */
+            mustChangePasscode?: boolean;
+            /** @description Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else. */
+            passcodeChangeToken?: string;
         };
         RefreshTokenDto: {
             refreshToken: string;
@@ -2679,6 +2747,10 @@ export interface components {
             /** @description Short-lived proof — send as the X-Step-Up-Token header on the one request it gates */
             stepUpToken: string;
             expiresAt: string;
+        };
+        ChangePasscodeFirstLoginDto: {
+            /** @description Exactly 6 digits */
+            newPasscode: string;
         };
         CreateSchoolDto: {
             name: string;
@@ -3568,6 +3640,11 @@ export interface components {
             phone?: string | null;
             yearsOfExperience?: number | null;
             bio?: string | null;
+            address?: string | null;
+            activities: string[];
+            certificationKey?: string | null;
+            /** @description Set once this Instructor has consented to holding a certification record. */
+            certificationConsentedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3596,6 +3673,58 @@ export interface components {
             phone?: string | null;
             yearsOfExperience?: number | null;
             bio?: string | null;
+        };
+        CreateInstructorManuallyDto: {
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @description Required when the School has branches (Decision 169) — same rule RoleGrantsService.create() already applies for an INSTRUCTOR grant. */
+            branchId?: string;
+        };
+        CreateInstructorManuallyResponseDto: {
+            id: string;
+            userId: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "REVOKED";
+            schoolId: string;
+            branchId?: string | null;
+            photoUrl?: string | null;
+            specializations: string[];
+            /** @description The School's styles this instructor specialises in (Decision 152). */
+            specializationStyleIds: string[];
+            phone?: string | null;
+            yearsOfExperience?: number | null;
+            bio?: string | null;
+            address?: string | null;
+            activities: string[];
+            certificationKey?: string | null;
+            /** @description Set once this Instructor has consented to holding a certification record. */
+            certificationConsentedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            /** @description False if the temp-passcode email could not be sent — the Instructor profile was still created. */
+            emailSent: boolean;
+        };
+        CompleteInstructorProfileDto: {
+            address?: string;
+            activities?: string[];
+            /** @description The key returned by POST /instructors/me/certification-upload-url, after uploading to it. */
+            certificationKey?: string;
+            /** @description Set true to record consent to holding a certification record. Can only move from unset to set — not a way to withdraw it. */
+            certificationConsent?: boolean;
+        };
+        RequestCertificationUploadUrlDto: {
+            /** @enum {string} */
+            contentType: "application/pdf" | "image/png" | "image/jpeg";
+        };
+        CertificationUploadUrlResponseDto: {
+            /** @description Presigned PUT URL, valid for 5 minutes — upload the certification file directly here, with the exact Content-Type this endpoint was called with. */
+            uploadUrl: string;
+            /** @description Pass this back as certificationKey when calling PATCH /instructors/me/profile. */
+            objectKey: string;
         };
         UserResponseDto: {
             id: string;
@@ -5061,6 +5190,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StepUpResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_changePasscodeFirstLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasscodeFirstLoginDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
                 };
             };
         };
@@ -6999,6 +7151,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstructorResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_createManually: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInstructorManuallyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateInstructorManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_completeMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteInstructorProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorListResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_requestCertificationUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestCertificationUploadUrlDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificationUploadUrlResponseDto"];
                 };
             };
         };
