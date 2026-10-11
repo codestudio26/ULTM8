@@ -2664,7 +2664,7 @@ Investigated at the user's direct request ("not sure — need to see how Classes
 
 ## Decision 211 — Instructor "Add Manually" account-claim invitation (Decision 206) approved for build
 
-**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Promotes:** Decision 206 from proposed design to approved
+**Date:** 10 Oct 2026 · **Status:** ~~Approved by product owner~~ **Superseded by Decision 237** (11 Oct 2026) — a different, incompatible mechanism (system passcode + forced reset) was chosen instead when this exact question was re-asked the next day, without this entry having been surfaced at the time. Never built. · **Promotes:** Decision 206 from proposed design to approved
 
 Decision 206's account-claim invitation design (new `AccountInvitation` entity, two unauthenticated token-gated endpoints, claim-link email reusing `NotificationDeliveryService`, a "Complete Your Registration" screen) is approved for build as specified there. This is the blocking dependency for Instructor Add Manually to work end-to-end.
 
@@ -3022,4 +3022,24 @@ User, approving the Developer recommendation, 11 Oct 2026.
 ### Recorded by
 
 User, approving the Developer recommendation (screen + step-up, prioritized ahead of backlog), 11 Oct 2026; this log entry itself written up after the fact, 11 Oct 2026, on discovering PR #189 shipped citing a decision number that was never actually recorded here.
+
+---
+
+## Decision 237 — Instructor "Add Manually": real record created immediately, system passcode emailed, forced change on first login — supersedes Decision 206/211
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the v1.1/v1.2 open-decisions review's item 1 — how a manually-added Instructor gets a real login. **Supersedes Decision 206 (proposed design) and Decision 211 (10 Oct 2026, approved for build)**, which had independently settled on a different, incompatible mechanism — an account-claim email invitation, where no `User`/`RoleGrant`/`Instructor` row exists at all until the invited person clicks a link and completes full registration themselves. That design was approved one day before this review, in a separate session, without this exact question having been re-asked; the two could not both stand.
+
+1. **"Add Manually" creates a real Instructor record outright — no invite/acceptance step.** Only **Name and Email** are required at creation. `Address`, `Activities` (distinct from `specializations`), `Certification` upload, and consent checkboxes (Decision 217's same four fields) are all real schema columns, left blank at creation and filled in by the Instructor themselves after their first login, via `PATCH /instructors/me/profile`.
+2. **First-login credential goes by email** (already wired, no new cost) — a server-generated temp passcode, not an invite link. `User.phone`/`dateOfBirth` are made nullable to allow this (Decision 1/230's own schema migration); `User.mustChangePasscode` forces a passcode change before any ordinary session is issued (`POST /auth/passcode-change/first-login`), via a narrow, single-purpose token that can call no other endpoint.
+3. **Why this over Decision 211's design:** the product owner, asked directly in this session ("we don't need to have all the required [fields] to create an account, we can make them fill the information once they have logged to their accounts"), wanted the record to exist immediately — Decision 211's design doesn't do that; it defers the record's entire existence to a claim step. This session's choice was confirmed as the better fit for that explicit requirement, at the acknowledged cost of a deliberate, one-time departure from this codebase's usual "never transmit the raw passcode" discipline (mitigated by the forced change, not an additional expiry).
+4. **WhatsApp as a future notification channel** for the first-login credential was raised and deferred — a separate, later decision, not a blocker here.
+
+### What this does NOT resolve
+
+Whether `AccountInvitation` (Decision 206's entity, never built) should still exist for Staff's own identical from-zero-invite gap — out of scope here; this decision only resolves Instructor "Add Manually".
+
+### Recorded by
+
+User, choosing "System passcode + forced reset" over Decision 211's account-claim-invitation design when asked directly during Plan Mode, 11 Oct 2026.
 
