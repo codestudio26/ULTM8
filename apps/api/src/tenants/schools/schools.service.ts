@@ -6,6 +6,8 @@ import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
+import { UsersService } from '../../users/users.service';
+import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
@@ -18,6 +20,7 @@ export class SchoolsService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -439,5 +442,48 @@ export class SchoolsService {
         update: { branchId: dto.branchId, assignedById: callerId },
       });
     });
+  }
+
+  /**
+   * PATCH schools/:id/students/:studentId — Staff-on-behalf-of edit of a
+   * Student's own profile (the "Update Student" page's v1.2 backend backlog
+   * gap — "no backend capability exists today for a School Owner/Staff
+   * member to edit a Student's profile on the Student's behalf"; the only
+   * profile-edit endpoint anywhere was `PATCH /users/me`, explicitly
+   * self-service only).
+   *
+   * Same assertSchoolOwner gate setStudentHomeBranch above already uses for
+   * an administrative Student-at-School action — deliberately NOT the
+   * backlog note's own literal "assertStaffAtSchool-equivalent" suggestion.
+   * Editing a Student's profile is the same administrative-action category
+   * this session has consistently gated with assertSchoolOwner (join()'s
+   * Staff-on-behalf-of branch, setStudentHomeBranch, revokeEnrollment) —
+   * assertStaffAtSchool would wrongly admit Instructor (SKILL.md §3:
+   * Instructor's permissions stop at attendance scan/grading/booking
+   * override, never School settings or a Student's own profile).
+   *
+   * Reuses UpdateUserDto's field set rather than a new DTO, per the
+   * backlog's own explicit instruction — the actual field-mapping/validation
+   * is delegated entirely to UsersService.updateProfile(), identical rules
+   * to the self-service PATCH /users/me, just targeting studentId instead of
+   * the caller's own id (see that method's own header comment for why the
+   * write has to run under studentId's own tenant context, not the
+   * caller's).
+   */
+  async updateStudentProfile(callerId: string, schoolId: string, studentId: string, dto: UpdateUserDto) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const enrolled = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      }),
+    );
+    if (!enrolled) {
+      throw new NotFoundException('This person is not an active Student at this School.');
+    }
+
+    return this.usersService.updateProfile(studentId, dto);
   }
 }

@@ -496,6 +496,59 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/{studentId}": {
+      "patch": {
+        "operationId": "SchoolsController_updateStudentProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/join": {
       "post": {
         "operationId": "SchoolsController_join",
@@ -1949,6 +2002,66 @@
         },
         "tags": [
           "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me": {
+      "get": {
+        "operationId": "UsersController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
         ],
         "security": [
           {
@@ -3587,66 +3700,6 @@
         },
         "tags": [
           "instructors"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/users/me": {
-      "get": {
-        "operationId": "UsersController_getMe",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "users"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "patch": {
-        "operationId": "UsersController_updateMe",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "users"
         ],
         "security": [
           {
@@ -8585,6 +8638,117 @@
           "updatedAt"
         ]
       },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "description": "Mobile-only per confirmed field list"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "ISO 8601 date, no time component"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "nationality": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1)."
+          },
+          "currency": {
+            "type": "string",
+            "description": "One of the 6 confirmed currencies — same free-text caveat as language."
+          },
+          "address": {
+            "type": "string"
+          },
+          "profilePhotoUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "phoneVerifiedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set once Twilio Verify OTP confirms this phone; null if not yet verified."
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "phone",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "JoinSchoolDto": {
         "type": "object",
         "properties": {
@@ -11260,117 +11424,6 @@
           "bio": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "UserResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "phoneVerifiedAt": {
-            "type": "string",
-            "nullable": true,
-            "description": "Set once Twilio Verify OTP confirms this phone; null if not yet verified."
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "username": {
-            "type": "string",
-            "nullable": true
-          },
-          "dateOfBirth": {
-            "type": "string"
-          },
-          "gender": {
-            "type": "string",
-            "nullable": true
-          },
-          "nationality": {
-            "type": "string",
-            "nullable": true
-          },
-          "language": {
-            "type": "string",
-            "nullable": true
-          },
-          "currency": {
-            "type": "string",
-            "nullable": true
-          },
-          "address": {
-            "type": "string",
-            "nullable": true
-          },
-          "profilePhotoUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "phone",
-          "firstName",
-          "surname",
-          "dateOfBirth",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "UpdateUserDto": {
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string"
-          },
-          "surname": {
-            "type": "string"
-          },
-          "username": {
-            "type": "string",
-            "description": "Mobile-only per confirmed field list"
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "description": "ISO 8601 date, no time component"
-          },
-          "gender": {
-            "type": "string"
-          },
-          "nationality": {
-            "type": "string"
-          },
-          "language": {
-            "type": "string",
-            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1)."
-          },
-          "currency": {
-            "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as language."
-          },
-          "address": {
-            "type": "string"
-          },
-          "profilePhotoUrl": {
-            "type": "string"
           }
         }
       },

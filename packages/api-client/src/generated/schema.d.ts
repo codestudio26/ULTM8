@@ -196,6 +196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/students/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["SchoolsController_updateStudentProfile"];
+        trace?: never;
+    };
     "/v1/schools/{id}/join": {
         parameters: {
             query?: never;
@@ -690,6 +706,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["UsersController_getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["UsersController_updateMe"];
         trace?: never;
     };
     "/v1/schools/{schoolId}/classes": {
@@ -1234,22 +1266,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["InstructorsController_update"];
-        trace?: never;
-    };
-    "/v1/users/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["UsersController_getMe"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["UsersController_updateMe"];
         trace?: never;
     };
     "/v1/settings/languages": {
@@ -2768,6 +2784,41 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
+        UpdateUserDto: {
+            firstName?: string;
+            surname?: string;
+            /** @description Mobile-only per confirmed field list */
+            username?: string;
+            /** @description ISO 8601 date, no time component */
+            dateOfBirth?: string;
+            gender?: string;
+            nationality?: string;
+            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
+            language?: string;
+            /** @description One of the 6 confirmed currencies — same free-text caveat as language. */
+            currency?: string;
+            address?: string;
+            profilePhotoUrl?: string;
+        };
+        UserResponseDto: {
+            id: string;
+            email: string;
+            phone: string;
+            /** @description Set once Twilio Verify OTP confirms this phone; null if not yet verified. */
+            phoneVerifiedAt?: string | null;
+            firstName: string;
+            surname: string;
+            username?: string | null;
+            dateOfBirth: string;
+            gender?: string | null;
+            nationality?: string | null;
+            language?: string | null;
+            currency?: string | null;
+            address?: string | null;
+            profilePhotoUrl?: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
         JoinSchoolDto: {
             /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
             studentId?: string;
@@ -3571,41 +3622,6 @@ export interface components {
             phone?: string | null;
             yearsOfExperience?: number | null;
             bio?: string | null;
-        };
-        UserResponseDto: {
-            id: string;
-            email: string;
-            phone: string;
-            /** @description Set once Twilio Verify OTP confirms this phone; null if not yet verified. */
-            phoneVerifiedAt?: string | null;
-            firstName: string;
-            surname: string;
-            username?: string | null;
-            dateOfBirth: string;
-            gender?: string | null;
-            nationality?: string | null;
-            language?: string | null;
-            currency?: string | null;
-            address?: string | null;
-            profilePhotoUrl?: string | null;
-            createdAt: string;
-            updatedAt: string;
-        };
-        UpdateUserDto: {
-            firstName?: string;
-            surname?: string;
-            /** @description Mobile-only per confirmed field list */
-            username?: string;
-            /** @description ISO 8601 date, no time component */
-            dateOfBirth?: string;
-            gender?: string;
-            nationality?: string;
-            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
-            language?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as language. */
-            currency?: string;
-            address?: string;
-            profilePhotoUrl?: string;
         };
         CodeNameResponseDto: {
             code: string;
@@ -5156,6 +5172,32 @@ export interface operations {
             };
         };
     };
+    SchoolsController_updateStudentProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponseDto"];
+                };
+            };
+        };
+    };
     SchoolsController_join: {
         parameters: {
             query?: never;
@@ -6003,6 +6045,48 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    UsersController_getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponseDto"];
+                };
+            };
+        };
+    };
+    UsersController_updateMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponseDto"];
+                };
             };
         };
     };
@@ -6948,48 +7032,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstructorResponseDto"];
-                };
-            };
-        };
-    };
-    UsersController_getMe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
-                };
-            };
-        };
-    };
-    UsersController_updateMe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateUserDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
                 };
             };
         };

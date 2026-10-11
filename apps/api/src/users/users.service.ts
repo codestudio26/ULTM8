@@ -58,6 +58,31 @@ export class UsersService {
    * (`"id" = current_setting('app.current_user_id', true)`) is reached.
    */
   async updateMe(callerId: string, dto: UpdateUserDto) {
+    return this.updateProfile(callerId, dto);
+  }
+
+  /**
+   * Shared by updateMe() (self-service, `targetId` is always the caller's own id) and
+   * SchoolsService.updateStudentProfile() (Staff-on-behalf-of edit of a Student's
+   * profile — the "Update Student" page's v1.2 backend backlog gap). Identical field-
+   * mapping/validation rules regardless of who's calling; only `targetId` differs.
+   * Authorizing WHO may call this with a `targetId` other than their own is entirely
+   * the caller's own job (SchoolsService.updateStudentProfile's assertSchoolOwner +
+   * active-enrollment check) — this method trusts `targetId` has already been cleared
+   * by the time it's called, the same trust boundary GuardiansService/SchoolsService's
+   * own on-behalf-of writes already rely on their callers for.
+   *
+   * Runs the actual write under `targetId`'s own tenant context, not the caller's —
+   * required, not a style choice: User's RLS policy (`user_self_or_shared_school`,
+   * schema.prisma's own migration) has a single combined `USING`/`WITH CHECK` with no
+   * `FOR` clause, so it applies to UPDATE too; its `WITH CHECK` is `"id" =
+   * current_setting('app.current_user_id', true)` only — a Staff caller's own context
+   * would pass the shared-school `USING` visibility check but then fail `WITH CHECK`
+   * outright (the row's `id` is the Student's, not the caller's). Same reasoning
+   * `SchoolsService.join()`'s Guardian-on-behalf-of branch already established for
+   * writing a RoleGrant on someone else's behalf.
+   */
+  async updateProfile(targetId: string, dto: UpdateUserDto) {
     // firstName/surname/dateOfBirth are NOT NULL on User, but `@IsOptional()` on
     // UpdateUserDto only skips validation for `undefined`, not an explicit `null`
     // (class-validator's own IsOptional behavior) — so `{"firstName": null}` would
@@ -83,11 +108,13 @@ export class UsersService {
     // all use) so a duplicate PATCH gets a specific message instead of falling through
     // to HttpExceptionFilter's generic P2002 "A record with this value already
     // exists." Only checked when a real value is supplied — null/undefined never
-    // collide with anything.
+    // collide with anything. Scoped by `targetId`'s own RLS visibility, same as this
+    // check always was pre-existing behavior for the self-service path, not a new gap
+    // introduced for the on-behalf-of case.
     if (dto.username) {
-      const duplicate = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      const duplicate = await this.prismaApp.withTenantContext(targetId, (tx) =>
         tx.user.findFirst({
-          where: { username: dto.username, id: { not: callerId } },
+          where: { username: dto.username, id: { not: targetId } },
           select: { id: true },
         }),
       );
@@ -96,9 +123,9 @@ export class UsersService {
       }
     }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    return this.prismaApp.withTenantContext(targetId, (tx) =>
       tx.user.update({
-        where: { id: callerId },
+        where: { id: targetId },
         data: {
           firstName: dto.firstName,
           surname: dto.surname,
