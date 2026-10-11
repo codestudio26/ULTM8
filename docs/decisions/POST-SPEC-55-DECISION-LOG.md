@@ -2905,3 +2905,16 @@ Full stress test run locally (Postgres/Redis stood up in-sandbox, not part of th
 ### Recorded by
 
 Developer (this session), per the user's instruction to view the built pages, stress-test the flow, fix anything found, and merge once logic is verified.
+
+---
+
+## Decision 229 — A coach can have one pending invite per branch, not one in all
+
+**Date:** 11 Oct 2026 · **Status:** Product-owner decision (Gus) · **Clarifies:** Decision 183 item 2 ("the invite link: one per person"), which the code had always applied per branch. Found in the Phase 7 decision review.
+
+1. **One pending invite per School, branch and email.** A second invite to the same email for the same branch is refused until the first is accepted, cancelled or expires.
+2. **The same person can have a pending invite at each branch.** A coach can work at several branches (Decisions 168, 169), and each branch is its own invite, so inviting them to a second branch is allowed. In a School with no branches, this means one pending invite per person.
+3. Gus was asked whether to make it strictly one per person and said *"no"*, keeping it as built; the wording here replaces "one per person" in Decision 183.
+
+No code change; covered by `coach-invites.e2e-spec.ts`.
+

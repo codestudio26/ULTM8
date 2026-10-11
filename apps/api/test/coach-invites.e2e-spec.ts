@@ -155,7 +155,7 @@ describeIfDb('Coach invites (Decision 183)', () => {
     expect(row.tokenHash).not.toContain(link);
   });
 
-  it('a School with branches needs a branch of its own; one pending invite per person', async () => {
+  it('a School with branches needs a branch of its own; one pending invite per branch and email', async () => {
     expect((await invite('owner', { email: 'someone@example.test' })).status).toBe(400);
     const foreign = await superuser.branch.create({ data: { id: randomUUID(), schoolId: other.id, name: 'Elsewhere' } });
     expect((await invite('owner', { email: 'someone@example.test', branchId: foreign.id })).status).toBe(400);
@@ -300,6 +300,14 @@ describeIfDb('Coach invites (Decision 183)', () => {
     await sign('pupil');
     expect((await mine('pupil')).status).toBe(403);
     expect((await mine('otherOwner')).status).toBe(403);
+  });
+
+  it('the same person can have a pending invite at each branch, but only one per branch (Decision 229)', async () => {
+    const email = `two-branches-${randomUUID()}@example.test`;
+    expect((await invite('owner', { email, branchId: north.id })).status).toBe(201);
+    expect((await invite('owner', { email, branchId: south.id })).status).toBe(201);
+    expect((await invite('owner', { email, branchId: south.id })).status).toBe(409);
+    expect(await superuser.coachInvite.count({ where: { email, acceptedAt: null, cancelledAt: null } })).toBe(2);
   });
 
   it('without PORTAL_BASE_URL no invite is made', async () => {
