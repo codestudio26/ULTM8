@@ -2619,6 +2619,12 @@ enum CheckInMethod {
   SELF_SERVICE
   INSTRUCTOR_SCAN
   INSTRUCTOR_MANUAL
+  /// Decision 235 — the Student's own standing, camera-free fallback: typing
+  /// the 6-digit code the Class-QR display screen also shows as text,
+  /// instead of scanning. Distinct from INSTRUCTOR_MANUAL (that one is
+  /// Staff-initiated and occasional-use; this one is Student-initiated and
+  /// standing/self-service).
+  SELF_SERVICE_CODE
 }
 
 /// Booking.refundResolution / BookingAttendee.refundResolution — a Developer-level
