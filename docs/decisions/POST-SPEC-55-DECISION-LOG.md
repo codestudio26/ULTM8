@@ -2918,3 +2918,23 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 239 — Branch/Franchise list filter query params; Branch's "City filter" built as an address substring search, not a structured city field
+
+**Date:** 11 Oct 2026 · **Status:** Built and verified this session.
+
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "City filter — client-side only; no filter query param exists" (Branches page) and "Fee model / Activity filters — client-side only; no filter query param exists" (Franchises page).
+
+1. **`GET /franchises` gains `feeModel` and `activity` query params** — both map directly to real, structured `Franchise` columns (`feeModel` enum, `activities` array via Prisma's `has`). No interpretation needed.
+2. **`GET /schools/:id/branches` gains an `address` query param** (case-insensitive substring match), as the deliberate, flagged stand-in for the mockup's "City filter." Verified before building: `Branch` has no structured `city` column — `address` is its only real location field. Rather than inventing a new `city` field (its own schema decision, out of scope here) or silently guessing at a parsing scheme for an unstructured address string, this filters the one real field that exists, named honestly (`address`, not `city`) so nothing claims a capability the schema doesn't have. If a real, structured `city` field is ever decided, this param stays as a general address search and a `city` filter would be added alongside it, not replace it.
+
+**Numbering note:** PR #167 (still open) independently claims "Decision 229" for its own role-grant email-notification work — a real collision with this master commit's Decision 229 above, assigned independently on `master` first. PR #167 will need that renumbered when it next resolves its own merge conflict against `master`, same precedent as the earlier Decision 98/209/228 collisions. Not fixed here — out of scope for this branch.
+
+### Verified
+
+`npx tsc --noEmit` clean; `tenants.e2e-spec.ts` full file run (39/39, including the two new filter tests) green; full e2e suite regression-clean; `packages/api-client` regenerated; `turbo build` clean across Track A.
+
+### Recorded by
+
+Developer (this session), continuing the user's standing instruction to build the v1.2 backend backlog sequentially.

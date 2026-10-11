@@ -5,7 +5,7 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
-import { CreateFranchiseDto } from './dto/create-franchise.dto';
+import { CreateFranchiseDto, FeeModelDto } from './dto/create-franchise.dto';
 import { UpdateFranchiseDto } from './dto/update-franchise.dto';
 
 /**
@@ -135,9 +135,27 @@ export class FranchisesService {
    * caller holds an active FRANCHISE_OWNER grant (franchise_tenant_isolation,
    * migration.sql) — FRANCHISE_OWNER is the only Role value ever scoped to
    * franchiseId, so this is equivalent to "Franchises the caller owns". */
-  async findAllForCaller(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+  async findAllForCaller(
+    callerId: string,
+    cursor?: string,
+    limit?: number,
+    feeModel?: FeeModelDto,
+    activity?: string,
+  ): Promise<CursorPage<{ id: string }>> {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.franchise.findMany({ ...args, select: FRANCHISE_PUBLIC_SELECT }), cursor, limit),
+      cursorPaginate(
+        (args) =>
+          tx.franchise.findMany({
+            ...args,
+            select: FRANCHISE_PUBLIC_SELECT,
+            where: {
+              ...(feeModel ? { feeModel } : {}),
+              ...(activity ? { activities: { has: activity } } : {}),
+            },
+          }),
+        cursor,
+        limit,
+      ),
     );
   }
 

@@ -5212,6 +5212,8 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Case-insensitive substring match against address (the only real location field Branch has — see this file's own header comment). */
+                address?: string;
             };
             header?: never;
             path: {
@@ -5405,6 +5407,9 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                feeModel?: "FLAT" | "PER_HEADCOUNT";
+                /** @description Only Franchises whose activities list includes this exact value. */
+                activity?: string;
             };
             header?: never;
             path?: never;

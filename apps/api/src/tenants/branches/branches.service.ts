@@ -48,10 +48,19 @@ export class BranchesService {
     schoolId: string,
     cursor?: string,
     limit?: number,
+    address?: string,
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.branch.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) =>
+          tx.branch.findMany({
+            ...args,
+            where: { schoolId, ...(address ? { address: { contains: address, mode: 'insensitive' } } : {}) },
+          }),
+        cursor,
+        limit,
+      ),
     );
   }
 
