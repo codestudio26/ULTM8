@@ -57,7 +57,7 @@ afterwards.
 | 148.2 — students with no home branch were mixed into the owner's columns | Built in #159: an owner-only **No branch** group above the columns, with **Assign** to give each a branch. |
 | 152.2 — rungs reordered with ↑/↓ buttons, not by drag | Built in #161: drag handles on belts and stripe lines; ↑/↓ kept for the keyboard. |
 | IMPLEMENTED-UNTESTED rows (16) | 15 now tested, no behaviour changed (see below); 164 superseded. |
-| One pending invite per School, branch and email, not per person | Unchanged; behaves as built. |
+| One pending invite per School, branch and email, not per person | Kept as built (Decision 210): one per branch, so a coach can be invited to a second branch; now tested. |
 
 ### The 16 rows that were built but untested
 
