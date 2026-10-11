@@ -123,6 +123,41 @@ export class WaiversService {
   // No delete method — same reasoning ClassesModule/School/Branch/MembershipPlan
   // already established (general tenant offboarding is [UNRESOLVED]).
 
+  /**
+   * GET /schools/{schoolId}/waivers/{id}/signatures (v1.2 backend backlog —
+   * the Waivers page's own "Signatures" panel) — School-Owner-gated, same
+   * gate as Waiver CRUD above. Deliberately builds ONLY what the backlog
+   * says this already supports (showing who HAS signed, with what status) —
+   * "who hasn't signed" needs a real Student roster to diff against, a
+   * separate, explicitly out-of-scope gap the backlog itself flags.
+   *
+   * Reuses toSignatureResponse() (the same serialization WaiversService.sign()/
+   * findMySignatures() already route every row through) rather than returning
+   * raw rows a second way — closes the same signatureImageKey-leak class of bug
+   * that helper's own header comment documents, for this new caller too.
+   * Queried under the CALLER's own tenant context: WaiverSignature's RLS is
+   * the narrow "School Owner/Manager, or the row's own Student" shape (see its
+   * own schema comment) — a School Owner's grant satisfies the "owner" branch
+   * directly, so there's no need for the target-tenant-context substitution
+   * MembershipsService.getMembershipStatus needs for Staff roles broader than
+   * Owner that Membership's own (same-shape) RLS doesn't recognize.
+   */
+  async findSignaturesForWaiver(callerId: string, schoolId: string, waiverId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const waiver = await this.findOneWaiver(callerId, waiverId); // 404s if not visible/doesn't exist
+    if (waiver.schoolId !== schoolId) {
+      throw new NotFoundException('Waiver not found');
+    }
+
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where: { waiverId, schoolId } }), cursor, limit),
+    );
+    const items = await Promise.all(page.items.map((item) => this.toSignatureResponse(item as WaiverSignature)));
+    return { ...page, items };
+  }
+
   // ---------------------------------------------------------------------------
   // Signing — Student self-signing, plus Guardian-on-behalf-of-a-linked-minor
   // signing as of Phase 37 (see sign()'s own header comment). Phase 34 added the

@@ -671,4 +671,35 @@ export class MembershipsService {
     const hasActive = memberships.some((m) => isMembershipLive(m, now));
     return hasActive ? 'ACTIVE' : 'EXPIRED';
   }
+
+  /**
+   * GET /membership-plans/{id}/active-count (v1.2 backend backlog —
+   * MembershipPlansPage's own "Active members" stat tile, shown today as a
+   * disabled "—" placeholder). School Owner/Manager only, same gate as
+   * findAllPlans/createPlan/updatePlan above — a per-plan membership count is
+   * revenue-adjacent aggregate data, the same management-surface sensitivity
+   * findAllPlans' own "FOUND ON REVIEW" comment already established, not the
+   * Discovery-facing read's visible-only shape.
+   *
+   * Reuses isMembershipLive() — the ONE established "Active" definition this
+   * file already exports and Decision 152 already reuses for the Grading
+   * Board's "currently attending" — rather than inventing a second one.
+   * Fetch-then-filter-in-JS, the same shape getMembershipStatus() above
+   * already uses for the identical "Active means live-computed, not a stored
+   * status flag alone" reasoning, just counted across every Membership
+   * against this Plan instead of one Student's own.
+   */
+  async getActiveMemberCount(callerId: string, planId: string): Promise<number> {
+    const plan = await this.findOnePlan(callerId, planId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, plan.schoolId);
+
+    const memberships = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membership.findMany({
+        where: { membershipPlanId: planId },
+        select: { status: true, expiryDate: true, classesRemaining: true },
+      }),
+    );
+    const now = new Date();
+    return memberships.filter((m) => isMembershipLive(m, now)).length;
+  }
 }

@@ -801,4 +801,91 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.body.items[0].activities).toEqual(['BJJ', 'Judo']);
     expect(typeof res.body.items[0].certificationConsentedAt).toBe('string');
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /instructors/:id/classes (v1.2 backend backlog) — the real replacement
+  // for the School Portal's client-side filter-the-School's-Classes workaround,
+  // with a server-computed enrolled count.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /instructors/:id/classes', () => {
+    it('returns only this Instructor\'s own Classes, each with a server-computed enrolledCount', async () => {
+      const coachUser = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `instructors-http-classes-coach-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'ClassesCoach',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('1990-01-01'),
+        },
+      });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: coachUser.id, schoolId: schoolA.id } });
+      const profile = await superuser.instructor.create({ data: { id: randomUUID(), schoolId: schoolA.id, userId: coachUser.id } });
+      instructorIds.push(profile.id);
+
+      const future = new Date(Date.now() + 24 * 3_600_000);
+      // instructorId on Class is a User.id FK, matching coachUser.id — not this
+      // profile's own `id` (see findClassesForInstructor's own header comment).
+      const ownClass = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: schoolA.id, instructorId: coachUser.id, title: 'Owned by coach', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      });
+      // A second Class taught by someone else at the same School — must not show up.
+      const otherClass = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: schoolA.id, title: 'Someone else\'s class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      });
+
+      // Fixture Bookings for the enrolled-count: two UPCOMING (should count), one
+      // CANCELLED (should not), on ownClass; one UPCOMING booking on otherClass
+      // (proves the count is per-Class, not School-wide).
+      const studentOne = await superuser.user.create({
+        data: { id: randomUUID(), email: `instructors-http-classes-s1-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'S1', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01') },
+      });
+      const studentTwo = await superuser.user.create({
+        data: { id: randomUUID(), email: `instructors-http-classes-s2-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'S2', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01') },
+      });
+      const studentThree = await superuser.user.create({
+        data: { id: randomUUID(), email: `instructors-http-classes-s3-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'S3', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01') },
+      });
+      const plan = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: schoolA.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 } });
+      const mkMembership = (studentId: string) =>
+        superuser.membership.create({ data: { id: randomUUID(), studentId, membershipPlanId: plan.id, schoolId: schoolA.id, status: 'ACTIVE', frequency: 'RECURRING' } });
+      const m1 = await mkMembership(studentOne.id);
+      const m2 = await mkMembership(studentTwo.id);
+      const m3 = await mkMembership(studentThree.id);
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentOne.id, classId: ownClass.id, schoolId: schoolA.id, sourceMembershipId: m1.id, status: 'UPCOMING' } });
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentTwo.id, classId: ownClass.id, schoolId: schoolA.id, sourceMembershipId: m2.id, status: 'UPCOMING' } });
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentThree.id, classId: ownClass.id, schoolId: schoolA.id, sourceMembershipId: m3.id, status: 'CANCELLED' } });
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentThree.id, classId: otherClass.id, schoolId: schoolA.id, sourceMembershipId: m3.id, status: 'UPCOMING' } });
+
+      try {
+        const res = await request(app.getHttpServer())
+          .get(`/v1/instructors/${profile.id}/classes`)
+          .set('Authorization', `Bearer ${tokenOwnerA}`);
+        expect(res.status).toBe(200);
+        const ids = res.body.items.map((c: { id: string }) => c.id);
+        expect(ids).toContain(ownClass.id);
+        expect(ids).not.toContain(otherClass.id);
+        const row = res.body.items.find((c: { id: string }) => c.id === ownClass.id);
+        expect(row.title).toBe('Owned by coach');
+        // 2 UPCOMING, the CANCELLED one excluded — same "Full" definition
+        // domain-rules §9 confirms.
+        expect(row.enrolledCount).toBe(2);
+      } finally {
+        await superuser.booking.deleteMany({ where: { schoolId: schoolA.id, classId: { in: [ownClass.id, otherClass.id] } } });
+        await superuser.membership.deleteMany({ where: { id: { in: [m1.id, m2.id, m3.id] } } });
+        await superuser.membershipPlan.delete({ where: { id: plan.id } });
+        await superuser.class.deleteMany({ where: { id: { in: [ownClass.id, otherClass.id] } } });
+        await superuser.user.deleteMany({ where: { id: { in: [studentOne.id, studentTwo.id, studentThree.id] } } });
+      }
+    });
+
+    it('cannot read another tenant\'s Instructor Classes', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/instructors/${randomUUID()}/classes`)
+        .set('Authorization', `Bearer ${tokenOwnerB}`);
+      expect(res.status).toBe(404);
+    });
+  });
 });

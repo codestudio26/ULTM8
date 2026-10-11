@@ -15,8 +15,28 @@ import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 
-/** The only two roles this endpoint is authorized to grant/revoke — see CreateRoleGrantDto. */
+/** The only two roles this endpoint is authorized to GRANT — see CreateRoleGrantDto. */
 const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF'] as const;
+
+/**
+ * The roles this endpoint is authorized to REVOKE (v1.2 backend backlog —
+ * Student Detail's/Instructor Detail's "Revoke Enrollment" action) — a
+ * strictly wider set than GRANTABLE_ROLES above, since revoking an existing
+ * grant is a different, narrower authorization question than creating one:
+ * STUDENT is deliberately excluded from GrantableRoleDto (see its own header
+ * comment — "granting... STUDENT... has no confirmed authorization rule"),
+ * but that's about who may self-service-enroll vs. be invited; it says
+ * nothing about whether a School Owner/Manager may end an EXISTING Student's
+ * enrollment, which has its own confirmed basis (the v1.2 backlog's own
+ * "Revoke Enrollment action... Proposed" entry for Student Detail,
+ * Instructor's own identical gap tracked right beside it). Revoking a
+ * STUDENT grant through revoke() below is purely additive: every existing
+ * INSTRUCTOR/BRANCH_STAFF caller is unaffected, and the method's own
+ * gradingPermission/staffPermission cleanup below is already keyed to those
+ * two roles specifically, so a STUDENT revoke simply finds nothing to clean
+ * up there (a pure Student never holds either).
+ */
+const REVOCABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'STUDENT'] as const;
 
 @Injectable()
 export class RoleGrantsService {
@@ -206,8 +226,8 @@ export class RoleGrantsService {
     if (!grant || grant.userId !== targetUserId) {
       throw new NotFoundException('RoleGrant not found');
     }
-    if (!GRANTABLE_ROLES.includes(grant.role as (typeof GRANTABLE_ROLES)[number])) {
-      throw new ForbiddenException('This endpoint may only revoke INSTRUCTOR or BRANCH_STAFF grants.');
+    if (!REVOCABLE_ROLES.includes(grant.role as (typeof REVOCABLE_ROLES)[number])) {
+      throw new ForbiddenException('This endpoint may only revoke INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.');
     }
     if (!grant.schoolId) {
       throw new ForbiddenException('This endpoint may only revoke School-scoped grants.');

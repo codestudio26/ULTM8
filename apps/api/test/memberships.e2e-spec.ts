@@ -831,4 +831,90 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     const asBranchStaff = await withUser(branchStaff.id, (tx) => tx.membership.findMany({ where: { schoolId: school.id } }));
     expect(asBranchStaff).toHaveLength(0);
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /membership-plans/:id/active-count (v1.2 backend backlog —
+  // MembershipPlansPage's own "Active members" stat tile). Reuses
+  // isMembershipLive() — the one established "Active" definition — not a
+  // second one.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /membership-plans/:id/active-count', () => {
+    it('counts only live-Active Memberships against this Plan — not Expired, not a used-up pack, not another Plan\'s', async () => {
+      const planRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'CLASS_PACK', title: 'Active-Count Pack', price: 1000, classesIncluded: 5 });
+      expect(planRes.status).toBe(201);
+      const planId = planRes.body.id as string;
+      membershipPlanIds.push(planId);
+
+      const otherPlanRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'CLASS_PACK', title: 'Other Plan', price: 1000, classesIncluded: 5 });
+      expect(otherPlanRes.status).toBe(201);
+      membershipPlanIds.push(otherPlanRes.body.id);
+
+      const mk = (studentId: string, data: Partial<{ status: string; expiryDate: Date | null; classesRemaining: number | null; membershipPlanId: string }> = {}) =>
+        superuser.membership.create({
+          data: {
+            id: randomUUID(),
+            studentId,
+            membershipPlanId: data.membershipPlanId ?? planId,
+            schoolId: school.id,
+            status: (data.status ?? 'ACTIVE') as 'ACTIVE' | 'EXPIRED',
+            frequency: 'ONE_TIME',
+            classesRemaining: data.classesRemaining ?? 3,
+            expiryDate: data.expiryDate,
+          },
+        });
+
+      const live1 = await mk(studentA.id);
+      const live2 = await mk(studentB.id);
+      // Expired status outright — not counted.
+      const expiredStatus = await mk(outsider.id, { status: 'EXPIRED' });
+      // Status ACTIVE but used up (0 classesRemaining) — not counted (Decision 26).
+      const usedUp = await mk(guardian.id, { classesRemaining: 0 });
+      // Status ACTIVE but past its own expiry date — not counted.
+      const pastExpiry = await mk(minor.id, { expiryDate: new Date(Date.now() - 24 * 3_600_000) });
+      // A live Membership, but against the OTHER Plan — must not inflate this Plan's count.
+      const otherPlanMembership = await mk(studentA.id, { membershipPlanId: otherPlanRes.body.id });
+      membershipIds.push(live1.id, live2.id, expiredStatus.id, usedUp.id, pastExpiry.id, otherPlanMembership.id);
+
+      const res = await request(app.getHttpServer())
+        .get(`/v1/membership-plans/${planId}/active-count`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.activeCount).toBe(2);
+    });
+
+    it('a Student (not School Owner/Manager) cannot read the active-count — 403', async () => {
+      const planRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'CLASS_PACK', title: 'Active-Count Gate Pack', price: 1000, classesIncluded: 5 });
+      expect(planRes.status).toBe(201);
+      membershipPlanIds.push(planRes.body.id);
+
+      const res = await request(app.getHttpServer())
+        .get(`/v1/membership-plans/${planRes.body.id}/active-count`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('Branch Staff (not Owner/Manager) cannot read the active-count either — narrower than the Staff-broad Booking/grading reads', async () => {
+      const planRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'CLASS_PACK', title: 'Active-Count Branch-Staff Pack', price: 1000, classesIncluded: 5 });
+      expect(planRes.status).toBe(201);
+      membershipPlanIds.push(planRes.body.id);
+
+      const res = await request(app.getHttpServer())
+        .get(`/v1/membership-plans/${planRes.body.id}/active-count`)
+        .set('Authorization', `Bearer ${tokenBranchStaff}`);
+      expect(res.status).toBe(403);
+    });
+  });
 });

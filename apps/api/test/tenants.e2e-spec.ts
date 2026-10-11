@@ -351,6 +351,84 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // v1.2 backend backlog — "Revoke Enrollment": revoke() now also accepts a
+  // STUDENT grant, not just INSTRUCTOR/BRANCH_STAFF. Purely additive — the
+  // INSTRUCTOR/BRANCH_STAFF cases above are unaffected.
+  // ---------------------------------------------------------------------------
+
+  it('School Owner CAN revoke a Student\'s own enrollment (STUDENT RoleGrant)', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-revoke-student-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: 'RevokeMe',
+        surname: 'Student',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    const grant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: studentUser.id, schoolId: schoolA.id, grantedById: studentUser.id },
+    });
+
+    const revokeRes = await request(app.getHttpServer())
+      .delete(`/v1/users/${studentUser.id}/role-grants/${grant.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(revokeRes.status).toBe(200);
+
+    const revoked = await superuser.roleGrant.findUniqueOrThrow({ where: { id: grant.id } });
+    expect(revoked.revokedAt).not.toBeNull();
+  });
+
+  it('cannot revoke a Student\'s enrollment at another tenant\'s School', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-revoke-student-other-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: 'OtherSchool',
+        surname: 'Student',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    const grant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: studentUser.id, schoolId: schoolB.id, grantedById: studentUser.id },
+    });
+
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/users/${studentUser.id}/role-grants/${grant.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(404);
+
+    const stillActive = await superuser.roleGrant.findUniqueOrThrow({ where: { id: grant.id } });
+    expect(stillActive.revokedAt).toBeNull();
+  });
+
+  it('cannot revoke a SCHOOL_OWNER_MANAGER grant through this endpoint — 403', async () => {
+    // A real, resolvable SCHOOL_OWNER_MANAGER grant — fresh fixture rather than
+    // beforeAll's own ownerA grant (whose id this suite never captured) — so this
+    // exercises the REVOCABLE_ROLES rejection itself, not just a 404 from a
+    // non-existent grant id.
+    const throwawaySchool = await superuser.school.create({ data: { id: randomUUID(), name: 'HTTP Non-Revocable-Role School' } });
+    const ownerGrant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: throwawaySchool.id },
+    });
+    try {
+      const res = await request(app.getHttpServer())
+        .delete(`/v1/users/${ownerA.id}/role-grants/${ownerGrant.id}`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(res.status).toBe(403);
+      const unchanged = await superuser.roleGrant.findUniqueOrThrow({ where: { id: ownerGrant.id } });
+      expect(unchanged.revokedAt).toBeNull();
+    } finally {
+      await superuser.roleGrant.delete({ where: { id: ownerGrant.id } });
+      await superuser.school.delete({ where: { id: throwawaySchool.id } });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // GET .../role-grants/invite-candidate (Decision 116) — exact email/phone match
   // only, ahead of the invite form actually firing create(). verifiedInvitee has no
   // RoleGrant at schoolA at this point in the suite (any it held were revoked above),
