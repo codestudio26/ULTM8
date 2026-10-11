@@ -2750,6 +2750,7 @@ export interface components {
             firstName: string;
             surname: string;
             email: string;
+            photoUrl: Record<string, never> | null;
             enrolledAt: string;
         };
         StudentListResponseDto: {

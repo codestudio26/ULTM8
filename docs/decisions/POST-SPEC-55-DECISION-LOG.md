@@ -2879,3 +2879,18 @@ Approved to scope the full redesign now, at the same Architect tier as Decisions
 ### Recorded by
 
 User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct 2026.
+
+---
+
+## Decision 232 — Resolve `User.profilePhotoUrl` onto the Student roster DTO
+
+**Date:** 11 Oct 2026 · **Status:** Built
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "Photo" gap on the Students list — `StudentSummaryResponseDto` had no `photoUrl` field even though `User.profilePhotoUrl` is a real, confirmed base-User field (ultm8-domain-rules §3) already resolved onto `UserResponseDto` for a caller's own profile.
+
+`GET /schools/:id/students` now resolves `photoUrl` from `User.profilePhotoUrl` on every roster row (null when unset, same nullability as `UserResponseDto`). No RLS or visibility concern here — `findAllStudentsForSchool`'s existing nested `user: { select }}` is already safe by construction (the `RoleGrant` row read as `role: 'STUDENT', revokedAt: null` is itself the exact witness `user_self_or_shared_school` needs), so this is purely an additional selected column, not a new resolution mechanism.
+
+**Numbered 232, not 228, to avoid a 5-way collision**: Decisions 228–231 were already claimed by four other branches built earlier in this same backlog sequence (PRs #165, #167, #169, #170), all still open against `master` at the time this branch was created. Whichever of these PRs merges last will need the usual renumbering reconciliation this project already has precedent for (Decisions 98, 209) — flagged in this PR's description.
+
+### Recorded by
+
+Developer, building from the backlog's own confirmed gap — no product-owner decision needed, this is a straightforward field resolution with an established precedent (Instructor's own `photoUrl`, and `resolveUserNames`'s RLS-bypass pattern used elsewhere), 11 Oct 2026.

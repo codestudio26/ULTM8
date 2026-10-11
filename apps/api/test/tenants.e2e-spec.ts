@@ -445,6 +445,15 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(row.surname).toBe('Tenant');
     expect(row.email).toBe(studentUser.email);
     expect(row.enrolledAt).toBeDefined();
+    expect(row.photoUrl).toBeNull();
+
+    await superuser.user.update({ where: { id: studentUser.id }, data: { profilePhotoUrl: 'https://example.test/roster-photo.jpg' } });
+    const rosterWithPhotoRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(rosterWithPhotoRes.status).toBe(200);
+    const rowWithPhoto = rosterWithPhotoRes.body.items.find((s: { id: string }) => s.id === studentUser.id);
+    expect(rowWithPhoto.photoUrl).toBe('https://example.test/roster-photo.jpg');
 
     // The Student themselves is not School Staff (Owner/Manager, Branch Staff,
     // or Instructor) — cannot read the roster.

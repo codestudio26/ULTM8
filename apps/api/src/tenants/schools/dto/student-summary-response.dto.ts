@@ -17,6 +17,12 @@ export class StudentSummaryResponseDto {
   @ApiProperty()
   email!: string;
 
+  /** User.profilePhotoUrl (ultm8-domain-rules §3's confirmed base User field) —
+   * null for a Student who hasn't set one, same nullability as UserResponseDto's
+   * own profilePhotoUrl. */
+  @ApiProperty({ nullable: true })
+  photoUrl!: string | null;
+
   /** When this Student's (currently active) enrollment at this School began —
    * RoleGrant.grantedAt, not User.createdAt (which is account creation, not
    * enrollment). */
