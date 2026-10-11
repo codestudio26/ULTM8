@@ -2882,6 +2882,24 @@ User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct
 
 ---
 
+## Decision 231 — Student roster Active/Inactive/All filtering, resolving its own RLS-visibility bug before shipping
+
+**Date:** 11 Oct 2026 · **Status:** Built · **Resolves:** the Students page gap `docs/v1.2-backend-backlog.md` flagged as "a bigger gap than a missing field."
+
+`GET /schools/:schoolId/students?status=` (ACTIVE default / INACTIVE / ALL) drops `findAllStudentsForSchool`'s hard-coded `revokedAt: null` filter for INACTIVE/ALL — a revoked enrollment was previously excluded from the result entirely, not merely unlabeled — and resolves a real `status` field per row.
+
+**Resolution, not raw "has a revoked row ever":** a Student revoked and later re-enrolled holds both a revoked row and a current active one; grouped by User, the active row always wins when one exists, and among revoked-only rows the most recently revoked one wins (so their display reflects their latest enrollment, not their first ever) — verified with a dedicated re-enrolled fixture in the e2e suite, not just asserted.
+
+**Found and fixed before this ever shipped, not after:** a first draft nested `user: { select: {...} } }` directly on the query (as the ACTIVE-only version already did) — and 500'd the instant a revoked row was included. Same root cause the existing "Decision 117 regression" test documents for `findAllForUser`: `user_self_or_shared_school`'s RLS requires an ACTIVE shared RoleGrant to see someone else's `User` row, so once a Student's only RoleGrant here is revoked, their own `User` row goes invisible under the caller's ordinary tenant context — Prisma's nested-relation fetch throws rather than returning null. Fixed with `resolveUserNames` (`PrismaAuthService`, RLS-immune), the same mechanism this codebase already uses everywhere else this exact gotcha applies.
+
+`apps/api/src/tenants/schools/schools.service.ts`, `schools.controller.ts`, new `dto/find-students-query.dto.ts`, `dto/student-summary-response.dto.ts` gains `status`. `tenants.e2e-spec.ts` adds a dedicated cluster: ACTIVE-default unchanged, INACTIVE-only, ALL with a revoked+re-enrolled fixture proving the resolution logic, and a 400 on an invalid status value. Full e2e suite green against real Postgres/Redis aside from the same pre-existing, unrelated `grading-ready-notification.e2e-spec.ts` failure already documented in Decision 229/PR #160; `packages/api-client` regenerated; `turbo build` clean.
+
+### Recorded by
+
+Continuing autonomously through the v1.2 backlog per the user's own instruction to work it "one after another... build, deep dive check... until confident," 11 Oct 2026 — the RLS bug was caught by that same "deep dive, verify, re-check" pass before this was ever pushed, not found later.
+
+---
+
 ## Decision 228 — Create/Update Membership Plan rebuilt as a full-page wizard; currency becomes a confirmed dropdown; two bugs fixed
 
 **Date:** 10 Oct 2026 · **Status:** Developer-level implementation of a direction the user picked after dedicated research (competitor review + a direct Spec 55 verification) and a follow-up re-answer (wizard over single scrollable view); flagged items below are for Architect confirmation, not decided here. Renumbered from this branch's original "Decision 209," which collided with Decision 209 above (assigned independently on `master` first).

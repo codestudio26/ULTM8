@@ -419,6 +419,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "ACTIVE",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "ALL"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8513,6 +8527,13 @@
           },
           "enrolledAt": {
             "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
           }
         },
         "required": [
@@ -8520,7 +8541,8 @@
           "firstName",
           "surname",
           "email",
-          "enrolledAt"
+          "enrolledAt",
+          "status"
         ]
       },
       "StudentListResponseDto": {

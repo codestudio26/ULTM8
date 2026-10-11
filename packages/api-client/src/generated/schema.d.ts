@@ -2751,6 +2751,8 @@ export interface components {
             surname: string;
             email: string;
             enrolledAt: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
         };
         StudentListResponseDto: {
             items: components["schemas"]["StudentSummaryResponseDto"][];
@@ -5111,7 +5113,9 @@ export interface operations {
     };
     SchoolsController_findStudents: {
         parameters: {
-            query?: never;
+            query?: {
+                status?: "ACTIVE" | "INACTIVE" | "ALL";
+            };
             header?: never;
             path: {
                 id: string;

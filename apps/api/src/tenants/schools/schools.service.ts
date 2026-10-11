@@ -2,19 +2,23 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
+import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
+import { StudentStatusFilterDto } from './dto/find-students-query.dto';
 
 @Injectable()
 export class SchoolsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
@@ -362,24 +366,74 @@ export class SchoolsService {
    * user_self_or_shared_school's visibility check needs, so the joined User row is
    * always visible — no separate PrismaAuthService lookup needed here.
    */
-  async findAllStudentsForSchool(callerId: string, schoolId: string) {
+  /**
+   * v1.2 backend backlog (Active/Inactive/All tabs) — `status` defaults to
+   * `ACTIVE`, matching this endpoint's behavior before the filter existed
+   * (every existing caller keeps seeing exactly what it saw before).
+   *
+   * For ACTIVE, the query itself still filters `revokedAt: null` — `distinct:
+   * ['userId']` picking the earliest such row is a no-op in practice, since
+   * `RoleGrant_one_active_student_per_school` guarantees at most one. For
+   * INACTIVE/ALL, the filter is dropped (a revoked enrollment was previously
+   * excluded from the result ENTIRELY, not merely unlabeled) and every row is
+   * fetched, then grouped by User in application code: a User who was
+   * revoked and later re-enrolled has BOTH a revoked row and a current active
+   * one, and their status must resolve from their CURRENT state, not "holds
+   * at least one revoked row ever" — the active row always wins when one
+   * exists; among revoked-only rows, the most recently revoked one wins
+   * (display-relevant: it's their most recent enrollment, not their first
+   * ever).
+   *
+   * FOUND ON REVIEW, before this ever shipped: a first draft nested `user:
+   * { select: {...} }` directly on this query, same as the ACTIVE-only
+   * version this replaced — which throws ("Field user is required... got
+   * null") the instant a revoked row is included. Same root cause the
+   * Decision 117 regression test two methods up already documents for
+   * `findAllForUser`: `user_self_or_shared_school`'s RLS requires an ACTIVE
+   * shared RoleGrant to see someone else's User row, so once a Student's
+   * only RoleGrant here is revoked, their own User row goes invisible under
+   * the caller's ordinary tenant context — the FK is real, RLS just hides
+   * the row. Fixed the same way: resolve names via `resolveUserNames`
+   * (PrismaAuthService, RLS-immune), not a nested relation.
+   */
+  async findAllStudentsForSchool(callerId: string, schoolId: string, status: StudentStatusFilterDto = StudentStatusFilterDto.ACTIVE) {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
 
+    const needsActiveOnly = status === StudentStatusFilterDto.ACTIVE;
     const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findMany({
-        where: { schoolId, role: 'STUDENT', revokedAt: null },
-        distinct: ['userId'],
+        where: { schoolId, role: 'STUDENT', ...(needsActiveOnly ? { revokedAt: null } : {}) },
         orderBy: { grantedAt: 'asc' },
-        select: {
-          grantedAt: true,
-          user: { select: { id: true, firstName: true, surname: true, email: true } },
-        },
+        select: { userId: true, grantedAt: true, revokedAt: true },
       }),
     );
-    return {
-      items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt })),
-    };
+
+    type Grant = (typeof grants)[number];
+    const byUser = new Map<string, Grant>();
+    for (const g of grants) {
+      const current = byUser.get(g.userId);
+      if (!current) {
+        byUser.set(g.userId, g);
+      } else if (g.revokedAt === null) {
+        byUser.set(g.userId, g); // the active row always wins
+      } else if (current.revokedAt !== null && g.revokedAt > current.revokedAt) {
+        byUser.set(g.userId, g); // both revoked — keep the most recently revoked
+      }
+    }
+
+    const resolved = [...byUser.values()];
+    const names = await resolveUserNames(this.prismaAuth, resolved.map((g) => g.userId));
+    const items = resolved
+      .map((g) => ({
+        ...(names.get(g.userId) ?? { firstName: '', surname: '', email: '' }),
+        id: g.userId,
+        enrolledAt: g.grantedAt,
+        status: g.revokedAt === null ? ('ACTIVE' as const) : ('INACTIVE' as const),
+      }))
+      .filter((item) => status === StudentStatusFilterDto.ALL || item.status === status);
+
+    return { items };
   }
 
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */
