@@ -162,7 +162,7 @@ function RefundModal({
   // "Remaining refundable" via formatMoney (major units, e.g. "50.00 USD")
   // directly above an input that submitted the SAME raw minor-unit number
   // with no conversion and no unit hint, unlike every other money-entry
-  // field in this codebase (e.g. MembershipPlanFormModal's own explicit
+  // field in this codebase (e.g. MembershipPlanFormPage's own explicit
   // "Minor currency unit (e.g. cents)" hints). That mismatch is a real
   // under-refund risk: an admin who reads "$50.00" and types "50" meaning
   // fifty dollars would silently refund 50 cents instead. Fixed by keeping

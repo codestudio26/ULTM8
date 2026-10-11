@@ -191,7 +191,11 @@ export class MembershipsService {
           classesIncluded: classesIncludedChanged ? nextClassesIncluded : undefined,
           scopedClassId: dto.scopedClassId,
           visible: dto.visible,
-          refundFeeDate: dto.refundFeeDate ? new Date(dto.refundFeeDate) : undefined,
+          // Decision 209: distinguishes omitted (undefined, leave unchanged) from
+          // an explicit null (clear) from a real date string — the old
+          // `dto.refundFeeDate ? new Date(...) : undefined` ternary treated
+          // explicit null the same as omitted, silently swallowing the clear.
+          refundFeeDate: dto.refundFeeDate === undefined ? undefined : dto.refundFeeDate === null ? null : new Date(dto.refundFeeDate),
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired,
           disciplineIds: dto.disciplineIds,
