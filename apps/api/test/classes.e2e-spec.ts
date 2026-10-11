@@ -212,6 +212,45 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
     expect(patchRes.body.description).toBe('Updated by owner A');
   });
 
+  it('GET /schools/:id/classes filters by activity and by a case-insensitive title search (Decision 241)', async () => {
+    const judo = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Filter Judo Fundamentals', activities: ['Judo'] }));
+    const karate = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Filter Karate Basics', activities: ['Karate'] }));
+    expect(judo.status).toBe(201);
+    expect(karate.status).toBe(201);
+    classIds.push(judo.body.id, karate.body.id);
+
+    const byActivity = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .query({ activity: 'Judo' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(byActivity.status).toBe(200);
+    const activityIds = byActivity.body.items.map((c: { id: string }) => c.id);
+    expect(activityIds).toContain(judo.body.id);
+    expect(activityIds).not.toContain(karate.body.id);
+
+    const bySearch = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .query({ search: 'karate' }) // lowercase — proves case-insensitivity
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(bySearch.status).toBe(200);
+    const searchIds = bySearch.body.items.map((c: { id: string }) => c.id);
+    expect(searchIds).toContain(karate.body.id);
+    expect(searchIds).not.toContain(judo.body.id);
+
+    const unfiltered = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    const unfilteredIds = unfiltered.body.items.map((c: { id: string }) => c.id);
+    expect(unfilteredIds).toContain(judo.body.id);
+    expect(unfilteredIds).toContain(karate.body.id);
+  });
+
   // ---------------------------------------------------------------------------
   // The novel piece: class_tenant_isolation's three-way branch OR.
   // ---------------------------------------------------------------------------

@@ -2918,3 +2918,22 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 241 — Classes list gains `activity` and `search` filter query params
+
+**Date:** 11 Oct 2026 · **Status:** Built and verified this session.
+
+**Resolves:** `docs/v1.2-backend-backlog.md`'s Classes page "Discipline filter" and "Search box" gaps — `GET /schools/:schoolId/classes` only ever took `cursor`/`limit`; both filters existed only as a client-side-of-the-fully-fetched-list workaround.
+
+1. **`activity`** — exact match against an entry in the real `Class.activities` array (same shape as Franchise's own `activity` filter, Decision 239).
+2. **`search`** — case-insensitive substring match against `Class.title`, the only real free-text field a "Search classes" box could plausibly search (confirmed against `schema.prisma` before building — no other candidate text field exists on `Class`).
+
+### Verified
+
+`npx tsc --noEmit` clean; `classes.e2e-spec.ts` full file run (14/14, including the two new filter assertions and a case-insensitivity check) green; full e2e suite regression-clean (660/660); `packages/api-client` regenerated; `turbo build` clean across Track A.
+
+### Recorded by
+
+Developer (this session), continuing the user's standing instruction to build the v1.2 backend backlog sequentially.
+

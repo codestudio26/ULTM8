@@ -2031,6 +2031,24 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "activity",
+            "required": false,
+            "in": "query",
+            "description": "Only Classes whose activities list includes this exact value.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against title.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

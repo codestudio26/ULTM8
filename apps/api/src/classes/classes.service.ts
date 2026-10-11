@@ -80,10 +80,24 @@ export class ClassesService {
     schoolId: string,
     cursor?: string,
     limit?: number,
+    activity?: string,
+    search?: string,
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.class.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) =>
+          tx.class.findMany({
+            ...args,
+            where: {
+              schoolId,
+              ...(activity ? { activities: { has: activity } } : {}),
+              ...(search ? { title: { contains: search, mode: 'insensitive' } } : {}),
+            },
+          }),
+        cursor,
+        limit,
+      ),
     );
   }
 
