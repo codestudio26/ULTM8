@@ -892,6 +892,22 @@ Lessons in the app wait for video hosting (Decision 155).
 ### Verified
 `tsc --noEmit`; jest `src/academies/joinSchool.test.tsx` (5); API e2e `join-declare.e2e-spec.ts` (6) and `academies.e2e-spec.ts` (branch names to a non-member, and the database refusing the discovery role a branch's address).
 
+## My Profile (`GET`/`PATCH /users/me`) — DONE
+
+No screen anywhere in this app had ever read this endpoint before, despite it being real and already shipped — login/registration only ever decode the JWT's own claims, never the richer profile row `/users/me` returns.
+
+### What was built
+- **My Profile** (`src/profile/ProfileScreen.tsx`), off Home. Shows email/phone read-only (with verified status) and edits everything `UpdateUserDto` allows: first name, surname, username, date of birth, gender, nationality, address, language, currency. Language/currency pick from the real confirmed lists (`GET /settings/languages`/`/settings/currencies`) via plain chip buttons rather than free text — no Picker dependency exists anywhere in this app, and these two fields don't justify adding one.
+- **API:** nothing new — `GET`/`PATCH /users/me` and `GET /settings/languages`/`/settings/currencies` all already existed.
+
+### Not yet
+- **Profile photo.** `UpdateUserDto.profilePhotoUrl` takes a plain URL string, not an upload flow — unlike Waiver signatures, nothing resolves "pick a photo" to a URL for this field. Needs either a dedicated presigned-upload endpoint (the same shape as Waivers') or a confirmed decision to reuse that one for profile photos too.
+- **Clearing an optional field back to empty.** `UpdateUserDto`'s optional fields are typed `string | undefined`, never `| null`, and `users.service.ts`'s `updateMe` relies on Prisma's "`undefined` = leave alone" semantics — there is no type-safe call this client can make to blank out a gender/nationality/address/username/language/currency once set. A real contract gap, not a client shortcut; see `profileQueries.ts`'s own comment.
+- **Email/phone changes.** Deliberately excluded by `UpdateUserDto` itself (both are login/OTP identifiers needing re-verification, not a bare profile edit) — not this screen's gap to close.
+
+### Verified
+`tsc --noEmit`.
+
 ## Explicitly blocked — do not scope a slice for these yet
 
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own
