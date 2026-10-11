@@ -2388,6 +2388,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/attendance/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttendanceController_enterCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/qr-token": {
         parameters: {
             query?: never;
@@ -4820,9 +4836,15 @@ export interface components {
             /** @description The rotating token from GET /classes/{id}/qr-token. */
             qrToken: string;
         };
+        EnterAttendanceCodeDto: {
+            classId: string;
+            /** @description The 6-digit fallback code shown on the Class-QR display screen. */
+            code: string;
+        };
         QrTokenResponseDto: {
             token: string;
             expiresAt: string;
+            code?: string;
         };
         InstructorScanDto: {
             studentId: string;
@@ -9232,6 +9254,29 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ScanAttendanceDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
+    AttendanceController_enterCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnterAttendanceCodeDto"];
             };
         };
         responses: {

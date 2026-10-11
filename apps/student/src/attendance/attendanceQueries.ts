@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap, type components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -28,5 +28,20 @@ export function useMyQrToken(enabled: boolean) {
     // one on remount instead of fetching fresh, same reasoning
     // useClassQrToken already established for the sibling endpoint.
     staleTime: 0,
+  });
+}
+
+/** Decision 235 — the camera-free fallback: types the 6-digit code the
+ * Class-QR display screen (apps/school-portal's ClassQrCodePage) also shows
+ * as text, instead of scanning. Invoked from MyBookingsScreen against a
+ * specific UPCOMING Booking's Class, same invalidation as useCancelBooking —
+ * a successful check-in flips that Booking's status to COMPLETED, which only
+ * a `my-bookings` refetch picks up. */
+export function useEnterCheckInCode() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, code }: { classId: string; code: string }) =>
+      unwrap(apiClient.POST('/v1/attendance/code', { body: { classId, code } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
   });
 }

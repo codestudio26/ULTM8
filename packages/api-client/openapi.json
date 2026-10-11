@@ -7273,6 +7273,42 @@
         ]
       }
     },
+    "/v1/attendance/code": {
+      "post": {
+        "operationId": "AttendanceController_enterCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterAttendanceCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/qr-token": {
       "get": {
         "operationId": "AttendanceController_issueClassQrToken",
@@ -15320,6 +15356,22 @@
           "qrToken"
         ]
       },
+      "EnterAttendanceCodeDto": {
+        "type": "object",
+        "properties": {
+          "classId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "The 6-digit fallback code shown on the Class-QR display screen."
+          }
+        },
+        "required": [
+          "classId",
+          "code"
+        ]
+      },
       "QrTokenResponseDto": {
         "type": "object",
         "properties": {
@@ -15327,6 +15379,9 @@
             "type": "string"
           },
           "expiresAt": {
+            "type": "string"
+          },
+          "code": {
             "type": "string"
           }
         },

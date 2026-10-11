@@ -56,6 +56,16 @@ export function ClassQrCodePage() {
           <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', maxWidth: 360 }}>
             Students scan this from their own device to check in. It refreshes automatically — no action needed.
           </p>
+          {qrToken?.code && (
+            <div style={{ textAlign: 'center', opacity: isRefetching ? 0.6 : 1 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 4px' }}>
+                No camera? Students can type this code instead:
+              </p>
+              <p style={{ fontSize: 28, fontWeight: 600, letterSpacing: 4, margin: 0, fontFamily: 'monospace' }}>
+                {qrToken.code}
+              </p>
+            </div>
+          )}
         </div>
       </Card>
     </>
