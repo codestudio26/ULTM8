@@ -53,11 +53,14 @@ describeIfDb('Booking — rungs unlock class types (Decision 173)', () => {
     return res;
   }
 
-  async function placeStudent(rungKey: string | null) {
+  async function placeStudent(rungKey: string | null, verificationStatus: 'VERIFIED' | 'UNVERIFIED' = 'VERIFIED') {
     await superuser.studentRank.deleteMany({ where: { studentId: student.id, disciplineId: bjj.id } });
     if (rungKey) {
       await superuser.studentRank.create({
-        data: { id: randomUUID(), studentId: student.id, disciplineId: bjj.id, schoolId: school.id, currentRankId: rung[rungKey].rankId, currentStripeId: rung[rungKey].id },
+        data: {
+          id: randomUUID(), studentId: student.id, disciplineId: bjj.id, schoolId: school.id, currentRankId: rung[rungKey].rankId, currentStripeId: rung[rungKey].id,
+          verificationStatus,
+        },
       });
     }
   }
@@ -123,6 +126,7 @@ describeIfDb('Booking — rungs unlock class types (Decision 173)', () => {
   });
 
   afterAll(async () => {
+    await superuser.waitlistEntry.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
     await superuser.membership.deleteMany({ where: { schoolId: school.id } });
@@ -173,6 +177,60 @@ describeIfDb('Booking — rungs unlock class types (Decision 173)', () => {
     const res = await book(bjjClass('Open Mat'), 'Visiting purple belt, checked by coach', tokenOwner);
     expect(res.status).toBe(201);
     expect(res.body.overrideReason).toBe('Visiting purple belt, checked by coach');
+  });
+
+  it('a belt the student declared and the School hasn\'t verified yet still books (Decision 137.3)', async () => {
+    await placeStudent('white-3', 'UNVERIFIED');
+    expect((await book(bjjClass('Advanced'))).status).toBe(201);
+    await placeStudent('white-1', 'UNVERIFIED');
+    expect((await book(bjjClass('Advanced'))).status).toBe(403); // the rung still decides
+  });
+
+  it('claiming a waitlist spot goes through the same rank gate as booking (Decision 173)', async () => {
+    const future = new Date(Date.now() + 24 * 3_600_000);
+    const claim = async () => {
+      const cls = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Waitlisted', activities: ['BJJ'], styles: bjjClass('Advanced'), startDate: future, endDate: new Date(future.getTime() + 3_600_000), capacity: 5 },
+      });
+      const entry = await superuser.waitlistEntry.create({
+        data: { id: randomUUID(), studentId: student.id, classId: cls.id, schoolId: school.id, position: 1, status: 'NOTIFIED', notifiedAt: new Date(), claimByDeadline: new Date(Date.now() + 3_600_000) },
+      });
+      return request(app.getHttpServer()).post(`/v1/waitlist/${entry.id}/claim`).set('Authorization', `Bearer ${tokenStudent}`).send({});
+    };
+    await placeStudent('white-1');
+    const refused = await claim();
+    expect(refused.status).toBe(403);
+    expect(JSON.stringify(refused.body)).toContain('BJJ · Advanced');
+    await placeStudent('white-3');
+    expect((await claim()).status).toBe(201);
+  });
+
+  it('a grading-day pass books only the class it is for (Decisions 144, 159.2, 162)', async () => {
+    const ticket = await superuser.user.create({
+      data: {
+        id: randomUUID(), email: `booking-unlocks-ticket-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'ticket', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01'), phoneVerifiedAt: new Date(),
+      },
+    });
+    userIds.push(ticket.id);
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: ticket.id, schoolId: school.id } });
+    const tokenTicket = jwt.sign({ sub: ticket.id, email: ticket.email, grants: [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }] });
+    const future = new Date(Date.now() + 48 * 3_600_000);
+    const mkClass = (title: string) =>
+      superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title, activities: ['BJJ'], styles: bjjClass(null), startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
+    const gradingDay = await mkClass('Grading day');
+    const other = await mkClass('Ordinary class');
+    // The School's own pass for its grading day: one credit, scoped to that class.
+    const plan = await superuser.membershipPlan.create({
+      data: { id: randomUUID(), schoolId: school.id, type: 'CLASS_PACK', title: 'Grading fee', price: 3000, classesIncluded: 1, scopedClassId: gradingDay.id },
+    });
+    await superuser.membership.create({
+      data: { id: randomUUID(), studentId: ticket.id, membershipPlanId: plan.id, schoolId: school.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 1, scopedClassId: gradingDay.id },
+    });
+    const bookAs = (classId: string) => request(app.getHttpServer()).post(`/v1/classes/${classId}/book`).set('Authorization', `Bearer ${tokenTicket}`).send({});
+    expect((await bookAs(other.id)).status).toBe(400);
+    expect((await bookAs(gradingDay.id)).status).toBe(201);
   });
 
   it('the owner sets the list on a rung; it is kept when a later edit leaves it out', async () => {

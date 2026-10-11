@@ -4297,6 +4297,8 @@ export interface components {
             /** @description The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10). */
             hardBlocked: boolean;
             eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff. */
+            noHomeBranch: boolean;
         };
         GradingBoardResponseDto: {
             /** @description Students with a next rank in this style, highest progress first. */

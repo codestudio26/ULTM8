@@ -7,7 +7,8 @@ import { useDisciplines, type DisciplineResponse } from '../disciplines/discipli
 import { useRanks } from '../ranks/rankQueries';
 import { BeltChip } from './BeltChip';
 import { flattenLadder, type Rung } from './ladder';
-import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useMyGrading, useSetBoardThresholds } from './gradingQueries';
+import { useBranches } from '../branches/branchQueries';
+import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useMyGrading, useSetBoardThresholds, useSetHomeBranch } from './gradingQueries';
 import { BulkPromoteModal } from './BulkPromoteModal';
 
 export const COLUMNS: Array<{ key: BoardColumn; label: string }> = [
@@ -25,7 +26,9 @@ export const fullName = (i: { firstName: string; surname: string }) => `${i.firs
  * settings). Search, "currently attending only", tick students and promote
  * them together, and move a student to another column by dragging the card
  * or with its Move button — after a confirmation, since it rewrites their
- * progress and is recorded on their history.
+ * progress and is recorded on their history. The owner also sees a "No
+ * branch" group of students without a home branch, whom no branch coach
+ * sees, and gives each one a branch there (Decision 148.2).
  */
 export function GradingBoardPage() {
   const schoolId = useGradingSchoolId();
@@ -61,7 +64,10 @@ export function GradingBoardPage() {
   const items = board.data?.items ?? [];
   const term = search.trim().toLowerCase();
   const visible = term ? items.filter((i) => fullName(i).toLowerCase().includes(term)) : items;
-  const byColumn = (col: BoardColumn) => visible.filter((i) => i.eligibility.boardColumn === col);
+  // Only the owner gets students with no home branch (Decision 148.2); they
+  // sit in their own group, not in the columns, until they have one.
+  const noBranch = visible.filter((i) => i.noHomeBranch);
+  const byColumn = (col: BoardColumn) => visible.filter((i) => !i.noHomeBranch && i.eligibility.boardColumn === col);
   const selectable = (i: GradingBoardItem) => !i.hardBlocked;
   const isSelected = (id: string) => selected.includes(id);
   const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -138,6 +144,32 @@ export function GradingBoardPage() {
           ) : board.error ? (
             <ErrorBanner message={board.error instanceof ApiError ? board.error.message : 'Could not load the board.'} />
           ) : (
+            <>
+            {noBranch.length > 0 && schoolId ? (
+              <section aria-label="No branch" style={{ marginTop: 16 }}>
+                <Card>
+                  <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: '0 0 4px' }}>
+                    No branch <Badge>{noBranch.length}</Badge>
+                  </h2>
+                  <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+                    These students have no home branch yet, so only you see them here; no branch coach does. Give each one a branch to put them in the columns below.
+                  </p>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+                    {noBranch.map((item) => (
+                      <BoardCard
+                        key={item.studentId}
+                        item={item}
+                        rung={ladder.find((r) => r.id === item.currentStripeId) ?? null}
+                        selected={isSelected(item.studentId)}
+                        onToggle={canPromote ? () => toggle(item.studentId) : undefined}
+                        onDragStart={() => setDraggingId(null)}
+                        footer={<AssignHomeBranch schoolId={schoolId} item={item} />}
+                      />
+                    ))}
+                  </ul>
+                </Card>
+              </section>
+            ) : null}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginTop: 16, alignItems: 'start' }}>
               {COLUMNS.map((col) => {
                 const list = byColumn(col.key);
@@ -207,6 +239,7 @@ export function GradingBoardPage() {
                 );
               })}
             </div>
+            </>
           )}
         </>
       )}
@@ -235,6 +268,7 @@ function BoardCard({
   onToggle,
   onMove,
   onDragStart,
+  footer,
 }: {
   item: GradingBoardItem;
   rung: Rung | null;
@@ -244,6 +278,8 @@ function BoardCard({
   /** Absent when the caller may not adjust progress in this style. */
   onMove?: () => void;
   onDragStart: () => void;
+  /** Extra controls under the card, e.g. assigning a home branch. */
+  footer?: React.ReactNode;
 }) {
   const name = fullName(item);
   const e = item.eligibility;
@@ -313,7 +349,41 @@ function BoardCard({
           </Button>
         ) : null}
       </div>
+      {footer}
     </li>
+  );
+}
+
+/** Give a student with no home branch one of the School's branches
+ * (Decisions 148, 168). Owner only, like the group it sits in. */
+function AssignHomeBranch({ schoolId, item }: { schoolId: string; item: GradingBoardItem }) {
+  const branches = useBranches(schoolId);
+  const assign = useSetHomeBranch(schoolId);
+  const [branchId, setBranchId] = useState('');
+  const name = fullName(item);
+  const id = `home-branch-${item.studentId}`;
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginTop: 10, flexWrap: 'wrap' }}>
+      <div style={{ flex: 1, minWidth: 140 }}>
+        <Field label={`Home branch for ${name}`} htmlFor={id}>
+          <SelectField
+            id={id}
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+            options={[{ value: '', label: 'Choose a branch' }, ...(branches.data?.items ?? []).map((b) => ({ value: b.id, label: b.name }))]}
+          />
+        </Field>
+      </div>
+      <Button
+        onClick={() => assign.mutate({ studentId: item.studentId, branchId })}
+        disabled={!branchId}
+        loading={assign.isPending}
+        aria-label={`Assign ${name} to this branch`}
+      >
+        Assign
+      </Button>
+      {assign.error ? <ErrorBanner message={assign.error instanceof ApiError ? assign.error.message : 'Could not assign the branch — please try again.'} /> : null}
+    </div>
   );
 }
 

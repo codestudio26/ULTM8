@@ -256,6 +256,71 @@ describeIfDb('Grading Board (Phase 3b)', () => {
     expect((await write('carla', 'ben', 'board-active', {}, 'put')).status).toBe(400);
   });
 
+  it('a student with no home branch shows as "No branch" to the owner only, until the owner assigns one (Decision 148.2)', async () => {
+    const ida = await mkUser('ida');
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: ida.id, schoolId: school.id } });
+    await superuser.studentRank.create({
+      data: { id: randomUUID(), studentId: ida.id, disciplineId: bjj.id, schoolId: school.id, currentRankId: rung['white-0'].rankId, currentStripeId: rung['white-0'].id, classesAttendedTowardCheckpoint: 3 },
+    });
+    const flag = (res: request.Response, name: string) => res.body.items.find((i: { firstName: string }) => i.firstName === name)?.noHomeBranch;
+
+    let res = await board('owner');
+    expect(flag(res, 'ida')).toBe(true);
+    expect(flag(res, 'ana')).toBe(false);
+    expect(flag(res, 'cat')).toBe(false);
+    expect(names(await board('carla'))).not.toContain('ida');
+
+    const assign = await request(app.getHttpServer())
+      .put(`/v1/schools/${school.id}/students/${ida.id}/home-branch`)
+      .set('Authorization', `Bearer ${token.owner}`)
+      .send({ branchId: downtown.id });
+    expect(assign.status).toBe(200);
+    res = await board('owner');
+    expect(flag(res, 'ida')).toBe(false);
+    const carlaRes = await board('carla');
+    expect(names(carlaRes)).toContain('ida');
+    expect(flag(carlaRes, 'ida')).toBe(false);
+
+    // A coach can't assign one.
+    const byCoach = await request(app.getHttpServer())
+      .put(`/v1/schools/${school.id}/students/${ida.id}/home-branch`)
+      .set('Authorization', `Bearer ${token.carla}`)
+      .send({ branchId: riverside.id });
+    expect(byCoach.status).toBe(403);
+  });
+
+  it('with ranks switched off, every newer grading write is refused (Decision 87)', async () => {
+    const ana = student.ana.id;
+    const event = await superuser.promotionEvent.create({
+      data: { id: randomUUID(), studentRankId: (await rankOf('ana')).id, schoolId: school.id, studentId: ana, type: 'ADJUSTMENT', toRankId: rung['white-0'].rankId, toStripeTierId: rung['white-0'].id },
+    });
+    const ownerReq = () => request(app.getHttpServer());
+    const auth = { Authorization: `Bearer ${token.owner}` };
+    const writes: Array<[string, () => request.Test]> = [
+      ['board move', () => ownerReq().post(`/v1/students/${ana}/ranks/${bjj.id}/board-move`).set(auth).send({ column: 'JUST_STARTING' })],
+      ['log a class', () => ownerReq().post(`/v1/students/${ana}/ranks/${bjj.id}/log-class`).set(auth).send({ classType: 'Fundamentals' })],
+      ['active switch', () => ownerReq().put(`/v1/students/${ana}/ranks/${bjj.id}/board-active`).set(auth).send({ active: true })],
+      ['board %', () => ownerReq().put(`/v1/disciplines/${bjj.id}/board-thresholds`).set(auth).send({ gettingThere: 30, readyToGrade: 70 })],
+      ['bulk promote', () => ownerReq().post(`/v1/schools/${school.id}/grading/bulk-promote`).set(auth).send({ disciplineId: bjj.id, studentIds: [ana] })],
+      ['void', () => ownerReq().post(`/v1/students/${ana}/rank-history/${event.id}/void?schoolId=${school.id}`).set(auth).send({ reason: 'Test' })],
+      ['edit rank date', () => ownerReq().patch(`/v1/students/${ana}/ranks/${bjj.id}/rank-date`).set(auth).send({ date: new Date(Date.now() - 10 * 86_400_000).toISOString().slice(0, 10) })],
+      ['verify', () => ownerReq().post(`/v1/students/${ana}/ranks/${bjj.id}/verify`).set(auth).send({})],
+    ];
+    const before = await rankOf('ana');
+    await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: false } });
+    try {
+      for (const [name, send] of writes) {
+        const res = await send();
+        expect({ name, status: res.status }).toEqual({ name, status: 403 });
+      }
+    } finally {
+      await superuser.school.update({ where: { id: school.id }, data: { ranksToggle: true } });
+    }
+    const after = await rankOf('ana');
+    expect(after.classesAttendedTowardCheckpoint).toBe(before.classesAttendedTowardCheckpoint);
+    expect((await superuser.promotionEvent.findUniqueOrThrow({ where: { id: event.id } })).voidedAt).toBeNull();
+  });
+
   describe('the two read-only rules coaches need (Decision 168, approved for the board)', () => {
     it('a coach reads the home-branch rows of their own branches only, and cannot change them', async () => {
       const carla = await superuser.user.findFirstOrThrow({ where: { id: { in: userIds }, firstName: 'carla' } });
