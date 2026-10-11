@@ -941,7 +941,7 @@ Investigated and recorded by Claude at the user's direct request ("pick up item 
 ## Decision 107 — QR check-in mechanics: two independently-keyed rotating tokens (Class-scoped + Student-scoped), per-Student Instructor roll-call scan with a camera-free manual fallback
 
 **Date:** 18 Sep 2026
-**Status:** Developer-level inference, flagged for Architect confirmation, not a product-owner-approved decision like 101–105 — approved by the user as a design proposal before implementation, but the underlying mechanics were never specified anywhere in Spec 55 or SKILL.md and were designed, not confirmed
+**Status:** Originally a Developer-level inference, flagged for Architect confirmation — the underlying mechanics were never specified anywhere in Spec 55 or SKILL.md and were designed, not confirmed, though approved by the user as a design proposal before implementation. **Ratified as a full product-owner decision, 11 Oct 2026**, while reviewing the v1.1/v1.2 open-decisions list — no change to the mechanics, this closes the Architect-confirmation gap.
 **Resolves:** two gaps this log never closed. First, Phase 13's own `POST /attendance/scan` shipped against a bare `bookingId` with no rotation at all — a static QR code a Student could screenshot and reuse indefinitely, directly contradicting Decision 66's own confirmed constraint that Class QR codes must be "time-boxed, rotating, never static." Second, Decision 71 confirmed that Instructors need a roll-call scanning capability distinct from Student self-service check-in, but never designed its mechanics (per-Student vs. batched, camera-based vs. name-confirmation, how consent withdrawal interacts with it) — left as a named-but-undesigned item ever since.
 
 ### Decision
@@ -2917,4 +2917,92 @@ Developer (this session), per the user's instruction to view the built pages, st
 3. Gus was asked whether to make it strictly one per person and said *"no"*, keeping it as built; the wording here replaces "one per person" in Decision 183.
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
+
+---
+
+## Decision 230 — Timetable↔Class relationship: rolling-window auto-generation reconfirmed
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner · **Completes:** Decision 210, which found this already built; this entry is the formal ratification of keeping the design and window as-is.
+**Resolves:** the v1.1/v1.2 open-decisions review's own item 2, reached independently of Decision 210 (logged the day before, in a different session) and arriving at the same conclusion.
+
+Reviewed again during the v1.1/v1.2 open-decisions pass: `ClassOccurrenceGenerationProcessor` materializes a dated `Class` row for every active `TimetableSlot` occurrence, 4 weeks ahead, via a daily job; a "book from Timetable" endpoint only needs to resolve slot+date to that already-existing row, never generate one synchronously. External precedent (GymMaster's "Repeats" scheduling, Mindbody's template/instance endpoint split) confirms this matches how comparable products shape the same relationship. The 4-week window is kept as-is, not widened — no change to Decision 210's design, just a second, independent confirmation of it.
+
+### Recorded by
+
+User, reconfirming Decision 210's conclusion during the v1.1/v1.2 open-decisions review, 11 Oct 2026.
+
+---
+
+## Decision 231 — Branch field-level settings screen: build it
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** Decision 76's left-open screen design ("only the sidebar nav item and empty frame ids exist in Figma"), and the backlog's four Branch mockup fields shown as display-only mirrors of Franchise's own with no column to persist to.
+
+Approved to build a dedicated Branch settings screen, reachable from the existing sidebar item, replacing today's modal-only edit path. Scoped tightly to Decision 76's already-confirmed profile fields, plus four new columns needed to back fields already drawn in the Branch mockups: `description`, `activities`/`facilities`, `defaultLanguage`, `type`. Explicitly excludes School's operational-policy fields (cancellation policy, waitlist window, ranks toggle) and anything payment-related — `PaymentAccount` stays School-level, unchanged, per existing unreopened decision. A competitor-practice comparison (Toast, GymMaster, Glofox) confirmed ULTM8's existing Decision 76 split already matches the norm for what a chain-level vs. per-location settings screen covers.
+
+### Recorded by
+
+User, choosing "Build it," 11 Oct 2026.
+
+---
+
+## Decision 232 — Franchise transfer: billing data policy, plus the leave/switch-Franchise feature itself approved for build
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the undesigned question of what happens to a School's `PaymentAccount`/`MembershipPlan`/`FranchiseFeeCharge` history on leaving one Franchise for another or going independent — previously moot since no leave/switch path exists yet (Decisions 97, 98).
+
+**Policy:** `PaymentAccount` and `MembershipPlan` carry over completely unchanged — both are already School-owned with no franchise linkage to sever. `FranchiseFeeCharge` history is retained as an immutable record of charges already billed against the old Franchise. The one real reconciliation point is the live Stripe subscription (`School.stripeFranchiseFeeSubscriptionId`): cancel the old one at departure, create a new one lazily against the new Franchise, or leave it null if the School goes independent. Consistent in spirit with Decision 110 (preserve history rather than clear it on a relationship change), not in mechanism — Decision 110 governs full account closure; this is a continuing School.
+
+**Additional scope approved:** the product owner also wants the actual leave/switch-Franchise feature built on top of this policy, not just the policy recorded — `joinFranchise()` is explicitly one-way today (409 if a School already has a Franchise), so this is new, unbuilt capability. **Not part of this session's Phase 2/3 execution** — tracked here as its own approved-but-unscheduled backlog item, to be picked up as a separate piece of work.
+
+### Recorded by
+
+User, approving the Developer recommendation on the billing policy, and additionally requesting the leave/switch feature be built, 11 Oct 2026.
+
+---
+
+## Decision 233 — Four unlabeled dashboard stats: dropped from the redesign
+
+**Date:** 11 Oct 2026 · **Status:** Decided by product owner (dropped, not deferred)
+**Resolves:** `skills/ultm8-domain-rules/SKILL.md` §12.2's long-standing `[UNRESOLVED]` note on the Student/Coach Profile screens' four unlabeled numeric stats (870 / 120k / 354k / 3.8Gb).
+
+No screenshot, Figma link, or stated meaning for these four numbers exists anywhere in the repository — checked `docs/ultm8-blueprint.html`, `deep-review/grading-prototype/screenshots/`, and every image file directly. Rather than guess at their meaning or chase down a missing original design file, the product owner chose to drop these four stats from the redesign entirely.
+
+### What this does NOT resolve
+
+Revisit only if someone can locate the original design file or otherwise explain what these numbers were meant to show.
+
+### Recorded by
+
+User, choosing to drop them rather than pursue the missing design reference ("lets drop it for now"), 11 Oct 2026.
+
+---
+
+## Decision 234 — Late-cancellation fee collection: charge the Student's saved payment method, off-session
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** `skills/ultm8-domain-rules/SKILL.md` §7's `[UNRESOLVED]` note on whether `Class.cancellationCharge` (and `MembershipPlan`/`TimetableSlot`'s equivalent fields) is actually *collected*, as distinct from the already-built credit-forfeiture mechanism.
+
+`cancelBooking()`'s existing past-cutoff branch already withholds credit restoration; this adds a sibling action, not a replacement — when `cancellationCharge` is non-null, fire a new off-session Stripe PaymentIntent against the Student's saved payment method. Requires extending the existing Stripe integration with an off-session charge capability it doesn't have today (today's charge path is on-session only). Matches the norm across comparable products (ClassPass, Vagaro, Zen Planner) of billing a real new charge for a late-cancellation fee, distinct from credit forfeiture.
+
+### What this does NOT resolve
+
+Failure handling for a declined card, SCA friction, or a removed payment method must be explicit, not silently retried — left to whoever builds this, not designed here. The existing chargeback-pattern-restriction job only partially backstops the customer-relations/chargeback risk a surprise off-session charge carries.
+
+### Recorded by
+
+User, approving the Developer recommendation, 11 Oct 2026.
+
+---
+
+## Decision 235 — No-camera check-in fallback: rotating 6-digit code derived from the same signed Class token
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** `skills/ultm8-domain-rules/SKILL.md` §7's `[UNRESOLVED]` note that the Instructor/Staff override endpoint was the only non-camera check-in path, sized for occasional accessibility use, not a standing per-class alternative.
+
+Extends the existing `QrTokenService` to also derive a short, human-typeable 6-digit code from the same signed Class token, rotating in lockstep with the QR — no new secret store needed. The Class-QR display screen shows this code as text alongside the QR. A new self-service screen/endpoint lets a Student type the code instead of scanning; it runs the same booking lookup, cutoff check, and time-bucket verification as the QR path, completing through the same transition, tagged with a new check-in-method value for audit trails. **Mandatory server-side rate limiting on wrong code submissions** — 6 digits is brute-forceable in hours without it. Matches accessibility precedent (University of York's six-digit check-in alternative). Keeps `INSTRUCTOR_MANUAL` as the true occasional-use staff fallback, giving consent-withdrawn or accessibility-affected Students a standing, self-service, camera-free option instead.
+
+### Recorded by
+
+User, approving the Developer recommendation, 11 Oct 2026.
 
