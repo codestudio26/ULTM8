@@ -82,4 +82,14 @@ export class SchoolsController {
   joinFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinFranchiseDto) {
     return this.schoolsService.joinFranchise(user.sub, id, dto.franchiseId);
   }
+
+  /** School Owner/Manager only — see SchoolsService.leaveFranchise's own header
+   * comment for the full account (Decision 232). "Switch Franchise" is this
+   * endpoint followed by an ordinary POST :id/join-franchise call, not a
+   * separate combined one. */
+  @ApiOkResponse({ type: SchoolResponseDto })
+  @Post(':id/leave-franchise')
+  leaveFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.leaveFranchise(user.sub, id);
+  }
 }

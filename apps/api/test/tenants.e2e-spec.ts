@@ -949,6 +949,100 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // School -> Franchise leave/switch (Decision 232) — closes the gap Decision 98
+  // deliberately left open. PaymentAccount/MembershipPlan carry over unchanged
+  // (School-owned, nothing to write); the Stripe subscription cancellation is
+  // best-effort and only attempted when a real stripeFranchiseFeeSubscriptionId
+  // is set — these fixtures leave it unset (no real Stripe PaymentAccount exists
+  // in these tests), so that best-effort branch never actually calls Stripe here.
+  // ---------------------------------------------------------------------------
+
+  it('School Owner can leave their Franchise, then switch to a new one by joining again', async () => {
+    const createSchoolRes = await request(app.getHttpServer())
+      .post('/v1/schools')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Leave-Franchise Test School' });
+    expect(createSchoolRes.status).toBe(201);
+    const freshSchoolId = createSchoolRes.body.id;
+
+    const createFranchiseRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Leave-Franchise Test Franchise A' });
+    const franchiseAId = createFranchiseRes.body.id;
+
+    await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId: franchiseAId })
+      .expect(201);
+
+    const leaveRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(leaveRes.status).toBe(201);
+    expect(leaveRes.body.franchiseId).toBeNull();
+    expect(leaveRes.body.franchiseFeeSubscriptionStatus).toBeNull();
+
+    // Switch — leave() cleared franchiseId back to null, so an ordinary
+    // join-franchise call against a DIFFERENT Franchise now succeeds, where it
+    // would have 409'd before leaving (Decision 98's one-way guard, unchanged).
+    const createFranchiseBRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Leave-Franchise Test Franchise B' });
+    const franchiseBId = createFranchiseBRes.body.id;
+
+    const switchRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId: franchiseBId });
+    expect(switchRes.status).toBe(201);
+    expect(switchRes.body.franchiseId).toBe(franchiseBId);
+
+    await superuser.school.delete({ where: { id: freshSchoolId } });
+    await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
+    await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
+  });
+
+  it('leaving a Franchise this School never joined is a 400, not a silent no-op', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('only that School\'s own Owner/Manager may leave its Franchise', async () => {
+    const createFranchiseRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Unauthorized Leave Test Franchise' });
+    const franchiseId = createFranchiseRes.body.id;
+    await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId })
+      .expect(201);
+
+    // ownerB holds no grant at all on schoolA.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(403);
+    const unchanged = await superuser.school.findUniqueOrThrow({ where: { id: schoolA.id } });
+    expect(unchanged.franchiseId).toBe(franchiseId);
+
+    // Clean up via the real endpoint, as schoolA's own owner, so schoolA is left
+    // independent again for every other test sharing this fixture.
+    await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .expect(201);
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
+
+  // ---------------------------------------------------------------------------
   // Franchise fee-rate fields (Phase 16b-ii, Decision 99) — self-service,
   // Franchise-Owner-set, round-tripped through the existing create/update
   // endpoints (no dedicated endpoint — see create-franchise.dto.ts's own
