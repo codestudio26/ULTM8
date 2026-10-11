@@ -2918,3 +2918,21 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 240 — Franchises Rows-table Name cell wired to the existing Franchise Detail page
+
+**Date:** 11 Oct 2026 · **Status:** Built and verified this session. Frontend only, no backend change.
+
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "Rows-table identity column is non-clickable" — `FranchiseDetailPage.tsx` and its `/franchises/:id` route already exist and work, but `FranchisesPage.tsx`'s Name column rendered plain text; only the row's "View details" action button navigated there.
+
+The Name cell now navigates to `/franchises/${f.id}` on click, styled with the same `--text-accent` token five other interactive elements in `packages/ui` already use — no new visual pattern invented. Verified in a real browser (dev API + School Portal dev servers, a seeded dev Franchise): clicking the Name cell lands on the Franchise Detail page exactly as the existing "View details" button does.
+
+### Verified
+
+`npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`; `vite build` clean; manually verified end-to-end in a real Chromium browser against the real API (screenshots: list page, post-click detail page).
+
+### Recorded by
+
+Developer (this session), continuing the user's standing instruction to build the v1.2 backend backlog sequentially.
+
