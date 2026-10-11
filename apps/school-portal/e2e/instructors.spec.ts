@@ -51,7 +51,10 @@ test('a School with branches requires one before Add Manually will submit', asyn
   await page.getByLabel('Surname').fill('Branch');
   await page.getByLabel('Email', { exact: false }).fill(`needs.branch.${randomUUID()}@example.test`);
   await page.getByRole('button', { name: 'Add instructor' }).last().click();
-  await expect(page.getByText('Choose the branch this instructor belongs to.')).toBeVisible();
+  // The Branch <select> is a native `required` field — the browser blocks
+  // submission on its own before React's onSubmit ever runs, so the modal
+  // stays open with nothing created, rather than any particular message text.
+  await expect(page.getByRole('dialog', { name: 'Add instructor manually' })).toBeVisible();
 
   await page.getByLabel('Branch').selectOption({ label: 'North' });
   await page.getByRole('button', { name: 'Add instructor' }).last().click();

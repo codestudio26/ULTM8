@@ -30,10 +30,6 @@ export function AddInstructorManuallyModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (requiresBranch && !form.branchId) {
-      setError('Choose the branch this instructor belongs to.');
-      return;
-    }
     try {
       await onSubmit({
         firstName: form.firstName,
