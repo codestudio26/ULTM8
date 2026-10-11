@@ -2676,12 +2676,12 @@ export interface components {
              * @default MANUAL
              * @enum {string}
              */
-            classCancellationPolicy: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
+            classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             /**
              * @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24).
              * @default 120
              */
-            waitlistClaimWindowMinutes: number;
+            waitlistClaimWindowMinutes?: number;
         };
         SchoolResponseDto: {
             id: string;
@@ -2726,12 +2726,12 @@ export interface components {
              * @default MANUAL
              * @enum {string}
              */
-            classCancellationPolicy: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
+            classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             /**
              * @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24).
              * @default 120
              */
-            waitlistClaimWindowMinutes: number;
+            waitlistClaimWindowMinutes?: number;
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;
@@ -2885,7 +2885,7 @@ export interface components {
              * @default FLAT
              * @enum {string}
              */
-            feeModel: "FLAT" | "PER_HEADCOUNT";
+            feeModel?: "FLAT" | "PER_HEADCOUNT";
             /** @description Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless. */
             flatFeeAmount?: number;
             /** @description Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless. */
@@ -2928,7 +2928,7 @@ export interface components {
              * @default FLAT
              * @enum {string}
              */
-            feeModel: "FLAT" | "PER_HEADCOUNT";
+            feeModel?: "FLAT" | "PER_HEADCOUNT";
             /** @description Minor-unit (e.g. cents). Only meaningful when feeModel=FLAT; independently settable regardless. */
             flatFeeAmount?: number;
             /** @description Minor-unit (e.g. cents) per active Student per month. Only meaningful when feeModel=PER_HEADCOUNT; independently settable regardless. */
@@ -3157,12 +3157,12 @@ export interface components {
             /** @description Minor currency unit (e.g. cents), in the School/Branch's own currency. */
             cancellationCharge?: number;
             /** @default false */
-            termsWaiverRequired: boolean;
+            termsWaiverRequired?: boolean;
             /**
              * @description Opts this Class into general-membership access. Default is opt-out (a ticket is required).
              * @default false
              */
-            membershipInclusion: boolean;
+            membershipInclusion?: boolean;
         };
         ClassStyleResponseDto: {
             disciplineId: string;
@@ -3215,12 +3215,12 @@ export interface components {
             /** @description ISO 8601 date-time — cancel-before-this cutoff for refund/credit. */
             refundFeeDate?: string;
             /** @default false */
-            termsWaiverRequired: boolean;
+            termsWaiverRequired?: boolean;
             /**
              * @description Opts this Class into general-membership access. Default is opt-out (a ticket is required).
              * @default false
              */
-            membershipInclusion: boolean;
+            membershipInclusion?: boolean;
             /** @description Branch to scope this Class to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
@@ -3399,7 +3399,7 @@ export interface components {
              * @default ON
              * @enum {string}
              */
-            status: "ON" | "OFF";
+            status?: "ON" | "OFF";
             title: string;
             /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
             activities?: string[];
@@ -3410,12 +3410,12 @@ export interface components {
             description?: string;
             bannerUrl?: string;
             /** @default false */
-            termsWaiverRequired: boolean;
+            termsWaiverRequired?: boolean;
             /**
              * @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required).
              * @default false
              */
-            membershipInclusion: boolean;
+            membershipInclusion?: boolean;
             /** @description Booking cutoff, in minutes before each occurrence starts. */
             bookingCutoffMinutesBeforeStart?: number;
             /** @description QR check-in window, in minutes, from each occurrence's start. */
@@ -3482,19 +3482,19 @@ export interface components {
              * @default ON
              * @enum {string}
              */
-            status: "ON" | "OFF";
+            status?: "ON" | "OFF";
             title?: string;
             /** @description Free-text activities. In a School with no styles, at least one is required. In a School with styles, filled in from the styles' names when omitted. */
             activities?: string[];
             /** @description The styles this slot belongs to, each with a class type (Decisions 143, 152, 170). Required, at least one, when the School has styles; a mixed slot lists several. */
             styles?: components["schemas"]["ClassStyleInputDto"][];
             /** @default false */
-            termsWaiverRequired: boolean;
+            termsWaiverRequired?: boolean;
             /**
              * @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required).
              * @default false
              */
-            membershipInclusion: boolean;
+            membershipInclusion?: boolean;
             /** @description Branch to scope this slot to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
@@ -3634,13 +3634,13 @@ export interface components {
             /** @description Restricts this plan to one specific Class. */
             scopedClassId?: string;
             /** @default true */
-            visible: boolean;
+            visible?: boolean;
             /** @description ISO 8601 date-time. */
             refundFeeDate?: string;
             /** @description Minor currency unit. */
             cancellationCharge?: number;
             /** @default false */
-            termsWaiverRequired: boolean;
+            termsWaiverRequired?: boolean;
             /** @description The School's styles this plan covers (Decision 195). */
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
@@ -3680,9 +3680,9 @@ export interface components {
             /** @description CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set. */
             classesIncluded?: number;
             /** @default true */
-            visible: boolean;
+            visible?: boolean;
             /** @default false */
-            termsWaiverRequired: boolean;
+            termsWaiverRequired?: boolean;
             /** @description The School's styles this plan covers (Decision 195). */
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
@@ -4180,7 +4180,7 @@ export interface components {
         };
         GradingActionDto: {
             /** @default false */
-            acknowledgeWithoutSkillSignoff: boolean;
+            acknowledgeWithoutSkillSignoff?: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
             /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award. */
@@ -4201,7 +4201,7 @@ export interface components {
         };
         DowngradeActionDto: {
             /** @default false */
-            acknowledgeWithoutSkillSignoff: boolean;
+            acknowledgeWithoutSkillSignoff?: boolean;
             /** @description The grader's own note on this history entry (Decision 128, item 11). */
             note?: string;
             /** @description The rung (stripe tier id) to move to. Promote: any higher rung, so rungs can be skipped (Decision 128, item 7); default the next rung. Downgrade: any lower rung; default the rung just below (Decision 185). Not used by stripe award. */

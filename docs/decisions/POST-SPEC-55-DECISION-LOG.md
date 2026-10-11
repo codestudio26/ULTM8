@@ -2918,3 +2918,21 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 234 — Fixed the openapi-typescript over-required-fields codegen gap: `--default-non-nullable=false`
+
+**Date:** 11 Oct 2026 · **Status:** Developer-level tooling fix for a gap `docs/v1.2-backend-backlog.md` had logged as "a one-time tooling/codegen change, not a per-DTO one" rather than worked around ad hoc everywhere.
+
+**Root cause, confirmed directly rather than guessed:** `openapi-typescript` (installed `^7.13.0`) ships a `--default-non-nullable` flag that defaults to `true` — any OpenAPI property carrying a `default` is generated as a non-optional TS field, *regardless of whether that property actually appears in the schema's own `required[]` array*. Verified against a freshly-exported `openapi.json`: `UpdateMembershipPlanDto.visible` has `default: true` and the schema's own `required` array is empty (`[]`), yet the old generated type still had `visible: boolean;` with no `?`. This affected every `@ApiPropertyOptional({ default })` field across the schema — confirmed exactly matching the ~10 DTOs `docs/v1.2-backend-backlog.md` had already found by grepping (`SchoolDto`/`FranchiseDto`/`ClassDto`/`TimetableSlotDto`/`MembershipPlanDto`/`GradingActionDto` variants), plus one more of the same shape the grep missed (`DowngradeActionDto.acknowledgeWithoutSkillSignoff`).
+
+**Fix:** `packages/api-client/package.json`'s `generate` script now passes `--default-non-nullable=false`, which tells `openapi-typescript` to only mark a field required when the schema's own `required[]` array actually says so — the correct OpenAPI semantics (a `default` means "the server fills this in if you omit it," not "you must send it"). Regenerated `schema.d.ts`; diff touches only the `?` marker on exactly these previously-over-required fields, nothing else. Removed the one ad hoc workaround this gap had forced (`membershipPlanQueries.ts`'s `as UpdateMembershipPlanInput` cast + its explanatory comment) — no cast is needed now that the generated type is correct.
+
+### Verified
+
+`npx tsc --noEmit` clean on `apps/api`, `packages/api-client`, `apps/school-portal`, `apps/platform-admin` (no other call site in Track A or Track B had worked around this gap — grepped for similar casts and found none beyond the one removed). `turbo build` clean across Track A. No backend code changed, so the e2e suite is unaffected by this change.
+
+### Recorded by
+
+Developer (this session), continuing the v1.2 backend backlog per the user's standing instruction to build it sequentially, verify, and move on.
+

@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fixed a codegen bug that marked several optional API fields as
+  required in the generated TypeScript client** (Decision 234):
+  `visible`/`termsWaiverRequired` on Membership Plans,
+  `classCancellationPolicy`/`waitlistClaimWindowMinutes` on Schools,
+  `feeModel` on Franchises, `termsWaiverRequired`/`membershipInclusion` on
+  Classes and Timetable Slots, `status` on Timetable Slots, and
+  `acknowledgeWithoutSkillSignoff` on grading actions. No behavior change —
+  these fields were always genuinely optional server-side; only the
+  generated types were wrong. `packages/api-client` regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,
