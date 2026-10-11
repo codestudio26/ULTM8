@@ -6012,6 +6012,10 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Only Classes whose activities list includes this exact value. */
+                activity?: string;
+                /** @description Case-insensitive substring match against title. */
+                search?: string;
             };
             header?: never;
             path: {
