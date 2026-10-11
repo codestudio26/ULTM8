@@ -3595,6 +3595,41 @@
         ]
       }
     },
+    "/v1/instructors/{id}/classes": {
+      "get": {
+        "operationId": "InstructorsController_findClasses",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorClassListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/users/me": {
       "get": {
         "operationId": "UsersController_getMe",
@@ -11262,6 +11297,120 @@
             "nullable": true
           }
         }
+      },
+      "InstructorClassResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "instructorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "styles": {
+            "description": "Styles with their class types (Decisions 143, 152, 170).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClassStyleResponseDto"
+            }
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Nullable = unlimited."
+          },
+          "bookingEndAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "qrAttendanceEndAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationCharge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor currency unit (e.g. cents)."
+          },
+          "termsWaiverRequired": {
+            "type": "boolean"
+          },
+          "membershipInclusion": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "enrolledCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "title",
+          "activities",
+          "styles",
+          "startDate",
+          "endDate",
+          "termsWaiverRequired",
+          "membershipInclusion",
+          "createdAt",
+          "updatedAt",
+          "enrolledCount"
+        ]
+      },
+      "InstructorClassListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructorClassResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
       },
       "UserResponseDto": {
         "type": "object",

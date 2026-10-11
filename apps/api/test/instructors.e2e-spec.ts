@@ -644,4 +644,165 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       await superuser.school.delete({ where: { id: schoolS.id } });
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /instructors/:id/classes (v1.2 backend backlog — "Instructor Class"
+  // grid on Instructor Detail). Self-contained fixtures: a School, two
+  // Instructors (so filtering is actually proven, not just "returns something"),
+  // Classes for each, and real Bookings/a BookingAttendee guest to prove the
+  // server-computed enrolledCount matches BookingsService.countOccupiedSeats()'s
+  // own definition rather than a raw Booking count.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /instructors/:id/classes', () => {
+    let icSchool: { id: string };
+    let icOwner: { id: string; email: string };
+    let icInstructorUser: { id: string; email: string };
+    let icOtherInstructorUser: { id: string; email: string };
+    let icInstructorProfile: { id: string };
+    let icOtherInstructorProfile: { id: string };
+    let icStudent: { id: string };
+    let icClassWithBookings: { id: string };
+    let icClassWithNoBookings: { id: string };
+    let icOtherInstructorClass: { id: string };
+    let icMembershipId: string;
+    let tokenIcOwner: string;
+    let tokenIcInstructor: string;
+
+    beforeAll(async () => {
+      icSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Instructor Classes HTTP School' } });
+
+      const mk = (label: string) =>
+        superuser.user.create({
+          data: {
+            id: randomUUID(),
+            email: `instructors-http-ic-${label}-${randomUUID()}@example.test`,
+            phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+            firstName: label,
+            surname: 'IcTenant',
+            passcodeHash: 'x',
+            dateOfBirth: new Date('2000-01-01'),
+            phoneVerifiedAt: new Date(),
+          },
+        });
+
+      icOwner = await mk('owner');
+      icInstructorUser = await mk('instructor');
+      icOtherInstructorUser = await mk('other-instructor');
+      icStudent = await mk('student');
+
+      await superuser.roleGrant.createMany({
+        data: [
+          { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: icOwner.id, schoolId: icSchool.id },
+          { id: randomUUID(), role: 'INSTRUCTOR', userId: icInstructorUser.id, schoolId: icSchool.id },
+          { id: randomUUID(), role: 'INSTRUCTOR', userId: icOtherInstructorUser.id, schoolId: icSchool.id },
+          { id: randomUUID(), role: 'STUDENT', userId: icStudent.id, schoolId: icSchool.id },
+        ],
+      });
+
+      icInstructorProfile = await superuser.instructor.create({
+        data: { id: randomUUID(), userId: icInstructorUser.id, schoolId: icSchool.id },
+      });
+      icOtherInstructorProfile = await superuser.instructor.create({
+        data: { id: randomUUID(), userId: icOtherInstructorUser.id, schoolId: icSchool.id },
+      });
+
+      const mkClass = (title: string, instructorUserId: string) =>
+        superuser.class.create({
+          data: {
+            id: randomUUID(),
+            schoolId: icSchool.id,
+            instructorId: instructorUserId,
+            title,
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 3600_000),
+          },
+        });
+      icClassWithBookings = await mkClass('Class With Bookings', icInstructorUser.id);
+      icClassWithNoBookings = await mkClass('Class With No Bookings', icInstructorUser.id);
+      icOtherInstructorClass = await mkClass("Other Instructor's Class", icOtherInstructorUser.id);
+
+      const plan = await superuser.membershipPlan.create({
+        data: { id: randomUUID(), schoolId: icSchool.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 },
+      });
+      const membership = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: icStudent.id, membershipPlanId: plan.id, schoolId: icSchool.id, status: 'ACTIVE', frequency: 'RECURRING', classesRemaining: null },
+      });
+      icMembershipId = membership.id;
+
+      // Two real seats on icClassWithBookings: one ordinary UPCOMING Booking,
+      // plus a second seat via a BookingAttendee guest on a THIRD, CANCELLED
+      // booking that must NOT count — proving the endpoint reuses
+      // countOccupiedSeats()'s own UPCOMING-only definition, not every row.
+      const upcomingBooking = await superuser.booking.create({
+        data: { id: randomUUID(), studentId: icStudent.id, classId: icClassWithBookings.id, schoolId: icSchool.id, sourceMembershipId: icMembershipId, status: 'UPCOMING' },
+      });
+      await superuser.bookingAttendee.create({
+        data: { id: randomUUID(), bookingId: upcomingBooking.id, schoolId: icSchool.id, membershipId: icMembershipId },
+      });
+      const cancelledBooking = await superuser.booking.create({
+        data: { id: randomUUID(), studentId: icStudent.id, classId: icClassWithBookings.id, schoolId: icSchool.id, sourceMembershipId: icMembershipId, status: 'CANCELLED' },
+      });
+      await superuser.bookingAttendee.create({
+        data: { id: randomUUID(), bookingId: cancelledBooking.id, schoolId: icSchool.id, membershipId: icMembershipId },
+      });
+      // A seat on the OTHER instructor's class — must never leak into this
+      // instructor's own enrolledCount or items list.
+      await superuser.booking.create({
+        data: { id: randomUUID(), studentId: icStudent.id, classId: icOtherInstructorClass.id, schoolId: icSchool.id, sourceMembershipId: icMembershipId, status: 'UPCOMING' },
+      });
+
+      tokenIcOwner = signAccessToken(icOwner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: icSchool.id, branchId: null }]);
+      tokenIcInstructor = signAccessToken(icInstructorUser, [{ role: 'INSTRUCTOR', franchiseId: null, schoolId: icSchool.id, branchId: null }]);
+    });
+
+    afterAll(async () => {
+      await superuser.bookingAttendee.deleteMany({ where: { schoolId: icSchool.id } });
+      await superuser.booking.deleteMany({ where: { schoolId: icSchool.id } });
+      await superuser.membership.deleteMany({ where: { schoolId: icSchool.id } });
+      await superuser.membershipPlan.deleteMany({ where: { schoolId: icSchool.id } });
+      await superuser.class.deleteMany({ where: { schoolId: icSchool.id } });
+      await superuser.instructor.deleteMany({ where: { schoolId: icSchool.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: icSchool.id } });
+      await superuser.school.delete({ where: { id: icSchool.id } });
+    });
+
+    it("returns only this Instructor's own Classes, each with a server-computed enrolledCount — an Instructor caller may call it for their own profile", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/instructors/${icInstructorProfile.id}/classes`)
+        .set('Authorization', `Bearer ${tokenIcInstructor}`);
+      expect(res.status).toBe(200);
+      expect(res.body.items).toHaveLength(2);
+
+      const ids = res.body.items.map((c: { id: string }) => c.id);
+      expect(ids).toContain(icClassWithBookings.id);
+      expect(ids).toContain(icClassWithNoBookings.id);
+      expect(ids).not.toContain(icOtherInstructorClass.id);
+
+      const withBookings = res.body.items.find((c: { id: string }) => c.id === icClassWithBookings.id);
+      // 1 UPCOMING Booking + its 1 BookingAttendee guest = 2. The CANCELLED
+      // booking's own guest must not add a third.
+      expect(withBookings.enrolledCount).toBe(2);
+      expect(withBookings.title).toBe('Class With Bookings');
+
+      const withNoBookings = res.body.items.find((c: { id: string }) => c.id === icClassWithNoBookings.id);
+      expect(withNoBookings.enrolledCount).toBe(0);
+    });
+
+    it('a School Owner may also call it for any Instructor at their School', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/instructors/${icOtherInstructorProfile.id}/classes`)
+        .set('Authorization', `Bearer ${tokenIcOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.items.map((c: { id: string }) => c.id)).toEqual([icOtherInstructorClass.id]);
+      expect(res.body.items[0].enrolledCount).toBe(1);
+    });
+
+    it('a caller with no visibility into this Instructor profile gets a 404, not an empty list', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/instructors/${icInstructorProfile.id}/classes`)
+        .set('Authorization', `Bearer ${tokenOwnerB}`); // a different tenant entirely
+      expect(res.status).toBe(404);
+    });
+  });
 });

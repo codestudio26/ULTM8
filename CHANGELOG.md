@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **A dedicated endpoint lists the Classes an Instructor teaches, with a
+  real enrolled count** (Decision 230, v1.2 backend backlog).
+  `GET /instructors/:id/classes` replaces the client-side-filter workaround
+  and computes "X of Y booked" server-side (same definition as the
+  Full-Class gate: UPCOMING Bookings plus their guests). **api:** new
+  `InstructorClassResponseDto`/`InstructorClassListResponseDto`.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,
