@@ -7,12 +7,31 @@ export type ClassResponse = components['schemas']['ClassResponseDto'];
 export type CreateClassInput = components['schemas']['CreateClassDto'];
 export type UpdateClassInput = components['schemas']['UpdateClassDto'];
 
-/** No pagination in this UI yet — same established convention as
- * useBranches/useDisciplines/useInstructors (see their own header comments). */
-export function useClasses(schoolId: string | null) {
+export interface ClassesFilter {
+  activities?: string;
+  search?: string;
+}
+
+/** `filter`/`cursor` — additive, optional server-side filters + cursor pagination
+ * (Classes page's Discipline filter + "Search classes" box + Prev/Next pager, now
+ * wired to the real GET /schools/:schoolId/classes?activities=&search=&cursor=
+ * query params instead of filtering an already-fully-fetched list client-side —
+ * `ClassListResponseDto.nextCursor` was already real server-side, just never wired
+ * to a pager here). Every caller that omits all three (MembershipPlansPage's own
+ * "Scoped to Class" dropdown/label, which wants the School's whole Class list, not
+ * one page of it) behaves exactly as before any of this existed. */
+export function useClasses(schoolId: string | null, filter: ClassesFilter = {}, cursor?: string | null) {
   return useQuery({
-    queryKey: ['classes', schoolId],
-    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/classes', { params: { path: { schoolId: schoolId! } } })),
+    queryKey: ['classes', schoolId, filter.activities ?? null, filter.search ?? null, cursor ?? null],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/classes', {
+          params: {
+            path: { schoolId: schoolId! },
+            query: { activities: filter.activities, search: filter.search, cursor: cursor ?? undefined },
+          },
+        }),
+      ),
     enabled: !!schoolId,
     // FOUND ON REVIEW (Phase 18): MembershipPlansPage now also depends on
     // this hook (to populate the "Scoped to Class" dropdown/label) alongside

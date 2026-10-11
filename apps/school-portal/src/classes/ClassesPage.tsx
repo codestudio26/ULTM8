@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
@@ -13,7 +13,36 @@ import { ClassFormModal } from './ClassFormModal';
 export function ClassesPage() {
   const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
-  const { data, isLoading, error } = useClasses(schoolId);
+  // Server-side Discipline (Activities) filter + "Search classes" box
+  // (GET /schools/:schoolId/classes?activities=&search=), plus Prev/Next cursor
+  // pagination (ClassListResponseDto.nextCursor was already real server-side —
+  // this page just never wired a pager to it before). A cursor stack (rather than
+  // ClassListResponseDto's own forward-only nextCursor) is what makes a real "Prev"
+  // possible without re-fetching from page 1 or accumulating every page in memory —
+  // no shared Pager component exists yet in this codebase to reuse (confirmed: no
+  // other school-portal list page is paginated today), so this is a small, local,
+  // one-off control, not a new shared one.
+  const [activitiesFilter, setActivitiesFilter] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [cursorStack, setCursorStack] = useState<Array<string | null>>([null]);
+  const [pageIndex, setPageIndex] = useState(0);
+  const cursor = cursorStack[pageIndex];
+
+  function resetPaging() {
+    setCursorStack([null]);
+    setPageIndex(0);
+  }
+
+  function goToNextPage(nextCursor: string | null) {
+    setCursorStack((stack) => [...stack.slice(0, pageIndex + 1), nextCursor]);
+    setPageIndex((i) => i + 1);
+  }
+
+  const { data, isLoading, error } = useClasses(
+    schoolId,
+    { activities: activitiesFilter.trim() || undefined, search: searchFilter.trim() || undefined },
+    cursor,
+  );
   const { data: branchData } = useBranches(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
   const { data: disciplineData } = useDisciplines(schoolId);
@@ -22,13 +51,12 @@ export function ClassesPage() {
   const [editing, setEditing] = useState<ClassResponse | null>(null);
 
   if (!schoolId) return null;
-  if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Classes.'} />;
 
   const classes = data?.items ?? [];
   const branches = branchData?.items ?? [];
   const instructors = instructorData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
+  const hasFilter = activitiesFilter.trim() !== '' || searchFilter.trim() !== '';
 
   return (
     <>
@@ -38,8 +66,45 @@ export function ClassesPage() {
         actions={<Button onClick={() => setCreating(true)}>Add class</Button>}
       />
       <Card>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 200 }}>
+            <Field label="Discipline" htmlFor="classes-activity-filter" hint="Exact match against one of the Class's Activities.">
+              <TextField
+                id="classes-activity-filter"
+                placeholder="e.g. Jiu Jitsu"
+                value={activitiesFilter}
+                onChange={(e) => {
+                  setActivitiesFilter(e.target.value);
+                  resetPaging();
+                }}
+              />
+            </Field>
+          </div>
+          <div style={{ minWidth: 200 }}>
+            <Field label="Search classes" htmlFor="classes-search-filter">
+              <TextField
+                id="classes-search-filter"
+                type="search"
+                placeholder="Search by title…"
+                value={searchFilter}
+                onChange={(e) => {
+                  setSearchFilter(e.target.value);
+                  resetPaging();
+                }}
+              />
+            </Field>
+          </div>
+        </div>
+      </Card>
+      {isLoading ? <Spinner /> : null}
+      {error ? <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Classes.'} /> : null}
+      {!isLoading && !error ? (
+      <Card>
         {classes.length === 0 ? (
-          <EmptyState title="No Classes yet" description="Add your first Class to get started." />
+          <EmptyState
+            title={hasFilter ? 'No Classes match these filters' : 'No Classes yet'}
+            description={hasFilter ? 'Try a different discipline or search term, or clear the filters.' : 'Add your first Class to get started.'}
+          />
         ) : (
           <Table<ClassResponse>
             rows={classes}
@@ -96,6 +161,19 @@ export function ClassesPage() {
           />
         )}
       </Card>
+      ) : null}
+
+      {!isLoading && !error && (classes.length > 0 || pageIndex > 0) ? (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+          <Button variant="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((i) => Math.max(0, i - 1))}>
+            Prev
+          </Button>
+          <Button variant="secondary" disabled={!data?.nextCursor} onClick={() => goToNextPage(data!.nextCursor ?? null)}>
+            Next
+          </Button>
+          <span className="ultm8-field__hint">Page {pageIndex + 1}</span>
+        </div>
+      ) : null}
 
       {creating ? (
         <ClassFormModal

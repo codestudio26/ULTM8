@@ -74,16 +74,34 @@ export class ClassesService {
   /** Classes visible to the caller under one School — RLS restricts this to a School-
    * level grant (sees every Class, any Branch) or a Branch-scoped grant (their own
    * Branch's Classes plus School-wide ones — class_tenant_isolation, this phase's
-   * migration). */
+   * migration).
+   *
+   * `activities`/`search` — additive, optional filters (School Portal's Classes page
+   * Discipline filter + "Search classes" box, ClassesQueryDto). Both omitted behaves
+   * exactly as before either filter existed. */
   async findAllForSchool(
     callerId: string,
     schoolId: string,
     cursor?: string,
     limit?: number,
+    activities?: string,
+    search?: string,
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.class.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) =>
+          tx.class.findMany({
+            ...args,
+            where: {
+              schoolId,
+              ...(activities ? { activities: { has: activities } } : {}),
+              ...(search ? { title: { contains: search, mode: 'insensitive' } } : {}),
+            },
+          }),
+        cursor,
+        limit,
+      ),
     );
   }
 

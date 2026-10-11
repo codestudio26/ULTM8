@@ -327,6 +327,89 @@ describeIfDb('ClassesModule — HTTP-level cross-tenant isolation', () => {
       .send({ endDate: '2026-09-01T00:00:00.000Z' }); // before classBody()'s default startDate
     expect(patchRes.status).toBe(400);
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /schools/:schoolId/classes?activities=&search=&cursor= — v1.2 backend
+  // backlog, "Classes page": Discipline filter + "Search classes" box had no
+  // backend param at all; Prev/Next pagination was decorative even though
+  // ClassListResponseDto.nextCursor/cursor/limit were already real.
+  // ---------------------------------------------------------------------------
+
+  it('filters GET /schools/:schoolId/classes by activities (exact) and by search (case-insensitive substring on title)', async () => {
+    const judoClass = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Adult Judo Fundamentals', activities: ['Judo'] }));
+    const bjjClass = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(classBody({ title: 'Kids BJJ', activities: ['BJJ'] }));
+    expect(judoClass.status).toBe(201);
+    expect(bjjClass.status).toBe(201);
+    classIds.push(judoClass.body.id, bjjClass.body.id);
+
+    const byActivity = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .query({ activities: 'Judo' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(byActivity.status).toBe(200);
+    const activityIds = byActivity.body.items.map((c: { id: string }) => c.id);
+    expect(activityIds).toContain(judoClass.body.id);
+    expect(activityIds).not.toContain(bjjClass.body.id);
+
+    const bySearch = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .query({ search: 'judo fund' }) // lowercase, partial — proves case-insensitive substring
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(bySearch.status).toBe(200);
+    const searchIds = bySearch.body.items.map((c: { id: string }) => c.id);
+    expect(searchIds).toContain(judoClass.body.id);
+    expect(searchIds).not.toContain(bjjClass.body.id);
+
+    // Omitted entirely — both still present, exactly as before either filter existed.
+    const unfiltered = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(unfiltered.status).toBe(200);
+    const unfilteredIds = unfiltered.body.items.map((c: { id: string }) => c.id);
+    expect(unfilteredIds).toContain(judoClass.body.id);
+    expect(unfilteredIds).toContain(bjjClass.body.id);
+  });
+
+  it('paginates GET /schools/:schoolId/classes with cursor/limit, and nextCursor is null on the last page', async () => {
+    const created: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolA.id}/classes`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`)
+        .send(classBody({ title: `Pagination Class ${i}`, activities: ['Pagination Fixture'] }));
+      expect(res.status).toBe(201);
+      created.push(res.body.id);
+    }
+    classIds.push(...created);
+
+    const firstPage = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .query({ activities: 'Pagination Fixture', limit: 2 })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body.items).toHaveLength(2);
+    expect(firstPage.body.nextCursor).toEqual(expect.any(String));
+
+    const secondPage = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/classes`)
+      .query({ activities: 'Pagination Fixture', limit: 2, cursor: firstPage.body.nextCursor })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(secondPage.status).toBe(200);
+    expect(secondPage.body.items).toHaveLength(1);
+    expect(secondPage.body.nextCursor).toBeNull();
+
+    // No overlap between the two pages — a real Prev/Next pager relies on this.
+    const firstIds = firstPage.body.items.map((c: { id: string }) => c.id);
+    const secondIds = secondPage.body.items.map((c: { id: string }) => c.id);
+    expect(firstIds.filter((id: string) => secondIds.includes(id))).toHaveLength(0);
+  });
+
   // ---------------------------------------------------------------------------
   // Grading foundation PR 5 — styles and class types on classes (Decisions 143,
   // 152, 170). Its own School with styles; School A above has none, so its

@@ -166,4 +166,43 @@ describeIfDb('BranchesModule — Decision 231 settings fields', () => {
       .send({ name: 'Overloaded Branch', activities: Array.from({ length: 21 }, (_, i) => `Activity ${i}`) });
     expect(res.status).toBe(400);
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /schools/:schoolId/branches?city= — v1.2 backend backlog, "Branches page",
+  // City filter: previously client-side only, no backend filter param existed.
+  // Branch has no dedicated city column (schema.prisma), so this is a
+  // case-insensitive substring match against `address` (BranchesQueryDto).
+  // ---------------------------------------------------------------------------
+
+  it('filters GET /schools/:schoolId/branches by city, case-insensitively, against address', async () => {
+    const toronto = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/branches`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ name: 'City Filter Branch Toronto', address: '123 Main St, Toronto, ON' });
+    const vaughan = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/branches`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ name: 'City Filter Branch Vaughan', address: '456 King St, Vaughan, ON' });
+    expect(toronto.status).toBe(201);
+    expect(vaughan.status).toBe(201);
+    branchIds.push(toronto.body.id, vaughan.body.id);
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/branches`)
+      .query({ city: 'toronto' }) // lowercase — proves case-insensitivity
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.items.map((b: { id: string }) => b.id);
+    expect(ids).toContain(toronto.body.id);
+    expect(ids).not.toContain(vaughan.body.id);
+
+    // Omitted entirely — both still present, exactly as before this filter existed.
+    const unfiltered = await request(app.getHttpServer())
+      .get(`/v1/schools/${school.id}/branches`)
+      .set('Authorization', `Bearer ${tokenOwner}`);
+    expect(unfiltered.status).toBe(200);
+    const unfilteredIds = unfiltered.body.items.map((b: { id: string }) => b.id);
+    expect(unfilteredIds).toContain(toronto.body.id);
+    expect(unfilteredIds).toContain(vaughan.body.id);
+  });
 });

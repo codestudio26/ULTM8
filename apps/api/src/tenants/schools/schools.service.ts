@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, Injectable, Logger, NotFoundExc
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
+import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
@@ -12,6 +14,7 @@ import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
+import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 
 @Injectable()
 export class SchoolsService {
@@ -19,6 +22,7 @@ export class SchoolsService {
 
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
@@ -445,25 +449,92 @@ export class SchoolsService {
    * (schoolId, role STUDENT, revokedAt null) is itself the exact witness
    * user_self_or_shared_school's visibility check needs, so the joined User row is
    * always visible — no separate PrismaAuthService lookup needed here.
+   *
+   * `status` (StudentRosterStatusDto) — ACTIVE (default, the exact pre-existing
+   * behavior, unchanged query below), INACTIVE (only Students whose every STUDENT
+   * RoleGrant at this School is revoked), or ALL (both). v1.2 backend backlog's
+   * "Students page" gap: the roster previously hard-coded `revokedAt: null`,
+   * silently excluding revoked enrollments with no way to ever see them.
    */
-  async findAllStudentsForSchool(callerId: string, schoolId: string) {
+  async findAllStudentsForSchool(callerId: string, schoolId: string, status: StudentRosterStatusDto = StudentRosterStatusDto.ACTIVE) {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
 
-    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+    if (status === StudentRosterStatusDto.ACTIVE) {
+      // Unchanged from this method's pre-existing behavior — kept as its own,
+      // untouched branch so a caller that never sends `status` sees exactly the
+      // same query/result it always has, not a behaviorally-equivalent rewrite.
+      const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.roleGrant.findMany({
+          where: { schoolId, role: 'STUDENT', revokedAt: null },
+          distinct: ['userId'],
+          orderBy: { grantedAt: 'asc' },
+          select: {
+            grantedAt: true,
+            user: { select: { id: true, firstName: true, surname: true, email: true } },
+          },
+        }),
+      );
+      return {
+        items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt, status: StudentStatusDto.ACTIVE })),
+      };
+    }
+
+    // INACTIVE or ALL — needs every STUDENT RoleGrant (active and revoked) at this
+    // School to resolve, per User, whether ANY of them is still non-revoked. Selects
+    // `userId` only, NOT a Prisma `include`/`select` on `user` — a revoked RoleGrant
+    // is exactly the case Decision 117 already found breaks that join:
+    // user_self_or_shared_school requires a currently-ACTIVE overlapping RoleGrant to
+    // see another User's row, so an all-revoked Student's own User row isn't visible
+    // through this method's own tenant (`ultm8_app`) context at all (confirmed by
+    // reproducing it directly — `Field user is required to return data, got null
+    // instead`, same failure class Decision 117's own regression test guards
+    // against). Names are resolved via PrismaAuthService/resolveUserNames instead,
+    // the same established pattern InstructorsService.findAllForSchool already uses
+    // for its own Name column.
+    const allGrants = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findMany({
-        where: { schoolId, role: 'STUDENT', revokedAt: null },
-        distinct: ['userId'],
+        where: { schoolId, role: 'STUDENT' },
         orderBy: { grantedAt: 'asc' },
-        select: {
-          grantedAt: true,
-          user: { select: { id: true, firstName: true, surname: true, email: true } },
-        },
+        select: { userId: true, grantedAt: true, revokedAt: true },
       }),
     );
-    return {
-      items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt })),
-    };
+
+    const names = await resolveUserNames(this.prismaAuth, allGrants.map((g) => g.userId));
+    const byUser = new Map<string, { earliestActiveAt?: Date; latestAt: Date; hasActive: boolean }>();
+    for (const g of allGrants) {
+      const existing = byUser.get(g.userId);
+      const isActive = g.revokedAt === null;
+      if (!existing) {
+        byUser.set(g.userId, {
+          hasActive: isActive,
+          earliestActiveAt: isActive ? g.grantedAt : undefined,
+          latestAt: g.grantedAt,
+        });
+      } else {
+        if (isActive) {
+          existing.hasActive = true;
+          if (existing.earliestActiveAt === undefined) existing.earliestActiveAt = g.grantedAt;
+        }
+        existing.latestAt = g.grantedAt; // allGrants is ordered ascending — last write wins
+      }
+    }
+
+    let rows = Array.from(byUser.entries()).map(([userId, { hasActive, earliestActiveAt, latestAt }]) => ({
+      id: userId,
+      firstName: names.get(userId)?.firstName ?? '',
+      surname: names.get(userId)?.surname ?? '',
+      email: names.get(userId)?.email ?? '',
+      status: hasActive ? StudentStatusDto.ACTIVE : StudentStatusDto.INACTIVE,
+      enrolledAt: hasActive ? earliestActiveAt! : latestAt,
+    }));
+
+    if (status === StudentRosterStatusDto.INACTIVE) {
+      rows = rows.filter((r) => r.status === StudentStatusDto.INACTIVE);
+    }
+    rows.sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime());
+
+    return { items: rows };
   }
 
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */

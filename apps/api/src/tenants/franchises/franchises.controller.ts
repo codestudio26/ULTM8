@@ -3,11 +3,11 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nest
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { FranchisesService } from './franchises.service';
 import { CreateFranchiseDto } from './dto/create-franchise.dto';
 import { UpdateFranchiseDto } from './dto/update-franchise.dto';
 import { FranchiseListResponseDto, FranchiseResponseDto } from './dto/franchise-response.dto';
+import { FranchisesQueryDto } from './dto/franchises-query.dto';
 import { SchoolListResponseDto } from '../schools/dto/school-response.dto';
 
 // Create / read / update only — no delete endpoint, same reasoning as SchoolsController
@@ -27,8 +27,8 @@ export class FranchisesController {
 
   @ApiOkResponse({ type: FranchiseListResponseDto })
   @Get()
-  findAll(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
-    return this.franchisesService.findAllForCaller(user.sub, query.cursor, query.limit);
+  findAll(@CurrentUser() user: JwtPayload, @Query() query: FranchisesQueryDto) {
+    return this.franchisesService.findAllForCaller(user.sub, query.cursor, query.limit, query.feeModel, query.activity);
   }
 
   @ApiOkResponse({ type: FranchiseResponseDto })
