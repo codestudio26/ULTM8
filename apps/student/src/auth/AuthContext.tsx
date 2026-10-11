@@ -60,6 +60,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, passcode: string) => {
       const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
+      // Decision 1/230 — login() can also resolve to a mustChangePasscode
+      // response (a server-generated temp passcode pending a change), but
+      // that's an Instructor "Add Manually" concern — school-portal's own
+      // sign-in, not this Student/Guardian app's. Surfaced as a clear error
+      // rather than silently assumed away, since the shared LoginResponseDto
+      // makes accessToken optional for both apps now.
+      if (!result.accessToken) {
+        throw new Error('This account requires a passcode change — sign in on the School Portal first.');
+      }
       await applyToken(result.accessToken);
     },
     [applyToken],
