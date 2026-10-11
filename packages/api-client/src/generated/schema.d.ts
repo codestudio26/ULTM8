@@ -1764,6 +1764,22 @@ export interface paths {
         patch: operations["GradingController_cycleSkillSignOff"];
         trace?: never;
     };
+    "/v1/students/{id}/ranks/declare-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradingController_findDeclareOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/ranks/{disciplineId}/declare": {
         parameters: {
             query?: never;
@@ -4202,6 +4218,30 @@ export interface components {
             /** @description Why the student is being moved down. Required. */
             reason: string;
         };
+        DeclareRungDto: {
+            id: string;
+            /** @description The stripe's own name, e.g. "Blue Belt · 2 Stripes". */
+            name: string;
+            beltName: string;
+            primaryColour: string;
+            secondaryColour?: string | null;
+            /** @description Stripe colour. */
+            stripeColour: string;
+            stripeCount: number;
+            timeOnly: boolean;
+            /** @description The belt (Rank) this rung belongs to; send it with the rung id to declare. */
+            rankId: string;
+        };
+        DeclareStyleOptionDto: {
+            disciplineId: string;
+            disciplineName: string;
+            /** @description Lowest first. The first rung is the plain first belt, verified automatically (Decision 147). */
+            ladder: components["schemas"]["DeclareRungDto"][];
+        };
+        DeclareOptionsResponseDto: {
+            /** @description Styles the student has no rank in yet. Empty while the School has ranks switched off. */
+            items: components["schemas"]["DeclareStyleOptionDto"][];
+        };
         DeclareRankDto: {
             /** @description The belt (Rank) of this style. */
             rankId: string;
@@ -4253,6 +4293,8 @@ export interface components {
             /** @description The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10). */
             hardBlocked: boolean;
             eligibility: components["schemas"]["EligibilityResponseDto"];
+            /** @description Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff. */
+            noHomeBranch: boolean;
         };
         GradingBoardResponseDto: {
             /** @description Students with a next rank in this style, highest progress first. */
@@ -4571,6 +4613,10 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
+        AcademyBranchDto: {
+            id: string;
+            name: string;
+        };
         AcademyMembershipPlanDto: {
             id: string;
             schoolId: string;
@@ -4606,6 +4652,8 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches. */
+            branches: components["schemas"]["AcademyBranchDto"][];
             membershipPlans: components["schemas"]["AcademyMembershipPlanDto"][];
             upcomingClasses: components["schemas"]["AcademyClassDto"][];
         };
@@ -7941,6 +7989,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GradingController_findDeclareOptions: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclareOptionsResponseDto"];
+                };
             };
         };
     };

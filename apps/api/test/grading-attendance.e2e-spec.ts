@@ -80,11 +80,12 @@ describeIfDb('Grading — attendance counted through the engine (Phase 2b)', () 
   }
 
   /** Books the student into a class and checks them in through the Instructor roll call. */
-  async function attend(startDate: Date, styles: Array<{ disciplineId: string; classType: string | null }>) {
+  async function attend(startDate: Date, styles: Array<{ disciplineId: string; classType: string | null }>, branchId?: string) {
     const cls = await superuser.class.create({
       data: {
         id: randomUUID(),
         schoolId: school.id,
+        branchId,
         title: 'Counted Class',
         activities: ['BJJ'],
         styles,
@@ -309,6 +310,24 @@ describeIfDb('Grading — attendance counted through the engine (Phase 2b)', () 
     const after = await counted();
     expect(after).toMatchObject({ total: 0, byType: {} });
     expect(after.countingSince.getTime()).toBeGreaterThanOrEqual(before - 1000);
+  });
+
+  it('a class at another branch counts like any other when the student could book it (Decision 148.1)', async () => {
+    const home = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Downtown' } });
+    const away = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Riverside' } });
+    await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: student.id, branchId: home.id } });
+    try {
+      await reset();
+      await setNextRung({ eligibleClassTypes: [] });
+      await attend(at('2026-09-07'), bjjClass('Sparring'), home.id);
+      await attend(at('2026-09-08'), bjjClass('Sparring'), away.id);
+      expect((await counted()).total).toBe(2);
+    } finally {
+      await superuser.booking.deleteMany({ where: { schoolId: school.id } });
+      await superuser.class.deleteMany({ where: { schoolId: school.id } });
+      await superuser.studentHomeBranch.deleteMany({ where: { schoolId: school.id } });
+      await superuser.branch.deleteMany({ where: { schoolId: school.id } });
+    }
   });
 
   describe('readiness from the engine — GET /students/{id}/eligibility (Phase 2c)', () => {

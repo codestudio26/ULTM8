@@ -15,6 +15,21 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Belts and stripes can be reordered by dragging** (Decision 152.2). Each
+  belt in the ladder, and each stripe line in the belt editor, has a drag
+  handle; dropping it on another row moves it there. The ↑/↓ buttons stay for
+  the keyboard, and saving asks for the same confirmation naming the students
+  affected.
+- **"No branch" group on the Grading Board** (Decision 148.2). The owner
+  now sees students who have no home branch yet in their own group above the
+  columns (no branch coach sees them) and gives each one a branch there. Board
+  items carry `noHomeBranch` (owner only).
+- **Joining a School from the app, with a home branch and a current belt**
+  (Decisions 137, 147, 209). A School's public page now lists its branch
+  names, name only, so a student can choose a home branch before joining.
+  New `GET /students/{id}/ranks/declare-options` lists the styles a student
+  can still declare a belt in, with their belts, for the student or their
+  guardian. The app's join screen is Track B (`docs/TRACK-B-ROADMAP.md`).
 - **Lesson access is also checked by the database** (Decision 208). A
   lesson's description, video and captions now live in their own table,
   which the database only lets staff, everyone at the School for a free

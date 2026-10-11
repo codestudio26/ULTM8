@@ -139,6 +139,9 @@ export class AcademiesService {
           take: MEMBERSHIP_PLANS_LIMIT,
           select: MEMBERSHIP_PLAN_DISCOVERY_SELECT,
         },
+        // Branch names only (Decision 209), so a student can choose a home
+        // branch when joining. Ordered by name: createdAt isn't granted.
+        branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } },
         classes: {
           where: { startDate: { gte: new Date() } },
           orderBy: { startDate: 'asc' },

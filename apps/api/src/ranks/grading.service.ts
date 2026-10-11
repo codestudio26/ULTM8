@@ -213,6 +213,69 @@ export class GradingService {
     return { items };
   }
 
+  /** The styles a student can still declare a belt in at one School, each
+   * with its ladder, for the "your current belt" step when joining
+   * (Decisions 137, 147). For the student and their guardians. Read under the
+   * student's own context: a guardian holds no role at the School, so can't
+   * read its styles and belts themselves. Styles the student already has a
+   * rank in are left out (only staff change those); none at all while the
+   * School has ranks switched off. */
+  async findDeclareOptions(callerId: string, studentId: string, schoolId: string) {
+    if (!UUID_PATTERN.test(schoolId)) {
+      throw new BadRequestException('schoolId must be a valid UUID');
+    }
+    if (callerId !== studentId) {
+      try {
+        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        throw new ForbiddenException('You may not declare a belt for this Student.');
+      }
+    }
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const enrolled = await tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      if (!enrolled) {
+        throw new ForbiddenException('Only a Student of this School can declare a belt here.');
+      }
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { ranksToggle: true } });
+      if (!school?.ranksToggle) {
+        return { items: [] };
+      }
+      const [styles, belts, held] = await Promise.all([
+        tx.discipline.findMany({ where: { schoolId }, orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } }),
+        tx.rank.findMany({ where: { schoolId }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
+        tx.studentRank.findMany({ where: { studentId, schoolId }, select: { disciplineId: true } }),
+      ]);
+      const heldIds = new Set(held.map((h) => h.disciplineId));
+      const items = styles
+        .filter((d) => !heldIds.has(d.id))
+        .map((d) => ({
+          disciplineId: d.id,
+          disciplineName: d.name,
+          ladder: belts
+            .filter((b) => b.disciplineId === d.id)
+            .flatMap((b) =>
+              b.stripeTiers.map((t) => ({
+                id: t.id,
+                rankId: b.id,
+                name: t.name,
+                beltName: b.name,
+                primaryColour: b.primaryColour,
+                secondaryColour: b.secondaryColour,
+                stripeColour: t.colour,
+                stripeCount: t.count,
+                timeOnly: t.timeOnly,
+              })),
+            ),
+        }))
+        .filter((d) => d.ladder.length > 0);
+      return { items };
+    });
+  }
+
   /** Voided entries are hidden from the normal history (Decision 129). Staff
    * may ask for them with `includeVoided`; a Student or Guardian may not. */
   async findRankHistoryForStudent(
@@ -940,6 +1003,9 @@ export class GradingService {
       student: { id: string; firstName: string; surname: string };
       studentRank: Prisma.StudentRankGetPayload<{ include: { skillStatuses: { select: { skillId: true; status: true } } } }>;
       homeTimeZone: string | null;
+      /** Owner only: the School has branches and this student has no home
+       * branch yet (Decision 148.2). */
+      noHomeBranch: boolean;
       memberships: Array<{ status: string; expiryDate: Date | null; classesRemaining: number | null }>;
     };
     const rows: Row[] = [];
@@ -952,20 +1018,28 @@ export class GradingService {
           select: { user: { select: { id: true, firstName: true, surname: true } } },
         });
         const ids = grants.map((g) => g.user.id);
-        const [ranks, homes, memberships] = await Promise.all([
+        const [ranks, homes, memberships, anyBranch] = await Promise.all([
           tx.studentRank.findMany({ where: { schoolId, disciplineId, studentId: { in: ids } }, include: { skillStatuses: { select: { skillId: true, status: true } } } }),
           tx.studentHomeBranch.findMany({ where: { schoolId, studentId: { in: ids } }, select: { studentId: true, branch: { select: { timezone: true } } } }),
           tx.membership.findMany({ where: { schoolId, studentId: { in: ids } }, select: membershipSelect }),
+          tx.branch.findFirst({ where: { schoolId }, select: { id: true } }),
         ]);
         // Keyed by student, not searched per student (stress round, finding 3).
         const rankOf = new Map(ranks.map((r) => [r.studentId, r]));
         const zoneOf = new Map(homes.map((h) => [h.studentId, h.branch.timezone]));
+        const hasHome = new Set(homes.map((h) => h.studentId));
         const membershipsOf = new Map<string, typeof memberships>();
         for (const m of memberships) membershipsOf.set(m.studentId, [...(membershipsOf.get(m.studentId) ?? []), m]);
         for (const g of grants) {
           const sr = rankOf.get(g.user.id);
           if (!sr) continue;
-          rows.push({ student: g.user, studentRank: sr, homeTimeZone: zoneOf.get(g.user.id) ?? null, memberships: membershipsOf.get(g.user.id) ?? [] });
+          rows.push({
+            student: g.user,
+            studentRank: sr,
+            homeTimeZone: zoneOf.get(g.user.id) ?? null,
+            noHomeBranch: !!anyBranch && !hasHome.has(g.user.id),
+            memberships: membershipsOf.get(g.user.id) ?? [],
+          });
         }
       });
     } else {
@@ -984,6 +1058,8 @@ export class GradingService {
           student: { id: r.studentId, firstName: r.firstName, surname: r.surname },
           studentRank: studentRankFromJson(r.studentRank),
           homeTimeZone: r.homeTimeZone,
+          // Staff see only students of their own branches (Decision 139).
+          noHomeBranch: false,
           memberships: r.memberships.map((m) => ({
             status: m.status as string,
             expiryDate: dbDate(m.expiryDate),
@@ -1007,6 +1083,7 @@ export class GradingService {
       active: boolean;
       activeSource: 'MANUAL' | 'MEMBERSHIP';
       hasActiveMembership: boolean;
+      noHomeBranch: boolean;
       hardBlocked: boolean;
       eligibility: Extract<ReturnType<typeof eligibilityOnLadder>, { hasNext: true }>;
     }> = [];
@@ -1034,6 +1111,7 @@ export class GradingService {
         active,
         activeSource: sr.boardActiveOverride === null ? 'MEMBERSHIP' : 'MANUAL',
         hasActiveMembership,
+        noHomeBranch: row.noHomeBranch,
         hardBlocked: discipline.skillsRequiredToGrade && !eligibility.timeOnly && eligibility.missingSkillIds.length > 0,
         eligibility,
       });
