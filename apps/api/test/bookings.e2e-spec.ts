@@ -79,6 +79,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   let classRankGated: { id: string };
   let classFull: { id: string };
   let classPastCutoff: { id: string };
+  let classPastCutoffWithFee: { id: string };
+  let classBeforeCutoffWithFee: { id: string };
 
   const bookingIds: string[] = [];
   const waitlistEntryIds: string[] = [];
@@ -200,6 +202,34 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     });
     classPastCutoff = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Already Cutoff', startDate: future, endDate: new Date(future.getTime() + 3_600_000), refundFeeDate: past },
+    });
+    // Decision 234 — same past-cutoff shape as classPastCutoff above, plus a
+    // real cancellationCharge, to exercise the late-cancellation-fee path.
+    classPastCutoffWithFee = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        title: 'Already Cutoff, With Fee',
+        startDate: future,
+        endDate: new Date(future.getTime() + 3_600_000),
+        refundFeeDate: past,
+        cancellationCharge: 1000,
+      },
+    });
+    // Decision 234 — a Class WITH cancellationCharge configured but not yet
+    // past its own refundFeeDate — used only to confirm REFUNDED cancellations
+    // never even attempt a charge. Its own dedicated fixture, not reused from
+    // elsewhere in this suite (classBasic/classFull both already carry Booking
+    // state from earlier tests this file doesn't want to disturb).
+    classBeforeCutoffWithFee = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        title: 'Before Cutoff, With Fee',
+        startDate: future,
+        endDate: new Date(future.getTime() + 3_600_000),
+        cancellationCharge: 1000,
+      },
     });
   });
 
@@ -962,6 +992,55 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
 
     const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
     expect(after.classesRemaining).toBe(2); // still decremented, never restored
+  });
+
+  it('Decision 234 — a WITHHELD cancellation on a Class with cancellationCharge set records NO_SAVED_PAYMENT_METHOD when the Student never saved a card, and the cancellation still succeeds', async () => {
+    // studentB, not studentA — keeps this test's own Membership/outcome state
+    // independent of the WITHHELD test above. No StudentPaymentMethod row
+    // exists anywhere in this suite's fixtures, so this exercises the real,
+    // fully-testable-without-Stripe outcome (PaymentsService.chargeOffSession
+    // throws NoSavedPaymentMethodError before ever reaching a Stripe call —
+    // see that method's own comment).
+    await superuser.membership.updateMany({ where: { studentId: studentB.id, classesRemaining: null }, data: { status: 'EXPIRED' } });
+
+    const membership = await mkActiveMembership(studentB.id, classPackPlanId, 3);
+    const bookRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classPastCutoffWithFee.id}/book`)
+      .set('Authorization', `Bearer ${tokenStudentB}`)
+      .send({});
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const cancelRes = await request(app.getHttpServer()).patch(`/v1/bookings/${bookRes.body.id}/cancel`).set('Authorization', `Bearer ${tokenStudentB}`);
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.refundResolution).toBe('WITHHELD');
+    expect(cancelRes.body.cancellationChargeOutcome).toBe('NO_SAVED_PAYMENT_METHOD');
+    expect(cancelRes.body.cancellationChargeAmount).toBe(1000);
+    expect(cancelRes.body.stripeCancellationPaymentIntentId).toBeNull();
+
+    const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(after.classesRemaining).toBe(2); // still decremented, never restored — unaffected by the charge outcome
+  });
+
+  it('cancelling BEFORE the refund cutoff on a Class with cancellationCharge set never attempts a charge at all (REFUNDED)', async () => {
+    await superuser.membership.updateMany({ where: { studentId: studentA.id, classesRemaining: null }, data: { status: 'EXPIRED' } });
+
+    const membership = await mkActiveMembership(studentA.id, classPackPlanId, 3);
+    const bookRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBeforeCutoffWithFee.id}/book`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({});
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const cancelRes = await request(app.getHttpServer()).patch(`/v1/bookings/${bookRes.body.id}/cancel`).set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.refundResolution).toBe('REFUNDED');
+    expect(cancelRes.body.cancellationChargeOutcome).toBeNull();
+    expect(cancelRes.body.cancellationChargeAmount).toBeNull();
+
+    const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(after.classesRemaining).toBe(3); // restored — no fee, no charge attempt
   });
 
   it('cancelling a Booking whose Membership was funded by a DISPUTED Transaction does NOT restore the credit (Decision 111 freeze) — the cancellation itself still succeeds', async () => {

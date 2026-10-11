@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiExcludeEndpoint, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,6 +7,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { ConnectOnboardingResponseDto, PaymentAccountResponseDto } from './dto/payment-account-response.dto';
+import { PaymentMethodResponseDto, SetupSessionResponseDto } from './dto/payment-method-response.dto';
 
 // PaymentAccount CRUD + Stripe Connect Express onboarding + webhook receiving only
 // this phase — see the Phase 8 kickoff prompt for the full scoping rationale. No
@@ -77,6 +78,33 @@ export class PaymentsController {
   @Post('payment-accounts/:id/connect/onboard')
   initiateConnectOnboarding(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.paymentsService.initiateConnectOnboarding(user.sub, id);
+  }
+
+  // ---- Saved payment methods (Decision 234's own dependency — see
+  // PaymentsService's own header comment on createSetupSession for the full
+  // "hosted Checkout Session, not an embedded SDK" account) ----
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiCreatedResponse({ type: SetupSessionResponseDto })
+  @Post('schools/:schoolId/payment-methods/setup-session')
+  createSetupSession(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.paymentsService.createSetupSession(user.sub, schoolId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ type: PaymentMethodResponseDto })
+  @Get('schools/:schoolId/payment-methods/me')
+  getMyPaymentMethod(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.paymentsService.getMyPaymentMethod(user.sub, schoolId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Delete('schools/:schoolId/payment-methods/me')
+  deleteMyPaymentMethod(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.paymentsService.deleteMyPaymentMethod(user.sub, schoolId);
   }
 
   // ---- Cash/Bank Transfer settlement confirmation (Phase 9) ----

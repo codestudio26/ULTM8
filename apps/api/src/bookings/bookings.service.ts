@@ -11,6 +11,7 @@ import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
+import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { BookClassDto } from './dto/book-class.dto';
@@ -25,7 +26,9 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
  * override amendment. Waitlist join/withdraw/claim live in WaitlistService — see that
  * file's own header comment. QR check-in/Attendance (Phase "12") and
  * NotificationsModule are both explicitly out of scope — see the Phase 11 kickoff
- * prompt §3. Phase 40 added Guardian-on-behalf-of booking CREATION; Phase 41 added
+ * prompt §3. The late-cancellation-fee CHARGE mechanism (once flagged here as
+ * deliberately missing) is built — Decision 234, see cancelBooking()'s own
+ * comment for the full account. Phase 40 added Guardian-on-behalf-of booking CREATION; Phase 41 added
  * Guardian-on-behalf-of CANCELLATION (see cancelBooking()'s own comment for why it
  * needed a genuinely different mechanism — a new DTO field, not the pre-existing
  * BookClassDto.studentId — even though both ultimately reuse the same target-
@@ -56,6 +59,7 @@ export class BookingsService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly guardiansService: GuardiansService,
     private readonly subscriptionGate: SubscriptionGateService,
+    private readonly paymentsService: PaymentsService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
@@ -265,6 +269,8 @@ export class BookingsService {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
     }
 
+    let cancellationChargeAmount: number | null = null;
+    let cancellationChargeCurrency = 'usd';
     const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
       const now = new Date();
@@ -273,6 +279,25 @@ export class BookingsService {
       // means never past it — always refunded.
       const pastCutoff = cls.refundFeeDate !== null && now >= cls.refundFeeDate;
       const resolution: 'REFUNDED' | 'WITHHELD' = pastCutoff ? 'WITHHELD' : 'REFUNDED';
+
+      // Decision 234 — a sibling action to credit-withholding above, not a
+      // replacement: captured here (inside the transaction, where cls/
+      // resolvedBooking's sourceMembership are both cheaply available) but the
+      // actual Stripe call happens AFTER this transaction commits (no external
+      // I/O inside a transaction, same discipline every other Stripe-calling
+      // write in this codebase follows) — see the try/catch below.
+      if (resolution === 'WITHHELD' && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
+        cancellationChargeAmount = cls.cancellationCharge;
+        // No currency field on Class itself — reuses the Booking's own
+        // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
+        // fallback MembershipsService.purchase() already applies when charging
+        // this exact Membership's own Stripe payments.
+        const sourceMembership = await tx.membership.findUnique({
+          where: { id: resolvedBooking.sourceMembershipId },
+          select: { membershipPlan: { select: { currency: true } } },
+        });
+        cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+      }
 
       // Optimistic-concurrency guard, same shape as every other status-transition in
       // this codebase (Phase 9/10b) — if the Booking already left UPCOMING (a
@@ -310,6 +335,50 @@ export class BookingsService {
       await this.waitlistCascadeQueue.add('seat-freed', { classId: booking.classId });
     } catch (err) {
       this.logger.warn(`Failed to enqueue waitlist-cascade-processing after cancelling Booking ${booking.id}: ${err}`);
+    }
+
+    // Decision 234 — the actual charge attempt, strictly AFTER the Cancellation
+    // above has already committed: cancelling the Booking is the real action
+    // being requested and must succeed regardless of whether this fee can
+    // actually be collected right now (an unreachable Stripe, a declined card,
+    // or no saved payment method at all are all real, expected outcomes here,
+    // never a reason to roll back or block the cancellation itself). Recorded
+    // onto the Booking via its own small follow-up update — never thrown to the
+    // caller — same "best-effort side effect, logged on failure, never blocks
+    // the user-facing action" shape SchoolsService.leaveFranchise's own Stripe
+    // cancellation already established.
+    if (cancellationChargeAmount !== null) {
+      let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
+      let paymentIntentId: string | null = null;
+      try {
+        const charge = await this.paymentsService.chargeOffSession(
+          resolvedBooking.studentId,
+          resolvedBooking.schoolId,
+          cancellationChargeAmount,
+          cancellationChargeCurrency,
+          'Late-cancellation fee',
+        );
+        outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
+        paymentIntentId = charge.paymentIntentId || null;
+      } catch (err) {
+        if (err instanceof NoSavedPaymentMethodError) {
+          outcome = 'NO_SAVED_PAYMENT_METHOD';
+        } else {
+          outcome = 'FAILED';
+          this.logger.error(`Late-cancellation charge failed for Booking ${booking.id} (Student ${resolvedBooking.studentId}, School ${resolvedBooking.schoolId}).`, err as Error);
+        }
+      }
+      return this.prismaApp.withTenantContext(resolvedBooking.studentId, (tx) =>
+        tx.booking.update({
+          where: { id: bookingId },
+          data: {
+            cancellationChargeOutcome: outcome,
+            cancellationChargeAmount,
+            stripeCancellationPaymentIntentId: paymentIntentId,
+          },
+          include: { attendees: true },
+        }),
+      );
     }
 
     return booking;
