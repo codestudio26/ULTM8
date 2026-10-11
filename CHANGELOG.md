@@ -233,6 +233,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   product question it leaves open (no "add a brand-new person" path exists
   here, unlike Instructors' own "Add manually"). `packages/api-client`
   regenerated.
+- **A School Owner can now compose and broadcast a message to every active
+  Student at their School** (Decision 241). **api:** new
+  `POST /schools/:schoolId/notifications/broadcast` (`title`/`body`),
+  School-Owner-gated, enqueuing through the existing `notification-fanout`
+  pipeline so each Student gets a real in-app (and, where configured, email)
+  notification. No audience/targeting beyond "every active Student" yet —
+  narrower targeting by Branch or Class is a real, still-open product
+  question. `packages/api-client` regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

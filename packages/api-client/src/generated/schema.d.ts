@@ -2644,6 +2644,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/notifications/broadcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationBroadcastController_broadcast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{id}/fee-charges": {
         parameters: {
             query?: never;
@@ -5175,6 +5191,14 @@ export interface components {
             items: components["schemas"]["AcademyTimetableSlotDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        BroadcastNotificationDto: {
+            title: string;
+            body: string;
+        };
+        BroadcastNotificationResponseDto: {
+            /** @description Count of distinct active Students the broadcast was enqueued for. */
+            recipientCount: number;
         };
         FranchiseFeeChargeResponseDto: {
             id: string;
@@ -9890,6 +9914,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcademyTimetableListResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationBroadcastController_broadcast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastNotificationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastNotificationResponseDto"];
                 };
             };
         };
