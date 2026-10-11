@@ -9,6 +9,7 @@ import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { InstructorListResponseDto, InstructorResponseDto } from './dto/instructor-response.dto';
 import { EligibleInstructorListResponseDto } from './dto/eligible-instructor-response.dto';
+import { InstructorClassListResponseDto } from './dto/instructor-class-response.dto';
 
 // Instructor profile CRUD only this phase — attendance-scan and booking-override wait
 // for Booking to exist and Decision 71's still-open engineering design pass. See the
@@ -59,5 +60,12 @@ export class InstructorsController {
   @Patch('instructors/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateInstructorDto) {
     return this.instructorsService.update(user.sub, id, dto);
+  }
+
+  /** The "Instructor Class" grid on Instructor Detail (v1.2 backend backlog). */
+  @ApiOkResponse({ type: InstructorClassListResponseDto })
+  @Get('instructors/:id/classes')
+  findClasses(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.instructorsService.findClassesForInstructor(user.sub, id);
   }
 }

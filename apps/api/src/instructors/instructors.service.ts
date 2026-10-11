@@ -173,6 +173,57 @@ export class InstructorsService {
     };
   }
 
+  /**
+   * v1.2 backend backlog ("Instructor Class" grid on Instructor Detail) —
+   * closes the gap `docs/v1.2-backend-backlog.md` flagged: no dedicated
+   * endpoint existed, so this was buildable only by fetching the School's
+   * full Classes list and filtering client-side; this also computes the
+   * "X of Y booked" enrolled count server-side rather than leaving it
+   * decorative.
+   *
+   * `Class.instructorId` is a FK to `User.id`, not `Instructor.id` — matched
+   * against `found.userId` (see this class's own CreateInstructorDto header
+   * comment: an Instructor profile is attached to an existing User, not a
+   * new identity). No `assertStaffAtSchool`/`assertSchoolOwner` gate needed
+   * beyond `findOne()`'s own RLS-backed visibility check: `Instructor`'s
+   * policy already limits who can see this profile at all, and
+   * `booking_staff_read` (Decision 89) already grants SCHOOL_OWNER_MANAGER/
+   * BRANCH_STAFF/INSTRUCTOR broad read on Booking/BookingAttendee at their
+   * own School/Branch under the caller's OWN ordinary tenant context — no
+   * PrismaJobsService bypass needed the way `countOccupiedSeats()` needs one
+   * for a STUDENT caller, who has no such broad grant.
+   *
+   * Enrolled count reuses `countOccupiedSeats()`'s own definition (UPCOMING
+   * Bookings plus their BookingAttendee guests) rather than inventing a
+   * second one — not a stored column, since a Booking's status (and thus
+   * whether a seat counts as occupied) changes independently of the Class.
+   */
+  async findClassesForInstructor(callerId: string, instructorId: string) {
+    const instructor = await this.findOne(callerId, instructorId); // 404s if not visible/doesn't exist
+
+    const classes = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.class.findMany({
+        where: { schoolId: instructor.schoolId, instructorId: instructor.userId },
+        orderBy: { startDate: 'asc' },
+      }),
+    );
+
+    const counts = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all(
+        classes.map((cls) =>
+          Promise.all([
+            tx.booking.count({ where: { classId: cls.id, status: 'UPCOMING' } }),
+            tx.bookingAttendee.count({ where: { booking: { classId: cls.id, status: 'UPCOMING' } } }),
+          ]),
+        ),
+      ),
+    );
+
+    return {
+      items: classes.map((cls, i) => ({ ...cls, enrolledCount: counts[i][0] + counts[i][1] })),
+    };
+  }
+
   /** School Owner/Manager only — resolved via the profile's own schoolId, not a route param. */
   async update(callerId: string, instructorId: string, dto: UpdateInstructorDto) {
     // Reuses findOne() rather than re-running the same fetch-and-404 query a second

@@ -1236,6 +1236,22 @@ export interface paths {
         patch: operations["InstructorsController_update"];
         trace?: never;
     };
+    "/v1/instructors/{id}/classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InstructorsController_findClasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users/me": {
         parameters: {
             query?: never;
@@ -3571,6 +3587,35 @@ export interface components {
             phone?: string | null;
             yearsOfExperience?: number | null;
             bio?: string | null;
+        };
+        InstructorClassResponseDto: {
+            id: string;
+            schoolId: string;
+            branchId?: string | null;
+            instructorId?: string | null;
+            title: string;
+            activities: string[];
+            /** @description Styles with their class types (Decisions 143, 152, 170). */
+            styles: components["schemas"]["ClassStyleResponseDto"][];
+            bannerUrl?: string | null;
+            description?: string | null;
+            startDate: string;
+            endDate: string;
+            /** @description Nullable = unlimited. */
+            capacity?: number | null;
+            bookingEndAt?: string | null;
+            qrAttendanceEndAt?: string | null;
+            refundFeeDate?: string | null;
+            /** @description Minor currency unit (e.g. cents). */
+            cancellationCharge?: number | null;
+            termsWaiverRequired: boolean;
+            membershipInclusion: boolean;
+            createdAt: string;
+            updatedAt: string;
+            enrolledCount: number;
+        };
+        InstructorClassListResponseDto: {
+            items: components["schemas"]["InstructorClassResponseDto"][];
         };
         UserResponseDto: {
             id: string;
@@ -6948,6 +6993,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstructorResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_findClasses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorClassListResponseDto"];
                 };
             };
         };

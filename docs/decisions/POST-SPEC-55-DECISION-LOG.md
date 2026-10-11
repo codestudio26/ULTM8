@@ -2879,3 +2879,21 @@ Approved to scope the full redesign now, at the same Architect tier as Decisions
 ### Recorded by
 
 User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct 2026.
+
+---
+
+## Decision 230 — Dedicated GET /instructors/:id/classes, with a server-computed enrolled count
+
+**Date:** 11 Oct 2026 · **Status:** Built · **Resolves:** the "Instructor Class" grid gap `docs/v1.2-backend-backlog.md`'s Instructors section flagged.
+
+`GET /instructors/:id/classes` returns the Classes this Instructor teaches, matching `Class.instructorId` (a FK to `User.id`) against the Instructor profile's own `userId` — closing the client-side-filter workaround the backlog doc had flagged, and computing the "X of Y booked" `enrolledCount` server-side rather than leaving it decorative.
+
+**No new authorization gate beyond `findOne()`'s own visibility check.** `Instructor`'s RLS already limits who can see this profile at all, and `booking_staff_read` (Decision 89) already grants `SCHOOL_OWNER_MANAGER`/`BRANCH_STAFF`/`INSTRUCTOR` broad SELECT on `Booking`/`BookingAttendee` at their own School/Branch under the caller's own ordinary tenant context — unlike `BookingsService.countOccupiedSeats()`, which needs a `PrismaJobsService` RLS bypass specifically because its own caller is an ordinary Student with no such broad grant.
+
+`enrolledCount` reuses `countOccupiedSeats()`'s own established definition (UPCOMING Bookings plus their BookingAttendee guests) rather than inventing a second one.
+
+`apps/api/src/instructors/instructors.service.ts` (`findClassesForInstructor`), `instructors.controller.ts`, new `dto/instructor-class-response.dto.ts` (extends `ClassResponseDto`). `instructors.e2e-spec.ts` adds a dedicated cluster: two Instructors at one School (proving filtering, not just "returns something"), a CANCELLED booking's own guest proven NOT to count, a School Owner calling it for another Instructor, and a cross-tenant 404. Full e2e suite green against real Postgres/Redis aside from the same pre-existing, unrelated `grading-ready-notification.e2e-spec.ts` failure already documented in Decision 229/PR #160; `packages/api-client` regenerated; `turbo build` clean.
+
+### Recorded by
+
+Continuing autonomously through the v1.2 backlog per the user's own instruction to work it "one after another... build, deep dive check... until confident," 11 Oct 2026.
