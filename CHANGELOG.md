@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **The Dashboard's "Bookings This Week" drill-down now has a real backend
+  to power it** (Decision 233). **api:** new
+  `GET /schools/:schoolId/bookings?from=&to=` returns Bookings in a date
+  range joined with their Class's title/date/activities, ready for a
+  day/discipline-grouped agenda or weekly-grid view. Capped at a 92-day
+  range. `packages/api-client` regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

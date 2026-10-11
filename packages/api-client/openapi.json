@@ -6748,6 +6748,59 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/bookings": {
+      "get": {
+        "operationId": "BookingsController_findAllForSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "Inclusive start of the date range (ISO 8601 date).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Inclusive end of the date range (ISO 8601 date).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolBookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/waitlist": {
       "post": {
         "operationId": "WaitlistController_joinWaitlist",
@@ -14516,6 +14569,70 @@
           "nextCursor": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SchoolBookingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartDate": {
+            "type": "string"
+          },
+          "classEndDate": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "studentFirstName",
+          "studentSurname",
+          "classId",
+          "classTitle",
+          "classStartDate",
+          "classEndDate",
+          "activities",
+          "status"
+        ]
+      },
+      "SchoolBookingListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolBookingResponseDto"
+            }
           }
         },
         "required": [
