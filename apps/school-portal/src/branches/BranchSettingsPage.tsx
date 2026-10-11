@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useBranch, useUpdateBranch } from './branchQueries';
 
 /**
@@ -20,6 +21,8 @@ export function BranchSettingsPage() {
   const navigate = useNavigate();
   const { data: branch, isLoading, error } = useBranch(branchId);
   const updateBranch = useUpdateBranch(branch?.schoolId ?? '', branchId ?? '');
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
 
   const [form, setForm] = useState({
     name: '',
@@ -123,7 +126,12 @@ export function BranchSettingsPage() {
             <TextField value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} />
           </Field>
           <Field label="Currency override" htmlFor="branch-settings-currency">
-            <TextField value={form.currencyOverride} onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))} />
+            <SelectField
+              id="branch-settings-currency"
+              value={form.currencyOverride}
+              onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))}
+              options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+            />
           </Field>
           <Field label="Type" htmlFor="branch-settings-type">
             <TextField value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
@@ -135,7 +143,12 @@ export function BranchSettingsPage() {
             <TextField value={form.facilities} onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))} />
           </Field>
           <Field label="Default language" htmlFor="branch-settings-language">
-            <TextField value={form.defaultLanguage} onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))} />
+            <SelectField
+              id="branch-settings-language"
+              value={form.defaultLanguage}
+              onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
+              options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+            />
           </Field>
           <Field label="Description" htmlFor="branch-settings-description">
             <TextField value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />

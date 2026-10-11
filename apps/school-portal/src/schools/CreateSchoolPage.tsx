@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthCard, Button, Checkbox, ErrorBanner, Field, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useCreateSchool } from './schoolQueries';
 
 /**
@@ -20,6 +21,8 @@ export function CreateSchoolPage() {
   const { logout, setAccessToken } = useAuth();
   const navigate = useNavigate();
   const createSchool = useCreateSchool();
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
 
   const [form, setForm] = useState({
     name: '',
@@ -116,10 +119,20 @@ export function CreateSchoolPage() {
           <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
         </Field>
         <Field label="Default language" htmlFor="school-language">
-          <TextField value={form.defaultLanguage} onChange={(e) => set('defaultLanguage', e.target.value)} />
+          <SelectField
+            id="school-language"
+            value={form.defaultLanguage}
+            onChange={(e) => set('defaultLanguage', e.target.value)}
+            options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+          />
         </Field>
         <Field label="Default currency" htmlFor="school-currency">
-          <TextField value={form.defaultCurrency} onChange={(e) => set('defaultCurrency', e.target.value)} />
+          <SelectField
+            id="school-currency"
+            value={form.defaultCurrency}
+            onChange={(e) => set('defaultCurrency', e.target.value)}
+            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+          />
         </Field>
         <Field label="Timezone" htmlFor="school-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
           <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
