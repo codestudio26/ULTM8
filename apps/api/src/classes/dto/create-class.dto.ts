@@ -133,12 +133,17 @@ export class CreateClassDto {
   @Min(0)
   cancellationCharge?: number;
 
-  @ApiPropertyOptional({ default: false })
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers that don't send it.
+  @ApiPropertyOptional({ description: 'Defaults to false when omitted.' })
   @IsOptional()
   @IsBoolean()
   termsWaiverRequired?: boolean;
 
-  @ApiPropertyOptional({ default: false, description: 'Opts this Class into general-membership access. Default is opt-out (a ticket is required).' })
+  // No `default:` in the Swagger metadata, for the same reason as
+  // termsWaiverRequired above.
+  @ApiPropertyOptional({ description: 'Opts this Class into general-membership access. Default is opt-out (a ticket is required).' })
   @IsOptional()
   @IsBoolean()
   membershipInclusion?: boolean;
