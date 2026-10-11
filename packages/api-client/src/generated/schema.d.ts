@@ -740,6 +740,22 @@ export interface paths {
         patch: operations["NotificationsController_markRead"];
         trace?: never;
     };
+    "/v1/notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["NotificationsController_deleteNotification"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications/device-tokens": {
         parameters: {
             query?: never;
@@ -6575,6 +6591,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["NotificationResponseDto"];
                 };
+            };
+        };
+    };
+    NotificationsController_deleteNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

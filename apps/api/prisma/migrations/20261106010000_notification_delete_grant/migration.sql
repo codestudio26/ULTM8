@@ -1,0 +1,13 @@
+-- v1.2 backend backlog's "Delete" gap under "## Notifications page" (Decision
+-- 231) — self-only hard delete of a caller's own Notification row
+-- (DELETE /notifications/:id). The Phase 15 migration
+-- (20260918000000_notifications_module) deliberately granted ultm8_app only
+-- SELECT, UPDATE on Notification, since no self-service delete existed yet;
+-- this adds DELETE now that one does.
+--
+-- No new RLS policy needed: "notification_self_only" (this table's existing
+-- policy) was declared with no FOR clause, so it already governs ALL
+-- commands — including DELETE — via the same USING clause that already
+-- scopes SELECT/UPDATE to the row's own userId. Granting DELETE here simply
+-- lets ultm8_app reach a command the policy was already shaped to allow.
+GRANT DELETE ON "Notification" TO ultm8_app;
