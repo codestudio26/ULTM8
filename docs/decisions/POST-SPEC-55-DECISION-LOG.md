@@ -2645,7 +2645,270 @@ Built in migration `20261105000000_branch_discovery`.
 
 ---
 
-## Decision 210 — A coach can have one pending invite per branch, not one in all
+## Decision 210 — TimetableSlot↔Class relationship: already resolved by existing code, not an open question
+
+**Date:** 10 Oct 2026 · **Status:** Confirmed by reading the code, not a new design
+**Resolves:** the `[UNRESOLVED]` flag in `skills/ultm8-domain-rules/SKILL.md` §9 and the "blocking architectural gap" `docs/v1.2-backend-backlog.md`'s Timetable section had been carrying.
+
+Asked how `TimetableSlot` should relate to `Class` for real Timetable click-to-book, the user asked to see how Classes are actually created today before deciding. Reading `apps/api/src/jobs/class-occurrence-generation.processor.ts` directly (not assumed) showed this was already built: a daily repeatable BullMQ job materializes real, dated `Class` rows from every active `TimetableSlot` up to `WEEKS_AHEAD` (4) weeks ahead, each carrying `timetableSlotId` and `occurrenceDate` as real columns. There is no remaining architecture question — `ClassesController`/`ClassesService` simply don't yet expose a lookup by `timetableSlotId`+`occurrenceDate`, which is the one small thing Timetable's "Book" action needs to resolve a clicked slot+date to its already-materialized `Class` and book it via the existing Staff-on-behalf-of `bookClass()` path.
+
+### Tracking
+
+`docs/v1.2-backend-backlog.md`'s Timetable section to be corrected to reflect this — the blocker was a missing read endpoint, not an open relationship question.
+
+### Recorded by
+
+Investigated at the user's direct request ("not sure — need to see how Classes are created today first") during the v1.2 backlog unblocking pass, 10 Oct 2026.
+
+---
+
+## Decision 211 — Instructor "Add Manually" account-claim invitation (Decision 206) approved for build
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Promotes:** Decision 206 from proposed design to approved
+
+Decision 206's account-claim invitation design (new `AccountInvitation` entity, two unauthenticated token-gated endpoints, claim-link email reusing `NotificationDeliveryService`, a "Complete Your Registration" screen) is approved for build as specified there. This is the blocking dependency for Instructor Add Manually to work end-to-end.
+
+### Recorded by
+
+User, choosing "Build Decision 128 now" [renumbered 206] when asked how to unblock the v1.2 backlog's Instructor Add Manually item, 10 Oct 2026.
+
+---
+
+## Decision 212 — Address-lookup/geocoding provider: Google Places
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the open gap `docs/v1.2-backend-backlog.md` flagged — zero geocoding/address-lookup provider confirmed anywhere in Spec 55 or this log, unlike the spec's other named infra gaps which all had a resolved vendor.
+
+Address fields across Branch/Franchise/Instructor Add/Update forms will be backed by Google Places (autocomplete + validation). **Needs a Google Cloud API key provisioned by the user before this can be built** — not something a Developer session can provision itself.
+
+### Recorded by
+
+User, choosing "Google Places" when asked which provider should back the Address fields, 10 Oct 2026.
+
+---
+
+## Decision 213 — Confirmed currency list: modest expansion, starting with CAD
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the mismatch flagged in `docs/v1.2-backend-backlog.md` — Branch/Franchise/School demo data across the redesign canvas is consistently Toronto/Vaughan-based (CAD), but CAD was never one of the 6 confirmed launch currencies (GBP/EUR/USD/BRL/AED/MYR).
+
+The user's first answer ("we will add all the currencies") was broader than the yes/no asked, so it was checked again rather than assumed: full ISO 4217 support (~180 currencies, touching every Price/amount field, Stripe currency-support checks, and every currency-formatting call site) is materially bigger than adding CAD to the existing curated list. Re-asked, the user confirmed a modest expansion of the curated list — CAD specifically, matching the demo data, not a dynamic world-currency selector. Further named additions beyond CAD can be added the same way on request; none are added here without being named, per this project's standing rule against inventing unspecified scope.
+
+### Recorded by
+
+User, choosing "Modest expansion (recommended)" after the broader first answer was checked back, 10 Oct 2026.
+
+---
+
+## Decision 214 — Waiver signed-state: diff against the real Student roster, not an explicit Pending row
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Depends on:** Decision 215 (real Student enrollment)
+**Resolves:** the first of the three layered gaps Decision 125's own waiver-signed-state finding described, for `docs/v1.2-backend-backlog.md`'s Waivers section.
+
+Asked for a recommendation between (a) diffing signed `WaiverSignature` rows against the real Student roster once it's real, or (b) writing an explicit `Pending`/`Unsigned` row per assignment up front: both approaches were checked and found to depend on the same underlying gap — writing a Pending row still requires knowing which Students to write one for, which still needs real enrollment data, so it doesn't avoid the dependency, it just moves where it's hit. Recommended, and approved: diff against the real roster (Decision 215) once built — no new write path, no stale-row risk if a Student later leaves the School.
+
+### Recorded by
+
+User, confirming the Developer recommendation given during the v1.2 backlog unblocking pass, 10 Oct 2026.
+
+---
+
+## Decision 215 — Build the real Student enrollment path now
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the gap `WaiverSignatureRequestsProcessor`'s own header comment, Decision 95, and the project roadmap already flagged — no endpoint anywhere creates a `STUDENT` RoleGrant through the real API; every e2e test seeds one directly with a superuser Prisma client.
+
+`SchoolsService.join()` already has the self-service path (Decision 96) and the Guardian-on-behalf-of branch (Phase 38) designed and precedented — this closes the gap by actually exercising that real path end-to-end rather than test-seeding around it, and unblocks both Decision 214 (Waiver signed-state) and Student Invite's enroll step.
+
+### Recorded by
+
+User, choosing "Yes, build it now (recommended)" when asked directly, 10 Oct 2026.
+
+---
+
+## Decision 216 — Waiver enforcement scope confirmed: any signed waiver at the School
+
+**Date:** 10 Oct 2026 · **Status:** Confirmed by product owner, zero code change
+**Resolves:** the `[UNRESOLVED]` note in `skills/ultm8-domain-rules/SKILL.md` §13 that Decision 125 had already found was actually resolved in code but not yet confirmed as intended.
+
+`BookingsService` already checks at booking time whether the Student holds *any* `SIGNED` `WaiverSignature` at that School, not one scoped to a specific required Waiver (`Class` has no field linking it to one canonical Waiver — only the boolean `termsWaiverRequired`). Confirmed as the intended behavior, not an oversight — no code change needed, this closes the `[UNRESOLVED]` flag.
+
+### Recorded by
+
+User, choosing "Any signed waiver at the School (matches current code)", 10 Oct 2026.
+
+---
+
+## Decision 217 — Build all four Instructor missing fields (Address, a second Activities list, Certification upload, consent)
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Depends on:** Decision 218 (upload pipeline) for Certification
+**Resolves:** the Add/Update/Detail Instructor gaps `docs/v1.2-backend-backlog.md` catalogued — none of Address, a second Activities-distinct-from-Specializations list, a Certification file, or consent/terms checkboxes exist on `Instructor` today.
+
+All four approved for build, a larger scope than the Developer recommendation (defer) given. Certification is a file upload, so it's sequenced behind Decision 218.
+
+### Recorded by
+
+User, choosing "Build all four now" when asked whether to build or defer, 10 Oct 2026.
+
+---
+
+## Decision 218 — File/image upload pipeline: S3-compatible object storage
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the app-wide gap shared by Instructor/Student/Branch/Franchise photo fields and the new Instructor Certification field (Decision 217) — no real upload pipeline exists anywhere in ULTM8 today; every photo field is settable only as a plain URL string.
+
+S3-compatible object storage, presigned upload URLs — the same pattern `WaiversController`'s existing `POST /waivers/:id/signature-upload-url` already uses, extended rather than building a second mechanism. **Needs a real S3 bucket (or equivalent) and access credentials provisioned by the user** before this can be built.
+
+### Recorded by
+
+User, choosing "S3-compatible object storage (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 219 — Instructor belt/rank reuses the Student rank system
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the gap flagged for Instructor's `beltRanking` field (free text only, e.g. "Black Belt, 3rd Dan") against the template's structured ranking dropdown.
+
+Rather than a separate Instructor-only rank structure, Instructor profiles will carry the same Discipline/Rank/Stripe structure Students already have via `StudentRank`. A real design/migration pass is still needed to work out how an Instructor-shaped rank record attaches (Instructor isn't a Student), left to implementation.
+
+### Recorded by
+
+User, choosing "Yes, reuse the Student rank system", 10 Oct 2026.
+
+---
+
+## Decision 220 — Build Student Measurements as real fields
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** Student Detail's Measurements fields (Weight Category, Kimono Size, Belt Size), which `docs/v1.2-backend-backlog.md` had flagged as having zero grounding anywhere in Spec 55, the domain-rules skill, or the schema.
+
+Approved for build as real fields on `User` or `StudentRank` (implementation's call which), overriding the Developer recommendation to drop them for lack of grounding. Recorded per this project's own "ask rather than guess" rule — flagged as ungrounded before building, decision made directly with the product owner rather than silently dropped or silently built.
+
+### Recorded by
+
+User, choosing "Build them as real fields" over the Developer recommendation to drop, 10 Oct 2026.
+
+---
+
+## Decision 221 — Skip the IP-geolocation smart default on the Mobile Number picker
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Mobile Number searchable picker's "Based on your location" default (added 7 Oct), which `docs/v1.2-backend-backlog.md` flagged as Proposed/Illustrative with no IP-geolocation provider confirmed anywhere.
+
+Drop the smart default; the picker keeps its fixed per-locale default. No vendor, no new cost.
+
+### Recorded by
+
+User, choosing "Skip the smart default (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 222 — Build Notifications Snooze
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Snooze gap in Concept 3 (Priority Inbox) that Decision 126 had catalogued — no snoozed/deferred state exists on `Notification` today.
+
+Approved for build: a `snoozedUntil` timestamp column plus a job to return it to the unread list when it elapses, overriding the Developer recommendation to drop it for now.
+
+### Recorded by
+
+User, choosing "Build it" over the Developer recommendation to defer, 10 Oct 2026.
+
+---
+
+## Decision 223 — Build real push notification SEND (FCM/APNs)
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the gap `DeviceToken`'s own header comment flagged ("deliberately NOT built this phase") and the Push delivery rate / Read-within-24h placeholder tiles Decision 126 catalogued.
+
+Approved for build, a larger scope than the two metric tiles alone: real FCM (Android)/APNs (iOS) dispatch, not just the device-token registration that already exists. **Needs real Firebase Cloud Messaging and Apple Push Notification service credentials provisioned by the user** before this can be built. The delivery-rate and read-within-24h metrics (plus a new `readAt` column for the latter) follow once SEND is real.
+
+### Recorded by
+
+User, choosing "Build real push SEND now (FCM/APNs)" over the Developer recommendation to defer both metric tiles, 10 Oct 2026.
+
+---
+
+## Decision 224 — Dashboard discipline grouping ships against raw `Class.activities` strings
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** how the Bookings-This-Week drill-down's day×discipline grouping should work, given `Class.activities` is a free-text string array, not a canonical Discipline FK (the same unreconciled gap `skills/ultm8-domain-rules/SKILL.md` §4 and Decision 90 already flag).
+
+Ship the Dashboard drill-down now, grouping by whatever strings are actually in `Class.activities`, with the known caveat that spelling/casing isn't guaranteed canonical — rather than waiting on the larger, separate Decision 90 Discipline-FK fix.
+
+### Recorded by
+
+User, choosing "Ship against raw strings now (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 225 — Curriculum video upload/caption integration folds into the Curriculum redesign scoping
+
+**Date:** 10 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** whether to provision Cloudflare Stream/AWS Transcribe credentials (picked, Decision 101) now as a standalone item.
+
+Rather than wiring video upload/caption dispatch as a parallel, separate effort, it folds into the Curriculum learner-facing redesign scoping work (Decision 227) already approved — the video integration is one part of that larger design, not independent of it.
+
+### Recorded by
+
+User, choosing "Fold into the Curriculum scoping work (recommended)", 10 Oct 2026.
+
+---
+
+## Decision 226 — Tenant offboarding (16 entities): approved to scope, design in progress
+
+**Date:** 10 Oct 2026 · **Status:** Approved to scope by product owner — **design not yet written, not built**
+**Resolves:** whether Branches/Franchises' missing Delete action should be addressed narrowly or as the larger, project-wide tenant-offboarding gap it's actually part of (16 entities share this per the decision log's existing notes).
+
+Approved to scope the full tenant-offboarding design now (cascade behavior, soft-delete vs. hard-delete, data-retention implications — this also touches Decision 110's still-pending Waiver-retention question), rather than a narrower one-off Delete for just Branch/Franchise that would leave an inconsistent pattern against the other 14 entities. This entry records the scope decision; the actual design is a separate, dedicated pass, not written here.
+
+### Recorded by
+
+User, choosing "Scope full tenant offboarding now" over the Developer recommendation to keep deferring, 10 Oct 2026.
+
+---
+
+## Decision 227 — Curriculum learner-facing redesign: approved to scope, design in progress
+
+**Date:** 10 Oct 2026 · **Status:** Approved to scope by product owner — **design not yet written, not built**
+**Resolves:** whether the three Curriculum mockups' proposed redesign (turning the already-shipped admin Lesson CRUD into a learner-facing video-library browse experience — Category, Favorite, Playlist, WatchHistory, Comment, all new entities) should be scoped now, deferred, or narrowed to just video playback.
+
+Approved to scope the full redesign now, at the same Architect tier as Decisions 58/101/104, rather than deferring it or building only video playback first. Decision 225's video upload/caption integration folds into this scoping work rather than running separately. This entry records the scope decision; the actual entity/relationship design is a separate, dedicated pass, not written here.
+
+### Recorded by
+
+User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct 2026.
+
+---
+
+## Decision 228 — Create/Update Membership Plan rebuilt as a full-page wizard; currency becomes a confirmed dropdown; two bugs fixed
+
+**Date:** 10 Oct 2026 · **Status:** Developer-level implementation of a direction the user picked after dedicated research (competitor review + a direct Spec 55 verification) and a follow-up re-answer (wizard over single scrollable view); flagged items below are for Architect confirmation, not decided here. Renumbered from this branch's original "Decision 209," which collided with Decision 209 above (assigned independently on `master` first).
+
+**Resolves:** the user asked to rebuild the Create/Update Membership Plan flow (until now a single modal, `MembershipPlanFormModal.tsx`) "with the best logic, following the logic of our system," after researching how competitors (Kicksite, PushPress, Mindbody, Zen Planner) structure the equivalent flow, with any new backend-facing findings logged for the dev team.
+
+1. **Container: a dedicated full page, not a modal** — first of its kind in this app; every other entity (Franchises, Disciplines, Students, Branches, Instructors, Membership Plans itself) still uses a List page + popover Modal. Chosen over an enhanced modal because this form (12 fields, several server-enforced cross-field rules) is the largest in the app, and both Kicksite and PushPress treat the equivalent flow as a dedicated builder, not a quick popover. New routes `/membership-plans/new` and `/membership-plans/:id/edit`, both rendering the new `MembershipPlanFormPage.tsx`. `MembershipPlanFormModal.tsx` is retired.
+2. **A multi-step wizard, not one scrollable view** — the user re-answered the earlier form-flow question and picked a wizard (closer to how Kicksite/PushPress structure the equivalent flow) over this app's existing "one scrollable form" convention. The same 5 field groups (Basics / Pricing & Access / Policies / Disciplines & Lessons / Visibility) become 5 steps, shown one at a time, with a clickable pill row that jumps directly to any step — not strictly linear, so Edit doesn't require clicking Next four times to reach one field. No field logic, validation, or DTO mapping changed by this — only the container. Conditional step-mounting meant an unmounted step's native `required` no longer blocked submission the way it did when every field was always on screen, so `handleSubmit` gained two explicit guards (Title/Price) reproducing the same checks client-side.
+3. **Type-conditional field visibility** (a client-side guardrail only, not a new server restriction): `classesIncluded`/`scopedClassId` now show only for Class Pack/Friend Pass, matching the domain rules' own description of scoping as a Class Pack/Friend Pass mechanism; `expiryDurationDays` hides for Subscription (Stripe-cycle-driven, no stored day-count applies). Selecting Friend Pass also auto-sets price to 0 in the UI, reflecting a rule the server already forces.
+4. **Currency becomes a 6-option dropdown** (GBP/EUR/USD/BRL/AED/MYR), replacing the old free-text field — verified directly against the Spec 55 `.docx` itself ("6 currencies observed: GBP, EUR, USD, BRL, AED, MYR," §11.2), not just `skills/ultm8-domain-rules/SKILL.md`'s summary (which never listed the six). Defaults to the School's own `defaultCurrency` on Create when that matches one of the six.
+5. **`refundFeeDate` null-clear bug fixed** — `MembershipsService.updatePlan()`'s `dto.refundFeeDate ? new Date(...) : undefined` treated an explicit `null` the same as an omitted field, silently swallowing a clear attempt (the same class of gap Class's own `bookingEndAt`/`qrAttendanceEndAt` still have, left alone — those are their own, separate, unfixed gap). `UpdateMembershipPlanDto.refundFeeDate` is now nullable (added to `NULLABLE_ON_UPDATE`), and the service ternary now distinguishes `undefined` (leave unchanged) from `null` (clear) from a real date string. Regression test added (`memberships.e2e-spec.ts`).
+6. **`classesIncluded` now locks to 1 client-side the instant a Class is scoped** — found via manual UI verification and a stress test of the finished wizard (1,000 simulated students purchasing across plan types, plus a true-concurrency double-purchase race, run locally against this branch, never committed): picking a Class in "Scoped to Class" while "Classes included" still held an earlier value >1 reached Save and only then hit the server's existing, correct rejection (a one-off Class has only one occurrence) — the hint text already called this "capped," but nothing enforced it before Save. Now mirrors the existing Friend-Pass price-lock pattern.
+7. **"Duplicate" closed client-side, no new endpoint** — a row action on the List page navigates to the Add page with the source plan's values as router state, pre-filling the form (title suffixed " (copy)"). This is the exact alternative `docs/v1.2-backend-backlog.md` had already named as acceptable when it logged the gap.
+8. **Found, not resolved — flagged for the Architect** (see `docs/v1.2-backend-backlog.md`'s Membership Plans section for the full writeup): (a) what happens to an already-active Stripe Subscription when a School edits price/type on that plan — PushPress explicitly builds a migrate-vs-grandfather choice for this, our system has none; (b) a genuine contradiction between Spec 55 §6.1 ("Weekly Pass... governed by an expiry date instead of a recurring billing cycle") and this same DTO's own field description ("Not used by WEEKLY_PASS") — left showing the field for Weekly Pass (the safer default of the two) rather than silently picking a side; (c) a platform-wide rate-limiting finding, unrelated to this page: `apps/api/src/app.module.ts`'s second, `'identity'`-named `ThrottlerModule` throttler is hardcoded to 1000 requests/minute and, for any route without a custom per-identity `@Throttle` tracker (e.g. `MembershipsController.purchase()`), falls back to being IP-keyed like the default throttler — but unlike the default throttler, it is not controlled by `THROTTLE_IP_LIMIT_PER_MINUTE`. A genuine burst past 1000 req/min from one IP (automated test tooling, or many real students buying passes from one shared School WiFi) will still 429 past that point even after raising the documented env var. Not altered here — out of scope for this page, and changing cross-cutting rate-limit configuration isn't a call to make unilaterally.
+9. **Not built, deliberately** — no late-cancellation-fee *collection* flow for `cancellationCharge` (that mechanism is `[UNRESOLVED]` domain territory per the skill, separate from the already-resolved refund/credit mechanism); the field is kept, stored, with explanatory copy saying so.
+
+### Verified
+
+Full stress test run locally (Postgres/Redis stood up in-sandbox, not part of this diff): 1,000 simulated Students purchasing across 4+ plan types (concurrency 50) — all succeeded or correctly pended with zero unexpected errors; a true-concurrency 100-Student double-purchase race against the general-access uniqueness constraint (`Membership_one_active_general_access_per_school`) produced the expected outcome in all 100 cases (0 double-successes); a DB-level invariant query confirmed zero Students ever held two simultaneous Active general-access Memberships; the Cash/Bank "confirm payment" half of the purchase lifecycle was separately exercised (20/20 confirmations succeeded, correctly creating linked Active Memberships). All test data and driver scripts were deleted afterward — nothing from the stress test itself is part of this branch's diff. `npx tsc -p tsconfig.json --noEmit` clean on `apps/school-portal`.
+
+### Recorded by
+
+Developer (this session), per the user's instruction to view the built pages, stress-test the flow, fix anything found, and merge once logic is verified.
+
+---
+
+## Decision 229 — A coach can have one pending invite per branch, not one in all
 
 **Date:** 11 Oct 2026 · **Status:** Product-owner decision (Gus) · **Clarifies:** Decision 183 item 2 ("the invite link: one per person"), which the code had always applied per branch. Found in the Phase 7 decision review.
 

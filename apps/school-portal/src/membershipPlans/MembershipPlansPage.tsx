@@ -1,19 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useClasses, type ClassResponse } from '../classes/classQueries';
-import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
-import { nullsToUndefined } from '../lib/nullableFields';
+import { useClasses } from '../classes/classQueries';
 import { formatMoney } from '../lib/money';
-import {
-  useCreateMembershipPlan,
-  useMembershipPlans,
-  useUpdateMembershipPlan,
-  useUpdateMembershipPlanVisibility,
-  type MembershipPlanResponse,
-} from './membershipPlanQueries';
-import { MembershipPlanFormModal } from './MembershipPlanFormModal';
+import { useMembershipPlans, useUpdateMembershipPlanVisibility, type MembershipPlanResponse } from './membershipPlanQueries';
 
 const TYPE_LABELS: Record<string, string> = {
   SUBSCRIPTION: 'Subscription',
@@ -54,14 +46,11 @@ function StatTile({ label, value, proposed, note }: { label: string; value: Reac
 }
 
 export function MembershipPlansPage() {
+  const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useMembershipPlans(schoolId);
   const { data: classData } = useClasses(schoolId);
-  const { data: disciplineData } = useDisciplines(schoolId);
-  const createPlan = useCreateMembershipPlan(schoolId ?? '');
   const toggleVisibility = useUpdateMembershipPlanVisibility(schoolId ?? '');
-  const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<MembershipPlanResponse | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
 
   if (!schoolId) return null;
@@ -71,14 +60,13 @@ export function MembershipPlansPage() {
   const plans = data?.items ?? [];
   const classes = classData?.items ?? [];
   const visibleCount = plans.filter((p) => p.visible).length;
-  const disciplines = disciplineData?.items ?? [];
 
   return (
     <>
       <PageHeader
         title="Membership Plans"
         subtitle="Subscription, Class Pack, Weekly Pass, Friend Pass, and Trial plans Students can purchase."
-        actions={<Button onClick={() => setCreating(true)}>Add plan</Button>}
+        actions={<Button onClick={() => navigate('/membership-plans/new')}>Add plan</Button>}
       />
 
       {/* Stats ribbon (Decision — see POST-SPEC-55-DECISION-LOG.md): Total/Visible/
@@ -141,69 +129,29 @@ export function MembershipPlansPage() {
                 key: 'actions',
                 header: '',
                 render: (p) => (
-                  <Button variant="secondary" onClick={() => setEditing(p)}>
-                    Edit
-                  </Button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button variant="secondary" onClick={() => navigate(`/membership-plans/${p.id}/edit`)}>
+                      Edit
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        navigate('/membership-plans/new', {
+                          state: {
+                            duplicateFrom: { ...p, id: undefined, createdAt: undefined, updatedAt: undefined, title: `${p.title} (copy)` },
+                          },
+                        })
+                      }
+                    >
+                      Duplicate
+                    </Button>
+                  </div>
                 ),
               },
             ]}
           />
         )}
       </Card>
-
-      {creating ? (
-        <MembershipPlanFormModal
-          title="Add membership plan"
-          classes={classes}
-          disciplines={disciplines}
-          submitting={createPlan.isPending}
-          onSubmit={async (values) => {
-            // Create has nothing to "clear" — map the form's nulls back to
-            // undefined (omitted), since CreateMembershipPlanDto doesn't
-            // accept null on these fields.
-            await createPlan.mutateAsync(nullsToUndefined(values));
-            setCreating(false);
-          }}
-          onClose={() => setCreating(false)}
-        />
-      ) : null}
-
-      {editing ? (
-        <EditMembershipPlanModal schoolId={schoolId} classes={classes} disciplines={disciplines} plan={editing} onClose={() => setEditing(null)} />
-      ) : null}
     </>
-  );
-}
-
-function EditMembershipPlanModal({
-  schoolId,
-  classes,
-  disciplines,
-  plan,
-  onClose,
-}: {
-  schoolId: string;
-  classes: ClassResponse[];
-  disciplines: DisciplineResponse[];
-  plan: MembershipPlanResponse;
-  onClose: () => void;
-}) {
-  const updatePlan = useUpdateMembershipPlan(schoolId, plan.id);
-  return (
-    <MembershipPlanFormModal
-      title="Edit membership plan"
-      initial={plan}
-      classes={classes}
-      disciplines={disciplines}
-      submitting={updatePlan.isPending}
-      onSubmit={async (values) => {
-        // Passed straight through, nulls included — UpdateMembershipPlanDto
-        // accepts null on these fields to mean "clear it" (see
-        // MembershipPlanFormValues' own header comment).
-        await updatePlan.mutateAsync(values);
-        onClose();
-      }}
-      onClose={onClose}
-    />
   );
 }

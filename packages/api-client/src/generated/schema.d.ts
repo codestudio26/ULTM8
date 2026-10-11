@@ -2865,6 +2865,7 @@ export interface components {
             id?: string | null;
             firstName?: string | null;
             surname?: string | null;
+            email?: string | null;
         };
         CreateFranchiseDto: {
             name: string;
@@ -3530,6 +3531,9 @@ export interface components {
             userId: string;
             firstName: string;
             surname: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "REVOKED";
             schoolId: string;
             branchId?: string | null;
             photoUrl?: string | null;
@@ -3677,8 +3681,6 @@ export interface components {
             classesIncluded?: number;
             /** @default true */
             visible: boolean;
-            /** @description ISO 8601 date-time. */
-            refundFeeDate?: string;
             /** @default false */
             termsWaiverRequired: boolean;
             /** @description The School's styles this plan covers (Decision 195). */
@@ -3693,6 +3695,8 @@ export interface components {
             scopedClassId?: string | null;
             /** @description Minor currency unit. Pass null to clear. */
             cancellationCharge?: number | null;
+            /** @description ISO 8601 date-time. Pass null to clear. */
+            refundFeeDate?: string | null;
         };
         PurchaseMembershipDto: {
             /** @description Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller. */

@@ -8938,6 +8938,10 @@
           "surname": {
             "type": "string",
             "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -11095,6 +11099,16 @@
           "surname": {
             "type": "string"
           },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "REVOKED"
+            ]
+          },
           "schoolId": {
             "type": "string"
           },
@@ -11143,6 +11157,8 @@
           "userId",
           "firstName",
           "surname",
+          "email",
+          "status",
           "schoolId",
           "specializations",
           "specializationStyleIds",
@@ -11597,10 +11613,6 @@
             "type": "boolean",
             "default": true
           },
-          "refundFeeDate": {
-            "type": "string",
-            "description": "ISO 8601 date-time."
-          },
           "termsWaiverRequired": {
             "type": "boolean",
             "default": false
@@ -11635,6 +11647,11 @@
             "type": "number",
             "nullable": true,
             "description": "Minor currency unit. Pass null to clear."
+          },
+          "refundFeeDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 date-time. Pass null to clear."
           }
         }
       },

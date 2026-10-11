@@ -9,7 +9,7 @@ import type { WaiverResponse } from './waiverQueries';
  * form in this phase's own review, there's nothing here for the
  * null-clearing gap to apply to), so this modal is deliberately simpler than
  * ClassFormModal/InstructorFormModal/TimetableSlotFormModal/
- * MembershipPlanFormModal. */
+ * MembershipPlanFormPage. */
 export function WaiverFormModal({
   title,
   initial,

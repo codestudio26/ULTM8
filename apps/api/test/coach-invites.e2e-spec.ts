@@ -302,7 +302,7 @@ describeIfDb('Coach invites (Decision 183)', () => {
     expect((await mine('otherOwner')).status).toBe(403);
   });
 
-  it('the same person can have a pending invite at each branch, but only one per branch (Decision 210)', async () => {
+  it('the same person can have a pending invite at each branch, but only one per branch (Decision 229)', async () => {
     const email = `two-branches-${randomUUID()}@example.test`;
     expect((await invite('owner', { email, branchId: north.id })).status).toBe(201);
     expect((await invite('owner', { email, branchId: south.id })).status).toBe(201);
