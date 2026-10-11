@@ -300,6 +300,61 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     }
   });
 
+  it('a Branch has its own type/activities/facilities/defaultLanguage/description, independent of its School (Decision 238)', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/branches`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({
+        name: 'Profile-Fields Branch',
+        type: 'Flagship',
+        activities: ['Jiu Jitsu', 'Judo'],
+        facilities: ['Mats', 'Showers'],
+        defaultLanguage: 'English (UK)',
+        description: 'Our original location.',
+      });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.type).toBe('Flagship');
+    expect(createRes.body.activities).toEqual(['Jiu Jitsu', 'Judo']);
+    expect(createRes.body.facilities).toEqual(['Mats', 'Showers']);
+    expect(createRes.body.defaultLanguage).toBe('English (UK)');
+    expect(createRes.body.description).toBe('Our original location.');
+    const fieldsBranchId = createRes.body.id as string;
+    try {
+      const patch = (body: object) =>
+        request(app.getHttpServer())
+          .patch(`/v1/branches/${fieldsBranchId}`)
+          .set('Authorization', `Bearer ${tokenOwnerA}`)
+          .send(body);
+
+      // undefined (omitted) leaves scalars unchanged, arrays included.
+      const kept = await patch({ contactPhone: '+16505551234' });
+      expect(kept.status).toBe(200);
+      expect(kept.body.type).toBe('Flagship');
+      expect(kept.body.activities).toEqual(['Jiu Jitsu', 'Judo']);
+
+      // An explicit null clears a scalar.
+      const cleared = await patch({ type: null, defaultLanguage: null, description: null });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.type).toBeNull();
+      expect(cleared.body.defaultLanguage).toBeNull();
+      expect(cleared.body.description).toBeNull();
+      expect(cleared.body.activities).toEqual(['Jiu Jitsu', 'Judo']); // untouched
+
+      // A real, replacement array updates the list (never "undefined-as-clear").
+      const replaced = await patch({ activities: ['Karate'], facilities: [] });
+      expect(replaced.status).toBe(200);
+      expect(replaced.body.activities).toEqual(['Karate']);
+      expect(replaced.body.facilities).toEqual([]);
+
+      const read = await request(app.getHttpServer()).get(`/v1/branches/${fieldsBranchId}`).set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(read.body.activities).toEqual(['Karate']);
+      expect(read.body.facilities).toEqual([]);
+      expect(read.body.type).toBeNull();
+    } finally {
+      await superuser.branch.delete({ where: { id: fieldsBranchId } });
+    }
+  });
+
   it('CAN create, grant, and revoke within its own School', async () => {
     const branchRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/branches`)

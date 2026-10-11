@@ -758,6 +758,17 @@ model School {
 /// ultm8-tenant-isolation §2 — Class is the first of those 4 to actually exist in this
 /// schema, added in Phase 4; Booking/WaitlistEntry are added in Phase 11 below.
 /// TimetableSlot/Instructor(-as-its-own-table) still don't exist as separate tables).
+///
+/// type/activities/facilities/defaultLanguage/description (Decision 238) extend
+/// Decision 76's original list to match School/Franchise's own identical fields —
+/// verified directly against both models before adding these: School and Franchise
+/// each already carry their own independent, non-derived activities/facilities/
+/// description/defaultLanguage (no inheritance or cross-entity derivation anywhere
+/// in this codebase), so giving Branch the same independent fields extends a pattern
+/// already used twice at the other two levels of the Franchise → School → Branch
+/// hierarchy, rather than inventing a new one. `type` mirrors Franchise's own
+/// column name (not School's `businessType`), matching the mockup's field
+/// positioning right after Branch Name, same as Franchise's "Business Type".
 model Branch {
   id String @id @default(uuid())
 
@@ -765,10 +776,15 @@ model Branch {
   school   School @relation(fields: [schoolId], references: [id])
 
   name             String
+  type             String?
   address          String?
   contactPhone     String?
   timezone         String? // IANA tz name, per the glossary convention (Spec §14)
   currencyOverride String?
+  defaultLanguage  String?
+  activities       String[] @default([])
+  facilities       String[] @default([])
+  description      String?
   logoUrl          String?
   bannerUrl        String?
 

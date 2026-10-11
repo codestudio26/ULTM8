@@ -2797,11 +2797,17 @@ export interface components {
         };
         CreateBranchDto: {
             name: string;
+            type?: string;
             address?: string;
             contactPhone?: string;
             /** @description IANA timezone name. */
             timezone?: string;
             currencyOverride?: string;
+            /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
+            defaultLanguage?: string;
+            activities?: string[];
+            facilities?: string[];
+            description?: string;
             logoUrl?: string;
             bannerUrl?: string;
         };
@@ -2809,11 +2815,16 @@ export interface components {
             id: string;
             schoolId: string;
             name: string;
+            type?: string | null;
             address?: string | null;
             contactPhone?: string | null;
             /** @description IANA timezone name. */
             timezone?: string | null;
             currencyOverride?: string | null;
+            defaultLanguage?: string | null;
+            activities: string[];
+            facilities: string[];
+            description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
             createdAt: string;
@@ -2825,11 +2836,17 @@ export interface components {
         };
         UpdateBranchDto: {
             name?: string;
+            activities?: string[];
+            facilities?: string[];
+            type?: string | null;
             address?: string | null;
             contactPhone?: string | null;
             /** @description IANA timezone name. */
             timezone?: string | null;
             currencyOverride?: string | null;
+            /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
+            defaultLanguage?: string | null;
+            description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
         };

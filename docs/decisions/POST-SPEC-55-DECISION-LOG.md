@@ -2905,3 +2905,26 @@ Full stress test run locally (Postgres/Redis stood up in-sandbox, not part of th
 ### Recorded by
 
 Developer (this session), per the user's instruction to view the built pages, stress-test the flow, fix anything found, and merge once logic is verified.
+
+---
+
+## Decision 238 — Branch gains type/activities/facilities/defaultLanguage/description, matching School and Franchise's own independent fields
+
+**Date:** 11 Oct 2026 · **Status:** Built and verified this session.
+
+**Resolves:** `docs/v1.2-backend-backlog.md`'s Branches page entries for Description, Activities/Facilities, Default Language, and Branch Type — each was shown in the mockups (`BranchAdd.dc.html`/`BranchUpdate.dc.html`/`BranchDetail.dc.html`) for structural parity with Franchise, but had no backing column, so Update couldn't persist any of them. The backlog doc flagged Activities/Facilities specifically as "needs a real decision... logged as unresolved, not guessed at" before this was built.
+
+**What was verified before building, rather than guessed:** `School` (`schema.prisma`) and `Franchise` each already carry their own `activities`/`facilities String[] @default([])`, `description String?`, and `defaultLanguage String?` — fully independent per entity, with zero derivation or inheritance between Franchise/School/Branch anywhere in this codebase (confirmed by reading both models directly, not assumed by analogy). Franchise additionally has its own `type String?` (named `type`, not School's `businessType` — `CreateFranchiseDto`'s own comment explains why). This resolves the backlog's open conceptual question by precedent rather than invented business logic: Branch simply receives the same independent fields already given to the other two levels of the Franchise → School → Branch hierarchy, with the same no-derivation treatment, rather than any new relationship (e.g. inheriting from School) being invented.
+
+1. **Five new columns on `Branch`**: `type`, `activities` (`String[]`), `facilities` (`String[]`), `defaultLanguage`, `description` — same types, same validation shape (`ArrayMaxSize(20)`/`IsString({ each: true })` for the two arrays, `MaxLength` caps matching the equivalent Franchise/School fields) as the already-shipped Franchise/School DTOs.
+2. **`type` named to match Franchise's column**, not School's `businessType` — the backlog's own mockup account places "Branch Type" in the same position as Franchise's "Business Type," and `BranchResponseDto`/`CreateBranchDto`/`UpdateBranchDto` all use `type` accordingly.
+3. **Arrays excluded from `UpdateBranchDto`'s nullable-on-update treatment** — same reasoning as `UpdateFranchiseDto`'s own array fields: a client sends a real, possibly-empty array to replace the list, never `undefined`-as-clear, so `activities`/`facilities` are plain, always-whole-array fields, not nullable-clearable scalars.
+4. **Migration is additive only** (`20261106000000_branch_profile_fields`) — no new `GRANT` needed, since `ultm8_app` already holds table-wide `SELECT, INSERT, UPDATE, DELETE` on `"Branch"` from the original init migration, which automatically covers new columns.
+
+### Verified
+
+`npx tsc --noEmit` clean; migration applied cleanly to a freshly-reset real Postgres (`prisma migrate reset --force --skip-seed`, all 68 migrations applying in order); new e2e test (`tenants.e2e-spec.ts`) covering create with all 5 fields, scalar null-clear, array replacement, and persistence-on-read, green; full e2e suite regression-clean; `packages/api-client` regenerated; `turbo build` clean across all packages.
+
+### Recorded by
+
+Developer (this session), continuing the user's standing instruction to build the v1.2 backend backlog sequentially.
