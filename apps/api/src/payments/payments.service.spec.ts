@@ -170,3 +170,28 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
     expect(result).toEqual({ succeeded: false, paymentIntentId: 'pi_declined' });
   });
 });
+
+/**
+ * Decision 236's own follow-up — MembershipsService.purchase()'s
+ * payWithSavedCard branch calls this when a saved-card charge already
+ * succeeded but the Membership it was paying for then lost the
+ * two-simultaneous-Active-Membership race, so the just-captured money has
+ * to be refunded explicitly (see refundOffSessionCharge's own header
+ * comment for the full account of why this codebase's usual async-webhook
+ * collision handling doesn't apply here).
+ */
+describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
+  it('refunds the given PaymentIntent on the School\'s own connected account', async () => {
+    const stripe = { refunds: { create: jest.fn().mockResolvedValue({ id: 're_1' }) } };
+    const scopedClient = jest.fn().mockReturnValue(stripe);
+    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never);
+    jest
+      .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
+      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+
+    await service.refundOffSessionCharge('student', 'school', 'pi_1');
+
+    expect(scopedClient).toHaveBeenCalledWith('acct_school');
+    expect(stripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_1' });
+  });
+});

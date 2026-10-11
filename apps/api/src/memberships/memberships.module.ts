@@ -3,6 +3,7 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { GuardiansModule } from '../guardians/guardians.module';
 import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
+import { AuthModule } from '../auth/auth.module';
 import { MembershipsController } from './memberships.controller';
 import { MembershipsService } from './memberships.service';
 
@@ -29,9 +30,16 @@ import { MembershipsService } from './memberships.service';
  * header comment). The £0-immediate/Friend-Pass and Cash/Bank Pending paths are
  * gated too, not just the Stripe path — all three are still "a new payment" in the
  * confirmed sense, a Membership/Transaction row created either way.
+ *
+ * Imports AuthModule (Decision 236's own follow-up) for its exported
+ * StepUpService — purchase()'s new `payWithSavedCard` branch gates the
+ * saved-card charge on a fresh step-up proof, same generic mechanism/same
+ * "second named consumer" GuardiansModule's own header comment already
+ * described for this exact follow-up. GuardiansModule (imported above) does
+ * NOT re-export AuthModule's providers, so this needs its own direct import.
  */
 @Module({
-  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule],
+  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule],
   controllers: [MembershipsController],
   providers: [MembershipsService],
 })

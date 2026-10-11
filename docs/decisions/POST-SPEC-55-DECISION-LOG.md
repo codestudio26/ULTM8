@@ -3065,3 +3065,26 @@ Decision 236's own separately-flagged follow-up — step-up re-authentication be
 
 User, choosing option (B) — full saved-payment-method infrastructure, not the minimal Subscription-only version — after being given an explicit time/pros-and-cons comparison of both, 11 Oct 2026.
 
+---
+
+## Decision 239 — Decision 236's own follow-up, built: step-up gates a new "pay with saved card" purchase path, not just the one pre-existing automatic charge
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** Decision 236's own named follow-up — "step-up re-authentication before reusing a saved payment method for a real charge (e.g. a Membership purchase)" — and the matching line in `skills/ultm8-domain-rules/SKILL.md` §14/§18.
+
+Scoping this turned up a real, previously-unflagged gap: before this decision, **nothing in this codebase let a Student actively choose to pay for anything by reusing their saved card.** `MembershipsService.purchase()`'s Stripe-paid branches always collected a fresh card (`PaymentsService.charge()`/`subscribe()`); the only consumer of `chargeOffSession()` (Decision 238's saved-card charge primitive) was the automatic, system-initiated late-cancellation fee (Decision 234), which has no interactive moment to prompt a passcode. So "step-up before reusing a saved card" had nothing to gate — closing the gap meant building the reuse-purchase path itself first, which the user was asked to scope explicitly (three options given: build the full purchase path + step-up; skip for now, leave flagged open; or build the step-up plumbing alone with nothing behind it). **The user chose the first.**
+
+1. **`PurchaseMembershipDto` gains `payWithSavedCard`** — self-purchase only, scoped to CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP (one-time Stripe-paid plans). Explicitly rejected (400, before any step-up check or Stripe call) for: a Guardian-driven purchase (the saved-payment-method endpoints are self-only — a linked minor, who never logs in, can never have one to reuse), a SUBSCRIPTION plan (`PaymentsService.subscribe()`'s own pre-existing limitation — a throwaway Stripe Customer every call, never wired to `StudentPaymentMethod` — is a separate piece of work, not fixed here), and a Cash/Bank-provider School.
+2. **Step-up re-authentication gates it** — the same generic `StepUpService` Decision 236 built, same `X-Step-Up-Token` header mechanism, checked before any Stripe call is made.
+3. **The charge is synchronous**, unlike the fresh-card path: `chargeOffSession()` already confirms the PaymentIntent (`off_session: true, confirm: true`) and returns a known success/failure immediately — no client-side Stripe Elements confirmation step, no webhook wait. `MembershipsService.purchaseWithSavedCard()` records the Transaction and creates the Membership directly.
+4. **A genuinely new correctness risk, closed, not left open:** the existing two-simultaneous-Active-general-access-Membership race (already guarded by a partial unique index) can now be lost *after* real money has already moved — `chargeOffSession()` runs before any DB write (same "an external Stripe call has no place holding a DB transaction open" discipline this codebase enforces everywhere else), so a rollback on collision cannot undo the charge the way the async webhook path's own `resolveMembershipCollision` does. Closed with an explicit, synchronous refund (`PaymentsService.refundOffSessionCharge()`) in that one case, rather than left as a flagged gap — this is new money-movement code, not a narrow pre-existing limitation being extended.
+5. **Frontend (`apps/student`):** `MembershipPlanRow` offers "Pay with saved card" alongside "Purchase" whenever the Student has a saved card for that School and the plan qualifies, using the same `StepUpPrompt` component Decision 236's Guardian consent-withdrawal screen already built. This is, incidentally, the first real Stripe-money-moving purchase UI actually wired up end-to-end in `apps/student` — the fresh-card path (`requires_payment` outcome) remains unbuilt (Slice 4b, needs a Stripe Elements SDK this app doesn't have), but this one needs no client-side payment SDK at all, since the server already knows the outcome synchronously.
+
+### What this does NOT resolve
+
+Fixing `PaymentsService.subscribe()`'s own pre-existing "throwaway Customer every call" limitation, which blocks saved-card reuse for SUBSCRIPTION plans — flagged, not solved here, same as `PurchaseMembershipDto`'s own comment on it. Guardian-driven saved-card reuse for a linked minor — would need a design decision on whose card that even means, not built or scoped here.
+
+### Recorded by
+
+User, choosing to build the full purchase path (not skip, not plumbing-only) after being told explicitly that nothing existed yet for step-up to gate, 11 Oct 2026.
+
