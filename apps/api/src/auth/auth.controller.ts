@@ -1,7 +1,9 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { StepUpService } from './step-up.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RegisterDto } from './dto/register.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -9,8 +11,12 @@ import { LoginDto } from './dto/login.dto';
 import { RequestPasscodeResetDto } from './dto/request-passcode-reset.dto';
 import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { StepUpVerifyDto } from './dto/step-up-verify.dto';
 import { AuthMessageResponseDto, LoginResponseDto } from './dto/auth-response.dto';
-import { bodyIdentityTracker } from '../common/throttle/identity-trackers';
+import { StepUpResponseDto } from './dto/step-up-response.dto';
+import { bodyIdentityTracker, jwtSubTracker } from '../common/throttle/identity-trackers';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 // Rate limiting on /auth/otp/* and /auth/login — confirmed, Spec §11.5. Decision 12
 // requires this decoupled from raw IP: a shared IP (office wifi, a school's front-desk
@@ -30,11 +36,20 @@ const PHONE_AUTH_THROTTLE = {
   default: { limit: 20, ttl: 60_000 },
   identity: { limit: 5, ttl: 60_000, getTracker: bodyIdentityTracker('phone') },
 };
+// Decision 9 — same identity-only strictness as login's own passcode guess
+// (EMAIL_AUTH_THROTTLE above); keyed by the caller's already-authenticated
+// `sub`, not email/phone, since this route sits behind JwtAuthGuard.
+const STEP_UP_VERIFY_THROTTLE = {
+  identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker },
+};
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly stepUpService: StepUpService,
+  ) {}
 
   @ApiCreatedResponse({ type: AuthMessageResponseDto })
   @Post('register')
@@ -93,5 +108,19 @@ export class AuthController {
   @Post('reset-password')
   confirmPasscodeReset(@Body() dto: ConfirmPasscodeResetDto) {
     return this.authService.confirmPasscodeReset(dto);
+  }
+
+  // Decision 9 — step-up re-authentication for an already-logged-in user
+  // confirming a sensitive action (today: Guardian BASELINE consent
+  // withdrawal). Behind JwtAuthGuard, unlike every other route in this
+  // controller — the caller must already hold a valid session; this only
+  // re-proves presence for one specific next action.
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiCreatedResponse({ type: StepUpResponseDto })
+  @Throttle(STEP_UP_VERIFY_THROTTLE)
+  @Post('step-up/verify')
+  verifyStepUp(@CurrentUser() user: JwtPayload, @Body() dto: StepUpVerifyDto) {
+    return this.stepUpService.verify(user.sub, dto);
   }
 }

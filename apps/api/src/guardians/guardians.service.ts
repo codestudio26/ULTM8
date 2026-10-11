@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { StepUpService } from '../auth/step-up.service';
 import { CreateMinorDto } from './dto/create-minor.dto';
 import { GrantConsentDto } from './dto/grant-consent.dto';
 
@@ -54,6 +55,7 @@ export class GuardiansService {
     private readonly prismaApp: PrismaAppService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly jwt: JwtService,
+    private readonly stepUpService: StepUpService,
   ) {}
 
   /**
@@ -253,8 +255,17 @@ export class GuardiansService {
    * resolved to the literal reading: THIS withdrawal triggers the cascade
    * regardless of any other Guardian's own consent state (Decision 92), not an
    * invented "unless someone else still consents" exception.
+   *
+   * Decision 9 — BASELINE withdrawal (the irreversible, account-revoking path)
+   * requires a fresh step-up proof (`StepUpService.assertVerified()`, checked
+   * BEFORE the record is looked up for tier, see below) minted by
+   * `POST /auth/step-up/verify`; CAMERA withdrawal does not, since it's
+   * reversible and a plain confirm is proportionate (Decision 9's own text).
+   * The tier gate happens only once `existing` is loaded — this is still a
+   * single combined check, not two round-trips, since StepUpService.
+   * assertVerified() does no DB I/O of its own.
    */
-  async withdrawConsent(guardianId: string, consentRecordId: string) {
+  async withdrawConsent(guardianId: string, consentRecordId: string, stepUpToken?: string) {
     const existing = await this.prismaApp.withTenantContext(guardianId, (tx) =>
       tx.consentRecord.findUnique({ where: { id: consentRecordId } }),
     );
@@ -263,6 +274,9 @@ export class GuardiansService {
     }
     if (existing.status !== 'ACTIVE') {
       throw new ConflictException('This consent record is already Withdrawn.');
+    }
+    if (existing.tier === 'BASELINE') {
+      this.stepUpService.assertVerified(guardianId, stepUpToken);
     }
 
     // FOUND ON REVIEW: an earlier version flipped ConsentRecord to WITHDRAWN

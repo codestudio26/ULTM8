@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { StepUpService } from './step-up.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { TwilioVerifyService } from './otp/twilio-verify.service';
 import { LoginAttemptTracker } from './login-attempt-tracker.service';
@@ -22,10 +23,12 @@ import { QueueModule } from '../jobs/queue.module';
     QueueModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TwilioVerifyService, LoginAttemptTracker],
+  providers: [AuthService, StepUpService, JwtStrategy, TwilioVerifyService, LoginAttemptTracker],
   // TwilioVerifyService exported so JobsModule's OtpDeliveryProcessor can call its
   // sendOtpNow() — the actual Twilio call now lives behind the queue, not in front of
-  // it.
-  exports: [AuthService, TwilioVerifyService],
+  // it. StepUpService exported so GuardiansModule can gate BASELINE consent
+  // withdrawal on it (Decision 9) without duplicating the step-up mechanism —
+  // one-directional (AuthModule doesn't import GuardiansModule), not a cycle.
+  exports: [AuthService, StepUpService, TwilioVerifyService],
 })
 export class AuthModule {}

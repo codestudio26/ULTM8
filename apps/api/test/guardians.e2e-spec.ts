@@ -12,9 +12,15 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+
+// Decision 9 — the real passcode behind both Guardians' bcrypt hashes below,
+// needed to exercise POST /auth/step-up/verify over real HTTP rather than
+// minting a step-up token directly.
+const TEST_PASSCODE = '424242';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -65,6 +71,7 @@ describeIfDb('GuardianModule — HTTP-level linking, consent, and RLS', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
+    const passcodeHash = await bcrypt.hash(TEST_PASSCODE, 12);
     const mkUser = (label: string) =>
       superuser.user.create({
         data: {
@@ -73,7 +80,7 @@ describeIfDb('GuardianModule — HTTP-level linking, consent, and RLS', () => {
           phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
           firstName: label,
           surname: 'Tenant',
-          passcodeHash: 'x',
+          passcodeHash,
           dateOfBirth: new Date('1985-01-01'),
           phoneVerifiedAt: new Date(),
         },
@@ -183,10 +190,70 @@ describeIfDb('GuardianModule — HTTP-level linking, consent, and RLS', () => {
     expect(doubleWithdraw.status).toBe(409);
   });
 
-  it('withdrawing BASELINE consent cascades — revokes every active RoleGrant the minor holds', async () => {
+  // ---------------------------------------------------------------------------
+  // Decision 9 — BASELINE withdrawal requires a fresh step-up proof; CAMERA
+  // (tested above) never does. See StepUpService's own header comment for why
+  // the token is verified directly here, never through JwtStrategy.
+  // ---------------------------------------------------------------------------
+
+  it('POST /auth/step-up/verify rejects an incorrect passcode', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/v1/auth/step-up/verify')
+      .set('Authorization', `Bearer ${tokenGuardianA}`)
+      .send({ passcode: '000000' });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('INVALID_PASSCODE');
+  });
+
+  it('withdrawing BASELINE consent with no step-up token is rejected — 403 STEP_UP_REQUIRED', async () => {
     const res = await request(app.getHttpServer())
       .patch(`/v1/guardians/me/consent/${baselineConsentId}/withdraw`)
       .set('Authorization', `Bearer ${tokenGuardianA}`);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('STEP_UP_REQUIRED');
+
+    // Still ACTIVE — the rejected withdrawal attempt must not have run the cascade.
+    const stillActive = await superuser.consentRecord.findUniqueOrThrow({ where: { id: baselineConsentId } });
+    expect(stillActive.status).toBe('ACTIVE');
+  });
+
+  it('a step-up token minted for a DIFFERENT Guardian is rejected on Guardian A\'s own withdrawal — 403', async () => {
+    const stepUpAsB = await request(app.getHttpServer())
+      .post('/v1/auth/step-up/verify')
+      .set('Authorization', `Bearer ${tokenGuardianB}`)
+      .send({ passcode: TEST_PASSCODE });
+    expect(stepUpAsB.status).toBe(201);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/guardians/me/consent/${baselineConsentId}/withdraw`)
+      .set('Authorization', `Bearer ${tokenGuardianA}`)
+      .set('X-Step-Up-Token', stepUpAsB.body.stepUpToken);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('STEP_UP_REQUIRED');
+  });
+
+  it('an expired step-up token is rejected — 403', async () => {
+    const expiredToken = jwt.sign({ sub: guardianA.id, scope: 'GUARDIAN_SENSITIVE_ACTION' }, { expiresIn: -10 });
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/guardians/me/consent/${baselineConsentId}/withdraw`)
+      .set('Authorization', `Bearer ${tokenGuardianA}`)
+      .set('X-Step-Up-Token', expiredToken);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('STEP_UP_REQUIRED');
+  });
+
+  it('withdrawing BASELINE consent with a valid step-up token cascades — revokes every active RoleGrant the minor holds', async () => {
+    const stepUp = await request(app.getHttpServer())
+      .post('/v1/auth/step-up/verify')
+      .set('Authorization', `Bearer ${tokenGuardianA}`)
+      .send({ passcode: TEST_PASSCODE });
+    expect(stepUp.status).toBe(201);
+    expect(typeof stepUp.body.stepUpToken).toBe('string');
+
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/guardians/me/consent/${baselineConsentId}/withdraw`)
+      .set('Authorization', `Bearer ${tokenGuardianA}`)
+      .set('X-Step-Up-Token', stepUp.body.stepUpToken);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('WITHDRAWN');
 

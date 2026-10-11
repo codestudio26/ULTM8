@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from '../auth/auth.module';
 import { GuardiansController } from './guardians.controller';
 import { GuardiansService } from './guardians.service';
 
@@ -34,6 +35,13 @@ import { GuardiansService } from './guardians.service';
  * multiple modules independently registering the same dynamic module, so this
  * costs nothing and keeps the dependency graph one-directional, matching this
  * module's own existing "one-directional, not a cycle" note above.
+ *
+ * Decision 9 — DOES import AuthModule (for its exported StepUpService),
+ * unlike the Kid-Mode case above: step-up re-authentication is a generic Auth
+ * concern Decision 9's own text already names a second consumer for (saved-
+ * payment-method reuse), not a Guardian-specific mechanism worth
+ * reimplementing locally. Still one-directional, not a cycle — AuthModule does
+ * not import GuardiansModule.
  */
 @Module({
   imports: [
@@ -41,6 +49,7 @@ import { GuardiansService } from './guardians.service';
       secret: process.env.JWT_ACCESS_SECRET,
       signOptions: { expiresIn: process.env.JWT_ACCESS_TTL ?? '15m' },
     }),
+    AuthModule,
   ],
   controllers: [GuardiansController],
   providers: [GuardiansService],
