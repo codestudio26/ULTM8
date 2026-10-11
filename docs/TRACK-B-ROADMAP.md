@@ -897,10 +897,6 @@ Lessons in the app wait for video hosting (Decision 155).
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own
 section — kept here only for what's still genuinely blocked as of 2026-09-22.)*
 
-- **Waiver drawn-signature capture** — the typed-name path shipped as Slice 6a;
-  Decision 74/78 confirm drawn-signature is legally sufficient too, but that specific
-  capture screen has never been designed anywhere. Needs a design pass + a
-  `WaiverSignature` schema change.
 - **Per-School white-label branding** — `packages/build-pipeline` is still an unbuilt
   placeholder; nothing to build against yet, and it's a standalone business decision
   (one app with dynamic theming vs. per-School app-store listings) beyond scope here.
@@ -930,8 +926,19 @@ remaining product questions in that section above.
 the API shape and library choice are both settled; the open question is only whether
 to take on the native dev-client workflow change right now.
 
-**Genuinely blocked** (see the section above): the Waiver drawn-signature capture and
-per-School white-label branding.
+**Genuinely blocked** (see the section above): per-School white-label branding.
+
+**Waiver drawn-signature capture — DONE (11 Oct 2026).** `WaiverRow.tsx` now has an
+optional `react-native-signature-canvas` pad alongside the required typed name/typed
+signature fields, wired to the real shipped backend contract (Phase 34/37): a
+presigned-upload-URL dance against R2 (`POST /waivers/{id}/signature-upload-url`,
+a direct PUT, then `signatureImageKey` on `sign()`), not a base64 blob in the request
+body. Guardian-on-behalf-of signing (the real DTO's optional `studentId`) stays out
+of scope for this slice. Verified against `waivers.e2e-spec.ts`'s drawn-signature
+suite (7/7 passing, including the Guardian case) and the real running API for the
+upload-url step; the actual PUT to R2 and the WebView canvas on a real device are
+unverified in this sandbox (no real R2 credentials, no Expo Go device available) —
+flagged, not asserted as device-verified.
 
 Several follow-ups are already spawned and tracked outside this doc (visible as task
 chips in the session): the waitlist notification-dispatch backend gap, the
