@@ -127,12 +127,18 @@ export class CreateSchoolDto {
   @IsUrl()
   bannerUrl?: string;
 
-  @ApiPropertyOptional({ enum: ClassCancellationPolicyDto, default: ClassCancellationPolicyDto.MANUAL })
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers that don't send it.
+  @ApiPropertyOptional({ enum: ClassCancellationPolicyDto, description: 'Defaults to MANUAL when omitted.' })
   @IsOptional()
   @IsEnum(ClassCancellationPolicyDto)
   classCancellationPolicy?: ClassCancellationPolicyDto;
 
-  @ApiPropertyOptional({ default: 120, description: 'Minutes; School-configurable waitlist claim window (default 120 — Decision 24).' })
+  // No `default:` in the Swagger metadata, for the same reason as
+  // classCancellationPolicy above — the default is documented in the
+  // description instead.
+  @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 120 — Decision 24).' })
   @IsOptional()
   @IsInt()
   @Min(1)

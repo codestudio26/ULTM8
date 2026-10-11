@@ -8688,11 +8688,10 @@
               "AUTO_REFUND",
               "AUTO_CREDIT"
             ],
-            "default": "MANUAL"
+            "description": "Defaults to MANUAL when omitted."
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "default": 120,
             "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
           }
         },
@@ -8866,11 +8865,10 @@
               "AUTO_REFUND",
               "AUTO_CREDIT"
             ],
-            "default": "MANUAL"
+            "description": "Defaults to MANUAL when omitted."
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "default": 120,
             "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
           },
           "mobileNumber": {
@@ -9489,7 +9487,7 @@
               "FLAT",
               "PER_HEADCOUNT"
             ],
-            "default": "FLAT"
+            "description": "Defaults to FLAT when omitted."
           },
           "flatFeeAmount": {
             "type": "number",
@@ -9647,7 +9645,7 @@
               "FLAT",
               "PER_HEADCOUNT"
             ],
-            "default": "FLAT"
+            "description": "Defaults to FLAT when omitted."
           },
           "flatFeeAmount": {
             "type": "number",
@@ -10448,11 +10446,10 @@
           },
           "termsWaiverRequired": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "membershipInclusion": {
             "type": "boolean",
-            "default": false,
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
           }
         },
@@ -10635,11 +10632,10 @@
           },
           "termsWaiverRequired": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "membershipInclusion": {
             "type": "boolean",
-            "default": false,
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
           },
           "branchId": {
@@ -11240,7 +11236,7 @@
               "ON",
               "OFF"
             ],
-            "default": "ON"
+            "description": "Defaults to ON when omitted."
           },
           "title": {
             "type": "string"
@@ -11272,11 +11268,10 @@
           },
           "termsWaiverRequired": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "membershipInclusion": {
             "type": "boolean",
-            "default": false,
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
           },
           "bookingCutoffMinutesBeforeStart": {
@@ -11486,7 +11481,7 @@
               "ON",
               "OFF"
             ],
-            "default": "ON"
+            "description": "Defaults to ON when omitted."
           },
           "title": {
             "type": "string"
@@ -11507,11 +11502,10 @@
           },
           "termsWaiverRequired": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "membershipInclusion": {
             "type": "boolean",
-            "default": false,
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
           },
           "branchId": {
@@ -12179,7 +12173,7 @@
           },
           "visible": {
             "type": "boolean",
-            "default": true
+            "description": "Defaults to true when omitted."
           },
           "refundFeeDate": {
             "type": "string",
@@ -12191,7 +12185,7 @@
           },
           "termsWaiverRequired": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "disciplineIds": {
             "description": "The School's styles this plan covers (Decision 195).",
@@ -12335,11 +12329,11 @@
           },
           "visible": {
             "type": "boolean",
-            "default": true
+            "description": "Defaults to true when omitted."
           },
           "termsWaiverRequired": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "disciplineIds": {
             "description": "The School's styles this plan covers (Decision 195).",
@@ -14030,7 +14024,7 @@
         "properties": {
           "acknowledgeWithoutSkillSignoff": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "note": {
             "type": "string",
@@ -14070,7 +14064,7 @@
         "properties": {
           "acknowledgeWithoutSkillSignoff": {
             "type": "boolean",
-            "default": false
+            "description": "Defaults to false when omitted."
           },
           "note": {
             "type": "string",
