@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **The Timetable page's "Book" action can now resolve a slot occurrence to
+  a real, bookable Class** (Decision 235). **api:** new
+  `GET /timetable/:id/occurrences/:date` returns the already-materialized
+  Class for that date (the daily class-occurrence-generation job already
+  creates one per slot/date), ready to pass to the existing booking
+  endpoints. No new booking capability — just the missing lookup.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

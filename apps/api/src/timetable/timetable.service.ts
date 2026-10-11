@@ -141,6 +141,63 @@ export class TimetableService {
     return this.toResponse(found);
   }
 
+  /**
+   * `GET /timetable/:id/occurrences/:date` — the v1.2 backend backlog's
+   * Timetable "Book" action gap (Decision 235). `skills/ultm8-domain-rules/SKILL.md`
+   * §9 still carries an `[UNRESOLVED]` tag asking "how TimetableSlot and
+   * Class actually relate... do not assume one Class row is auto-spawned
+   * per TimetableSlot occurrence without this being confirmed" — that tag
+   * is stale relative to the already-shipped code: `ClassOccurrenceGenerationProcessor`
+   * (src/jobs/class-occurrence-generation.processor.ts) has run on a daily
+   * schedule since Phase 5, materializing exactly one `Class` row per
+   * (TimetableSlot, occurrenceDate) pair, enforced by Class's own
+   * `@@unique([timetableSlotId, occurrenceDate])` constraint. This method
+   * doesn't decide that architecture — it was already decided and built —
+   * it just exposes the lookup clicking a slot's occurrence needs: resolve
+   * (slotId, date) to the Class the job already generated, so the caller
+   * can book against a real `classId` via the existing
+   * `POST /classes/:id/book` (self) or Staff-on-behalf-of flow. Flagged in
+   * Decision 235 for the Architect to retire the stale SKILL.md tag — not
+   * edited directly here, since that file is Architect-maintained only.
+   *
+   * No Staff-only gate here, matching `findOne` above exactly — TimetableSlot
+   * and Class share the identical any-RoleGrant-holder RLS shape, and a
+   * Student resolving their own self-booking needs this exact same lookup,
+   * not just Staff on-behalf-of.
+   *
+   * 404, not a generated "create it now," when nothing has materialized yet
+   * for that date — e.g. a date outside the job's own rolling `WEEKS_AHEAD`
+   * window, or one that doesn't fall on this slot's weekday at all. Silently
+   * generating one here would reintroduce the exact "or does one need to be
+   * created/looked up on demand" question the backlog doc raised and the
+   * job's own design already answered no to (a background sweep, not
+   * on-demand creation).
+   */
+  async resolveOccurrence(callerId: string, slotId: string, date: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('`date` must be an ISO 8601 date (YYYY-MM-DD).');
+    }
+    const [year, month, day] = date.split('-').map(Number);
+    const occurrenceDate = new Date(Date.UTC(year, month - 1, day));
+    if (Number.isNaN(occurrenceDate.getTime())) {
+      throw new BadRequestException('`date` is not a valid calendar date.');
+    }
+
+    const slot = await this.prismaApp.withTenantContext(callerId, (tx) => tx.timetableSlot.findUnique({ where: { id: slotId } }));
+    if (!slot) {
+      throw new NotFoundException('TimetableSlot not found');
+    }
+
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.class.findUnique({ where: { timetableSlotId_occurrenceDate: { timetableSlotId: slotId, occurrenceDate } } }),
+    );
+    if (!cls) {
+      throw new NotFoundException('No Class has been generated for this TimetableSlot on that date.');
+    }
+
+    return { classId: cls.id, title: cls.title, startDate: cls.startDate, endDate: cls.endDate };
+  }
+
   /** School Owner/Manager only — resolved via the slot's own schoolId, not a route param. */
   async update(callerId: string, slotId: string, dto: UpdateTimetableSlotDto) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
