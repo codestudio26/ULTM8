@@ -6421,6 +6421,49 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/waivers/{id}/signatures": {
+      "get": {
+        "operationId": "WaiversController_findSignatureRoster",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureRosterResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/{id}/sign": {
       "post": {
         "operationId": "WaiversController_sign",
@@ -14308,6 +14351,75 @@
             "description": "The waiver document body text."
           }
         }
+      },
+      "WaiverSignatureRosterItemDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SIGNED",
+              "UNSIGNED",
+              "EXPIRED",
+              "PENDING"
+            ]
+          },
+          "signedDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "signatureId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "email",
+          "status",
+          "signedDate",
+          "signatureId"
+        ]
+      },
+      "WaiverSignatureRosterResponseDto": {
+        "type": "object",
+        "properties": {
+          "waiverId": {
+            "type": "string"
+          },
+          "signedCount": {
+            "type": "number"
+          },
+          "totalCount": {
+            "type": "number"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaiverSignatureRosterItemDto"
+            }
+          }
+        },
+        "required": [
+          "waiverId",
+          "signedCount",
+          "totalCount",
+          "items"
+        ]
       },
       "SignWaiverDto": {
         "type": "object",

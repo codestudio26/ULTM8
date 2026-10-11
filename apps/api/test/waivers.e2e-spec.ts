@@ -507,6 +507,122 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Staff-facing signature roster (Decision 214) — diffs the real Student
+  // roster against this Waiver's own signatures. Enrolls via the real
+  // self-service POST /schools/:id/join endpoint (not a direct-Prisma seed),
+  // deliberately, to prove this against genuine enrollment rather than
+  // fixture data — see WaiversService.findSignatureRoster's own header
+  // comment for why that distinction matters here.
+  // ---------------------------------------------------------------------------
+
+  describe('staff-facing signature roster (Decision 214)', () => {
+    let rosterSchool: { id: string };
+    let rosterWaiverId: string;
+    let joinedStudent: { id: string; email: string };
+    let tokenJoinedStudent: string;
+
+    beforeAll(async () => {
+      rosterSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Signature Roster School' } });
+      await superuser.roleGrant.create({
+        data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: rosterSchool.id },
+      });
+
+      joinedStudent = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `waivers-http-roster-joiner-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'Roster',
+          surname: 'Joiner',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      const tokenFreshJoiner = signAccessToken(joinedStudent, []);
+      const joinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${rosterSchool.id}/join`)
+        .set('Authorization', `Bearer ${tokenFreshJoiner}`)
+        .send();
+      expect(joinRes.status).toBe(201);
+      tokenJoinedStudent = joinRes.body.accessToken;
+
+      const waiverRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${rosterSchool.id}/waivers`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ title: 'Roster Waiver', body: 'text' });
+      rosterWaiverId = waiverRes.body.id;
+      waiverIds.push(rosterWaiverId);
+    });
+
+    afterAll(async () => {
+      // Creating the Waiver above enqueues waiver-signature-requests, which
+      // fans out a real Notification row for joinedStudent via a live worker
+      // — same ON DELETE RESTRICT ordering the outer afterAll's own comment
+      // already documents fixing for the shared fixtures.
+      await superuser.notification.deleteMany({ where: { userId: joinedStudent.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: rosterSchool.id } });
+      await superuser.user.delete({ where: { id: joinedStudent.id } });
+      await superuser.school.delete({ where: { id: rosterSchool.id } });
+    });
+
+    it('a Student who joined via the real self-service endpoint but has not signed appears UNSIGNED, with no stored row', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${rosterSchool.id}/waivers/${rosterWaiverId}/signatures`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.totalCount).toBe(1);
+      expect(res.body.signedCount).toBe(0);
+      const row = res.body.items.find((i: { studentId: string }) => i.studentId === joinedStudent.id);
+      expect(row).toBeDefined();
+      expect(row.status).toBe('UNSIGNED');
+      expect(row.signedDate).toBeNull();
+      expect(row.signatureId).toBeNull();
+      expect(row.email).toBe(joinedStudent.email);
+
+      // Never persisted — purely synthesized from the roster diff, exactly
+      // the point of Decision 214 (no explicit Pending/Unsigned row).
+      const storedRow = await superuser.waiverSignature.findFirst({
+        where: { waiverId: rosterWaiverId, studentId: joinedStudent.id },
+      });
+      expect(storedRow).toBeNull();
+    });
+
+    it('once that Student signs, the same roster call reports SIGNED with the real signature id/date', async () => {
+      const signRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${rosterWaiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenJoinedStudent}`)
+        .send({ signerFullName: 'Roster Joiner', signatureText: 'Roster Joiner' });
+      expect(signRes.status).toBe(201);
+      signatureIds.push(signRes.body.id);
+
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${rosterSchool.id}/waivers/${rosterWaiverId}/signatures`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.signedCount).toBe(1);
+      const row = res.body.items.find((i: { studentId: string }) => i.studentId === joinedStudent.id);
+      expect(row.status).toBe('SIGNED');
+      expect(row.signatureId).toBe(signRes.body.id);
+      expect(row.signedDate).toEqual(expect.any(String));
+    });
+
+    it('a Student (not Staff) cannot read the signature roster — 403', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${rosterSchool.id}/waivers/${rosterWaiverId}/signatures`)
+        .set('Authorization', `Bearer ${tokenJoinedStudent}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('a Waiver id that exists but belongs to a different School 404s, not just an empty roster', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${rosterSchool.id}/waivers/${waiverIds[0]}/signatures`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // RLS — WaiverSignature deliberately reuses Phase 9's narrow shape, not
   // Waiver's own broad catalog-read shape. Direct Prisma, not HTTP — no HTTP
   // endpoint exposes another Student's raw signature to probe this via supertest
