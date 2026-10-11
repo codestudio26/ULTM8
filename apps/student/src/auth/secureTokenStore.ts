@@ -5,8 +5,9 @@
  * `TokenStore` shape (same get/set/clear contract every screen already expects) but
  * backs it with `expo-secure-store`, the platform Keychain/Keystore, instead of a
  * DOM storage API. `AsyncStorage` was deliberately not used: it's plain, unencrypted
- * storage, a real risk for a JWT even short-lived (15-minute TTL, no refresh token yet
- * — see AuthContext's header comment).
+ * storage, a real risk for a JWT even short-lived (15-minute TTL — apps/api's
+ * JWT_ACCESS_TTL default — which is exactly why a refresh token is also stored here
+ * now, see AuthContext's `refreshSession`/`login`/`logout`).
  *
  * Unlike sessionStorage, SecureStore's API is async — every call site that reads the
  * token must account for that (see AuthContext's loading state), not just swap the
@@ -25,11 +26,14 @@
 import * as SecureStore from 'expo-secure-store';
 
 const STORAGE_KEY = 'ultm8.accessToken';
+const REFRESH_STORAGE_KEY = 'ultm8.refreshToken';
 
 export interface AsyncTokenStore {
   get(): Promise<string | null>;
   set(token: string): Promise<void>;
   clear(): Promise<void>;
+  getRefreshToken(): Promise<string | null>;
+  setRefreshToken(token: string): Promise<void>;
 }
 
 let warnedUnavailable = false;
@@ -67,9 +71,29 @@ export const secureTokenStore: AsyncTokenStore = {
   },
   async clear() {
     try {
-      await SecureStore.deleteItemAsync(STORAGE_KEY);
+      // Both keys, always together — there is no confirmed scenario where this app
+      // should hold one without the other (a bare accessToken with its refreshToken
+      // gone can never renew itself; a bare refreshToken with no accessToken is just
+      // dead weight a stale install would otherwise carry around indefinitely).
+      await Promise.all([SecureStore.deleteItemAsync(STORAGE_KEY), SecureStore.deleteItemAsync(REFRESH_STORAGE_KEY)]);
     } catch {
       /* noop — nothing to clear if storage isn't available */
+    }
+  },
+  async getRefreshToken() {
+    try {
+      await warnIfUnavailable();
+      return await SecureStore.getItemAsync(REFRESH_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  },
+  async setRefreshToken(token: string) {
+    try {
+      await warnIfUnavailable();
+      await SecureStore.setItemAsync(REFRESH_STORAGE_KEY, token);
+    } catch {
+      /* noop — same "don't crash login over a failed persist" reasoning as set() above */
     }
   },
 };

@@ -46,6 +46,29 @@ export interface ApiClientOptions {
    * packages/auth — see its README). Returning undefined/null omits the header
    * entirely, matching AuthModule's public (pre-login) endpoints. */
   getAccessToken?: () => string | null | undefined;
+  /**
+   * Called when a request comes back 401 — apps/api's access tokens are short-lived
+   * (15 minutes, AuthModule's own JWT_ACCESS_TTL default) by design, so this is the
+   * normal mid-session case, not an edge case. Return a fresh access token to retry
+   * the failed request once with it; return/resolve null or undefined to give up, in
+   * which case the original 401 is returned exactly as if this option weren't set.
+   * MUST NOT throw/reject — a caller that can fail (e.g. the refresh token itself is
+   * also expired) must catch that itself and resolve null, the same way
+   * `getAccessToken` is never allowed to do anything but return a value.
+   *
+   * Called AT MOST ONCE per overlapping burst of 401s, however many requests failed
+   * at once — every one of them awaits the SAME call and retries with whatever it
+   * resolves to. This is not just an efficiency nicety: apps/api's refresh-token
+   * rotation (AuthService.refresh()) treats a SECOND concurrent attempt to redeem the
+   * same not-yet-rotated refresh token as reuse — a compromise signal that revokes
+   * every session for that user as a precaution. A caller that invoked this once per
+   * failed request, in parallel, would routinely trigger exactly that the first time
+   * two requests ever raced a token expiry together, signing the person out
+   * everywhere over nothing. The single-flight dedup below is the only thing standing
+   * between "token expired, refreshed transparently" and "every device signed out" —
+   * it is load-bearing, not a best-effort optimization.
+   */
+  onUnauthorized?: () => Promise<string | null | undefined>;
 }
 
 /**
@@ -69,7 +92,74 @@ export function createApiClient(options: ApiClientOptions) {
   };
   client.use(authMiddleware);
 
+  // Opt-in — a caller that never passes `onUnauthorized` (apps/school-portal, as of
+  // this writing) gets none of this registered and sees byte-for-byte the same
+  // behavior as before it existed.
+  if (options.onUnauthorized) {
+    client.use(createRefreshMiddleware(options.onUnauthorized));
+  }
+
   return client;
+}
+
+/**
+ * The retry-on-401 middleware behind `ApiClientOptions.onUnauthorized` — see that
+ * option's own doc comment for the single-flight requirement this exists to satisfy.
+ */
+function createRefreshMiddleware(onUnauthorized: () => Promise<string | null | undefined>): Middleware {
+  // A Request's body can only ever be read once a real fetch has started sending it,
+  // so by the time onResponse sees a 401 for e.g. a PATCH, `request.body` is already
+  // consumed — retrying it needs a clone taken BEFORE that happens, in onRequest.
+  // Keyed by openapi-fetch's own per-request `id` (stable across onRequest/onResponse/
+  // onError for one logical call); removed on both paths below so a request that's
+  // never retried doesn't keep its clone alive for the rest of the app's lifetime.
+  const pendingClones = new Map<string, Request>();
+  // The single-flight guard `onUnauthorized`'s own doc comment requires: every 401
+  // that arrives while a refresh is already in flight awaits this SAME promise
+  // instead of starting a second one.
+  let refreshing: Promise<string | null | undefined> | null = null;
+
+  function refreshOnce(): Promise<string | null | undefined> {
+    if (!refreshing) {
+      refreshing = onUnauthorized().finally(() => {
+        refreshing = null;
+      });
+    }
+    return refreshing;
+  }
+
+  return {
+    onRequest({ request, id }) {
+      pendingClones.set(id, request.clone());
+      return request;
+    },
+    async onResponse({ response, id, options: clientOptions }) {
+      const original = pendingClones.get(id);
+      pendingClones.delete(id);
+      if (response.status !== 401 || !original) return undefined;
+
+      let newToken: string | null | undefined;
+      try {
+        newToken = await refreshOnce();
+      } catch {
+        // Belt-and-braces only — onUnauthorized's contract says it never throws.
+        return undefined;
+      }
+      if (!newToken) return undefined;
+
+      // A plain fetch() here, not another call through this same client — that would
+      // re-enter this exact middleware chain for the retry. Going around it like this
+      // means a retry that *also* 401s is never retried again: it never reaches this
+      // onResponse a second time, so the original caller just gets that 401 back, the
+      // same as if onUnauthorized had returned null.
+      const retryRequest = new Request(original);
+      retryRequest.headers.set('Authorization', `Bearer ${newToken}`);
+      return clientOptions.fetch(retryRequest);
+    },
+    onError({ id }) {
+      pendingClones.delete(id);
+    },
+  };
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;
