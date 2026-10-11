@@ -10,6 +10,7 @@ export type EligibleInstructorUser = components['schemas']['EligibleInstructorUs
 export type CreateInstructorManuallyInput = components['schemas']['CreateInstructorManuallyDto'];
 export type CompleteInstructorProfileInput = components['schemas']['CompleteInstructorProfileDto'];
 export type CertificationContentType = components['schemas']['RequestCertificationUploadUrlDto']['contentType'];
+export type InstructorClassResponse = components['schemas']['InstructorClassResponseDto'];
 
 /** No pagination in this UI yet — same established convention as
  * useBranches/useDisciplines (see their own header comments). */
@@ -25,6 +26,29 @@ export function useInstructors(schoolId: string | null) {
     // re-fetch reference data that rarely changes; a real create/update still
     // invalidates this query key directly).
     staleTime: 60_000,
+  });
+}
+
+/** Single-Instructor fetch via the already-existing `GET /v1/instructors/{id}`
+ * endpoint — previously unused by the frontend, which only ever read a profile
+ * out of the already-fetched `useInstructors` list. Needed by
+ * InstructorDetailPage to load directly from a URL/refresh. */
+export function useInstructor(id: string | null) {
+  return useQuery({
+    queryKey: ['instructors', 'detail', id],
+    queryFn: () => unwrap(apiClient.GET('/v1/instructors/{id}', { params: { path: { id: id! } } })),
+    enabled: !!id,
+  });
+}
+
+/** v1.2 backend backlog — Instructor Detail's "Instructor Class" grid, the
+ * real replacement for the client-side filter-the-School's-Classes
+ * workaround. No pagination in this UI yet, same convention as useInstructors. */
+export function useInstructorClasses(id: string | null) {
+  return useQuery({
+    queryKey: ['instructors', 'detail', id, 'classes'],
+    queryFn: () => unwrap(apiClient.GET('/v1/instructors/{id}/classes', { params: { path: { id: id! } } })),
+    enabled: !!id,
   });
 }
 
