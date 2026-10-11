@@ -2918,3 +2918,25 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 233 — Bookings date-range aggregation: Bookings-rooted (not Class-rooted), School-scoped, unpaginated and capped at 92 days, ships against raw `activities` strings
+
+**Date:** 11 Oct 2026 · **Status:** Developer-level implementation of `docs/v1.2-backend-backlog.md`'s own confirmed-but-unbuilt Dashboard "Bookings This Week" drill-down gap, whose own text explicitly left "the exact endpoint shape... a design question for the backend team, not prescribed here."
+
+1. **New endpoint:** `GET /schools/:schoolId/bookings?from=&to=` — School-Staff-gated (`assertStaffAtSchool`: School Owner/Manager, Branch Staff, or Instructor), `from`/`to` inclusive ISO 8601 dates.
+2. **Bookings-rooted, not Class-rooted** — returns one row per `Booking`, enriched with the related `Class`'s `title`/`startDate`/`endDate`/`activities` (a Booking carries no date of its own — it's derived entirely from its Class). The backlog doc's own text frames this consistently as "a School-scoped **Bookings** endpoint... joins Class," never as a Class/session-rooted query, so this follows the doc's own repeated framing rather than guessing at a different shape from an unavailable mockup detail.
+3. **Filters through the Class relation** (`class: { startDate: { gte, lt } }`), not a column on `Booking` — `to` is inclusive of the whole day (computed as `to + 1 day`, exclusive upper bound).
+4. **Relies entirely on the existing `booking_staff_read` RLS policy** (Phase 11 migration) for School/Branch scoping — no new grant or policy needed; this method's own `where` only adds `schoolId` + the date range.
+5. **Deliberately unpaginated**, capped at a 92-day range (`BadRequestException` past that, and when `from` > `to`) — bounded by the caller's own date range, not an open-ended list, matching the "don't make the caller page through everything" principle this backlog doc already names elsewhere for a bounded, whole-range view. The 92-day cap is a Developer-level defensive choice (nothing in the backlog spec states one) — flagged for Architect confirmation, not assumed final.
+6. **Ships against raw `Class.activities` strings**, not a canonical Discipline FK — the same call Decision 224 already made for this exact Dashboard drill-down's own day×discipline grouping (Decision 90's Discipline-FK reconciliation remains separate, still-open work). Grouping by day/discipline itself is left to the client, same as every other "groupable" flat-list view in this codebase (e.g. the Grading Board).
+7. **Response is narrower than `BookingResponseDto`** (no attendees/override/check-in detail) — this view's only job is the day/discipline drill-down; clicking a session in the UI reuses the already-shipped `GET classes/:id/bookings` roster, per the backlog doc's own note that this is "not a new backend gap."
+
+### Verified
+
+`npx tsc --noEmit` clean; new `school-bookings.e2e-spec.ts` (date-range filtering including the from/to boundary, Class title/date/activities join, Branch-scoped Staff sees only their Branch's + School-wide Bookings — not a different Branch's, a Student is rejected 403, a different School's Owner gets 404, `from` after `to` and a range over 92 days both reject 400, a malformed date rejects 400) plus the full existing e2e suite, run against real Postgres — all green, zero regressions.
+
+### Recorded by
+
+Developer (this session), continuing the v1.2 backend backlog per the user's standing instruction to build it sequentially, verify, and move on.
+

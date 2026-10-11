@@ -9,6 +9,7 @@ import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { SchoolsService } from '../tenants/schools/schools.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
@@ -54,6 +55,7 @@ export class BookingsService {
     private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
+    private readonly schoolsService: SchoolsService,
     private readonly guardiansService: GuardiansService,
     private readonly subscriptionGate: SubscriptionGateService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
@@ -392,6 +394,73 @@ export class BookingsService {
         // kept as defense-in-depth rather than a non-null assertion.
         studentFirstName: names.get(b.studentId)?.firstName ?? '',
         studentSurname: names.get(b.studentId)?.surname ?? '',
+      })),
+    };
+  }
+
+  /**
+   * `GET /schools/:schoolId/bookings?from=&to=` — the v1.2 backend backlog's
+   * Dashboard "Bookings This Week" drill-down gap: a School-scoped,
+   * date-range Bookings view, enriched with the related Class's title/
+   * date/activities so a caller can group the flat result by day and by
+   * discipline-string client-side (same "ship against the raw strings"
+   * call Decision 224 already made for this exact drill-down's grouping —
+   * Decision 90's Discipline-FK reconciliation is separate, still-open
+   * work).
+   *
+   * Booking itself carries no date — it's derived entirely from the
+   * related Class's own `startDate`/`endDate` — so this filters through
+   * that relation rather than a column on Booking directly. Deliberately
+   * unpaginated: bounded by the caller's own `from`/`to` range (capped at
+   * 92 days below, since nothing in the backlog's own spec caps it and an
+   * unbounded range would otherwise be an unbounded scan), not an
+   * open-ended list — the same "don't make the caller page through
+   * everything" principle `docs/v1.2-backend-backlog.md` itself names
+   * elsewhere (Notifications' true-count gap) for exactly this class of
+   * bounded, whole-range view. Relies entirely on the existing
+   * `booking_staff_read` RLS policy (Phase 11 migration) for the
+   * School/Branch scoping itself — a School-level grant sees every
+   * Branch's Bookings, a Branch-scoped grant only its own Branch's plus
+   * School-wide ones — so this method's own `where` only needs
+   * `schoolId` plus the date range, not Branch logic duplicated here.
+   */
+  async findAllForSchool(callerId: string, schoolId: string, from: string, to: string) {
+    await this.schoolsService.findOne(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    if (fromDate > toDate) {
+      throw new BadRequestException('`from` must not be after `to`.');
+    }
+    const MAX_RANGE_DAYS = 92;
+    if (toDate.getTime() - fromDate.getTime() > MAX_RANGE_DAYS * 24 * 60 * 60 * 1000) {
+      throw new BadRequestException(`The date range must not exceed ${MAX_RANGE_DAYS} days.`);
+    }
+    // Inclusive of the whole `to` day, not just midnight.
+    const toExclusive = new Date(toDate.getTime() + 24 * 60 * 60 * 1000);
+
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findMany({
+        where: { schoolId, class: { startDate: { gte: fromDate, lt: toExclusive } } },
+        include: { class: { select: { title: true, startDate: true, endDate: true, activities: true } } },
+        orderBy: { class: { startDate: 'asc' } },
+      }),
+    );
+
+    const names = await resolveUserNames(this.prismaAuth, rows.map((b) => b.studentId));
+    return {
+      items: rows.map((b) => ({
+        id: b.id,
+        studentId: b.studentId,
+        studentFirstName: names.get(b.studentId)?.firstName ?? '',
+        studentSurname: names.get(b.studentId)?.surname ?? '',
+        classId: b.classId,
+        classTitle: b.class.title,
+        classStartDate: b.class.startDate,
+        classEndDate: b.class.endDate,
+        activities: b.class.activities,
+        status: b.status,
       })),
     };
   }

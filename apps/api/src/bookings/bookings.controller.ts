@@ -12,6 +12,8 @@ import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
+import { FindSchoolBookingsQueryDto } from './dto/find-school-bookings-query.dto';
+import { SchoolBookingListResponseDto } from './dto/school-booking-response.dto';
 
 // Decision 17: extends the per-user/per-IP throttling already used on auth endpoints
 // to class-booking and credit-restore (cancelBooking is where BookingsService restores
@@ -79,5 +81,11 @@ export class BookingsController {
   @Get('classes/:id/bookings')
   findAllForClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: PaginationQueryDto) {
     return this.bookingsService.findAllForClass(user.sub, id, query.cursor, query.limit);
+  }
+
+  @ApiOkResponse({ type: SchoolBookingListResponseDto })
+  @Get('schools/:schoolId/bookings')
+  findAllForSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: FindSchoolBookingsQueryDto) {
+    return this.bookingsService.findAllForSchool(user.sub, schoolId, query.from, query.to);
   }
 }

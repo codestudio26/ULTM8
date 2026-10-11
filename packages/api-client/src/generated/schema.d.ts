@@ -2196,6 +2196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_findAllForSchool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/waitlist": {
         parameters: {
             query?: never;
@@ -4558,6 +4574,21 @@ export interface components {
         BookingListResponseDto: {
             items: components["schemas"]["BookingResponseDto"][];
             nextCursor?: string | null;
+        };
+        SchoolBookingResponseDto: {
+            id: string;
+            studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
+            classId: string;
+            classTitle: string;
+            classStartDate: string;
+            classEndDate: string;
+            activities: string[];
+            status: string;
+        };
+        SchoolBookingListResponseDto: {
+            items: components["schemas"]["SchoolBookingResponseDto"][];
         };
         JoinWaitlistDto: {
             /** @description Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
@@ -8693,6 +8724,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_findAllForSchool: {
+        parameters: {
+            query: {
+                /** @description Inclusive start of the date range (ISO 8601 date). */
+                from: string;
+                /** @description Inclusive end of the date range (ISO 8601 date). */
+                to: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolBookingListResponseDto"];
                 };
             };
         };
