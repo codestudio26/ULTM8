@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from './HomeScreen';
+import { ProfileScreen } from '../profile/ProfileScreen';
 import { AcademiesListScreen } from '../academies/AcademiesListScreen';
 import { JoinSchoolScreen } from '../academies/JoinSchoolScreen';
 import { AcademyDetailScreen } from '../academies/AcademyDetailScreen';
@@ -31,6 +32,7 @@ export function AppNavigator() {
   return (
     <Stack.Navigator initialRouteName={coachSchoolId ? 'CoachDashboard' : 'Home'}>
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'ULTM8 Student' }} />
+      <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} />
       <Stack.Screen name="Academies" component={AcademiesListScreen} options={{ title: 'Academies' }} />
       <Stack.Screen
         name="AcademyDetail"
