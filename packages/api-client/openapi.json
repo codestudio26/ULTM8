@@ -660,6 +660,15 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "address",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against address (the only real location field Branch has — see this file's own header comment).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1011,6 +1020,27 @@
               "maximum": 100,
               "default": 20,
               "type": "number"
+            }
+          },
+          {
+            "name": "feeModel",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "FLAT",
+                "PER_HEADCOUNT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "required": false,
+            "in": "query",
+            "description": "Only Franchises whose activities list includes this exact value.",
+            "schema": {
+              "type": "string"
             }
           }
         ],

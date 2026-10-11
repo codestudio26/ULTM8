@@ -300,6 +300,38 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     }
   });
 
+  it('GET /schools/:id/branches filters by a case-insensitive substring of address (Decision 239 — no structured city field exists)', async () => {
+    const north = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/branches`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Filter Branch North', address: '1 High Street, London' });
+    const south = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/branches`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Filter Branch South', address: '2 Ocean Drive, Brighton' });
+    expect(north.status).toBe(201);
+    expect(south.status).toBe(201);
+    try {
+      const matched = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolA.id}/branches`)
+        .query({ address: 'london' }) // lowercase — proves case-insensitivity
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(matched.status).toBe(200);
+      const matchedIds = matched.body.items.map((b: { id: string }) => b.id);
+      expect(matchedIds).toContain(north.body.id);
+      expect(matchedIds).not.toContain(south.body.id);
+
+      const unfiltered = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolA.id}/branches`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      const unfilteredIds = unfiltered.body.items.map((b: { id: string }) => b.id);
+      expect(unfilteredIds).toContain(north.body.id);
+      expect(unfilteredIds).toContain(south.body.id);
+    } finally {
+      await superuser.branch.deleteMany({ where: { id: { in: [north.body.id, south.body.id] } } });
+    }
+  });
+
   it('CAN create, grant, and revoke within its own School', async () => {
     const branchRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/branches`)
@@ -763,6 +795,47 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
     await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
+  });
+
+  it('GET /franchises filters by feeModel and by activity (Decision 239)', async () => {
+    const flat = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Flat-Fee Filter Franchise', feeModel: 'FLAT', activities: ['Judo', 'Karate'] });
+    const perHead = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Per-Headcount Filter Franchise', feeModel: 'PER_HEADCOUNT', activities: ['Judo'] });
+    expect(flat.status).toBe(201);
+    expect(perHead.status).toBe(201);
+    try {
+      const byFeeModel = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ feeModel: 'PER_HEADCOUNT' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byFeeModel.status).toBe(200);
+      const feeModelIds = byFeeModel.body.items.map((f: { id: string }) => f.id);
+      expect(feeModelIds).toContain(perHead.body.id);
+      expect(feeModelIds).not.toContain(flat.body.id);
+
+      const byActivity = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ activity: 'Karate' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byActivity.status).toBe(200);
+      const activityIds = byActivity.body.items.map((f: { id: string }) => f.id);
+      expect(activityIds).toContain(flat.body.id);
+      expect(activityIds).not.toContain(perHead.body.id);
+
+      const invalid = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ feeModel: 'NOT_A_REAL_MODEL' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(invalid.status).toBe(400);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [flat.body.id, perHead.body.id] } } });
+      await superuser.franchise.deleteMany({ where: { id: { in: [flat.body.id, perHead.body.id] } } });
+    }
   });
 
   it('PATCH /franchises/:id with explicit null clears an optional String field; omitting it leaves it unchanged (UpdateFranchiseDto, Phase 23)', async () => {

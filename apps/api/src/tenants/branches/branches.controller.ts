@@ -3,10 +3,10 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nest
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { BranchesService } from './branches.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
+import { FindBranchesQueryDto } from './dto/find-branches-query.dto';
 import { BranchListResponseDto, BranchResponseDto } from './dto/branch-response.dto';
 
 @ApiTags('branches')
@@ -31,9 +31,9 @@ export class BranchesController {
   findAll(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: FindBranchesQueryDto,
   ) {
-    return this.branchesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
+    return this.branchesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.address);
   }
 
   @ApiOkResponse({ type: BranchResponseDto })
