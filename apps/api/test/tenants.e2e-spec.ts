@@ -23,6 +23,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -58,8 +59,22 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     return jwt.sign({ sub: user.id, email: user.email, grants });
   }
 
+  // RoleGrantsService.create()'s new notification email (v1.2 backend
+  // backlog) — same stub-the-provider pattern coach-invites.e2e-spec.ts
+  // already established, since Postmark/SES aren't configured in this suite.
+  let sentEmails: Array<{ to: string; subject: string; body: string }> = [];
+  let failEmail = false;
+
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(NotificationDeliveryService)
+      .useValue({
+        sendEmail: async (to: string, subject: string, body: string) => {
+          if (failEmail) throw new Error('mail is down');
+          sentEmails.push({ to, subject, body });
+        },
+      })
+      .compile();
     app = moduleRef.createNestApplication();
     // Mirrors main.ts's bootstrap exactly, so this exercises the real request pipeline.
     app.setGlobalPrefix('v1');
@@ -201,13 +216,47 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const single = await superuser.school.create({ data: { id: randomUUID(), name: 'HTTP Single-site School' } });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: single.id } });
     try {
+      const invitee = await superuser.user.findUniqueOrThrow({ where: { id: verifiedInvitee.id } });
       const tokenOwnerSingle = signAccessToken(ownerB, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: single.id, branchId: null }]);
+      sentEmails = [];
       const res = await request(app.getHttpServer())
         .post(`/v1/users/${verifiedInvitee.id}/role-grants`)
         .set('Authorization', `Bearer ${tokenOwnerSingle}`)
         .send({ role: 'INSTRUCTOR', schoolId: single.id });
       expect(res.status).toBe(201);
       expect(res.body.branchId).toBeNull();
+      // v1.2 backend backlog — a role grant now notifies the target by email,
+      // and the response resolves userFirstName/userSurname (found on review:
+      // RoleGrantResponseDto declared both required but create() never had
+      // resolved either, despite returning the raw RoleGrant row).
+      expect(res.body.emailSent).toBe(true);
+      expect(res.body.userFirstName).toBe(invitee.firstName);
+      expect(res.body.userSurname).toBe(invitee.surname);
+      expect(sentEmails).toHaveLength(1);
+      expect(sentEmails[0].to).toBe(invitee.email);
+      expect(sentEmails[0].subject).toContain('Instructor');
+      expect(sentEmails[0].subject).toContain('HTTP Single-site School');
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: single.id } });
+      await superuser.school.delete({ where: { id: single.id } });
+    }
+  });
+
+  it('a role grant whose notification email fails is still created, with emailSent false', async () => {
+    const single = await superuser.school.create({ data: { id: randomUUID(), name: 'HTTP Bounce School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: single.id } });
+    try {
+      const tokenOwnerSingle = signAccessToken(ownerB, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: single.id, branchId: null }]);
+      failEmail = true;
+      const res = await request(app.getHttpServer())
+        .post(`/v1/users/${verifiedInvitee.id}/role-grants`)
+        .set('Authorization', `Bearer ${tokenOwnerSingle}`)
+        .send({ role: 'INSTRUCTOR', schoolId: single.id });
+      failEmail = false;
+      expect(res.status).toBe(201);
+      expect(res.body.emailSent).toBe(false);
+      // The grant itself is unaffected by the notification failure.
+      expect(await superuser.roleGrant.count({ where: { userId: verifiedInvitee.id, schoolId: single.id, role: 'INSTRUCTOR' } })).toBe(1);
     } finally {
       await superuser.roleGrant.deleteMany({ where: { schoolId: single.id } });
       await superuser.school.delete({ where: { id: single.id } });

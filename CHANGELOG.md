@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Granting the Instructor or Branch Staff role now emails the person**
+  (Decision 229, v1.2 backend backlog). `POST /users/:id/role-grants`
+  notifies the target by email (Postmark/SES) after the grant commits —
+  a failed send doesn't fail the grant; the response's `emailSent` says
+  whether it went out. **api:** new `CreateRoleGrantResponseDto`; the
+  response now also resolves `userFirstName`/`userSurname` (found while
+  building this: the DTO had always declared them required but they were
+  never resolved).
 - **Belts and stripes can be reordered by dragging** (Decision 152.2). Each
   belt in the ladder, and each stripe line in the belt editor, has a drag
   handle; dropping it on another row moves it there. The ↑/↓ buttons stay for

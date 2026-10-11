@@ -2840,6 +2840,23 @@ export interface components {
             /** @description Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates. */
             branchId?: string;
         };
+        CreateRoleGrantResponseDto: {
+            id: string;
+            /** @enum {string} */
+            role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
+            userId: string;
+            userFirstName: string;
+            userSurname: string;
+            franchiseId?: string | null;
+            schoolId?: string | null;
+            branchId?: string | null;
+            grantedById?: string | null;
+            grantedAt: string;
+            revokedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            emailSent: boolean;
+        };
         RoleGrantResponseDto: {
             id: string;
             /** @enum {string} */
@@ -5347,7 +5364,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RoleGrantResponseDto"];
+                    "application/json": components["schemas"]["CreateRoleGrantResponseDto"];
                 };
             };
         };

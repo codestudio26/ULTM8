@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
@@ -10,9 +11,10 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { CoachInvitesService } from '../coach-invites/coach-invites.service';
+import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
-import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
+import { CreateRoleGrantDto, GrantableRoleDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 
 /** The only two roles this endpoint is authorized to grant/revoke — see CreateRoleGrantDto. */
@@ -20,11 +22,14 @@ const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF'] as const;
 
 @Injectable()
 export class RoleGrantsService {
+  private readonly logger = new Logger(RoleGrantsService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly coachInvites: CoachInvitesService,
+    private readonly delivery: NotificationDeliveryService,
   ) {}
 
   /**
@@ -44,7 +49,7 @@ export class RoleGrantsService {
     // need PrismaAuthService's pre-tenant-context bypass the way the target-existence
     // check below does.
     const caller = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.user.findUnique({ where: { id: callerId }, select: { phoneVerifiedAt: true } }),
+      tx.user.findUnique({ where: { id: callerId }, select: { phoneVerifiedAt: true, firstName: true, surname: true } }),
     );
     if (!caller?.phoneVerifiedAt) {
       throw new ForbiddenException(
@@ -60,16 +65,23 @@ export class RoleGrantsService {
     // Decision 81 (see above). Uses PrismaAuthService (see its header comment) because
     // no shared RoleGrant exists yet to make the target visible via the ordinary
     // RLS-scoped path.
+    // email/firstName/surname resolved here too — found on review, the same
+    // "declared required by the DTO but never resolved" gap PR #160 already
+    // fixed for Instructor (InstructorResponseDto's firstName/surname): this
+    // method's own @ApiCreatedResponse declares RoleGrantResponseDto, which
+    // requires userFirstName/userSurname, but it returned the raw RoleGrant
+    // row — neither a column on that model. One query now covers both that
+    // fix and the target's email for the new notification below.
     const targetUser = await this.prismaAuth.user.findUnique({
       where: { id: targetUserId },
-      select: { id: true },
+      select: { id: true, email: true, firstName: true, surname: true },
     });
     if (!targetUser) {
       throw new NotFoundException('User not found');
     }
 
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.findUnique({ where: { id: dto.schoolId }, select: { id: true } }),
+      tx.school.findUnique({ where: { id: dto.schoolId }, select: { id: true, name: true } }),
     );
     if (!school) {
       throw new NotFoundException('School not found');
@@ -116,7 +128,7 @@ export class RoleGrantsService {
     }
 
     const roleGrantId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const created = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.create({
         data: {
           id: roleGrantId,
@@ -132,6 +144,33 @@ export class RoleGrantsService {
     // only rebuilt from the live RoleGrant set at login/refresh time (Spec §8.3). If
     // they're already logged in, the new grant has no effect until their token is
     // reissued. Flagged in the Phase 2 summary per the phase brief's own instruction.
+
+    // v1.2 backend backlog ("Granting a role sends no notification today") —
+    // email only (Postmark primary/SES fallback, already wired for every
+    // other notification this codebase sends); SMS/WhatsApp both ruled out,
+    // see that doc's own note. Same "don't fail the grant over a notification
+    // side effect, tell the caller whether it actually went out" shape
+    // CoachInvitesService.invite() already established — the RoleGrant above
+    // is already durably committed by the time this runs.
+    const roleLabel = dto.role === GrantableRoleDto.BRANCH_STAFF ? 'Branch Staff' : 'Instructor';
+    const inviter = caller ? `${caller.firstName} ${caller.surname}` : 'Your school';
+    let emailSent = true;
+    try {
+      await this.delivery.sendEmail(
+        targetUser.email,
+        `You've been granted the ${roleLabel} role at ${school.name}`,
+        [
+          `${inviter} has granted you the ${roleLabel} role at ${school.name} on ULTM8.`,
+          '',
+          "Sign in with your existing account to see it reflected — if you're already signed in, sign out and back in.",
+        ].join('\n'),
+      );
+    } catch (err) {
+      emailSent = false;
+      this.logger.warn(`RoleGrant ${roleGrantId}: the notification email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    return { ...created, userFirstName: targetUser.firstName, userSurname: targetUser.surname, emailSent };
   }
 
   /**
