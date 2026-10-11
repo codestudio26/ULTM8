@@ -196,6 +196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/students/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["SchoolsController_revokeEnrollment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/join": {
         parameters: {
             query?: never;
@@ -2768,6 +2784,22 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
+        RoleGrantResponseDto: {
+            id: string;
+            /** @enum {string} */
+            role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
+            userId: string;
+            userFirstName: string;
+            userSurname: string;
+            franchiseId?: string | null;
+            schoolId?: string | null;
+            branchId?: string | null;
+            grantedById?: string | null;
+            grantedAt: string;
+            revokedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
         JoinSchoolDto: {
             /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
             studentId?: string;
@@ -2839,22 +2871,6 @@ export interface components {
             schoolId: string;
             /** @description Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates. */
             branchId?: string;
-        };
-        RoleGrantResponseDto: {
-            id: string;
-            /** @enum {string} */
-            role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
-            userId: string;
-            userFirstName: string;
-            userSurname: string;
-            franchiseId?: string | null;
-            schoolId?: string | null;
-            branchId?: string | null;
-            grantedById?: string | null;
-            grantedAt: string;
-            revokedAt?: string | null;
-            createdAt: string;
-            updatedAt: string;
         };
         RoleGrantListResponseDto: {
             items: components["schemas"]["RoleGrantResponseDto"][];
@@ -5152,6 +5168,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentHomeBranchResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_revokeEnrollment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleGrantResponseDto"];
                 };
             };
         };

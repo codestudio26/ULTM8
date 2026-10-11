@@ -496,6 +496,49 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/{studentId}": {
+      "delete": {
+        "operationId": "SchoolsController_revokeEnrollment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleGrantResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/join": {
       "post": {
         "operationId": "SchoolsController_join",
@@ -8585,6 +8628,73 @@
           "updatedAt"
         ]
       },
+      "RoleGrantResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "SCHOOL_OWNER_MANAGER",
+              "BRANCH_STAFF",
+              "INSTRUCTOR",
+              "FRANCHISE_OWNER",
+              "GUARDIAN"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userFirstName": {
+            "type": "string"
+          },
+          "userSurname": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "userId",
+          "userFirstName",
+          "userSurname",
+          "grantedAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "JoinSchoolDto": {
         "type": "object",
         "properties": {
@@ -8834,73 +8944,6 @@
         "required": [
           "role",
           "schoolId"
-        ]
-      },
-      "RoleGrantResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "STUDENT",
-              "SCHOOL_OWNER_MANAGER",
-              "BRANCH_STAFF",
-              "INSTRUCTOR",
-              "FRANCHISE_OWNER",
-              "GUARDIAN"
-            ]
-          },
-          "userId": {
-            "type": "string"
-          },
-          "userFirstName": {
-            "type": "string"
-          },
-          "userSurname": {
-            "type": "string"
-          },
-          "franchiseId": {
-            "type": "string",
-            "nullable": true
-          },
-          "schoolId": {
-            "type": "string",
-            "nullable": true
-          },
-          "branchId": {
-            "type": "string",
-            "nullable": true
-          },
-          "grantedById": {
-            "type": "string",
-            "nullable": true
-          },
-          "grantedAt": {
-            "type": "string"
-          },
-          "revokedAt": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "role",
-          "userId",
-          "userFirstName",
-          "userSurname",
-          "grantedAt",
-          "createdAt",
-          "updatedAt"
         ]
       },
       "RoleGrantListResponseDto": {
