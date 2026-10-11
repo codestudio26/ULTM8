@@ -8,6 +8,7 @@ export type AuthStackParamList = {
 
 export type AppStackParamList = {
   Home: undefined;
+  Profile: undefined;
   Academies: undefined;
   AcademyDetail: { academyId: string; name: string };
   /** Join a School (or add a belt at one already joined), for oneself or a

@@ -25,6 +25,7 @@ export function HomeScreen({ navigation }: Props) {
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>ULTM8 Student</Text>
       {isCoach ? <Button title="Coach dashboard" onPress={() => navigation.navigate('CoachDashboard')} /> : null}
+      <Button title="My profile" variant="secondary" onPress={() => navigation.navigate('Profile')} />
       <Button title="Browse academies" onPress={() => navigation.navigate('Academies')} />
       <Button title="Check in" onPress={() => navigation.navigate('QrCheckIn')} />
       {isStudent ? <Button title="My grading" onPress={() => navigation.navigate('MyGrading')} /> : null}
