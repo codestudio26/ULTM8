@@ -24,6 +24,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   now sees students who have no home branch yet in their own group above the
   columns (no branch coach sees them) and gives each one a branch there. Board
   items carry `noHomeBranch` (owner only).
+- **Instructor roster/detail now show a real email and Active/Revoked
+  status, and the invite-candidate lookup now returns a real email**
+  (v1.2 backend backlog). `GET /instructors` and `GET /instructors/:id`
+  resolve `email` alongside `firstName`/`surname`, plus a `status` derived
+  from whether the linked User still holds a non-revoked INSTRUCTOR
+  RoleGrant at this School; `GET .../role-grants/invite-candidate` now also
+  returns `email` (`null` when no match). **api:** `InstructorResponseDto`
+  gains `email`/`status`; `InviteCandidateResponseDto` gains `email`.
+  `packages/api-client` regenerated.
 - **Joining a School from the app, with a home branch and a current belt**
   (Decisions 137, 147, 209). A School's public page now lists its branch
   names, name only, so a student can choose a home branch before joining.

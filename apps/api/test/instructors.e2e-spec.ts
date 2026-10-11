@@ -248,6 +248,12 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       .send({ bio: 'Updated by owner A' });
     expect(patchRes.status).toBe(200);
     expect(patchRes.body.bio).toBe('Updated by owner A');
+    // PATCH's response is InstructorResponseDto too — firstName/surname/email/status
+    // must be resolved onto it the same way GET already is, not just silently absent.
+    expect(patchRes.body.firstName).toBeTruthy();
+    expect(patchRes.body.surname).toBeTruthy();
+    expect(patchRes.body.email).toBeTruthy();
+    expect(patchRes.body.status).toBe('ACTIVE');
   });
 
   // ---------------------------------------------------------------------------
@@ -292,12 +298,57 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
     const before = await fetchProfile();
     expect(before.firstName).toBe('NameResolution');
     expect(before.surname).toBe('Tenant');
+    expect(before.email).toBe(nameUser.email);
+    // v1.2 backlog: the Active/Revoked pill — resolved from this same RoleGrant,
+    // revokedAt: null means ACTIVE.
+    expect(before.status).toBe('ACTIVE');
 
     await superuser.roleGrant.update({ where: { id: nameGrant.id }, data: { revokedAt: new Date() } });
 
     const after = await fetchProfile();
     expect(after.firstName).toBe('NameResolution');
     expect(after.surname).toBe('Tenant');
+    expect(after.email).toBe(nameUser.email);
+    // Name/email keep resolving after revocation (PrismaAuthService, not RLS) but the
+    // status pill must flip — that's the whole point of showing it.
+    expect(after.status).toBe('REVOKED');
+  });
+
+  it('GET /instructors/:id resolves firstName/surname/email/status the same way the roster list does', async () => {
+    // findOne() previously returned the raw Instructor row with none of these resolved
+    // at all, despite InstructorResponseDto declaring firstName/surname required —
+    // Instructor Detail was silently relying on the list fetch's own cache for names.
+    const detailUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `instructors-http-detail-resolution-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'DetailResolution',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'INSTRUCTOR', userId: detailUser.id, schoolId: schoolA.id },
+    });
+
+    const createRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send(profileBody(detailUser.id));
+    expect(createRes.status).toBe(201);
+    instructorIds.push(createRes.body.id);
+
+    const detailRes = await request(app.getHttpServer())
+      .get(`/v1/instructors/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(detailRes.status).toBe(200);
+    expect(detailRes.body.firstName).toBe('DetailResolution');
+    expect(detailRes.body.surname).toBe('Tenant');
+    expect(detailRes.body.email).toBe(detailUser.email);
+    expect(detailRes.body.status).toBe('ACTIVE');
   });
 
   // ---------------------------------------------------------------------------

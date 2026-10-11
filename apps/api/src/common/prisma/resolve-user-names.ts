@@ -3,6 +3,7 @@ import { PrismaAuthService } from './prisma-auth.service';
 export interface ResolvedUserName {
   firstName: string;
   surname: string;
+  email: string;
 }
 
 /**
@@ -21,7 +22,7 @@ export async function resolveUserNames(prismaAuth: PrismaAuthService, ids: strin
   if (uniqueIds.length === 0) return new Map();
   const users = await prismaAuth.user.findMany({
     where: { id: { in: uniqueIds } },
-    select: { id: true, firstName: true, surname: true },
+    select: { id: true, firstName: true, surname: true, email: true },
   });
-  return new Map(users.map((u) => [u.id, { firstName: u.firstName, surname: u.surname }]));
+  return new Map(users.map((u) => [u.id, { firstName: u.firstName, surname: u.surname, email: u.email }]));
 }

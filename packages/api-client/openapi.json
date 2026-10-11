@@ -8938,6 +8938,10 @@
           "surname": {
             "type": "string",
             "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -11095,6 +11099,16 @@
           "surname": {
             "type": "string"
           },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "REVOKED"
+            ]
+          },
           "schoolId": {
             "type": "string"
           },
@@ -11143,6 +11157,8 @@
           "userId",
           "firstName",
           "surname",
+          "email",
+          "status",
           "schoolId",
           "specializations",
           "specializationStyleIds",
