@@ -3296,6 +3296,102 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/payment-methods/setup-session": {
+      "post": {
+        "operationId": "PaymentsController_createSetupSession",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupSessionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payment-methods/me": {
+      "get": {
+        "operationId": "PaymentsController_getMyPaymentMethod",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PaymentsController_deleteMyPaymentMethod",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/transactions/{id}/confirm": {
       "patch": {
         "operationId": "PaymentsController_confirmTransaction",
@@ -11024,6 +11120,34 @@
           "onboardingUrl"
         ]
       },
+      "SetupSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "checkoutUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkoutUrl"
+        ]
+      },
+      "PaymentMethodResponseDto": {
+        "type": "object",
+        "properties": {
+          "hasSavedPaymentMethod": {
+            "type": "boolean"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hasSavedPaymentMethod"
+        ]
+      },
       "CreateTimetableSlotDto": {
         "type": "object",
         "properties": {
@@ -15009,6 +15133,18 @@
             "nullable": true
           },
           "resolvedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationChargeOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancellationChargeAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "stripeCancellationPaymentIntentId": {
             "type": "string",
             "nullable": true
           },

@@ -3043,3 +3043,25 @@ Whether `AccountInvitation` (Decision 206's entity, never built) should still ex
 
 User, choosing "System passcode + forced reset" over Decision 211's account-claim-invitation design when asked directly during Plan Mode, 11 Oct 2026.
 
+---
+
+## Decision 238 — Saved payment methods: a real capability built from scratch, as full infrastructure (not scoped to Decision 234 alone), via hosted Stripe Checkout rather than an embedded SDK
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** a real, previously-unknown gap discovered while scoping Decision 234's implementation — `PaymentsService.charge()`/`subscribe()`'s own existing header comments already documented "no `GET /payments/methods`, no saved-card reuse anywhere yet" as a deliberate Phase 9 simplification, but Decision 234's own text ("charge the Student's saved payment method, off-session") assumed that capability already existed. It didn't: no Stripe Customer/payment-method id was persisted anywhere in this schema before this decision.
+
+**Scope chosen, with full cost disclosed up front:** two options were put to the product owner — (A) a minimal version scoped only to Students already on a Subscription-type Membership (reusing the Customer `subscribe()` already creates), or (B) a real, general saved-payment-method capability usable by any Student regardless of membership type. **The product owner chose (B).**
+
+1. **New `StudentPaymentMethod` table** — `(studentId, schoolId)` unique, storing only a Stripe Customer id (never persisted card details; brand/last4 are fetched live from Stripe for display). Scoped per School, not globally per Student — a Stripe Customer lives inside exactly one connected account (Decision 86's Direct-charge model), so a card saved at one School's Customer can never be reused at another School's.
+2. **Collection mechanism: a hosted Stripe Checkout Session (`mode: 'setup'`), not an embedded Stripe Elements/card-field integration.** `apps/student` (the Student/Guardian app) has no Stripe SDK dependency at all and is plain Expo-managed with no custom native dev client (Decision 113) — an embedded SDK needs native module linking this app's current build setup doesn't have, and this session's own environment cannot build or run a native RN dev client to verify one either way. The hosted Checkout URL is opened in the device's own browser (`expo-web-browser`, a pure-JS Expo module needing no native rebuild), which auto-returns to the app via its already-registered `ultm8-student://` scheme. Confirmation of a saved card is via the `checkout.session.completed` webhook, never a client-side success callback alone — the same discipline every other Stripe confirmation in this codebase already follows.
+3. **New Stripe primitives** on `PaymentsService`: `createSetupSession()`, `getMyPaymentMethod()`, `deleteMyPaymentMethod()`, and `chargeOffSession()` (the actual off-session charge, Decision 234's own direct dependency) — closing the "off-session charge capability it doesn't have today" gap Decision 234's own text names.
+4. **Decision 234 (late-cancellation fee) is built on top of this**, in the same phase: `BookingsService.cancelBooking()` attempts `chargeOffSession()` when a past-cutoff Class has `cancellationCharge` set, recording the outcome (`CHARGED`/`FAILED`/`NO_SAVED_PAYMENT_METHOD`) onto the Booking — never blocking the cancellation itself, which must succeed regardless of whether the fee can actually be collected.
+
+### What this does NOT resolve
+
+Decision 236's own separately-flagged follow-up — step-up re-authentication before reusing a saved payment method for a real charge (e.g. a Membership purchase) — is now technically buildable on top of this, but is not built here; it remains its own tracked, separate piece of work.
+
+### Recorded by
+
+User, choosing option (B) — full saved-payment-method infrastructure, not the minimal Subscription-only version — after being given an explicit time/pros-and-cons comparison of both, 11 Oct 2026.
+

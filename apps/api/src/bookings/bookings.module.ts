@@ -3,6 +3,7 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { QueueModule } from '../jobs/queue.module';
 import { GuardiansModule } from '../guardians/guardians.module';
 import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
 import { WaitlistController } from './waitlist.controller';
@@ -31,9 +32,14 @@ import { WaitlistService } from './waitlist.service';
  * a real Booking directly via its own `tx.booking.create`, not by calling
  * BookingsService, so it needs its own separate `assertNotDegraded()` call rather
  * than inheriting BookingsService's.
+ *
+ * Imports PaymentsModule (Decision 234) for PaymentsService.chargeOffSession() —
+ * closes the "late-cancellation-fee CHARGE mechanism" gap this file's own header
+ * comment above already flagged as deliberately missing. Not circular: PaymentsModule
+ * imports TenantsModule/QueueModule only, nothing under apps/api/src/bookings.
  */
 @Module({
-  imports: [TenantsModule, QueueModule, GuardiansModule, SubscriptionPlansModule],
+  imports: [TenantsModule, QueueModule, GuardiansModule, SubscriptionPlansModule, PaymentsModule],
   controllers: [BookingsController, WaitlistController],
   providers: [BookingsService, WaitlistService],
 })

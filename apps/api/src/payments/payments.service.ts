@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, Logger, NotFoundExc
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
+import Stripe from 'stripe';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -9,6 +10,14 @@ import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
+
+/** Thrown by PaymentsService.chargeOffSession() when the Student has no saved
+ * payment method (or their Customer has no default one set) at this School —
+ * a real precondition failure, distinct from a Stripe-side decline/error.
+ * Exported so BookingsService.cancelBooking() can check it via `instanceof`,
+ * the same shape MembershipCollisionError (stripe-webhook-processing.processor.ts)
+ * already established for a signal-not-a-generic-failure error in this codebase. */
+export class NoSavedPaymentMethodError extends Error {}
 
 @Injectable()
 export class PaymentsService {
@@ -457,6 +466,169 @@ export class PaymentsService {
       throw new Error('Stripe Subscription did not return an expandable latest_invoice.payment_intent');
     }
     return { subscriptionId: subscription.id, paymentIntentId: paymentIntent.id, clientSecret: paymentIntent.client_secret };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Saved payment methods (Decision 234's own dependency — see
+  // StudentPaymentMethod's schema.prisma comment for why this didn't exist before
+  // this phase). A Stripe Checkout Session in `mode: 'setup'` — hosted, not an
+  // embedded Stripe Elements form — is the collection mechanism: `apps/student`
+  // has no Stripe SDK dependency at all today, and this app is Expo-managed
+  // (Decision 113) with no custom native dev client, so a native card-element
+  // integration isn't buildable/verifiable in this phase either. The hosted
+  // Checkout URL is opened in the device's own browser (`expo-web-browser`,
+  // `WebBrowser.openAuthSessionAsync`, which auto-returns to the app via its
+  // registered `ultm8-student://` scheme on redirect) — zero native linking,
+  // same reasoning that already ruled out an embedded SDK. Confirmation is via
+  // the `checkout.session.completed` webhook (StripeWebhookProcessingProcessor),
+  // the same "never trust a client-side success callback alone" discipline every
+  // other Stripe confirmation in this codebase already follows.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /schools/:schoolId/payment-methods/setup-session — any caller with a
+   * RoleGrant at this School (resolveStripePaymentAccount's own existing scope;
+   * narrower than that isn't needed — a Student setting up their OWN card is the
+   * only real caller, and `customer`/`metadata.studentId` below are always the
+   * CALLER's own id, never attacker-controlled). Reuses the existing Customer if
+   * this Student already has one for this School (re-running this flow UPDATES
+   * the saved card, never creates a second Customer) — read under the caller's
+   * own tenant context, same self-only RLS StudentPaymentMethod's migration
+   * establishes.
+   */
+  async createSetupSession(callerId: string, schoolId: string): Promise<{ checkoutUrl: string }> {
+    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: callerId, schoolId } } }),
+    );
+    const session = await stripe.checkout.sessions.create({
+      mode: 'setup',
+      customer: existing?.stripeCustomerId,
+      success_url: 'ultm8-student://payment-methods/complete',
+      cancel_url: 'ultm8-student://payment-methods/cancel',
+      // Read back by StripeWebhookProcessingProcessor's checkout.session.completed
+      // handler — the Session itself carries these, no separate lookup needed.
+      metadata: { studentId: callerId, schoolId },
+    });
+    if (!session.url) {
+      throw new Error('Stripe Checkout Session did not return a hosted URL.');
+    }
+    return { checkoutUrl: session.url };
+  }
+
+  /**
+   * GET /schools/:schoolId/payment-methods/me — self-only (StudentPaymentMethod's
+   * own RLS already enforces this; no separate assert needed). Card brand/last4
+   * are fetched live from Stripe for display, never persisted locally — see
+   * StudentPaymentMethod's own schema.prisma comment for why.
+   */
+  async getMyPaymentMethod(
+    callerId: string,
+    schoolId: string,
+  ): Promise<{ hasSavedPaymentMethod: boolean; brand?: string; last4?: string }> {
+    const saved = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: callerId, schoolId } } }),
+    );
+    if (!saved) {
+      return { hasSavedPaymentMethod: false };
+    }
+    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    const customer = await stripe.customers.retrieve(saved.stripeCustomerId, {
+      expand: ['invoice_settings.default_payment_method'],
+    });
+    const pm = (customer as { invoice_settings?: { default_payment_method?: { card?: { brand: string; last4: string } } } })
+      .invoice_settings?.default_payment_method;
+    return { hasSavedPaymentMethod: true, brand: pm?.card?.brand, last4: pm?.card?.last4 };
+  }
+
+  /**
+   * DELETE /schools/:schoolId/payment-methods/me — self-only. Detaches the
+   * payment method at Stripe best-effort (logged, never blocking — same
+   * "the local row is the authoritative 'do we still charge this Student' state"
+   * reasoning SchoolsService.leaveFranchise's own best-effort Stripe cancel
+   * already established) and always deletes the local row: once a Student asks
+   * to remove their card, this codebase must stop treating them as chargeable
+   * even if the Stripe-side cleanup call itself fails.
+   */
+  async deleteMyPaymentMethod(callerId: string, schoolId: string): Promise<void> {
+    const saved = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: callerId, schoolId } } }),
+    );
+    if (!saved) {
+      throw new NotFoundException('No saved payment method for this School.');
+    }
+    try {
+      const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+      const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+      const customer = await stripe.customers.retrieve(saved.stripeCustomerId);
+      const pmId = (customer as { invoice_settings?: { default_payment_method?: string } }).invoice_settings?.default_payment_method;
+      if (pmId) {
+        await stripe.paymentMethods.detach(pmId);
+      }
+    } catch (err) {
+      this.logger.error(`Failed to detach Stripe payment method for Student ${callerId} at School ${schoolId} — Stripe-side cleanup may be needed.`, err as Error);
+    }
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.studentPaymentMethod.delete({ where: { id: saved.id } }));
+  }
+
+  /**
+   * The actual off-session charge — Decision 234's own late-cancellation fee is
+   * the first real caller (BookingsService.cancelBooking()), reusing whatever
+   * card this Student saved via createSetupSession() above. Reads
+   * StudentPaymentMethod under the STUDENT's own tenant context (self-only RLS),
+   * not the caller's — BookingsService already runs its own Stripe-adjacent work
+   * under `withTenantContext(resolvedBooking.studentId, ...)` for the identical
+   * reason (a Staff-initiated cancellation has no RoleGrant of its own that would
+   * otherwise see this row).
+   *
+   * Throws NoSavedPaymentMethodError (exported, checked via instanceof at the
+   * call site) when there's nothing to charge — a real, expected precondition
+   * failure, not a Stripe-side error. A declined card is NOT thrown as an
+   * error — `{ succeeded: false }` is an ordinary, expected outcome of an
+   * automated off-session charge attempt, same category as a bounced cheque,
+   * not a system failure; only a genuinely unexpected Stripe/network error
+   * propagates.
+   */
+  async chargeOffSession(
+    studentId: string,
+    schoolId: string,
+    amount: number,
+    currency: string,
+    description: string,
+  ): Promise<{ succeeded: boolean; paymentIntentId: string }> {
+    const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId } } }),
+    );
+    if (!saved) {
+      throw new NoSavedPaymentMethodError(`Student ${studentId} has no saved payment method at School ${schoolId}.`);
+    }
+    const account = await this.resolveStripePaymentAccount(studentId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    const customer = await stripe.customers.retrieve(saved.stripeCustomerId);
+    const pmId = (customer as { invoice_settings?: { default_payment_method?: string } }).invoice_settings?.default_payment_method;
+    if (!pmId) {
+      throw new NoSavedPaymentMethodError(`Student ${studentId}'s Stripe Customer at School ${schoolId} has no default payment method set.`);
+    }
+    try {
+      const intent = await stripe.paymentIntents.create({
+        amount,
+        currency,
+        description,
+        customer: saved.stripeCustomerId,
+        payment_method: pmId,
+        off_session: true,
+        confirm: true,
+      });
+      return { succeeded: intent.status === 'succeeded', paymentIntentId: intent.id };
+    } catch (err) {
+      if (err instanceof Stripe.errors.StripeCardError) {
+        const paymentIntentId = (err.payment_intent as { id?: string } | undefined)?.id ?? '';
+        return { succeeded: false, paymentIntentId };
+      }
+      throw err;
+    }
   }
 
   /**

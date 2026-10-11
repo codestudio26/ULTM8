@@ -364,6 +364,7 @@ model User {
   waiverSignatures             WaiverSignature[]       @relation("WaiverSignatureStudent")
   waiverSignaturesSigned       WaiverSignature[]       @relation("WaiverSignatureSignedBy")
   bookings                     Booking[]               @relation("BookingStudent")
+  paymentMethods               StudentPaymentMethod[]
   bookingsOverridden           Booking[]               @relation("BookingOverriddenBy")
   bookingsResolved             Booking[]               @relation("BookingResolvedBy")
   bookingsCheckedIn            Booking[]               @relation("BookingCheckedInBy")
@@ -751,25 +752,26 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches            Branch[]
-  roleGrants          RoleGrant[]
-  classes             Class[]
-  timetableSlots      TimetableSlot[]
-  instructors         Instructor[]
-  paymentAccount      PaymentAccount?
-  membershipPlans     MembershipPlan[]
-  transactions        Transaction[]
-  disciplines         Discipline[]
-  waivers             Waiver[]
-  franchiseFeeCharges FranchiseFeeCharge[]
-  lessons             Lesson[]
-  platformCharges     PlatformCharge[]
-  studentHomeBranches StudentHomeBranch[]
-  gradingPermissions  GradingPermission[]
-  staffPermissions    StaffPermission[]
-  coachInvites        CoachInvite[]
-  lessonCategories    LessonCategory[]
-  instructorBelts     InstructorBelt[]
+  branches              Branch[]
+  roleGrants            RoleGrant[]
+  classes               Class[]
+  timetableSlots        TimetableSlot[]
+  instructors           Instructor[]
+  paymentAccount        PaymentAccount?
+  studentPaymentMethods StudentPaymentMethod[]
+  membershipPlans       MembershipPlan[]
+  transactions          Transaction[]
+  disciplines           Discipline[]
+  waivers               Waiver[]
+  franchiseFeeCharges   FranchiseFeeCharge[]
+  lessons               Lesson[]
+  platformCharges       PlatformCharge[]
+  studentHomeBranches   StudentHomeBranch[]
+  gradingPermissions    GradingPermission[]
+  staffPermissions      StaffPermission[]
+  coachInvites          CoachInvite[]
+  lessonCategories      LessonCategory[]
+  instructorBelts       InstructorBelt[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -1265,6 +1267,55 @@ model PaymentAccount {
   // (School's and Franchise's own confirmed entity rows, singular).
   @@unique([schoolId])
   @@unique([franchiseId])
+}
+
+/// StudentPaymentMethod — a Student's saved card, usable for an off-session charge
+/// (Decision 234's own late-cancellation fee being the first real consumer; Decision
+/// 236 flags a second, "any charge against a saved payment method," not built yet).
+/// Closes a real, previously-nonexistent capability gap found while scoping Decision
+/// 234: `PaymentsService.charge()`/`subscribe()`'s own header comments already
+/// document "no GET /payments/methods, no saved-card reuse anywhere yet" as a
+/// deliberate Phase 9 simplification — there was genuinely nowhere in this schema
+/// that persisted a reusable Stripe Customer/payment-method id before this.
+///
+/// Scoped per (studentId, schoolId), NOT globally per Student — a Stripe Customer
+/// lives inside exactly one connected account (Decision 86's Direct-charge model),
+/// and a School's connected account is a different Stripe account from every other
+/// School's, so a Customer created for one School can never be reused at another.
+/// Same reasoning FranchiseFeeBillingService.ensureSubscription's own "throwaway
+/// Customer per School" comment already gives, just persisted here instead of
+/// thrown away, since this one needs to be found again later.
+///
+/// Does NOT store card details (brand/last4) — those are fetched live from Stripe
+/// when actually needed (GET .../payment-methods/me), the same "never a raw secret,
+/// never a value Stripe already owns and can be asked for" discipline
+/// PaymentAccount.stripeConnectedAccountId's own comment states for a different
+/// field. stripeCustomerId is not a secret itself, but keeping this table narrow
+/// avoids a second place for payment-method metadata to drift out of sync with
+/// Stripe's own records.
+model StudentPaymentMethod {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  /// The Stripe Customer created for this (Student, School) pair — its
+  /// invoice_settings.default_payment_method is the card actually charged.
+  /// Never a raw payment-method/card id stored separately; Stripe's own Customer
+  /// object is the single source of truth for "which card," read live each time.
+  stripeCustomerId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One saved card per (Student, School) — re-running the setup flow updates the
+  // SAME Customer's default payment method (StripeWebhookProcessingProcessor's own
+  // checkout.session.completed handler), never creates a second row.
+  @@unique([studentId, schoolId])
+  @@index([schoolId])
 }
 
 /// ProcessedStripeEvent (Phase 8) — Stripe webhook idempotency ledger. Spec 55 §10.2's
@@ -2583,6 +2634,21 @@ enum RefundResolution {
   WITHHELD
 }
 
+/// Decision 234 (POST-SPEC-55-DECISION-LOG.md) — Booking.cancellationChargeOutcome's
+/// own value set. Set only when a cancellation is WITHHELD (past the Class's
+/// refundFeeDate cutoff) AND the Class has a non-null cancellationCharge — null on
+/// every other cancellation (nothing to charge for) and on every non-Cancelled
+/// Booking. CHARGED/FAILED mirror an ordinary off-session PaymentIntent's two
+/// real outcomes; NO_SAVED_PAYMENT_METHOD is the precondition failure when the
+/// Student has never saved a card at this School (StudentPaymentMethod) —
+/// distinguished from FAILED because there's nothing to retry without the
+/// Student first adding a card, unlike a declined/expired one.
+enum CancellationChargeOutcome {
+  CHARGED
+  FAILED
+  NO_SAVED_PAYMENT_METHOD
+}
+
 /// WaitlistEntry.status — SKILL.md §10 (quoted): "Waiting / Notified / Claimed /
 /// Expired / Cancelled."
 enum WaitlistStatus {
@@ -2669,6 +2735,17 @@ model Booking {
   refundResolution RefundResolution?
   resolvedById     String?
   resolvedBy       User?             @relation("BookingResolvedBy", fields: [resolvedById], references: [id])
+
+  // Decision 234 — the late-cancellation fee itself (Class.cancellationCharge),
+  // as distinct from the credit-forfeiture refundResolution already captures.
+  // See CancellationChargeOutcome's own comment for the value set/null case.
+  // cancellationChargeAmount mirrors the minor-unit Int convention every other
+  // money field in this schema uses (Class.cancellationCharge's own column) —
+  // copied onto the Booking at charge-attempt time so the amount actually
+  // attempted is preserved even if Class.cancellationCharge changes later.
+  cancellationChargeOutcome         CancellationChargeOutcome?
+  cancellationChargeAmount          Int?
+  stripeCancellationPaymentIntentId String?
 
   // Guardian Kid Mode (Decision 123). bookedViaKidMode marks a Booking created via
   // a Kid-Mode-scoped token (BookingsController's live BookingDelegation check, not
