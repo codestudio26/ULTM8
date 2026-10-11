@@ -21,6 +21,7 @@ import { GuardiansModule } from './guardians/guardians.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { NotificationBroadcastModule } from './notifications/notification-broadcast.module';
 import { FranchiseFeesModule } from './franchise-fees/franchise-fees.module';
 import { JobsModule } from './jobs/jobs.module';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module';
@@ -67,6 +68,7 @@ function ipLimitPerMinute(): number {
     AttendanceModule,
     AcademiesModule,
     NotificationsModule,
+    NotificationBroadcastModule,
     FranchiseFeesModule,
     JobsModule,
     PlatformAdminModule,

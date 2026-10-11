@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **A School Owner can now compose and broadcast a message to every active
+  Student at their School** (Decision 230). **api:** new
+  `POST /schools/:schoolId/notifications/broadcast` (`title`/`body`),
+  School-Owner-gated, enqueuing through the existing `notification-fanout`
+  pipeline so each Student gets a real in-app (and, where configured, email)
+  notification. No audience/targeting beyond "every active Student" yet —
+  narrower targeting by Branch or Class is a real, still-open product
+  question. `packages/api-client` regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

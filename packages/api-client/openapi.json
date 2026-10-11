@@ -7187,6 +7187,51 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/notifications/broadcast": {
+      "post": {
+        "operationId": "NotificationBroadcastController_broadcast",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastNotificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{id}/fee-charges": {
       "get": {
         "operationId": "FranchiseFeesController_findAllForFranchise",
@@ -15013,6 +15058,33 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "BroadcastNotificationDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ]
+      },
+      "BroadcastNotificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "recipientCount": {
+            "type": "number",
+            "description": "Count of distinct active Students the broadcast was enqueued for."
+          }
+        },
+        "required": [
+          "recipientCount"
         ]
       },
       "FranchiseFeeChargeResponseDto": {
