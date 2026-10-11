@@ -13,6 +13,7 @@ import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url.dto';
+import { WaiverSignatureRosterResponseDto } from './dto/waiver-signature-roster-response.dto';
 import { R2ClientService } from './r2-client.service';
 
 /**
@@ -122,6 +123,81 @@ export class WaiversService {
 
   // No delete method — same reasoning ClassesModule/School/Branch/MembershipPlan
   // already established (general tenant offboarding is [UNRESOLVED]).
+
+  /**
+   * Staff-facing signature roster (Decision 214) — closes the first of the
+   * three layered gaps docs/v1.2-backend-backlog.md's Waivers section
+   * flagged: "No staff-facing endpoint exists" to list who has/hasn't signed.
+   * The other two layers it was blocked on are NOT built here, because
+   * they turned out to already be resolved by existing code (see Decision
+   * 228 in the decision log, recorded alongside this):
+   *   - "WaiverSignature has no concept of unsigned" — true, but Decision 214
+   *     already settled this isn't a gap to close: diff the real roster
+   *     against this Waiver's signed rows instead of writing an explicit
+   *     Pending/Unsigned row per assignment. No schema change needed.
+   *   - "The Student roster has no real population path" — false as of this
+   *     session: SchoolsService.join()'s self-service and Guardian-on-behalf-of
+   *     branches are both already real, already HTTP-exercised endpoints
+   *     (tenants.e2e-spec.ts, join-declare.e2e-spec.ts both call
+   *     POST /schools/:id/join over real supertest requests, not direct-Prisma
+   *     fixtures) — findAllStudentsForSchool() below reads exactly that real
+   *     roster, live.
+   *
+   * Diffing, not a stored join: `WaiverSignatureStatus.UNSIGNED`/`PENDING`
+   * are declared enum values nothing has ever written (`sign()` always
+   * creates SIGNED; no other write path exists) — a Student with no row for
+   * this Waiver is reported UNSIGNED here without ever persisting one.
+   */
+  async findSignatureRoster(callerId: string, schoolId: string, waiverId: string): Promise<WaiverSignatureRosterResponseDto> {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const waiver = await this.prismaApp.withTenantContext(callerId, (tx) => tx.waiver.findUnique({ where: { id: waiverId } }));
+    if (!waiver || waiver.schoolId !== schoolId) {
+      throw new NotFoundException('Waiver not found');
+    }
+
+    const [roster, signatures] = await Promise.all([
+      this.schoolsService.findAllStudentsForSchool(callerId, schoolId),
+      this.prismaApp.withTenantContext(callerId, (tx) => tx.waiverSignature.findMany({ where: { waiverId } })),
+    ]);
+
+    // At most one non-EXPIRED row per (waiver, student) — the same partial
+    // unique index sign()'s own header comment documents — so the first
+    // non-EXPIRED row seen for a Student IS their current status; only when
+    // EVERY row for a Student is EXPIRED does "most recent EXPIRED" apply.
+    const byStudent = new Map<string, WaiverSignature>();
+    for (const sig of signatures) {
+      const current = byStudent.get(sig.studentId);
+      if (!current) {
+        byStudent.set(sig.studentId, sig);
+      } else if (sig.status !== 'EXPIRED') {
+        byStudent.set(sig.studentId, sig);
+      } else if (current.status === 'EXPIRED' && sig.signedDate > current.signedDate) {
+        byStudent.set(sig.studentId, sig);
+      }
+    }
+
+    const items = roster.items.map((student: { id: string; firstName: string; surname: string; email: string }) => {
+      const sig = byStudent.get(student.id);
+      return {
+        studentId: student.id,
+        firstName: student.firstName,
+        surname: student.surname,
+        email: student.email,
+        status: sig?.status ?? 'UNSIGNED',
+        signedDate: sig ? sig.signedDate.toISOString() : null,
+        signatureId: sig?.id ?? null,
+      };
+    });
+
+    return {
+      waiverId,
+      signedCount: items.filter((item) => item.status === 'SIGNED').length,
+      totalCount: items.length,
+      items,
+    };
+  }
 
   // ---------------------------------------------------------------------------
   // Signing — Student self-signing, plus Guardian-on-behalf-of-a-linked-minor

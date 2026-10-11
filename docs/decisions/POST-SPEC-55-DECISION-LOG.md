@@ -2879,3 +2879,29 @@ Approved to scope the full redesign now, at the same Architect tier as Decisions
 ### Recorded by
 
 User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct 2026.
+
+---
+
+## Decision 228 — Student enrollment path was already real; the staff-facing Waiver signature roster is now built
+
+**Date:** 11 Oct 2026 · **Status:** Confirmed by reading the code, not a new design · **Corrects:** Decision 215's own premise · **Builds:** the first of the three layered gaps `docs/v1.2-backend-backlog.md`'s Waivers section flagged.
+
+### Decision 215's premise was stale
+
+Decision 215 ("Build the real Student enrollment path now") said "no endpoint anywhere creates a STUDENT RoleGrant through the real API; every e2e test seeds one directly with a superuser Prisma client." Checked directly before building anything further, the same way Decision 210 checked `TimetableSlot`↔`Class` before taking "build it" at face value: this is no longer true, and per the code's own history, was likely already untrue when Decision 215 was written.
+
+`SchoolsService.join()` (`POST /schools/:id/join`) is a complete, real, already-wired endpoint: self-service (Decision 96) and Guardian-on-behalf-of (Phase 38) both create a genuine `STUDENT` `RoleGrant`, both reject a double-join with 409 via the DB's own partial unique index, both mint a fresh access token reflecting the new grant for the self-service path. `tenants.e2e-spec.ts` and `join-declare.e2e-spec.ts` both already exercise it over real `supertest` HTTP requests — not direct-Prisma fixtures — including the exact "fresh caller, zero grants anywhere, self-service joins and gets a token back" case Decision 215's own language described as unproven. Nothing needed building here.
+
+### What was actually still missing, and is now built
+
+Of the three layered gaps the Waivers section of `docs/v1.2-backend-backlog.md` catalogued for "who has/hasn't signed":
+
+1. **No staff-facing endpoint existed to list signatures — built.** `GET /schools/:schoolId/waivers/:id/signatures` (School Owner/Manager-gated, same gate as Waiver CRUD) returns every Student on the School's real roster (`SchoolsService.findAllStudentsForSchool` — the same roster Instructor/Student pickers already use) diffed against this Waiver's `WaiverSignature` rows.
+2. **"No concept of unsigned" — already resolved by Decision 214, not a gap to close.** The new endpoint synthesizes `UNSIGNED` for a Student with no row, per Decision 214's own choice (diff the roster, don't write an explicit Pending row). No schema change.
+3. **"The Student roster has no real population path" — false, per the correction above.** The roster read is the same live `join()` path now confirmed real.
+
+`apps/api/src/waivers/waivers.service.ts` (`findSignatureRoster`), `waivers.controller.ts`, new `WaiverSignatureRosterResponseDto`. `waivers.e2e-spec.ts` adds a dedicated cluster that joins a fresh Student via the real HTTP endpoint (not a fixture seed) specifically to prove the roster reflects genuine enrollment, then signs and re-checks. Full e2e suite (661 tests, 66 suites) green against real Postgres/Redis; `packages/api-client` regenerated; `turbo build` clean.
+
+### Recorded by
+
+Investigated while building Decision 214/215 together at the user's direct request ("Build the Student enrollment path and Waiver signed-state together"), 11 Oct 2026 — the premise was checked against the real code rather than accepted, found already resolved, and the actual remaining gap built instead.

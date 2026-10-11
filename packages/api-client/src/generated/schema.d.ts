@@ -2084,6 +2084,22 @@ export interface paths {
         patch: operations["WaiversController_updateWaiver"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/waivers/{id}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_findSignatureRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/{id}/sign": {
         parameters: {
             query?: never;
@@ -4494,6 +4510,22 @@ export interface components {
             title?: string;
             /** @description The waiver document body text. */
             body?: string;
+        };
+        WaiverSignatureRosterItemDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @enum {string} */
+            status: "SIGNED" | "UNSIGNED" | "EXPIRED" | "PENDING";
+            signedDate: string | null;
+            signatureId: string | null;
+        };
+        WaiverSignatureRosterResponseDto: {
+            waiverId: string;
+            signedCount: number;
+            totalCount: number;
+            items: components["schemas"]["WaiverSignatureRosterItemDto"][];
         };
         SignWaiverDto: {
             /** @description Guardian-only: sign on behalf of this linked minor Student instead of the caller. */
@@ -8520,6 +8552,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WaiverResponseDto"];
+                };
+            };
+        };
+    };
+    WaiversController_findSignatureRoster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverSignatureRosterResponseDto"];
                 };
             };
         };

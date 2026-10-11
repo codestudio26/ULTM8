@@ -11,6 +11,7 @@ import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url.dto';
 import { WaiverListResponseDto, WaiverResponseDto } from './dto/waiver-response.dto';
 import { WaiverSignatureListResponseDto, WaiverSignatureResponseDto } from './dto/waiver-signature-response.dto';
+import { WaiverSignatureRosterResponseDto } from './dto/waiver-signature-roster-response.dto';
 import { SignatureUploadUrlResponseDto } from './dto/signature-upload-url-response.dto';
 
 // Waiver CRUD + Student self-signing (typed name, or typed name + drawn-signature
@@ -67,6 +68,16 @@ export class WaiversController {
   @Patch('waivers/:id')
   updateWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateWaiverDto) {
     return this.waiversService.updateWaiver(user.sub, id, dto);
+  }
+
+  // School Owner/Manager-only roster of who has/hasn't signed this Waiver
+  // (Decision 214) — diffed against the real Student roster, not a stored
+  // per-assignment row. See WaiversService.findSignatureRoster's own header
+  // comment for the two gaps this used to be blocked on, both already closed.
+  @ApiOkResponse({ type: WaiverSignatureRosterResponseDto })
+  @Get('schools/:schoolId/waivers/:id/signatures')
+  findSignatureRoster(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Param('id') id: string) {
+    return this.waiversService.findSignatureRoster(user.sub, schoolId, id);
   }
 
   @ApiCreatedResponse({ type: WaiverSignatureResponseDto })
