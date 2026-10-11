@@ -28,7 +28,13 @@
       "apiBaseUrl": "http://localhost:3000"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ULTM8 uses your camera to scan the Class check-in QR code."
+        }
+      ]
     ]
   }
 }

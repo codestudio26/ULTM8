@@ -31,6 +31,26 @@ export function useMyQrToken(enabled: boolean) {
   });
 }
 
+/** Self-service camera scan (`POST /attendance/scan`, Phase 51/Decision 107) —
+ * the Student scans the Class-scoped rotating QR the School Portal's
+ * `ClassQrCodePage` displays, instead of typing Decision 235's fallback code
+ * (`useEnterCheckInCode` below). `classId` is decoded client-side from the
+ * scanned token's own JWT payload (`decodeJwt.ts`, display-hint only, same
+ * "never trust for authorization" caveat that file's own header documents —
+ * the server independently re-derives and verifies `classId` from the
+ * token's signature, never from this client-decoded value) — the QR itself
+ * only ever encodes the raw token string (`QRCodeSVG value={qrToken.token}`
+ * on the display screen), and `AttendanceService.scan()` requires `classId`
+ * as a separate field. Same invalidation as `useEnterCheckInCode`. */
+export function useScanAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, qrToken }: { classId: string; qrToken: string }) =>
+      unwrap(apiClient.POST('/v1/attendance/scan', { body: { classId, qrToken } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
+  });
+}
+
 /** Decision 235 — the camera-free fallback: types the 6-digit code the
  * Class-QR display screen (apps/school-portal's ClassQrCodePage) also shows
  * as text, instead of scanning. Invoked from MyBookingsScreen against a

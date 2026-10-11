@@ -22,7 +22,7 @@ Detail for each Slice is in its own section below; this table is the map.
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
 | 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
 | 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b still blocked — needs a design pass + schema change; partially unblockable by syncing with `master` (see below) |
-| 5 | **Attendance** | 8 (QR check-in) | Scoped (2026-09-22), not yet built — the backend endpoint already exists (`POST /attendance/scan`); needs your call on 2 remaining product questions + a new `apps/school-portal` screen |
+| 5 | **Attendance** | 8 (QR check-in) | ✅ DONE (11 Oct 2026) — the backend endpoint, the `apps/school-portal` QR display screen, and both of this section's own "needs your call" product questions were already resolved (Decisions 107/235); the `apps/student` camera-scan screen (`QrScanner.tsx`, via `QrCheckInScreen`'s new mode toggle) closed the last piece |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
 | 7 | **Resilience** | 10 (offline behavior/caching) | ✅ DONE (light read-only caching via react-query persistence) |
 
@@ -948,10 +948,31 @@ consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read
 offline caching (Phase 7); the Membership authorization-check fix; Guardian "Kid
 Mode" booking delegation (Decision 123).
 
-**Scoped, not yet built**: QR check-in (Phase 5) — the backend endpoint it needs
-already exists (`POST /attendance/scan`); what's left is a `apps/school-portal` QR
-display screen, a scanning capability in `apps/student`, and your call on the 2
-remaining product questions in that section above.
+**QR check-in (Phase 5) — DONE (11 Oct 2026).** The backend endpoint
+(`POST /attendance/scan`) and the `apps/school-portal` QR display screen
+(`ClassQrCodePage.tsx`) were already built (Decision 107, Phase 51/52). What
+the rotating code encodes was already settled — `QrTokenService` signs a
+short-lived, Class-scoped JWT (Decision 107), and Decision 235 added a derived
+6-digit fallback code for no-camera check-in, alongside the School Portal's own
+display screen. Where the display screen runs operationally (an Instructor's
+phone vs. a venue tablet) was left as a deployment choice, never a blocker —
+the screen works identically either way. The one piece that was still missing —
+a camera-scanning capability in `apps/student` — is now built: `QrScanner.tsx`,
+reached via a new mode toggle ("Show my code" / "Scan to check in") on the
+existing `QrCheckInScreen`. Uses `expo-camera`'s `CameraView` (one of Expo Go's
+bundled native modules since SDK 49, needing no custom dev client, verified
+against the installed package's own type definitions before building). The
+scanned QR encodes only the raw signed token (`ClassQrCodePage.tsx`'s own
+`QRCodeSVG value={qrToken.token}`); `classId` is decoded client-side from the
+token's own JWT payload (`decodeJwtPayload`, display-hint only — the server
+independently re-derives and verifies `classId` from the token's signature),
+avoiding any change to the QR's contents, the display screen, or the
+`POST /attendance/scan` contract. Verified via `npx tsc --noEmit` and
+`expo export --platform web`, plus 11 new RTL tests (`QrScanner.test.tsx`,
+`QrCheckInScreen.test.tsx`'s new toggle test) — this sandbox has no way to
+launch a real Expo Go client, device, or camera permission prompt, so the
+actual camera capture itself is unexercised here, same honestly-disclosed gap
+every native-module slice in this doc already states.
 
 **Blocked on your decision, not further research**: Slice 4b (Stripe/PaymentSheet) —
 the API shape and library choice are both settled; the open question is only whether
