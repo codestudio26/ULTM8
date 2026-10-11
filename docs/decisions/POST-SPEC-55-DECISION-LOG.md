@@ -2918,6 +2918,8 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+**Note on the commit title:** this decision was merged as commit `94d32ca` (PR #176), whose title still reads "Decision 210", its number before it was renumbered to 229. That commit is this decision, not Decision 210 above.
+
 ---
 
 ## Decision 230 — Timetable↔Class relationship: rolling-window auto-generation reconfirmed
