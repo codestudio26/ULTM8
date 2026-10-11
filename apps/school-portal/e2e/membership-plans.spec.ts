@@ -94,35 +94,39 @@ test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) =
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByLabel('Type').selectOption('CLASS_PACK');
-  await page.getByLabel('Title').fill('5-Class Pack');
+  await page.getByLabel('Title').fill('Open Mat Pack');
   await page.getByRole('button', { name: 'Next' }).click();
 
-  // Step 2: Pricing & Access — Class Pack fields now show.
+  // Step 2: Pricing & Access — Class Pack fields now show. Scoping to a
+  // Class locks Classes included to 1 immediately (a one-off Class has only
+  // one occurrence; the server rejects anything higher) — asserted here too,
+  // since this is exactly the bug the stress test found and fixed.
   await page.getByLabel('Price').fill('2000');
-  await page.getByLabel('Classes included').fill('5');
   await page.getByLabel('Scoped to Class').selectOption({ label: 'Open Mat' });
+  await expect(page.getByLabel(/Classes included/)).toHaveValue('1');
 
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await expect(page.getByRole('cell', { name: '5-Class Pack' })).toBeVisible();
-  const created = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: '5-Class Pack' } });
+  await expect(page.getByRole('cell', { name: 'Open Mat Pack' })).toBeVisible();
+  const created = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Open Mat Pack' } });
   planIds.push(created.id);
-  expect(created.classesIncluded).toBe(5);
+  expect(created.classesIncluded).toBe(1);
   expect(created.scopedClassId).toBe(classId);
 
-  await page.getByRole('row', { name: /5-Class Pack/ }).getByRole('button', { name: 'Duplicate' }).click();
+  await page.getByRole('row', { name: /Open Mat Pack/ }).getByRole('button', { name: 'Duplicate' }).click();
   await expect(page.getByRole('heading', { name: 'Add membership plan' })).toBeVisible();
   // Duplicate prefills from the source plan — step 1 (Basics) shows the
   // copied title immediately; step 2 needs a click to see its copied fields.
-  await expect(page.getByLabel('Title')).toHaveValue('5-Class Pack (copy)');
+  await expect(page.getByLabel('Title')).toHaveValue('Open Mat Pack (copy)');
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
-  await expect(page.getByLabel('Classes included')).toHaveValue('5');
+  await expect(page.getByLabel(/Classes included/)).toHaveValue('1');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await expect(page.getByRole('cell', { name: '5-Class Pack (copy)' })).toBeVisible();
-  const duplicate = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: '5-Class Pack (copy)' } });
+  await expect(page.getByRole('cell', { name: 'Open Mat Pack (copy)' })).toBeVisible();
+  const duplicate = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Open Mat Pack (copy)' } });
   planIds.push(duplicate.id);
-  expect(duplicate.classesIncluded).toBe(5);
+  expect(duplicate.classesIncluded).toBe(1);
   expect(duplicate.scopedClassId).toBe(classId);
 });
