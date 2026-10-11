@@ -336,24 +336,30 @@ function MembershipPlanForm({
                 form.type === 'FRIEND_PASS'
                   ? 'Forced to 1 for Friend Pass.'
                   : form.scopedClassId
-                    ? 'Capped at 1 while scoped to a specific Class.'
+                    ? 'Locked to 1 while scoped to a specific Class — a one-off Class has only one occurrence.'
                     : 'Class Pack credit quantity.'
               }
             >
               <TextField
                 type="number"
                 min={1}
-                disabled={form.type === 'FRIEND_PASS'}
-                value={form.type === 'FRIEND_PASS' ? '1' : form.classesIncluded}
+                disabled={form.type === 'FRIEND_PASS' || !!form.scopedClassId}
+                value={form.type === 'FRIEND_PASS' || form.scopedClassId ? '1' : form.classesIncluded}
                 onChange={(e) => setForm((f) => ({ ...f, classesIncluded: e.target.value }))}
               />
             </Field>
           ) : null}
           {showScopedClass ? (
-            <Field label="Scoped to Class" htmlFor="plan-scopedClass" hint="Restricts this plan to one specific Class — leave as Not restricted to clear.">
+            <Field label="Scoped to Class" htmlFor="plan-scopedClass" hint="Restricts this plan to one specific Class (and locks Classes included to 1) — leave as Not restricted to clear.">
               <SelectField
                 value={form.scopedClassId}
-                onChange={(e) => setForm((f) => ({ ...f, scopedClassId: e.target.value }))}
+                onChange={(e) => {
+                  // Scoping a Class locks classesIncluded to 1 client-side too —
+                  // otherwise a leftover higher value reached Save and bounced off
+                  // the server's rejection instead of being prevented here.
+                  const nextScopedClassId = e.target.value;
+                  setForm((f) => ({ ...f, scopedClassId: nextScopedClassId, classesIncluded: nextScopedClassId ? '1' : f.classesIncluded }));
+                }}
                 options={[{ value: '', label: 'Not restricted' }, ...classes.map((c) => ({ value: c.id, label: c.title }))]}
               />
             </Field>
