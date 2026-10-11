@@ -37,7 +37,7 @@ export interface FranchiseFormValues {
  * rejects a rate change once any member School has started billing) are
  * enforced server-side, not duplicated here — same convention every other
  * form modal in this codebase already follows for its own service-side
- * cross-field checks (e.g. MembershipPlanFormModal). */
+ * cross-field checks (e.g. MembershipPlanFormPage). */
 export function FranchiseFormModal({
   title,
   initial,

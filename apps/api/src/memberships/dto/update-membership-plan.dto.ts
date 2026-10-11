@@ -1,8 +1,8 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
 import { CreateMembershipPlanDto } from './create-membership-plan.dto';
 
-const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge'] as const;
+const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate'] as const;
 
 /**
  * FOUND PROACTIVELY (Phase 18, before school-portal's own edit-MembershipPlan
@@ -17,15 +17,19 @@ const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', '
  * Widened proactively here rather than waiting to rediscover the identical
  * bug a second time via review.
  *
+ * `refundFeeDate` widened too (Decision 209): it used to sit in the
+ * deliberately-NOT-widened list because `MembershipsService.updatePlan()`
+ * converted it via `dto.refundFeeDate ? new Date(dto.refundFeeDate) :
+ * undefined` — a falsy check that swallowed an explicit `null` the same as
+ * an omitted field. Fixed at the source (that ternary now distinguishes
+ * `undefined` from `null` from a real string) rather than left as a second
+ * instance of the same gap Class's own bookingEndAt/qrAttendanceEndAt still
+ * have — those remain their own, separate, unfixed gap.
+ *
  * Deliberately NOT widened: `type`/`title`/`price`/`visible`/
  * `termsWaiverRequired` (required or cross-validated together — see
  * MembershipsService.updatePlan()'s own comment on why price/classesIncluded
- * are resolved jointly with type — nothing to "clear" on their own), or
- * `refundFeeDate` (converted via `dto.refundFeeDate ? new Date(dto.refundFeeDate)
- * : undefined` — a falsy check that would swallow an explicit null the same as
- * an omitted field, the same class of gap Class's own bookingEndAt/
- * qrAttendanceEndAt/refundFeeDate have; left alone rather than silently
- * half-fixed, same as those).
+ * are resolved jointly with type — nothing to "clear" on their own).
  */
 export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembershipPlanDto, NULLABLE_ON_UPDATE)) {
   @ApiPropertyOptional({ description: "One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear.", type: String, nullable: true })
@@ -50,4 +54,9 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @IsInt()
   @Min(0)
   cancellationCharge?: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'ISO 8601 date-time. Pass null to clear.' })
+  @IsOptional()
+  @IsDateString()
+  refundFeeDate?: string | null;
 }
