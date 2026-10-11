@@ -2908,6 +2908,18 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 ---
 
+## Decision 229 — A coach can have one pending invite per branch, not one in all
+
+**Date:** 11 Oct 2026 · **Status:** Product-owner decision (Gus) · **Clarifies:** Decision 183 item 2 ("the invite link: one per person"), which the code had always applied per branch. Found in the Phase 7 decision review.
+
+1. **One pending invite per School, branch and email.** A second invite to the same email for the same branch is refused until the first is accepted, cancelled or expires.
+2. **The same person can have a pending invite at each branch.** A coach can work at several branches (Decisions 168, 169), and each branch is its own invite, so inviting them to a second branch is allowed. In a School with no branches, this means one pending invite per person.
+3. Gus was asked whether to make it strictly one per person and said *"no"*, keeping it as built; the wording here replaces "one per person" in Decision 183.
+
+No code change; covered by `coach-invites.e2e-spec.ts`.
+
+---
+
 ## Decision 239 — Branch/Franchise list filter query params; Branch's "City filter" built as an address substring search, not a structured city field
 
 **Date:** 11 Oct 2026 · **Status:** Built and verified this session.
@@ -2916,6 +2928,8 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 1. **`GET /franchises` gains `feeModel` and `activity` query params** — both map directly to real, structured `Franchise` columns (`feeModel` enum, `activities` array via Prisma's `has`). No interpretation needed.
 2. **`GET /schools/:id/branches` gains an `address` query param** (case-insensitive substring match), as the deliberate, flagged stand-in for the mockup's "City filter." Verified before building: `Branch` has no structured `city` column — `address` is its only real location field. Rather than inventing a new `city` field (its own schema decision, out of scope here) or silently guessing at a parsing scheme for an unstructured address string, this filters the one real field that exists, named honestly (`address`, not `city`) so nothing claims a capability the schema doesn't have. If a real, structured `city` field is ever decided, this param stays as a general address search and a `city` filter would be added alongside it, not replace it.
+
+**Numbering note:** PR #167 (still open) independently claims "Decision 229" for its own role-grant email-notification work — a real collision with this master commit's Decision 229 above, assigned independently on `master` first. PR #167 will need that renumbered when it next resolves its own merge conflict against `master`, same precedent as the earlier Decision 98/209/228 collisions. Not fixed here — out of scope for this branch.
 
 ### Verified
 
