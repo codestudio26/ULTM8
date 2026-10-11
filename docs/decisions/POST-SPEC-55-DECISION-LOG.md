@@ -2882,6 +2882,24 @@ User, choosing "Scope it now" over the Developer recommendation to defer, 10 Oct
 
 ---
 
+## Decision 236 — Staff-facing Student "Revoke Enrollment" action
+
+**Date:** 11 Oct 2026 · **Status:** Built · **Resolves:** the Student Detail page's "Revoke Enrollment" gap `docs/v1.2-backend-backlog.md` flagged — "No Staff-facing revoke/unenroll endpoint exists for a Student's `RoleGrant` today."
+
+`DELETE /schools/:schoolId/students/:studentId` (School Owner/Manager only) revokes that Student's active `STUDENT` `RoleGrant` at that School. Same `assertSchoolOwner` gate `SchoolsService.setStudentHomeBranch` already uses for an administrative Student-at-School action, not `assertStaffAtSchool` (which would wrongly admit Instructor — SKILL.md §3's confirmed scope stops Instructor at attendance/grading/booking-override).
+
+**Deliberately not `RoleGrantsService.revoke()`.** That endpoint's own `GRANTABLE_ROLES` constant explicitly excludes `STUDENT` — Student enrollment is granted through `SchoolsService.join()`, not `RoleGrantsService.create()`, so by the same split its revocation belongs on `SchoolsService` too, not bolted onto the Instructor/Branch-Staff-only endpoint.
+
+**Revokes only the `RoleGrant` — no invented cascade.** Nothing in Spec 55, the domain-rules skill, or the decision log confirms what (if anything) should happen to a revoked Student's existing Bookings or Memberships, so nothing was built for that here rather than guessed at. `GuardiansService.withdrawConsent()`'s own BASELINE cascade (full account-deletion processing) is a different, much heavier mechanism for a different trigger — a Guardian withdrawing consent for a minor — and isn't a template to copy without its own confirmed decision.
+
+`apps/api/src/tenants/schools/schools.service.ts` (`revokeEnrollment`), `schools.controller.ts`. `tenants.e2e-spec.ts` adds a dedicated cluster: Owner succeeds (revoked grant returned, with name resolved via `resolveUserNames` — the same "Decision 117" RLS-invisibility gotcha applies here too, since this very revoke can make the Student's own User row invisible to the caller the instant it commits), Instructor rejected, the Student drops off the active roster, a repeat revoke on the same Student 404s (nothing active left to revoke), a never-enrolled `studentId` 404s, and another tenant's real Owner gets 403. Full e2e suite (660 tests) green against a freshly-reset real Postgres/Redis — zero failures, not even the usual pre-existing `grading-ready-notification.e2e-spec.ts` flake this run; `packages/api-client` regenerated; `turbo build` clean.
+
+### Recorded by
+
+Continuing autonomously through the v1.2 backlog per the user's own instruction to work it "one after another... build, deep dive check... until confident," 11 Oct 2026.
+
+---
+
 ## Decision 228 — Create/Update Membership Plan rebuilt as a full-page wizard; currency becomes a confirmed dropdown; two bugs fixed
 
 **Date:** 10 Oct 2026 · **Status:** Developer-level implementation of a direction the user picked after dedicated research (competitor review + a direct Spec 55 verification) and a follow-up re-answer (wizard over single scrollable view); flagged items below are for Architect confirmation, not decided here. Renumbered from this branch's original "Decision 209," which collided with Decision 209 above (assigned independently on `master` first).

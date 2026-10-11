@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -13,11 +13,14 @@ import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
+import { RoleGrantResponseDto } from '../role-grants/dto/role-grant-response.dto';
 
-// Create / read / update only — no delete endpoint (general tenant offboarding is
+// No delete endpoint for the School resource itself — general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
 // Franchise/School/Branch organisational structure, not offboarding; corrected here
-// after this same miscitation was found copied across four files).
+// after this same miscitation was found copied across four files. The DELETE route
+// below ends one Student's enrollment, not the School itself — see
+// SchoolsService.revokeEnrollment's own header comment.
 @ApiTags('schools')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -67,6 +70,19 @@ export class SchoolsController {
     @Body() dto: SetHomeBranchDto,
   ) {
     return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
+  }
+
+  /** School Owner/Manager only — ends one Student's enrollment (Student Detail's
+   * "Revoke Enrollment" action). See SchoolsService.revokeEnrollment's own
+   * header comment. */
+  @ApiOkResponse({ type: RoleGrantResponseDto })
+  @Delete(':id/students/:studentId')
+  revokeEnrollment(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+  ) {
+    return this.schoolsService.revokeEnrollment(user.sub, id, studentId);
   }
 
   @ApiCreatedResponse({ type: JoinSchoolResponseDto })

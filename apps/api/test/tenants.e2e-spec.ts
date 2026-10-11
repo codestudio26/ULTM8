@@ -461,6 +461,108 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(404);
   });
 
+  // ---------------------------------------------------------------------------
+  // DELETE /schools/{id}/students/{studentId} — the Student Detail page's
+  // "Revoke Enrollment" action (SchoolsService.revokeEnrollment). Owner-only,
+  // same administrative-action gate setStudentHomeBranch already uses.
+  // ---------------------------------------------------------------------------
+
+  it('DELETE /schools/:id/students/:studentId — the Owner can revoke a Student\'s enrollment; an Instructor cannot', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-revoke-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'revoke-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const studentToken = signAccessToken(studentUser, []);
+    const joinRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({ branchId: branchA.id });
+    expect(joinRes.status).toBe(201);
+
+    const instructor = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-revoke-instructor-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'revoke-instructor',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'INSTRUCTOR', userId: instructor.id, schoolId: schoolA.id },
+    });
+    const instructorToken = signAccessToken(instructor, [{ role: 'INSTRUCTOR', franchiseId: null, schoolId: schoolA.id, branchId: null }]);
+
+    // Instructor is Staff but not the Owner — this is an administrative action
+    // (SKILL.md §3), same exclusion RoleGrantsService.create()/revoke() already
+    // enforce for the identical class of action.
+    const instructorRes = await request(app.getHttpServer())
+      .delete(`/v1/schools/${schoolA.id}/students/${studentUser.id}`)
+      .set('Authorization', `Bearer ${instructorToken}`);
+    expect(instructorRes.status).toBe(403);
+
+    const ownerRes = await request(app.getHttpServer())
+      .delete(`/v1/schools/${schoolA.id}/students/${studentUser.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.role).toBe('STUDENT');
+    expect(ownerRes.body.userId).toBe(studentUser.id);
+    expect(ownerRes.body.revokedAt).not.toBeNull();
+    expect(ownerRes.body.userFirstName).toBe('revoke-student');
+    expect(ownerRes.body.userSurname).toBe('Tenant');
+
+    // No longer on the active roster.
+    const rosterRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(rosterRes.body.items.some((s: { id: string }) => s.id === studentUser.id)).toBe(false);
+
+    // Revoking again finds no active enrollment left to revoke — 404, not a
+    // silent no-op success.
+    const doubleRevokeRes = await request(app.getHttpServer())
+      .delete(`/v1/schools/${schoolA.id}/students/${studentUser.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(doubleRevokeRes.status).toBe(404);
+  });
+
+  it('DELETE /schools/:id/students/:studentId — a studentId with no active enrollment at this School is a 404; another tenant\'s Owner gets 403', async () => {
+    const neverEnrolled = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-never-enrolled-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'never-enrolled',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+
+    const notFoundRes = await request(app.getHttpServer())
+      .delete(`/v1/schools/${schoolA.id}/students/${neverEnrolled.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(notFoundRes.status).toBe(404);
+
+    // tokenOwnerB is a real School Owner, just not of schoolA — assertSchoolOwner
+    // finds no grant for THEM at schoolA, a plain 403 (no preliminary School-row
+    // visibility check precedes it here, unlike findAllForClass's own shape).
+    const crossTenantRes = await request(app.getHttpServer())
+      .delete(`/v1/schools/${schoolA.id}/students/${neverEnrolled.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(crossTenantRes.status).toBe(403);
+  });
+
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')

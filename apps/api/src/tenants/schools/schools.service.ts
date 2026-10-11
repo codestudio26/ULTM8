@@ -2,8 +2,10 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
+import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
@@ -15,6 +17,7 @@ import { SetHomeBranchDto } from './dto/home-branch.dto';
 export class SchoolsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
@@ -439,5 +442,52 @@ export class SchoolsService {
         update: { branchId: dto.branchId, assignedById: callerId },
       });
     });
+  }
+
+  /**
+   * DELETE schools/:id/students/:studentId — the Student Detail page's "Revoke
+   * Enrollment" action (v1.2 backend backlog). NOT the "No delete method" note
+   * above — that's about deleting a School itself (general tenant offboarding,
+   * still [UNRESOLVED]); this ends one Student's enrollment at a School they
+   * already joined, the same category of action RoleGrantsService.revoke()
+   * already covers for INSTRUCTOR/BRANCH_STAFF (deliberately excludes STUDENT —
+   * see that service's own GRANTABLE_ROLES comment — since Student enrollment
+   * is granted through join() instead, not RoleGrantsService.create()).
+   *
+   * Same assertSchoolOwner gate setStudentHomeBranch above already uses for an
+   * administrative Student-at-School action — not assertStaffAtSchool, which
+   * would wrongly admit Instructor (SKILL.md §3: Instructor's permissions stop
+   * at attendance scan/grading/booking override, never School settings or
+   * enrollment management).
+   *
+   * Revokes ONLY the STUDENT RoleGrant — no cascade onto Bookings, Memberships,
+   * or anything else. Nothing in Spec 55, the domain-rules skill, or the
+   * decision log confirms a side effect for ordinary enrollment revocation, so
+   * none is invented here. GuardiansService.withdrawConsent()'s own BASELINE
+   * cascade (full account-deletion processing) is a different, much heavier
+   * mechanism for a different trigger — a Guardian withdrawing consent for a
+   * minor — not a template to copy without its own confirmed decision.
+   */
+  async revokeEnrollment(callerId: string, schoolId: string, studentId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const grant = await tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+      });
+      if (!grant) {
+        throw new NotFoundException('This person is not an active Student at this School.');
+      }
+      return tx.roleGrant.update({ where: { id: grant.id }, data: { revokedAt: new Date() } });
+    });
+
+    // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
+    // RoleGrant.user — the Student's own User row can go invisible to the
+    // caller under user_self_or_shared_school the instant this very revoke
+    // commits, if this was their only shared active RoleGrant with the caller.
+    const names = await resolveUserNames(this.prismaAuth, [studentId]);
+    const name = names.get(studentId) ?? { firstName: '', surname: '', email: '' };
+    return { ...revoked, userFirstName: name.firstName, userSurname: name.surname };
   }
 }
