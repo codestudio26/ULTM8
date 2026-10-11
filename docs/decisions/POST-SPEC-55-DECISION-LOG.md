@@ -2918,3 +2918,41 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 230 — Notifications compose/broadcast: School Owner only, always every active Student, no audience/targeting field
+
+**Date:** 11 Oct 2026 · **Status:** Developer-level implementation of `docs/v1.2-backend-backlog.md`'s own confirmed-but-unbuilt "Compose/broadcast a message to Students" gap under "## Notifications page."
+
+1. **New endpoint:** `POST /schools/:schoolId/notifications/broadcast` — `{ title, body }` only. School Owner/Manager-gated (`assertSchoolOwner`), School-not-archived-gated (`assertSchoolNotArchived`), same pair of checks every other School-Owner write in this codebase uses.
+2. **No audience/targeting field, by deliberate design, not an oversight.** The backlog doc itself flags narrower targeting (by Branch or Class) as "a real product question, not a Developer default to invent" — this always fans out to every active Student (an un-revoked `STUDENT` RoleGrant) at the School, the one confirmed, uncontroversial default. If per-Branch/per-Class targeting is wanted later, it is new, separate scope — not something this endpoint should guess at now.
+3. **Separate `NotificationBroadcastModule`, not a new method on `NotificationsService`/`NotificationsModule`.** `TenantsModule` already imports `NotificationsModule` (for `CoachInvitesService`'s own invite email) — importing `TenantsModule` back into `NotificationsModule` for `TenantAuthorizationService`/`SchoolsService` would be circular. Follows `WaiversModule`'s own already-established shape instead: a sibling module importing `TenantsModule` + `QueueModule` directly, never imported by `TenantsModule` itself.
+4. **Enqueues directly onto the existing `notification-fanout` queue**, reusing `WaiverSignatureRequestsProcessor`'s own per-recipient deterministic-jobId `addBulk` pattern (one job per distinct Student, `jobId: broadcast-<broadcastId>-<userId>`), rather than introducing a second queue hop — there is no async lookup needed first here (title/body come straight from the request, not fetched by a separate job).
+5. **Enqueue failure is a 503, not a logged-and-swallowed failure** — a deliberate divergence from `WaiversService.createWaiver()`'s own "log and still return 201" choice. There, the Waiver row is already durably created before the fan-out enqueue is attempted, so a fan-out failure loses a notification, not the Waiver itself. Here the broadcast has no other durable effect — if the enqueue fails, nothing happened at all, so the caller needs to know rather than get a false-positive success.
+
+### Verified
+
+`npx tsc --noEmit` clean; new `notification-broadcast.e2e-spec.ts` (School Owner broadcasts to every active Student, a real Notification row lands per Student via the live Redis/BullMQ worker, excluding a revoked grant/Instructor/the Owner themself; a School with zero active Students returns `recipientCount: 0`; an Instructor is rejected 403; a different School's Owner gets 404; an archived School is rejected 403; a missing title/body is rejected 400) plus the full existing e2e suite, run against real Postgres + Redis — all green, zero regressions.
+
+### Recorded by
+
+Developer (this session), continuing the v1.2 backend backlog per the user's standing instruction to build it sequentially, verify, and move on.
+
+---
+
+## Decision 231 — Notifications "Delete": a self-only hard delete, resolved as a reasonable default rather than escalated
+
+**Date:** 11 Oct 2026 · **Status:** Developer-level resolution of a gap `docs/v1.2-backend-backlog.md` itself flagged as needing a product decision ("whether a User should be able to hard-delete their own notification history at all") — flagged here for Architect confirmation, not assumed beyond appeal.
+
+1. **New endpoint:** `DELETE /notifications/:id` — hard-deletes the caller's own Notification row. Self-only, mirroring `deregisterDeviceToken`'s own `deleteMany` + count-check shape exactly (a plain `delete` 500s on a row RLS already hides; `deleteMany` simply deletes zero rows, turned into an explicit 404).
+2. **Why this resolves as a safe default rather than an escalation:** (a) the Notifications mockup this backlog item traces to already draws a Delete action in the row's action menu — the product side already decided the *affordance* should exist, only the backend was missing; (b) a direct, live precedent for exactly this shape already exists in this same controller — `DeregisterDeviceToken` already hard-deletes a caller's own row with no further gating; (c) `Notification` carries no downstream FK/audit dependency a hard delete could orphan (grepped the schema — nothing references `Notification.id`). This is a CRUD-completeness call, not an invented business/domain rule (it touches no grading, payment, tenancy, or Guardian/minor logic) — the class of decision CLAUDE.md's escalation rule is protecting against.
+3. **Found while building it:** `ultm8_app` only ever held `SELECT, UPDATE` on `Notification` (the Phase 15 migration, before any self-service delete existed) — no `DELETE`. New migration `20261106010000_notification_delete_grant` grants it; no new RLS policy needed, since `notification_self_only` was declared with no `FOR` clause and already governs all commands via its existing `USING` clause.
+
+### Verified
+
+`npx tsc --noEmit` clean; migration applies cleanly against a fresh `prisma migrate reset`; new `notifications.e2e-spec.ts` case (self-only delete succeeds and the row disappears from both the DB and `GET /notifications/me`; a cross-caller delete attempt 404s and leaves the row untouched; a repeat delete of the same row 404s) plus the full existing e2e suite — all green, zero regressions.
+
+### Recorded by
+
+Developer (this session), continuing the v1.2 backend backlog per the user's standing instruction to build it sequentially, verify, and move on.
+

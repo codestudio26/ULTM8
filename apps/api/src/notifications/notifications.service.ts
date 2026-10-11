@@ -86,6 +86,32 @@ export class NotificationsService {
   }
 
   /**
+   * v1.2 backend backlog's "Delete" gap under "## Notifications page"
+   * (Decision 231) — self-only hard delete of the caller's own Notification
+   * row. The backlog doc itself flagged this as needing a product decision
+   * ("whether a User should be able to hard-delete their own notification
+   * history at all") before building; resolved as a reasonable default, not
+   * a new business rule invented from nothing — the mockup already draws a
+   * Delete action in the row menu (previously disabled-styled only), there's
+   * a direct precedent for exactly this shape already live in this same
+   * controller (deregisterDeviceToken below), and a Notification carries no
+   * downstream FK/audit dependency that a hard delete would orphan. Flagged
+   * in Decision 231 for Architect confirmation rather than silently assumed
+   * final. Mirrors deregisterDeviceToken's own `deleteMany` + count-check
+   * shape exactly, for the same reason (a plain `delete` 500s on a row RLS
+   * already hides; `deleteMany` just deletes zero rows, turned into an
+   * explicit 404 here).
+   */
+  async deleteNotification(callerId: string, notificationId: string): Promise<void> {
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const result = await tx.notification.deleteMany({ where: { id: notificationId, userId: callerId } });
+      if (result.count === 0) {
+        throw new NotFoundException('Notification not found');
+      }
+    });
+  }
+
+  /**
    * FOUND ON REVIEW — an earlier draft used a plain `upsert` keyed on `token`
    * and claimed a token already owned by a DIFFERENT User would be silently
    * "re-owned" by whoever re-registers it. That claim was wrong: DeviceToken

@@ -36,6 +36,13 @@ export class NotificationsController {
     return this.notificationsService.markRead(user.sub, id);
   }
 
+  @ApiNoContentResponse()
+  @HttpCode(204)
+  @Delete(':id')
+  deleteNotification(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.notificationsService.deleteNotification(user.sub, id);
+  }
+
   @ApiCreatedResponse({ type: DeviceTokenResponseDto })
   @Post('device-tokens')
   registerDeviceToken(@CurrentUser() user: JwtPayload, @Body() dto: RegisterDeviceTokenDto) {
