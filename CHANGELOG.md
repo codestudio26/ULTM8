@@ -15,6 +15,9 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Notifications now report a true total/unread count** (Decision 232).
+  **api:** new `GET /notifications/me/count` → `{ total, unread }` for the
+  caller's own notifications. `packages/api-client` regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

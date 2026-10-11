@@ -6,6 +6,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { NotificationsService } from './notifications.service';
 import { NotificationListResponseDto, NotificationResponseDto } from './dto/notification-response.dto';
+import { NotificationCountResponseDto } from './dto/notification-count-response.dto';
 import { RegisterDeviceTokenDto } from './dto/device-token.dto';
 import { DeviceTokenResponseDto } from './dto/device-token-response.dto';
 
@@ -28,6 +29,12 @@ export class NotificationsController {
   @Get('me')
   findAllForCaller(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
     return this.notificationsService.findAllForCaller(user.sub, query.cursor, query.limit);
+  }
+
+  @ApiOkResponse({ type: NotificationCountResponseDto })
+  @Get('me/count')
+  getCounts(@CurrentUser() user: JwtPayload) {
+    return this.notificationsService.getCounts(user.sub);
   }
 
   @ApiOkResponse({ type: NotificationResponseDto })

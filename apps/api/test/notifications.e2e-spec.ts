@@ -192,6 +192,38 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     expect(readAgain.body.read).toBe(true);
   });
 
+  it("GET /notifications/me/count reports the caller's own total/unread counts only, as a delta against a fresh baseline (order-independent of other tests in this file)", async () => {
+    const before = await request(app.getHttpServer())
+      .get('/v1/notifications/me/count')
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(before.status).toBe(200);
+
+    const unreadOne = await superuser.notification.create({
+      data: { id: randomUUID(), userId: studentA.id, title: 'Count unread 1', body: 'body' },
+    });
+    notificationIds.push(unreadOne.id);
+    const unreadTwo = await superuser.notification.create({
+      data: { id: randomUUID(), userId: studentA.id, title: 'Count unread 2', body: 'body' },
+    });
+    notificationIds.push(unreadTwo.id);
+    const read = await superuser.notification.create({
+      data: { id: randomUUID(), userId: studentA.id, title: 'Count read', body: 'body', read: true },
+    });
+    notificationIds.push(read.id);
+    // Not the caller's own — must not affect studentA's counts.
+    const forB = await superuser.notification.create({
+      data: { id: randomUUID(), userId: studentB.id, title: 'Count for B', body: 'body B' },
+    });
+    notificationIds.push(forB.id);
+
+    const after = await request(app.getHttpServer())
+      .get('/v1/notifications/me/count')
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(after.status).toBe(200);
+    expect(after.body.total).toBe(before.body.total + 3);
+    expect(after.body.unread).toBe(before.body.unread + 2);
+  });
+
   // ---------------------------------------------------------------------------
   // DeviceToken registration
   // ---------------------------------------------------------------------------

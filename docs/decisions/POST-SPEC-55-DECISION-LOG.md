@@ -2918,3 +2918,21 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 232 — Notifications true total/unread count: caller-wide, not School-wide
+
+**Date:** 11 Oct 2026 · **Status:** Developer-level implementation of `docs/v1.2-backend-backlog.md`'s own confirmed-but-unbuilt "True total/unread counts" gap under "## Notifications page."
+
+1. **New endpoint:** `GET /notifications/me/count` — returns `{ total, unread }` for the caller's own notifications only.
+2. **Caller-wide, not School-wide.** The backlog doc's own text names "or even just caller-wide" as an acceptable scope for this gap, and `Notification` has no School/Branch column to scope a wider count by regardless — it's a self-only entity, same as every other read in `NotificationsController` (list, mark-read, delete). Not an invented narrowing of scope; the doc itself sanctions it.
+3. Implemented as two parallel `count()` queries under the caller's own tenant context (`withTenantContext`) — no new index needed; both queries hit the existing `Notification_userId_createdAt_id_idx` (a leading-column `userId` match) the Phase 15 migration already created for `findAllForCaller`.
+
+### Verified
+
+`npx tsc --noEmit` clean; new `notifications.e2e-spec.ts` case (asserts the count delta against a fresh baseline after creating 2 unread + 1 read notification for the caller and 1 for a different caller, order-independent of other tests in the same file) plus the full existing e2e suite — all green, zero regressions.
+
+### Recorded by
+
+Developer (this session), continuing the v1.2 backend backlog per the user's standing instruction to build it sequentially, verify, and move on.
+

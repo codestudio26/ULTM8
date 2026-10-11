@@ -64,6 +64,24 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * v1.2 backend backlog's "True total/unread counts" gap under "##
+   * Notifications page" — the Delivery Ribbon mockup's Total/Unread tiles
+   * only reflected whatever page `findAllForCaller` happened to have
+   * loaded. Caller-wide (not School-wide — the backlog doc's own text names
+   * this as an acceptable scope, and Notification has no School/Branch
+   * column to scope a wider count by regardless).
+   */
+  async getCounts(callerId: string): Promise<{ total: number; unread: number }> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const [total, unread] = await Promise.all([
+        tx.notification.count({ where: { userId: callerId } }),
+        tx.notification.count({ where: { userId: callerId, read: false } }),
+      ]);
+      return { total, unread };
+    });
+  }
+
   /** Idempotent — marking an already-read Notification as read again is not a
    * conflicting state transition the way e.g. Booking status changes are (no
    * data loss, no double-processing risk), so this uses a plain `update`, not
