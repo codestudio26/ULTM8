@@ -669,7 +669,10 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     try {
       // verifiedInvitee stands in for "some other real User" — notAGuardian
-      // holds no GuardianLink to them at all.
+      // holds no GuardianLink to them at all. Also proves join()'s Guardian-
+      // then-Owner fallback (see SchoolsService.join()'s own comment) still
+      // 403s correctly when NEITHER authority applies, not just when the
+      // Guardian check alone fails.
       const res = await request(app.getHttpServer())
         .post(`/v1/schools/${schoolB.id}/join`)
         .set('Authorization', `Bearer ${tokenNotAGuardian}`)
@@ -678,6 +681,103 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     } finally {
       await superuser.user.delete({ where: { id: notAGuardian.id } });
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Staff-on-behalf-of enroll (v1.2 backend backlog — "Invite a Student"'s
+  // enroll step). join()'s Guardian branch is unchanged; this proves the
+  // fallback-to-School-Owner branch for an existing, already-registered User.
+  // ---------------------------------------------------------------------------
+
+  describe('Staff-on-behalf-of enroll', () => {
+    let staffSchool: { id: string };
+    let staffOwner: { id: string; email: string };
+    let staffInstructor: { id: string; email: string };
+    let existingUser: { id: string; email: string };
+    let tokenStaffOwner: string;
+    let tokenStaffInstructor: string;
+
+    beforeAll(async () => {
+      staffSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Staff Enroll School' } });
+      const mk = (label: string) =>
+        superuser.user.create({
+          data: {
+            id: randomUUID(),
+            email: `tenants-http-staffenroll-${label}-${randomUUID()}@example.test`,
+            phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+            firstName: label,
+            surname: 'StaffEnroll',
+            passcodeHash: 'x',
+            dateOfBirth: new Date('1990-01-01'),
+            phoneVerifiedAt: new Date(),
+          },
+        });
+      staffOwner = await mk('owner');
+      staffInstructor = await mk('instructor');
+      existingUser = await mk('existing');
+
+      await superuser.roleGrant.createMany({
+        data: [
+          { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: staffOwner.id, schoolId: staffSchool.id },
+          { id: randomUUID(), role: 'INSTRUCTOR', userId: staffInstructor.id, schoolId: staffSchool.id },
+        ],
+      });
+
+      tokenStaffOwner = signAccessToken(staffOwner, [
+        { role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: staffSchool.id, branchId: null },
+      ]);
+      tokenStaffInstructor = signAccessToken(staffInstructor, [
+        { role: 'INSTRUCTOR', franchiseId: null, schoolId: staffSchool.id, branchId: null },
+      ]);
+    });
+
+    afterAll(async () => {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: staffSchool.id } });
+      await superuser.user.deleteMany({ where: { id: { in: [staffOwner.id, staffInstructor.id, existingUser.id] } } });
+      await superuser.school.delete({ where: { id: staffSchool.id } });
+    });
+
+    it("an Instructor CANNOT enroll an existing User on the School's behalf — 403, confirming this isn't assertStaffAtSchool", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${staffSchool.id}/join`)
+        .set('Authorization', `Bearer ${tokenStaffInstructor}`)
+        .send({ studentId: existingUser.id });
+      expect(res.status).toBe(403);
+    });
+
+    it('a nonexistent studentId 404s cleanly for the School Owner, not a raw FK-constraint 500', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${staffSchool.id}/join`)
+        .set('Authorization', `Bearer ${tokenStaffOwner}`)
+        .send({ studentId: randomUUID() });
+      expect(res.status).toBe(404);
+    });
+
+    it("the School Owner CAN enroll an existing, already-registered User on the School's behalf — no access token minted for them", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${staffSchool.id}/join`)
+        .set('Authorization', `Bearer ${tokenStaffOwner}`)
+        .send({ studentId: existingUser.id });
+      expect(res.status).toBe(201);
+      expect(res.body.role).toBe('STUDENT');
+      expect(res.body.userId).toBe(existingUser.id);
+      expect(res.body.schoolId).toBe(staffSchool.id);
+      expect(res.body.accessToken).toBeUndefined();
+
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: existingUser.id, schoolId: staffSchool.id, role: 'STUDENT' },
+      });
+      expect(grant).not.toBeNull();
+      expect(grant!.grantedById).toBe(staffOwner.id);
+    });
+
+    it('enrolling the same User twice is a 409, same as the Guardian/self-service paths', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${staffSchool.id}/join`)
+        .set('Authorization', `Bearer ${tokenStaffOwner}`)
+        .send({ studentId: existingUser.id });
+      expect(res.status).toBe(409);
+    });
   });
 
   // ---------------------------------------------------------------------------

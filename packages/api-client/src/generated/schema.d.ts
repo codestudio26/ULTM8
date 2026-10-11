@@ -2769,7 +2769,7 @@ export interface components {
             updatedAt: string;
         };
         JoinSchoolDto: {
-            /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
+            /** @description Enroll this existing Student at the School instead of the caller — either a Guardian enrolling a linked minor, or a School Owner/Manager enrolling an existing User (never a brand-new account). */
             studentId?: string;
             /** @description The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none. */
             branchId?: string;
@@ -2789,7 +2789,7 @@ export interface components {
             revokedAt?: string | null;
             createdAt: string;
             updatedAt: string;
-            /** @description Present for an ordinary self-service join; absent for a Guardian enrolling a linked minor (see this DTO's own header comment). */
+            /** @description Present for an ordinary self-service join; absent for any on-behalf-of enroll (Guardian or Staff — see this DTO's own header comment). */
             accessToken?: string;
         };
         JoinFranchiseDto: {
