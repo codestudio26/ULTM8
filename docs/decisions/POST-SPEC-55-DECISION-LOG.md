@@ -2918,3 +2918,23 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+---
+
+## Decision 230 — Notifications compose/broadcast: School Owner only, always every active Student, no audience/targeting field
+
+**Date:** 11 Oct 2026 · **Status:** Developer-level implementation of `docs/v1.2-backend-backlog.md`'s own confirmed-but-unbuilt "Compose/broadcast a message to Students" gap under "## Notifications page."
+
+1. **New endpoint:** `POST /schools/:schoolId/notifications/broadcast` — `{ title, body }` only. School Owner/Manager-gated (`assertSchoolOwner`), School-not-archived-gated (`assertSchoolNotArchived`), same pair of checks every other School-Owner write in this codebase uses.
+2. **No audience/targeting field, by deliberate design, not an oversight.** The backlog doc itself flags narrower targeting (by Branch or Class) as "a real product question, not a Developer default to invent" — this always fans out to every active Student (an un-revoked `STUDENT` RoleGrant) at the School, the one confirmed, uncontroversial default. If per-Branch/per-Class targeting is wanted later, it is new, separate scope — not something this endpoint should guess at now.
+3. **Separate `NotificationBroadcastModule`, not a new method on `NotificationsService`/`NotificationsModule`.** `TenantsModule` already imports `NotificationsModule` (for `CoachInvitesService`'s own invite email) — importing `TenantsModule` back into `NotificationsModule` for `TenantAuthorizationService`/`SchoolsService` would be circular. Follows `WaiversModule`'s own already-established shape instead: a sibling module importing `TenantsModule` + `QueueModule` directly, never imported by `TenantsModule` itself.
+4. **Enqueues directly onto the existing `notification-fanout` queue**, reusing `WaiverSignatureRequestsProcessor`'s own per-recipient deterministic-jobId `addBulk` pattern (one job per distinct Student, `jobId: broadcast-<broadcastId>-<userId>`), rather than introducing a second queue hop — there is no async lookup needed first here (title/body come straight from the request, not fetched by a separate job).
+5. **Enqueue failure is a 503, not a logged-and-swallowed failure** — a deliberate divergence from `WaiversService.createWaiver()`'s own "log and still return 201" choice. There, the Waiver row is already durably created before the fan-out enqueue is attempted, so a fan-out failure loses a notification, not the Waiver itself. Here the broadcast has no other durable effect — if the enqueue fails, nothing happened at all, so the caller needs to know rather than get a false-positive success.
+
+### Verified
+
+`npx tsc --noEmit` clean; new `notification-broadcast.e2e-spec.ts` (School Owner broadcasts to every active Student, a real Notification row lands per Student via the live Redis/BullMQ worker, excluding a revoked grant/Instructor/the Owner themself; a School with zero active Students returns `recipientCount: 0`; an Instructor is rejected 403; a different School's Owner gets 404; an archived School is rejected 403; a missing title/body is rejected 400) plus the full existing e2e suite, run against real Postgres + Redis — all green, zero regressions.
+
+### Recorded by
+
+Developer (this session), continuing the v1.2 backend backlog per the user's standing instruction to build it sequentially, verify, and move on.
+
