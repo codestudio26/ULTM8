@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Checkbox, ErrorBanner, Field, PageHeader, SelectField, Spinner, TextField } from '@ultm8/ui';
+import { Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, SelectField, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
+import { useCurrencies } from '../settings/settingsQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { isoToLocalInput, localInputToIso } from '../lib/datetime';
 import {
@@ -24,20 +25,6 @@ const PLAN_TYPES = [
 ] as const;
 
 type PlanType = (typeof PLAN_TYPES)[number]['value'];
-
-// The platform's 6 supported currencies, confirmed directly against Spec 55
-// §11.2 ("6 currencies observed: GBP, EUR, USD, BRL, AED, MYR") — not
-// previously listed in skills/ultm8-domain-rules/SKILL.md, verified against
-// the spec document itself. Replaces the old free-text currency field.
-const CURRENCIES = [
-  { value: '', label: 'Not set' },
-  { value: 'GBP', label: 'GBP — British Pound' },
-  { value: 'EUR', label: 'EUR — Euro' },
-  { value: 'USD', label: 'USD — US Dollar' },
-  { value: 'BRL', label: 'BRL — Brazilian Real' },
-  { value: 'AED', label: 'AED — UAE Dirham' },
-  { value: 'MYR', label: 'MYR — Malaysian Ringgit' },
-];
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -160,12 +147,18 @@ function MembershipPlanForm({
   onSubmit: (values: MembershipPlanFormValues) => Promise<void>;
   onCancel: () => void;
 }) {
+  // Real confirmed-list selection via GET /settings/currencies (now every
+  // Stripe-supported currency, ~135 ISO 4217 codes, up from the old hardcoded
+  // 6 — product-owner-approved 11/12 Oct 2026) — this previously duplicated a
+  // stale local 6-entry array instead of fetching the actual canonical list,
+  // a real staleness gap closed here, not just a count bump.
+  const { data: currencies } = useCurrencies();
   // The School's own defaultCurrency is free text (same unconfirmed-enum gap
   // this redesign fixes for MembershipPlan.currency, not yet fixed for
-  // School) — only pre-fill from it when it actually matches one of the 6
+  // School) — only pre-fill from it when it actually matches one of the
   // confirmed codes, so a stray value there can't pre-select a currency the
-  // dropdown doesn't offer.
-  const normalizedDefaultCurrency = CURRENCIES.some((c) => c.value === defaultCurrency?.toUpperCase())
+  // picker doesn't offer.
+  const normalizedDefaultCurrency = (currencies ?? []).some((c) => c.code === defaultCurrency?.toUpperCase())
     ? defaultCurrency!.toUpperCase()
     : undefined;
   const [form, setForm] = useState({
@@ -322,10 +315,11 @@ function MembershipPlanForm({
             />
           </Field>
           <Field label="Currency" htmlFor="plan-currency" hint="Your School's own choice — no conversion applied.">
-            <SelectField
+            <CurrencyField
               value={form.currency}
-              onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
-              options={CURRENCIES}
+              onChange={(code) => setForm((f) => ({ ...f, currency: code }))}
+              options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
+              placeholder="Not set"
             />
           </Field>
           {showClassesIncluded ? (

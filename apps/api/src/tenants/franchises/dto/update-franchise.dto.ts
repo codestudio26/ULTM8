@@ -66,7 +66,7 @@ export class UpdateFranchiseDto extends PartialType(OmitType(CreateFranchiseDto,
   @MaxLength(100)
   defaultLanguage?: string | null;
 
-  @ApiPropertyOptional({ description: 'One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.', type: String, nullable: true })
+  @ApiPropertyOptional({ description: 'An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage.', type: String, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(100)

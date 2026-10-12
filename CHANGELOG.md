@@ -15,6 +15,38 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Currency support expanded from the old hardcoded 6 to every currency
+  Stripe supports** (Decision 241) — the canonical `CURRENCIES` list
+  (`apps/api/src/settings/constants/currencies.ts`, served by
+  `GET /settings/currencies`) grew from 6 entries (GBP, EUR, USD, BRL, AED,
+  MYR) to 139 fiat ISO 4217 codes, since every payment in this product
+  already routes through Stripe anyway and the product owner approved
+  building to that ceiling instead of the old sample-6. No DTO/backend
+  validation change was needed — re-verified that no `currency`/
+  `defaultCurrency`/`currencyOverride` field anywhere had `@IsIn`/enum
+  validation to begin with; only Swagger description text changed on
+  `CreateSchoolDto`/`UpdateSchoolDto`/`CreateFranchiseDto`/
+  `UpdateFranchiseDto`/`UpdateUserDto`. New `CurrencyField` searchable
+  combobox (`packages/ui`, same ARIA-1.2 pattern as `TimezoneField` below,
+  but list-via-prop since the list comes from the API, not a runtime
+  `Intl` call) replaces the plain `<select>` on `CreateSchoolPage`/
+  `SchoolPage`/`FranchiseFormModal`/`BranchFormModal`/
+  `BranchSettingsPage`/`MembershipPlanFormPage` — the last of which had its
+  own independent, hardcoded 6-entry currency array that never actually
+  called `GET /settings/currencies`, a real pre-existing staleness bug
+  fixed here. `apps/student`'s `ProfileScreen` Currency field moved from a
+  chip-row picker to a new `SearchablePickerField` (Modal + search +
+  FlatList, same pattern `PhoneField`'s own country picker uses); Language
+  stays chips (still only 4 entries). `apps/api/test/settings.e2e-spec.ts`'s
+  currency-list assertion updated to check shape/presence rather than an
+  exact 6-code match. `skills/ultm8-domain-rules/SKILL.md` §1 and
+  `docs/v1.2-backend-backlog.md`'s Default Currency bullet both corrected
+  with dated notes — see Decision 241
+  (`docs/decisions/POST-SPEC-55-DECISION-LOG.md`) for the full change,
+  including how the 139-entry list was sourced (Stripe's own docs were
+  unreachable from this session's network; retrieved via a public
+  open-source mirror that cites them as its source, disclosed in that
+  decision and in `currencies.ts`'s own header comment).
 - **Timetable page redesign — Daily/Weekly/Monthly views + real click-to-book**
   (`docs/v1.2-backend-backlog.md`): `TimetablePage.tsx` was a plain weekday-
   grouped CRUD grid (Add/Edit a slot only, no booking) — this redesign builds

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import { Button, ErrorBanner, Field, SuccessBanner, TextField } from '../components/ui';
+import { Button, ErrorBanner, Field, SearchablePickerField, SuccessBanner, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import { useCurrencies, useLanguages, useMyProfile, useUpdateProfile, type CodeName, type UserProfile } from './profileQueries';
@@ -43,13 +43,15 @@ function formFrom(profile: UserProfile): Form {
  * read-only — the DTO deliberately excludes both, since changing either is a
  * login/OTP identifier change, not a bare profile edit.
  *
- * `language`/`currency` pick from the real confirmed lists
- * (`GET /settings/languages`/`/settings/currencies`, domain-rules §1's "4
- * languages... 6 currencies") via plain chip buttons — this app has no Picker
- * dependency anywhere, and adding one just for two fields isn't worth a new
- * native dependency when a row of Pressable chips (the same pattern
- * LessonRow.tsx already uses for its format/duration chips) does the same job
- * with what's already here. */
+ * `language`/`currency` pick from the real confirmed lists (`GET
+ * /settings/languages`/`/settings/currencies`). Language (4 entries, domain-rules
+ * §1) stays a row of plain chip buttons — the same pattern LessonRow.tsx already
+ * uses for its format/duration chips, no new native dependency needed. Currency
+ * (now every Stripe-supported currency, ~135 ISO 4217 codes, up from the old
+ * hardcoded 6 — product-owner-approved 11/12 Oct 2026, see `CHANGELOG.md` →
+ * Unreleased) uses `SearchablePickerField` instead — a chip row that size would
+ * wrap into an unusable wall of buttons; see that component's own header comment
+ * for why a Modal+search, not a new Picker dependency, solves it. */
 export function ProfileScreen() {
   const profile = useMyProfile();
   const languages = useLanguages();
@@ -139,11 +141,15 @@ export function ProfileScreen() {
         />
       </Field>
       <Field label="Currency">
-        <ChipPicker
+        <SearchablePickerField
           options={currencies.data ?? []}
           value={form.currency}
           onSelect={(code) => set('currency', code)}
           loading={currencies.isLoading}
+          placeholder="Select a currency"
+          searchPlaceholder="Search currency…"
+          emptyLabel="Not available."
+          triggerAccessibilityLabel="Currency"
         />
       </Field>
 

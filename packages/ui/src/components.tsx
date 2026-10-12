@@ -433,6 +433,191 @@ export function TimezoneField({
   );
 }
 
+/* ------------------------------------------------------------------ Currency combobox */
+
+export interface CurrencyOption {
+  code: string;
+  name: string;
+}
+
+export interface CurrencyFieldProps {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  /** The currency list to search over — pass the `useCurrencies()` result (plus a
+   * leading `{code: '', name: 'Not set'}` entry if the field should be clearable),
+   * same convention the plain `SelectField` usage it replaces already followed. */
+  options: CurrencyOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  'aria-invalid'?: React.AriaAttributes['aria-invalid'];
+  'aria-describedby'?: string;
+}
+
+const CURRENCY_MAX_RESULTS = 50;
+
+function formatCurrencyOption(opt: CurrencyOption): string {
+  return opt.code ? `${opt.code} — ${opt.name}` : opt.name;
+}
+
+/** Searchable combobox over a `{code, name}` currency list — added once Currency
+ * grew from a 6-entry `<select>` to every Stripe-supported currency (~135 ISO 4217
+ * codes, product-owner-approved 11/12 Oct 2026): a plain `<select>` with that many
+ * options is still technically usable but a poor pick experience, the same "long
+ * list needs search" problem `TimezoneField` above already solved for IANA zones.
+ * Deliberately NOT built on `ALL_TIMEZONES`'s module-level-list pattern — the
+ * currency list isn't static here, it comes from `GET /settings/currencies` (the
+ * canonical `CURRENCIES` constant, so it can grow/shrink server-side without a
+ * frontend redeploy) — so this component takes `options` as a prop instead of
+ * owning its own list. The committed value stays a plain ISO 4217 string (e.g.
+ * `"USD"`, or `""` for "not set" if the caller includes that as an option), same
+ * shape the `SelectField` usage it replaces already carried, so no DTO/backend
+ * change is needed. Same ARIA 1.2 editable-combobox pattern and popover mechanics
+ * as `TimezoneField` — see that component's own header comment for the reasoning,
+ * not repeated here. */
+export function CurrencyField({
+  id,
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled,
+  required,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
+}: CurrencyFieldProps) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const baseId = id ?? 'ultm8-currency';
+  const listboxId = `${baseId}-listbox`;
+  const optionId = (code: string) => `${baseId}-option-${(code || 'none').replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const matches = !q ? options : options.filter((opt) => opt.code.toLowerCase().includes(q) || opt.name.toLowerCase().includes(q));
+    return matches.slice(0, CURRENCY_MAX_RESULTS);
+  }, [query, options]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setQuery('');
+        setActiveIndex(-1);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [isOpen]);
+
+  function openDropdown() {
+    setQuery('');
+    setIsOpen(true);
+    setActiveIndex(-1);
+  }
+
+  function closeDropdown() {
+    setIsOpen(false);
+    setQuery('');
+    setActiveIndex(-1);
+  }
+
+  function selectOption(opt: CurrencyOption) {
+    onChange(opt.code);
+    closeDropdown();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!isOpen) {
+          openDropdown();
+        } else {
+          setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (isOpen) setActiveIndex((i) => Math.max(i - 1, 0));
+        break;
+      case 'Enter':
+        if (isOpen && activeIndex >= 0 && results[activeIndex]) {
+          e.preventDefault();
+          selectOption(results[activeIndex]);
+        }
+        break;
+      case 'Escape':
+        if (isOpen) {
+          e.preventDefault();
+          closeDropdown();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  const selected = options.find((o) => o.code === value);
+  const displayValue = isOpen ? query : selected ? formatCurrencyOption(selected) : '';
+
+  return (
+    <div className="ultm8-combobox" ref={containerRef}>
+      <input
+        id={id}
+        role="combobox"
+        type="text"
+        autoComplete="off"
+        className="ultm8-input"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listboxId : undefined}
+        aria-autocomplete="list"
+        aria-activedescendant={isOpen && activeIndex >= 0 && results[activeIndex] ? optionId(results[activeIndex].code) : undefined}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
+        disabled={disabled}
+        required={required}
+        placeholder={placeholder}
+        value={displayValue}
+        onFocus={openDropdown}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setIsOpen(true);
+          setActiveIndex(-1);
+        }}
+        onKeyDown={handleKeyDown}
+        onBlur={closeDropdown}
+      />
+      {isOpen ? (
+        <ul className="ultm8-combobox__listbox" role="listbox" id={listboxId}>
+          {results.length === 0 ? (
+            <li className="ultm8-combobox__empty">No matching currency</li>
+          ) : (
+            results.map((opt, i) => (
+              <li
+                key={opt.code || '__none__'}
+                id={optionId(opt.code)}
+                role="option"
+                aria-selected={opt.code === value}
+                className={['ultm8-combobox__option', i === activeIndex ? 'ultm8-combobox__option--active' : ''].join(' ').trim()}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selectOption(opt)}
+                onMouseEnter={() => setActiveIndex(i)}
+              >
+                {formatCurrencyOption(opt)}
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export interface PhoneFieldProps {
   /** Always a plain E.164 string (e.g. `"+15551234567"`), or `''` until a country
    * has been chosen and at least one digit typed — never a formatted/national

@@ -95,7 +95,7 @@ export class CreateSchoolDto {
   @MaxLength(100)
   defaultLanguage?: string;
 
-  @ApiPropertyOptional({ description: 'One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.' })
+  @ApiPropertyOptional({ description: 'An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage.' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
