@@ -1556,6 +1556,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/transactions/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TransactionsController_findMyTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/disciplines": {
         parameters: {
             query?: never;
@@ -4058,6 +4074,7 @@ export interface components {
             studentSurname: string;
             paymentAccountId: string;
             membershipPlanId: string;
+            membershipPlanTitle: string;
             membershipId?: string | null;
             billingDate: string;
             amount: number;
@@ -7843,6 +7860,29 @@ export interface operations {
             path: {
                 schoolId: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionListResponseDto"];
+                };
+            };
+        };
+    };
+    TransactionsController_findMyTransactions: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
