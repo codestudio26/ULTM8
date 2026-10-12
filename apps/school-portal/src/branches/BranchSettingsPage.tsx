@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
+import { Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -133,11 +133,12 @@ export function BranchSettingsPage() {
             <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
           </Field>
           <Field label="Currency override" htmlFor="branch-settings-currency">
-            <SelectField
+            <CurrencyField
               id="branch-settings-currency"
               value={form.currencyOverride}
-              onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))}
-              options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+              onChange={(code) => setForm((f) => ({ ...f, currencyOverride: code }))}
+              options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
+              placeholder="Not set"
             />
           </Field>
           <Field label="Type" htmlFor="branch-settings-type">

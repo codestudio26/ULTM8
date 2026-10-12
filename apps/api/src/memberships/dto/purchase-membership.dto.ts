@@ -27,7 +27,7 @@ import { IsBoolean, IsOptional, IsUUID } from 'class-validator';
  * Subscription would need that fixed first, which is its own separate piece
  * of work, not bundled in here.
  *
- * Track B Slice 4b (Decision 241, `docs/TRACK-B-ROADMAP.md`) — `useHostedCheckout`
+ * Track B Slice 4b (Decision 243, `docs/TRACK-B-ROADMAP.md`) — `useHostedCheckout`
  * replaces the plain, unusable `requires_payment`/`clientSecret` fresh-card path
  * (apps/student has no Stripe Elements/PaymentSheet SDK, Decision 113) with a
  * hosted Stripe Checkout Session, the same `mode: 'setup'` pattern Decision
@@ -57,7 +57,7 @@ export class PurchaseMembershipDto {
 
   @ApiPropertyOptional({
     description:
-      'Collect a fresh card via a hosted Stripe Checkout Session (Decision 241) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard.',
+      'Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard.',
   })
   @IsOptional()
   @IsBoolean()

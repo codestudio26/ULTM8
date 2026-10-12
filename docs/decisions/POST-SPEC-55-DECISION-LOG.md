@@ -3115,7 +3115,29 @@ User ("the best and most accurate... this needs to be genuinely accurate interna
 
 ---
 
-## Decision 241 — Track B Slice 4b (fresh-card membership purchase): a hosted Stripe Checkout Session (`mode: 'payment'`), not a native PaymentSheet dev client — extends Decision 238's `mode: 'setup'` pattern
+## Decision 241 — Currency list expanded from the old hardcoded 6 to every currency Stripe supports (~135/139 ISO 4217 codes)
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** Spec 55 §11.2's own "6 currencies observed" line (GBP, EUR, USD, BRL, AED, MYR), carried forward into `apps/api/src/settings/constants/currencies.ts`'s canonical `CURRENCIES` list and `skills/ultm8-domain-rules/SKILL.md` §1 — never actually confirmed as a deliberate ceiling, just the sample set the Figma designs happened to show. Every payment in this product already routes through Stripe (Decision 86's Direct-charge model, and no other payment rail exists or is planned), so the product owner was told explicitly that Stripe's own supported-currency set is the practical ceiling, and approved building to that instead of the sample-6.
+
+1. **Canonical list:** `apps/api/src/settings/constants/currencies.ts`'s `CURRENCIES` constant now holds 139 fiat ISO 4217 codes (BTC, which Stripe also lists as a settlement currency, excluded — out of this task's fiat/ISO-4217 scope). Same `{code, name}` shape as the old 6-entry list, so no DTO or API-client shape change was needed — only this constant and the frontend pickers that render from `GET /settings/currencies`.
+2. **Sourcing, disclosed:** `docs.stripe.com`/`support.stripe.com` were unreachable from this session's sandboxed network (DNS failure on every stripe.com-family host), and the `stripe` npm package (apps/api's own dependency) does not bundle a currency list — its Node SDK types `currency` as a plain `string`, not an enum. The list was instead retrieved from a public, open-source mirror reachable via `raw.githubusercontent.com` — WooCommerce's `woocommerce-gateway-stripe` plugin's `WC_Stripe_Currency_Code` class, whose own header comment cites `https://docs.stripe.com/currencies` as its source, cross-checked against that same file's separately maintained Stripe-documented zero-decimal/three-decimal currency lists. Flagged for the Architect to re-verify directly against Stripe's own docs if/when this environment can reach them.
+3. **No `@IsIn`/enum validation existed on any `currency`/`defaultCurrency`/`currencyOverride` DTO field before this** (re-verified by grep across every School/Branch/Franchise/MembershipPlan/User DTO) — every one was already plain free-text `@IsString()`/`@MaxLength()`. So this change needed no backend validation-decorator change; only the canonical list + Swagger description text ("one of the 6 confirmed currencies" → "an ISO 4217 code from the Stripe-supported currency list, ~135 currencies") on `CreateSchoolDto`/`UpdateSchoolDto`/`CreateFranchiseDto`/`UpdateFranchiseDto`/`UpdateUserDto`.
+4. **Frontend pickers, web (`packages/ui`):** a new `CurrencyField` searchable combobox, same ARIA-1.2 editable-combobox pattern and popover mechanics as Decision 240's `TimezoneField` (which solved the identical "long list needs search" problem for IANA zones) — but taking `options` as a prop instead of owning a static list, since the currency list comes from `GET /settings/currencies`, not a runtime `Intl` API. Replaces the plain `<select>` on `CreateSchoolPage`/`SchoolPage`/`FranchiseFormModal`/`BranchFormModal`/`BranchSettingsPage`, all of which already fetched the real list via `useCurrencies()`. `MembershipPlanFormPage` is the one exception found: it had its own independent, hardcoded 6-entry `CURRENCIES` array that never called `GET /settings/currencies` at all — a pre-existing staleness bug, not just a count bump — now wired to the same `useCurrencies()` hook as every other form.
+5. **Frontend picker, mobile (`apps/student`):** a new `SearchablePickerField` (Modal + search `TextInput` + `FlatList`, same pattern `PhoneField`'s own country picker already used for its 245-country list) replaces `ProfileScreen`'s Currency `ChipPicker` — a chip row at ~135 entries would wrap into an unusable wall of buttons. Language stays a `ChipPicker` (still only 4 entries).
+6. **Tests:** `apps/api/test/settings.e2e-spec.ts`'s `GET /settings/currencies` assertion (previously pinned to exactly the old 6 codes) now asserts shape (3-letter codes, no duplicates, non-empty names) and that the full set — including the previous 6 — is present, rather than an exact count, so a legitimate future addition/removal doesn't need the test rewritten again.
+
+### What this does NOT resolve
+
+Whether `School.defaultCurrency`/`Branch.currencyOverride`/`User.currency`/`MembershipPlan.currency` should ever become a real validated enum instead of free text (several existing code comments already flag this as an open gap, predating this decision) — not changed here; this decision only expands which values the *picker* offers, not the field's underlying validation.
+
+### Recorded by
+
+User, after being told explicitly that Stripe's own supported-currency set is the practical ceiling since every payment routes through Stripe, 12 Oct 2026.
+
+---
+
+## Decision 243 — Track B Slice 4b (fresh-card membership purchase): a hosted Stripe Checkout Session (`mode: 'payment'`), not a native PaymentSheet dev client — extends Decision 238's `mode: 'setup'` pattern
 
 **Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
 **Resolves:** `docs/TRACK-B-ROADMAP.md`'s Slice 4b — `MembershipsService.purchase()`'s fresh-card Stripe path returns `{ outcome: 'requires_payment', clientSecret, transactionId }`, a PaymentIntent client secret meant for Stripe Elements/PaymentSheet confirmation. `apps/student` is plain Expo-managed with no custom native dev client (Decision 113) and has no Stripe native SDK dependency at all (Decision 238's own header comment), so that outcome has been a dead end from this app since Slice 4a shipped — shown honestly as "online payment isn't available in the app yet" rather than built against a guess.

@@ -52,8 +52,10 @@ export function useUpdateProfile() {
  * SettingsController's own header comment: a prospective registrant needs these
  * before they have a token), so no auth concern reusing them here. Drives real
  * confirmed-list selection for `language`/`currency` on the Profile screen instead
- * of free text — domain-rules §1 confirms exactly 4 languages and 6 currencies,
- * so this is the actual list, not an invented one. */
+ * of free text — domain-rules §1 confirms 4 languages; currency is now every
+ * currency Stripe supports (~135 ISO 4217 codes, product-owner-approved 11/12 Oct
+ * 2026, up from the old hardcoded 6 — see `CHANGELOG.md` → Unreleased), so this is
+ * the actual list, not an invented one. */
 export function useLanguages() {
   return useQuery({ queryKey: ['settings-languages'], queryFn: () => unwrap(apiClient.GET('/v1/settings/languages')) });
 }

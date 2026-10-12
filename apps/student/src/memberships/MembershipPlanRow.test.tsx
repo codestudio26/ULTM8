@@ -99,7 +99,7 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
     expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1', payWithSavedCard: true, stepUpToken: 'step-up-token-abc' });
   });
 
-  it('"Purchase" sends useHostedCheckout (Decision 241) — no payWithSavedCard, no step-up', async () => {
+  it('"Purchase" sends useHostedCheckout (Decision 243) — no payWithSavedCard, no step-up', async () => {
     mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: true } } as never);
 
     const { getByText } = await render(<MembershipPlanRow plan={CLASS_PACK as never} schoolId="school-1" />);
@@ -114,7 +114,7 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
 });
 
 /**
- * Decision 241 (Track B Slice 4b) — "Purchase" now completes a Stripe-backed
+ * Decision 243 (Track B Slice 4b) — "Purchase" now completes a Stripe-backed
  * CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP purchase end-to-end: it sends
  * useHostedCheckout, and on the real `requires_checkout` outcome opens the
  * returned checkoutUrl in the device's own browser via the exact same
@@ -123,7 +123,7 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
  * same screen's own documented single-refetch-after-return choice, invalidates
  * the My Memberships query cache once the browser session ends.
  */
-describe('MembershipPlanRow — Decision 241 hosted Checkout', () => {
+describe('MembershipPlanRow — Decision 243 hosted Checkout', () => {
   let invalidateMyMemberships: jest.Mock;
 
   beforeEach(() => {
@@ -170,7 +170,7 @@ describe('MembershipPlanRow — Decision 241 hosted Checkout', () => {
     expect(queryByText('Pay with saved card')).toBeNull();
   });
 
-  it('a SUBSCRIPTION plan still falls back to the old requires_payment "not available" message — Decision 241 does not cover Subscriptions', async () => {
+  it('a SUBSCRIPTION plan still falls back to the old requires_payment "not available" message — Decision 243 does not cover Subscriptions', async () => {
     const purchase = {
       ...idlePurchase(),
       isSuccess: true,

@@ -172,14 +172,14 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
 });
 
 /**
- * Decision 241 (Track B Slice 4b) — `MembershipsService.purchase()`'s
+ * Decision 243 (Track B Slice 4b) — `MembershipsService.purchase()`'s
  * `useHostedCheckout` branch calls this instead of `charge()` above: apps/
  * student has no Stripe Elements/PaymentSheet SDK, so a bare PaymentIntent
  * `clientSecret` is unusable there. Same "e2e tests cover everything up to
  * the first real Stripe call; these unit tests cover the Stripe-calling code
  * itself" split as the Decision 234 block above.
  */
-describe('PaymentsService — createPurchaseCheckoutSession (Decision 241)', () => {
+describe('PaymentsService — createPurchaseCheckoutSession (Decision 243)', () => {
   function makeService(stripe: Record<string, unknown>) {
     const scopedClient = jest.fn().mockReturnValue(stripe);
     const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never);

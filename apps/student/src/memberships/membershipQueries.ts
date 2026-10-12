@@ -22,12 +22,12 @@ export function useMyMemberships() {
  * £0-priced plan, OR Decision 236's payWithSavedCard branch below, which is
  * also synchronous), `pending_confirmation` (Cash/Bank Transfer, Staff
  * confirms later via a Staff-only endpoint — out of scope here),
- * `requires_checkout` (Decision 241, Track B Slice 4b — a hosted Stripe
+ * `requires_checkout` (Decision 243, Track B Slice 4b — a hosted Stripe
  * Checkout Session URL; MembershipPlanRow opens it via expo-web-browser), or
  * `requires_payment` (a bare Stripe Elements clientSecret — unreachable from
- * this app's own "Purchase" button as of Decision 241, which always sends
+ * this app's own "Purchase" button as of Decision 243, which always sends
  * useHostedCheckout instead; still returned for a SUBSCRIPTION plan, which
- * Decision 241 explicitly does not cover — PaymentsService.subscribe()'s own
+ * Decision 243 explicitly does not cover — PaymentsService.subscribe()'s own
  * pre-existing limitation, see MembershipPlanRow's own header comment). The
  * caller (MembershipPlanRow) decides what UI each outcome gets; this hook
  * just relays the real response and invalidates the Memberships list on an
@@ -39,7 +39,7 @@ export function useMyMemberships() {
  * guardianQueries.ts's useWithdrawConsent() already established for this
  * exact mechanism's first consumer.
  *
- * Decision 241's own follow-up — `useHostedCheckout` collects a fresh card
+ * Decision 243's own follow-up — `useHostedCheckout` collects a fresh card
  * via a hosted Stripe Checkout Session instead (mutually exclusive with
  * payWithSavedCard, enforced server-side). */
 export function usePurchaseMembership() {
@@ -72,7 +72,7 @@ export function usePurchaseMembership() {
 }
 
 /**
- * Decision 241's own post-return refresh — mirrors Decision 238's
+ * Decision 243's own post-return refresh — mirrors Decision 238's
  * PaymentMethodsScreen, which refetches its own per-School GET query right
  * after `WebBrowser.openAuthSessionAsync` resolves, accepting the same
  * documented "the real confirmation is a webhook that can land a moment

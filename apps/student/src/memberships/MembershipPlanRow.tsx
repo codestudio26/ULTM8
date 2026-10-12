@@ -13,21 +13,21 @@ type MembershipPlan = components['schemas']['AcademyMembershipPlanDto'];
 type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
 
 /** One membership plan on AcademyDetailScreen (Slice 4a, extended by Track B
- * Slice 4b — Decision 241). Four real outcomes from POST
+ * Slice 4b — Decision 243). Four real outcomes from POST
  * /membership-plans/{id}/purchase (verified in MembershipsService.purchase()):
  * `active` (an immediate, £0 grant, OR Decision 236's payWithSavedCard branch below),
  * `pending_confirmation` (Cash/Bank Transfer — awaiting Staff confirmation, no further
- * Student action), `requires_checkout` (Decision 241 — a hosted Stripe Checkout
+ * Student action), `requires_checkout` (Decision 243 — a hosted Stripe Checkout
  * Session, opened in the device's own browser), and `requires_payment` (a bare
  * Stripe Elements clientSecret this app has no SDK to render — unreachable from
- * the plain "Purchase" button as of Decision 241, which always sends
+ * the plain "Purchase" button as of Decision 243, which always sends
  * useHostedCheckout; still the real outcome for a SUBSCRIPTION plan, which
- * Decision 241 deliberately does not cover — PaymentsService.subscribe()'s own
+ * Decision 243 deliberately does not cover — PaymentsService.subscribe()'s own
  * pre-existing "throwaway Customer every call" limitation, same one
  * payWithSavedCard's SUBSCRIPTION block below is scoped around — so that one
  * message stays, shown honestly rather than silently failing).
  *
- * Decision 241 (Track B Slice 4b) — "Purchase" now completes end-to-end for a
+ * Decision 243 (Track B Slice 4b) — "Purchase" now completes end-to-end for a
  * Stripe-backed CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP plan: it sends
  * `useHostedCheckout: true`, and on `requires_checkout` opens the returned
  * `checkoutUrl` in the device's own browser via `WebBrowser.openAuthSessionAsync`

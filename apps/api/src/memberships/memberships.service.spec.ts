@@ -151,7 +151,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
 });
 
 /**
- * Decision 241 (Track B Slice 4b) — `MembershipsService.purchase()`'s
+ * Decision 243 (Track B Slice 4b) — `MembershipsService.purchase()`'s
  * `useHostedCheckout` branch (purchaseViaHostedCheckout, private — called
  * here via direct cast, same technique the payWithSavedCard describe block
  * above uses). apps/student has no Stripe Elements/PaymentSheet SDK, so the
@@ -160,7 +160,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
  * Checkout Session instead. Unlike payWithSavedCard, there is no live Stripe
  * call to avoid in e2e here either way — PaymentsService.
  * createPurchaseCheckoutSession() is mocked directly, the same split
- * payments.service.spec.ts's own Decision 241 block already establishes
+ * payments.service.spec.ts's own Decision 243 block already establishes
  * (e2e cannot exercise a real Checkout Session create against a fixture
  * `acct_fixture_...` connected account id, so this Transaction-creation
  * logic is unit-tested here instead). The webhook-settlement half (once
@@ -169,7 +169,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
  * same handler, `charge()`'s own requires_payment path already produces and
  * stripe-webhook-processing.e2e-spec.ts already covers end-to-end.
  */
-describe('MembershipsService.purchaseViaHostedCheckout (Decision 241)', () => {
+describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
   function makeTx(overrides: { transactionCreate?: jest.Mock } = {}) {
     return { transaction: { create: overrides.transactionCreate ?? jest.fn().mockResolvedValue({ id: 'transaction-1' }) } };
   }
@@ -237,7 +237,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 241)', () => {
 });
 
 /**
- * Decision 241's own scope checks, exercised against the full public
+ * Decision 243's own scope checks, exercised against the full public
  * `purchase()` method rather than the private branch directly — these are
  * pure validation/authorization logic reachable before any Stripe call, the
  * same "no live Stripe credentials needed" territory
@@ -247,7 +247,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 241)', () => {
  * `PaymentsService.createPurchaseCheckoutSession`) was actually reached —
  * something e2e cannot assert without a live Stripe call.
  */
-describe('MembershipsService.purchase — useHostedCheckout scope (Decision 241)', () => {
+describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)', () => {
   function makeService(opts: {
     plan: Record<string, unknown>;
     paymentAccount: Record<string, unknown> | null;

@@ -66,7 +66,7 @@ export class PurchaseMembershipResponseDto {
 
   @ApiPropertyOptional({
     description:
-      'Hosted Stripe Checkout Session URL (Decision 241, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment.',
+      'Hosted Stripe Checkout Session URL (Decision 243, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment.',
   })
   checkoutUrl?: string;
 

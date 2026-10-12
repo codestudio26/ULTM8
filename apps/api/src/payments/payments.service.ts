@@ -619,7 +619,7 @@ export class PaymentsService {
    * Membership-creation path keyed off the Session would duplicate
    * `handlePaymentIntentSucceeded`'s own logic for no benefit while opening a
    * real risk of the two deliveries racing each other — a second source of
-   * truth, not a safer one. (Also recorded as Decision 241,
+   * truth, not a safer one. (Also recorded as Decision 243,
    * `docs/decisions/POST-SPEC-55-DECISION-LOG.md`.)
    */
   async createPurchaseCheckoutSession(

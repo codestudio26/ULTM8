@@ -680,7 +680,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   });
 
   // ---------------------------------------------------------------------------
-  // Decision 241 (Track B Slice 4b) — useHostedCheckout. Same "no live Stripe
+  // Decision 243 (Track B Slice 4b) — useHostedCheckout. Same "no live Stripe
   // credentials in CI" limitation as the payWithSavedCard block above: every
   // assertion here is reachable BEFORE MembershipsService.purchaseViaHostedCheckout()
   // ever makes a real Stripe call (PaymentsService.createPurchaseCheckoutSession()

@@ -20,7 +20,7 @@ Detail for each Slice is in its own section below; this table is the map.
 |---|---|---|---|
 | 1 | **Foundation** | 1 (walking skeleton), 2 (booking/waitlist), 3 (rank/grading) | ✅ DONE |
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
-| 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe fresh-card purchase) | 4a ✅ DONE; 4b ✅ DONE (12 Oct 2026, Decision 241 — hosted Stripe Checkout, not PaymentSheet) |
+| 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe fresh-card purchase) | 4a ✅ DONE; 4b ✅ DONE (12 Oct 2026, Decision 243 — hosted Stripe Checkout, not PaymentSheet) |
 | 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b ✅ DONE (11 Oct 2026) — **correction (12 Oct 2026): this row was stale.** The backend (`WaiverSignature.signatureImageKey`, the DTOs, `POST /waivers/{id}/signature-upload-url`) was already real by the time this row was last edited — no schema change or design pass was ever actually needed, only the capture UI; see this Phase's own detail section below for what shipped and `CHANGELOG.md` → Unreleased for the test-coverage follow-up |
 | 5 | **Attendance** | 8 (QR check-in) | ✅ DONE (11 Oct 2026) — the backend endpoint, the `apps/school-portal` QR display screen, and both of this section's own "needs your call" product questions were already resolved (Decisions 107/235); the `apps/student` camera-scan screen (`QrScanner.tsx`, via `QrCheckInScreen`'s new mode toggle) closed the last piece |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
@@ -718,7 +718,7 @@ during the test.
 
 ---
 
-## Slice 4b — Stripe fresh-card purchase — DONE (12 Oct 2026, Decision 241 — hosted Checkout, not PaymentSheet)
+## Slice 4b — Stripe fresh-card purchase — DONE (12 Oct 2026, Decision 243 — hosted Checkout, not PaymentSheet)
 
 **Originally researched as "Stripe/PaymentSheet path," left NOT built** pending the
 user's decision on the native-dev-client workflow cost below — kept as-written for
@@ -801,7 +801,7 @@ custom-dev-client workflow change** (losing the web-preview verification path th
 whole track has relied on) **right now**, versus shipping the non-Stripe
 `pending_confirmation` path first as a smaller, unblocking slice.
 
-### What was built (12 Oct 2026, Decision 241)
+### What was built (12 Oct 2026, Decision 243)
 
 The user chose neither of the two PaymentSheet-era options above — by the time this
 was revisited, Decision 238 (saved payment methods, 11 Oct 2026) had already built a
@@ -839,7 +839,7 @@ charge, instead of adopting PaymentSheet.
   app (`PaymentsService.subscribe()`'s own pre-existing "throwaway Customer every
   call" limitation, out of scope here same as it was for Decision 239).
 - Full account, including why `checkout.session.completed` was deliberately not
-  extended: `docs/decisions/POST-SPEC-55-DECISION-LOG.md`, Decision 241.
+  extended: `docs/decisions/POST-SPEC-55-DECISION-LOG.md`, Decision 243.
 
 ### What this does NOT resolve
 
@@ -1100,7 +1100,7 @@ launch a real Expo Go client, device, or camera permission prompt, so the
 actual camera capture itself is unexercised here, same honestly-disclosed gap
 every native-module slice in this doc already states.
 
-**Slice 4b — DONE (12 Oct 2026, Decision 241).** Resolved not by taking on the
+**Slice 4b — DONE (12 Oct 2026, Decision 243).** Resolved not by taking on the
 native dev-client workflow, but by extending Decision 238's hosted-Checkout pattern
 (already built for saving a card) from `mode: 'setup'` to `mode: 'payment'` — see
 Slice 4b's own section above for the full account.

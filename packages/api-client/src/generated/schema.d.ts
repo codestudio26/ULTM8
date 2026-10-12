@@ -2986,7 +2986,7 @@ export interface components {
             ranksToggle?: boolean;
             /** @description One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment. */
             defaultLanguage?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
             /** @description IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172). */
             timezone?: string;
@@ -3052,7 +3052,7 @@ export interface components {
             businessType?: string | null;
             /** @description One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment. */
             defaultLanguage?: string | null;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
             /** @description IANA timezone name. Same field as Branch.timezone (Decisions 76, 172). */
             timezone?: string | null;
@@ -3098,7 +3098,7 @@ export interface components {
             nationality?: string;
             /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
             language?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as language. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
@@ -3265,7 +3265,7 @@ export interface components {
             facilities?: string[];
             /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
             defaultLanguage?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
             description?: string;
             logoUrl?: string;
@@ -3327,7 +3327,7 @@ export interface components {
             type?: string | null;
             /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
             defaultLanguage?: string | null;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
             description?: string | null;
             logoUrl?: string | null;
@@ -3530,7 +3530,7 @@ export interface components {
             nationality?: string;
             /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
             language?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as language. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
@@ -4153,7 +4153,7 @@ export interface components {
             studentId?: string;
             /** @description Self-purchase only: charge the saved payment method (Decision 238) instead of collecting a fresh card. Requires the X-Step-Up-Token header (Decision 236). */
             payWithSavedCard?: boolean;
-            /** @description Collect a fresh card via a hosted Stripe Checkout Session (Decision 241) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard. */
+            /** @description Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard. */
             useHostedCheckout?: boolean;
         };
         MembershipResponseDto: {
@@ -4176,7 +4176,7 @@ export interface components {
             outcome: "requires_payment" | "requires_checkout" | "pending_confirmation" | "active";
             /** @description Stripe PaymentIntent client secret — present only when outcome is requires_payment. */
             clientSecret?: string;
-            /** @description Hosted Stripe Checkout Session URL (Decision 241, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment. */
+            /** @description Hosted Stripe Checkout Session URL (Decision 243, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment. */
             checkoutUrl?: string;
             /** @description Present only when outcome is active. */
             membership?: components["schemas"]["MembershipResponseDto"];

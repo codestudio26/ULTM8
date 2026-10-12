@@ -303,7 +303,7 @@ export class MembershipsService {
     if (dto?.payWithSavedCard && isGuardianAction) {
       throw new BadRequestException('Paying with a saved card is not supported for a Guardian-driven purchase — pay with a new card instead.');
     }
-    // Decision 241 — the two fresh-card-collection mechanisms are mutually
+    // Decision 243 — the two fresh-card-collection mechanisms are mutually
     // exclusive flags on the same request, same "fail loudly on an
     // unsupported combination rather than silently prefer one" discipline the
     // check above already follows.
@@ -353,7 +353,7 @@ export class MembershipsService {
     if (dto?.payWithSavedCard && paymentAccount.provider !== 'STRIPE') {
       throw new BadRequestException('Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.');
     }
-    // Decision 241 — Track B Slice 4b's hosted-Checkout path, scoped
+    // Decision 243 — Track B Slice 4b's hosted-Checkout path, scoped
     // identically to payWithSavedCard's own two checks immediately above
     // (CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP, Stripe-configured School only).
     // Unlike payWithSavedCard, this is NOT rejected for a Guardian-driven
@@ -439,7 +439,7 @@ export class MembershipsService {
         return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, stepUpToken);
       }
 
-      // Decision 241 (Track B Slice 4b) — hosted Stripe Checkout, the fresh-
+      // Decision 243 (Track B Slice 4b) — hosted Stripe Checkout, the fresh-
       // card path apps/student can actually complete. SUBSCRIPTION already
       // took its own branch above and never reaches here; CLASS_PACK/
       // WEEKLY_PASS/TRIAL_MEMBERSHIP only, same scope as payWithSavedCard.
@@ -593,7 +593,7 @@ export class MembershipsService {
   }
 
   /**
-   * Decision 241 (Track B Slice 4b) — `purchase()`'s `useHostedCheckout`
+   * Decision 243 (Track B Slice 4b) — `purchase()`'s `useHostedCheckout`
    * branch. apps/student has no Stripe SDK dependency (Decision 113/238), so
    * the bare PaymentIntent `clientSecret` the `charge()` branch above returns
    * (`requires_payment`) is a dead end there — nothing in that app can render

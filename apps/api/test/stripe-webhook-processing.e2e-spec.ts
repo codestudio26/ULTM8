@@ -203,7 +203,7 @@ describeIfDb('stripe-webhook-processing job', () => {
   // Phase 9 — first real per-event-type handlers.
   // ---------------------------------------------------------------------------
 
-  // Decision 241 (Track B Slice 4b) — MembershipsService.purchaseViaHostedCheckout()
+  // Decision 243 (Track B Slice 4b) — MembershipsService.purchaseViaHostedCheckout()
   // (a hosted Stripe Checkout Session, `mode: 'payment'`) creates its Transaction
   // with EXACTLY this same shape (PENDING/STRIPE/stripePaymentIntentId, no
   // stripeSubscriptionId) as seedPendingTransaction() below already fixtures —
@@ -218,7 +218,7 @@ describeIfDb('stripe-webhook-processing job', () => {
   // pre-existing fresh-card `charge()` one — see
   // PaymentsService.createPurchaseCheckoutSession()/MembershipsService.
   // purchaseViaHostedCheckout()'s own header comments for the full reasoning, and
-  // memberships.service.spec.ts's own Decision 241 block for the
+  // memberships.service.spec.ts's own Decision 243 block for the
   // Transaction-creation half this file can't reach without a live Stripe call.
   it('payment_intent.succeeded flips the Transaction to SUCCESSFUL and creates the Membership Active (Decision 6)', async () => {
     const { transaction, plan, student, stripePaymentIntentId } = await seedPendingTransaction();
@@ -263,7 +263,7 @@ describeIfDb('stripe-webhook-processing job', () => {
   // SAME PaymentIntent id either way — handlePaymentIntentFailed's own header
   // comment confirms no Membership was ever created for a PENDING Transaction,
   // so there is nothing to undo beyond the status flip itself.
-  it('payment_intent.payment_failed flips the Transaction to FAILED and creates no Membership (Decision 241 — a declined/expired Checkout attempt)', async () => {
+  it('payment_intent.payment_failed flips the Transaction to FAILED and creates no Membership (Decision 243 — a declined/expired Checkout attempt)', async () => {
     const { transaction, stripePaymentIntentId } = await seedPendingTransaction();
     const stripeEventId = `evt_fixture_${randomUUID()}`;
     eventIds.push(stripeEventId);
