@@ -128,6 +128,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const refreshToken = await secureTokenStore.getRefreshToken();
       if (!refreshToken) return null;
       const result = await unwrap(authClient.POST('/v1/auth/refresh', { body: { refreshToken } }));
+      // LoginResponseDto's accessToken/refreshToken are typed optional only because
+      // the DTO is shared with login()'s mustChangePasscode response (Decision
+      // 1/230) — AuthService.refresh() itself (its own signature:
+      // `Promise<{ accessToken: string; refreshToken: string }>`) never returns that
+      // shape, it only ever throws or returns both. Narrowed here rather than
+      // asserted, so a future change to that contract fails safe (falls into the
+      // catch below, the same clean "session's over" path) instead of silently
+      // storing `undefined` as a token.
+      if (!result.accessToken || !result.refreshToken) {
+        throw new Error('POST /auth/refresh returned no token pair');
+      }
       // Rotated (AuthService.refresh()'s own doc comment: the presented token is
       // revoked in the same step a successor is issued) — the OLD refresh token is
       // now dead, so the new one must be persisted before anything else can use it.
