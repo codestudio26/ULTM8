@@ -192,6 +192,12 @@ test('Instructor Detail shows the Instructor\'s own Classes with a real enrolled
     // (enrolledCount, no "/<capacity>" segment — see InstructorDetailPage's
     // own render).
     await expect(page.getByText(/^1\s+booked$/)).toBeVisible();
+    // RoleGrant.revokedAt resolved onto InstructorResponseDto.status (v1.2
+    // backend backlog) — a real Active/Revoked badge, not a "—" placeholder.
+    await expect(page.getByText('ACTIVE', { exact: true })).toBeVisible();
+    // No InstructorBelt row exists for this fixture — the Ranking section's
+    // own empty state, not a fabricated belt.
+    await expect(page.getByText('No belt chosen yet')).toBeVisible();
 
     await page.getByRole('button', { name: 'Revoke enrollment' }).click();
     const dialog = page.getByRole('dialog', { name: 'Revoke Dana Coach\'s enrollment?' });
@@ -201,11 +207,42 @@ test('Instructor Detail shows the Instructor\'s own Classes with a real enrolled
     await expect(page).toHaveURL(/\/instructors$/);
     const grant = await db.roleGrant.findFirstOrThrow({ where: { userId: coach.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } });
     expect(grant.revokedAt).not.toBeNull();
+    await expect(page.getByRole('row', { name: /Dana Coach/ }).getByText('Revoked', { exact: true })).toBeVisible();
   } finally {
     await db.booking.delete({ where: { id: booking.id } });
     await db.membership.delete({ where: { id: membership.id } });
     await db.membershipPlan.delete({ where: { id: plan.id } });
     await db.class.delete({ where: { id: cls.id } });
+    await db.instructor.delete({ where: { id: profile.id } });
+  }
+});
+
+test('Instructor Detail shows the real, verified belt from the Ranking section', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  const coach = await addCoach(s, 'Robin', 'Ranked');
+  const profile = await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
+  const belt = await db.instructorBelt.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      userId: coach.id,
+      disciplineId: s.disciplineId,
+      rankId: s.rung['White 1'].rankId,
+      stripeTierId: s.rung['White 1'].id,
+      verificationStatus: 'VERIFIED',
+      verifiedAt: new Date(),
+      verifiedById: s.ownerId,
+    },
+  });
+
+  try {
+    await page.goto(`/instructors/${profile.id}`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Robin Ranked' })).toBeVisible();
+    await expect(page.getByText('BJJ:')).toBeVisible();
+    await expect(page.getByText('White 1')).toBeVisible();
+    await expect(page.getByText('Verified', { exact: true })).toBeVisible();
+  } finally {
+    await db.instructorBelt.delete({ where: { id: belt.id } });
     await db.instructor.delete({ where: { id: profile.id } });
   }
 });

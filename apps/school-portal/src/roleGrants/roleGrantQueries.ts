@@ -74,6 +74,12 @@ export function useRevokeRoleGrant() {
       ),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['roleGrants', variables.targetUserId] });
+      // The Instructors/Students rosters and Instructor Detail both resolve their
+      // own Active/Revoked status from this same RoleGrant (v1.2 backend backlog) —
+      // without this, a revoke here leaves them showing the stale pre-revoke status
+      // until an unrelated refetch or a hard reload.
+      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
     },
   });
 }

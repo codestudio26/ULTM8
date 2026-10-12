@@ -124,10 +124,11 @@ export function InstructorsPage() {
               // fabricated status.
               { key: 'login', header: 'Login', render: () => '—' },
               { key: 'phone', header: 'Phone Number', render: (i) => i.phone ?? '—' },
-              // RoleGrant.revokedAt (Active/Revoked) isn't resolved onto
-              // InstructorResponseDto yet — same "—" placeholder as Login,
-              // rather than hardcoding "Active" for every row.
-              { key: 'status', header: 'Status', render: () => '—' },
+              {
+                key: 'status',
+                header: 'Status',
+                render: (i) => (i.status === 'REVOKED' ? <Badge>Revoked</Badge> : <Badge variant="success">Active</Badge>),
+              },
               {
                 key: 'actions',
                 header: '',

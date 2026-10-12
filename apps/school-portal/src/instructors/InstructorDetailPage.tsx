@@ -7,6 +7,7 @@ import { Avatar } from '../lib/Avatar';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
 import { useInstructor, useInstructorClasses } from './instructorQueries';
+import { useSchoolInstructorBelts } from './instructorBeltQueries';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -17,9 +18,12 @@ function formatDate(iso: string): string {
  * template to match): profile fields InstructorResponseDto already carries,
  * the real "Instructor Class" grid (GET /instructors/{id}/classes, with a
  * server-computed enrolledCount — see InstructorsService.findClassesForInstructor's
- * own header comment), and a Revoke Enrollment action for the underlying
- * INSTRUCTOR RoleGrant, using this app's existing ConfirmDeleteModal
- * confirmation pattern (not a browser confirm()).
+ * own header comment), a read-only Ranking section (reuses
+ * useSchoolInstructorBelts, filtered to this Instructor — correcting/verifying
+ * a belt stays on the School-wide "Instructors' belts" section on
+ * InstructorsPage.tsx, not duplicated here), and a Revoke Enrollment action
+ * for the underlying INSTRUCTOR RoleGrant, using this app's existing
+ * ConfirmDeleteModal confirmation pattern (not a browser confirm()).
  */
 export function InstructorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +32,7 @@ export function InstructorDetailPage() {
   const navigate = useNavigate();
   const { data: instructor, isLoading, error } = useInstructor(instructorId);
   const { data: classesData, isLoading: classesLoading, error: classesError } = useInstructorClasses(instructorId);
+  const belts = useSchoolInstructorBelts(schoolId);
   const roleGrants = useUserRoleGrants(instructor?.userId ?? null);
   const revokeGrant = useRevokeRoleGrant();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
@@ -40,6 +45,7 @@ export function InstructorDetailPage() {
   if (!instructor) return null;
 
   const classes = classesData?.items ?? [];
+  const instructorBelts = (belts.data?.items ?? []).filter((b) => b.userId === instructor.userId);
   const activeGrant = (roleGrants.data?.items ?? []).find(
     (g) => g.schoolId === schoolId && g.role === 'INSTRUCTOR' && !g.revokedAt,
   );
@@ -128,6 +134,34 @@ export function InstructorDetailPage() {
                   </div>
                   <Badge variant="accent">
                     {c.enrolledCount} {c.capacity != null ? `/ ${c.capacity}` : ''} booked
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
+          Ranking
+        </h2>
+        <Card>
+          {belts.isLoading ? (
+            <Spinner />
+          ) : belts.error ? (
+            <ErrorBanner message={belts.error instanceof ApiError ? belts.error.message : "Could not load this Instructor's belts."} />
+          ) : instructorBelts.length === 0 ? (
+            <EmptyState title="No belt chosen yet" description="The Instructor chooses their own belt per style on their own My belts page." />
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+              {instructorBelts.map((b) => (
+                <li key={b.disciplineId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                  <span>
+                    <strong>{b.disciplineName}:</strong> {b.beltName}
+                  </span>
+                  <Badge variant={b.verificationStatus === 'VERIFIED' ? 'success' : 'danger'}>
+                    {b.verificationStatus === 'VERIFIED' ? 'Verified' : 'Not verified'}
                   </Badge>
                 </li>
               ))}
