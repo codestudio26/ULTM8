@@ -16,6 +16,7 @@ import { TenantLifecyclePurgeProcessor, TenantLifecyclePurgeScheduler } from './
 import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-restriction.processor';
 import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from './membership-expiry-sweep.processor';
 import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './grading-notifications.processor';
+import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler } from './notification-unsnooze-sweep.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -108,6 +109,13 @@ import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './
  * action, plus a daily sweep) and the routing of "you've been promoted" to the
  * student or a minor's guardians. Fans out through NOTIFICATION_FANOUT_QUEUE
  * like the others; no new module import.
+ *
+ * v1.2 backend backlog ("Notifications page" — Snooze, approved by the
+ * product owner) adds NotificationUnsnoozeSweepProcessor/Scheduler — a pure
+ * scheduled sweep, same shape as BookingNoShowProcessingScheduler/
+ * ClassOccurrenceGenerationScheduler, needing no new module import (only
+ * PrismaJobsService, already global, and its own queue, already registered
+ * in QueueModule).
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -131,6 +139,8 @@ import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './
     MembershipExpirySweepScheduler,
     GradingNotificationsProcessor,
     GradingNotificationsScheduler,
+    NotificationUnsnoozeSweepProcessor,
+    NotificationUnsnoozeSweepScheduler,
   ],
 })
 export class JobsModule {}

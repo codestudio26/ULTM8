@@ -46,3 +46,8 @@ export const MEMBERSHIP_EXPIRY_SWEEP_QUEUE = 'membership-expiry-sweep';
 // guardians. Runs as ultm8_jobs: GuardianLink is readable only by the guardian
 // under ultm8_app's RLS.
 export const GRADING_NOTIFICATIONS_QUEUE = 'grading-notifications';
+// v1.2 backend backlog ("Notifications page" — Snooze, approved by the
+// product owner): a scheduled sweep clearing Notification.snoozedUntil once
+// it elapses, returning the Notification to the ordinary unread list — same
+// shape as booking-no-show-processing's own scheduled sweep.
+export const NOTIFICATION_UNSNOOZE_SWEEP_QUEUE = 'notification-unsnooze-sweep';
