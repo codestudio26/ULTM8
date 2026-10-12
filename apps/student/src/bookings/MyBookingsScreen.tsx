@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { type components } from '@ultm8/api-client';
-import { Button, InlineError } from '../components/ui';
+import { Button, InlineError, TextField } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useEnterCheckInCode } from '../attendance/attendanceQueries';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
 
 type Booking = components['schemas']['BookingResponseDto'];
@@ -13,6 +14,7 @@ type Booking = components['schemas']['BookingResponseDto'];
  * three are already-resolved terminal states with nothing to cancel. */
 function BookingRow({ booking }: { booking: Booking }) {
   const cancelBooking = useCancelBooking();
+  const enterCode = useEnterCheckInCode();
   const [error, setError] = useState<string | null>(null);
   // FOUND ON REVIEW (same class of bug as ConsentTierRow's withdraw confirmation):
   // Alert.alert is a documented no-op on React Native Web, this app's own
@@ -20,6 +22,11 @@ function BookingRow({ booking }: { booking: Booking }) {
   // "Cancel" silently did nothing on web. Replaced with an inline panel (plain
   // Views/Text, no native dialog API) that renders identically on every platform.
   const [confirming, setConfirming] = useState(false);
+  // Decision 235 — camera-free check-in: an inline code-entry panel, same
+  // reasoning as the cancel-confirm panel above (no native dialog/camera API
+  // either way renders on web).
+  const [enteringCode, setEnteringCode] = useState(false);
+  const [code, setCode] = useState('');
 
   function openConfirm() {
     if (cancelBooking.isPending) return;
@@ -40,6 +47,30 @@ function BookingRow({ booking }: { booking: Booking }) {
       await cancelBooking.mutateAsync(booking.id);
     } catch (err) {
       setError(getApiErrorMessage(err, 'Could not cancel this booking — please try again.'));
+    }
+  }
+
+  function openCodeEntry() {
+    if (enterCode.isPending) return;
+    setError(null);
+    setCode('');
+    setEnteringCode(true);
+  }
+
+  function cancelCodeEntry() {
+    setEnteringCode(false);
+    setCode('');
+  }
+
+  async function submitCode() {
+    if (enterCode.isPending) return;
+    setError(null);
+    try {
+      await enterCode.mutateAsync({ classId: booking.classId, code });
+      setEnteringCode(false);
+      setCode('');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Incorrect or expired code — ask Staff for the current code.'));
     }
   }
 
@@ -66,8 +97,42 @@ function BookingRow({ booking }: { booking: Booking }) {
             </View>
           </View>
         </View>
+      ) : booking.status === 'UPCOMING' && enteringCode ? (
+        <View style={{ marginTop: 8 }}>
+          <Text style={{ fontSize: 13, marginBottom: 6 }}>
+            Type the code shown on the Class's check-in screen. No camera needed.
+          </Text>
+          <TextField
+            value={code}
+            onChangeText={setCode}
+            placeholder="123456"
+            keyboardType="number-pad"
+            maxLength={6}
+            autoFocus
+          />
+          <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <Button title="Cancel" variant="secondary" onPress={cancelCodeEntry} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button
+                title="Check in"
+                onPress={submitCode}
+                loading={enterCode.isPending}
+                disabled={code.length !== 6}
+              />
+            </View>
+          </View>
+        </View>
       ) : booking.status === 'UPCOMING' ? (
-        <Button title="Cancel" variant="secondary" onPress={openConfirm} loading={cancelBooking.isPending} />
+        <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            <Button title="Check in with code" variant="secondary" onPress={openCodeEntry} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button title="Cancel" variant="secondary" onPress={openConfirm} loading={cancelBooking.isPending} />
+          </View>
+        </View>
       ) : null}
     </View>
   );

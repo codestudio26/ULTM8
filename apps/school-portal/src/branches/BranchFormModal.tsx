@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useCurrencies } from '../settings/settingsQueries';
 import type { BranchResponse } from './branchQueries';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
@@ -44,6 +46,7 @@ export function BranchFormModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
+  const { data: currencies } = useCurrencies();
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     address: initial?.address ?? '',
@@ -84,13 +87,22 @@ export function BranchFormModal({
           <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
         </Field>
         <Field label="Contact phone" htmlFor="branch-phone">
-          <TextField value={form.contactPhone} onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))} />
+          <PhoneField
+            value={form.contactPhone}
+            onChange={(v) => setForm((f) => ({ ...f, contactPhone: v }))}
+            defaultCountry={guessDefaultCountry()}
+          />
         </Field>
-        <Field label="Timezone" htmlFor="branch-timezone" hint="IANA name, e.g. America/New_York">
-          <TextField value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} />
+        <Field label="Timezone" htmlFor="branch-timezone">
+          <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
         </Field>
         <Field label="Currency override" htmlFor="branch-currency">
-          <TextField value={form.currencyOverride} onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))} />
+          <SelectField
+            id="branch-currency"
+            value={form.currencyOverride}
+            onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))}
+            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+          />
         </Field>
         <Field label="Logo URL" htmlFor="branch-logo">
           <TextField value={form.logoUrl} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} />

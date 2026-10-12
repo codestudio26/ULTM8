@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
@@ -10,22 +11,67 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { CoachInvitesService } from '../coach-invites/coach-invites.service';
+import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 
-/** The only two roles this endpoint is authorized to grant/revoke — see CreateRoleGrantDto. */
+/** Display label per GrantableRoleDto value, for the "you've been granted..."
+ * notification email's subject/body — this endpoint only ever creates these two
+ * (see GRANTABLE_ROLES below), so no other role needs an entry here. */
+const ROLE_LABELS: Record<string, string> = {
+  INSTRUCTOR: 'Instructor',
+  BRANCH_STAFF: 'Branch Staff',
+};
+
+/** The only two roles this endpoint is authorized to GRANT — see CreateRoleGrantDto. */
 const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF'] as const;
+
+/**
+ * The roles this endpoint is authorized to REVOKE (v1.2 backend backlog —
+ * Student Detail's/Instructor Detail's "Revoke Enrollment" action) — a
+ * strictly wider set than GRANTABLE_ROLES above, since revoking an existing
+ * grant is a different, narrower authorization question than creating one:
+ * STUDENT is deliberately excluded from GrantableRoleDto (see its own header
+ * comment — "granting... STUDENT... has no confirmed authorization rule"),
+ * but that's about who may self-service-enroll vs. be invited; it says
+ * nothing about whether a School Owner/Manager may end an EXISTING Student's
+ * enrollment, which has its own confirmed basis (the v1.2 backlog's own
+ * "Revoke Enrollment action... Proposed" entry for Student Detail,
+ * Instructor's own identical gap tracked right beside it). Revoking a
+ * STUDENT grant through revoke() below is purely additive: every existing
+ * INSTRUCTOR/BRANCH_STAFF caller is unaffected, and the method's own
+ * gradingPermission/staffPermission cleanup below is already keyed to those
+ * two roles specifically, so a STUDENT revoke simply finds nothing to clean
+ * up there (a pure Student never holds either).
+ */
+const REVOCABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'STUDENT'] as const;
 
 @Injectable()
 export class RoleGrantsService {
+  private readonly logger = new Logger(RoleGrantsService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly coachInvites: CoachInvitesService,
+    private readonly delivery: NotificationDeliveryService,
   ) {}
+
+  /** Same convention as CoachInvitesService/InstructorsService's own
+   * portalBaseUrl() — called only from inside create()'s non-blocking email
+   * try/catch below, never ahead of the grant itself: unlike a coach-invite
+   * link or an Add-Manually temp passcode, this notification isn't the only
+   * way the grantee learns of or can use their new role (they already have an
+   * account and can just log in), so a missing/misconfigured env var must not
+   * block the grant. */
+  private portalBaseUrl(): string {
+    const url = process.env.PORTAL_BASE_URL?.trim().replace(/\/+$/, '');
+    if (!url) throw new Error('PORTAL_BASE_URL is not configured.');
+    return url;
+  }
 
   /**
    * School Owner/Manager granting Instructor or Branch Staff within their own School
@@ -44,7 +90,7 @@ export class RoleGrantsService {
     // need PrismaAuthService's pre-tenant-context bypass the way the target-existence
     // check below does.
     const caller = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.user.findUnique({ where: { id: callerId }, select: { phoneVerifiedAt: true } }),
+      tx.user.findUnique({ where: { id: callerId }, select: { phoneVerifiedAt: true, firstName: true, surname: true } }),
     );
     if (!caller?.phoneVerifiedAt) {
       throw new ForbiddenException(
@@ -62,14 +108,14 @@ export class RoleGrantsService {
     // RLS-scoped path.
     const targetUser = await this.prismaAuth.user.findUnique({
       where: { id: targetUserId },
-      select: { id: true },
+      select: { id: true, email: true, firstName: true },
     });
     if (!targetUser) {
       throw new NotFoundException('User not found');
     }
 
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.findUnique({ where: { id: dto.schoolId }, select: { id: true } }),
+      tx.school.findUnique({ where: { id: dto.schoolId }, select: { id: true, name: true } }),
     );
     if (!school) {
       throw new NotFoundException('School not found');
@@ -90,13 +136,15 @@ export class RoleGrantsService {
       }
     }
 
+    let branchName: string | null = null;
     if (dto.branchId) {
       const branch = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.branch.findUnique({ where: { id: dto.branchId }, select: { id: true, schoolId: true } }),
+        tx.branch.findUnique({ where: { id: dto.branchId }, select: { id: true, schoolId: true, name: true } }),
       );
       if (!branch || branch.schoolId !== dto.schoolId) {
         throw new BadRequestException('branchId must reference a Branch belonging to schoolId');
       }
+      branchName = branch.name;
     }
 
     const duplicate = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -116,7 +164,7 @@ export class RoleGrantsService {
     }
 
     const roleGrantId = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.create({
         data: {
           id: roleGrantId,
@@ -132,6 +180,36 @@ export class RoleGrantsService {
     // only rebuilt from the live RoleGrant set at login/refresh time (Spec §8.3). If
     // they're already logged in, the new grant has no effect until their token is
     // reissued. Flagged in the Phase 2 summary per the phase brief's own instruction.
+
+    // "You've been granted the Instructor role..." notification — previously
+    // missing entirely: the grant itself always succeeded, but the invited
+    // user had no way to learn about it short of noticing it themselves on
+    // next login. Non-blocking, same emailSent shape CoachInvitesService.
+    // create()/InstructorsService.createManually() already established — the
+    // grant above has already committed, so a delivery failure here (or
+    // PORTAL_BASE_URL being unset) must never undo or appear to undo it.
+    const roleLabel = ROLE_LABELS[dto.role] ?? dto.role;
+    const where = branchName ? `${school.name} (${branchName})` : school.name;
+    const inviter = caller.firstName || caller.surname ? `${caller.firstName} ${caller.surname}` : 'Your school';
+    let emailSent = true;
+    try {
+      const baseUrl = this.portalBaseUrl();
+      await this.delivery.sendEmail(
+        targetUser.email,
+        `You've been granted the ${roleLabel} role at ${school.name}`,
+        [
+          `${inviter} has granted you the ${roleLabel} role at ${where} on ULTM8.`,
+          '',
+          'Sign in to see it:',
+          `${baseUrl}/login`,
+        ].join('\n'),
+      );
+    } catch (err) {
+      emailSent = false;
+      this.logger.warn(`RoleGrant ${grant.id}: the notification email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    return { ...grant, emailSent };
   }
 
   /**
@@ -206,8 +284,8 @@ export class RoleGrantsService {
     if (!grant || grant.userId !== targetUserId) {
       throw new NotFoundException('RoleGrant not found');
     }
-    if (!GRANTABLE_ROLES.includes(grant.role as (typeof GRANTABLE_ROLES)[number])) {
-      throw new ForbiddenException('This endpoint may only revoke INSTRUCTOR or BRANCH_STAFF grants.');
+    if (!REVOCABLE_ROLES.includes(grant.role as (typeof REVOCABLE_ROLES)[number])) {
+      throw new ForbiddenException('This endpoint may only revoke INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.');
     }
     if (!grant.schoolId) {
       throw new ForbiddenException('This endpoint may only revoke School-scoped grants.');

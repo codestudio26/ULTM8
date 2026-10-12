@@ -17,7 +17,9 @@ export type AppStackParamList = {
   MyBookings: undefined;
   Notifications: undefined;
   MyMemberships: undefined;
+  TransactionHistory: undefined;
   Waivers: undefined;
+  PaymentMethods: undefined;
   /** No params — self-view only (see curriculumQueries.ts's header comment for why
    * a Guardian viewing a linked minor's Lessons isn't built yet). */
   Lessons: undefined;

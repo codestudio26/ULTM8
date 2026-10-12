@@ -20,7 +20,10 @@ export const MAX_STARTING_CLASSES = 10_000;
  * caller-specified or ladder-implied) — flagged, not asserted as settled.
  */
 export class GradingActionDto {
-  @ApiPropertyOptional({ default: false })
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers that don't send it.
+  @ApiPropertyOptional({ description: 'Defaults to false when omitted.' })
   @IsOptional()
   @IsBoolean()
   acknowledgeWithoutSkillSignoff?: boolean;

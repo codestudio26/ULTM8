@@ -15,6 +15,224 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Timetable page redesign — Daily/Weekly/Monthly views + real click-to-book**
+  (`docs/v1.2-backend-backlog.md`): `TimetablePage.tsx` was a plain weekday-
+  grouped CRUD grid (Add/Edit a slot only, no booking) — this redesign builds
+  the mockup's three described capabilities for real. **Correction to the
+  backlog doc's own entry:** its "Blocking architectural gap" note describing
+  the `TimetableSlot`↔`Class` relationship as `[UNRESOLVED]` was stale —
+  `skills/ultm8-domain-rules/SKILL.md` §9 has stated this `[CONFIRMED]` since
+  24 Aug 2026 (a bookable `Class` is either materialized ahead of time from an
+  active, recurring `TimetableSlot` via the real, running
+  `class-occurrence-generation` job — 4 weeks ahead, daily cron — or created
+  as an independent one-off; `Class`'s own
+  `@@unique([timetableSlotId, occurrenceDate])` guarantees at most one
+  materialized row per slot+date). There was no remaining architecture
+  question to resolve.
+  - **New backend endpoint:** `GET timetable/:id/occurrence?date=YYYY-MM-DD`
+    (`TimetableController.findOccurrence`/`TimetableService.findOccurrence`),
+    Staff-only (`assertStaffAtSchool`, same gate `BookingsService` already
+    uses), resolving a slot + calendar date to its materialized `Class` via
+    the unique-constraint lookup. A date with nothing materialized yet (beyond
+    the 4-week horizon, or the job hasn't run) is a clean, disclosed 404 —
+    never created on demand (that would re-open the already-resolved
+    "materialize ahead of time vs. on-demand" question) and never an
+    unhandled 500. `packages/api-client` regenerated.
+  - **Frontend:** a new Day/Week/Month range control (independent of the
+    established `ViewToggle` Rows/Grid layout toggle also added here — Rows is
+    the day-grouped agenda list, Grid is a day-columns look with left-border-
+    colored cards) and a "Book" action on every rendered occurrence across all
+    three range modes (agenda cards on Day/Week, dots on Month). The
+    confirmation dialog (`TimetableBookingDialog.tsx`) is wired to the real
+    `GET /schools/:id/students` roster and the real `POST /classes/:id/book`
+    (`BookingsService.bookClass`'s existing Staff-on-behalf-of path, unchanged)
+    — Confirm stays disabled until a Student is selected. A date beyond the
+    generation horizon shows a plain "Not bookable yet" state instead of
+    hiding the Book action or erroring — a disclosed limitation of the 4-week
+    window, not a bug. No mockup was reachable this session (same situation
+    `DashboardPage.tsx` was in) — the three views and the dialog were designed
+    fresh against the backlog doc's own description of what was settled on.
+    Payment is deliberately not collected inline (no other Staff-on-behalf-of
+    booking entry point in this app does either); see the PR description for
+    the disclosed layout judgment calls. New e2e coverage: an apps/api e2e
+    spec for the occurrence endpoint (found/404/cross-School/non-Staff cases)
+    and a Playwright spec for the page (view switching, booking flow, Student
+    gating, the "not bookable yet" state).
+- **Classes page — banner thumbnail and membership-inclusion badge**
+  (`docs/v1.2-backend-backlog.md`): `Class.bannerUrl` and
+  `Class.membershipInclusion` were already real, confirmed fields
+  (`ClassResponseDto`/`CreateClassDto`/`UpdateClassDto`) and already
+  editable via `ClassFormModal.tsx`, but neither was ever rendered on
+  `ClassesPage.tsx`. Both views now show a small `bannerUrl` thumbnail (a
+  plain placeholder square with the Class title's first letter when
+  unset — same URL-only convention as `Branch.logoUrl`/`bannerUrl` and
+  `Instructor.photoUrl`, no real upload pipeline exists app-wide) and a
+  `Badge` ("Included in membership") when `membershipInclusion` is true.
+  `termsWaiverRequired` is deliberately left unrendered — per
+  `skills/ultm8-domain-rules/SKILL.md` §9/§13 as cross-referenced in the
+  backlog doc, its enforcement scope needs an Architect re-check before a
+  badge implying it's enforced is added.
+- **Correction to the entry above — `termsWaiverRequired` badge, DONE.**
+  The "needs an Architect re-check" caveat was itself stale:
+  `skills/ultm8-domain-rules/SKILL.md` §9/§13/§18 all independently and
+  consistently state enforcement is already resolved ("closed by logic
+  review 25 Aug 2026"), not an open question. Per `CLAUDE.md`'s own
+  source-of-truth hierarchy, the domain-rules skill outranks this backlog
+  doc's note — this is a documentation sync, not a new product decision.
+  `ClassesPage.tsx` now renders a plain `Badge` ("Waiver required")
+  alongside `membershipInclusion`'s own badge, in both Grid and Rows.
+- **`StudentUpdate.dc.html` — a Staff member can now edit a Student's profile
+  on their behalf** (`docs/v1.2-backend-backlog.md`): previously a proposed
+  new capability, not a build-out of anything already wired — the only
+  profile-edit endpoint anywhere was the self-service-only `PATCH /users/me`.
+  New `PATCH /schools/:schoolId/students/:studentId/profile` (Staff-only —
+  School Owner/Manager, Branch Staff, or Instructor at that School;
+  `TenantAuthorizationService.assertStaffAtSchool`, the same gate
+  `BookingsService.findAllForStudent`/`getWeeklySummary` already use for a
+  Staff member acting on a specific Student), with a new, additive RLS
+  policy on `User` authorizing the write (the pre-existing self-only policy
+  never covered a caller writing a different User's row). New
+  `UpdateStudentProfileDto` reuses `UpdateUserDto` outright — same field set,
+  same exclusion of `email`/`phone` (unique login/OTP identifiers Staff must
+  not be able to redirect on a Student's behalf). New dedicated
+  `StudentUpdatePage.tsx` (`/students/:id/edit`, not a Modal — mirrors
+  Decision 231's Branch-settings-page precedent, since this is its own named
+  screen in the design canvas, not a plain confirmation dialog), reached via
+  a new "Edit profile" action on the real Student Detail screen
+  (`StudentGradingPage.tsx`). Known limitation, disclosed rather than
+  hidden: there is still no single-Student detail read endpoint, so only
+  `firstName`/`surname` (known from the roster) are pre-filled — every other
+  field starts blank and is sent only if typed, so this form can set a value
+  but can't yet clear one it has no way to see. `packages/api-client`
+  regenerated.
+- **Students roster now shows each Student's photo** (plumbing gap: `User.
+  profilePhotoUrl` already existed, resolved/editable via `GET`/`PATCH
+  /users/me`, apps/student's `ProfileScreen.tsx`, but `StudentSummaryResponseDto`
+  never resolved or exposed it, so the roster had no photo column at all).
+  `SchoolsService.findAllStudentsForSchool` now resolves `profilePhotoUrl`
+  from the same underlying `User` row other fields already come from — no new
+  query, for either the ACTIVE path's direct select or the INACTIVE/ALL
+  path's `resolveUserNames` (now carrying `profilePhotoUrl` for every one of
+  its other call sites too, all unaffected since they don't read it).
+  `StudentsPage.tsx` adds a small circular avatar column, reusing the existing
+  `Avatar` component (`apps/school-portal/src/lib/Avatar.tsx`, already used by
+  Instructors) — a real photo when set, an initials monogram fallback
+  otherwise. `packages/api-client` regenerated.
+- **Instructors — "Invite to Instructor Role" (existing-user invite, distinct
+  from "Add manually")** (`docs/v1.2-backend-backlog.md`): a School Owner/
+  Manager can now grant the Instructor role to a User who already has a ULTM8
+  account (e.g. as a Student or Guardian), found by exact email/phone match —
+  no new User created, unlike "Add manually". New
+  `apps/school-portal/src/instructors/InviteToInstructorRoleModal.tsx`, a
+  third entry point on `InstructorsPage.tsx` beside "Add manually"/"Add
+  instructor", reusing the existing candidate-lookup endpoint and
+  `POST /users/{userId}/role-grants` (both already real; no new backend
+  endpoint needed — `INSTRUCTOR` was already a grantable role there).
+  `RoleGrantsService.create()` now also sends a "you've been granted this
+  role" notification email on every grant it creates (Instructor or Branch
+  Staff alike) — previously missing entirely. Non-blocking: a delivery
+  failure never undoes the grant (`emailSent: false` in the response, the
+  same pattern `AddInstructorManuallyModal`/`CoachInvitePage` already use);
+  `StaffPage.tsx`'s own pre-existing invite form now surfaces this flag too.
+  New `CreatedRoleGrantResponseDto`. `packages/api-client` regenerated.
+- **Classes page — row actions collapsed into a "⋮" kebab menu**: the 4
+  always-visible per-row buttons ("View bookings", "Show QR", "Roll call",
+  "Edit") were visually noisy at this row density; they're unchanged in
+  behavior and visibility logic, just revealed on click now. New shared
+  `RowActionsMenu` (`packages/ui`) — a small popover menu (outside-click/
+  `Escape` dismissal, same ingredients as `TimezoneField`'s/`PhoneField`'s
+  existing popovers; no dedicated `Menu`/`Dropdown` component existed yet),
+  added to `packages/ui` rather than kept page-local since dense list-page
+  tables with several per-row actions recur across this app (Branches,
+  Disciplines, Curriculum, …). Pure presentation change, no backend/DTO
+  change.
+- **Notifications — a true, caller-wide Total/Unread stats ribbon**
+  (`docs/v1.2-backend-backlog.md`, closing the "True total/unread counts" gap
+  from Decision 204's Concept 5 finding): new `GET /notifications/me/counts`
+  (self-scoped, same convention as `GET /notifications/me`), returning
+  `{ total, unread }` computed server-side over the caller's full set of
+  `Notification` rows rather than whatever page of the list endpoint happens
+  to be loaded. `NotificationsPage.tsx` now shows a real two-tile stats
+  ribbon (Total/Unread) backed by this endpoint, same `StatTile` pattern
+  Transactions/Membership Plans already established. `packages/api-client`
+  regenerated.
+- **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
+  day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
+  Dashboard page itself is new — no real implementation existed anywhere in
+  this app before this (only a mockup, `Dashboard.dc.html`, in an external
+  design-canvas tool outside this repo checkout; built fresh with the product
+  owner's go-ahead rather than waiting on it). New `GET
+  /schools/:schoolId/bookings/summary` (Staff-only), date-range filterable
+  (defaults to the current Mon–Sun week), returning real `totalBookings`/
+  `upcomingBookings` counts and a day-by-day breakdown grouped by the Class's
+  raw `activities` string tags (not yet the canonical Discipline/styles FK —
+  Decision 90's bridge, unchanged here). `apps/school-portal/src/dashboard/
+  DashboardPage.tsx` (two KPI cards) links to a new
+  `BookingsDrilldownPage.tsx` (the day-by-day/per-activity view, with its own
+  editable date range) — a new "Dashboard" nav item routes to both.
+  `packages/api-client` regenerated.
+- **Every Timezone field is now a searchable combobox with live UTC offsets**
+  (product-approved), replacing the plain free-text "IANA name" `TextField` on
+  Branch create/edit (`BranchFormModal`, `BranchSettingsPage`) and School
+  create/edit (`CreateSchoolPage`, `SchoolPage`). New shared
+  `TimezoneField` (`packages/ui`): type-to-filter over the full IANA tz
+  database (`Intl.supportedValuesOf('timeZone')`, ~418 zones on this runtime —
+  not a hand-maintained list), each option showing its current, DST-aware
+  UTC offset computed live via `Intl.DateTimeFormat`. Follows the ARIA 1.2
+  editable-combobox pattern (`role="combobox"`/`aria-expanded`/
+  `aria-activedescendant`, full keyboard support). The committed value stays
+  a plain IANA string, same shape the free-text field carried — no
+  DTO/backend change. First test infra added to `packages/ui` (Vitest +
+  Testing Library + jsdom), this package having shipped with none; no other
+  web app here unit-tests components either, only `apps/school-portal`'s
+  Playwright e2e, which `branch-settings.spec.ts` now also covers for this
+  field's actual combobox interaction (not `.selectOption()`).
+- **Every mobile-number field now has a real country-code picker, worldwide**
+  (Decision 240) — a new `PhoneField` (`packages/ui`, consumed by
+  `apps/school-portal`; a parallel `apps/student` implementation, same
+  `libphonenumber-js` logic) replaces plain free text on every phone/mobile
+  field in both apps: Register/Forgot-Passcode/Reset-Passcode/Verify-OTP in
+  both apps, School/Franchise `mobileNumber`, Branch `contactPhone` (both
+  `BranchFormModal` and `BranchSettingsPage`), Instructor `phone`, and the
+  Staff invite-candidate phone lookup. Always composes to a plain E.164
+  string — no DTO or backend change. The app's `PhoneField` is Track B
+  (`docs/TRACK-B-ROADMAP.md`).
+- **Real server-side filters and pagination for the Branches, Franchises,
+  Classes, and Students portal pages** (`docs/v1.2-backend-backlog.md`) —
+  four pages whose list/filter controls previously only worked against an
+  already-fully-fetched list client-side, or not at all:
+  - **Branches** — the City filter now sends `GET
+    /schools/:schoolId/branches?city=`, a case-insensitive substring match
+    against `Branch.address` (Branch has no dedicated city column).
+  - **Franchises** — Fee model and Activity filters now send `GET
+    /franchises?feeModel=&activity=`. The Rows table's Name/logo cell is now
+    itself a link to the Franchise detail page, not only the row's "View
+    details" action.
+  - **Classes** — the Discipline filter and "Search classes" box now send
+    `GET /schools/:schoolId/classes?activities=&search=`; a Prev/Next pager
+    is wired to the already-real `ClassListResponseDto.nextCursor`.
+  - **Students** — a new Active/Inactive/All filter (`GET
+    /schools/:id/students?status=`), defaulting to Active (the exact
+    pre-existing behavior). `findAllStudentsForSchool` previously hard-coded
+    `revokedAt: null`, so a revoked enrollment had no way to ever be seen;
+    `StudentSummaryResponseDto` now carries a real `status`.
+  All four are additive — a caller that sends none of the new query params
+  sees unchanged behavior. `packages/api-client` regenerated.
+- **"Invite a Student"** (`docs/v1.2-backend-backlog.md`) — a Staff member can
+  now enroll an existing, already-registered-but-unenrolled person as a
+  Student at their own School, from a new `/students/invite` page (linked
+  from `StudentsPage.tsx`'s new "Invite a Student" button). Find-then-confirm,
+  reusing the same exact-email/phone-match `GET
+  .../role-grants/invite-candidate` lookup StaffPage's Instructor/Branch Staff
+  invite flow already uses. No new endpoint: `SchoolsService.join()` (`POST
+  /schools/:id/join`) gained a second on-behalf-of branch alongside its
+  existing Guardian one, gated the same way as the Instructor/Branch Staff
+  invite flow (School Owner/Manager only) — see this feature's own PR
+  description for why this, not a `RoleGrantsService.create()`/
+  `GrantableRoleDto` change, was the right-shaped fix, and for the explicit
+  product question it leaves open (no "add a brand-new person" path exists
+  here, unlike Instructors' own "Add manually"). `packages/api-client`
+  regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

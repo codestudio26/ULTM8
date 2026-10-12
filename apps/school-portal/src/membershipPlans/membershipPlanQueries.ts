@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -69,6 +69,28 @@ export function useUpdateMembershipPlan(schoolId: string, planId: string) {
  * `required[]` across the whole schema to confirm the pattern, not guessed) — logged
  * in docs/v1.2-backend-backlog.md as a codegen/tooling fix rather than worked around
  * ad hoc in every affected caller. */
+/**
+ * v1.2 backend backlog — MembershipPlansPage's "Active members" stat tile.
+ * The backend endpoint is per-plan (GET /membership-plans/{id}/active-count);
+ * the ribbon shows one School-wide total, so this fans out one request per
+ * plan (via useQueries, not N separate hook instances) and sums them —
+ * acceptable at this page's existing unpaginated-list scale (same convention
+ * useMembershipPlans itself already accepts), not a new performance
+ * assumption this page didn't already make.
+ */
+export function useActiveMemberTotal(planIds: string[]) {
+  const results = useQueries({
+    queries: planIds.map((id) => ({
+      queryKey: ['membershipPlan', id, 'active-count'],
+      queryFn: () => unwrap(apiClient.GET('/v1/membership-plans/{id}/active-count', { params: { path: { id } } })),
+    })),
+  });
+  const isLoading = results.some((r) => r.isLoading);
+  const error = results.find((r) => r.error)?.error ?? null;
+  const total = results.reduce((sum, r) => sum + (r.data?.activeCount ?? 0), 0);
+  return { total, isLoading, error };
+}
+
 export function useUpdateMembershipPlanVisibility(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({

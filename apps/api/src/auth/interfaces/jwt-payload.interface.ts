@@ -50,10 +50,23 @@ export interface KidModeClaim {
   studentId: string; // User.id of the one linked minor this token may book for
 }
 
+/**
+ * Decision 1/230 — present ONLY on the short-lived token AuthService.login()
+ * mints in place of ordinary access/refresh tokens when the target User's
+ * `mustChangePasscode` is set (Instructor "Add Manually" — a temp passcode was
+ * issued on their behalf, not chosen by them). `grants` is still `[]` on this
+ * token, same as every other special-purpose token in this codebase
+ * (Kid Mode, impersonation's own claims aside) — it authenticates the User,
+ * nothing else, until `POST /auth/passcode-change/first-login` exchanges it
+ * for a real session. `JwtStrategy.validate()` is the one central choke point
+ * that rejects this token for any other route — see PASSCODE_CHANGE_ALLOWED_PATH
+ * there.
+ */
 export interface JwtPayload {
   sub: string; // User.id
   email: string;
   grants: RoleGrantClaim[];
   impersonation?: ImpersonationClaim;
   kidMode?: KidModeClaim;
+  passcodeChangePurpose?: true;
 }

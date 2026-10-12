@@ -64,3 +64,12 @@ export class RoleGrantListResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   nextCursor!: string | null;
 }
+
+/** Same `emailSent` non-blocking-failure shape CoachInvitesService.create()/
+ * InstructorsService.createManually() already established — the grant is
+ * always created once validation passes; only the "you've been granted..."
+ * notification email can fail independently of it. */
+export class CreatedRoleGrantResponseDto extends RoleGrantResponseDto {
+  @ApiProperty({ description: 'False if the "you\'ve been granted this role" email could not be sent — the grant was still created.' })
+  emailSent!: boolean;
+}

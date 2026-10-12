@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import type { FranchiseResponse } from './franchiseQueries';
 
 const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
@@ -51,6 +53,8 @@ export function FranchiseFormModal({
   onSubmit: (values: FranchiseFormValues) => Promise<void>;
   onClose: () => void;
 }) {
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     mobileNumber: initial?.mobileNumber ?? '',
@@ -102,7 +106,11 @@ export function FranchiseFormModal({
           <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </Field>
         <Field label="Mobile number" htmlFor="franchise-mobile">
-          <TextField value={form.mobileNumber} onChange={(e) => setForm((f) => ({ ...f, mobileNumber: e.target.value }))} />
+          <PhoneField
+            value={form.mobileNumber}
+            onChange={(v) => setForm((f) => ({ ...f, mobileNumber: v }))}
+            defaultCountry={guessDefaultCountry()}
+          />
         </Field>
         <Field label="Address" htmlFor="franchise-address">
           <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
@@ -117,10 +125,20 @@ export function FranchiseFormModal({
           <TextField value={form.facilities} onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))} />
         </Field>
         <Field label="Default language" htmlFor="franchise-language">
-          <TextField value={form.defaultLanguage} onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))} />
+          <SelectField
+            id="franchise-language"
+            value={form.defaultLanguage}
+            onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
+            options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+          />
         </Field>
         <Field label="Default currency" htmlFor="franchise-currency">
-          <TextField value={form.defaultCurrency} onChange={(e) => setForm((f) => ({ ...f, defaultCurrency: e.target.value }))} />
+          <SelectField
+            id="franchise-currency"
+            value={form.defaultCurrency}
+            onChange={(e) => setForm((f) => ({ ...f, defaultCurrency: e.target.value }))}
+            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+          />
         </Field>
         <Field label="Description" htmlFor="franchise-description">
           <TextField value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />

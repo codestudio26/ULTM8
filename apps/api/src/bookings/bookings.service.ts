@@ -11,11 +11,15 @@ import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
+import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
+import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
+import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booking-week';
+import { localDay } from '../ranks/engine';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -25,7 +29,9 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
  * override amendment. Waitlist join/withdraw/claim live in WaitlistService — see that
  * file's own header comment. QR check-in/Attendance (Phase "12") and
  * NotificationsModule are both explicitly out of scope — see the Phase 11 kickoff
- * prompt §3. Phase 40 added Guardian-on-behalf-of booking CREATION; Phase 41 added
+ * prompt §3. The late-cancellation-fee CHARGE mechanism (once flagged here as
+ * deliberately missing) is built — Decision 234, see cancelBooking()'s own
+ * comment for the full account. Phase 40 added Guardian-on-behalf-of booking CREATION; Phase 41 added
  * Guardian-on-behalf-of CANCELLATION (see cancelBooking()'s own comment for why it
  * needed a genuinely different mechanism — a new DTO field, not the pre-existing
  * BookClassDto.studentId — even though both ultimately reuse the same target-
@@ -56,6 +62,7 @@ export class BookingsService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly guardiansService: GuardiansService,
     private readonly subscriptionGate: SubscriptionGateService,
+    private readonly paymentsService: PaymentsService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {}
 
@@ -265,6 +272,8 @@ export class BookingsService {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
     }
 
+    let cancellationChargeAmount: number | null = null;
+    let cancellationChargeCurrency = 'usd';
     const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedBooking.classId } });
       const now = new Date();
@@ -273,6 +282,25 @@ export class BookingsService {
       // means never past it — always refunded.
       const pastCutoff = cls.refundFeeDate !== null && now >= cls.refundFeeDate;
       const resolution: 'REFUNDED' | 'WITHHELD' = pastCutoff ? 'WITHHELD' : 'REFUNDED';
+
+      // Decision 234 — a sibling action to credit-withholding above, not a
+      // replacement: captured here (inside the transaction, where cls/
+      // resolvedBooking's sourceMembership are both cheaply available) but the
+      // actual Stripe call happens AFTER this transaction commits (no external
+      // I/O inside a transaction, same discipline every other Stripe-calling
+      // write in this codebase follows) — see the try/catch below.
+      if (resolution === 'WITHHELD' && cls.cancellationCharge !== null && cls.cancellationCharge > 0) {
+        cancellationChargeAmount = cls.cancellationCharge;
+        // No currency field on Class itself — reuses the Booking's own
+        // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
+        // fallback MembershipsService.purchase() already applies when charging
+        // this exact Membership's own Stripe payments.
+        const sourceMembership = await tx.membership.findUnique({
+          where: { id: resolvedBooking.sourceMembershipId },
+          select: { membershipPlan: { select: { currency: true } } },
+        });
+        cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+      }
 
       // Optimistic-concurrency guard, same shape as every other status-transition in
       // this codebase (Phase 9/10b) — if the Booking already left UPCOMING (a
@@ -310,6 +338,50 @@ export class BookingsService {
       await this.waitlistCascadeQueue.add('seat-freed', { classId: booking.classId });
     } catch (err) {
       this.logger.warn(`Failed to enqueue waitlist-cascade-processing after cancelling Booking ${booking.id}: ${err}`);
+    }
+
+    // Decision 234 — the actual charge attempt, strictly AFTER the Cancellation
+    // above has already committed: cancelling the Booking is the real action
+    // being requested and must succeed regardless of whether this fee can
+    // actually be collected right now (an unreachable Stripe, a declined card,
+    // or no saved payment method at all are all real, expected outcomes here,
+    // never a reason to roll back or block the cancellation itself). Recorded
+    // onto the Booking via its own small follow-up update — never thrown to the
+    // caller — same "best-effort side effect, logged on failure, never blocks
+    // the user-facing action" shape SchoolsService.leaveFranchise's own Stripe
+    // cancellation already established.
+    if (cancellationChargeAmount !== null) {
+      let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
+      let paymentIntentId: string | null = null;
+      try {
+        const charge = await this.paymentsService.chargeOffSession(
+          resolvedBooking.studentId,
+          resolvedBooking.schoolId,
+          cancellationChargeAmount,
+          cancellationChargeCurrency,
+          'Late-cancellation fee',
+        );
+        outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
+        paymentIntentId = charge.paymentIntentId || null;
+      } catch (err) {
+        if (err instanceof NoSavedPaymentMethodError) {
+          outcome = 'NO_SAVED_PAYMENT_METHOD';
+        } else {
+          outcome = 'FAILED';
+          this.logger.error(`Late-cancellation charge failed for Booking ${booking.id} (Student ${resolvedBooking.studentId}, School ${resolvedBooking.schoolId}).`, err as Error);
+        }
+      }
+      return this.prismaApp.withTenantContext(resolvedBooking.studentId, (tx) =>
+        tx.booking.update({
+          where: { id: bookingId },
+          data: {
+            cancellationChargeOutcome: outcome,
+            cancellationChargeAmount,
+            stripeCancellationPaymentIntentId: paymentIntentId,
+          },
+          include: { attendees: true },
+        }),
+      );
     }
 
     return booking;
@@ -392,6 +464,153 @@ export class BookingsService {
         // kept as defense-in-depth rather than a non-null assertion.
         studentFirstName: names.get(b.studentId)?.firstName ?? '',
         studentSurname: names.get(b.studentId)?.surname ?? '',
+      })),
+    };
+  }
+
+  /**
+   * GET /students/{id}/bookings (v1.2 backend backlog — Student Detail's
+   * "Upcoming Booking") — Staff-only (School Owner/Manager, Branch Staff, or
+   * Instructor), same `schoolId` required-query-param shape
+   * MembershipsService.getMembershipStatus / GradingService's own
+   * students/{id}/... reads already established (a Student's Bookings are
+   * School-scoped, and without it this can't know which School's data to
+   * read). Queried under the CALLER's own tenant context, not the target
+   * Student's — Booking's RLS already carries a broad, SELECT-only policy
+   * admitting any active Staff RoleGrant holder at the School (the same
+   * `booking_staff_read` policy findAllForClass() above already relies on),
+   * so there's no narrow-RLS reason here to borrow the target-tenant-context
+   * substitution MembershipsService.getMembershipStatus needs for
+   * Membership's own narrower policy.
+   */
+  async findAllForStudent(
+    callerId: string,
+    studentId: string,
+    schoolId: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<CursorPage<{ id: string }>> {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) =>
+          tx.booking.findMany({
+            ...args,
+            where: { studentId, schoolId },
+            include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
+          }),
+        cursor,
+        limit,
+      ),
+    );
+    return {
+      ...page,
+      items: page.items.map((b) => {
+        const { class: cls, ...rest } = b;
+        return { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate };
+      }),
+    };
+  }
+
+  /**
+   * GET /schools/:schoolId/bookings/summary — v1.2 backend backlog, Dashboard
+   * "Bookings This Week" drill-down (nothing backed this before: see the backlog
+   * doc's own entry for the full gap this closes). Staff-only (School Owner/
+   * Manager, Branch Staff, or Instructor) — the same `assertStaffAtSchool` gate
+   * findAllForClass/findAllForStudent above already use, not the narrower
+   * `assertSchoolOwner` TransactionsController.findAllForSchool uses: Booking data
+   * here is scheduling/attendance information, not the financial ledger Transaction
+   * reads with a deliberately tighter Owner-only gate elsewhere in this codebase.
+   *
+   * Two real, disclosed judgment calls (see BookingsSummaryResponseDto's own header
+   * comment for the full account): (1) grouping "by discipline" groups by the raw
+   * `Class.activities` string tags, not the canonical `Discipline`/`styles` FK —
+   * same Decision 90 bridge ClassesQueryDto's own `activities` filter already
+   * relies on, not reopened here; (2) a Booking whose Class carries several
+   * activities tags counts once per tag (fan-out) in the per-activity breakdown,
+   * but exactly once in every day-level/overall total.
+   *
+   * `from`/`to` (YYYY-MM-DD) must both be supplied or both omitted — supplying only
+   * one is treated the same as an invalid range, a plain 400, rather than silently
+   * guessing the other end. Interpreted as local calendar days in the School's own
+   * `timezone` (falls back to UTC — School.timezone is nullable) — see
+   * booking-week.ts's own header comment for why.
+   */
+  async getWeeklySummary(callerId: string, schoolId: string, from?: string, to?: string): Promise<BookingsSummaryResponseDto> {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }),
+    );
+    const timeZone = school?.timezone ?? null;
+
+    let range: { from: string; to: string };
+    if (from === undefined && to === undefined) {
+      range = defaultWeekRange(timeZone);
+    } else if (from === undefined || to === undefined) {
+      throw new BadRequestException('from and to must both be supplied, or both omitted for the current week.');
+    } else {
+      range = { from, to };
+    }
+    if (range.from > range.to) {
+      throw new BadRequestException('from must not be after to.');
+    }
+
+    const { gte, lt } = localDateRangeToInstants(range.from, range.to, timeZone);
+
+    const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findMany({
+        where: { schoolId, class: { startDate: { gte, lt } } },
+        select: { status: true, class: { select: { startDate: true, activities: true } } },
+      }),
+    );
+
+    const UNSPECIFIED = 'Unspecified';
+    const dayBuckets = new Map<string, { total: number; upcoming: number; activities: Map<string, { total: number; upcoming: number }> }>();
+    for (const day of daysInRange(range.from, range.to)) {
+      dayBuckets.set(day, { total: 0, upcoming: 0, activities: new Map() });
+    }
+
+    let totalBookings = 0;
+    let upcomingBookings = 0;
+    for (const b of bookings) {
+      totalBookings += 1;
+      const isUpcoming = b.status === 'UPCOMING';
+      if (isUpcoming) upcomingBookings += 1;
+
+      const day = localDay(b.class.startDate, timeZone ?? 'UTC');
+      const bucket = dayBuckets.get(day);
+      if (!bucket) continue; // Defensive — the gte/lt filter above should make this unreachable.
+      bucket.total += 1;
+      if (isUpcoming) bucket.upcoming += 1;
+
+      const tags = b.class.activities.length > 0 ? b.class.activities : [UNSPECIFIED];
+      for (const tag of tags) {
+        const a = bucket.activities.get(tag) ?? { total: 0, upcoming: 0 };
+        a.total += 1;
+        if (isUpcoming) a.upcoming += 1;
+        bucket.activities.set(tag, a);
+      }
+    }
+
+    return {
+      from: range.from,
+      to: range.to,
+      totalBookings,
+      upcomingBookings,
+      days: Array.from(dayBuckets.entries()).map(([date, bucket]) => ({
+        date,
+        totalBookings: bucket.total,
+        upcomingBookings: bucket.upcoming,
+        activities: Array.from(bucket.activities.entries()).map(([activity, a]) => ({
+          activity,
+          totalBookings: a.total,
+          upcomingBookings: a.upcoming,
+        })),
       })),
     };
   }

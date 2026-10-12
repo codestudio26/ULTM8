@@ -13,6 +13,8 @@ import { TenantAuthorizationService } from './tenant-authorization.service';
 import { CoachInviteLinksController, CoachInvitesController } from './coach-invites/coach-invites.controller';
 import { CoachInvitesService } from './coach-invites/coach-invites.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { StripeClientService } from '../payments/stripe-client.service';
+import { UsersModule } from '../users/users.module';
 
 /**
  * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
@@ -45,16 +47,28 @@ import { NotificationsModule } from '../notifications/notifications.module';
  * Coach invites (Decision 183) live here too: they end in a RoleGrant. Imports
  * NotificationsModule for the invite email (NotificationsModule imports nothing).
  *
+ * Registers its own independent StripeClientService provider (Decision 232,
+ * SchoolsService.leaveFranchise's own best-effort subscription cancellation) rather
+ * than importing PaymentsModule — PaymentsModule already imports TenantsModule, so
+ * the reverse edge would be circular. Same "duplicate a stateless/config-only
+ * registration rather than add a cross-module dependency edge" convention
+ * WaiversModule/InstructorsModule already established for R2ClientService.
+ *
  * Exports SchoolsService, FranchisesService, and TenantAuthorizationService so other
  * modules can reuse them rather than duplicating existence/authorization checks —
  * PaymentsModule now uses FranchisesService.findOne() the same way it already used
  * SchoolsService.findOne() (Phase 16 closes the "no FranchisesService.findOne() exists
  * yet" gap PaymentsService.createForFranchise/findForFranchise both flagged in Phase 8).
+ *
+ * Imports UsersModule (v1.2 backend backlog's Student Detail "Edit" gap) so
+ * SchoolsService.updateStudentProfile() can call UsersService.updateProfileFor() —
+ * one-directional, confirmed the same way as AuthModule/GuardiansModule above:
+ * UsersModule imports nothing from tenants.
  */
 @Module({
-  imports: [AuthModule, GuardiansModule, NotificationsModule],
+  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
-  providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService],
+  providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService],
 })
 export class TenantsModule {}

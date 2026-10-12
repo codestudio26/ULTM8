@@ -10,15 +10,23 @@ import { RegisterPage } from './auth/RegisterPage';
 import { VerifyOtpPage } from './auth/VerifyOtpPage';
 import { ForgotPasscodePage } from './auth/ForgotPasscodePage';
 import { ResetPasscodePage } from './auth/ResetPasscodePage';
+import { FirstLoginPasscodeChangePage } from './auth/FirstLoginPasscodeChangePage';
 import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
+import { DashboardPage } from './dashboard/DashboardPage';
+import { BookingsDrilldownPage } from './dashboard/BookingsDrilldownPage';
 import { BranchesPage } from './branches/BranchesPage';
+import { BranchSettingsPage } from './branches/BranchSettingsPage';
 import { StaffPage } from './roleGrants/StaffPage';
 import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
 import { InstructorsPage } from './instructors/InstructorsPage';
+import { InstructorDetailPage } from './instructors/InstructorDetailPage';
+import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
 import { StudentsPage } from './students/StudentsPage';
+import { InviteStudentPage } from './students/InviteStudentPage';
+import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
 import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
@@ -37,12 +45,14 @@ import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
-/** Owners land on their School; coaches on their dashboard (Decision 184);
- * anyone else on creating a School. */
+/** Owners land on the Dashboard (Bookings This Week + KPIs); coaches on their own
+ * dashboard (Decision 184, a different page — `/coach`); anyone else on creating a
+ * School. The School profile itself (`/school`) is still reachable from the nav,
+ * just no longer the landing page. */
 function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
-  return <Navigate to={schoolId ? '/school' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
+  return <Navigate to={schoolId ? '/dashboard' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
 }
 
 export function App() {
@@ -53,6 +63,7 @@ export function App() {
       <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/forgot-passcode" element={<ForgotPasscodePage />} />
       <Route path="/reset-passcode" element={<ResetPasscodePage />} />
+      <Route path="/first-login-passcode-change" element={<FirstLoginPasscodeChangePage />} />
       <Route path="/coach-invite/:token" element={<CoachInvitePage />} />
 
       <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
@@ -95,6 +106,16 @@ export function App() {
         }
       />
       <Route
+        path="/complete-instructor-profile"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CompleteInstructorProfilePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/school"
         element={
           <RequireAuth>
@@ -105,11 +126,41 @@ export function App() {
         }
       />
       <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <Shell>
+              <DashboardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/bookings-drilldown"
+        element={
+          <RequireAuth>
+            <Shell>
+              <BookingsDrilldownPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/branches"
         element={
           <RequireAuth>
             <Shell>
               <BranchesPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/branches/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <BranchSettingsPage />
             </Shell>
           </RequireAuth>
         }
@@ -155,6 +206,16 @@ export function App() {
         }
       />
       <Route
+        path="/instructors/:id"
+        element={
+          <RequireAuth>
+            <Shell>
+              <InstructorDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/students"
         element={
           <RequireAuth>
@@ -165,11 +226,34 @@ export function App() {
         }
       />
       <Route
+        path="/students/invite"
+        element={
+          <RequireAuth>
+            <Shell>
+              <InviteStudentPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/students/:id"
         element={
           <RequireAuth>
             <Shell>
               <StudentGradingPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — a dedicated page, not
+        * a Modal over StudentGradingPage; see StudentUpdatePage.tsx's own
+        * header comment for why. */}
+      <Route
+        path="/students/:id/edit"
+        element={
+          <RequireAuth>
+            <Shell>
+              <StudentUpdatePage />
             </Shell>
           </RequireAuth>
         }

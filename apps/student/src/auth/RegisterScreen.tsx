@@ -3,8 +3,9 @@ import { ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
+import { Button, ErrorBanner, Field, PhoneField, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
@@ -79,8 +80,8 @@ export function RegisterScreen({ navigation }: Props) {
             onChangeText={(v) => set('email', v)}
           />
         </Field>
-        <Field label="Phone" hint="E.164 format, e.g. +15551234567">
-          <TextField keyboardType="phone-pad" value={form.phone} onChangeText={(v) => set('phone', v)} />
+        <Field label="Phone">
+          <PhoneField value={form.phone} onChange={(v) => set('phone', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Field label="First name">
           <TextField value={form.firstName} onChangeText={(v) => set('firstName', v)} />

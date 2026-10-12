@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 /**
  * Field set per Decision 76 (docs/decisions/POST-SPEC-55-DECISION-LOG.md) — Branch
@@ -22,6 +22,10 @@ import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
  * unvalidated by omission — flagging the interpretation, not silently assuming it.
  * address at 500, logoUrl/bannerUrl capped at 2048 chars and validated as actual URLs.
  * UpdateBranchDto (PartialType(CreateBranchDto)) inherits all of these automatically.
+ *
+ * Decision 231 — `type`/`activities`/`facilities`/`defaultLanguage`/`description`
+ * added for the Branch settings screen, mirroring Franchise's own
+ * identically-named fields and validation exactly (create-franchise.dto.ts).
  */
 export class CreateBranchDto {
   @ApiProperty()
@@ -52,6 +56,38 @@ export class CreateBranchDto {
   @IsString()
   @MaxLength(100)
   currencyOverride?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  type?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  activities?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  facilities?: string[];
+
+  @ApiPropertyOptional({ description: 'One of the 4 confirmed languages — free text, matching School.defaultLanguage\'s existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  defaultLanguage?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

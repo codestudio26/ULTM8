@@ -9,9 +9,17 @@ import type { JwtClaims } from './types';
 interface AuthContextValue {
   accessToken: string | null;
   claims: JwtClaims | null;
-  /** Login is email + passcode only — Decision 72, the passcode is the sole
-   * credential, not a step-up factor alongside OTP. */
-  login: (email: string, passcode: string) => Promise<void>;
+  /**
+   * Login is email + passcode only — Decision 72, the passcode is the sole
+   * credential, not a step-up factor alongside OTP.
+   *
+   * Decision 1/230 — resolves to `{ mustChangePasscode: true,
+   * passcodeChangeToken }` instead of applying a token when a
+   * server-generated temp passcode (Instructor "Add Manually") is still
+   * pending a change — no token is stored yet in that case; the caller
+   * navigates to the first-login passcode-change flow with that token.
+   */
+  login: (email: string, passcode: string) => Promise<{ mustChangePasscode: true; passcodeChangeToken: string } | void>;
   logout: () => void;
   /**
    * Swaps in an already-obtained token without hitting /auth/login — for the one
@@ -46,7 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, passcode: string) => {
       const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
-      applyToken(result.accessToken);
+      if (result.mustChangePasscode) {
+        return { mustChangePasscode: true as const, passcodeChangeToken: result.passcodeChangeToken! };
+      }
+      applyToken(result.accessToken!);
       markVerifyNoticeDue();
     },
     [applyToken],

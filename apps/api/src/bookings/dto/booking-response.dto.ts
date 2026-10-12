@@ -62,6 +62,18 @@ export class BookingResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   resolvedById!: string | null;
 
+  // Decision 234 — a sibling of refundResolution, not a replacement. See
+  // CancellationChargeOutcome's own schema.prisma comment for the value set/null
+  // case.
+  @ApiPropertyOptional({ type: String, nullable: true })
+  cancellationChargeOutcome!: string | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  cancellationChargeAmount!: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  stripeCancellationPaymentIntentId!: string | null;
+
   @ApiProperty({ type: [BookingAttendeeResponseDto] })
   attendees!: BookingAttendeeResponseDto[];
 

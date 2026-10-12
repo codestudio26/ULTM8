@@ -22,7 +22,7 @@ Detail for each Slice is in its own section below; this table is the map.
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
 | 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
 | 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b still blocked — needs a design pass + schema change; partially unblockable by syncing with `master` (see below) |
-| 5 | **Attendance** | 8 (QR check-in) | Scoped (2026-09-22), not yet built — the backend endpoint already exists (`POST /attendance/scan`); needs your call on 2 remaining product questions + a new `apps/school-portal` screen |
+| 5 | **Attendance** | 8 (QR check-in) | ✅ DONE (11 Oct 2026) — the backend endpoint, the `apps/school-portal` QR display screen, and both of this section's own "needs your call" product questions were already resolved (Decisions 107/235); the `apps/student` camera-scan screen (`QrScanner.tsx`, via `QrCheckInScreen`'s new mode toggle) closed the last piece |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
 | 7 | **Resilience** | 10 (offline behavior/caching) | ✅ DONE (light read-only caching via react-query persistence) |
 
@@ -923,6 +923,61 @@ No screen anywhere in this app had ever read this endpoint before, despite it be
 ### Verified
 `tsc --noEmit`.
 
+## Student-scoped transaction history (receipt viewing) — DONE (2026-10-12)
+
+Closes the "Explicitly blocked" gap of the same name below: the endpoints a
+Student-facing payment history/receipt view would need didn't exist yet as real
+controllers, despite appearing in a "representative" table in one of the skills.
+Pure plumbing — the `Transaction` model already had everything needed
+(`studentId`, `schoolId`, `membershipPlanId`, `amount`, `currency`, `billingDate`,
+`status`, `paymentMethod`); no open product question here.
+
+### What was built
+- **API:** `GET /transactions/me` (`apps/api/src/transactions/transactions.controller.ts`),
+  paginated the same way as `GET /schools/{id}/transactions` (cursor/limit,
+  `PaginationQueryDto`), scoped strictly to `user.sub` as the Transaction's own
+  `studentId` — same shape and reasoning as `BookingsService.findMyBookings`: the
+  `where: { studentId: callerId }` clause is defense-in-depth on top of
+  Transaction's own RLS policy (`transaction_school_staff_or_self`), which already
+  lets a caller see only their own row or a School Owner/Manager's. No School-Owner
+  authorization check is needed or added. `TransactionResponseDto` gained a new
+  `membershipPlanTitle` field (joined from `Transaction.membershipPlan`, a plain
+  Prisma `include` — unlike the `Transaction.student` join, `MembershipPlan` isn't
+  subject to the RoleGrant-revocation gotcha Decision 117 found, so no
+  `resolveUserNames`-style workaround was needed here), shared by both the Staff
+  ledger read and this new self-read, so a Student can actually tell what each
+  charge was for. `packages/api-client` regenerated (`npm run export:openapi` in
+  `apps/api`, then `npm run generate` in `packages/api-client`).
+- **Student app:** `src/transactions/TransactionHistoryScreen.tsx`, reachable from
+  Home ("Payment history", next to "My memberships", same convention every other
+  secondary screen there already follows). Each row: what it paid for (the joined
+  membership plan title), amount+currency (`formatMoney`, the same helper
+  `MembershipPlanRow` already uses — `Transaction.amount` is minor-unit, same
+  convention as `MembershipPlan.price`), the billing date (`formatDate`), and
+  status. Built on the existing `PaginatedListScreen` extraction, same as My
+  Bookings/My Memberships — no new list pattern. New query hook
+  `src/transactions/transactionQueries.ts` (`useMyTransactions`), matching
+  `useMyMemberships`'/`useMyBookings`' `usePaginatedQuery` convention.
+
+### Not yet
+- **PDF/invoice generation.** No PDF infra exists anywhere in this codebase
+  (confirmed — searched for any such dependency/service before starting). "Receipt
+  viewing" here means this real, readable list of each Transaction, not a
+  downloadable document; a future PDF-export feature would be new infra, not an
+  extension of this.
+
+### Verified
+`apps/api`: `tsc --noEmit`; `nest build`; unit suite (482 tests, all passing); new
+`test/transactions.e2e-spec.ts` (unauthenticated rejected, self-read only ever
+returns the caller's own rows and never another Student's, pagination via
+cursor/limit) — written against the same `describeIfDb`-gated, real-Postgres
+convention every other e2e spec in this repo uses; the sandbox this was built in had
+no way to stand up a live Postgres itself, so this file's own run depends on CI's
+Postgres-backed cross-tenant-isolation job going green, same as any other e2e spec
+added there — check that job's result for this file specifically before merging.
+`apps/student`: `tsc --noEmit`; full `npm run test` (64 tests across 12 suites,
+including the new `src/transactions/transactionHistory.test.tsx`, all passing).
+
 ## Session refresh — access tokens no longer expire mid-session (`POST /auth/refresh`, `/auth/logout`) — DONE
 
 A real, flagged-but-never-closed gap: `secureTokenStore.ts`'s own header comment already said "15-minute TTL, no refresh token yet" before this. apps/api mints a 15-minute access token and a 30-day refresh token on login, but nothing in this app ever stored, used, or revoked the refresh token — every session silently started failing every API call with a raw 401 exactly 15 minutes after login, with no recovery except logging back in by hand.
@@ -948,13 +1003,11 @@ section — kept here only for what's still genuinely blocked as of 2026-09-22.)
 - **Per-School white-label branding** — `packages/build-pipeline` is still an unbuilt
   placeholder; nothing to build against yet, and it's a standalone business decision
   (one app with dynamic theming vs. per-School app-store listings) beyond scope here.
-- **Invoice/receipt viewing, Student-scoped transaction history** — the endpoints
-  these would need don't exist yet as real controllers, despite appearing in a
-  "representative" table in one of the skills.
 
 Everything else previously listed here (Attendance QR check-in, Guardian-facing
-screens, Offline caching) has since been scoped and/or built — see the Version 1 Plan
-section and each item's own section above for the current, accurate status.
+screens, Offline caching, Invoice/receipt viewing + Student-scoped transaction
+history) has since been scoped and/or built — see the Version 1 Plan section and
+each item's own section above for the current, accurate status.
 
 ---
 
@@ -965,10 +1018,31 @@ consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read
 offline caching (Phase 7); the Membership authorization-check fix; Guardian "Kid
 Mode" booking delegation (Decision 123).
 
-**Scoped, not yet built**: QR check-in (Phase 5) — the backend endpoint it needs
-already exists (`POST /attendance/scan`); what's left is a `apps/school-portal` QR
-display screen, a scanning capability in `apps/student`, and your call on the 2
-remaining product questions in that section above.
+**QR check-in (Phase 5) — DONE (11 Oct 2026).** The backend endpoint
+(`POST /attendance/scan`) and the `apps/school-portal` QR display screen
+(`ClassQrCodePage.tsx`) were already built (Decision 107, Phase 51/52). What
+the rotating code encodes was already settled — `QrTokenService` signs a
+short-lived, Class-scoped JWT (Decision 107), and Decision 235 added a derived
+6-digit fallback code for no-camera check-in, alongside the School Portal's own
+display screen. Where the display screen runs operationally (an Instructor's
+phone vs. a venue tablet) was left as a deployment choice, never a blocker —
+the screen works identically either way. The one piece that was still missing —
+a camera-scanning capability in `apps/student` — is now built: `QrScanner.tsx`,
+reached via a new mode toggle ("Show my code" / "Scan to check in") on the
+existing `QrCheckInScreen`. Uses `expo-camera`'s `CameraView` (one of Expo Go's
+bundled native modules since SDK 49, needing no custom dev client, verified
+against the installed package's own type definitions before building). The
+scanned QR encodes only the raw signed token (`ClassQrCodePage.tsx`'s own
+`QRCodeSVG value={qrToken.token}`); `classId` is decoded client-side from the
+token's own JWT payload (`decodeJwtPayload`, display-hint only — the server
+independently re-derives and verifies `classId` from the token's signature),
+avoiding any change to the QR's contents, the display screen, or the
+`POST /attendance/scan` contract. Verified via `npx tsc --noEmit` and
+`expo export --platform web`, plus 11 new RTL tests (`QrScanner.test.tsx`,
+`QrCheckInScreen.test.tsx`'s new toggle test) — this sandbox has no way to
+launch a real Expo Go client, device, or camera permission prompt, so the
+actual camera capture itself is unexercised here, same honestly-disclosed gap
+every native-module slice in this doc already states.
 
 **Blocked on your decision, not further research**: Slice 4b (Stripe/PaymentSheet) —
 the API shape and library choice are both settled; the open question is only whether

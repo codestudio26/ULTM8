@@ -33,6 +33,11 @@ export class BranchesService {
           contactPhone: dto.contactPhone,
           timezone: dto.timezone,
           currencyOverride: dto.currencyOverride,
+          type: dto.type,
+          activities: dto.activities,
+          facilities: dto.facilities,
+          defaultLanguage: dto.defaultLanguage,
+          description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
         },
@@ -42,16 +47,30 @@ export class BranchesService {
 
   /** Branches visible to the caller under one School — RLS restricts this to School
    * Owner/Manager (sees every Branch under their School) or a Branch Staff grant
-   * matching that one Branch (branch_tenant_isolation, migration.sql). */
+   * matching that one Branch (branch_tenant_isolation, migration.sql).
+   *
+   * `city` — additive, optional filter (School Portal's Branches page City filter).
+   * Branch has no dedicated city column (see BranchesQueryDto's own header comment),
+   * so this is a case-insensitive substring match against `address`. Omitted entirely,
+   * it behaves exactly as before this filter existed. */
   async findAllForSchool(
     callerId: string,
     schoolId: string,
     cursor?: string,
     limit?: number,
+    city?: string,
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.branch.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) =>
+          tx.branch.findMany({
+            ...args,
+            where: { schoolId, ...(city ? { address: { contains: city, mode: 'insensitive' } } : {}) },
+          }),
+        cursor,
+        limit,
+      ),
     );
   }
 
@@ -81,6 +100,11 @@ export class BranchesService {
           contactPhone: dto.contactPhone,
           timezone: dto.timezone,
           currencyOverride: dto.currencyOverride,
+          type: dto.type,
+          activities: dto.activities,
+          facilities: dto.facilities,
+          defaultLanguage: dto.defaultLanguage,
+          description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
         },

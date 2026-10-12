@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import {
   fetchInviteCandidate,
   fetchUserRoleGrants,
@@ -45,7 +46,10 @@ export function StaffPage() {
   const [role, setRole] = useState<'INSTRUCTOR' | 'BRANCH_STAFF'>('INSTRUCTOR');
   const [branchId, setBranchId] = useState('');
   const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteSuccess, setInviteSuccess] = useState(false);
+  // Non-blocking emailSent flag (same treatment AddInstructorManuallyModal/
+  // CoachInvitePage already give it) for the "you've been granted this role"
+  // notification RoleGrantsService.create() now sends.
+  const [inviteNotice, setInviteNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
   const [lookupUserId, setLookupUserId] = useState('');
   const [lookupResult, setLookupResult] = useState<RoleGrantResponse[] | null>(null);
@@ -62,7 +66,7 @@ export function StaffPage() {
   async function handleFind(e: React.FormEvent) {
     e.preventDefault();
     setFindError(null);
-    setInviteSuccess(false);
+    setInviteNotice(null);
     if (!inviteEmail && !invitePhone) {
       setFindError('Enter an email or phone number to search.');
       return;
@@ -97,17 +101,21 @@ export function StaffPage() {
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
     setInviteError(null);
-    setInviteSuccess(false);
+    setInviteNotice(null);
     if (needsBranch && !branchId) {
       setInviteError(role === 'BRANCH_STAFF' ? 'Select a Branch for Branch Staff.' : 'Select the Branch this Instructor belongs to.');
       return;
     }
     try {
-      await inviteStaff.mutateAsync({
+      const granted = await inviteStaff.mutateAsync({
         targetUserId: candidate!.id!,
         body: { role, schoolId: schoolId!, branchId: needsBranch ? branchId : undefined },
       });
-      setInviteSuccess(true);
+      setInviteNotice(
+        granted.emailSent
+          ? { kind: 'ok', text: 'Invited — they were emailed to let them know.' }
+          : { kind: 'warn', text: 'Invited, but the notification email could not be sent.' },
+      );
       resetInviteSearch();
     } catch (err) {
       setInviteError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
@@ -146,15 +154,16 @@ export function StaffPage() {
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
           Invite staff
         </h2>
-        {inviteSuccess ? <SuccessBanner message="Invited." /> : null}
+        {inviteNotice?.kind === 'ok' ? <SuccessBanner message={inviteNotice.text} /> : null}
+        {inviteNotice?.kind === 'warn' ? <ErrorBanner message={inviteNotice.text} /> : null}
         {!candidate ? (
           <form onSubmit={handleFind}>
             {findError ? <ErrorBanner message={findError} /> : null}
             <Field label="Email" htmlFor="invite-email" hint="Exact match only. Provide email or phone (or both).">
               <TextField type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
             </Field>
-            <Field label="Phone" htmlFor="invite-phone" hint="E.164 format, e.g. +14155551234">
-              <TextField value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} />
+            <Field label="Phone" htmlFor="invite-phone" hint="Exact match only.">
+              <PhoneField value={invitePhone} onChange={setInvitePhone} defaultCountry={guessDefaultCountry()} />
             </Field>
             <Button type="submit" loading={findLoading}>
               Find

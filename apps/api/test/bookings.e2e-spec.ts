@@ -79,6 +79,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   let classRankGated: { id: string };
   let classFull: { id: string };
   let classPastCutoff: { id: string };
+  let classPastCutoffWithFee: { id: string };
+  let classBeforeCutoffWithFee: { id: string };
 
   const bookingIds: string[] = [];
   const waitlistEntryIds: string[] = [];
@@ -200,6 +202,34 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     });
     classPastCutoff = await superuser.class.create({
       data: { id: randomUUID(), schoolId: school.id, title: 'Already Cutoff', startDate: future, endDate: new Date(future.getTime() + 3_600_000), refundFeeDate: past },
+    });
+    // Decision 234 — same past-cutoff shape as classPastCutoff above, plus a
+    // real cancellationCharge, to exercise the late-cancellation-fee path.
+    classPastCutoffWithFee = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        title: 'Already Cutoff, With Fee',
+        startDate: future,
+        endDate: new Date(future.getTime() + 3_600_000),
+        refundFeeDate: past,
+        cancellationCharge: 1000,
+      },
+    });
+    // Decision 234 — a Class WITH cancellationCharge configured but not yet
+    // past its own refundFeeDate — used only to confirm REFUNDED cancellations
+    // never even attempt a charge. Its own dedicated fixture, not reused from
+    // elsewhere in this suite (classBasic/classFull both already carry Booking
+    // state from earlier tests this file doesn't want to disturb).
+    classBeforeCutoffWithFee = await superuser.class.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        title: 'Before Cutoff, With Fee',
+        startDate: future,
+        endDate: new Date(future.getTime() + 3_600_000),
+        cancellationCharge: 1000,
+      },
     });
   });
 
@@ -964,6 +994,81 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     expect(after.classesRemaining).toBe(2); // still decremented, never restored
   });
 
+  it('Decision 234 — a WITHHELD cancellation on a Class with cancellationCharge set records NO_SAVED_PAYMENT_METHOD when the Student never saved a card, and the cancellation still succeeds', async () => {
+    // A dedicated, fresh Student — not studentA/studentB. FOUND ON REVIEW: an
+    // earlier draft reused studentB (expiring only their general-access
+    // Membership first, same pattern the WITHHELD test above uses for
+    // studentA) and passed in isolation, but failed when the full suite ran
+    // in file order — studentB already holds an EARLIER, still-Active
+    // Class-Pack-type Membership from a prior test in this file by this
+    // point, which spend-order picked over the fresh one created here,
+        // leaving classesRemaining unexpectedly at 3 instead of 2. A fresh
+    // Student has no such history to collide with, closing the gap outright
+    // rather than chasing down every other test's own Membership state.
+    const freshStudent = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `bookings-http-fee-student-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Fee',
+        surname: 'Student',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: freshStudent.id, schoolId: school.id } });
+    const tokenFreshStudent = signAccessToken(freshStudent, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
+
+    // No StudentPaymentMethod row exists anywhere in this suite's fixtures,
+    // so this exercises the real, fully-testable-without-Stripe outcome
+    // (PaymentsService.chargeOffSession throws NoSavedPaymentMethodError
+    // before ever reaching a Stripe call — see that method's own comment).
+    const membership = await mkActiveMembership(freshStudent.id, classPackPlanId, 3);
+    const bookRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classPastCutoffWithFee.id}/book`)
+      .set('Authorization', `Bearer ${tokenFreshStudent}`)
+      .send({});
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const cancelRes = await request(app.getHttpServer()).patch(`/v1/bookings/${bookRes.body.id}/cancel`).set('Authorization', `Bearer ${tokenFreshStudent}`);
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.refundResolution).toBe('WITHHELD');
+    expect(cancelRes.body.cancellationChargeOutcome).toBe('NO_SAVED_PAYMENT_METHOD');
+    expect(cancelRes.body.cancellationChargeAmount).toBe(1000);
+    expect(cancelRes.body.stripeCancellationPaymentIntentId).toBeNull();
+
+    const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(after.classesRemaining).toBe(2); // still decremented, never restored — unaffected by the charge outcome
+
+    // No manual cleanup here — freshStudent's email matches this suite's own
+    // 'bookings-http-' pattern, so afterAll's existing user.deleteMany already
+    // removes it, in the correct order (after Booking/RoleGrant cleanup —
+    // deleting the User first would hit Booking's own FK to it).
+  });
+
+  it('cancelling BEFORE the refund cutoff on a Class with cancellationCharge set never attempts a charge at all (REFUNDED)', async () => {
+    await superuser.membership.updateMany({ where: { studentId: studentA.id, classesRemaining: null }, data: { status: 'EXPIRED' } });
+
+    const membership = await mkActiveMembership(studentA.id, classPackPlanId, 3);
+    const bookRes = await request(app.getHttpServer())
+      .post(`/v1/classes/${classBeforeCutoffWithFee.id}/book`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({});
+    expect(bookRes.status).toBe(201);
+    bookingIds.push(bookRes.body.id);
+
+    const cancelRes = await request(app.getHttpServer()).patch(`/v1/bookings/${bookRes.body.id}/cancel`).set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(cancelRes.status).toBe(200);
+    expect(cancelRes.body.refundResolution).toBe('REFUNDED');
+    expect(cancelRes.body.cancellationChargeOutcome).toBeNull();
+    expect(cancelRes.body.cancellationChargeAmount).toBeNull();
+
+    const after = await superuser.membership.findUniqueOrThrow({ where: { id: membership.id } });
+    expect(after.classesRemaining).toBe(3); // restored — no fee, no charge attempt
+  });
+
   it('cancelling a Booking whose Membership was funded by a DISPUTED Transaction does NOT restore the credit (Decision 111 freeze) — the cancellation itself still succeeds', async () => {
     // classWaiverGated, not classBasic — studentB already holds an active Booking
     // on classBasic from the earlier "spend order" test above (never cancelled),
@@ -1257,5 +1362,327 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
   it('RLS: an outsider with no RoleGrant at this School sees nothing', async () => {
     const asOutsider = await withUser(outsider.id, (tx) => tx.booking.findMany({ where: { schoolId: school.id } }));
     expect(asOutsider).toHaveLength(0);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /students/:id/bookings (v1.2 backend backlog — Student Detail's
+  // "Upcoming Booking") — a real per-Student, School-scoped Staff read.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /students/:id/bookings', () => {
+    it('Staff (School Owner) reads this Student\'s own Bookings at this School, with the Class title/dates joined on', async () => {
+      // A dedicated Class fixture, not classBasic — studentA already holds a
+      // Booking against classBasic from earlier tests in this suite, and
+      // Booking's own (studentId, classId) uniqueness would turn a second
+      // direct-insert attempt there into an unrelated 500, not a clean fixture.
+      const future = new Date(Date.now() + 24 * 3_600_000);
+      const classForStudentBookingsRead = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Student Bookings Read Fixture', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      });
+      const membership = await mkActiveMembership(studentA.id, subscriptionPlanId, null);
+      const booking = await superuser.booking.create({
+        data: { id: randomUUID(), studentId: studentA.id, classId: classForStudentBookingsRead.id, schoolId: school.id, sourceMembershipId: membership.id, status: 'UPCOMING' },
+      });
+      bookingIds.push(booking.id);
+
+      try {
+        const res = await request(app.getHttpServer())
+          .get(`/v1/students/${studentA.id}/bookings`)
+          .query({ schoolId: school.id })
+          .set('Authorization', `Bearer ${tokenOwner}`);
+        expect(res.status).toBe(200);
+        const row = res.body.items.find((b: { id: string }) => b.id === booking.id);
+        expect(row).toBeDefined();
+        expect(row.classTitle).toBe('Student Bookings Read Fixture');
+        expect(typeof row.classStartDate).toBe('string');
+        expect(row.status).toBe('UPCOMING');
+        // Another Student's own Booking at the same School must not leak in.
+        expect(res.body.items.some((b: { studentId: string }) => b.studentId === studentB.id)).toBe(false);
+      } finally {
+        // Booking must go first — Booking_classId_fkey would otherwise reject
+        // deleting the Class while this fixture Booking still references it.
+        await superuser.booking.delete({ where: { id: booking.id } });
+        await superuser.class.delete({ where: { id: classForStudentBookingsRead.id } });
+      }
+    });
+
+    it('Branch Staff (not just the Owner) may also read it — the same broad Staff-read policy findAllForClass relies on', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${tokenBranchStaff}`);
+      expect(res.status).toBe(200);
+    });
+
+    it('a Student (not Staff) cannot read it through this endpoint — 403', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('an outsider with no RoleGrant at this School cannot read it — 403', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${tokenOutsider}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('requires the schoolId query param — 400 when omitted', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(400);
+    });
+  });
+
+  /**
+   * GET /schools/:schoolId/bookings/summary — v1.2 backend backlog, Dashboard
+   * "Bookings This Week" drill-down. Uses a fixed, far-past date range
+   * (2026-01-05..2026-01-11, a real Mon-Sun week) rather than "this week", so these
+   * assertions never depend on which day the suite happens to run — and so this
+   * block's own fixtures can never collide with classBasic/classFull/etc.'s shared
+   * `future`/`past` (now ± 24h) Classes from earlier in this file.
+   */
+  describe('GET /schools/:schoolId/bookings/summary', () => {
+    const RANGE_FROM = '2026-01-05'; // Monday
+    const RANGE_TO = '2026-01-11'; // Sunday
+    const dt = (day: string, hour: number) => new Date(`${day}T${String(hour).padStart(2, '0')}:00:00.000Z`);
+
+    let classMon: { id: string };
+    let classTueMulti: { id: string };
+    let classWedNoTags: { id: string };
+    let classOutOfRange: { id: string };
+    const summaryBookingIds: string[] = [];
+    const summaryMembershipIds: string[] = [];
+    const summaryClassIds: string[] = [];
+
+    // A second, wholly separate School — proves this endpoint's results never leak
+    // across a tenant boundary, the same cross-School isolation every other Staff
+    // read in this suite is expected to uphold.
+    let schoolB: { id: string };
+    let ownerB: { id: string; email: string };
+    let tokenOwnerB: string;
+    let classB: { id: string };
+
+    beforeAll(async () => {
+      classMon = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Mon Judo', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
+      });
+      classTueMulti = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Tue Judo+BJJ', activities: ['Judo', 'BJJ'], startDate: dt('2026-01-06', 9), endDate: dt('2026-01-06', 10) },
+      });
+      classWedNoTags = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Wed No Tags', activities: [], startDate: dt('2026-01-07', 9), endDate: dt('2026-01-07', 10) },
+      });
+      classOutOfRange = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Out Of Range', activities: ['Judo'], startDate: dt('2026-01-12', 9), endDate: dt('2026-01-12', 10) },
+      });
+      summaryClassIds.push(classMon.id, classTueMulti.id, classWedNoTags.id, classOutOfRange.id);
+
+      // classesRemaining: 5 (a Class-Pack shape), not null — studentA/studentB each
+      // already hold a general-access (classesRemaining IS NULL) Active Membership
+      // from earlier tests in this suite, and Membership_one_active_general_access_per_school
+      // (this schema's own partial unique index backing SKILL.md §8's "cannot hold
+      // two simultaneous Active general-access Memberships at the same School")
+      // would reject a second one. This block only needs a valid, FK-satisfying
+      // sourceMembershipId — the spend-order business rule itself isn't under test
+      // here, so a Class-Pack-shaped row avoids the collision cleanly.
+      const membershipA = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: studentA.id, membershipPlanId: classPackPlanId, schoolId: school.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 5 },
+      });
+      const membershipB = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: studentB.id, membershipPlanId: classPackPlanId, schoolId: school.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 5 },
+      });
+      summaryMembershipIds.push(membershipA.id, membershipB.id);
+
+      const mkBooking = async (studentId: string, classId: string, membershipId: string, status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED') => {
+        const booking = await superuser.booking.create({
+          data: { id: randomUUID(), studentId, classId, schoolId: school.id, sourceMembershipId: membershipId, status },
+        });
+        summaryBookingIds.push(booking.id);
+        return booking;
+      };
+
+      // Monday: 2 UPCOMING + 1 CANCELLED (cancelled still counts toward totalBookings
+      // — "every Booking (any status)" per BookingsService's own header comment —
+      // but not toward upcomingBookings).
+      await mkBooking(studentA.id, classMon.id, membershipA.id, 'UPCOMING');
+      await mkBooking(studentB.id, classMon.id, membershipB.id, 'UPCOMING');
+      await mkBooking(studentA.id, classMon.id, membershipA.id, 'CANCELLED');
+      // Tuesday: 1 UPCOMING on a Class tagged both Judo and BJJ — fans out to both
+      // activity buckets, counts once in the day's own total.
+      await mkBooking(studentB.id, classTueMulti.id, membershipB.id, 'UPCOMING');
+      // Wednesday: 1 COMPLETED on a Class with no activities tags at all.
+      await mkBooking(studentA.id, classWedNoTags.id, membershipA.id, 'COMPLETED');
+      // Outside the requested range entirely — must never be counted.
+      await mkBooking(studentB.id, classOutOfRange.id, membershipB.id, 'UPCOMING');
+
+      schoolB = await superuser.school.create({ data: { id: randomUUID(), name: 'Bookings Summary Isolation School B' } });
+      ownerB = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `bookings-http-summary-owner-b-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'owner-b',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: schoolB.id } });
+      tokenOwnerB = signAccessToken(ownerB, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null }]);
+      classB = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: schoolB.id, title: 'School B Summary Class', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
+      });
+      const membershipPlanB = await superuser.membershipPlan.create({
+        data: { id: randomUUID(), schoolId: schoolB.id, type: 'SUBSCRIPTION', title: 'School B Unlimited', price: 5000 },
+      });
+      const membershipB2 = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: ownerB.id, membershipPlanId: membershipPlanB.id, schoolId: schoolB.id, status: 'ACTIVE', frequency: 'RECURRING', classesRemaining: null },
+      });
+      await superuser.booking.create({
+        data: { id: randomUUID(), studentId: ownerB.id, classId: classB.id, schoolId: schoolB.id, sourceMembershipId: membershipB2.id, status: 'UPCOMING' },
+      });
+    });
+
+    afterAll(async () => {
+      await superuser.booking.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.membership.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.membershipPlan.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.class.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.school.delete({ where: { id: schoolB.id } });
+      await superuser.user.delete({ where: { id: ownerB.id } });
+
+      await superuser.booking.deleteMany({ where: { id: { in: summaryBookingIds } } });
+      await superuser.membership.deleteMany({ where: { id: { in: summaryMembershipIds } } });
+      await superuser.class.deleteMany({ where: { id: { in: summaryClassIds } } });
+    });
+
+    it('returns correct total/upcoming counts and a day-by-day, per-activity-tag breakdown for the requested range', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.from).toBe(RANGE_FROM);
+      expect(res.body.to).toBe(RANGE_TO);
+      // 2 UPCOMING + 1 CANCELLED (Mon) + 1 UPCOMING (Tue) + 1 COMPLETED (Wed) = 5.
+      // The out-of-range Booking (2026-01-12) must not be counted.
+      expect(res.body.totalBookings).toBe(5);
+      expect(res.body.upcomingBookings).toBe(3);
+
+      expect(res.body.days).toHaveLength(7); // Mon..Sun inclusive
+      expect(res.body.days.map((d: { date: string }) => d.date)).toEqual([
+        '2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09', '2026-01-10', '2026-01-11',
+      ]);
+
+      const monday = res.body.days.find((d: { date: string }) => d.date === RANGE_FROM);
+      expect(monday.totalBookings).toBe(3);
+      expect(monday.upcomingBookings).toBe(2);
+      const mondayJudo = monday.activities.find((a: { activity: string }) => a.activity === 'Judo');
+      expect(mondayJudo.totalBookings).toBe(3);
+      expect(mondayJudo.upcomingBookings).toBe(2);
+
+      const tuesday = res.body.days.find((d: { date: string }) => d.date === '2026-01-06');
+      expect(tuesday.totalBookings).toBe(1);
+      expect(tuesday.upcomingBookings).toBe(1);
+      // Fan-out: a Class tagged Judo AND BJJ counts once in EACH tag's bucket, but
+      // only once in the day's own total above.
+      const tueJudo = tuesday.activities.find((a: { activity: string }) => a.activity === 'Judo');
+      const tueBjj = tuesday.activities.find((a: { activity: string }) => a.activity === 'BJJ');
+      expect(tueJudo.totalBookings).toBe(1);
+      expect(tueBjj.totalBookings).toBe(1);
+
+      const wednesday = res.body.days.find((d: { date: string }) => d.date === '2026-01-07');
+      expect(wednesday.totalBookings).toBe(1);
+      expect(wednesday.upcomingBookings).toBe(0);
+      const wedUnspecified = wednesday.activities.find((a: { activity: string }) => a.activity === 'Unspecified');
+      expect(wedUnspecified).toBeDefined();
+      expect(wedUnspecified.totalBookings).toBe(1);
+
+      // A day in-range with zero Bookings still appears, at zero — never a sparse array.
+      const thursday = res.body.days.find((d: { date: string }) => d.date === '2026-01-08');
+      expect(thursday.totalBookings).toBe(0);
+      expect(thursday.activities).toEqual([]);
+    });
+
+    it('a date-range narrower than the full fixture set excludes what falls outside it', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_FROM }) // Monday only
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.days).toHaveLength(1);
+      expect(res.body.totalBookings).toBe(3);
+    });
+
+    it('Staff-only — a Student caller gets 403, Branch Staff (not just the Owner) gets 200', async () => {
+      const studentRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(studentRes.status).toBe(403);
+
+      const staffRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenBranchStaff}`);
+      expect(staffRes.status).toBe(200);
+    });
+
+    it('cross-School isolation — School B\'s own Owner cannot read School A\'s summary, and School A\'s figures never include School B\'s Bookings', async () => {
+      const forbidden = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwnerB}`);
+      expect(forbidden.status).toBe(403);
+
+      // School B's own summary sees exactly its own 1 Booking, not School A's 5.
+      const ownRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolB.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwnerB}`);
+      expect(ownRes.status).toBe(200);
+      expect(ownRes.body.totalBookings).toBe(1);
+
+      // And School A's Owner querying School A's own summary still sees only 5 —
+      // School B's Booking on the exact same day never leaked in.
+      const aRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(aRes.body.totalBookings).toBe(5);
+    });
+
+    it('from/to must both be supplied, or both omitted — 400 when only one is given, and when from is after to', async () => {
+      const onlyFrom = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(onlyFrom.status).toBe(400);
+
+      const reversed = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_TO, to: RANGE_FROM })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(reversed.status).toBe(400);
+    });
+
+    it('defaults to the current Mon-Sun week when from/to are both omitted', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.days).toHaveLength(7);
+      // Monday's weekday-number check — Date.UTC-based, same convention
+      // ranks/engine/days.ts's own dayNumber uses.
+      expect(new Date(`${res.body.from}T00:00:00.000Z`).getUTCDay()).toBe(1);
+      expect(new Date(`${res.body.to}T00:00:00.000Z`).getUTCDay()).toBe(0);
+    });
   });
 });

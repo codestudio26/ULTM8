@@ -13,7 +13,7 @@ import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url.dto';
-import { R2ClientService } from './r2-client.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 
 /**
  * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read of
@@ -122,6 +122,41 @@ export class WaiversService {
 
   // No delete method — same reasoning ClassesModule/School/Branch/MembershipPlan
   // already established (general tenant offboarding is [UNRESOLVED]).
+
+  /**
+   * GET /schools/{schoolId}/waivers/{id}/signatures (v1.2 backend backlog —
+   * the Waivers page's own "Signatures" panel) — School-Owner-gated, same
+   * gate as Waiver CRUD above. Deliberately builds ONLY what the backlog
+   * says this already supports (showing who HAS signed, with what status) —
+   * "who hasn't signed" needs a real Student roster to diff against, a
+   * separate, explicitly out-of-scope gap the backlog itself flags.
+   *
+   * Reuses toSignatureResponse() (the same serialization WaiversService.sign()/
+   * findMySignatures() already route every row through) rather than returning
+   * raw rows a second way — closes the same signatureImageKey-leak class of bug
+   * that helper's own header comment documents, for this new caller too.
+   * Queried under the CALLER's own tenant context: WaiverSignature's RLS is
+   * the narrow "School Owner/Manager, or the row's own Student" shape (see its
+   * own schema comment) — a School Owner's grant satisfies the "owner" branch
+   * directly, so there's no need for the target-tenant-context substitution
+   * MembershipsService.getMembershipStatus needs for Staff roles broader than
+   * Owner that Membership's own (same-shape) RLS doesn't recognize.
+   */
+  async findSignaturesForWaiver(callerId: string, schoolId: string, waiverId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+
+    const waiver = await this.findOneWaiver(callerId, waiverId); // 404s if not visible/doesn't exist
+    if (waiver.schoolId !== schoolId) {
+      throw new NotFoundException('Waiver not found');
+    }
+
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where: { waiverId, schoolId } }), cursor, limit),
+    );
+    const items = await Promise.all(page.items.map((item) => this.toSignatureResponse(item as WaiverSignature)));
+    return { ...page, items };
+  }
 
   // ---------------------------------------------------------------------------
   // Signing — Student self-signing, plus Guardian-on-behalf-of-a-linked-minor
@@ -276,11 +311,23 @@ export class WaiversService {
 
   /** See sign()'s own header comment. Age-of-majority (18) computed from
    * User.dateOfBirth — a plain calendar-based calculation, not a rolling
-   * 365.25-day approximation, so a Student who turns 18 today already passes. */
+   * 365.25-day approximation, so a Student who turns 18 today already passes.
+   *
+   * `dateOfBirth` is nullable on `User` since Decision 1/230 (Instructor "Add
+   * Manually" defers it to self-service profile completion) — but every real
+   * Student-enrollment path still sets it at creation (register(),
+   * GuardiansService.createMinor(), SchoolsService.join()), so a null value
+   * here means this caller was never actually enrolled as a Student with a
+   * known age; treated the same as under-18, not silently allowed. */
   private async assertSelfAttestedAdult(callerId: string): Promise<void> {
     const student = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
     );
+    if (!student.dateOfBirth) {
+      throw new ForbiddenException(
+        'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
+      );
+    }
     const today = new Date();
     let age = today.getUTCFullYear() - student.dateOfBirth.getUTCFullYear();
     const hasHadBirthdayThisYear =

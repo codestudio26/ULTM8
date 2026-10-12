@@ -23,6 +23,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -50,7 +51,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   let branchB: { id: string };
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
-  let verifiedInvitee: { id: string; email: string; phone: string };
+  let verifiedInvitee: { id: string; email: string; phone: string | null };
   let tokenOwnerA: string;
   let tokenOwnerB: string;
 
@@ -58,8 +59,24 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     return jwt.sign({ sub: user.id, email: user.email, grants });
   }
 
+  // RoleGrantsService.create()'s new "you've been granted this role" notification —
+  // same overrideProvider(NotificationDeliveryService) capture pattern
+  // instructors.e2e-spec.ts already established for its own temp-passcode email. A
+  // `to` address containing "email-fail" simulates total delivery failure, to prove
+  // the grant itself still commits (emailSent: false) rather than being undone.
+  const sentEmails: Array<{ to: string; subject: string; body: string }> = [];
+
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    process.env.PORTAL_BASE_URL = 'https://portal.example.test';
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(NotificationDeliveryService)
+      .useValue({
+        sendEmail: async (to: string, subject: string, body: string) => {
+          if (to.includes('email-fail')) throw new Error('Simulated delivery failure');
+          sentEmails.push({ to, subject, body });
+        },
+      })
+      .compile();
     app = moduleRef.createNestApplication();
     // Mirrors main.ts's bootstrap exactly, so this exercises the real request pipeline.
     app.setGlobalPrefix('v1');
@@ -351,6 +368,84 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // v1.2 backend backlog — "Revoke Enrollment": revoke() now also accepts a
+  // STUDENT grant, not just INSTRUCTOR/BRANCH_STAFF. Purely additive — the
+  // INSTRUCTOR/BRANCH_STAFF cases above are unaffected.
+  // ---------------------------------------------------------------------------
+
+  it('School Owner CAN revoke a Student\'s own enrollment (STUDENT RoleGrant)', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-revoke-student-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: 'RevokeMe',
+        surname: 'Student',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    const grant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: studentUser.id, schoolId: schoolA.id, grantedById: studentUser.id },
+    });
+
+    const revokeRes = await request(app.getHttpServer())
+      .delete(`/v1/users/${studentUser.id}/role-grants/${grant.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(revokeRes.status).toBe(200);
+
+    const revoked = await superuser.roleGrant.findUniqueOrThrow({ where: { id: grant.id } });
+    expect(revoked.revokedAt).not.toBeNull();
+  });
+
+  it('cannot revoke a Student\'s enrollment at another tenant\'s School', async () => {
+    const studentUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-revoke-student-other-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: 'OtherSchool',
+        surname: 'Student',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    const grant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: studentUser.id, schoolId: schoolB.id, grantedById: studentUser.id },
+    });
+
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/users/${studentUser.id}/role-grants/${grant.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(404);
+
+    const stillActive = await superuser.roleGrant.findUniqueOrThrow({ where: { id: grant.id } });
+    expect(stillActive.revokedAt).toBeNull();
+  });
+
+  it('cannot revoke a SCHOOL_OWNER_MANAGER grant through this endpoint — 403', async () => {
+    // A real, resolvable SCHOOL_OWNER_MANAGER grant — fresh fixture rather than
+    // beforeAll's own ownerA grant (whose id this suite never captured) — so this
+    // exercises the REVOCABLE_ROLES rejection itself, not just a 404 from a
+    // non-existent grant id.
+    const throwawaySchool = await superuser.school.create({ data: { id: randomUUID(), name: 'HTTP Non-Revocable-Role School' } });
+    const ownerGrant = await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: throwawaySchool.id },
+    });
+    try {
+      const res = await request(app.getHttpServer())
+        .delete(`/v1/users/${ownerA.id}/role-grants/${ownerGrant.id}`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(res.status).toBe(403);
+      const unchanged = await superuser.roleGrant.findUniqueOrThrow({ where: { id: ownerGrant.id } });
+      expect(unchanged.revokedAt).toBeNull();
+    } finally {
+      await superuser.roleGrant.delete({ where: { id: ownerGrant.id } });
+      await superuser.school.delete({ where: { id: throwawaySchool.id } });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // GET .../role-grants/invite-candidate (Decision 116) — exact email/phone match
   // only, ahead of the invite form actually firing create(). verifiedInvitee has no
   // RoleGrant at schoolA at this point in the suite (any it held were revoked above),
@@ -409,6 +504,133 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // "Invite to Instructor Role" (apps/school-portal/src/instructors) — an
+  // existing eligible User (found via the invite-candidate lookup above) is
+  // granted INSTRUCTOR through this same POST .../role-grants endpoint, and
+  // RoleGrantsService.create() now sends a "you've been granted this role"
+  // notification email — previously missing entirely (the grant always
+  // succeeded, but nothing ever told the invited user).
+  // ---------------------------------------------------------------------------
+
+  function mkFixtureUser(label: string) {
+    return superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-invite-role-${label}-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: label,
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+  }
+
+  it('inviting an existing eligible user grants the Instructor role and emails them', async () => {
+    const candidate = await mkFixtureUser('candidate');
+    // A School with no branches: the grant is School-wide (Decision 169), same
+    // shape as the "single-site" fixture above.
+    const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Invite Role Single-Site School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: school.id } });
+    const token = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/users/${candidate.id}/role-grants`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'INSTRUCTOR', schoolId: school.id });
+      expect(res.status).toBe(201);
+      expect(res.body.role).toBe('INSTRUCTOR');
+      expect(res.body.emailSent).toBe(true);
+
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: candidate.id, schoolId: school.id, role: 'INSTRUCTOR', revokedAt: null },
+      });
+      expect(grant).not.toBeNull();
+
+      const sent = sentEmails.find((e) => e.to === candidate.email);
+      expect(sent).toBeDefined();
+      expect(sent!.subject).toContain('Instructor role');
+      expect(sent!.subject).toContain('Invite Role Single-Site School');
+      expect(sent!.body).toContain('https://portal.example.test/login');
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
+      await superuser.user.delete({ where: { id: candidate.id } });
+      await superuser.school.delete({ where: { id: school.id } });
+    }
+  });
+
+  it('rejects granting a role to a non-existent User — 404, no grant created', async () => {
+    const nonExistentId = randomUUID();
+    const res = await request(app.getHttpServer())
+      .post(`/v1/users/${nonExistentId}/role-grants`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ role: 'INSTRUCTOR', schoolId: schoolA.id, branchId: branchA.id });
+    expect(res.status).toBe(404);
+    expect(await superuser.roleGrant.count({ where: { userId: nonExistentId } })).toBe(0);
+  });
+
+  it('a non-owner caller (Branch Staff) cannot grant a role — 403', async () => {
+    const staffUser = await mkFixtureUser('staff-caller');
+    const target = await mkFixtureUser('staff-caller-target');
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffUser.id, schoolId: schoolA.id, branchId: branchA.id },
+    });
+    const staffToken = signAccessToken(staffUser, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: schoolA.id, branchId: branchA.id }]);
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/users/${target.id}/role-grants`)
+        .set('Authorization', `Bearer ${staffToken}`)
+        .send({ role: 'INSTRUCTOR', schoolId: schoolA.id, branchId: branchA.id });
+      expect(res.status).toBe(403);
+      const grant = await superuser.roleGrant.findFirst({ where: { userId: target.id, schoolId: schoolA.id, role: 'INSTRUCTOR' } });
+      expect(grant).toBeNull();
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { userId: staffUser.id } });
+      await superuser.user.deleteMany({ where: { id: { in: [staffUser.id, target.id] } } });
+    }
+  });
+
+  it('still creates the grant even when the notification email fails to send — emailSent: false, non-blocking', async () => {
+    // "email-fail" in the address is this suite's own trigger (see the
+    // overrideProvider above) for a simulated total delivery failure.
+    const candidate = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-email-fail-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: 'EmailFail',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Email Failure Single-Site School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: school.id } });
+    const token = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/users/${candidate.id}/role-grants`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'INSTRUCTOR', schoolId: school.id });
+      expect(res.status).toBe(201);
+      expect(res.body.emailSent).toBe(false);
+
+      // The grant committed regardless of the email failure — the whole point
+      // of making this non-blocking.
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: candidate.id, schoolId: school.id, role: 'INSTRUCTOR', revokedAt: null },
+      });
+      expect(grant).not.toBeNull();
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
+      await superuser.user.delete({ where: { id: candidate.id } });
+      await superuser.school.delete({ where: { id: school.id } });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // GET /schools/{id}/students — the Student roster (SchoolsService.
   // findAllStudentsForSchool). Staff-gated broadly, unlike the Owner-only
   // eligible-users endpoint Instructors has — any Staff member should be able
@@ -426,6 +648,11 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
         passcodeHash: 'x',
         dateOfBirth: new Date('2000-01-01'),
         phoneVerifiedAt: new Date(),
+        // Set so the roster's profilePhotoUrl (resolved from this same User row,
+        // see StudentSummaryResponseDto) has a non-null case to round-trip, next
+        // to the null case status=INACTIVE/ALL's revokedStudent fixture below
+        // already covers (no profilePhotoUrl set there).
+        profilePhotoUrl: 'https://example.test/roster-student-photo.jpg',
       },
     });
     const studentToken = signAccessToken(studentUser, []);
@@ -445,6 +672,17 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(row.surname).toBe('Tenant');
     expect(row.email).toBe(studentUser.email);
     expect(row.enrolledAt).toBeDefined();
+    expect(row.status).toBe('ACTIVE');
+    expect(row.profilePhotoUrl).toBe('https://example.test/roster-student-photo.jpg');
+
+    // Omitting `status` entirely behaves exactly like `status=ACTIVE` — the
+    // pre-existing default, unchanged by this filter's addition.
+    const defaultRosterRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .query({ status: 'ACTIVE' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(defaultRosterRes.status).toBe(200);
+    expect(defaultRosterRes.body.items).toEqual(rosterRes.body.items);
 
     // The Student themselves is not School Staff (Owner/Manager, Branch Staff,
     // or Instructor) — cannot read the roster.
@@ -459,6 +697,80 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .get(`/v1/schools/${schoolA.id}/students`)
       .set('Authorization', `Bearer ${tokenOwnerB}`);
     expect(res.status).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /schools/{id}/students?status=INACTIVE|ALL — v1.2 backend backlog,
+  // "Students page" Active/Inactive gap: findAllStudentsForSchool previously
+  // hard-coded `revokedAt: null`, so a revoked enrollment had no way to ever
+  // appear in this roster at all.
+  // ---------------------------------------------------------------------------
+
+  it('status=INACTIVE/ALL surface a Student whose only STUDENT RoleGrant at this School is revoked; status=ACTIVE (the default) still excludes them', async () => {
+    const revokedStudent = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-roster-revoked-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'revoked-student',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    // Seeded directly as an already-revoked STUDENT RoleGrant (same convention
+    // grading-security-hardening.e2e-spec.ts already uses for a "former Student"
+    // fixture) — there is no Staff-facing endpoint to revoke a STUDENT grant
+    // (RoleGrantsService.revoke()'s own GRANTABLE_ROLES is INSTRUCTOR/BRANCH_STAFF
+    // only; "Revoke Enrollment" is tracked separately as its own, still-open v1.2
+    // backend backlog item, not something this filter depends on or builds).
+    await superuser.roleGrant.create({
+      data: {
+        id: randomUUID(),
+        role: 'STUDENT',
+        userId: revokedStudent.id,
+        schoolId: schoolA.id,
+        grantedById: revokedStudent.id,
+        revokedAt: new Date(),
+      },
+    });
+
+    // Default (status omitted) — still Active-only, so the now-revoked Student
+    // never appears. This is the exact pre-existing behavior, unchanged.
+    const activeRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(activeRes.status).toBe(200);
+    expect(activeRes.body.items.map((s: { id: string }) => s.id)).not.toContain(revokedStudent.id);
+
+    // status=INACTIVE — surfaces them, with status: 'INACTIVE'.
+    const inactiveRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .query({ status: 'INACTIVE' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(inactiveRes.status).toBe(200);
+    const inactiveRow = inactiveRes.body.items.find((s: { id: string }) => s.id === revokedStudent.id);
+    expect(inactiveRow).toBeDefined();
+    expect(inactiveRow.status).toBe('INACTIVE');
+    // No profilePhotoUrl was set on this fixture — round-trips as null, not
+    // undefined or an empty string, via resolveUserNames (the INACTIVE/ALL
+    // path's User-field resolution, distinct from the ACTIVE path's direct
+    // select covered by the photo-set case above).
+    expect(inactiveRow.profilePhotoUrl).toBeNull();
+
+    // status=ALL — surfaces them too, alongside any still-Active Student.
+    const allRes = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/students`)
+      .query({ status: 'ALL' })
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(allRes.status).toBe(200);
+    const allIds = allRes.body.items.map((s: { id: string }) => s.id);
+    expect(allIds).toContain(revokedStudent.id);
+
+    // A Student with no STUDENT RoleGrant at this School at all (never joined)
+    // never appears under any status value.
+    expect(inactiveRes.body.items.map((s: { id: string }) => s.id)).not.toContain(ownerB.id);
   });
 
   it('self-service School creation grants the creator SCHOOL_OWNER_MANAGER atomically', async () => {
@@ -681,6 +993,106 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Staff-on-behalf-of enrollment (v1.2 backend backlog, "Invite a Student") —
+  // SchoolsService.join()'s second on-behalf-of branch, mirroring Phase 38's
+  // Guardian one above. Scoped to School Owner/Manager only (the same gate
+  // RoleGrantsService.create()/StaffPage's own Instructor/Branch Staff invite
+  // flow already use), not the broader assertStaffAtSchool.
+  // ---------------------------------------------------------------------------
+
+  it('a School Owner/Manager CAN enroll an existing, already-registered person as a Student — no access token comes back, and the grant is issued by the Owner', async () => {
+    const existingPerson = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-staff-enroll-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Already',
+        surname: 'Registered',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+
+    try {
+      const joinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenOwnerB}`)
+        .send({ studentId: existingPerson.id, branchId: branchB.id });
+      expect(joinRes.status).toBe(201);
+      const minorHome = await superuser.studentHomeBranch.findUniqueOrThrow({
+        where: { schoolId_studentId: { schoolId: schoolB.id, studentId: existingPerson.id } },
+      });
+      expect([minorHome.branchId, minorHome.assignedById]).toEqual([branchB.id, ownerB.id]);
+      expect(joinRes.body.role).toBe('STUDENT');
+      expect(joinRes.body.userId).toBe(existingPerson.id);
+      expect(joinRes.body.schoolId).toBe(schoolB.id);
+      expect(joinRes.body.accessToken).toBeUndefined();
+
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: existingPerson.id, schoolId: schoolB.id, role: 'STUDENT', revokedAt: null },
+      });
+      expect(grant).not.toBeNull();
+      expect(grant!.grantedById).toBe(ownerB.id);
+
+      // Idempotency — same partial unique index as the self-join/Guardian
+      // paths above, proven independently for the Staff path too.
+      const secondJoinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenOwnerB}`)
+        .send({ studentId: existingPerson.id });
+      expect(secondJoinRes.status).toBe(409);
+      expect(secondJoinRes.body.error.message).toMatch(/already enrolled/);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { userId: existingPerson.id } });
+      await superuser.studentHomeBranch.deleteMany({ where: { studentId: existingPerson.id } });
+      await superuser.user.delete({ where: { id: existingPerson.id } });
+    }
+  });
+
+  it('a School Owner/Manager CANNOT enroll someone else at another tenant\'s School — 403', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolB.id}/join`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`) // owns School A, not School B
+      .send({ studentId: verifiedInvitee.id });
+    expect(res.status).toBe(403);
+    expect(await superuser.roleGrant.count({ where: { userId: verifiedInvitee.id, schoolId: schoolB.id, role: 'STUDENT' } })).toBe(0);
+  });
+
+  it('a Branch Staff member (not School Owner/Manager) cannot enroll someone else — 403, same gate as the Instructor/Branch Staff invite flow', async () => {
+    const branchStaffUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-staff-not-owner-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Branch',
+        surname: 'Staffer',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1995-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: branchStaffUser.id, schoolId: schoolB.id, branchId: branchB.id },
+    });
+    const tokenBranchStaff = signAccessToken(branchStaffUser, [
+      { role: 'BRANCH_STAFF', franchiseId: null, schoolId: schoolB.id, branchId: branchB.id },
+    ]);
+
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenBranchStaff}`)
+        .send({ studentId: verifiedInvitee.id });
+      expect(res.status).toBe(403);
+      expect(await superuser.roleGrant.count({ where: { userId: verifiedInvitee.id, schoolId: schoolB.id, role: 'STUDENT' } })).toBe(0);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { userId: branchStaffUser.id } });
+      await superuser.user.delete({ where: { id: branchStaffUser.id } });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // FranchisesModule (Phase 16) — self-service creation mirrors School's own
   // Decision-79 pattern exactly; cross-tenant isolation mirrors School's own tests
   // above, against the same franchise_tenant_isolation RLS shape.
@@ -763,6 +1175,68 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
 
     await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
     await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /franchises?feeModel=&activity= — server-side filters (School Portal's
+  // Franchises page). FranchisesService.findAllForCaller previously ignored both;
+  // the page filtered an already-fetched list client-side (v1.2 backend backlog,
+  // "Franchises page", "Fee model / Activity filters").
+  // ---------------------------------------------------------------------------
+
+  it('filters GET /franchises by feeModel and by activity, independently and together', async () => {
+    const flatJiuJitsu = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Filter Franchise Flat JiuJitsu', feeModel: 'FLAT', activities: ['Jiu Jitsu'] });
+    const headcountKarate = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Filter Franchise Headcount Karate', feeModel: 'PER_HEADCOUNT', activities: ['Karate'] });
+    expect(flatJiuJitsu.status).toBe(201);
+    expect(headcountKarate.status).toBe(201);
+    const ids = [flatJiuJitsu.body.id, headcountKarate.body.id];
+
+    try {
+      const byFeeModel = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ feeModel: 'PER_HEADCOUNT' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byFeeModel.status).toBe(200);
+      const feeModelIds = byFeeModel.body.items.map((f: { id: string }) => f.id);
+      expect(feeModelIds).toContain(headcountKarate.body.id);
+      expect(feeModelIds).not.toContain(flatJiuJitsu.body.id);
+
+      const byActivity = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ activity: 'Jiu Jitsu' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byActivity.status).toBe(200);
+      const activityIds = byActivity.body.items.map((f: { id: string }) => f.id);
+      expect(activityIds).toContain(flatJiuJitsu.body.id);
+      expect(activityIds).not.toContain(headcountKarate.body.id);
+
+      const byBoth = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .query({ feeModel: 'FLAT', activity: 'Karate' })
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(byBoth.status).toBe(200);
+      const bothIds = byBoth.body.items.map((f: { id: string }) => f.id);
+      expect(bothIds).not.toContain(flatJiuJitsu.body.id); // wrong activity
+      expect(bothIds).not.toContain(headcountKarate.body.id); // wrong feeModel
+
+      // Omitted entirely — both still present, exactly as before either filter existed.
+      const unfiltered = await request(app.getHttpServer())
+        .get('/v1/franchises')
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(unfiltered.status).toBe(200);
+      const unfilteredIds = unfiltered.body.items.map((f: { id: string }) => f.id);
+      expect(unfilteredIds).toContain(flatJiuJitsu.body.id);
+      expect(unfilteredIds).toContain(headcountKarate.body.id);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: ids } } });
+      await superuser.franchise.deleteMany({ where: { id: { in: ids } } });
+    }
   });
 
   it('PATCH /franchises/:id with explicit null clears an optional String field; omitting it leaves it unchanged (UpdateFranchiseDto, Phase 23)', async () => {
@@ -944,6 +1418,100 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const unchanged = await superuser.school.findUniqueOrThrow({ where: { id: schoolA.id } });
     expect(unchanged.franchiseId).toBeNull();
 
+    await superuser.roleGrant.deleteMany({ where: { franchiseId } });
+    await superuser.franchise.delete({ where: { id: franchiseId } });
+  });
+
+  // ---------------------------------------------------------------------------
+  // School -> Franchise leave/switch (Decision 232) — closes the gap Decision 98
+  // deliberately left open. PaymentAccount/MembershipPlan carry over unchanged
+  // (School-owned, nothing to write); the Stripe subscription cancellation is
+  // best-effort and only attempted when a real stripeFranchiseFeeSubscriptionId
+  // is set — these fixtures leave it unset (no real Stripe PaymentAccount exists
+  // in these tests), so that best-effort branch never actually calls Stripe here.
+  // ---------------------------------------------------------------------------
+
+  it('School Owner can leave their Franchise, then switch to a new one by joining again', async () => {
+    const createSchoolRes = await request(app.getHttpServer())
+      .post('/v1/schools')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Leave-Franchise Test School' });
+    expect(createSchoolRes.status).toBe(201);
+    const freshSchoolId = createSchoolRes.body.id;
+
+    const createFranchiseRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Leave-Franchise Test Franchise A' });
+    const franchiseAId = createFranchiseRes.body.id;
+
+    await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId: franchiseAId })
+      .expect(201);
+
+    const leaveRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(leaveRes.status).toBe(201);
+    expect(leaveRes.body.franchiseId).toBeNull();
+    expect(leaveRes.body.franchiseFeeSubscriptionStatus).toBeNull();
+
+    // Switch — leave() cleared franchiseId back to null, so an ordinary
+    // join-franchise call against a DIFFERENT Franchise now succeeds, where it
+    // would have 409'd before leaving (Decision 98's one-way guard, unchanged).
+    const createFranchiseBRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Leave-Franchise Test Franchise B' });
+    const franchiseBId = createFranchiseBRes.body.id;
+
+    const switchRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${freshSchoolId}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId: franchiseBId });
+    expect(switchRes.status).toBe(201);
+    expect(switchRes.body.franchiseId).toBe(franchiseBId);
+
+    await superuser.school.delete({ where: { id: freshSchoolId } });
+    await superuser.roleGrant.deleteMany({ where: { franchiseId: { in: [franchiseAId, franchiseBId] } } });
+    await superuser.franchise.deleteMany({ where: { id: { in: [franchiseAId, franchiseBId] } } });
+  });
+
+  it('leaving a Franchise this School never joined is a 400, not a silent no-op', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('only that School\'s own Owner/Manager may leave its Franchise', async () => {
+    const createFranchiseRes = await request(app.getHttpServer())
+      .post('/v1/franchises')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Unauthorized Leave Test Franchise' });
+    const franchiseId = createFranchiseRes.body.id;
+    await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ franchiseId })
+      .expect(201);
+
+    // ownerB holds no grant at all on schoolA.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(403);
+    const unchanged = await superuser.school.findUniqueOrThrow({ where: { id: schoolA.id } });
+    expect(unchanged.franchiseId).toBe(franchiseId);
+
+    // Clean up via the real endpoint, as schoolA's own owner, so schoolA is left
+    // independent again for every other test sharing this fixture.
+    await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/leave-franchise`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .expect(201);
     await superuser.roleGrant.deleteMany({ where: { franchiseId } });
     await superuser.franchise.delete({ where: { id: franchiseId } });
   });

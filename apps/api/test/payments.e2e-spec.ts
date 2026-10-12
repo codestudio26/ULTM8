@@ -63,9 +63,11 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
   let ownerA: { id: string; email: string };
   let ownerB: { id: string; email: string };
   let franchiseOwner: { id: string; email: string };
+  let studentA: { id: string; email: string };
   let tokenOwnerA: string;
   let tokenOwnerB: string;
   let tokenFranchiseOwner: string;
+  let tokenStudentA: string;
 
   const paymentAccountIds: string[] = [];
 
@@ -102,9 +104,16 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
     ownerA = await mkUser('owner-a');
     ownerB = await mkUser('owner-b');
     franchiseOwner = await mkUser('franchise-owner');
+    studentA = await mkUser('student-a');
 
     await superuser.roleGrant.create({
       data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: schoolA.id },
+    });
+    // Decision 234 — PaymentsService.resolveStripePaymentAccount admits ANY
+    // active RoleGrant at the School, not owner-only (a Student saving their
+    // own card is the real caller for payment-methods, not a School Owner).
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: schoolA.id },
     });
     await superuser.roleGrant.create({
       data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: schoolB.id },
@@ -127,6 +136,7 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
     tokenFranchiseOwner = signAccessToken(franchiseOwner, [
       { role: 'FRANCHISE_OWNER', franchiseId: franchise.id, schoolId: null, branchId: null },
     ]);
+    tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: schoolA.id, branchId: null }]);
   });
 
   afterAll(async () => {
@@ -230,6 +240,53 @@ describeIfDb('PaymentsModule — HTTP-level cross-tenant isolation and webhook s
       .get(`/v1/franchises/${franchise.id}/payment-account`)
       .set('Authorization', `Bearer ${tokenOwnerA}`);
     expect(res.status).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Saved payment methods (Decision 234) — same "everything up to the first real
+  // Stripe call" scope every other Stripe-calling e2e gate in this repo already
+  // accepts (this file's own header comment states the identical split for
+  // PaymentAccount's webhook half). createSetupSession's own first real Stripe
+  // call never happens here — resolveStripePaymentAccount's 400 fires first,
+  // since this fixture's PaymentAccount (created above) was never actually
+  // onboarded (no stripeConnectedAccountId — onboarding needs a real Stripe
+  // network call this suite doesn't make). getMyPaymentMethod/
+  // deleteMyPaymentMethod never reach Stripe at all when nothing is saved.
+  // ---------------------------------------------------------------------------
+
+  it('GET .../payment-methods/me reports false without ever needing an onboarded PaymentAccount', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/payment-methods/me`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ hasSavedPaymentMethod: false });
+  });
+
+  it('DELETE .../payment-methods/me is a 404 when nothing is saved — not a silent no-op', async () => {
+    const res = await request(app.getHttpServer())
+      .delete(`/v1/schools/${schoolA.id}/payment-methods/me`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(res.status).toBe(404);
+  });
+
+  it('POST .../payment-methods/setup-session is a 400 when the School has no fully-onboarded Stripe PaymentAccount', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/payment-methods/setup-session`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('a Student cannot see another School\'s payment-methods/me — RLS/existence checks apply the same as any other tenant-scoped read', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolB.id}/payment-methods/me`)
+      .set('Authorization', `Bearer ${tokenStudentA}`);
+    // studentA holds no RoleGrant at schoolB at all — resolveStripePaymentAccount
+    // is never reached by this read (it returns {hasSavedPaymentMethod:false}
+    // straight from the self-only StudentPaymentMethod RLS read, same as the
+    // "nothing saved" test above); schoolB simply has no row for this Student
+    // either way, so the response is identical and reveals nothing about schoolB.
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ hasSavedPaymentMethod: false });
   });
 
   // ---------------------------------------------------------------------------

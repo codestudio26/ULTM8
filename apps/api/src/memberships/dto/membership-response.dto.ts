@@ -67,7 +67,7 @@ export class PurchaseMembershipResponseDto {
   @ApiPropertyOptional({ type: MembershipResponseDto, description: 'Present only when outcome is active.' })
   membership?: MembershipResponseDto;
 
-  @ApiPropertyOptional({ description: 'The created Transaction id — present for requires_payment and pending_confirmation.' })
+  @ApiPropertyOptional({ description: 'The created Transaction id — present for requires_payment, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236).' })
   transactionId?: string;
 }
 

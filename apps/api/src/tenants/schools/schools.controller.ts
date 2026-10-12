@@ -12,7 +12,10 @@ import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
+import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
+import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { UserResponseDto } from '../../users/dto/user-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -49,11 +52,13 @@ export class SchoolsController {
     return this.schoolsService.update(user.sub, id, dto);
   }
 
-  /** The Student roster — Staff-only, see SchoolsService.findAllStudentsForSchool. */
+  /** The Student roster — Staff-only, see SchoolsService.findAllStudentsForSchool.
+   * `status` (Active/Inactive/All) defaults to ACTIVE when omitted — the exact
+   * pre-existing behavior (StudentRosterQueryDto). */
   @ApiOkResponse({ type: StudentListResponseDto })
   @Get(':id/students')
-  findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.schoolsService.findAllStudentsForSchool(user.sub, id);
+  findStudents(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: StudentRosterQueryDto) {
+    return this.schoolsService.findAllStudentsForSchool(user.sub, id, query.status);
   }
 
   /** School Owner/Manager only — assign or change a student's home branch
@@ -69,6 +74,20 @@ export class SchoolsController {
     return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
   }
 
+  /** Staff (School Owner/Manager, Branch Staff, or Instructor) editing a Student's
+   * own profile on their behalf — see SchoolsService.updateStudentProfile's own
+   * header comment for the full authorization/field-scope account. */
+  @ApiOkResponse({ type: UserResponseDto })
+  @Patch(':id/students/:studentId/profile')
+  updateStudentProfile(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Body() dto: UpdateStudentProfileDto,
+  ) {
+    return this.schoolsService.updateStudentProfile(user.sub, id, studentId, dto);
+  }
+
   @ApiCreatedResponse({ type: JoinSchoolResponseDto })
   @Post(':id/join')
   join(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinSchoolDto) {
@@ -81,5 +100,15 @@ export class SchoolsController {
   @Post(':id/join-franchise')
   joinFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinFranchiseDto) {
     return this.schoolsService.joinFranchise(user.sub, id, dto.franchiseId);
+  }
+
+  /** School Owner/Manager only — see SchoolsService.leaveFranchise's own header
+   * comment for the full account (Decision 232). "Switch Franchise" is this
+   * endpoint followed by an ordinary POST :id/join-franchise call, not a
+   * separate combined one. */
+  @ApiOkResponse({ type: SchoolResponseDto })
+  @Post(':id/leave-franchise')
+  leaveFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.leaveFranchise(user.sub, id);
   }
 }

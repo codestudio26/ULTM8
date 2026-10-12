@@ -101,6 +101,13 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     return res.body.token;
   }
 
+  /** Decision 235 — the Class-scoped token response's own `code` field. */
+  async function fetchClassCode(callerToken: string, classId: string): Promise<string> {
+    const res = await request(app.getHttpServer()).get(`/v1/classes/${classId}/qr-token`).set('Authorization', `Bearer ${callerToken}`);
+    expect(res.status).toBe(200);
+    return res.body.code;
+  }
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
@@ -307,6 +314,126 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       // The consent-withdrawn minor from this test is reused below as the
       // "roll-call manual mode works around withdrawn consent" fixture.
       minorWithWithdrawnConsent = { id: minorId };
+    });
+  });
+
+  describe('Decision 235 — self-service code entry (POST /attendance/code)', () => {
+    it('a Student CAN type the current code shown alongside the QR — marks Completed, records SELF_SERVICE_CODE', async () => {
+      const future = new Date(Date.now() + 3_600_000);
+      const cls = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Code Entry Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000), qrAttendanceEndAt: new Date(future.getTime() + 3_600_000) },
+      });
+      const membershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
+      await mkBooking(studentB.id, cls.id, membershipB.id);
+
+      const code = await fetchClassCode(tokenInstructor, cls.id);
+      expect(code).toMatch(/^\d{6}$/);
+      const res = await request(app.getHttpServer()).post('/v1/attendance/code').set('Authorization', `Bearer ${tokenStudentB}`).send({ classId: cls.id, code });
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('COMPLETED');
+      expect(res.body.checkInMethod).toBe('SELF_SERVICE_CODE');
+      expect(res.body.checkedInById).toBeNull();
+    });
+
+    it('a Guardian-linked minor whose camera-tier consent is Withdrawn CAN still use code entry — this is its entire purpose', async () => {
+      expect(minorWithWithdrawnConsent).toBeDefined();
+      const minorId = minorWithWithdrawnConsent!.id;
+      const tokenMinor = signAccessToken({ id: minorId, email: 'minor@example.test' }, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
+
+      const future = new Date(Date.now() + 3_600_000);
+      const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Minor Code Entry Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
+      // This minor already has an Active Membership from the earlier
+      // withdrawn-consent scan test (line ~307) — reuse it instead of
+      // minting a second one, which would violate the (studentId, schoolId)
+      // unique constraint Membership enforces.
+      const membership = await superuser.membership.findFirstOrThrow({ where: { studentId: minorId } });
+      await mkBooking(minorId, cls.id, membership.id);
+
+      const code = await fetchClassCode(tokenInstructor, cls.id);
+      const res = await request(app.getHttpServer()).post('/v1/attendance/code').set('Authorization', `Bearer ${tokenMinor}`).send({ classId: cls.id, code });
+      expect(res.status).toBe(201);
+      expect(res.body.checkInMethod).toBe('SELF_SERVICE_CODE');
+    });
+
+    it('an incorrect code is rejected — 400', async () => {
+      const future = new Date(Date.now() + 3_600_000);
+      const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Wrong Code Class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
+      const membershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
+      await mkBooking(studentB.id, cls.id, membershipB.id);
+
+      const code = await fetchClassCode(tokenInstructor, cls.id);
+      const wrongCode = code === '000000' ? '111111' : '000000';
+      const res = await request(app.getHttpServer()).post('/v1/attendance/code').set('Authorization', `Bearer ${tokenStudentB}`).send({ classId: cls.id, code: wrongCode });
+      expect(res.status).toBe(400);
+    });
+
+    it('a code minted for a different Class is rejected — 400', async () => {
+      const future = new Date(Date.now() + 3_600_000);
+      const [clsA, clsB] = await Promise.all([
+        superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Code Class A', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } }),
+        superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Code Class B', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } }),
+      ]);
+      const membershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
+      await mkBooking(studentB.id, clsA.id, membershipB.id);
+
+      const codeForClassB = await fetchClassCode(tokenInstructor, clsB.id);
+      const res = await request(app.getHttpServer()).post('/v1/attendance/code').set('Authorization', `Bearer ${tokenStudentB}`).send({ classId: clsA.id, code: codeForClassB });
+      expect(res.status).toBe(400);
+    });
+
+    it('entering a code after the check-in window has closed is rejected — 400', async () => {
+      const existingMembershipB = await superuser.membership.findFirstOrThrow({ where: { studentId: studentB.id } });
+      const past = new Date(Date.now() - 3_600_000);
+      const cls = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Code Entry Already Closed', startDate: past, endDate: new Date(past.getTime() + 1_800_000), qrAttendanceEndAt: new Date(past.getTime() + 1_800_000) },
+      });
+      await mkBooking(studentB.id, cls.id, existingMembershipB.id);
+
+      const code = await fetchClassCode(tokenInstructor, cls.id);
+      const res = await request(app.getHttpServer()).post('/v1/attendance/code').set('Authorization', `Bearer ${tokenStudentB}`).send({ classId: cls.id, code });
+      expect(res.status).toBe(400);
+    });
+
+    it('a Student with no Upcoming Booking on the Class is rejected — 404', async () => {
+      const future = new Date(Date.now() + 3_600_000);
+      const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Code No Booking Here', startDate: future, endDate: new Date(future.getTime() + 3_600_000) } });
+
+      const code = await fetchClassCode(tokenInstructor, cls.id);
+      const res = await request(app.getHttpServer()).post('/v1/attendance/code').set('Authorization', `Bearer ${tokenStudentA}`).send({ classId: cls.id, code });
+      expect(res.status).toBe(404);
+    });
+
+    it('the 6th rapid attempt by the SAME caller is throttled (limit 5/60s) — mandatory brute-force protection', async () => {
+      // A dedicated, fresh Student — the throttle is keyed by this caller's
+      // own `sub` (jwtSubTracker), and burning through it here must not
+      // affect any other test in this file that reuses studentA/studentB.
+      // Wrong codes alone are enough to reach the limit — the throttle guard
+      // runs before AttendanceService.enterCode() does any real lookup, same
+      // as booking-throttle.e2e-spec.ts's own documented reasoning for why
+      // these tests don't need the underlying action to actually succeed.
+      const freshStudent = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `attendance-http-throttle-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'Throttle',
+          surname: 'Student',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      userIds.push(freshStudent.id);
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: freshStudent.id, schoolId: school.id } });
+      const tokenFreshStudent = signAccessToken(freshStudent, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
+
+      const statuses: number[] = [];
+      for (let i = 0; i < 6; i++) {
+        const res = await request(app.getHttpServer()).post('/v1/attendance/code').set('Authorization', `Bearer ${tokenFreshStudent}`).send({ classId: randomUUID(), code: '000000' });
+        statuses.push(res.status);
+      }
+      expect(statuses.slice(0, 5)).not.toContain(429);
+      expect(statuses[5]).toBe(429);
     });
   });
 

@@ -87,7 +87,10 @@ export class CreateTimetableSlotDto {
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'breakEnd must be HH:mm, 24-hour clock' })
   breakEnd?: string;
 
-  @ApiPropertyOptional({ enum: ['ON', 'OFF'], default: 'ON' })
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers that don't send it.
+  @ApiPropertyOptional({ enum: ['ON', 'OFF'], description: 'Defaults to ON when omitted.' })
   @IsOptional()
   @IsEnum(['ON', 'OFF'])
   status?: 'ON' | 'OFF';
@@ -140,12 +143,17 @@ export class CreateTimetableSlotDto {
   @IsUrl()
   bannerUrl?: string;
 
-  @ApiPropertyOptional({ default: false })
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers that don't send it.
+  @ApiPropertyOptional({ description: 'Defaults to false when omitted.' })
   @IsOptional()
   @IsBoolean()
   termsWaiverRequired?: boolean;
 
-  @ApiPropertyOptional({ default: false, description: 'Opts generated Classes into general-membership access. Default is opt-out (a ticket is required).' })
+  // No `default:` in the Swagger metadata, for the same reason as
+  // termsWaiverRequired above.
+  @ApiPropertyOptional({ description: 'Opts generated Classes into general-membership access. Default is opt-out (a ticket is required).' })
   @IsOptional()
   @IsBoolean()
   membershipInclusion?: boolean;

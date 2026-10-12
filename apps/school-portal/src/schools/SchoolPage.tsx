@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Checkbox, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useSchool, useUpdateSchool } from './schoolQueries';
+import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
+import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool } from './schoolQueries';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
  * their own School"). Field list matches UpdateSchoolDto exactly, same as
@@ -12,6 +14,8 @@ export function SchoolPage() {
   const schoolId = useOwnedSchoolId();
   const { data: school, isLoading, error: loadError } = useSchool(schoolId);
   const updateSchool = useUpdateSchool(schoolId ?? '');
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
 
   const [form, setForm] = useState<{
     name: string;
@@ -101,7 +105,7 @@ export function SchoolPage() {
             <TextField required value={form.name} onChange={(e) => set('name', e.target.value)} />
           </Field>
           <Field label="Mobile number" htmlFor="edit-mobile">
-            <TextField value={form.mobileNumber} onChange={(e) => set('mobileNumber', e.target.value)} />
+            <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
           </Field>
           <Field label="Address" htmlFor="edit-address">
             <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
@@ -116,13 +120,23 @@ export function SchoolPage() {
             <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
           </Field>
           <Field label="Default language" htmlFor="edit-language">
-            <TextField value={form.defaultLanguage} onChange={(e) => set('defaultLanguage', e.target.value)} />
+            <SelectField
+              id="edit-language"
+              value={form.defaultLanguage}
+              onChange={(e) => set('defaultLanguage', e.target.value)}
+              options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+            />
           </Field>
           <Field label="Default currency" htmlFor="edit-currency">
-            <TextField value={form.defaultCurrency} onChange={(e) => set('defaultCurrency', e.target.value)} />
+            <SelectField
+              id="edit-currency"
+              value={form.defaultCurrency}
+              onChange={(e) => set('defaultCurrency', e.target.value)}
+              options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+            />
           </Field>
-          <Field label="Timezone" htmlFor="edit-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
-            <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
+          <Field label="Timezone" htmlFor="edit-timezone" hint="Used for classes without a branch timezone.">
+            <TimezoneField value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
           </Field>
           <Field label="Description" htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
@@ -158,6 +172,80 @@ export function SchoolPage() {
           </div>
         </form>
       </Card>
+      {schoolId && school ? <FranchiseAffiliationCard schoolId={schoolId} franchiseId={school.franchiseId ?? null} /> : null}
     </>
+  );
+}
+
+/**
+ * Decision 232 — leave/switch-Franchise, on top of Decision 98's own one-way-only
+ * join-franchise endpoint. "Switch" is deliberately not a separate action here
+ * either — leaving, then joining a different Franchise, same as the backend
+ * (SchoolsService.leaveFranchise's own header comment). No "browse Franchises to
+ * join" UI exists anywhere in this codebase (join-franchise never had one before
+ * this phase) — a School Owner enters the Franchise's id directly, same shape the
+ * API itself has always taken.
+ */
+function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string; franchiseId: string | null }) {
+  const joinFranchise = useJoinFranchise(schoolId);
+  const leaveFranchise = useLeaveFranchise(schoolId);
+  const [franchiseIdInput, setFranchiseIdInput] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleJoin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await joinFranchise.mutateAsync(franchiseIdInput);
+      setFranchiseIdInput('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+    }
+  }
+
+  async function handleLeave() {
+    setError(null);
+    try {
+      await leaveFranchise.mutateAsync();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+    }
+  }
+
+  return (
+    <Card>
+      <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
+        Franchise affiliation
+      </h2>
+      {error ? <ErrorBanner message={error} /> : null}
+      {franchiseId ? (
+        <>
+          <p>
+            Affiliated with Franchise <Badge>{franchiseId}</Badge>
+          </p>
+          <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
+            Leaving cancels any standing franchise-fee billing for this School. To switch, leave first, then join the
+            new Franchise below.
+          </p>
+          <Button variant="danger" onClick={handleLeave} loading={leaveFranchise.isPending}>
+            Leave Franchise
+          </Button>
+        </>
+      ) : (
+        <>
+          <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
+            This School is independent — not affiliated with any Franchise.
+          </p>
+          <form onSubmit={handleJoin}>
+            <Field label="Franchise ID" htmlFor="join-franchise-id">
+              <TextField required value={franchiseIdInput} onChange={(e) => setFranchiseIdInput(e.target.value)} />
+            </Field>
+            <Button type="submit" loading={joinFranchise.isPending}>
+              Join Franchise
+            </Button>
+          </form>
+        </>
+      )}
+    </Card>
   );
 }

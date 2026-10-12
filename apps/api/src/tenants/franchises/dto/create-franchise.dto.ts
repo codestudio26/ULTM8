@@ -115,7 +115,10 @@ export class CreateFranchiseDto {
   @IsUrl()
   bannerUrl?: string;
 
-  @ApiPropertyOptional({ enum: FeeModelDto, default: FeeModelDto.FLAT })
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers that don't send it.
+  @ApiPropertyOptional({ enum: FeeModelDto, description: 'Defaults to FLAT when omitted.' })
   @IsOptional()
   @IsEnum(FeeModelDto)
   feeModel?: FeeModelDto;

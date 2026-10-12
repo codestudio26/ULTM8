@@ -208,6 +208,66 @@ export class TimetableService {
     return this.toResponse(updated);
   }
 
+  /**
+   * GET /timetable/:id/occurrence?date=YYYY-MM-DD — Timetable page redesign
+   * (click-to-book). Resolves a specific weekday occurrence of this recurring
+   * slot to its materialized, bookable `Class` row, per
+   * `skills/ultm8-domain-rules/SKILL.md` §9 (`[CONFIRMED]`, resolved 24 Aug
+   * 2026): a bookable Class is either materialized ahead of time from an
+   * active, recurring TimetableSlot (the class-occurrence-generation job,
+   * WEEKS_AHEAD) or created as an independent one-off event — never on
+   * demand. `Class`'s own `@@unique([timetableSlotId, occurrenceDate])`
+   * guarantees at most one match.
+   *
+   * Staff-only (School Owner/Manager, Branch Staff, or Instructor) — unlike
+   * `findOne` above, which any RoleGrant holder at the School may read (the
+   * slot TEMPLATE is visible School-wide), this resolves toward an actual
+   * booking action, which SKILL.md §9/§10 reserve to Staff (a Student books
+   * through the mobile app's own class-browsing flow, not this endpoint).
+   * The slot lookup itself still runs under the caller's own tenant context
+   * first, so a slot genuinely outside the caller's visibility (wrong
+   * School/Branch) 404s before the Staff check ever runs — same
+   * RLS-blocked-and-genuinely-missing-are-indistinguishable convention as
+   * every other lookup in this service.
+   *
+   * No Class materialized yet for this date (e.g. beyond the 4-week
+   * generation horizon, or the slot was only just turned on and the job
+   * hasn't run) is a clear, expected 404 — never created on demand, which
+   * would re-litigate the already-resolved "materialize ahead of time vs.
+   * on-demand" question, and never an unhandled 500.
+   */
+  async findOccurrence(callerId: string, slotId: string, date: string) {
+    const slot = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.timetableSlot.findUnique({ where: { id: slotId } }),
+    );
+    if (!slot) {
+      throw new NotFoundException('TimetableSlot not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, slot.schoolId, slot.branchId);
+
+    // Matches class-occurrence-generation.processor.ts's own construction of
+    // Class.occurrenceDate: a UTC midnight instant built directly from the
+    // calendar date's year/month/day, never a locally-parsed Date (which
+    // would silently shift a day for a timezone offset from UTC).
+    const occurrenceDate = new Date(`${date}T00:00:00.000Z`);
+    if (Number.isNaN(occurrenceDate.getTime())) {
+      throw new BadRequestException('date must be a valid calendar date.');
+    }
+
+    const occurrence = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.class.findUnique({
+        where: { timetableSlotId_occurrenceDate: { timetableSlotId: slotId, occurrenceDate } },
+      }),
+    );
+    if (!occurrence) {
+      throw new NotFoundException(
+        'No bookable Class has been generated yet for this occurrence — it may be beyond the 4-week ' +
+          'generation horizon, or this slot was only just turned on and the daily job has not run yet.',
+      );
+    }
+    return occurrence;
+  }
+
   // No delete method — general tenant offboarding is [UNRESOLVED]
   // (ultm8-app-publishing §4 — not ultm8-domain-rules §2, which covers Franchise/
   // School/Branch structure, not offboarding), same reasoning as School/Branch/Class.

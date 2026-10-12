@@ -1,23 +1,36 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
+import { resolveUserNames } from '../../common/prisma/resolve-user-names';
+import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
+import { StripeClientService } from '../../payments/stripe-client.service';
+import { UsersService } from '../../users/users.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
+import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 
 @Injectable()
 export class SchoolsService {
+  private readonly logger = new Logger(SchoolsService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
+    private readonly stripeClient: StripeClientService,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -145,12 +158,46 @@ export class SchoolsService {
    * and a unique-constraint violation (P2002) becomes the 409, the same
    * "atomic create() + caught P2002" pattern already established elsewhere
    * in this codebase (e.g. Waiver creation dedup).
+   *
+   * v1.2 backend backlog ("Invite a Student") added a SECOND on-behalf-of
+   * case, Staff enrolling an existing-but-unenrolled person at their own
+   * School (find-then-confirm, `GET .../role-grants/invite-candidate`
+   * ahead of this call — the account-creation half of the original mockup
+   * was explicitly removed by the product owner, 28 Sep; StaffPage's own
+   * Instructor/Branch Staff invite flow is the shape this mirrors). Same
+   * `dto.studentId` on-behalf-of field Phase 38 already established — there
+   * is no separate DTO field to distinguish "Guardian" from "Staff" caller,
+   * so which one applies is DISCOVERED, not declared: try the School-Owner
+   * gate RoleGrantsService.create()/StaffPage's own invite flow already use
+   * for this exact kind of action first (this page lives behind the
+   * School-Owner-only part of the portal, same as StaffPage), and only fall
+   * back to `assertGuardianOfStudent` if the caller doesn't hold that grant
+   * — the same "try one path, fall back to the other" idiom
+   * BookingsService.bookClass()/cancelBooking() already use to tell their
+   * own Guardian-vs-Staff on-behalf-of callers apart. A caller who is
+   * neither gets assertGuardianOfStudent's own 403, unchanged.
+   *
+   * Deliberately NOT a change to RoleGrantsService.create()/GrantableRoleDto
+   * — that enum's own header comment is explicit that granting STUDENT "has
+   * no confirmed authorization rule" through that path, and Decision 96's
+   * STUDENT RoleGrant is created exclusively here; widening the grantable-
+   * roles enum would be a second, divergent creation path for the exact
+   * same role, not a fix.
    */
   async join(callerId: string, schoolId: string, dto?: JoinSchoolDto) {
     const studentId = dto?.studentId ?? callerId;
-    const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
-    if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
+    let isGuardianAction = false;
+    let isStaffAction = false;
+    if (isOnBehalfOf) {
+      try {
+        await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+        isStaffAction = true;
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+        isGuardianAction = true;
+      }
     }
 
     const roleGrantId = randomUUID();
@@ -177,7 +224,7 @@ export class SchoolsService {
       } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
           throw new ConflictException(
-            isGuardianAction ? 'This Student is already enrolled at this School.' : 'You are already a Student at this School.',
+            isOnBehalfOf ? 'This Student is already enrolled at this School.' : 'You are already a Student at this School.',
           );
         }
         throw err;
@@ -205,10 +252,11 @@ export class SchoolsService {
       return created;
     });
 
-    if (isGuardianAction) {
-      // No access token to mint — see JoinSchoolResponseDto's own comment: a
-      // Guardian-managed minor's account is permanently blocked from
-      // independent login, so there is nothing a token would ever be used for.
+    if (isGuardianAction || isStaffAction) {
+      // No access token to mint — the caller (Guardian or Staff) isn't the
+      // one who just got the new grant, so there is nothing on their own
+      // session to refresh (see JoinSchoolResponseDto's own comment for the
+      // Guardian case, which this now also covers for Staff).
       return roleGrant;
     }
 
@@ -324,6 +372,84 @@ export class SchoolsService {
     });
   }
 
+  /**
+   * A School's own leave/switch-Franchise path — School Owner/Manager initiated,
+   * self-service, closing the gap `joinFranchise()`'s own header comment deliberately
+   * left open pending the user's "revisit when the project is done" conversation
+   * (Decision 97). That conversation happened (Decision 232): `PaymentAccount` and
+   * `MembershipPlan` carry over completely unchanged — both already School-owned,
+   * with no franchise linkage to sever, so neither needs any write here.
+   * `FranchiseFeeCharge` history is retained as an immutable record — this method
+   * never touches those rows either. The one real reconciliation point is the live
+   * Stripe subscription (`School.stripeFranchiseFeeSubscriptionId`): cancelled here,
+   * at departure; a School that then calls `joinFranchise()` again gets a new one
+   * created lazily by franchise-fee-usage-reporting's own `ensureSubscription`, the
+   * same path every first-time join already goes through. "Switch Franchise" is
+   * deliberately NOT a separate combined endpoint — it's this method followed by an
+   * ordinary `joinFranchise()` call, which already works again once this clears
+   * `franchiseId` back to null.
+   *
+   * Idempotency/guard: the same conditional `updateMany` shape `joinFranchise()`
+   * already established — `count === 0` means the School's `franchiseId` moved out
+   * from under this call between the read below and the write (another concurrent
+   * leave, or the grant itself was revoked), surfaced as a 409 rather than a silent
+   * no-op, for the identical reasoning that method's own header comment gives.
+   *
+   * The Stripe cancellation is deliberately best-effort, not a precondition: it runs
+   * via `PrismaJobsService` (ultm8_jobs) AFTER the `franchiseId` write commits —
+   * same "the caller's own RLS context can't see a Franchise it holds no grant on"
+   * reasoning, and the same service, `GuardiansService.withdrawConsent()`'s own
+   * BASELINE cascade already established for an analogous problem (a School Owner
+   * has no FRANCHISE_OWNER grant on the Franchise they're leaving, so `franchise_
+   * tenant_isolation`/`payment_account_tenant_isolation` would hide its PaymentAccount
+   * from this caller's own tenant context entirely). Ordered AFTER the commit, not
+   * before: leaving the Franchise relationship is the actual feature being asked
+   * for, and must succeed even if Stripe is unreachable or the subscription is
+   * already gone — a stale, uncancelled Stripe subscription is a real but narrow
+   * billing-cleanup gap, logged loudly here, not a reason to trap a School in a
+   * Franchise it has already, authoritatively, left.
+   */
+  async leaveFranchise(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const current = await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    if (!current.franchiseId) {
+      throw new BadRequestException('This School is not affiliated with any Franchise.');
+    }
+    const { franchiseId: oldFranchiseId, stripeFranchiseFeeSubscriptionId: oldSubscriptionId } = current;
+
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.updateMany({
+        where: { id: schoolId, franchiseId: oldFranchiseId },
+        data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null },
+      }),
+    );
+    if (count === 0) {
+      throw new ConflictException('This School already left its Franchise — nothing to do.');
+    }
+
+    if (oldSubscriptionId) {
+      try {
+        const oldFranchise = await this.prismaJobs.franchise.findUnique({
+          where: { id: oldFranchiseId },
+          include: { paymentAccount: true },
+        });
+        const account = oldFranchise?.paymentAccount;
+        if (account?.provider === 'STRIPE' && account.stripeConnectedAccountId) {
+          await this.stripeClient.scopedClient(account.stripeConnectedAccountId).subscriptions.cancel(oldSubscriptionId);
+        }
+      } catch (err) {
+        this.logger.error(
+          `School ${schoolId} left Franchise ${oldFranchiseId}, but cancelling its standing Stripe subscription (${oldSubscriptionId}) failed — it may need manual cancellation.`,
+          err as Error,
+        );
+      }
+    }
+
+    return this.findOne(callerId, schoolId);
+  }
+
   /** Schools visible to the caller — RLS already restricts this to Schools where the
    * caller holds any active RoleGrant (school_tenant_isolation, migration.sql). */
   async findAllForCaller(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
@@ -361,25 +487,93 @@ export class SchoolsService {
    * (schoolId, role STUDENT, revokedAt null) is itself the exact witness
    * user_self_or_shared_school's visibility check needs, so the joined User row is
    * always visible — no separate PrismaAuthService lookup needed here.
+   *
+   * `status` (StudentRosterStatusDto) — ACTIVE (default, the exact pre-existing
+   * behavior, unchanged query below), INACTIVE (only Students whose every STUDENT
+   * RoleGrant at this School is revoked), or ALL (both). v1.2 backend backlog's
+   * "Students page" gap: the roster previously hard-coded `revokedAt: null`,
+   * silently excluding revoked enrollments with no way to ever see them.
    */
-  async findAllStudentsForSchool(callerId: string, schoolId: string) {
+  async findAllStudentsForSchool(callerId: string, schoolId: string, status: StudentRosterStatusDto = StudentRosterStatusDto.ACTIVE) {
     await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
 
-    const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+    if (status === StudentRosterStatusDto.ACTIVE) {
+      // Unchanged from this method's pre-existing behavior — kept as its own,
+      // untouched branch so a caller that never sends `status` sees exactly the
+      // same query/result it always has, not a behaviorally-equivalent rewrite.
+      const grants = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.roleGrant.findMany({
+          where: { schoolId, role: 'STUDENT', revokedAt: null },
+          distinct: ['userId'],
+          orderBy: { grantedAt: 'asc' },
+          select: {
+            grantedAt: true,
+            user: { select: { id: true, firstName: true, surname: true, email: true, profilePhotoUrl: true } },
+          },
+        }),
+      );
+      return {
+        items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt, status: StudentStatusDto.ACTIVE })),
+      };
+    }
+
+    // INACTIVE or ALL — needs every STUDENT RoleGrant (active and revoked) at this
+    // School to resolve, per User, whether ANY of them is still non-revoked. Selects
+    // `userId` only, NOT a Prisma `include`/`select` on `user` — a revoked RoleGrant
+    // is exactly the case Decision 117 already found breaks that join:
+    // user_self_or_shared_school requires a currently-ACTIVE overlapping RoleGrant to
+    // see another User's row, so an all-revoked Student's own User row isn't visible
+    // through this method's own tenant (`ultm8_app`) context at all (confirmed by
+    // reproducing it directly — `Field user is required to return data, got null
+    // instead`, same failure class Decision 117's own regression test guards
+    // against). Names are resolved via PrismaAuthService/resolveUserNames instead,
+    // the same established pattern InstructorsService.findAllForSchool already uses
+    // for its own Name column.
+    const allGrants = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findMany({
-        where: { schoolId, role: 'STUDENT', revokedAt: null },
-        distinct: ['userId'],
+        where: { schoolId, role: 'STUDENT' },
         orderBy: { grantedAt: 'asc' },
-        select: {
-          grantedAt: true,
-          user: { select: { id: true, firstName: true, surname: true, email: true } },
-        },
+        select: { userId: true, grantedAt: true, revokedAt: true },
       }),
     );
-    return {
-      items: grants.map((g) => ({ ...g.user, enrolledAt: g.grantedAt })),
-    };
+
+    const names = await resolveUserNames(this.prismaAuth, allGrants.map((g) => g.userId));
+    const byUser = new Map<string, { earliestActiveAt?: Date; latestAt: Date; hasActive: boolean }>();
+    for (const g of allGrants) {
+      const existing = byUser.get(g.userId);
+      const isActive = g.revokedAt === null;
+      if (!existing) {
+        byUser.set(g.userId, {
+          hasActive: isActive,
+          earliestActiveAt: isActive ? g.grantedAt : undefined,
+          latestAt: g.grantedAt,
+        });
+      } else {
+        if (isActive) {
+          existing.hasActive = true;
+          if (existing.earliestActiveAt === undefined) existing.earliestActiveAt = g.grantedAt;
+        }
+        existing.latestAt = g.grantedAt; // allGrants is ordered ascending — last write wins
+      }
+    }
+
+    let rows = Array.from(byUser.entries()).map(([userId, { hasActive, earliestActiveAt, latestAt }]) => ({
+      id: userId,
+      firstName: names.get(userId)?.firstName ?? '',
+      surname: names.get(userId)?.surname ?? '',
+      email: names.get(userId)?.email ?? '',
+      profilePhotoUrl: names.get(userId)?.profilePhotoUrl ?? null,
+      status: hasActive ? StudentStatusDto.ACTIVE : StudentStatusDto.INACTIVE,
+      enrolledAt: hasActive ? earliestActiveAt! : latestAt,
+    }));
+
+    if (status === StudentRosterStatusDto.INACTIVE) {
+      rows = rows.filter((r) => r.status === StudentStatusDto.INACTIVE);
+    }
+    rows.sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime());
+
+    return { items: rows };
   }
 
   /** School Owner/Manager only (Spec §8.2) — see TenantAuthorizationService. */
@@ -439,5 +633,58 @@ export class SchoolsService {
         update: { branchId: dto.branchId, assignedById: callerId },
       });
     });
+  }
+
+  /**
+   * `PATCH /schools/{schoolId}/students/{studentId}/profile` — v1.2 backend
+   * backlog's Student Detail "Edit" gap: a Staff member editing a Student's own
+   * profile on their behalf. `PATCH /users/me` (UsersController) is self-service
+   * only and obviously can't serve this.
+   *
+   * Authorization is the SAME `assertStaffAtSchool` gate findAllStudentsForSchool/
+   * BookingsService.findAllForStudent/getWeeklySummary already use for a Staff
+   * member acting on a specific Student at this School — not the narrower
+   * `assertSchoolOwner` setStudentHomeBranch above uses, since editing a Student's
+   * contact details is an ordinary Staff action (any School Owner/Manager, Branch
+   * Staff, or Instructor), not a School-Owner-gated one like assigning a home
+   * Branch. No `targetBranchId` passed to assertStaffAtSchool — same reasoning as
+   * findAllStudentsForSchool's own comment: Student enrollment has no Branch
+   * dimension, so there's nothing to scope a Branch Staff grant against here.
+   *
+   * Field scope: UpdateStudentProfileDto reuses UpdateUserDto outright — see that
+   * DTO's own header comment for why `email`/`phone` stay excluded here too (they're
+   * unique login/OTP identifiers; letting Staff change either on a Student's behalf
+   * would let Staff silently redirect that Student's login/OTP destination, the
+   * exact risk self-service already walls off).
+   *
+   * The actual write is delegated to UsersService.updateProfileFor (shared with
+   * `updateMe`, see its own header comment) rather than duplicated here — this
+   * method's own job is purely the Staff-on-behalf-of authorization layer:
+   * confirming the caller is Staff at this School (not just anyone who can see it —
+   * findOne() below only 404s a School invisible/non-existent to the caller at all,
+   * same two-step order findAllStudentsForSchool already uses) and that `studentId`
+   * is an actual, currently-enrolled Student at this same School (same
+   * `RoleGrant`-lookup shape setStudentHomeBranch above already uses, deliberately
+   * copied rather than factored out purely for this: the business logic is simple
+   * enough — and setStudentHomeBranch's own check is School-Owner-gated,
+   * inapplicable here as a shared helper — that extracting a third method solely to
+   * avoid five duplicated lines would cost more clarity than it saves).
+   */
+  async updateStudentProfile(callerId: string, schoolId: string, studentId: string, dto: UpdateStudentProfileDto) {
+    await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const enrolled = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      }),
+    );
+    if (!enrolled) {
+      throw new NotFoundException('This person is not a Student at this School.');
+    }
+
+    return this.usersService.updateProfileFor(callerId, studentId, dto);
   }
 }

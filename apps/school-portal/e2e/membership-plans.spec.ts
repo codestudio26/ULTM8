@@ -130,3 +130,32 @@ test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) =
   expect(duplicate.classesIncluded).toBe(1);
   expect(duplicate.scopedClassId).toBe(classId);
 });
+
+// ---------------------------------------------------------------------------
+// v1.2 backend backlog — the "Active members" stat tile is real now (summed
+// across every plan's own GET /membership-plans/{id}/active-count), not the
+// "—" placeholder.
+// ---------------------------------------------------------------------------
+
+test('the Active members stat tile reflects real, live Memberships across every plan', async ({ page }) => {
+  const plan = await db.membershipPlan.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Active Tile Pack', price: 1000, classesIncluded: 5 },
+  });
+  planIds.push(plan.id);
+  const live = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 3 },
+  });
+  // Used up — must not count.
+  const usedUp = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.newStudent.id, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 0 },
+  });
+
+  try {
+    await page.goto('/membership-plans');
+    await expect(page.getByRole('cell', { name: 'Active Tile Pack' })).toBeVisible();
+    const tile = page.locator('span', { hasText: 'Active members' }).locator('..');
+    await expect(tile.getByText('1', { exact: true })).toBeVisible();
+  } finally {
+    await db.membership.deleteMany({ where: { id: { in: [live.id, usedUp.id] } } });
+  }
+});

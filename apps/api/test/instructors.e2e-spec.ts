@@ -27,6 +27,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -64,13 +65,26 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
   let tokenBranchStaffA1: string;
 
   const instructorIds: string[] = [];
+  // Decision 1/230 — captured emails for "Add Manually"'s temp-passcode send,
+  // same overrideProvider(NotificationDeliveryService) pattern
+  // coach-invites.e2e-spec.ts already established.
+  const sentEmails: Array<{ to: string; subject: string; body: string }> = [];
 
   function signAccessToken(user: { id: string; email: string }, grants: Array<Record<string, unknown>>) {
     return jwt.sign({ sub: user.id, email: user.email, grants });
   }
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    process.env.PORTAL_BASE_URL = 'https://portal.example.test';
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(NotificationDeliveryService)
+      .useValue({
+        sendEmail: async (to: string, subject: string, body: string) => {
+          if (!subject.startsWith('Your ULTM8 instructor account is ready')) return;
+          sentEmails.push({ to, subject, body });
+        },
+      })
+      .compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
@@ -643,5 +657,235 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       await superuser.roleGrant.deleteMany({ where: { schoolId: schoolS.id } });
       await superuser.school.delete({ where: { id: schoolS.id } });
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Decision 1/230/237 — Instructor "Add Manually": a real User + RoleGrant +
+  // Instructor created immediately from just name+email, a temp passcode
+  // emailed, forced change on first login.
+  // ---------------------------------------------------------------------------
+
+  function extractTempPasscode(body: string): string {
+    const match = body.match(/Temporary passcode: (\d{6})/);
+    if (!match) throw new Error(`No temp passcode found in email body: ${body}`);
+    return match[1];
+  }
+
+  it('creates a real User + RoleGrant + Instructor immediately from just name+email, and emails a temp passcode', async () => {
+    const schoolN = await superuser.school.create({ data: { id: randomUUID(), name: 'Instructors HTTP No-Branch School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: schoolN.id } });
+    const tokenOwnerN = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolN.id, branchId: null }]);
+    const email = `instructors-http-am-${randomUUID()}@example.test`;
+
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolN.id}/instructors/add-manually`)
+        .set('Authorization', `Bearer ${tokenOwnerN}`)
+        .send({ firstName: 'Added', surname: 'Manually', email });
+      expect(res.status).toBe(201);
+      expect(res.body.emailSent).toBe(true);
+      expect(res.body.firstName).toBe('Added');
+      expect(res.body.email).toBe(email);
+      instructorIds.push(res.body.id);
+
+      const createdUser = await superuser.user.findUniqueOrThrow({ where: { email } });
+      expect(createdUser.phone).toBeNull();
+      expect(createdUser.dateOfBirth).toBeNull();
+      expect(createdUser.mustChangePasscode).toBe(true);
+
+      const grant = await superuser.roleGrant.findFirst({ where: { userId: createdUser.id, schoolId: schoolN.id, role: 'INSTRUCTOR' } });
+      expect(grant).not.toBeNull();
+      expect(grant!.revokedAt).toBeNull();
+
+      const sentEmail = sentEmails.find((e) => e.to === email);
+      expect(sentEmail).toBeDefined();
+      expect(() => extractTempPasscode(sentEmail!.body)).not.toThrow();
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolN.id } });
+      await superuser.school.delete({ where: { id: schoolN.id } });
+    }
+  });
+
+  it('rejects a duplicate email — 409, points at "Invite to Instructor Role" instead', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors/add-manually`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ firstName: 'Dup', surname: 'Email', email: ownerA.email, branchId: branchA1.id });
+    expect(res.status).toBe(409);
+  });
+
+  it('non-owner (Branch Staff) cannot use Add Manually — 403', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors/add-manually`)
+      .set('Authorization', `Bearer ${tokenBranchStaffA1}`)
+      .send({ firstName: 'No', surname: 'Permission', email: `instructors-http-no-perm-${randomUUID()}@example.test` });
+    expect(res.status).toBe(403);
+  });
+
+  it('School has branches: add-manually without branchId is rejected — 400', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors/add-manually`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ firstName: 'No', surname: 'Branch', email: `instructors-http-no-branch-${randomUUID()}@example.test` });
+    expect(res.status).toBe(400);
+  });
+
+  it('full smoke path: add-manually -> login (must change passcode) -> first-login change -> real session; the old temp passcode then fails', async () => {
+    const email = `instructors-http-smoke-${randomUUID()}@example.test`;
+    const created = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors/add-manually`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ firstName: 'Smoke', surname: 'Path', email, branchId: branchA1.id });
+    expect(created.status).toBe(201);
+    instructorIds.push(created.body.id);
+
+    const sentEmail = sentEmails.find((e) => e.to === email);
+    const tempPasscode = extractTempPasscode(sentEmail!.body);
+
+    const firstLogin = await request(app.getHttpServer()).post('/v1/auth/login').send({ email, passcode: tempPasscode });
+    expect(firstLogin.status).toBe(201);
+    expect(firstLogin.body.mustChangePasscode).toBe(true);
+    expect(typeof firstLogin.body.passcodeChangeToken).toBe('string');
+    expect(firstLogin.body.accessToken).toBeUndefined();
+
+    // The passcode-change token cannot be used anywhere else.
+    const misuse = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/instructors`)
+      .set('Authorization', `Bearer ${firstLogin.body.passcodeChangeToken}`);
+    expect(misuse.status).toBe(403);
+
+    const change = await request(app.getHttpServer())
+      .post('/v1/auth/passcode-change/first-login')
+      .set('Authorization', `Bearer ${firstLogin.body.passcodeChangeToken}`)
+      .send({ newPasscode: '424242' });
+    expect(change.status).toBe(201);
+    expect(typeof change.body.accessToken).toBe('string');
+    expect(typeof change.body.refreshToken).toBe('string');
+
+    // The old temp passcode no longer works.
+    const oldPasscodeLogin = await request(app.getHttpServer()).post('/v1/auth/login').send({ email, passcode: tempPasscode });
+    expect(oldPasscodeLogin.status).toBe(401);
+
+    // The new passcode logs in normally — no more mustChangePasscode.
+    const secondLogin = await request(app.getHttpServer()).post('/v1/auth/login').send({ email, passcode: '424242' });
+    expect(secondLogin.status).toBe(201);
+    expect(typeof secondLogin.body.accessToken).toBe('string');
+    expect(secondLogin.body.mustChangePasscode).toBeUndefined();
+  });
+
+  it('PATCH /instructors/me/profile completes the four deferred fields across every Instructor row the caller holds', async () => {
+    const email = `instructors-http-complete-${randomUUID()}@example.test`;
+    const created = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/instructors/add-manually`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ firstName: 'Complete', surname: 'Profile', email, branchId: branchA1.id });
+    expect(created.status).toBe(201);
+    instructorIds.push(created.body.id);
+
+    const sentEmail = sentEmails.find((e) => e.to === email);
+    const tempPasscode = extractTempPasscode(sentEmail!.body);
+    const firstLogin = await request(app.getHttpServer()).post('/v1/auth/login').send({ email, passcode: tempPasscode });
+    const change = await request(app.getHttpServer())
+      .post('/v1/auth/passcode-change/first-login')
+      .set('Authorization', `Bearer ${firstLogin.body.passcodeChangeToken}`)
+      .send({ newPasscode: '424242' });
+    const tokenNewInstructor = change.body.accessToken as string;
+
+    const res = await request(app.getHttpServer())
+      .patch('/v1/instructors/me/profile')
+      .set('Authorization', `Bearer ${tokenNewInstructor}`)
+      .send({ address: '123 Mat Street', activities: ['BJJ', 'Judo'], certificationConsent: true });
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].address).toBe('123 Mat Street');
+    expect(res.body.items[0].activities).toEqual(['BJJ', 'Judo']);
+    expect(typeof res.body.items[0].certificationConsentedAt).toBe('string');
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /instructors/:id/classes (v1.2 backend backlog) — the real replacement
+  // for the School Portal's client-side filter-the-School's-Classes workaround,
+  // with a server-computed enrolled count.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /instructors/:id/classes', () => {
+    it('returns only this Instructor\'s own Classes, each with a server-computed enrolledCount', async () => {
+      const coachUser = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `instructors-http-classes-coach-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'ClassesCoach',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('1990-01-01'),
+        },
+      });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: coachUser.id, schoolId: schoolA.id } });
+      const profile = await superuser.instructor.create({ data: { id: randomUUID(), schoolId: schoolA.id, userId: coachUser.id } });
+      instructorIds.push(profile.id);
+
+      const future = new Date(Date.now() + 24 * 3_600_000);
+      // instructorId on Class is a User.id FK, matching coachUser.id — not this
+      // profile's own `id` (see findClassesForInstructor's own header comment).
+      const ownClass = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: schoolA.id, instructorId: coachUser.id, title: 'Owned by coach', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      });
+      // A second Class taught by someone else at the same School — must not show up.
+      const otherClass = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: schoolA.id, title: 'Someone else\'s class', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      });
+
+      // Fixture Bookings for the enrolled-count: two UPCOMING (should count), one
+      // CANCELLED (should not), on ownClass; one UPCOMING booking on otherClass
+      // (proves the count is per-Class, not School-wide).
+      const studentOne = await superuser.user.create({
+        data: { id: randomUUID(), email: `instructors-http-classes-s1-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'S1', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01') },
+      });
+      const studentTwo = await superuser.user.create({
+        data: { id: randomUUID(), email: `instructors-http-classes-s2-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'S2', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01') },
+      });
+      const studentThree = await superuser.user.create({
+        data: { id: randomUUID(), email: `instructors-http-classes-s3-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'S3', surname: 'Tenant', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01') },
+      });
+      const plan = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: schoolA.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 } });
+      const mkMembership = (studentId: string) =>
+        superuser.membership.create({ data: { id: randomUUID(), studentId, membershipPlanId: plan.id, schoolId: schoolA.id, status: 'ACTIVE', frequency: 'RECURRING' } });
+      const m1 = await mkMembership(studentOne.id);
+      const m2 = await mkMembership(studentTwo.id);
+      const m3 = await mkMembership(studentThree.id);
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentOne.id, classId: ownClass.id, schoolId: schoolA.id, sourceMembershipId: m1.id, status: 'UPCOMING' } });
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentTwo.id, classId: ownClass.id, schoolId: schoolA.id, sourceMembershipId: m2.id, status: 'UPCOMING' } });
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentThree.id, classId: ownClass.id, schoolId: schoolA.id, sourceMembershipId: m3.id, status: 'CANCELLED' } });
+      await superuser.booking.create({ data: { id: randomUUID(), studentId: studentThree.id, classId: otherClass.id, schoolId: schoolA.id, sourceMembershipId: m3.id, status: 'UPCOMING' } });
+
+      try {
+        const res = await request(app.getHttpServer())
+          .get(`/v1/instructors/${profile.id}/classes`)
+          .set('Authorization', `Bearer ${tokenOwnerA}`);
+        expect(res.status).toBe(200);
+        const ids = res.body.items.map((c: { id: string }) => c.id);
+        expect(ids).toContain(ownClass.id);
+        expect(ids).not.toContain(otherClass.id);
+        const row = res.body.items.find((c: { id: string }) => c.id === ownClass.id);
+        expect(row.title).toBe('Owned by coach');
+        // 2 UPCOMING, the CANCELLED one excluded — same "Full" definition
+        // domain-rules §9 confirms.
+        expect(row.enrolledCount).toBe(2);
+      } finally {
+        await superuser.booking.deleteMany({ where: { schoolId: schoolA.id, classId: { in: [ownClass.id, otherClass.id] } } });
+        await superuser.membership.deleteMany({ where: { id: { in: [m1.id, m2.id, m3.id] } } });
+        await superuser.membershipPlan.delete({ where: { id: plan.id } });
+        await superuser.class.deleteMany({ where: { id: { in: [ownClass.id, otherClass.id] } } });
+        await superuser.user.deleteMany({ where: { id: { in: [studentOne.id, studentTwo.id, studentThree.id] } } });
+      }
+    });
+
+    it('cannot read another tenant\'s Instructor Classes', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/instructors/${randomUUID()}/classes`)
+        .set('Authorization', `Bearer ${tokenOwnerB}`);
+      expect(res.status).toBe(404);
+    });
   });
 });

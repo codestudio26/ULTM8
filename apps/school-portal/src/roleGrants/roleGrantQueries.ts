@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -34,6 +34,22 @@ export function fetchInviteCandidate(schoolId: string, query: { email?: string; 
       params: { path: { schoolId }, query },
     }),
   );
+}
+
+/**
+ * v1.2 backend backlog — Instructor Detail's/Student Detail's "Revoke
+ * Enrollment" action needs to know, on page load (not only on a manual
+ * lookup form submit the way StaffPage's own imperative fetchUserRoleGrants
+ * call is used), which active RoleGrant to actually revoke — a cached
+ * react-query wrapper over the same endpoint, additive alongside the
+ * existing imperative helper rather than replacing it.
+ */
+export function useUserRoleGrants(userId: string | null) {
+  return useQuery({
+    queryKey: ['roleGrants', userId],
+    queryFn: () => fetchUserRoleGrants(userId!),
+    enabled: !!userId,
+  });
 }
 
 export function useInviteStaff() {

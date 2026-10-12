@@ -59,18 +59,22 @@ export class AttendanceService {
   ) {}
 
   /** GET /classes/{id}/qr-token — Staff-only. Mints the rotating Class-scoped
-   * token the School Portal's own QR display screen polls for and renders. No
-   * window check here (deliberately) — issuing a token for a Class whose
-   * check-in window has already closed is harmless, since scan() enforces the
-   * window itself; duplicating that check here would just be a second copy of
-   * the same cutoff logic to keep in sync. */
+   * token the School Portal's own QR display screen polls for and renders,
+   * plus (Decision 235) the same-window 6-digit fallback code shown as text
+   * alongside the QR. No window check here (deliberately) — issuing a token
+   * for a Class whose check-in window has already closed is harmless, since
+   * scan()/enterCode() enforce the window themselves; duplicating that check
+   * here would just be a second copy of the same cutoff logic to keep in
+   * sync. */
   async issueClassQrToken(callerId: string, classId: string) {
     const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
     if (!cls) {
       throw new NotFoundException('Class not found');
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
-    return this.qrTokenService.signClassToken(classId);
+    const { token, expiresAt } = this.qrTokenService.signClassToken(classId);
+    const { code } = this.qrTokenService.deriveClassCheckInCode(classId);
+    return { token, expiresAt, code };
   }
 
   /** GET /attendance/my-qr-token — self-service, no role check and no DB read
@@ -109,6 +113,35 @@ export class AttendanceService {
     await this.assertCameraConsentNotWithdrawn(callerId);
 
     return this.completeBooking(callerId, booking, 'SELF_SERVICE', null);
+  }
+
+  /**
+   * POST /attendance/code — Decision 235's own standing, self-service,
+   * camera-free check-in path: a Student types the 6-digit code the Class-QR
+   * display screen also shows as text (same window as the QR, see
+   * QrTokenService.deriveClassCheckInCode's own comment). Deliberately
+   * SKIPS assertCameraConsentNotWithdrawn — this exists specifically to give
+   * a consent-withdrawn or accessibility-affected Student a standing path
+   * that doesn't depend on a camera at all, the same reasoning
+   * instructorScan()'s own INSTRUCTOR_MANUAL mode already applies; gating it
+   * on the exact thing it's the alternative to would defeat its own purpose.
+   * `INSTRUCTOR_MANUAL` remains the true occasional-use STAFF fallback
+   * (Decision 235) — this is its own, distinct, Student-initiated method.
+   */
+  async enterCode(studentId: string, classId: string, code: string) {
+    if (!this.qrTokenService.verifyClassCheckInCode(classId, code)) {
+      throw new BadRequestException('Incorrect or expired code — ask Staff for the current code.');
+    }
+
+    const booking = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.booking.findFirst({ where: { studentId, classId, status: 'UPCOMING' }, include: { class: true } }),
+    );
+    if (!booking) {
+      throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
+    }
+    this.assertWithinWindow(booking.class);
+
+    return this.completeBooking(studentId, booking, 'SELF_SERVICE_CODE', null);
   }
 
   /** POST /classes/{id}/attendance-scan — Staff-only (Decision 71's confirmed

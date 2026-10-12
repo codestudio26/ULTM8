@@ -167,11 +167,46 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       dispute = await client.disputes.retrieve(objectId);
     }
 
+    // Decision 234's own saved-payment-method dependency — same "pre-fetch
+    // outside the transaction" discipline as invoice/dispute above, plus one
+    // more external call this event specifically needs: Checkout Session's
+    // own `mode: 'setup'` does NOT auto-set the new Customer's default payment
+    // method (unlike Subscriptions' `payment_settings.save_default_payment_
+    // method`) — PaymentsService.createSetupSession's own header comment has
+    // the full account of why Checkout (hosted) rather than an embedded SDK is
+    // used here at all. A missing stripeAccountId is the same genuine anomaly
+    // invoice.paid/invoice.payment_failed's own comment describes (every Stripe
+    // object this codebase creates uses scopedClient()) — refuse rather than
+    // silently drop. `session.mode !== 'setup'` or missing metadata/setup_intent
+    // is left to dispatch()'s own safe-default (this codebase uses Checkout for
+    // nothing else today, so this is defensive, not an expected branch).
+    let checkoutSessionData: { studentId: string; schoolId: string; stripeCustomerId: string } | undefined;
+    if (eventType === 'checkout.session.completed') {
+      if (!stripeAccountId) {
+        throw new Error(
+          `checkout.session.completed for object ${objectId} (event ${stripeEventId}) arrived with no stripeAccountId on the job payload — cannot fetch its Session, refusing to silently mark this event processed.`,
+        );
+      }
+      const stripe = this.stripeClient.scopedClient(stripeAccountId);
+      const session = await stripe.checkout.sessions.retrieve(objectId);
+      if (session.mode === 'setup' && session.setup_intent && session.customer && session.metadata?.studentId && session.metadata?.schoolId) {
+        const setupIntentId = typeof session.setup_intent === 'string' ? session.setup_intent : session.setup_intent.id;
+        const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+        const paymentMethodId =
+          typeof setupIntent.payment_method === 'string' ? setupIntent.payment_method : setupIntent.payment_method?.id;
+        const customerId = typeof session.customer === 'string' ? session.customer : session.customer.id;
+        if (paymentMethodId) {
+          await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: paymentMethodId } });
+          checkoutSessionData = { studentId: session.metadata.studentId, schoolId: session.metadata.schoolId, stripeCustomerId: customerId };
+        }
+      }
+    }
+
     let sideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     try {
       await this.prismaJobs.$transaction(async (tx) => {
         await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
-        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute);
+        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData);
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
@@ -296,6 +331,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     stripeEventId: string,
     invoice: Stripe.Invoice | undefined,
     dispute: Stripe.Dispute | undefined,
+    checkoutSessionData: { studentId: string; schoolId: string; stripeCustomerId: string } | undefined,
   ): Promise<DisputeSideEffects> {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
@@ -346,6 +382,17 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           throw new Error(`dispatch() reached ${eventType} (event ${stripeEventId}) with no Dispute — this should be unreachable; see process()'s own guard.`);
         }
         return this.handleChargeDispute(tx, dispute, stripeEventId);
+      // Decision 234's own saved-payment-method dependency — see process()'s own
+      // pre-fetch comment for the full account.
+      case 'checkout.session.completed':
+        if (checkoutSessionData) {
+          await this.handleCheckoutSessionCompleted(tx, checkoutSessionData);
+        } else {
+          this.logger.log(
+            `Stripe event ${stripeEventId} (checkout.session.completed) was not a recognized setup-mode payment-method save — recorded, no handler action.`,
+          );
+        }
+        return noSideEffects;
       // Safe default — see this file's own header comment for why this stays
       // log-only: nothing built yet reacts differently to past_due vs Active
       // beyond what customer.subscription.deleted already covers on cancellation.
@@ -1073,6 +1120,25 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
 
   private formatDisputeAmount(dispute: Stripe.Dispute): string {
     return `${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`;
+  }
+
+  /** Decision 234's own saved-payment-method dependency — upserts rather than
+   * creates: re-running PaymentsService.createSetupSession() for an existing
+   * (studentId, schoolId) pair reuses the SAME Stripe Customer (that method's
+   * own comment), so this is always "the same row, possibly a new default
+   * payment method" never a second row — matches StudentPaymentMethod's own
+   * @@unique([studentId, schoolId]). process()'s own pre-fetch has already set
+   * the Customer's default payment method at Stripe; this only persists the
+   * Customer id locally. */
+  private async handleCheckoutSessionCompleted(
+    tx: Prisma.TransactionClient,
+    data: { studentId: string; schoolId: string; stripeCustomerId: string },
+  ): Promise<void> {
+    await tx.studentPaymentMethod.upsert({
+      where: { studentId_schoolId: { studentId: data.studentId, schoolId: data.schoolId } },
+      create: { id: randomUUID(), studentId: data.studentId, schoolId: data.schoolId, stripeCustomerId: data.stripeCustomerId },
+      update: { stripeCustomerId: data.stripeCustomerId },
+    });
   }
 
   @OnWorkerEvent('failed')

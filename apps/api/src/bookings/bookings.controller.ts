@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -12,6 +12,9 @@ import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
+import { StudentBookingListResponseDto } from './dto/student-booking-response.dto';
+import { BookingsSummaryQueryDto } from './dto/bookings-summary-query.dto';
+import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
 
 // Decision 17: extends the per-user/per-IP throttling already used on auth endpoints
 // to class-booking and credit-restore (cancelBooking is where BookingsService restores
@@ -79,5 +82,33 @@ export class BookingsController {
   @Get('classes/:id/bookings')
   findAllForClass(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Query() query: PaginationQueryDto) {
     return this.bookingsService.findAllForClass(user.sub, id, query.cursor, query.limit);
+  }
+
+  /** v1.2 backend backlog — Student Detail's "Upcoming Booking", a real
+   * per-Student Staff read. `schoolId` required query param, same convention
+   * as GET /students/{id}/membership-status and /students/{id}/rank-history
+   * — see BookingsService.findAllForStudent's own header comment. */
+  @ApiOkResponse({ type: StudentBookingListResponseDto })
+  @ApiQuery({ name: 'cursor', required: false, description: 'nextCursor from the previous page.' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Get('students/:id/bookings')
+  findAllForStudent(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('schoolId') schoolId: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.bookingsService.findAllForStudent(user.sub, id, schoolId, cursor, limit);
+  }
+
+  /** v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. Staff-only
+   * (School Owner/Manager, Branch Staff, or Instructor). See
+   * BookingsService.getWeeklySummary's own header comment for the date-range
+   * default/validation and the two disclosed judgment calls on grouping. */
+  @ApiOkResponse({ type: BookingsSummaryResponseDto })
+  @Get('schools/:schoolId/bookings/summary')
+  getWeeklySummary(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: BookingsSummaryQueryDto) {
+    return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to);
   }
 }

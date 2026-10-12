@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, SegmentedCodeInput, SuccessBanner, TextField } from '@ultm8/ui';
+import { AuthCard, Button, ErrorBanner, Field, PhoneField, SegmentedCodeInput, SuccessBanner } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 
 export function VerifyOtpPage() {
   const navigate = useNavigate();
@@ -43,8 +44,8 @@ export function VerifyOtpPage() {
       <form onSubmit={handleVerify}>
         {error ? <ErrorBanner message={error} /> : null}
         {resent ? <SuccessBanner message="Code resent." /> : null}
-        <Field label="Phone" htmlFor="verify-phone" hint="E.164 format, e.g. +15551234567">
-          <TextField type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Field label="Phone" htmlFor="verify-phone">
+          <PhoneField required value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Field label="Verification code" htmlFor="verify-code">
           <SegmentedCodeInput value={code} onChange={setCode} autoFocus required />

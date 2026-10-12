@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useCreateWaiver, useUpdateWaiver, useWaivers, type WaiverResponse } from './waiverQueries';
+import { useCreateWaiver, useUpdateWaiver, useWaivers, useWaiverSignatures, type WaiverResponse } from './waiverQueries';
 import { WaiverFormModal } from './WaiverFormModal';
 
 /** Short list-row preview — Waiver.body can run up to 20,000 characters
@@ -111,34 +111,7 @@ export function WaiversPage() {
                 {selected.body}
               </div>
 
-              {/* Signatures — proposed, not real. See docs/decisions/POST-SPEC-55-DECISION-LOG.md
-                  Decision 125 and docs/v1.2-backend-backlog.md ("Waivers page") for the full
-                  finding: there is no staff-facing endpoint to list WaiverSignature rows at
-                  all, and even if one existed, a WaiverSignature row only ever represents
-                  "signed" today (status defaults to SIGNED; nothing ever creates an
-                  Unsigned/Pending row) — so "who hasn't signed yet" can't be answered from
-                  WaiverSignature alone without also resolving the Student roster, which has
-                  its own separate, larger gap (no real Student-enrollment path in production
-                  yet). Shown here, visibly inert, rather than silently omitted. */}
-              <div
-                title="Not available yet — no staff-facing endpoint exists to list who has signed this Waiver, and the underlying WaiverSignature model has no concept of an 'unsigned' row today. See docs/v1.2-backend-backlog.md."
-                style={{
-                  marginTop: 24,
-                  padding: '14px 18px',
-                  border: '1px dashed var(--border-strong)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
-                }}
-              >
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Signatures
-                </span>
-                <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-                  Not available yet — see docs/v1.2-backend-backlog.md
-                </span>
-              </div>
+              <SignaturesPanel schoolId={schoolId} waiverId={selected.id} />
             </Card>
             </div>
           ) : null}
@@ -161,6 +134,53 @@ export function WaiversPage() {
         <EditWaiverModal schoolId={schoolId} waiver={editing} onClose={() => setEditing(null)} />
       ) : null}
     </>
+  );
+}
+
+/**
+ * v1.2 backend backlog — real data for "who HAS signed, with what status."
+ * Deliberately does NOT attempt "who hasn't signed yet" (a roster diff) —
+ * that's a separate, still-open product decision this panel doesn't guess
+ * at; see docs/v1.2-backend-backlog.md.
+ */
+function SignaturesPanel({ schoolId, waiverId }: { schoolId: string; waiverId: string }) {
+  const { data, isLoading, error } = useWaiverSignatures(schoolId, waiverId);
+  const items = data?.items ?? [];
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h3 style={{ fontSize: 15, margin: '0 0 8px', color: 'var(--text-primary)' }}>Signatures</h3>
+      {isLoading ? (
+        <Spinner />
+      ) : error ? (
+        <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load signatures.'} />
+      ) : items.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>No one has signed this Waiver yet.</p>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+          {items.map((s) => (
+            <li
+              key={s.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--surface-1)',
+              }}
+            >
+              <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{s.signerFullName}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatUpdatedLabel(s.signedDate)}</span>
+                <Badge variant={s.status === 'SIGNED' ? 'success' : s.status === 'EXPIRED' ? 'danger' : undefined}>{s.status}</Badge>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

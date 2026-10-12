@@ -2664,7 +2664,7 @@ Investigated at the user's direct request ("not sure — need to see how Classes
 
 ## Decision 211 — Instructor "Add Manually" account-claim invitation (Decision 206) approved for build
 
-**Date:** 10 Oct 2026 · **Status:** Approved by product owner · **Promotes:** Decision 206 from proposed design to approved
+**Date:** 10 Oct 2026 · **Status:** ~~Approved by product owner~~ **Superseded by Decision 237** (11 Oct 2026) — a different, incompatible mechanism (system passcode + forced reset) was chosen instead when this exact question was re-asked the next day, without this entry having been surfaced at the time. Never built. · **Promotes:** Decision 206 from proposed design to approved
 
 Decision 206's account-claim invitation design (new `AccountInvitation` entity, two unauthenticated token-gated endpoints, claim-link email reusing `NotificationDeliveryService`, a "Complete Your Registration" screen) is approved for build as specified there. This is the blocking dependency for Instructor Add Manually to work end-to-end.
 
@@ -2775,6 +2775,8 @@ Rather than a separate Instructor-only rank structure, Instructor profiles will 
 ### Recorded by
 
 User, choosing "Yes, reuse the Student rank system", 10 Oct 2026.
+
+**Status update (12 Oct 2026):** already built, before this decision was logged. Decision 188 (PR #142) gave instructors an `InstructorBelt` per style, chosen from the School's own Discipline/Rank/Stripe ladder (the same one students use) and verified by the owner; the old free-text `beltRanking` field is gone. No separate design pass is needed.
 
 ---
 
@@ -2918,6 +2920,8 @@ Developer (this session), per the user's instruction to view the built pages, st
 
 No code change; covered by `coach-invites.e2e-spec.ts`.
 
+**Note on the commit title:** this decision was merged as commit `94d32ca` (PR #176), whose title still reads "Decision 210", its number before it was renumbered to 229. That commit is this decision, not Decision 210 above.
+
 ---
 
 ## Decision 230 — Timetable↔Class relationship: rolling-window auto-generation reconfirmed
@@ -3020,4 +3024,92 @@ User, approving the Developer recommendation, 11 Oct 2026.
 ### Recorded by
 
 User, approving the Developer recommendation (screen + step-up, prioritized ahead of backlog), 11 Oct 2026; this log entry itself written up after the fact, 11 Oct 2026, on discovering PR #189 shipped citing a decision number that was never actually recorded here.
+
+---
+
+## Decision 237 — Instructor "Add Manually": real record created immediately, system passcode emailed, forced change on first login — supersedes Decision 206/211
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the v1.1/v1.2 open-decisions review's item 1 — how a manually-added Instructor gets a real login. **Supersedes Decision 206 (proposed design) and Decision 211 (10 Oct 2026, approved for build)**, which had independently settled on a different, incompatible mechanism — an account-claim email invitation, where no `User`/`RoleGrant`/`Instructor` row exists at all until the invited person clicks a link and completes full registration themselves. That design was approved one day before this review, in a separate session, without this exact question having been re-asked; the two could not both stand.
+
+1. **"Add Manually" creates a real Instructor record outright — no invite/acceptance step.** Only **Name and Email** are required at creation. `Address`, `Activities` (distinct from `specializations`), `Certification` upload, and consent checkboxes (Decision 217's same four fields) are all real schema columns, left blank at creation and filled in by the Instructor themselves after their first login, via `PATCH /instructors/me/profile`.
+2. **First-login credential goes by email** (already wired, no new cost) — a server-generated temp passcode, not an invite link. `User.phone`/`dateOfBirth` are made nullable to allow this (Decision 1/230's own schema migration); `User.mustChangePasscode` forces a passcode change before any ordinary session is issued (`POST /auth/passcode-change/first-login`), via a narrow, single-purpose token that can call no other endpoint.
+3. **Why this over Decision 211's design:** the product owner, asked directly in this session ("we don't need to have all the required [fields] to create an account, we can make them fill the information once they have logged to their accounts"), wanted the record to exist immediately — Decision 211's design doesn't do that; it defers the record's entire existence to a claim step. This session's choice was confirmed as the better fit for that explicit requirement, at the acknowledged cost of a deliberate, one-time departure from this codebase's usual "never transmit the raw passcode" discipline (mitigated by the forced change, not an additional expiry).
+4. **WhatsApp as a future notification channel** for the first-login credential was raised and deferred — a separate, later decision, not a blocker here.
+
+### What this does NOT resolve
+
+Whether `AccountInvitation` (Decision 206's entity, never built) should still exist for Staff's own identical from-zero-invite gap — out of scope here; this decision only resolves Instructor "Add Manually".
+
+### Recorded by
+
+User, choosing "System passcode + forced reset" over Decision 211's account-claim-invitation design when asked directly during Plan Mode, 11 Oct 2026.
+
+---
+
+## Decision 238 — Saved payment methods: a real capability built from scratch, as full infrastructure (not scoped to Decision 234 alone), via hosted Stripe Checkout rather than an embedded SDK
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** a real, previously-unknown gap discovered while scoping Decision 234's implementation — `PaymentsService.charge()`/`subscribe()`'s own existing header comments already documented "no `GET /payments/methods`, no saved-card reuse anywhere yet" as a deliberate Phase 9 simplification, but Decision 234's own text ("charge the Student's saved payment method, off-session") assumed that capability already existed. It didn't: no Stripe Customer/payment-method id was persisted anywhere in this schema before this decision.
+
+**Scope chosen, with full cost disclosed up front:** two options were put to the product owner — (A) a minimal version scoped only to Students already on a Subscription-type Membership (reusing the Customer `subscribe()` already creates), or (B) a real, general saved-payment-method capability usable by any Student regardless of membership type. **The product owner chose (B).**
+
+1. **New `StudentPaymentMethod` table** — `(studentId, schoolId)` unique, storing only a Stripe Customer id (never persisted card details; brand/last4 are fetched live from Stripe for display). Scoped per School, not globally per Student — a Stripe Customer lives inside exactly one connected account (Decision 86's Direct-charge model), so a card saved at one School's Customer can never be reused at another School's.
+2. **Collection mechanism: a hosted Stripe Checkout Session (`mode: 'setup'`), not an embedded Stripe Elements/card-field integration.** `apps/student` (the Student/Guardian app) has no Stripe SDK dependency at all and is plain Expo-managed with no custom native dev client (Decision 113) — an embedded SDK needs native module linking this app's current build setup doesn't have, and this session's own environment cannot build or run a native RN dev client to verify one either way. The hosted Checkout URL is opened in the device's own browser (`expo-web-browser`, a pure-JS Expo module needing no native rebuild), which auto-returns to the app via its already-registered `ultm8-student://` scheme. Confirmation of a saved card is via the `checkout.session.completed` webhook, never a client-side success callback alone — the same discipline every other Stripe confirmation in this codebase already follows.
+3. **New Stripe primitives** on `PaymentsService`: `createSetupSession()`, `getMyPaymentMethod()`, `deleteMyPaymentMethod()`, and `chargeOffSession()` (the actual off-session charge, Decision 234's own direct dependency) — closing the "off-session charge capability it doesn't have today" gap Decision 234's own text names.
+4. **Decision 234 (late-cancellation fee) is built on top of this**, in the same phase: `BookingsService.cancelBooking()` attempts `chargeOffSession()` when a past-cutoff Class has `cancellationCharge` set, recording the outcome (`CHARGED`/`FAILED`/`NO_SAVED_PAYMENT_METHOD`) onto the Booking — never blocking the cancellation itself, which must succeed regardless of whether the fee can actually be collected.
+
+### What this does NOT resolve
+
+Decision 236's own separately-flagged follow-up — step-up re-authentication before reusing a saved payment method for a real charge (e.g. a Membership purchase) — is now technically buildable on top of this, but is not built here; it remains its own tracked, separate piece of work.
+
+### Recorded by
+
+User, choosing option (B) — full saved-payment-method infrastructure, not the minimal Subscription-only version — after being given an explicit time/pros-and-cons comparison of both, 11 Oct 2026.
+
+---
+
+## Decision 239 — Decision 236's own follow-up, built: step-up gates a new "pay with saved card" purchase path, not just the one pre-existing automatic charge
+
+**Date:** 11 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** Decision 236's own named follow-up — "step-up re-authentication before reusing a saved payment method for a real charge (e.g. a Membership purchase)" — and the matching line in `skills/ultm8-domain-rules/SKILL.md` §14/§18.
+
+Scoping this turned up a real, previously-unflagged gap: before this decision, **nothing in this codebase let a Student actively choose to pay for anything by reusing their saved card.** `MembershipsService.purchase()`'s Stripe-paid branches always collected a fresh card (`PaymentsService.charge()`/`subscribe()`); the only consumer of `chargeOffSession()` (Decision 238's saved-card charge primitive) was the automatic, system-initiated late-cancellation fee (Decision 234), which has no interactive moment to prompt a passcode. So "step-up before reusing a saved card" had nothing to gate — closing the gap meant building the reuse-purchase path itself first, which the user was asked to scope explicitly (three options given: build the full purchase path + step-up; skip for now, leave flagged open; or build the step-up plumbing alone with nothing behind it). **The user chose the first.**
+
+1. **`PurchaseMembershipDto` gains `payWithSavedCard`** — self-purchase only, scoped to CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP (one-time Stripe-paid plans). Explicitly rejected (400, before any step-up check or Stripe call) for: a Guardian-driven purchase (the saved-payment-method endpoints are self-only — a linked minor, who never logs in, can never have one to reuse), a SUBSCRIPTION plan (`PaymentsService.subscribe()`'s own pre-existing limitation — a throwaway Stripe Customer every call, never wired to `StudentPaymentMethod` — is a separate piece of work, not fixed here), and a Cash/Bank-provider School.
+2. **Step-up re-authentication gates it** — the same generic `StepUpService` Decision 236 built, same `X-Step-Up-Token` header mechanism, checked before any Stripe call is made.
+3. **The charge is synchronous**, unlike the fresh-card path: `chargeOffSession()` already confirms the PaymentIntent (`off_session: true, confirm: true`) and returns a known success/failure immediately — no client-side Stripe Elements confirmation step, no webhook wait. `MembershipsService.purchaseWithSavedCard()` records the Transaction and creates the Membership directly.
+4. **A genuinely new correctness risk, closed, not left open:** the existing two-simultaneous-Active-general-access-Membership race (already guarded by a partial unique index) can now be lost *after* real money has already moved — `chargeOffSession()` runs before any DB write (same "an external Stripe call has no place holding a DB transaction open" discipline this codebase enforces everywhere else), so a rollback on collision cannot undo the charge the way the async webhook path's own `resolveMembershipCollision` does. Closed with an explicit, synchronous refund (`PaymentsService.refundOffSessionCharge()`) in that one case, rather than left as a flagged gap — this is new money-movement code, not a narrow pre-existing limitation being extended.
+5. **Frontend (`apps/student`):** `MembershipPlanRow` offers "Pay with saved card" alongside "Purchase" whenever the Student has a saved card for that School and the plan qualifies, using the same `StepUpPrompt` component Decision 236's Guardian consent-withdrawal screen already built. This is, incidentally, the first real Stripe-money-moving purchase UI actually wired up end-to-end in `apps/student` — the fresh-card path (`requires_payment` outcome) remains unbuilt (Slice 4b, needs a Stripe Elements SDK this app doesn't have), but this one needs no client-side payment SDK at all, since the server already knows the outcome synchronously.
+
+### What this does NOT resolve
+
+Fixing `PaymentsService.subscribe()`'s own pre-existing "throwaway Customer every call" limitation, which blocks saved-card reuse for SUBSCRIPTION plans — flagged, not solved here, same as `PurchaseMembershipDto`'s own comment on it. Guardian-driven saved-card reuse for a linked minor — would need a design decision on whose card that even means, not built or scoped here.
+
+### Recorded by
+
+User, choosing to build the full purchase path (not skip, not plumbing-only) after being told explicitly that nothing existed yet for step-up to gate, 11 Oct 2026.
+
+---
+
+## Decision 240 — Every mobile-number field gets a real country-picker `PhoneField`, via `libphonenumber-js`'s "min" metadata — a pure input-UX upgrade, no DTO/backend change
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** every phone/mobile-number field in both `apps/school-portal` and `apps/student` was plain free text, with no country-code picker and no client-side validation — relying on the user to type a correctly-formed E.164 string by hand. For `RegisterScreen`/`RegisterPage`'s `phone` specifically, that field determines whether OTP/SMS delivery works at all for an international user. The product owner asked explicitly for "the best and most accurate" approach, worldwide — not a curated subset of launch markets.
+
+1. **Library: `libphonenumber-js`, "min" metadata build** (`import … from 'libphonenumber-js'`, which this version's own package re-exports as an alias of `/min` — confirmed by diffing the two entry files before picking one, not assumed). The alternative `/mobile` build (complete metadata, mobile-numbers-only, stricter `isValid()`) was considered and rejected: this one `PhoneField` is reused for both login/OTP mobile numbers **and** School/Franchise/Branch business contact numbers, which aren't confirmed to always be mobile lines — `/mobile`'s stricter validation risked flagging a genuine landline contact number as invalid. `/min` is also the package's own documented default.
+2. **Two parallel implementations, same logic, no shared runtime dependency across the web/native boundary:** `packages/ui/src/components.tsx` exports a web `PhoneField` (a searchable country-flag/dial-code combobox, composing to E.164 via `AsYouType`), and `apps/student/src/components/ui.tsx` (that app's one `components/ui` file — not a directory) exports an RN equivalent, country picker as a `Modal`+`FlatList` (no new Picker dependency). Both embed an identical, frozen `[ISO code, English name, calling code]` array for every country `libphonenumber-js`'s "min" metadata supports (245 entries, generated once via `getCountries()` + Node's `Intl.DisplayNames`) rather than computing country names at runtime — `Intl.DisplayNames` isn't guaranteed on every Hermes build.
+3. **Always emits a plain E.164 string** (`"+15551234567"`, or `''` until a country is chosen and a digit typed) — confirmed against every DTO that already validates a `phone`/`mobileNumber`/`contactPhone` field server-side (`RegisterDto`, `CreateInstructorDto`/`UpdateInstructorDto`, `LookupInviteCandidateQueryDto` all already use `@IsPhoneNumber` → E.164 only; `CreateSchoolDto`/`CreateFranchiseDto`/`CreateBranchDto` and their `Update*` variants validate `mobileNumber`/`contactPhone` as plain free text, so a stricter E.164 input only tightens what reaches them, never conflicts). **No DTO or backend change anywhere.**
+4. **Default country: the caller's own best locale guess, never a hardcoded single country** — browser `navigator.language`/`navigator.languages` on the web, device locale via `Intl.DateTimeFormat().resolvedOptions().locale` on `apps/student` (no new `expo-localization` dependency — Hermes's own bundled ICU already resolves this against the real device locale). Falls back to no pre-selected country (forcing an explicit choice) when no usable region subtag is found, rather than guessing wrong.
+5. **Fields converted:** `apps/student` — `RegisterScreen`, `ForgotPasscodeScreen`, `VerifyOtpScreen`, `ResetPasscodeScreen`. `apps/school-portal` — `RegisterPage`/`ForgotPasscodePage`/`ResetPasscodePage`/`VerifyOtpPage` (the mirrored Staff-side auth flow), `CreateSchoolPage`/`SchoolPage` (`mobileNumber`), `FranchiseFormModal` (`mobileNumber`), `BranchFormModal` **and** `BranchSettingsPage` (`contactPhone` — Decision 231 moved Branch *editing* to a dedicated settings page that `BranchFormModal` no longer serves, found by re-checking `BranchesPage`'s own routing rather than trusting the original field list), `InstructorFormModal` (`phone`), and `StaffPage`'s invite-candidate lookup (`phone` — an *existing* user's phone, looked up by exact E.164 match; not in the original field list, found by re-grepping after the listed fields were done).
+6. **Deliberately left alone:** `apps/student`'s `ProfileScreen` shows `phone` read-only (`UpdateUserDto` deliberately excludes both `email` and `phone` — login/OTP identifiers, not a bare profile edit, per that DTO's own header comment) — confirmed against the DTO before leaving it, not assumed from the screen's own comment alone. `CompleteInstructorProfilePage`/`CreateInstructorManuallyDto` collect no phone at all (by design, per that DTO's own header comment) — nothing to convert.
+7. **Not a login-identifier format change for any existing user:** `apps/student`/`apps/school-portal` login is by **email** + 6-digit passcode (Decision 72), never by phone — confirmed directly in `LoginScreen`/`LoginPage` before treating this as safe. Phone is used only for OTP delivery (registration, forgot-passcode) and the Staff-invite lookup, so this upgrade cannot break anyone's ability to log in.
+
+### What this does NOT resolve
+
+No existing Playwright spec in `apps/school-portal/e2e` exercised any of the converted phone/mobile fields before this change (re-verified by grep across every spec file) — so none needed updating to keep passing, but none gained new coverage either. Net-new e2e coverage for these fields (across 9+ forms, several needing a real OTP/SMS round trip this test environment has no provider for) is flagged as a follow-up, not built here.
+
+### Recorded by
+
+User ("the best and most accurate... this needs to be genuinely accurate internationally, not a curated subset of launch markets"), approving `libphonenumber-js` directly, 12 Oct 2026.
 

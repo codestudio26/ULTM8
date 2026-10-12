@@ -1,13 +1,25 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { AttendanceService } from './attendance.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
+import { EnterAttendanceCodeDto } from './dto/enter-attendance-code.dto';
 import { QrTokenResponseDto } from './dto/qr-token-response.dto';
 import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
+
+// Decision 235's own explicit mandate: "mandatory server-side rate limiting
+// on wrong code submissions — 6 digits is brute-forceable in hours without
+// it." Same shape/limit as STEP_UP_VERIFY_THROTTLE (auth.controller.ts) — an
+// authenticated, sensitive-guess endpoint keyed by the caller's own `sub`,
+// not a request-body field (there's no email/phone here to key on anyway).
+const ENTER_CODE_THROTTLE = {
+  identity: { limit: 5, ttl: 60_000, getTracker: jwtSubTracker },
+};
 
 /**
  * Phase 13 built self-service QR check-in; Phase 51 (Decision 107) adds the
@@ -28,6 +40,17 @@ export class AttendanceController {
   @Post('attendance/scan')
   scan(@CurrentUser() user: JwtPayload, @Body() dto: ScanAttendanceDto) {
     return this.attendanceService.scan(user.sub, dto);
+  }
+
+  /** Self-service, camera-free fallback (Decision 235) — types the 6-digit
+   * code the Class-QR display screen also shows as text, instead of
+   * scanning. See AttendanceService.enterCode()'s own comment for why this
+   * deliberately skips the camera-consent gate scan() enforces. */
+  @ApiOkResponse({ type: BookingResponseDto })
+  @Throttle(ENTER_CODE_THROTTLE)
+  @Post('attendance/code')
+  enterCode(@CurrentUser() user: JwtPayload, @Body() dto: EnterAttendanceCodeDto) {
+    return this.attendanceService.enterCode(user.sub, dto.classId, dto.code);
   }
 
   /** Staff-only — mints the rotating Class-scoped token for the School Portal's

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthCard, Button, Checkbox, ErrorBanner, Field, SelectField, TextField } from '@ultm8/ui';
+import { AuthCard, Button, Checkbox, ErrorBanner, Field, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useCreateSchool } from './schoolQueries';
 
 /**
@@ -20,6 +22,8 @@ export function CreateSchoolPage() {
   const { logout, setAccessToken } = useAuth();
   const navigate = useNavigate();
   const createSchool = useCreateSchool();
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
 
   const [form, setForm] = useState({
     name: '',
@@ -101,7 +105,7 @@ export function CreateSchoolPage() {
           <TextField required value={form.name} onChange={(e) => set('name', e.target.value)} />
         </Field>
         <Field label="Mobile number" htmlFor="school-mobile">
-          <TextField value={form.mobileNumber} onChange={(e) => set('mobileNumber', e.target.value)} />
+          <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Field label="Address" htmlFor="school-address">
           <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
@@ -116,13 +120,23 @@ export function CreateSchoolPage() {
           <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
         </Field>
         <Field label="Default language" htmlFor="school-language">
-          <TextField value={form.defaultLanguage} onChange={(e) => set('defaultLanguage', e.target.value)} />
+          <SelectField
+            id="school-language"
+            value={form.defaultLanguage}
+            onChange={(e) => set('defaultLanguage', e.target.value)}
+            options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+          />
         </Field>
         <Field label="Default currency" htmlFor="school-currency">
-          <TextField value={form.defaultCurrency} onChange={(e) => set('defaultCurrency', e.target.value)} />
+          <SelectField
+            id="school-currency"
+            value={form.defaultCurrency}
+            onChange={(e) => set('defaultCurrency', e.target.value)}
+            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+          />
         </Field>
-        <Field label="Timezone" htmlFor="school-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
-          <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
+        <Field label="Timezone" htmlFor="school-timezone" hint="Used for classes without a branch timezone.">
+          <TimezoneField value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
         </Field>
         <Field label="Description" htmlFor="school-description">
           <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />

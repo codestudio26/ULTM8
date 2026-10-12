@@ -1,22 +1,34 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { randomInt, randomUUID } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import { resolveInstructorSpecializations } from './instructor-specializations';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
-import { cursorPaginate } from '../common/pagination/cursor-paginate';
+import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
+import { CreateInstructorManuallyDto } from './dto/create-instructor-manually.dto';
+import { CompleteInstructorProfileDto } from './dto/complete-instructor-profile.dto';
+import { RequestCertificationUploadUrlDto } from './dto/request-certification-upload-url.dto';
+
+const BCRYPT_ROUNDS = 12;
 
 @Injectable()
 export class InstructorsService {
+  private readonly logger = new Logger(InstructorsService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly delivery: NotificationDeliveryService,
+    private readonly r2Client: R2ClientService,
   ) {}
 
   /**
@@ -73,6 +85,196 @@ export class InstructorsService {
         },
       });
     });
+  }
+
+  private portalBaseUrl(): string {
+    const url = process.env.PORTAL_BASE_URL?.trim().replace(/\/+$/, '');
+    if (!url) throw new ServiceUnavailableException('Instructor "Add Manually" is not set up yet: PORTAL_BASE_URL is not configured.');
+    return url;
+  }
+
+  /**
+   * POST /schools/:schoolId/instructors/add-manually (Decision 1/230) — a real
+   * User + RoleGrant + Instructor created in one transaction from just
+   * name+email, no invite/acceptance step: the product owner's own answer was
+   * "only Name and Email are required at creation... everything else is left
+   * blank and the instructor fills it in themselves after their first login."
+   * Supersedes Decision 206/211's unbuilt account-claim-invitation design for
+   * this same problem (Decision 237).
+   *
+   * School Owner/Manager only — same gate create() above already uses (Spec
+   * §8.2: Instructor's own confirmed permissions explicitly exclude
+   * "instructor management"), not CoachInvitesService's broader
+   * "Can invite coaches" staff permission — nothing approved here extends that
+   * permission to this new creation path.
+   */
+  async createManually(callerId: string, schoolId: string, dto: CreateInstructorManuallyDto) {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const email = dto.email.trim().toLowerCase();
+    const baseUrl = this.portalBaseUrl();
+
+    if (dto.branchId) {
+      await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+    }
+    // Decision 169: an instructor always belongs to something — same rule
+    // RoleGrantsService.create() already applies for an INSTRUCTOR grant.
+    const branches = await this.prismaApp.withTenantContext(callerId, (tx) => tx.branch.findMany({ where: { schoolId }, select: { id: true } }));
+    if (branches.length > 0 && !dto.branchId) {
+      throw new BadRequestException('This School has branches: choose the branch this instructor belongs to (branchId).');
+    }
+
+    // Decision 116's existing-email check, same PrismaAuthService pre-tenant-
+    // context lookup RoleGrantsService.create()'s target-existence check and
+    // AuthService.register() both already use — closes the risk of two
+    // divergent paths (Add Manually vs. an existing account) ever producing
+    // two accounts for one person.
+    const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingUser) {
+      throw new ConflictException('An account with this email already exists — use "Invite to Instructor Role" instead.');
+    }
+
+    const userId = randomUUID();
+    const instructorId = randomUUID();
+    const roleGrantId = randomUUID();
+    const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
+
+    const { instructor } = await this.prismaApp.withMultiTenantContext(async (tx, setContext) => {
+      // Bootstrap trick (AuthService.register()'s own pattern, reused by
+      // GuardiansService.createMinor()): User's RLS WITH CHECK only permits
+      // inserting a row whose id equals the CURRENT tenant context, so the new
+      // Instructor's User row is created under ITS OWN (about-to-exist) id.
+      await setContext(userId);
+      await tx.user.create({
+        data: {
+          id: userId,
+          email,
+          firstName: dto.firstName,
+          surname: dto.surname,
+          passcodeHash,
+          mustChangePasscode: true,
+          // phone/dateOfBirth deliberately left null — filled in by the
+          // Instructor themselves after first login (Decision 1/230).
+        },
+      });
+
+      await setContext(callerId);
+      await tx.roleGrant.create({
+        data: { id: roleGrantId, role: 'INSTRUCTOR', userId, schoolId, branchId: dto.branchId, grantedById: callerId },
+      });
+      const instructor = await tx.instructor.create({
+        data: { id: instructorId, userId, schoolId, branchId: dto.branchId },
+      });
+      return { instructor };
+    });
+
+    // Same non-blocking-email-failure shape as CoachInvitesService.create():
+    // creation already succeeded; only the delivery can fail independently.
+    let emailSent = true;
+    try {
+      await this.delivery.sendEmail(
+        email,
+        "Your ULTM8 instructor account is ready",
+        [
+          "You've been added as an Instructor on ULTM8.",
+          '',
+          `Sign in with this email address (${email}) and the temporary passcode below — you'll be asked to choose your own passcode right away.`,
+          '',
+          `Temporary passcode: ${tempPasscode}`,
+          '',
+          `${baseUrl}/login`,
+        ].join('\n'),
+      );
+    } catch (err) {
+      emailSent = false;
+      this.logger.warn(`Instructor ${instructor.id}: the temp-passcode email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    return {
+      ...instructor,
+      firstName: dto.firstName,
+      surname: dto.surname,
+      email,
+      status: 'ACTIVE' as const,
+      emailSent,
+    };
+  }
+
+  /**
+   * PATCH /instructors/me/profile (Decision 1/217) — self-service completion
+   * of the four fields "Add Manually" leaves blank at creation. Applied
+   * across every Instructor row the caller holds — flagged, not resolved: a
+   * multi-School instructor can't set different values per School through
+   * this one endpoint.
+   */
+  async completeMyProfile(callerId: string, dto: CompleteInstructorProfileDto) {
+    // Upload-then-confirm, same discipline R2ClientService.objectExists()
+    // already enforces for waiver signatures — never trust a caller-supplied
+    // key as proof something was actually uploaded there.
+    if (dto.certificationKey) {
+      const exists = await this.r2Client.objectExists(dto.certificationKey);
+      if (!exists) {
+        throw new BadRequestException('certificationKey does not correspond to an uploaded file — request a fresh upload URL and upload first.');
+      }
+    }
+
+    const existingRows = await this.prismaApp.withTenantContext(callerId, (tx) => tx.instructor.findMany({ where: { userId: callerId } }));
+    if (existingRows.length === 0) {
+      throw new NotFoundException('You have no Instructor profile.');
+    }
+
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.instructor.updateMany({
+        where: { userId: callerId },
+        data: {
+          address: dto.address,
+          activities: dto.activities,
+          certificationKey: dto.certificationKey,
+          // Can only move from unset to set, never clear — see this DTO's own
+          // header comment.
+          certificationConsentedAt: dto.certificationConsent ? new Date() : undefined,
+        },
+      }),
+    );
+
+    const updated = await this.prismaApp.withTenantContext(callerId, (tx) => tx.instructor.findMany({ where: { userId: callerId } }));
+    const names = await resolveUserNames(this.prismaAuth, [callerId]);
+    const name = names.get(callerId);
+    const statusByRow = await Promise.all(
+      updated.map((row) => this.resolveInstructorStatuses(callerId, row.schoolId, [callerId])),
+    );
+
+    return {
+      items: updated.map((row, i) => ({
+        ...row,
+        firstName: name?.firstName ?? '',
+        surname: name?.surname ?? '',
+        email: name?.email ?? '',
+        status: statusByRow[i].get(callerId) ?? ('REVOKED' as const),
+      })),
+      nextCursor: null,
+    };
+  }
+
+  /** POST /instructors/me/certification-upload-url (Decision 1/217/218) —
+   * reuses R2ClientService's presigned-URL pattern, the only existing
+   * precedent (waiver signature images). For a multi-School Instructor, uses
+   * the first profile found — same flagged limitation as completeMyProfile(). */
+  async requestCertificationUploadUrl(callerId: string, dto: RequestCertificationUploadUrlDto) {
+    const instructor = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.instructor.findFirst({ where: { userId: callerId }, select: { id: true, schoolId: true } }),
+    );
+    if (!instructor) {
+      throw new NotFoundException('You have no Instructor profile.');
+    }
+    const extension = dto.contentType === 'application/pdf' ? 'pdf' : dto.contentType === 'image/png' ? 'png' : 'jpg';
+    const objectKey = `instructor-certifications/${instructor.schoolId}/${instructor.id}/${randomUUID()}.${extension}`;
+    const uploadUrl = await this.r2Client.getPresignedUploadUrl(objectKey, dto.contentType);
+    return { uploadUrl, objectKey };
   }
 
   /** Profiles visible to the caller under one School — RLS restricts this to a School-
@@ -171,6 +373,70 @@ export class InstructorsService {
       email: names.get(found.userId)?.email ?? '',
       status: statuses.get(found.userId) ?? 'REVOKED',
     };
+  }
+
+  /**
+   * GET /instructors/{id}/classes (v1.2 backend backlog) — the real
+   * replacement for the School Portal's own client-side filter-the-School's-
+   * Classes-by-instructorId workaround (see InstructorClassResponseDto's own
+   * header comment for the full citation). `instructorId` on Class is a
+   * User.id FK (§6.1, confirmed by the backlog itself: "the filter has to
+   * match Instructor.userId against Class.instructorId"), not this
+   * Instructor row's own `id` — resolved via findOne() below, same as every
+   * other method here that needs this profile's schoolId/userId.
+   *
+   * Staff-gated (assertStaffAtSchool, same defense-in-depth convention
+   * BookingsService.findAllForClass already established for a Booking-
+   * derived read) — findOne() itself only enforces RLS visibility (any
+   * active RoleGrant holder), but computing enrolledCount below reads
+   * Booking rows, whose broad SELECT policy is Staff-only (domain-rules
+   * §10/Decision 89) — this endpoint is the School Portal's own Staff-facing
+   * Instructor Detail screen, so there's no real caller this excludes.
+   */
+  async findClassesForInstructor(callerId: string, instructorId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    const instructor = await this.findOne(callerId, instructorId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertStaffAtSchool(callerId, instructor.schoolId, instructor.branchId);
+
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) => tx.class.findMany({ ...args, where: { schoolId: instructor.schoolId, instructorId: instructor.userId } }),
+        cursor,
+        limit,
+      ),
+    );
+    const enrolledCounts = await this.resolveEnrolledCounts(callerId, page.items.map((c) => c.id));
+    return {
+      ...page,
+      items: page.items.map((c) => ({ ...c, enrolledCount: enrolledCounts.get(c.id) ?? 0 })),
+    };
+  }
+
+  /** Batched "every attendee across every UPCOMING Booking" count (domain-rules
+   * §9's own Full-status definition, reused here rather than invented a second
+   * time) across an entire page of Classes in two queries total — not
+   * BookingsService.countOccupiedSeats()'s own per-Class pair of queries, which
+   * would be a real N+1 here. BookingAttendee has no classId column of its own
+   * (only bookingId — see its own schema comment), so its rows are attributed
+   * to a Class via a nested select through the Booking relation rather than a
+   * groupBy (this codebase has no existing groupBy precedent to follow; a
+   * fetch-then-count-in-JS pass matches the established convention
+   * resolveInstructorStatuses/resolveUserNames already use for this exact class
+   * of "batch it, don't N+1 it" problem). */
+  private async resolveEnrolledCounts(callerId: string, classIds: string[]): Promise<Map<string, number>> {
+    const counts = new Map<string, number>(classIds.map((id) => [id, 0]));
+    if (classIds.length === 0) return counts;
+    const [bookings, attendees] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.booking.findMany({ where: { classId: { in: classIds }, status: 'UPCOMING' }, select: { classId: true } }),
+        tx.bookingAttendee.findMany({
+          where: { booking: { classId: { in: classIds }, status: 'UPCOMING' } },
+          select: { booking: { select: { classId: true } } },
+        }),
+      ]),
+    );
+    for (const b of bookings) counts.set(b.classId, (counts.get(b.classId) ?? 0) + 1);
+    for (const a of attendees) counts.set(a.booking.classId, (counts.get(a.booking.classId) ?? 0) + 1);
+    return counts;
   }
 
   /** School Owner/Manager only — resolved via the profile's own schoolId, not a route param. */

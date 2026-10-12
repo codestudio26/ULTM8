@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
@@ -9,6 +9,9 @@ import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
 import { useLessons } from '../curriculum/curriculumQueries';
 import { useInstructors } from '../instructors/instructorQueries';
+import { useStudentBookings, type StudentBookingResponse } from '../bookings/bookingQueries';
+import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { flattenLadder, type Rung } from './ladder';
 import { BeltChip } from './BeltChip';
 import {
@@ -54,6 +57,7 @@ export function StudentGradingPage() {
   const { id } = useParams<{ id: string }>();
   const studentId = id ?? null;
   const schoolId = useGradingSchoolId();
+  const navigate = useNavigate();
   const { claims } = useAuth();
   // The board passes the name along: a coach can't list the School's students.
   const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
@@ -65,6 +69,14 @@ export function StudentGradingPage() {
   const instructors = useInstructors(schoolId);
   const [showVoided, setShowVoided] = useState(false);
   const history = useRankHistory(studentId, schoolId, showVoided);
+  // v1.2 backend backlog — "Upcoming Booking" and "Revoke Enrollment", both
+  // additions to this real page (the de facto Student Detail screen at
+  // /students/:id — no separate mockup-matching page exists in this app; see
+  // the backlog's own "Student Detail (new mockup, not yet built)" entry).
+  const bookings = useStudentBookings(studentId, schoolId);
+  const roleGrants = useUserRoleGrants(studentId);
+  const revokeGrant = useRevokeRoleGrant();
+  const [confirmingRevoke, setConfirmingRevoke] = useState(false);
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -86,6 +98,12 @@ export function StudentGradingPage() {
   const studentName = student ? `${student.firstName} ${student.surname}`.trim() : passedName ?? 'Student';
   const performerName = (userId: string | null | undefined) =>
     !userId ? 'Former instructor' : userId === claims?.sub ? 'You' : staffNames.get(userId) ?? 'Staff member';
+  // Revoke Enrollment is School Owner-only (matches the backend's own
+  // assertSchoolOwner gate on DELETE /users/{userId}/role-grants/{id}) — a
+  // coach visiting via /grading never sees this action.
+  const activeStudentGrant = (roleGrants.data?.items ?? []).find(
+    (g) => g.schoolId === schoolId && g.role === 'STUDENT' && !g.revokedAt,
+  );
 
   return (
     <>
@@ -95,7 +113,45 @@ export function StudentGradingPage() {
       <PageHeader
         title={studentName}
         subtitle="Ranks, progress toward the next grade, skills and history, for each style at your School."
+        actions={
+          <>
+            {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — any Staff
+              * reaching this page (School Owner/Manager, Branch Staff, or
+              * Instructor) may use it, matching the backend's own
+              * assertStaffAtSchool gate — not Owner-only like Revoke
+              * enrollment below, which the backend separately restricts via
+              * assertSchoolOwner. A dedicated page (StudentUpdatePage.tsx at
+              * /students/:id/edit), not a Modal — see that page's own header
+              * comment for why. */}
+            {student ? (
+              <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
+                Edit profile
+              </Button>
+            ) : null}
+            {my.isOwner && activeStudentGrant ? (
+              <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
+                Revoke enrollment
+              </Button>
+            ) : null}
+          </>
+        }
       />
+
+      <div style={{ marginBottom: 24 }}>
+        <Card>
+          <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
+            Upcoming Booking
+          </h2>
+          {bookings.isLoading ? (
+            <Spinner />
+          ) : bookings.error ? (
+            <ErrorBanner message={bookings.error instanceof ApiError ? bookings.error.message : 'Could not load Bookings.'} />
+          ) : (
+            <UpcomingBooking bookings={bookings.data?.items ?? []} />
+          )}
+        </Card>
+      </div>
+
       {styles.length === 0 ? (
         <Card>
           {my.isOwner ? (
@@ -122,7 +178,43 @@ export function StudentGradingPage() {
         ))
       )}
       <Checkbox label="Show voided history entries" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
+
+      {confirmingRevoke && activeStudentGrant ? (
+        <ConfirmDeleteModal
+          title={`Revoke ${studentName}'s enrollment?`}
+          description="They lose their Student role at this School immediately. This can't be undone from here — they would need to enroll again."
+          confirmLabel="Revoke"
+          genericErrorMessage="Could not revoke this enrollment. Please try again."
+          onConfirm={async () => {
+            await revokeGrant.mutateAsync({ targetUserId: activeStudentGrant.userId, roleGrantId: activeStudentGrant.id });
+            navigate('/students');
+          }}
+          onClose={() => setConfirmingRevoke(false)}
+        />
+      ) : null}
     </>
+  );
+}
+
+/** The nearest Upcoming Booking, if any — id-ordered pagination (Decision 22)
+ * means this list isn't date-sorted server-side, so the nearest is found
+ * client-side across whatever page loaded. Good enough for this page's scale
+ * (no pagination UI exists here yet, same convention as every other list on
+ * this page). */
+function UpcomingBooking({ bookings }: { bookings: StudentBookingResponse[] }) {
+  const upcoming = bookings
+    .filter((b) => b.status === 'UPCOMING')
+    .sort((a, b) => new Date(a.classStartDate).getTime() - new Date(b.classStartDate).getTime());
+  const next = upcoming[0];
+  if (!next) {
+    return <p className="ultm8-field__hint" style={{ margin: 0 }}>No upcoming Booking.</p>;
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <strong>{next.classTitle}</strong>
+      <span className="ultm8-field__hint">{formatDay(next.classStartDate)}</span>
+      {upcoming.length > 1 ? <Badge>+{upcoming.length - 1} more</Badge> : null}
+    </div>
   );
 }
 

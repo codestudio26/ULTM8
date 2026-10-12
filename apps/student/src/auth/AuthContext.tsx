@@ -61,6 +61,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, passcode: string) => {
       const result = await unwrap(authClient.POST('/v1/auth/login', { body: { email, passcode } }));
+      // Decision 1/230 — login() can also resolve to a mustChangePasscode
+      // response (a server-generated temp passcode pending a change), but
+      // that's an Instructor "Add Manually" concern — school-portal's own
+      // sign-in, not this Student/Guardian app's. Surfaced as a clear error
+      // rather than silently assumed away. LoginResponseDto's own header
+      // comment confirms accessToken/refreshToken are always present or absent
+      // TOGETHER, so this one check covers both before either is used below.
+      if (!result.accessToken || !result.refreshToken) {
+        throw new Error('This account requires a passcode change — sign in on the School Portal first.');
+      }
       // Refresh token first, then the access token — applyToken is what flips
       // `accessToken` state and sends the app from AuthNavigator to AppNavigator, so
       // ordering it last means the refresh token is already persisted by the time

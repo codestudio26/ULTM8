@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createHmac } from 'crypto';
 
 const TTL_SECONDS = Number(process.env.QR_ATTENDANCE_TOKEN_TTL_SECONDS ?? 20);
 
@@ -46,6 +47,62 @@ export class QrTokenService {
   signClassToken(classId: string): { token: string; expiresAt: Date } {
     const token = this.classJwt.sign({ classId } satisfies ClassQrPayload, { expiresIn: TTL_SECONDS });
     return { token, expiresAt: new Date(Date.now() + TTL_SECONDS * 1000) };
+  }
+
+  /**
+   * Decision 235 (POST-SPEC-55-DECISION-LOG.md) — a short, human-typeable
+   * 6-digit fallback code for a Student with no working camera, "derived from
+   * the same signed Class token... no new secret store needed." Read
+   * literally (hash the exact JWT string the display screen currently holds),
+   * that's unverifiable later without storing that specific token somewhere —
+   * this codebase's JWTs are intentionally stateless (classJwt.verify() never
+   * looks anything up). Interpreted instead as: the SAME signing input
+   * (QR_CLASS_TOKEN_SECRET) and the SAME rotation cadence (TTL_SECONDS) as the
+   * QR token, via a fixed time bucket rather than a specific token instance —
+   * stateless (still no new secret store) and provably in lockstep with the
+   * QR (same classId, same TTL window), without needing the exact JWT string
+   * to still exist anywhere to verify against later. Flagged as an inferred
+   * reading, not asserted as the only possible one.
+   *
+   * `Math.floor(now / TTL)` — every mint/verify call within the same
+   * TTL_SECONDS window computes the identical bucket, matching how often the
+   * QR token itself actually rotates (the display screen re-polls
+   * GET /classes/{id}/qr-token every TTL_SECONDS).
+   */
+  deriveClassCheckInCode(classId: string): { code: string; expiresAt: Date } {
+    const bucket = this.currentBucket();
+    return { code: this.hmacCode(classId, bucket), expiresAt: new Date((bucket + 1) * TTL_SECONDS * 1000) };
+  }
+
+  /** Accepts the current bucket's code OR the immediately preceding one — the
+   * same one-step grace a Student typing a 6-digit code (slower than a camera
+   * scan) can plausibly straddle right at a rotation boundary. Never more than
+   * one bucket back — widening this tolerance further would meaningfully cut
+   * into the brute-force resistance this code's own 20s (default) rotation
+   * window exists to provide. */
+  verifyClassCheckInCode(classId: string, code: string): boolean {
+    const bucket = this.currentBucket();
+    return code === this.hmacCode(classId, bucket) || code === this.hmacCode(classId, bucket - 1);
+  }
+
+  private currentBucket(): number {
+    return Math.floor(Date.now() / (TTL_SECONDS * 1000));
+  }
+
+  private hmacCode(classId: string, bucket: number): string {
+    const secret = process.env.QR_CLASS_TOKEN_SECRET;
+    if (!secret) {
+      // Same "unconfigured dependency fails at first use, not at boot"
+      // convention classJwt.sign()/verify() already follow for this exact
+      // env var — explicit here because createHmac, unlike jsonwebtoken,
+      // would otherwise silently accept an empty-string secret and produce a
+      // real, exploitable, deterministic-and-guessable code instead of
+      // failing loudly.
+      throw new Error('QR_CLASS_TOKEN_SECRET is not set — cannot derive a check-in code.');
+    }
+    const digest = createHmac('sha256', secret).update(`${classId}:${bucket}`).digest();
+    const num = digest.readUInt32BE(0) % 1_000_000;
+    return num.toString().padStart(6, '0');
   }
 
   /** Throws BadRequestException (expired/invalid/tampered) rather than

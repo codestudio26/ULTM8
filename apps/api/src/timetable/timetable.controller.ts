@@ -8,6 +8,8 @@ import { TimetableService } from './timetable.service';
 import { CreateTimetableSlotDto } from './dto/create-timetable-slot.dto';
 import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
 import { TimetableSlotListResponseDto, TimetableSlotResponseDto } from './dto/timetable-slot-response.dto';
+import { TimetableOccurrenceQueryDto } from './dto/timetable-occurrence-query.dto';
+import { ClassResponseDto } from '../classes/dto/class-response.dto';
 
 // TimetableSlot CRUD only — no delete, same reasoning as School/Branch/Class (general
 // tenant offboarding is [UNRESOLVED]). The class-occurrence-generation job that
@@ -49,5 +51,18 @@ export class TimetableController {
   @Patch('timetable/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateTimetableSlotDto) {
     return this.timetableService.update(user.sub, id, dto);
+  }
+
+  /** Timetable page redesign (click-to-book) — see TimetableService.findOccurrence's
+   * own header comment for the full gate/404 rationale. Staff-only, unlike the plain
+   * findOne above. */
+  @ApiOkResponse({ type: ClassResponseDto })
+  @Get('timetable/:id/occurrence')
+  findOccurrence(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Query() query: TimetableOccurrenceQueryDto,
+  ) {
+    return this.timetableService.findOccurrence(user.sub, id, query.date);
   }
 }

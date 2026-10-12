@@ -266,17 +266,37 @@ enum TransactionStatus {
 /// Owner/Manager, Branch Staff, Instructor, Franchise Owner, Guardian). Role/scope is
 /// NEVER a column here — RoleGrant is the sole source of truth (domain-rules §3).
 model User {
-  id    String @id @default(uuid())
-  email String @unique
-  phone String @unique // E.164, validated at the DTO layer
+  id    String  @id @default(uuid())
+  email String  @unique
+  /// E.164, validated at the DTO layer. Nullable since Decision 1/230 (Instructor
+  /// "Add Manually"): that path creates a real User immediately from just
+  /// name+email, with phone deferred to self-service profile completion —
+  /// Postgres allows multiple NULLs under a unique index, so this stays unique
+  /// for every row that does have one. Login's own phone-verification gate
+  /// (AuthService.login()) is skipped entirely while this is null — there is
+  /// nothing to verify yet, not a bypassed check.
+  phone String? @unique
 
   firstName String
   surname   String
   username  String? @unique // mobile-only per confirmed field list; nullable elsewhere
 
   /// bcrypt hash of the 6-digit passcode — the account's sole login credential
-  /// (Decision 72). Never store the raw passcode.
+  /// (Decision 72). Never store the raw passcode. A server-generated temp
+  /// passcode (Decision 1/230) is hashed here exactly the same way as a
+  /// self-chosen one — see `mustChangePasscode` below for how that's forced to
+  /// be replaced.
   passcodeHash String
+
+  /// Decision 1/230 — set when a server-generated temp passcode was issued on
+  /// this User's behalf (Instructor "Add Manually") instead of the account
+  /// holder choosing their own, same as every other account. Checked by
+  /// AuthService.login(): while true, login short-circuits to a narrow,
+  /// passcode-change-only token instead of ordinary access/refresh tokens, and
+  /// cleared the moment AuthService.changePasscodeFirstLogin() succeeds. Never
+  /// set for any other path — this is specifically the "someone else set this
+  /// account's first passcode" marker, not a general force-reset mechanism.
+  mustChangePasscode Boolean @default(false)
 
   /// Set once Twilio Verify OTP confirms this phone (Spec §8.1's registerScreen ->
   /// verificationPin flow). NOT a confirmed schema field — a Developer-added column
@@ -297,7 +317,12 @@ model User {
   /// oversight.
   paymentRestrictedAt DateTime?
 
-  dateOfBirth     DateTime @db.Date // ISO 8601 date, no time component (confirmed)
+  /// ISO 8601 date, no time component (confirmed). Nullable since Decision
+  /// 1/230 — same deferred-to-self-service-completion reasoning as `phone`
+  /// above; `UsersService.updateMe()` already refuses to ever CLEAR a
+  /// once-set value (its own `dto.dateOfBirth === null` guard), so this only
+  /// ever moves from null to set, never back.
+  dateOfBirth     DateTime? @db.Date
   gender          String?
   nationality     String?
   language        String? // one of the 4 confirmed languages; stored as free text pending
@@ -339,6 +364,7 @@ model User {
   waiverSignatures             WaiverSignature[]       @relation("WaiverSignatureStudent")
   waiverSignaturesSigned       WaiverSignature[]       @relation("WaiverSignatureSignedBy")
   bookings                     Booking[]               @relation("BookingStudent")
+  paymentMethods               StudentPaymentMethod[]
   bookingsOverridden           Booking[]               @relation("BookingOverriddenBy")
   bookingsResolved             Booking[]               @relation("BookingResolvedBy")
   bookingsCheckedIn            Booking[]               @relation("BookingCheckedInBy")
@@ -726,25 +752,26 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches            Branch[]
-  roleGrants          RoleGrant[]
-  classes             Class[]
-  timetableSlots      TimetableSlot[]
-  instructors         Instructor[]
-  paymentAccount      PaymentAccount?
-  membershipPlans     MembershipPlan[]
-  transactions        Transaction[]
-  disciplines         Discipline[]
-  waivers             Waiver[]
-  franchiseFeeCharges FranchiseFeeCharge[]
-  lessons             Lesson[]
-  platformCharges     PlatformCharge[]
-  studentHomeBranches StudentHomeBranch[]
-  gradingPermissions  GradingPermission[]
-  staffPermissions    StaffPermission[]
-  coachInvites        CoachInvite[]
-  lessonCategories    LessonCategory[]
-  instructorBelts     InstructorBelt[]
+  branches              Branch[]
+  roleGrants            RoleGrant[]
+  classes               Class[]
+  timetableSlots        TimetableSlot[]
+  instructors           Instructor[]
+  paymentAccount        PaymentAccount?
+  studentPaymentMethods StudentPaymentMethod[]
+  membershipPlans       MembershipPlan[]
+  transactions          Transaction[]
+  disciplines           Discipline[]
+  waivers               Waiver[]
+  franchiseFeeCharges   FranchiseFeeCharge[]
+  lessons               Lesson[]
+  platformCharges       PlatformCharge[]
+  studentHomeBranches   StudentHomeBranch[]
+  gradingPermissions    GradingPermission[]
+  staffPermissions      StaffPermission[]
+  coachInvites          CoachInvite[]
+  lessonCategories      LessonCategory[]
+  instructorBelts       InstructorBelt[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -769,8 +796,21 @@ model Branch {
   contactPhone     String?
   timezone         String? // IANA tz name, per the glossary convention (Spec §14)
   currencyOverride String?
-  logoUrl          String?
-  bannerUrl        String?
+
+  /// Decision 231 — Branch field-level settings screen. These four mirror
+  /// Franchise's own identically-named/typed columns field-for-field
+  /// (schema.prisma's Franchise model), per the decision's own scoping to
+  /// "four new columns needed to back fields already drawn in the Branch
+  /// mockups". Display-only mirror no longer — Branch now really has its own
+  /// independent values, not a copy of its Franchise's.
+  type            String?
+  activities      String[] @default([])
+  facilities      String[] @default([])
+  defaultLanguage String?
+  description     String?
+
+  logoUrl   String?
+  bannerUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1034,6 +1074,35 @@ model Instructor {
   yearsOfExperience Int?
   bio               String?
 
+  /// Decision 1/217 — distinct, free-text postal address for this Instructor
+  /// profile at this School, same "deliberately separate, not assumed
+  /// identical" treatment `phone` above already gets against User.phone;
+  /// User.address is a different, personal-account field.
+  address String?
+
+  /// Decision 1/217 — "a second Activities list," deliberately distinct from
+  /// `specializations` above: `specializations` is scoped to THIS School's own
+  /// style roster (Decision 152); this is the Instructor's own free-text
+  /// activities/disciplines list, same shape as School.activities/
+  /// Class.activities elsewhere in this schema, not reconciled against either.
+  activities String[] @default([])
+
+  /// Decision 1/217/218 — R2 object key for an uploaded certification file
+  /// (private bucket, presigned-URL-only access — same convention
+  /// WaiverSignature.signatureImageKey already established). Null until the
+  /// Instructor uploads one via their own self-service profile completion;
+  /// never set directly from a caller-supplied string, same
+  /// upload-then-confirm discipline R2ClientService.objectExists() already
+  /// enforces for waiver signatures.
+  certificationKey String?
+
+  /// Decision 1/217 — timestamp of the Instructor's own consent/terms
+  /// acknowledgement for holding a certification record, modeled as a single
+  /// boolean-shaped timestamp (set = consented), same shape
+  /// ConsentRecord.consentedAt uses. Revisit if more than one distinct consent
+  /// item is ever actually needed here.
+  certificationConsentedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1198,6 +1267,55 @@ model PaymentAccount {
   // (School's and Franchise's own confirmed entity rows, singular).
   @@unique([schoolId])
   @@unique([franchiseId])
+}
+
+/// StudentPaymentMethod — a Student's saved card, usable for an off-session charge
+/// (Decision 234's own late-cancellation fee being the first real consumer; Decision
+/// 236 flags a second, "any charge against a saved payment method," not built yet).
+/// Closes a real, previously-nonexistent capability gap found while scoping Decision
+/// 234: `PaymentsService.charge()`/`subscribe()`'s own header comments already
+/// document "no GET /payments/methods, no saved-card reuse anywhere yet" as a
+/// deliberate Phase 9 simplification — there was genuinely nowhere in this schema
+/// that persisted a reusable Stripe Customer/payment-method id before this.
+///
+/// Scoped per (studentId, schoolId), NOT globally per Student — a Stripe Customer
+/// lives inside exactly one connected account (Decision 86's Direct-charge model),
+/// and a School's connected account is a different Stripe account from every other
+/// School's, so a Customer created for one School can never be reused at another.
+/// Same reasoning FranchiseFeeBillingService.ensureSubscription's own "throwaway
+/// Customer per School" comment already gives, just persisted here instead of
+/// thrown away, since this one needs to be found again later.
+///
+/// Does NOT store card details (brand/last4) — those are fetched live from Stripe
+/// when actually needed (GET .../payment-methods/me), the same "never a raw secret,
+/// never a value Stripe already owns and can be asked for" discipline
+/// PaymentAccount.stripeConnectedAccountId's own comment states for a different
+/// field. stripeCustomerId is not a secret itself, but keeping this table narrow
+/// avoids a second place for payment-method metadata to drift out of sync with
+/// Stripe's own records.
+model StudentPaymentMethod {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  /// The Stripe Customer created for this (Student, School) pair — its
+  /// invoice_settings.default_payment_method is the card actually charged.
+  /// Never a raw payment-method/card id stored separately; Stripe's own Customer
+  /// object is the single source of truth for "which card," read live each time.
+  stripeCustomerId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One saved card per (Student, School) — re-running the setup flow updates the
+  // SAME Customer's default payment method (StripeWebhookProcessingProcessor's own
+  // checkout.session.completed handler), never creates a second row.
+  @@unique([studentId, schoolId])
+  @@index([schoolId])
 }
 
 /// ProcessedStripeEvent (Phase 8) — Stripe webhook idempotency ledger. Spec 55 §10.2's
@@ -2501,6 +2619,12 @@ enum CheckInMethod {
   SELF_SERVICE
   INSTRUCTOR_SCAN
   INSTRUCTOR_MANUAL
+  /// Decision 235 — the Student's own standing, camera-free fallback: typing
+  /// the 6-digit code the Class-QR display screen also shows as text,
+  /// instead of scanning. Distinct from INSTRUCTOR_MANUAL (that one is
+  /// Staff-initiated and occasional-use; this one is Student-initiated and
+  /// standing/self-service).
+  SELF_SERVICE_CODE
 }
 
 /// Booking.refundResolution / BookingAttendee.refundResolution — a Developer-level
@@ -2514,6 +2638,21 @@ enum CheckInMethod {
 enum RefundResolution {
   REFUNDED
   WITHHELD
+}
+
+/// Decision 234 (POST-SPEC-55-DECISION-LOG.md) — Booking.cancellationChargeOutcome's
+/// own value set. Set only when a cancellation is WITHHELD (past the Class's
+/// refundFeeDate cutoff) AND the Class has a non-null cancellationCharge — null on
+/// every other cancellation (nothing to charge for) and on every non-Cancelled
+/// Booking. CHARGED/FAILED mirror an ordinary off-session PaymentIntent's two
+/// real outcomes; NO_SAVED_PAYMENT_METHOD is the precondition failure when the
+/// Student has never saved a card at this School (StudentPaymentMethod) —
+/// distinguished from FAILED because there's nothing to retry without the
+/// Student first adding a card, unlike a declined/expired one.
+enum CancellationChargeOutcome {
+  CHARGED
+  FAILED
+  NO_SAVED_PAYMENT_METHOD
 }
 
 /// WaitlistEntry.status — SKILL.md §10 (quoted): "Waiting / Notified / Claimed /
@@ -2602,6 +2741,17 @@ model Booking {
   refundResolution RefundResolution?
   resolvedById     String?
   resolvedBy       User?             @relation("BookingResolvedBy", fields: [resolvedById], references: [id])
+
+  // Decision 234 — the late-cancellation fee itself (Class.cancellationCharge),
+  // as distinct from the credit-forfeiture refundResolution already captures.
+  // See CancellationChargeOutcome's own comment for the value set/null case.
+  // cancellationChargeAmount mirrors the minor-unit Int convention every other
+  // money field in this schema uses (Class.cancellationCharge's own column) —
+  // copied onto the Booking at charge-attempt time so the amount actually
+  // attempted is preserved even if Class.cancellationCharge changes later.
+  cancellationChargeOutcome         CancellationChargeOutcome?
+  cancellationChargeAmount          Int?
+  stripeCancellationPaymentIntentId String?
 
   // Guardian Kid Mode (Decision 123). bookedViaKidMode marks a Booking created via
   // a Kid-Mode-scoped token (BookingsController's live BookingDelegation check, not

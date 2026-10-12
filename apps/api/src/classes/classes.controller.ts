@@ -3,11 +3,11 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nest
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { ClassListResponseDto, ClassResponseDto } from './dto/class-response.dto';
+import { ClassesQueryDto } from './dto/classes-query.dto';
 
 // Class CRUD only this phase — no booking/waitlist, no TimetableSlot materialization.
 // See the Phase 4 kickoff prompt for the full scoping rationale. No delete endpoint,
@@ -34,9 +34,9 @@ export class ClassesController {
   findAll(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: ClassesQueryDto,
   ) {
-    return this.classesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
+    return this.classesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.activities, query.search);
   }
 
   @ApiOkResponse({ type: ClassResponseDto })

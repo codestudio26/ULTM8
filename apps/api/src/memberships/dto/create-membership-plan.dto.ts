@@ -64,7 +64,10 @@ export class CreateMembershipPlanDto {
   @IsUUID()
   scopedClassId?: string;
 
-  @ApiPropertyOptional({ default: true })
+  // No `default:` in the Swagger metadata on purpose: openapi-typescript would
+  // then type this as required in packages/api-client and break existing
+  // callers that don't send it.
+  @ApiPropertyOptional({ description: 'Defaults to true when omitted.' })
   @IsOptional()
   @IsBoolean()
   visible?: boolean;
@@ -80,7 +83,9 @@ export class CreateMembershipPlanDto {
   @Min(0)
   cancellationCharge?: number;
 
-  @ApiPropertyOptional({ default: false })
+  // No `default:` in the Swagger metadata, for the same reason as visible
+  // above.
+  @ApiPropertyOptional({ description: 'Defaults to false when omitted.' })
   @IsOptional()
   @IsBoolean()
   termsWaiverRequired?: boolean;
