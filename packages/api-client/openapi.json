@@ -9290,7 +9290,7 @@
           },
           "defaultCurrency": {
             "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage."
           },
           "timezone": {
             "type": "string",
@@ -9514,7 +9514,7 @@
           },
           "defaultCurrency": {
             "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage.",
             "nullable": true
           },
           "timezone": {
@@ -9669,7 +9669,7 @@
           },
           "currency": {
             "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as language."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language."
           },
           "address": {
             "type": "string"
@@ -10292,7 +10292,7 @@
           },
           "defaultCurrency": {
             "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage."
           },
           "description": {
             "type": "string"
@@ -10496,7 +10496,7 @@
           },
           "defaultCurrency": {
             "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as defaultLanguage.",
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage.",
             "nullable": true
           },
           "description": {
@@ -11271,7 +11271,7 @@
           },
           "currency": {
             "type": "string",
-            "description": "One of the 6 confirmed currencies — same free-text caveat as language."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language."
           },
           "address": {
             "type": "string"

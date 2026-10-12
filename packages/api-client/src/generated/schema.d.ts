@@ -3018,7 +3018,7 @@ export interface components {
             ranksToggle?: boolean;
             /** @description One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment. */
             defaultLanguage?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
             /** @description IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172). */
             timezone?: string;
@@ -3084,7 +3084,7 @@ export interface components {
             businessType?: string | null;
             /** @description One of the 4 confirmed languages — no canonical code list is confirmed anywhere yet (domain-rules §1), so this is free text, matching User.language's existing Phase 1 treatment. */
             defaultLanguage?: string | null;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
             /** @description IANA timezone name. Same field as Branch.timezone (Decisions 76, 172). */
             timezone?: string | null;
@@ -3130,7 +3130,7 @@ export interface components {
             nationality?: string;
             /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
             language?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as language. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
@@ -3297,7 +3297,7 @@ export interface components {
             facilities?: string[];
             /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
             defaultLanguage?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string;
             description?: string;
             logoUrl?: string;
@@ -3359,7 +3359,7 @@ export interface components {
             type?: string | null;
             /** @description One of the 4 confirmed languages — free text, matching School.defaultLanguage's existing treatment (no canonical code list confirmed anywhere yet, domain-rules §1). */
             defaultLanguage?: string | null;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as defaultLanguage. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as defaultLanguage. */
             defaultCurrency?: string | null;
             description?: string | null;
             logoUrl?: string | null;
@@ -3578,7 +3578,7 @@ export interface components {
             nationality?: string;
             /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
             language?: string;
-            /** @description One of the 6 confirmed currencies — same free-text caveat as language. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;

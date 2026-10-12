@@ -309,6 +309,102 @@ export function PhoneField({ value, onChange, defaultCountry, placeholder }: Pho
   );
 }
 
+export interface CodeNameOption {
+  code: string;
+  name: string;
+}
+
+/** A trigger `Pressable` + full-screen `Modal` with a search box and `FlatList` —
+ * same pattern as `PhoneField`'s country picker above, generalized over any
+ * `{code, name}` list. Added for the Currency field once it grew from 6 entries to
+ * every Stripe-supported currency (~135, product-owner-approved 11/12 Oct 2026):
+ * the chip-row pattern `ProfileScreen`'s own local `ChipPicker` still uses for the
+ * 4-item Language list would wrap into an unusable wall of buttons at that size.
+ * No new native dependency pulled in, same reasoning as `PhoneField`'s own header
+ * comment on why a Picker dependency isn't worth it for a couple of fields. */
+export function SearchablePickerField({
+  options,
+  value,
+  onSelect,
+  loading,
+  placeholder = 'Select…',
+  searchPlaceholder = 'Search…',
+  emptyLabel = 'Not available.',
+  triggerAccessibilityLabel,
+}: {
+  options: CodeNameOption[];
+  value: string;
+  onSelect: (code: string) => void;
+  loading?: boolean;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  emptyLabel?: string;
+  triggerAccessibilityLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.name.toLowerCase().includes(q) || o.code.toLowerCase().includes(q));
+  }, [search, options]);
+
+  const selected = options.find((o) => o.code === value);
+
+  function select(code: string) {
+    onSelect(code);
+    setOpen(false);
+    setSearch('');
+  }
+
+  if (loading) return <ActivityIndicator />;
+  if (options.length === 0) return <Text style={styles.hint}>{emptyLabel}</Text>;
+
+  return (
+    <View>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [styles.input, styles.searchPickerTrigger, pressed && styles.buttonPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={triggerAccessibilityLabel}
+      >
+        <Text style={[styles.phoneFieldTriggerText, !selected && { color: theme.textMuted }]}>
+          {selected ? `${selected.code} — ${selected.name}` : placeholder}
+        </Text>
+      </Pressable>
+      <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
+        <View style={styles.phoneFieldModal}>
+          <TextInput
+            style={styles.input}
+            placeholderTextColor={theme.textMuted}
+            placeholder={searchPlaceholder}
+            accessibilityLabel={searchPlaceholder}
+            autoFocus
+            value={search}
+            onChangeText={setSearch}
+          />
+          <FlatList
+            data={filtered}
+            keyExtractor={(o) => o.code}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => select(item.code)}
+                style={({ pressed }) => [styles.phoneFieldOption, pressed && styles.buttonPressed]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.phoneFieldOptionName}>{item.name}</Text>
+                <Text style={styles.phoneFieldOptionDial}>{item.code}</Text>
+              </Pressable>
+            )}
+          />
+          <Button title="Close" variant="secondary" onPress={() => setOpen(false)} />
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
 export function Button({
   title,
   onPress,
@@ -417,6 +513,10 @@ const styles = StyleSheet.create({
   },
   phoneFieldInput: {
     flex: 1,
+  },
+  searchPickerTrigger: {
+    minHeight: minTouchTarget,
+    justifyContent: 'center',
   },
   phoneFieldModal: {
     flex: 1,

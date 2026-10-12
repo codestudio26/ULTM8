@@ -19,9 +19,11 @@ export function useLanguages() {
 
 /** The confirmed platform-wide currency list (ISO 4217 codes) — same
  * "rarely changes" staleTime convention as useLanguages. Backs the
- * Default currency / Currency override pickers on School/Franchise/Branch
- * forms, replacing a plain free-text input for the same already-confirmed
- * 6-currency list `GET /settings/currencies` already serves. */
+ * Default currency / Currency override pickers on School/Franchise/Branch/
+ * MembershipPlan forms. Now every currency Stripe supports (~135 codes, up
+ * from the old hardcoded 6 — product-owner-approved 11/12 Oct 2026, see
+ * `CHANGELOG.md` → Unreleased) — `GET /settings/currencies` serves the same
+ * canonical list either way, so this hook's shape is unchanged. */
 export function useCurrencies() {
   return useQuery({
     queryKey: ['settings', 'currencies'],

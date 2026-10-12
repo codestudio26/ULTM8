@@ -64,7 +64,7 @@ export class UpdateUserDto {
   @MaxLength(100)
   language?: string;
 
-  @ApiPropertyOptional({ description: 'One of the 6 confirmed currencies — same free-text caveat as language.' })
+  @ApiPropertyOptional({ description: 'An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language.' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
