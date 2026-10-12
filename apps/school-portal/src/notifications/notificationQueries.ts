@@ -5,6 +5,9 @@ import { apiClient } from '../api';
 
 export type NotificationResponse = components['schemas']['NotificationResponseDto'];
 export type NotificationCountsResponse = components['schemas']['NotificationCountsResponseDto'];
+export type SnoozeNotificationInput = components['schemas']['SnoozeNotificationDto'];
+export type BroadcastNotificationInput = components['schemas']['BroadcastNotificationDto'];
+export type BroadcastResponse = components['schemas']['BroadcastResponseDto'];
 
 /** The CALLER's own notification inbox — every authenticated User has one,
  * School staff included, so this is not School-scoped (no schoolId in the
@@ -38,10 +41,43 @@ export function useMarkNotificationRead() {
  * finding) — a true, caller-wide total/unread count from a dedicated
  * endpoint (`GET /notifications/me/counts`), not derived from whatever page
  * of `useNotifications` happens to be loaded client-side. Same caller-only
- * scoping as `useNotifications` (no schoolId in the route). */
+ * scoping as `useNotifications` (no schoolId in the route). Also now carries
+ * the Read-within-24h metric (v1.2 backend backlog, approved by the product
+ * owner) — see NotificationCountsResponseDto's own header comment. */
 export function useNotificationCounts() {
   return useQuery({
     queryKey: ['notifications', 'counts'],
     queryFn: () => unwrap(apiClient.GET('/v1/notifications/me/counts', {})),
+  });
+}
+
+/** v1.2 backend backlog ("Notifications page" — Snooze, approved by the
+ * product owner). Same self-only scoping as useMarkNotificationRead — both
+ * invalidate the list AND the counts query (a Snooze changes the unread
+ * total exactly like a mark-read does, see
+ * NotificationsService.getCountsForCaller's own header comment). */
+export function useSnoozeNotification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: SnoozeNotificationInput }) =>
+      unwrap(apiClient.PATCH('/v1/notifications/{id}/snooze', { params: { path: { id } }, body })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'counts'] });
+    },
+  });
+}
+
+/** v1.2 backend backlog ("Notifications page" — Broadcast/compose, approved
+ * by the product owner). School-Owner-gated on the backend
+ * (NotificationBroadcastService.broadcast) — `schoolId` here is
+ * NotificationsPage's own `useOwnedSchoolId()`, same convention
+ * WaiversPage/MembershipPlansPage already use for an Owner-only write. No
+ * query to invalidate on success — a broadcast fans out to OTHER Students'
+ * own inboxes, never the calling Staff member's own `GET /notifications/me`. */
+export function useBroadcastNotification(schoolId: string) {
+  return useMutation({
+    mutationFn: (body: BroadcastNotificationInput) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/notifications/broadcast', { params: { path: { schoolId } }, body })),
   });
 }
