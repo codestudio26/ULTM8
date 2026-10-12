@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies } from '../settings/settingsQueries';
@@ -93,8 +93,8 @@ export function BranchFormModal({
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label="Timezone" htmlFor="branch-timezone" hint="IANA name, e.g. America/New_York">
-          <TextField value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} />
+        <Field label="Timezone" htmlFor="branch-timezone">
+          <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
         </Field>
         <Field label="Currency override" htmlFor="branch-currency">
           <SelectField

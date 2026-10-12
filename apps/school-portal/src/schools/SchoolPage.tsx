@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Card, Checkbox, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -135,8 +135,8 @@ export function SchoolPage() {
               options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
             />
           </Field>
-          <Field label="Timezone" htmlFor="edit-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
-            <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
+          <Field label="Timezone" htmlFor="edit-timezone" hint="Used for classes without a branch timezone.">
+            <TimezoneField value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
           </Field>
           <Field label="Description" htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
