@@ -29,6 +29,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `skills/ultm8-domain-rules/SKILL.md` §9/§13 as cross-referenced in the
   backlog doc, its enforcement scope needs an Architect re-check before a
   badge implying it's enforced is added.
+- **Correction to the entry above — `termsWaiverRequired` badge, DONE.**
+  The "needs an Architect re-check" caveat was itself stale:
+  `skills/ultm8-domain-rules/SKILL.md` §9/§13/§18 all independently and
+  consistently state enforcement is already resolved ("closed by logic
+  review 25 Aug 2026"), not an open question. Per `CLAUDE.md`'s own
+  source-of-truth hierarchy, the domain-rules skill outranks this backlog
+  doc's note — this is a documentation sync, not a new product decision.
+  `ClassesPage.tsx` now renders a plain `Badge` ("Waiver required")
+  alongside `membershipInclusion`'s own badge, in both Grid and Rows.
 - **`StudentUpdate.dc.html` — a Staff member can now edit a Student's profile
   on their behalf** (`docs/v1.2-backend-backlog.md`): previously a proposed
   new capability, not a build-out of anything already wired — the only
