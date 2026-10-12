@@ -125,11 +125,15 @@ export function ClassesPage() {
               const branchName = branches.find((b) => b.id === c.branchId)?.name ?? (c.branchId ? c.branchId : 'Whole School');
               return (
                 <Card key={c.id}>
-                  <strong>{c.title}</strong>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={40} />
+                    <strong>{c.title}</strong>
+                  </div>
                   <div style={{ margin: '8px 0' }}>
                     {c.activities.map((a, i) => (
                       <Badge key={`${a}-${i}`}>{a}</Badge>
                     ))}
+                    {c.membershipInclusion ? <Badge variant="accent">Included in membership</Badge> : null}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
                     {instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—'}
@@ -158,6 +162,7 @@ export function ClassesPage() {
           <Table<ClassResponse>
             rows={classes}
             columns={[
+              { key: 'banner', header: '', render: (c) => <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={32} /> },
               { key: 'title', header: 'Title', render: (c) => c.title },
               {
                 key: 'activities',
@@ -165,7 +170,14 @@ export function ClassesPage() {
                 // Index-qualified key — activities is unconstrained free text
                 // (no dedup enforced), so two identical entries would
                 // otherwise collide on the same key.
-                render: (c) => c.activities.map((a, i) => <Badge key={`${a}-${i}`}>{a}</Badge>),
+                render: (c) => (
+                  <>
+                    {c.activities.map((a, i) => (
+                      <Badge key={`${a}-${i}`}>{a}</Badge>
+                    ))}
+                    {c.membershipInclusion ? <Badge variant="accent">Included in membership</Badge> : null}
+                  </>
+                ),
               },
               {
                 key: 'instructor',
@@ -247,6 +259,47 @@ export function ClassesPage() {
         />
       ) : null}
     </>
+  );
+}
+
+/**
+ * Minimal one-off thumbnail for `Class.bannerUrl` — a plain URL string, same
+ * convention as Branch.logoUrl/bannerUrl and Instructor.photoUrl (no real
+ * upload pipeline exists app-wide). Doesn't reuse the shared `Avatar`
+ * component (`../lib/Avatar.tsx`): Avatar's placeholder is a firstName/
+ * surname initials monogram, and a Class has neither — a plain "no banner"
+ * placeholder square (the title's first letter) fits better than forcing a
+ * two-letter-initials shape onto a Class title.
+ */
+function ClassThumbnail({ bannerUrl, title, size }: { bannerUrl: string | null | undefined; title: string; size: number }) {
+  if (bannerUrl) {
+    return (
+      <img
+        src={bannerUrl}
+        alt=""
+        style={{ width: size, height: size, borderRadius: 6, objectFit: 'cover', flex: 'none' }}
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: size,
+        height: size,
+        borderRadius: 6,
+        background: 'var(--fill-accent)',
+        color: '#ffffff',
+        fontSize: Math.round(size * 0.4),
+        fontWeight: 500,
+        flex: 'none',
+      }}
+    >
+      {title[0]?.toUpperCase() ?? '?'}
+    </span>
   );
 }
 

@@ -15,6 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Classes page — banner thumbnail and membership-inclusion badge**
+  (`docs/v1.2-backend-backlog.md`): `Class.bannerUrl` and
+  `Class.membershipInclusion` were already real, confirmed fields
+  (`ClassResponseDto`/`CreateClassDto`/`UpdateClassDto`) and already
+  editable via `ClassFormModal.tsx`, but neither was ever rendered on
+  `ClassesPage.tsx`. Both views now show a small `bannerUrl` thumbnail (a
+  plain placeholder square with the Class title's first letter when
+  unset — same URL-only convention as `Branch.logoUrl`/`bannerUrl` and
+  `Instructor.photoUrl`, no real upload pipeline exists app-wide) and a
+  `Badge` ("Included in membership") when `membershipInclusion` is true.
+  `termsWaiverRequired` is deliberately left unrendered — per
+  `skills/ultm8-domain-rules/SKILL.md` §9/§13 as cross-referenced in the
+  backlog doc, its enforcement scope needs an Architect re-check before a
+  badge implying it's enforced is added.
 - **`StudentUpdate.dc.html` — a Staff member can now edit a Student's profile
   on their behalf** (`docs/v1.2-backend-backlog.md`): previously a proposed
   new capability, not a build-out of anything already wired — the only
