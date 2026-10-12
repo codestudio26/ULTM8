@@ -3,8 +3,9 @@ import { ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
+import { Button, ErrorBanner, Field, PhoneField, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPasscode'>;
@@ -39,8 +40,8 @@ export function ForgotPasscodeScreen({ navigation }: Props) {
           We'll text a verification code to your phone.
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Phone" hint="E.164 format, e.g. +15551234567">
-          <TextField keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+        <Field label="Phone">
+          <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Button title="Send code" onPress={handleSubmit} loading={submitting} />
         <Button title="Back to log in" variant="secondary" onPress={() => navigation.navigate('Login')} />

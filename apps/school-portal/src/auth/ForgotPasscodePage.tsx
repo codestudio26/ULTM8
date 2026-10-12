@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthCard, Button, ErrorBanner, Field, TextField } from '@ultm8/ui';
+import { AuthCard, Button, ErrorBanner, Field, PhoneField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 
 export function ForgotPasscodePage() {
   const navigate = useNavigate();
@@ -39,8 +40,8 @@ export function ForgotPasscodePage() {
     >
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Phone" htmlFor="forgot-phone" hint="E.164 format, e.g. +15551234567">
-          <TextField type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Field label="Phone" htmlFor="forgot-phone">
+          <PhoneField required value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Button type="submit" fullWidth loading={submitting}>
           Send code

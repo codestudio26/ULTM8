@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, PhoneField, SelectField, TextArea, TextField } from '@ultm8/ui';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
 
 /** Fields match CreateInstructorDto/UpdateInstructorDto exactly —
@@ -146,8 +147,12 @@ export function InstructorFormModal({
             />
           </Field>
         )}
-        <Field label="Phone" htmlFor="instructor-phone" hint="E.164 format, e.g. +14155551234">
-          <TextField value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+        <Field label="Phone" htmlFor="instructor-phone">
+          <PhoneField
+            value={form.phone}
+            onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+            defaultCountry={guessDefaultCountry()}
+          />
         </Field>
         <Field label="Years of experience" htmlFor="instructor-experience">
           <TextField

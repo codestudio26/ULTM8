@@ -3,8 +3,9 @@ import { ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
+import { Button, ErrorBanner, Field, PhoneField, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ResetPasscode'>;
@@ -43,8 +44,8 @@ export function ResetPasscodeScreen({ route, navigation }: Props) {
           Enter the code we sent, then choose a new 6-digit passcode.
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Phone" hint="E.164 format, e.g. +15551234567">
-          <TextField keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+        <Field label="Phone">
+          <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Field label="Verification code">
           <TextField keyboardType="number-pad" value={code} onChangeText={setCode} />

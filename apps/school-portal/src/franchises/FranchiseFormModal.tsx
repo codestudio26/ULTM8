@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import type { FranchiseResponse } from './franchiseQueries';
 
@@ -105,7 +106,11 @@ export function FranchiseFormModal({
           <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </Field>
         <Field label="Mobile number" htmlFor="franchise-mobile">
-          <TextField value={form.mobileNumber} onChange={(e) => setForm((f) => ({ ...f, mobileNumber: e.target.value }))} />
+          <PhoneField
+            value={form.mobileNumber}
+            onChange={(v) => setForm((f) => ({ ...f, mobileNumber: v }))}
+            defaultCountry={guessDefaultCountry()}
+          />
         </Field>
         <Field label="Address" htmlFor="franchise-address">
           <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
