@@ -137,19 +137,46 @@ export function WaiversPage() {
   );
 }
 
+/** Badge color per status — SIGNED is the only unambiguously "good" state;
+ * EXPIRED is the only unambiguously "bad" one. UNSIGNED/PENDING get the
+ * neutral/default badge — an assignment-time row waiting to be signed is
+ * not itself a problem, just incomplete. */
+function statusBadgeVariant(status: string): 'success' | 'danger' | undefined {
+  if (status === 'SIGNED') return 'success';
+  if (status === 'EXPIRED') return 'danger';
+  return undefined;
+}
+
 /**
- * v1.2 backend backlog — real data for "who HAS signed, with what status."
- * Deliberately does NOT attempt "who hasn't signed yet" (a roster diff) —
- * that's a separate, still-open product decision this panel doesn't guess
- * at; see docs/v1.2-backend-backlog.md.
+ * v1.2 backend backlog — real data for "who HAS signed, AND who hasn't,
+ * with what status." Previously only showed who HAS signed (`sign()` was the
+ * only code path that ever wrote a WaiverSignature row, so a row's mere
+ * existence meant "signed") — now that the backend writes an explicit
+ * Unsigned row at assignment time (WaiverAssignmentService), this same
+ * endpoint's response already includes those rows too; this panel now
+ * renders them distinctly (their own badge color, their own fallback name —
+ * `studentName`, since an Unsigned row has no `signerFullName` yet) and
+ * surfaces the backlog's own "Recommended display shape" rollup
+ * ("12 of 40 signed") above the roster.
  */
 function SignaturesPanel({ schoolId, waiverId }: { schoolId: string; waiverId: string }) {
   const { data, isLoading, error } = useWaiverSignatures(schoolId, waiverId);
   const items = data?.items ?? [];
+  const summary = data?.summary;
 
   return (
+    // `<h3>` stays a direct child of this div (not nested inside its own
+    // row wrapper) — Playwright's waivers.spec.ts locates this whole panel
+    // as `heading.locator('..')`, so wrapping the heading alone in a
+    // sub-div would silently exclude everything else (the rollup line, the
+    // list/empty-state below) from that locator's scope.
     <div style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 8px', color: 'var(--text-primary)' }}>Signatures</h3>
+      <h3 style={{ fontSize: 15, margin: '0 0 4px', color: 'var(--text-primary)' }}>Signatures</h3>
+      {summary && summary.total > 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 8px' }}>
+          {summary.signed} of {summary.total} signed
+        </p>
+      ) : null}
       {isLoading ? (
         <Spinner />
       ) : error ? (
@@ -171,10 +198,10 @@ function SignaturesPanel({ schoolId, waiverId }: { schoolId: string; waiverId: s
                 background: 'var(--surface-1)',
               }}
             >
-              <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{s.signerFullName}</span>
+              <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{s.signerFullName ?? s.studentName ?? 'Unknown Student'}</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatUpdatedLabel(s.signedDate)}</span>
-                <Badge variant={s.status === 'SIGNED' ? 'success' : s.status === 'EXPIRED' ? 'danger' : undefined}>{s.status}</Badge>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.signedDate ? formatUpdatedLabel(s.signedDate) : '—'}</span>
+                <Badge variant={statusBadgeVariant(s.status)}>{s.status}</Badge>
               </span>
             </li>
           ))}
