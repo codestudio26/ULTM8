@@ -15,6 +15,23 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Instructors — "Invite to Instructor Role" (existing-user invite, distinct
+  from "Add manually")** (`docs/v1.2-backend-backlog.md`): a School Owner/
+  Manager can now grant the Instructor role to a User who already has a ULTM8
+  account (e.g. as a Student or Guardian), found by exact email/phone match —
+  no new User created, unlike "Add manually". New
+  `apps/school-portal/src/instructors/InviteToInstructorRoleModal.tsx`, a
+  third entry point on `InstructorsPage.tsx` beside "Add manually"/"Add
+  instructor", reusing the existing candidate-lookup endpoint and
+  `POST /users/{userId}/role-grants` (both already real; no new backend
+  endpoint needed — `INSTRUCTOR` was already a grantable role there).
+  `RoleGrantsService.create()` now also sends a "you've been granted this
+  role" notification email on every grant it creates (Instructor or Branch
+  Staff alike) — previously missing entirely. Non-blocking: a delivery
+  failure never undoes the grant (`emailSent: false` in the response, the
+  same pattern `AddInstructorManuallyModal`/`CoachInvitePage` already use);
+  `StaffPage.tsx`'s own pre-existing invite form now surfaces this flag too.
+  New `CreatedRoleGrantResponseDto`. `packages/api-client` regenerated.
 - **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
   day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
   Dashboard page itself is new — no real implementation existed anywhere in
