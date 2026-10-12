@@ -233,7 +233,7 @@ export class RoleGrantsService {
   }
 
   /**
-   * POST /schools/:schoolId/role-grants/add-manually (Decision 246) — Staff "Add
+   * POST /schools/:schoolId/role-grants/add-manually (Decision 251) — Staff "Add
    * Manually", closing the exact gap Decision 237's own "What this does NOT resolve"
    * section flagged: "Whether AccountInvitation... should still exist for Staff's own
    * identical from-zero-invite gap." The product owner's own direct answer, when asked:

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Staff "Add Manually" (Decision 246), against the real API — closes the
+ * Staff "Add Manually" (Decision 251), against the real API — closes the
  * exact dead end the Staff page's "Invite staff" find-by-email/phone step
  * used to hit when no ULTM8 account existed yet. Mirrors
  * instructors.spec.ts's own "Add Manually" coverage, with one deliberate

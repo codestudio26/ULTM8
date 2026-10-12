@@ -4,7 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
 
 /**
- * Decision 246 — Staff "Add Manually": a real User + RoleGrant (role:
+ * Decision 251 — Staff "Add Manually": a real User + RoleGrant (role:
  * BRANCH_STAFF) created immediately from just a name, email, and branch —
  * no invite/acceptance step. Mirrors AddInstructorManuallyModal.tsx's exact
  * shape, with one deliberate difference: `branchId` is ALWAYS required

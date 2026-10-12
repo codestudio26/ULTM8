@@ -82,4 +82,29 @@ export class UpdateUserDto {
   @MaxLength(2048)
   @IsUrl()
   profilePhotoUrl?: string;
+
+  /**
+   * Decision 220/246 — Student Detail Measurements, approved for build as real
+   * fields on `User`. Free text, same `@MaxLength(50)` caveat as `gender`/
+   * `nationality` above: nothing confirms an enum, unit, or canonical code list for
+   * any of these three, so this is a developer-level presentation choice (plain
+   * text), not an invented business rule.
+   */
+  @ApiPropertyOptional({ description: 'Free text — no confirmed enum/unit (Decision 220/246).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  weightCategory?: string;
+
+  @ApiPropertyOptional({ description: 'Free text — no confirmed enum/unit (Decision 220/246).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  kimonoSize?: string;
+
+  @ApiPropertyOptional({ description: 'Free text — no confirmed enum/unit (Decision 220/246).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  beltSize?: string;
 }

@@ -75,7 +75,7 @@ export class RoleGrantsController {
     return this.roleGrantsService.lookupInviteCandidate(user.sub, schoolId, query);
   }
 
-  // Decision 246 — Staff "Add Manually". See RoleGrantsService.createStaffManually's
+  // Decision 251 — Staff "Add Manually". See RoleGrantsService.createStaffManually's
   // own header comment for the full mechanism; mirrors
   // InstructorsController's add-manually route exactly, including this throttle tier.
   @ApiCreatedResponse({ type: CreateStaffManuallyResponseDto })

@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { RoleGrantResponseDto } from './role-grant-response.dto';
 
 /**
- * Decision 246 — same `emailSent` non-blocking-failure shape
+ * Decision 251 — same `emailSent` non-blocking-failure shape
  * InstructorsService.createManually()/RoleGrantsService.create() already
  * established: creation always succeeds once validation passes; only the
  * temp-passcode email can fail independently of it.

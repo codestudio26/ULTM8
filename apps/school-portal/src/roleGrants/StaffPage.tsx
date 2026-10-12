@@ -34,7 +34,7 @@ import { AddStaffManuallyModal } from './AddStaffManuallyModal';
  * resolves the target's name (userFirstName/userSurname, Decision 114) so the lookup
  * results are attributable, not just a table of raw grant rows.
  *
- * Decision 246 — "Add staff manually" closes the exact gap the "Find" step above
+ * Decision 251 — "Add staff manually" closes the exact gap the "Find" step above
  * used to dead-end on: no fallback existed when no ULTM8 account was found for the
  * searched email/phone. Mirrors AddInstructorManuallyModal/InstructorsPage's own
  * flow exactly (real User + RoleGrant created immediately, temp passcode emailed,

@@ -9826,6 +9826,18 @@
           },
           "profilePhotoUrl": {
             "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           }
         }
       },
@@ -9882,6 +9894,21 @@
           "profilePhotoUrl": {
             "type": "string",
             "nullable": true
+          },
+          "weightCategory": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           },
           "createdAt": {
             "type": "string"
@@ -11528,6 +11555,18 @@
           },
           "profilePhotoUrl": {
             "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           }
         }
       },

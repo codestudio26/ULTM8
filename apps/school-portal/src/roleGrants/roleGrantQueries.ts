@@ -81,7 +81,7 @@ export function useRevokeRoleGrant() {
 }
 
 /**
- * POST /schools/{schoolId}/role-grants/add-manually (Decision 246) — Staff "Add
+ * POST /schools/{schoolId}/role-grants/add-manually (Decision 251) — Staff "Add
  * Manually": creates a real User + RoleGrant (role: BRANCH_STAFF) immediately from
  * just name+email+branchId; the response's `emailSent` flag is non-blocking, same
  * shape useCreateInstructorManually()'s own InstructorsPage.tsx banner already

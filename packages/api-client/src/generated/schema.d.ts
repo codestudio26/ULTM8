@@ -3198,6 +3198,12 @@ export interface components {
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string;
         };
         UserResponseDto: {
             id: string;
@@ -3215,6 +3221,12 @@ export interface components {
             currency?: string | null;
             address?: string | null;
             profilePhotoUrl?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3672,6 +3684,12 @@ export interface components {
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */

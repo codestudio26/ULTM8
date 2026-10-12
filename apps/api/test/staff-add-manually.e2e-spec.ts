@@ -1,5 +1,5 @@
 /**
- * Decision 246 — Staff "Add Manually": a real User + RoleGrant (role:
+ * Decision 251 — Staff "Add Manually": a real User + RoleGrant (role:
  * BRANCH_STAFF) created immediately from just name + email + branchId, a
  * temp passcode emailed, forced change on first login. Mirrors
  * instructors.e2e-spec.ts's own "Add Manually"/full-smoke-path coverage
@@ -35,7 +35,7 @@ if (!hasDb) {
   );
 }
 
-describeIfDb('RoleGrantsModule — Staff "Add Manually" (Decision 246)', () => {
+describeIfDb('RoleGrantsModule — Staff "Add Manually" (Decision 251)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
@@ -47,7 +47,7 @@ describeIfDb('RoleGrantsModule — Staff "Add Manually" (Decision 246)', () => {
   let tokenBranchStaffA1: string;
 
   const roleGrantIds: string[] = [];
-  // Decision 246 — captured emails for Add Manually's temp-passcode send, same
+  // Decision 251 — captured emails for Add Manually's temp-passcode send, same
   // overrideProvider(NotificationDeliveryService) pattern instructors.e2e-spec.ts
   // already established.
   const sentEmails: Array<{ to: string; subject: string; body: string }> = [];

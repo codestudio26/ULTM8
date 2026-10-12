@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 /**
- * Staff "Add Manually" (Decision 246) — mirrors Decision 1/230/237's
+ * Staff "Add Manually" (Decision 251) — mirrors Decision 1/230/237's
  * Instructor "Add Manually" exactly, per the product owner's own direct
  * answer when this was re-asked: "Yes — same pattern as Instructor: real
  * User+RoleGrant created immediately, temp passcode emailed, forced change
