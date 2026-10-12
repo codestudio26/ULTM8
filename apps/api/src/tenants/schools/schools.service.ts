@@ -10,10 +10,12 @@ import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-pagin
 import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
 import { StripeClientService } from '../../payments/stripe-client.service';
+import { UsersService } from '../../users/users.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
+import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 
 @Injectable()
@@ -28,6 +30,7 @@ export class SchoolsService {
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
     private readonly stripeClient: StripeClientService,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -630,5 +633,58 @@ export class SchoolsService {
         update: { branchId: dto.branchId, assignedById: callerId },
       });
     });
+  }
+
+  /**
+   * `PATCH /schools/{schoolId}/students/{studentId}/profile` — v1.2 backend
+   * backlog's Student Detail "Edit" gap: a Staff member editing a Student's own
+   * profile on their behalf. `PATCH /users/me` (UsersController) is self-service
+   * only and obviously can't serve this.
+   *
+   * Authorization is the SAME `assertStaffAtSchool` gate findAllStudentsForSchool/
+   * BookingsService.findAllForStudent/getWeeklySummary already use for a Staff
+   * member acting on a specific Student at this School — not the narrower
+   * `assertSchoolOwner` setStudentHomeBranch above uses, since editing a Student's
+   * contact details is an ordinary Staff action (any School Owner/Manager, Branch
+   * Staff, or Instructor), not a School-Owner-gated one like assigning a home
+   * Branch. No `targetBranchId` passed to assertStaffAtSchool — same reasoning as
+   * findAllStudentsForSchool's own comment: Student enrollment has no Branch
+   * dimension, so there's nothing to scope a Branch Staff grant against here.
+   *
+   * Field scope: UpdateStudentProfileDto reuses UpdateUserDto outright — see that
+   * DTO's own header comment for why `email`/`phone` stay excluded here too (they're
+   * unique login/OTP identifiers; letting Staff change either on a Student's behalf
+   * would let Staff silently redirect that Student's login/OTP destination, the
+   * exact risk self-service already walls off).
+   *
+   * The actual write is delegated to UsersService.updateProfileFor (shared with
+   * `updateMe`, see its own header comment) rather than duplicated here — this
+   * method's own job is purely the Staff-on-behalf-of authorization layer:
+   * confirming the caller is Staff at this School (not just anyone who can see it —
+   * findOne() below only 404s a School invisible/non-existent to the caller at all,
+   * same two-step order findAllStudentsForSchool already uses) and that `studentId`
+   * is an actual, currently-enrolled Student at this same School (same
+   * `RoleGrant`-lookup shape setStudentHomeBranch above already uses, deliberately
+   * copied rather than factored out purely for this: the business logic is simple
+   * enough — and setStudentHomeBranch's own check is School-Owner-gated,
+   * inapplicable here as a shared helper — that extracting a third method solely to
+   * avoid five duplicated lines would cost more clarity than it saves).
+   */
+  async updateStudentProfile(callerId: string, schoolId: string, studentId: string, dto: UpdateStudentProfileDto) {
+    await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const enrolled = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      }),
+    );
+    if (!enrolled) {
+      throw new NotFoundException('This person is not a Student at this School.');
+    }
+
+    return this.usersService.updateProfileFor(callerId, studentId, dto);
   }
 }
