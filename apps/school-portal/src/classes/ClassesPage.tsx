@@ -134,6 +134,7 @@ export function ClassesPage() {
                       <Badge key={`${a}-${i}`}>{a}</Badge>
                     ))}
                     {c.membershipInclusion ? <Badge variant="accent">Included in membership</Badge> : null}
+                    {c.termsWaiverRequired ? <Badge>Waiver required</Badge> : null}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
                     {instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—'}
@@ -176,6 +177,7 @@ export function ClassesPage() {
                       <Badge key={`${a}-${i}`}>{a}</Badge>
                     ))}
                     {c.membershipInclusion ? <Badge variant="accent">Included in membership</Badge> : null}
+                    {c.termsWaiverRequired ? <Badge>Waiver required</Badge> : null}
                   </>
                 ),
               },
