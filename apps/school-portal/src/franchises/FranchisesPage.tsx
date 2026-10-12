@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useCreateFranchise, useFranchises, useUpdateFranchise, type FeeModel, type FranchiseResponse } from './franchiseQueries';
@@ -18,6 +18,12 @@ export function FranchisesPage() {
   // Server-side Fee model / Activity filters (GET /franchises?feeModel=&activity=).
   const [feeModelFilter, setFeeModelFilter] = useState<FeeModel | ''>('');
   const [activityFilter, setActivityFilter] = useState('');
+  // Rows/Grid is a pure presentation choice over the same fetched data — kept as
+  // local, in-memory state (defaulting to "Rows"), not persisted: no school-portal
+  // page persists a view/UI preference today (no localStorage usage exists in this
+  // app), so there's no existing convention to match, and a per-session default is
+  // the documented low-effort choice here.
+  const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const { data, isLoading, error } = useFranchises({
     feeModel: feeModelFilter || undefined,
     activity: activityFilter.trim() || undefined,
@@ -37,31 +43,34 @@ export function FranchisesPage() {
         actions={<Button onClick={() => setCreating(true)}>Add franchise</Button>}
       />
       <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 180 }}>
-            <Field label="Fee model" htmlFor="franchises-fee-model-filter">
-              <SelectField
-                id="franchises-fee-model-filter"
-                value={feeModelFilter}
-                onChange={(e) => setFeeModelFilter(e.target.value as FeeModel | '')}
-                options={[
-                  { value: '', label: 'All' },
-                  { value: 'FLAT', label: 'Flat' },
-                  { value: 'PER_HEADCOUNT', label: 'Per-headcount' },
-                ]}
-              />
-            </Field>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 180 }}>
+              <Field label="Fee model" htmlFor="franchises-fee-model-filter">
+                <SelectField
+                  id="franchises-fee-model-filter"
+                  value={feeModelFilter}
+                  onChange={(e) => setFeeModelFilter(e.target.value as FeeModel | '')}
+                  options={[
+                    { value: '', label: 'All' },
+                    { value: 'FLAT', label: 'Flat' },
+                    { value: 'PER_HEADCOUNT', label: 'Per-headcount' },
+                  ]}
+                />
+              </Field>
+            </div>
+            <div style={{ minWidth: 200 }}>
+              <Field label="Activity" htmlFor="franchises-activity-filter" hint="Exact match against one of the Franchise's Activities.">
+                <TextField
+                  id="franchises-activity-filter"
+                  placeholder="e.g. Jiu Jitsu"
+                  value={activityFilter}
+                  onChange={(e) => setActivityFilter(e.target.value)}
+                />
+              </Field>
+            </div>
           </div>
-          <div style={{ minWidth: 200 }}>
-            <Field label="Activity" htmlFor="franchises-activity-filter" hint="Exact match against one of the Franchise's Activities.">
-              <TextField
-                id="franchises-activity-filter"
-                placeholder="e.g. Jiu Jitsu"
-                value={activityFilter}
-                onChange={(e) => setActivityFilter(e.target.value)}
-              />
-            </Field>
-          </div>
+          <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Franchises view" />
         </div>
       </Card>
       {isLoading ? (
@@ -75,6 +84,34 @@ export function FranchisesPage() {
               title={hasFilter ? 'No Franchises match these filters' : 'No Franchises yet'}
               description={hasFilter ? 'Try a different fee model or activity, or clear the filters.' : 'Add a Franchise to start inviting Schools to join it.'}
             />
+          ) : viewMode === 'grid' ? (
+            <CardGrid>
+              {franchises.map((f) => (
+                <Card key={f.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/franchises/${f.id}`)}
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-accent)', cursor: 'pointer', font: 'inherit', textAlign: 'left', fontWeight: 600 }}
+                  >
+                    {f.name}
+                  </button>
+                  <div style={{ margin: '8px 0' }}>
+                    {f.activities.map((a, i) => (
+                      <Badge key={`${a}-${i}`}>{a}</Badge>
+                    ))}
+                  </div>
+                  <Badge>{f.feeModel === 'FLAT' ? 'Flat' : 'Per-headcount'}</Badge>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
+                      View details
+                    </Button>
+                    <Button variant="secondary" onClick={() => setEditing(f)}>
+                      Edit
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </CardGrid>
           ) : (
             <Table<FranchiseResponse>
               rows={franchises}
