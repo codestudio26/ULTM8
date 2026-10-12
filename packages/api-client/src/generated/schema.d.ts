@@ -1316,6 +1316,22 @@ export interface paths {
         patch: operations["TimetableController_update"];
         trace?: never;
     };
+    "/v1/timetable/{id}/occurrence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimetableController_findOccurrence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/instructors": {
         parameters: {
             query?: never;
@@ -7536,6 +7552,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_findOccurrence: {
+        parameters: {
+            query: {
+                /** @description The occurrence's calendar date, YYYY-MM-DD, matching Class.occurrenceDate. */
+                date: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassResponseDto"];
                 };
             };
         };

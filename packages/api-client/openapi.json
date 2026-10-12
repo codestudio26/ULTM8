@@ -3797,6 +3797,50 @@
         ]
       }
     },
+    "/v1/timetable/{id}/occurrence": {
+      "get": {
+        "operationId": "TimetableController_findOccurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "description": "The occurrence's calendar date, YYYY-MM-DD, matching Class.occurrenceDate.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/instructors": {
       "post": {
         "operationId": "InstructorsController_create",
