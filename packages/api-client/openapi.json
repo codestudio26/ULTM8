@@ -12909,6 +12909,10 @@
           "visible": {
             "type": "boolean"
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true
+          },
           "refundFeeDate": {
             "type": "string",
             "nullable": true
@@ -13037,6 +13041,10 @@
             "type": "string",
             "nullable": true,
             "description": "ISO 8601 date-time. Pass null to clear."
+          },
+          "archived": {
+            "type": "boolean",
+            "description": "Retires (true) or restores (false) this plan. Omit to leave unchanged."
           }
         }
       },

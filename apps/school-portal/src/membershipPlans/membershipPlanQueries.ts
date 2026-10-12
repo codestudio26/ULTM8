@@ -104,3 +104,20 @@ export function useUpdateMembershipPlanVisibility(schoolId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['membershipPlans', schoolId] }),
   });
 }
+
+/** Same PATCH /v1/membership-plans/{id} endpoint, archived-toggle variant
+ * (v1.2 backend backlog — the Archive action). Same "a plan's other fields
+ * stay untouched" safety as useUpdateMembershipPlanVisibility above. */
+export function useUpdateMembershipPlanArchived(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      unwrap(
+        apiClient.PATCH('/v1/membership-plans/{id}', {
+          params: { path: { id } },
+          body: { archived } as UpdateMembershipPlanInput,
+        }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['membershipPlans', schoolId] }),
+  });
+}

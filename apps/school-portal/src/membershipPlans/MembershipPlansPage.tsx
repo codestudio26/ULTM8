@@ -5,7 +5,13 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useClasses } from '../classes/classQueries';
 import { formatMoney } from '../lib/money';
-import { useActiveMemberTotal, useMembershipPlans, useUpdateMembershipPlanVisibility, type MembershipPlanResponse } from './membershipPlanQueries';
+import {
+  useActiveMemberTotal,
+  useMembershipPlans,
+  useUpdateMembershipPlanArchived,
+  useUpdateMembershipPlanVisibility,
+  type MembershipPlanResponse,
+} from './membershipPlanQueries';
 
 const TYPE_LABELS: Record<string, string> = {
   SUBSCRIPTION: 'Subscription',
@@ -51,7 +57,9 @@ export function MembershipPlansPage() {
   const { data, isLoading, error } = useMembershipPlans(schoolId);
   const { data: classData } = useClasses(schoolId);
   const toggleVisibility = useUpdateMembershipPlanVisibility(schoolId ?? '');
+  const toggleArchived = useUpdateMembershipPlanArchived(schoolId ?? '');
   const [toggleError, setToggleError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   // Hoisted above the early returns below (Rules of Hooks — every hook here
   // must run on every render, loading/error states included) — computed from
   // `data` directly rather than the post-guard `plans` local below.
@@ -64,6 +72,11 @@ export function MembershipPlansPage() {
   const plans = data?.items ?? [];
   const classes = classData?.items ?? [];
   const visibleCount = plans.filter((p) => p.visible).length;
+  const archivedCount = plans.filter((p) => p.archivedAt).length;
+  // v1.2 backend backlog — Archive: dropped from the default list, same
+  // client-side-filter convention Visible/Hidden already use, not a new
+  // server-side query param.
+  const shownPlans = showArchived ? plans : plans.filter((p) => !p.archivedAt);
 
   return (
     <>
@@ -83,6 +96,7 @@ export function MembershipPlansPage() {
         <StatTile label="Total plans" value={plans.length} />
         <StatTile label="Visible" value={visibleCount} />
         <StatTile label="Hidden" value={plans.length - visibleCount} />
+        <StatTile label="Archived" value={archivedCount} />
         <StatTile
           label="Active members"
           value={activeMembers.isLoading ? <Spinner /> : activeMembers.error ? '—' : activeMembers.total}
@@ -91,14 +105,32 @@ export function MembershipPlansPage() {
 
       {toggleError ? <ErrorBanner message={toggleError} /> : null}
 
+      <Checkbox
+        label={`Show archived (${archivedCount})`}
+        checked={showArchived}
+        onChange={(e) => setShowArchived(e.target.checked)}
+      />
+
       <Card>
-        {plans.length === 0 ? (
-          <EmptyState title="No Membership Plans yet" description="Add your first plan to get started." />
+        {shownPlans.length === 0 ? (
+          <EmptyState
+            title={plans.length === 0 ? 'No Membership Plans yet' : 'No plans to show'}
+            description={plans.length === 0 ? 'Add your first plan to get started.' : 'Every plan is archived — check "Show archived" above.'}
+          />
         ) : (
           <Table<MembershipPlanResponse>
-            rows={plans}
+            rows={shownPlans}
             columns={[
-              { key: 'title', header: 'Title', render: (p) => p.title },
+              {
+                key: 'title',
+                header: 'Title',
+                render: (p) => (
+                  <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    {p.title}
+                    {p.archivedAt ? <Badge>Archived</Badge> : null}
+                  </span>
+                ),
+              },
               { key: 'type', header: 'Type', render: (p) => <Badge variant="accent">{TYPE_LABELS[p.type] ?? p.type}</Badge> },
               { key: 'price', header: 'Price', render: (p) => formatMoney(p.price, p.currency) },
               {
@@ -146,6 +178,22 @@ export function MembershipPlansPage() {
                       }
                     >
                       Duplicate
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={toggleArchived.isPending && toggleArchived.variables?.id === p.id}
+                      onClick={() => {
+                        setToggleError(null);
+                        toggleArchived.mutate(
+                          { id: p.id, archived: !p.archivedAt },
+                          {
+                            onError: (err) =>
+                              setToggleError(err instanceof ApiError ? err.message : 'Could not update this plan — please try again.'),
+                          },
+                        );
+                      }}
+                    >
+                      {p.archivedAt ? 'Unarchive' : 'Archive'}
                     </Button>
                   </div>
                 ),

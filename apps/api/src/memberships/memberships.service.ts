@@ -204,6 +204,9 @@ export class MembershipsService {
           termsWaiverRequired: dto.termsWaiverRequired,
           disciplineIds: dto.disciplineIds,
           includesLessons: dto.includesLessons,
+          // v1.2 backend backlog — Archive, a plain boolean toggle at this DTO's
+          // own layer (see its own comment); undefined leaves archivedAt unchanged.
+          archivedAt: dto.archived === undefined ? undefined : dto.archived ? new Date() : null,
         },
       }),
     );
@@ -305,6 +308,13 @@ export class MembershipsService {
     }
 
     const plan = await this.findOnePlan(studentId, planId);
+    // v1.2 backend backlog — Archive. Unlike `visible` (display-only, never
+    // checked here), archivedAt is a hard block on every NEW purchase —
+    // Staff-on-behalf-of (isGuardianAction) included. A Membership already
+    // sold on this plan before it was archived is untouched by this check.
+    if (plan.archivedAt) {
+      throw new BadRequestException('This Membership Plan has been archived — it no longer accepts new purchases.');
+    }
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
     // payments" is one of the three actions it explicitly names (Phase 54).
     // Checked under `studentId`'s own RLS context, not `callerId`'s — same

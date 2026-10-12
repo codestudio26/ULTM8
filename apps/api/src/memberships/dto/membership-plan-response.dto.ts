@@ -33,6 +33,12 @@ export class MembershipPlanResponseDto {
   @ApiProperty()
   visible!: boolean;
 
+  /** v1.2 backend backlog — Archive. Null = active; set = retired (see
+   * schema.prisma's own MembershipPlan.archivedAt comment for the full
+   * account of how this differs from `visible`). */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  archivedAt!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   refundFeeDate!: string | null;
 

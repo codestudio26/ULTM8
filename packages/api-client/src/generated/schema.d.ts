@@ -4072,6 +4072,7 @@ export interface components {
             classesIncluded?: number | null;
             scopedClassId?: string | null;
             visible: boolean;
+            archivedAt?: string | null;
             refundFeeDate?: string | null;
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
@@ -4112,6 +4113,8 @@ export interface components {
             cancellationCharge?: number | null;
             /** @description ISO 8601 date-time. Pass null to clear. */
             refundFeeDate?: string | null;
+            /** @description Retires (true) or restores (false) this plan. Omit to leave unchanged. */
+            archived?: boolean;
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;

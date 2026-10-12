@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
 import { CreateMembershipPlanDto } from './create-membership-plan.dto';
 
 const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate'] as const;
@@ -59,4 +59,14 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @IsOptional()
   @IsDateString()
   refundFeeDate?: string | null;
+
+  /** v1.2 backend backlog — the Archive action (schema.prisma's own
+   * MembershipPlan.archivedAt comment has the full account). A plain
+   * boolean toggle, same shape as `visible`, not a raw timestamp the client
+   * would have to construct — MembershipsService.updatePlan() translates
+   * true/false to archivedAt now()/null. */
+  @ApiPropertyOptional({ description: 'Retires (true) or restores (false) this plan. Omit to leave unchanged.' })
+  @IsOptional()
+  @IsBoolean()
+  archived?: boolean;
 }

@@ -1408,6 +1408,20 @@ model MembershipPlan {
 
   visible Boolean @default(true)
 
+  /// v1.2 backend backlog — retiring a plan for good, distinct from `visible`
+  /// (which only affects whether Students browsing can see/purchase it
+  /// themselves): an archived plan is blocked from every NEW purchase,
+  /// Staff-on-behalf-of included (MembershipsService.purchase()), and is
+  /// filtered out of the School Owner's own list by default — same
+  /// client-side-filter convention `visible`'s own Visible/Hidden stat tiles
+  /// already use, not a server-side query param. Reversible (set back to
+  /// null) at any time — unlike Decision 110's tenant-offboarding archive,
+  /// there is no purge/grace-period here: a retired plan's historical data
+  /// must stay forever for Transaction/Membership references, and nothing
+  /// about archiving touches a Membership already sold on this plan — it
+  /// keeps billing/renewing until it ends on its own.
+  archivedAt DateTime?
+
   /// Lessons (Decision 195): the School's styles this plan covers, and
   /// whether a live membership on it can watch those styles' lessons. On by
   /// default for priced plans, off for free ones; the owner can change it.

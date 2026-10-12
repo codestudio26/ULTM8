@@ -355,6 +355,100 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     expect(meRes.body.items.some((m: { id: string }) => m.id === purchaseRes.body.membership.id)).toBe(true);
   });
 
+  // Each test below mints its own throwaway Student (never reused across this
+  // file's own tokenStudentA/B, whose general-access-membership state other
+  // tests here deliberately depend on in file order — see "a second
+  // simultaneous..." right below) — cleaned up by this suite's own afterAll
+  // `email: { contains: 'memberships-http-' }` sweep.
+  async function mkThrowawayStudent(label: string) {
+    const user = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `memberships-http-${label}-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: label,
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: user.id, schoolId: school.id } });
+    return { user, token: signAccessToken(user, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]) };
+  }
+
+  it('PATCH { archived: true } sets archivedAt; { archived: false } clears it — reversible, unlike visible it blocks new purchases', async () => {
+    const { token: tokenThrowaway } = await mkThrowawayStudent('archive-toggle');
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Retiring Trial', price: 0 });
+    expect(planRes.status).toBe(201);
+    membershipPlanIds.push(planRes.body.id);
+    expect(planRes.body.archivedAt).toBeNull();
+
+    const archiveRes = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${planRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ archived: true });
+    expect(archiveRes.status).toBe(200);
+    expect(archiveRes.body.archivedAt).not.toBeNull();
+    // Omitting every other field must leave them untouched (same contract
+    // the other PATCH tests above establish for currency/etc.).
+    expect(archiveRes.body.title).toBe('Retiring Trial');
+
+    const purchaseRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenThrowaway}`)
+      .send({});
+    expect(purchaseRes.status).toBe(400);
+    expect(purchaseRes.body.error.message).toMatch(/archived/i);
+
+    const unarchiveRes = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${planRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ archived: false });
+    expect(unarchiveRes.status).toBe(200);
+    expect(unarchiveRes.body.archivedAt).toBeNull();
+
+    const secondPurchaseRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenThrowaway}`)
+      .send({});
+    expect(secondPurchaseRes.status).toBe(201);
+    membershipIds.push(secondPurchaseRes.body.membership.id);
+  });
+
+  it('archiving a plan never touches a Membership already sold on it — it keeps its own status', async () => {
+    const { token: tokenThrowaway } = await mkThrowawayStudent('archive-no-touch');
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Soon-archived Trial', price: 0 });
+    expect(planRes.status).toBe(201);
+    membershipPlanIds.push(planRes.body.id);
+
+    const purchaseRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenThrowaway}`)
+      .send({});
+    expect(purchaseRes.status).toBe(201);
+    membershipIds.push(purchaseRes.body.membership.id);
+
+    const archiveRes = await request(app.getHttpServer())
+      .patch(`/v1/membership-plans/${planRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ archived: true });
+    expect(archiveRes.status).toBe(200);
+
+    const meRes = await request(app.getHttpServer())
+      .get('/v1/memberships/me')
+      .set('Authorization', `Bearer ${tokenThrowaway}`);
+    expect(meRes.status).toBe(200);
+    const membership = meRes.body.items.find((m: { id: string }) => m.id === purchaseRes.body.membership.id);
+    expect(membership.status).toBe('ACTIVE');
+  });
+
   it('a second simultaneous general-access Membership for the same Student/School is rejected — 409', async () => {
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)

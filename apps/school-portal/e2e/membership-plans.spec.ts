@@ -137,6 +137,42 @@ test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) =
 // "—" placeholder.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// v1.2 backend backlog — the Archive action. Distinct from Visibility: an
+// archived plan drops out of the default list (client-side filter, same
+// convention the Visible/Hidden stat tiles already use) behind a "Show
+// archived" toggle, and is reversible.
+// ---------------------------------------------------------------------------
+
+test('archiving a plan hides it from the default list; unarchiving brings it back', async ({ page }) => {
+  const plan = await db.membershipPlan.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, type: 'TRIAL_MEMBERSHIP', title: 'Soon Retired Trial', price: 0 },
+  });
+  planIds.push(plan.id);
+
+  await page.goto('/membership-plans');
+  const row = page.getByRole('row', { name: /Soon Retired Trial/ });
+  await expect(row).toBeVisible();
+  const archivedTile = page.locator('span', { hasText: 'Archived' }).locator('..');
+  await expect(archivedTile.getByText('0', { exact: true })).toBeVisible();
+
+  await row.getByRole('button', { name: 'Archive' }).click();
+  await expect(row).toBeHidden();
+  await expect(archivedTile.getByText('1', { exact: true })).toBeVisible();
+  expect((await db.membershipPlan.findUniqueOrThrow({ where: { id: plan.id } })).archivedAt).not.toBeNull();
+
+  await page.getByLabel(/Show archived/).check();
+  await expect(row).toBeVisible();
+  await expect(row.getByText('Archived', { exact: true })).toBeVisible();
+
+  await row.getByRole('button', { name: 'Unarchive' }).click();
+  await expect(row.getByText('Archived', { exact: true })).toHaveCount(0);
+  expect((await db.membershipPlan.findUniqueOrThrow({ where: { id: plan.id } })).archivedAt).toBeNull();
+
+  await page.getByLabel(/Show archived/).uncheck();
+  await expect(row).toBeVisible();
+});
+
 test('the Active members stat tile reflects real, live Memberships across every plan', async ({ page }) => {
   const plan = await db.membershipPlan.create({
     data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Active Tile Pack', price: 1000, classesIncluded: 5 },
