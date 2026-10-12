@@ -112,6 +112,7 @@ export function BranchesPage() {
       {creating ? (
         <BranchFormModal
           title="Add branch"
+          schoolId={schoolId}
           submitting={createBranch.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to

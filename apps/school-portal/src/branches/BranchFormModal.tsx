@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies } from '../settings/settingsQueries';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { BranchResponse } from './branchQueries';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
@@ -12,11 +13,13 @@ import type { BranchResponse } from './branchQueries';
  * timezone/currencyOverride since Phase 3, but never logoUrl/bannerUrl —
  * Decision 76's own field list names "branding" explicitly, and the backend
  * (create/update DTOs, response DTO, Prisma model) has carried both fields the
- * whole time; only this form had never been updated to expose them. Added
- * here as plain-text URL fields, the same treatment Franchise/Class/
- * TimetableSlot's own forms already give logoUrl/bannerUrl elsewhere in this
- * app — no image-upload infrastructure exists for general branding assets
- * (R2 is wired up for waiver signatures specifically, Phase 34, not this).
+ * whole time; only this form had never been updated to expose them. Originally
+ * added as plain-text URL fields (no image-upload infrastructure existed for
+ * general branding assets at the time — R2 was wired up for waiver signatures
+ * specifically, Phase 34, not this); now a real `PhotoUploadField` as of the
+ * real-photo-uploads phase (product-owner-approved — see
+ * apps/api/src/uploads/uploads.module.ts's own header comment), same as every
+ * other photo/logo/banner field app-wide.
  *
  * FOUND ON REVIEW (Phase 18): `null` (not `undefined`) means "the field was
  * cleared" — UpdateBranchDto now accepts `null` on these fields to mean
@@ -27,12 +30,20 @@ import type { BranchResponse } from './branchQueries';
  * `null` on these fields. */
 export function BranchFormModal({
   title,
+  schoolId,
   initial,
   submitting,
   onSubmit,
   onClose,
 }: {
   title: string;
+  /** Required so the Logo/Banner fields' upload URL requests can be
+   * authorized (School Owner at this School — see UploadsService's own
+   * comment). This modal is create-only today (Decision 231 moved editing to
+   * BranchSettingsPage), so there is never an existing Branch id to key the
+   * upload under — entityId is omitted, a fresh id stands in (see
+   * UploadsService.requestPublicPhotoUploadUrl's own comment on that). */
+  schoolId: string;
   initial?: Partial<BranchResponse>;
   submitting: boolean;
   onSubmit: (values: {
@@ -57,6 +68,7 @@ export function BranchFormModal({
     bannerUrl: initial?.bannerUrl ?? '',
   });
   const [error, setError] = useState<string | null>(null);
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,11 +116,23 @@ export function BranchFormModal({
             options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
           />
         </Field>
-        <Field label="Logo URL" htmlFor="branch-logo">
-          <TextField value={form.logoUrl} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} />
+        <Field label="Logo" htmlFor="branch-logo">
+          <PhotoUploadField
+            value={form.logoUrl}
+            onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
+            requestUpload={(file) =>
+              requestPhotoUpload.mutateAsync({ entityType: 'BRANCH', schoolId, contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp' })
+            }
+          />
         </Field>
-        <Field label="Banner URL" htmlFor="branch-banner">
-          <TextField value={form.bannerUrl} onChange={(e) => setForm((f) => ({ ...f, bannerUrl: e.target.value }))} />
+        <Field label="Banner" htmlFor="branch-banner">
+          <PhotoUploadField
+            value={form.bannerUrl}
+            onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
+            requestUpload={(file) =>
+              requestPhotoUpload.mutateAsync({ entityType: 'BRANCH', schoolId, contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp' })
+            }
+          />
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>

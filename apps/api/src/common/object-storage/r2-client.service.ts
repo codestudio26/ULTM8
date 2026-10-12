@@ -42,18 +42,53 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
  * itself to be created WITHOUT public access enabled — see .env.example's own
  * comment; this codebase has no AWS/Cloudflare credentials to provision the bucket
  * itself, same standing gap as Cognito's User Pool.
+ *
+ * SECOND access path added for real photo uploads (product-owner-approved —
+ * see UploadsModule's own header comment and CHANGELOG.md "Unreleased"): every
+ * photo/logo/banner field app-wide (Instructor.photoUrl, User.profilePhotoUrl,
+ * Branch/Franchise logoUrl/bannerUrl, Class.bannerUrl) was a plain pasted-URL
+ * text field with no real upload pipeline. These are "gallery photo" data, NOT
+ * the "legal record" category the private path above exists for (no §12.2
+ * data-residency concern was ever raised for them, and the product owner
+ * explicitly chose this simpler, PUBLIC-access R2 path over the more complex
+ * Cloudflare Images option for v1 — resizing/thumbnailing stays explicitly
+ * out of scope, left for Cloudflare Images if ever revisited). Given that, this
+ * second path uses R2's own public-bucket mechanism — a SEPARATE bucket
+ * (`R2_PUBLIC_BUCKET_NAME`) with Public Access turned on (either R2's own
+ * r2.dev subdomain, quick but rate-limited, or a custom domain mapped to the
+ * bucket via Cloudflare's CDN — ops' choice; this service only needs the
+ * resulting base URL, `R2_PUBLIC_BASE_URL`) — never the original private
+ * bucket, whose access model this does not weaken. Reuses the same account
+ * credentials above (one R2 account, two buckets) — a public bucket still
+ * needs a presigned PUT to accept an upload (R2 does not expose a public,
+ * unauthenticated PUT), but a public GET needs no signature at all, so reads
+ * are a plain, permanent URL (`getPublicPhotoUrl`) instead of a
+ * `getPresignedDownloadUrl`-style short-lived one. See `getPublicPhotoUploadUrl`/
+ * `getPublicPhotoUrl`'s own comments.
  */
 @Injectable()
 export class R2ClientService {
   private readonly logger = new Logger(R2ClientService.name);
   private readonly client: S3Client | null;
   private readonly bucketName: string | undefined;
+  private readonly publicBucketName: string | undefined;
+  private readonly publicBaseUrl: string | undefined;
 
   constructor() {
     const accountId = process.env.R2_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
     this.bucketName = process.env.R2_BUCKET_NAME;
+    // Same account, two buckets — the public bucket's own config is read
+    // independently of the private one above (see this file's own header
+    // comment), so a deployment can configure either, both, or neither.
+    this.publicBucketName = process.env.R2_PUBLIC_BUCKET_NAME;
+    this.publicBaseUrl = process.env.R2_PUBLIC_BASE_URL?.trim().replace(/\/+$/, '');
+    if (!this.publicBucketName || !this.publicBaseUrl) {
+      this.logger.warn(
+        'R2_PUBLIC_BUCKET_NAME / R2_PUBLIC_BASE_URL are not both set — public gallery-photo uploads will fail until they are.',
+      );
+    }
     if (!accountId || !accessKeyId || !secretAccessKey || !this.bucketName) {
       this.logger.warn(
         'R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_BUCKET_NAME are not all set — object-storage uploads will fail until they are.',
@@ -126,6 +161,36 @@ export class R2ClientService {
       }
       throw err;
     }
+  }
+
+  /** A presigned PUT URL for `key` in the PUBLIC bucket (`R2_PUBLIC_BUCKET_NAME`),
+   * not the private one `getPresignedUploadUrl` above writes to — see this file's
+   * own header comment for why gallery photos get a second bucket rather than
+   * reusing the private one. Still needs a real signature: R2 does not expose an
+   * unauthenticated public PUT even on a bucket with public GET access enabled,
+   * so the upload side works exactly like the private path (same 5-minute expiry,
+   * same Content-Type-pinned-into-the-signature behavior) — only the READ side
+   * (`getPublicPhotoUrl` below) actually differs. */
+  async getPublicPhotoUploadUrl(key: string, contentType: string): Promise<string> {
+    const client = this.assertConfigured();
+    if (!this.publicBucketName) {
+      throw new Error('R2ClientService public bucket is not configured — set R2_PUBLIC_BUCKET_NAME / R2_PUBLIC_BASE_URL');
+    }
+    const command = new PutObjectCommand({ Bucket: this.publicBucketName, Key: key, ContentType: contentType });
+    return getSignedUrl(client, command, { expiresIn: 300 });
+  }
+
+  /** The permanent, public URL for `key` once uploaded — a plain string
+   * concatenation against `R2_PUBLIC_BASE_URL` (the bucket's r2.dev subdomain or
+   * a custom domain mapped to it, ops' choice — see this file's own header
+   * comment), not a signed/expiring URL: that's the whole point of the public
+   * bucket. No network call, same "cheap, pure local computation" shape
+   * `getPresignedDownloadUrl` already has, just without the HMAC step at all. */
+  getPublicPhotoUrl(key: string): string {
+    if (!this.publicBaseUrl) {
+      throw new Error('R2ClientService public bucket is not configured — set R2_PUBLIC_BUCKET_NAME / R2_PUBLIC_BASE_URL');
+    }
+    return `${this.publicBaseUrl}/${key}`;
   }
 
   private assertConfigured(): S3Client {

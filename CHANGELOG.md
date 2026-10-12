@@ -86,6 +86,77 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   signature-upload-url endpoint) was already real and the capture UI itself
   had already shipped and been marked DONE further down the same doc — the
   table row was simply never updated alongside that. Corrected here.
+- **Real photo uploads for every photo/logo/banner field app-wide**
+  (`docs/v1.2-backend-backlog.md` — "Photo upload" bullets logged separately
+  for Instructors/Branches/Franchises/Classes): every one of
+  `Instructor.photoUrl`, `User.profilePhotoUrl`, `Branch.logoUrl`/`bannerUrl`,
+  `Franchise.logoUrl`/`bannerUrl`, and `Class.bannerUrl` was a plain pasted-URL
+  text field, with no real upload pipeline anywhere in this app. Product-owner-
+  approved as a deliberately simpler alternative to the already-decided
+  Cloudflare Images companion (Spec 55 §11.3) — resizing/thumbnailing stays
+  explicitly out of scope for this change, left for Cloudflare Images if ever
+  revisited.
+  - **New backend: a second, PUBLIC-access R2 path, alongside the existing
+    PRIVATE one** (`R2ClientService.getPublicPhotoUploadUrl`/
+    `getPublicPhotoUrl`, new `R2_PUBLIC_BUCKET_NAME`/`R2_PUBLIC_BASE_URL` env
+    vars) — a SEPARATE bucket from the existing private waiver-signature/
+    certification bucket (`R2_BUCKET_NAME`), which this never weakens or
+    touches. **Implementation judgment call, disclosed:** R2's own public-
+    access mechanism is either its r2.dev subdomain or a custom domain mapped
+    to the bucket via Cloudflare's CDN — this build is agnostic to which one
+    ops actually configures; `R2_PUBLIC_BASE_URL` is just that bucket's
+    resulting base URL, appended to an object key with no signing needed for
+    reads (unlike the private path's short-lived presigned GETs, a public
+    bucket's own GET needs no signature at all — only the upload-side PUT
+    still does).
+  - **New endpoint: `POST /uploads/public-photo-url`** (new `UploadsModule`) —
+    ONE shared presign endpoint across all 5 entity types (an `entityType`
+    enum), rather than 5 near-identical per-entity ones, since authorization
+    for each is already a one-line delegation to the existing
+    `TenantAuthorizationService` (School Owner for Instructor/Branch/Class,
+    Franchise Owner for Franchise — mirroring each entity's own existing
+    update-endpoint gate exactly) or to the exact same Staff-on-behalf-of-a-
+    Student check `SchoolsService.updateStudentProfile` already makes (for
+    User). Returns a presigned PUT URL plus the resulting permanent public
+    URL — no separate "confirm the upload happened" step the way the private
+    signature/certification flows have (`objectExists()`): this is public,
+    non-legal-record data, so a never-uploaded URL simply 404s when viewed,
+    no worse than the plain-pasted-URL status quo it replaces. A Franchise's
+    own photo, requested before the Franchise exists, needs no gate at all —
+    mirrors `POST /franchises` itself, which is genuinely self-service with no
+    prior RoleGrant check.
+  - **New shared component: `PhotoUploadField`** (`packages/ui`) — file
+    picker, live preview (the current value, or a local blob preview of the
+    just-picked file before upload completes), upload-in-progress state, and
+    on success sets the form's URL field to the new public URL. Built once,
+    reused across all 6 call sites — same "build the shared component once"
+    discipline `PhoneField`/`TimezoneField` already established. **Max file
+    size: 5MB, image/png + image/jpeg + image/webp only** — an explicit
+    judgment call, disclosed: no existing size-limit convention anywhere else
+    in this codebase to inherit from (checked first); 5MB was chosen as
+    reasonable for a profile/logo/banner photo given no client-side
+    resizing/compression is attempted.
+  - **Wired into all 6 call sites:** `InstructorFormModal.tsx`
+    (`Instructor.photoUrl`), `StudentUpdatePage.tsx`
+    (`User.profilePhotoUrl`, Staff-on-behalf-of a Student), `BranchFormModal.tsx`
+    (create) + `BranchSettingsPage.tsx` (edit) (`Branch.logoUrl`/`bannerUrl`),
+    `FranchiseFormModal.tsx` (`Franchise.logoUrl`/`bannerUrl`), and
+    `ClassFormModal.tsx` (`Class.bannerUrl`) — each replacing a plain
+    `TextField` labeled "Photo URL"/"Logo URL"/"Banner URL" with the new
+    `PhotoUploadField`. `packages/api-client` regenerated.
+  - New e2e coverage (`apps/api/test/uploads.e2e-spec.ts`) over real Postgres:
+    presign-URL issuance per entity type, each entity's own authorization gate
+    (School Owner, Franchise Owner, Staff-on-behalf-of-a-Student), and the
+    "can't request a key under a different School/Franchise's own namespace"
+    cross-tenant check — same discipline the existing certification/signature
+    upload tests already established. New Playwright coverage
+    (`apps/school-portal/e2e/branch-photo-upload.spec.ts`) drives the
+    `BranchFormModal` photo picker end-to-end via `page.setInputFiles()`,
+    against a lightweight local stub standing in for the R2 PUT (no real R2
+    credentials are configured in this environment at all — see that spec's
+    own header comment for how it mirrors this repo's existing external-
+    service-stubbing convention).
+
 - **Timetable page redesign — Daily/Weekly/Monthly views + real click-to-book**
   (`docs/v1.2-backend-backlog.md`): `TimetablePage.tsx` was a plain weekday-
   grouped CRUD grid (Add/Edit a slot only, no booking) — this redesign builds

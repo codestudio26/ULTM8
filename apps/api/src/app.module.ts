@@ -27,6 +27,7 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
 import { TranslationsModule } from './translations/translations.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 /** Requests per minute per IP on every route (THROTTLE_IP_LIMIT_PER_MINUTE,
  * default 60). Only the browser tests raise it: they drive the whole portal
@@ -73,6 +74,7 @@ function ipLimitPerMinute(): number {
     CurriculumModule,
     TranslationsModule,
     SubscriptionPlansModule,
+    UploadsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

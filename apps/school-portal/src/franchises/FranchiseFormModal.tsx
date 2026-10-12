@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { FranchiseResponse } from './franchiseQueries';
 
 const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
@@ -55,6 +56,7 @@ export function FranchiseFormModal({
 }) {
   const { data: languages } = useLanguages();
   const { data: currencies } = useCurrencies();
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     mobileNumber: initial?.mobileNumber ?? '',
@@ -143,11 +145,31 @@ export function FranchiseFormModal({
         <Field label="Description" htmlFor="franchise-description">
           <TextField value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
-        <Field label="Logo URL" htmlFor="franchise-logo">
-          <TextField value={form.logoUrl} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} />
+        <Field label="Logo" htmlFor="franchise-logo">
+          <PhotoUploadField
+            value={form.logoUrl}
+            onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
+            requestUpload={(file) =>
+              requestPhotoUpload.mutateAsync({
+                entityType: 'FRANCHISE',
+                franchiseId: initial?.id,
+                contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+              })
+            }
+          />
         </Field>
-        <Field label="Banner URL" htmlFor="franchise-banner">
-          <TextField value={form.bannerUrl} onChange={(e) => setForm((f) => ({ ...f, bannerUrl: e.target.value }))} />
+        <Field label="Banner" htmlFor="franchise-banner">
+          <PhotoUploadField
+            value={form.bannerUrl}
+            onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
+            requestUpload={(file) =>
+              requestPhotoUpload.mutateAsync({
+                entityType: 'FRANCHISE',
+                franchiseId: initial?.id,
+                contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+              })
+            }
+          />
         </Field>
         <Field label="Fee model" htmlFor="franchise-feeModel">
           <SelectField

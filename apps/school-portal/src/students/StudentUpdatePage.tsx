@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, PageHeader, PhotoUploadField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useStudents, useUpdateStudentProfile } from './studentQueries';
 
 /**
@@ -49,6 +50,7 @@ export function StudentUpdatePage() {
   const navigate = useNavigate();
   const students = useStudents(schoolId);
   const updateProfile = useUpdateStudentProfile(schoolId);
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   const student = students.data?.items.find((s) => s.id === studentId);
   const studentName = student ? `${student.firstName} ${student.surname}`.trim() : 'Student';
@@ -181,8 +183,19 @@ export function StudentUpdatePage() {
           <Field label="Address" htmlFor="student-update-address" hint="Leave blank to keep unchanged.">
             <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f!, address: e.target.value }))} />
           </Field>
-          <Field label="Photo URL" htmlFor="student-update-photo" hint="Leave blank to keep unchanged.">
-            <TextField value={form.profilePhotoUrl} onChange={(e) => setForm((f) => ({ ...f!, profilePhotoUrl: e.target.value }))} />
+          <Field label="Photo" htmlFor="student-update-photo" hint="Leave unchanged to keep the existing photo.">
+            <PhotoUploadField
+              value={form.profilePhotoUrl}
+              onChange={(profilePhotoUrl) => setForm((f) => ({ ...f!, profilePhotoUrl }))}
+              requestUpload={(file) =>
+                requestPhotoUpload.mutateAsync({
+                  entityType: 'USER',
+                  schoolId,
+                  entityId: safeStudentId,
+                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                })
+              }
+            />
           </Field>
           <Button type="submit" loading={updateProfile.isPending}>
             Save
