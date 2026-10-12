@@ -15,6 +15,21 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
+  day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
+  Dashboard page itself is new — no real implementation existed anywhere in
+  this app before this (only a mockup, `Dashboard.dc.html`, in an external
+  design-canvas tool outside this repo checkout; built fresh with the product
+  owner's go-ahead rather than waiting on it). New `GET
+  /schools/:schoolId/bookings/summary` (Staff-only), date-range filterable
+  (defaults to the current Mon–Sun week), returning real `totalBookings`/
+  `upcomingBookings` counts and a day-by-day breakdown grouped by the Class's
+  raw `activities` string tags (not yet the canonical Discipline/styles FK —
+  Decision 90's bridge, unchanged here). `apps/school-portal/src/dashboard/
+  DashboardPage.tsx` (two KPI cards) links to a new
+  `BookingsDrilldownPage.tsx` (the day-by-day/per-activity view, with its own
+  editable date range) — a new "Dashboard" nav item routes to both.
+  `packages/api-client` regenerated.
 - **Every Timezone field is now a searchable combobox with live UTC offsets**
   (product-approved), replacing the plain free-text "IANA name" `TextField` on
   Branch create/edit (`BranchFormModal`, `BranchSettingsPage`) and School

@@ -2404,6 +2404,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/bookings/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_getWeeklySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/waitlist": {
         parameters: {
             query?: never;
@@ -4916,6 +4932,28 @@ export interface components {
         StudentBookingListResponseDto: {
             items: components["schemas"]["StudentBookingResponseDto"][];
             nextCursor?: string | null;
+        };
+        BookingsSummaryActivityDto: {
+            /** @description The raw Class.activities tag this bucket is for, or "Unspecified" for a Class with no tags. */
+            activity: string;
+            totalBookings: number;
+            upcomingBookings: number;
+        };
+        BookingsSummaryDayDto: {
+            /** @description YYYY-MM-DD, the School's own local calendar day. */
+            date: string;
+            totalBookings: number;
+            upcomingBookings: number;
+            activities: components["schemas"]["BookingsSummaryActivityDto"][];
+        };
+        BookingsSummaryResponseDto: {
+            /** @description Inclusive range start actually used, YYYY-MM-DD. */
+            from: string;
+            /** @description Inclusive range end actually used, YYYY-MM-DD. */
+            to: string;
+            totalBookings: number;
+            upcomingBookings: number;
+            days: components["schemas"]["BookingsSummaryDayDto"][];
         };
         JoinWaitlistDto: {
             /** @description Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
@@ -9395,6 +9433,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentBookingListResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_getWeeklySummary: {
+        parameters: {
+            query?: {
+                /** @description Inclusive range start, YYYY-MM-DD. Defaults to the current week's Monday when both from/to are omitted. */
+                from?: string;
+                /** @description Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted. */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingsSummaryResponseDto"];
                 };
             };
         };

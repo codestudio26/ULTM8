@@ -31,6 +31,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       brand="ULTM8 School Portal"
       header={<TopBar />}
       navItems={isCoachOnly ? [...COACH_NAV.slice(0, 2), ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []), ...(mayInvite ? [INVITE_NAV] : []), COACH_NAV[2]] : [
+        { label: 'Dashboard', to: '/dashboard' },
         { label: 'School', to: '/school' },
         { label: 'Branches', to: '/branches' },
         { label: 'Staff', to: '/staff' },

@@ -14,6 +14,8 @@ import { FirstLoginPasscodeChangePage } from './auth/FirstLoginPasscodeChangePag
 import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
+import { DashboardPage } from './dashboard/DashboardPage';
+import { BookingsDrilldownPage } from './dashboard/BookingsDrilldownPage';
 import { BranchesPage } from './branches/BranchesPage';
 import { BranchSettingsPage } from './branches/BranchSettingsPage';
 import { StaffPage } from './roleGrants/StaffPage';
@@ -115,6 +117,26 @@ export function App() {
           <RequireAuth>
             <Shell>
               <SchoolPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <Shell>
+              <DashboardPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/bookings-drilldown"
+        element={
+          <RequireAuth>
+            <Shell>
+              <BookingsDrilldownPage />
             </Shell>
           </RequireAuth>
         }
