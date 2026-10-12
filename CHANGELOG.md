@@ -39,6 +39,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   field starts blank and is sent only if typed, so this form can set a value
   but can't yet clear one it has no way to see. `packages/api-client`
   regenerated.
+- **Students roster now shows each Student's photo** (plumbing gap: `User.
+  profilePhotoUrl` already existed, resolved/editable via `GET`/`PATCH
+  /users/me`, apps/student's `ProfileScreen.tsx`, but `StudentSummaryResponseDto`
+  never resolved or exposed it, so the roster had no photo column at all).
+  `SchoolsService.findAllStudentsForSchool` now resolves `profilePhotoUrl`
+  from the same underlying `User` row other fields already come from — no new
+  query, for either the ACTIVE path's direct select or the INACTIVE/ALL
+  path's `resolveUserNames` (now carrying `profilePhotoUrl` for every one of
+  its other call sites too, all unaffected since they don't read it).
+  `StudentsPage.tsx` adds a small circular avatar column, reusing the existing
+  `Avatar` component (`apps/school-portal/src/lib/Avatar.tsx`, already used by
+  Instructors) — a real photo when set, an initials monogram fallback
+  otherwise. `packages/api-client` regenerated.
 - **Instructors — "Invite to Instructor Role" (existing-user invite, distinct
   from "Add manually")** (`docs/v1.2-backend-backlog.md`): a School Owner/
   Manager can now grant the Instructor role to a User who already has a ULTM8

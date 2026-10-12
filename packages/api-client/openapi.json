@@ -9388,6 +9388,10 @@
           "email": {
             "type": "string"
           },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "enrolledAt": {
             "type": "string"
           },

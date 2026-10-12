@@ -648,6 +648,11 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
         passcodeHash: 'x',
         dateOfBirth: new Date('2000-01-01'),
         phoneVerifiedAt: new Date(),
+        // Set so the roster's profilePhotoUrl (resolved from this same User row,
+        // see StudentSummaryResponseDto) has a non-null case to round-trip, next
+        // to the null case status=INACTIVE/ALL's revokedStudent fixture below
+        // already covers (no profilePhotoUrl set there).
+        profilePhotoUrl: 'https://example.test/roster-student-photo.jpg',
       },
     });
     const studentToken = signAccessToken(studentUser, []);
@@ -668,6 +673,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(row.email).toBe(studentUser.email);
     expect(row.enrolledAt).toBeDefined();
     expect(row.status).toBe('ACTIVE');
+    expect(row.profilePhotoUrl).toBe('https://example.test/roster-student-photo.jpg');
 
     // Omitting `status` entirely behaves exactly like `status=ACTIVE` — the
     // pre-existing default, unchanged by this filter's addition.
@@ -747,6 +753,11 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const inactiveRow = inactiveRes.body.items.find((s: { id: string }) => s.id === revokedStudent.id);
     expect(inactiveRow).toBeDefined();
     expect(inactiveRow.status).toBe('INACTIVE');
+    // No profilePhotoUrl was set on this fixture — round-trips as null, not
+    // undefined or an empty string, via resolveUserNames (the INACTIVE/ALL
+    // path's User-field resolution, distinct from the ACTIVE path's direct
+    // select covered by the photo-set case above).
+    expect(inactiveRow.profilePhotoUrl).toBeNull();
 
     // status=ALL — surfaces them too, alongside any still-Active Student.
     const allRes = await request(app.getHttpServer())

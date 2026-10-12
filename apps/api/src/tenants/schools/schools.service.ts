@@ -509,7 +509,7 @@ export class SchoolsService {
           orderBy: { grantedAt: 'asc' },
           select: {
             grantedAt: true,
-            user: { select: { id: true, firstName: true, surname: true, email: true } },
+            user: { select: { id: true, firstName: true, surname: true, email: true, profilePhotoUrl: true } },
           },
         }),
       );
@@ -563,6 +563,7 @@ export class SchoolsService {
       firstName: names.get(userId)?.firstName ?? '',
       surname: names.get(userId)?.surname ?? '',
       email: names.get(userId)?.email ?? '',
+      profilePhotoUrl: names.get(userId)?.profilePhotoUrl ?? null,
       status: hasActive ? StudentStatusDto.ACTIVE : StudentStatusDto.INACTIVE,
       enrolledAt: hasActive ? earliestActiveAt! : latestAt,
     }));
