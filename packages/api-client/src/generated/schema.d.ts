@@ -2884,6 +2884,22 @@ export interface paths {
         patch: operations["PlatformAdminTranslationsController_update"];
         trace?: never;
     };
+    "/v1/uploads/public-photo-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UploadsController_requestPublicPhotoUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5328,6 +5344,24 @@ export interface components {
             locale?: string;
             /** @description The translated text for this screen/labelKey/locale. */
             content?: string;
+        };
+        RequestPublicPhotoUploadUrlDto: {
+            /** @enum {string} */
+            entityType: "INSTRUCTOR" | "USER" | "BRANCH" | "FRANCHISE" | "CLASS";
+            /** @enum {string} */
+            contentType: "image/png" | "image/jpeg" | "image/webp";
+            /** @description Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student. */
+            schoolId?: string;
+            /** @description Required for entityType FRANCHISE. */
+            franchiseId?: string;
+            /** @description The existing Instructor/Branch/Class/Franchise row's own id, or the target Student's User id for entityType USER on-behalf-of. Omit when creating a brand-new entity (its id does not exist yet) or editing your own User row. */
+            entityId?: string;
+        };
+        PublicPhotoUploadUrlResponseDto: {
+            /** @description Presigned PUT URL, valid for 5 minutes — upload the photo file directly here, with the exact Content-Type this endpoint was called with. */
+            uploadUrl: string;
+            /** @description The permanent, public URL to save onto the entity's photoUrl/logoUrl/bannerUrl/profilePhotoUrl field once the upload succeeds. Never expires or needs re-signing. */
+            publicUrl: string;
         };
     };
     responses: never;
@@ -10371,6 +10405,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranslationResponseDto"];
+                };
+            };
+        };
+    };
+    UploadsController_requestPublicPhotoUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestPublicPhotoUploadUrlDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPhotoUploadUrlResponseDto"];
                 };
             };
         };
