@@ -17,6 +17,9 @@ import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
+import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
+import { daysInRange, defaultWeekRange, localDateRangeToInstants } from './booking-week';
+import { localDay } from '../ranks/engine';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -510,6 +513,105 @@ export class BookingsService {
         const { class: cls, ...rest } = b;
         return { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate };
       }),
+    };
+  }
+
+  /**
+   * GET /schools/:schoolId/bookings/summary — v1.2 backend backlog, Dashboard
+   * "Bookings This Week" drill-down (nothing backed this before: see the backlog
+   * doc's own entry for the full gap this closes). Staff-only (School Owner/
+   * Manager, Branch Staff, or Instructor) — the same `assertStaffAtSchool` gate
+   * findAllForClass/findAllForStudent above already use, not the narrower
+   * `assertSchoolOwner` TransactionsController.findAllForSchool uses: Booking data
+   * here is scheduling/attendance information, not the financial ledger Transaction
+   * reads with a deliberately tighter Owner-only gate elsewhere in this codebase.
+   *
+   * Two real, disclosed judgment calls (see BookingsSummaryResponseDto's own header
+   * comment for the full account): (1) grouping "by discipline" groups by the raw
+   * `Class.activities` string tags, not the canonical `Discipline`/`styles` FK —
+   * same Decision 90 bridge ClassesQueryDto's own `activities` filter already
+   * relies on, not reopened here; (2) a Booking whose Class carries several
+   * activities tags counts once per tag (fan-out) in the per-activity breakdown,
+   * but exactly once in every day-level/overall total.
+   *
+   * `from`/`to` (YYYY-MM-DD) must both be supplied or both omitted — supplying only
+   * one is treated the same as an invalid range, a plain 400, rather than silently
+   * guessing the other end. Interpreted as local calendar days in the School's own
+   * `timezone` (falls back to UTC — School.timezone is nullable) — see
+   * booking-week.ts's own header comment for why.
+   */
+  async getWeeklySummary(callerId: string, schoolId: string, from?: string, to?: string): Promise<BookingsSummaryResponseDto> {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }),
+    );
+    const timeZone = school?.timezone ?? null;
+
+    let range: { from: string; to: string };
+    if (from === undefined && to === undefined) {
+      range = defaultWeekRange(timeZone);
+    } else if (from === undefined || to === undefined) {
+      throw new BadRequestException('from and to must both be supplied, or both omitted for the current week.');
+    } else {
+      range = { from, to };
+    }
+    if (range.from > range.to) {
+      throw new BadRequestException('from must not be after to.');
+    }
+
+    const { gte, lt } = localDateRangeToInstants(range.from, range.to, timeZone);
+
+    const bookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.findMany({
+        where: { schoolId, class: { startDate: { gte, lt } } },
+        select: { status: true, class: { select: { startDate: true, activities: true } } },
+      }),
+    );
+
+    const UNSPECIFIED = 'Unspecified';
+    const dayBuckets = new Map<string, { total: number; upcoming: number; activities: Map<string, { total: number; upcoming: number }> }>();
+    for (const day of daysInRange(range.from, range.to)) {
+      dayBuckets.set(day, { total: 0, upcoming: 0, activities: new Map() });
+    }
+
+    let totalBookings = 0;
+    let upcomingBookings = 0;
+    for (const b of bookings) {
+      totalBookings += 1;
+      const isUpcoming = b.status === 'UPCOMING';
+      if (isUpcoming) upcomingBookings += 1;
+
+      const day = localDay(b.class.startDate, timeZone ?? 'UTC');
+      const bucket = dayBuckets.get(day);
+      if (!bucket) continue; // Defensive — the gte/lt filter above should make this unreachable.
+      bucket.total += 1;
+      if (isUpcoming) bucket.upcoming += 1;
+
+      const tags = b.class.activities.length > 0 ? b.class.activities : [UNSPECIFIED];
+      for (const tag of tags) {
+        const a = bucket.activities.get(tag) ?? { total: 0, upcoming: 0 };
+        a.total += 1;
+        if (isUpcoming) a.upcoming += 1;
+        bucket.activities.set(tag, a);
+      }
+    }
+
+    return {
+      from: range.from,
+      to: range.to,
+      totalBookings,
+      upcomingBookings,
+      days: Array.from(dayBuckets.entries()).map(([date, bucket]) => ({
+        date,
+        totalBookings: bucket.total,
+        upcomingBookings: bucket.upcoming,
+        activities: Array.from(bucket.activities.entries()).map(([activity, a]) => ({
+          activity,
+          totalBookings: a.total,
+          upcomingBookings: a.upcoming,
+        })),
+      })),
     };
   }
 

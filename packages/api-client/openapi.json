@@ -7408,6 +7408,59 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/bookings/summary": {
+      "get": {
+        "operationId": "BookingsController_getWeeklySummary",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Inclusive range start, YYYY-MM-DD. Defaults to the current week's Monday when both from/to are omitted.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Inclusive range end, YYYY-MM-DD. Defaults to the current week's Sunday when both from/to are omitted.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingsSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/waitlist": {
       "post": {
         "operationId": "WaitlistController_joinWaitlist",
@@ -15768,6 +15821,85 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "BookingsSummaryActivityDto": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "type": "string",
+            "description": "The raw Class.activities tag this bucket is for, or \"Unspecified\" for a Class with no tags."
+          },
+          "totalBookings": {
+            "type": "number"
+          },
+          "upcomingBookings": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "activity",
+          "totalBookings",
+          "upcomingBookings"
+        ]
+      },
+      "BookingsSummaryDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD, the School's own local calendar day."
+          },
+          "totalBookings": {
+            "type": "number"
+          },
+          "upcomingBookings": {
+            "type": "number"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingsSummaryActivityDto"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "totalBookings",
+          "upcomingBookings",
+          "activities"
+        ]
+      },
+      "BookingsSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Inclusive range start actually used, YYYY-MM-DD."
+          },
+          "to": {
+            "type": "string",
+            "description": "Inclusive range end actually used, YYYY-MM-DD."
+          },
+          "totalBookings": {
+            "type": "number"
+          },
+          "upcomingBookings": {
+            "type": "number"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingsSummaryDayDto"
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "totalBookings",
+          "upcomingBookings",
+          "days"
         ]
       },
       "JoinWaitlistDto": {

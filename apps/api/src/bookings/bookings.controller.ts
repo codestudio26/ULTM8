@@ -13,6 +13,8 @@ import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { UpdateBookingOverrideDto } from './dto/update-booking-override.dto';
 import { BookingListResponseDto, BookingResponseDto } from './dto/booking-response.dto';
 import { StudentBookingListResponseDto } from './dto/student-booking-response.dto';
+import { BookingsSummaryQueryDto } from './dto/bookings-summary-query.dto';
+import { BookingsSummaryResponseDto } from './dto/bookings-summary-response.dto';
 
 // Decision 17: extends the per-user/per-IP throttling already used on auth endpoints
 // to class-booking and credit-restore (cancelBooking is where BookingsService restores
@@ -98,5 +100,15 @@ export class BookingsController {
     @Query('limit') limit?: number,
   ) {
     return this.bookingsService.findAllForStudent(user.sub, id, schoolId, cursor, limit);
+  }
+
+  /** v1.2 backend backlog — Dashboard "Bookings This Week" drill-down. Staff-only
+   * (School Owner/Manager, Branch Staff, or Instructor). See
+   * BookingsService.getWeeklySummary's own header comment for the date-range
+   * default/validation and the two disclosed judgment calls on grouping. */
+  @ApiOkResponse({ type: BookingsSummaryResponseDto })
+  @Get('schools/:schoolId/bookings/summary')
+  getWeeklySummary(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Query() query: BookingsSummaryQueryDto) {
+    return this.bookingsService.getWeeklySummary(user.sub, schoolId, query.from, query.to);
   }
 }

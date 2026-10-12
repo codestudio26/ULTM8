@@ -1437,4 +1437,252 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       expect(res.status).toBe(400);
     });
   });
+
+  /**
+   * GET /schools/:schoolId/bookings/summary — v1.2 backend backlog, Dashboard
+   * "Bookings This Week" drill-down. Uses a fixed, far-past date range
+   * (2026-01-05..2026-01-11, a real Mon-Sun week) rather than "this week", so these
+   * assertions never depend on which day the suite happens to run — and so this
+   * block's own fixtures can never collide with classBasic/classFull/etc.'s shared
+   * `future`/`past` (now ± 24h) Classes from earlier in this file.
+   */
+  describe('GET /schools/:schoolId/bookings/summary', () => {
+    const RANGE_FROM = '2026-01-05'; // Monday
+    const RANGE_TO = '2026-01-11'; // Sunday
+    const dt = (day: string, hour: number) => new Date(`${day}T${String(hour).padStart(2, '0')}:00:00.000Z`);
+
+    let classMon: { id: string };
+    let classTueMulti: { id: string };
+    let classWedNoTags: { id: string };
+    let classOutOfRange: { id: string };
+    const summaryBookingIds: string[] = [];
+    const summaryMembershipIds: string[] = [];
+    const summaryClassIds: string[] = [];
+
+    // A second, wholly separate School — proves this endpoint's results never leak
+    // across a tenant boundary, the same cross-School isolation every other Staff
+    // read in this suite is expected to uphold.
+    let schoolB: { id: string };
+    let ownerB: { id: string; email: string };
+    let tokenOwnerB: string;
+    let classB: { id: string };
+
+    beforeAll(async () => {
+      classMon = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Mon Judo', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
+      });
+      classTueMulti = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Tue Judo+BJJ', activities: ['Judo', 'BJJ'], startDate: dt('2026-01-06', 9), endDate: dt('2026-01-06', 10) },
+      });
+      classWedNoTags = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Wed No Tags', activities: [], startDate: dt('2026-01-07', 9), endDate: dt('2026-01-07', 10) },
+      });
+      classOutOfRange = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Summary Out Of Range', activities: ['Judo'], startDate: dt('2026-01-12', 9), endDate: dt('2026-01-12', 10) },
+      });
+      summaryClassIds.push(classMon.id, classTueMulti.id, classWedNoTags.id, classOutOfRange.id);
+
+      // classesRemaining: 5 (a Class-Pack shape), not null — studentA/studentB each
+      // already hold a general-access (classesRemaining IS NULL) Active Membership
+      // from earlier tests in this suite, and Membership_one_active_general_access_per_school
+      // (this schema's own partial unique index backing SKILL.md §8's "cannot hold
+      // two simultaneous Active general-access Memberships at the same School")
+      // would reject a second one. This block only needs a valid, FK-satisfying
+      // sourceMembershipId — the spend-order business rule itself isn't under test
+      // here, so a Class-Pack-shaped row avoids the collision cleanly.
+      const membershipA = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: studentA.id, membershipPlanId: classPackPlanId, schoolId: school.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 5 },
+      });
+      const membershipB = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: studentB.id, membershipPlanId: classPackPlanId, schoolId: school.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 5 },
+      });
+      summaryMembershipIds.push(membershipA.id, membershipB.id);
+
+      const mkBooking = async (studentId: string, classId: string, membershipId: string, status: 'UPCOMING' | 'COMPLETED' | 'CANCELLED') => {
+        const booking = await superuser.booking.create({
+          data: { id: randomUUID(), studentId, classId, schoolId: school.id, sourceMembershipId: membershipId, status },
+        });
+        summaryBookingIds.push(booking.id);
+        return booking;
+      };
+
+      // Monday: 2 UPCOMING + 1 CANCELLED (cancelled still counts toward totalBookings
+      // — "every Booking (any status)" per BookingsService's own header comment —
+      // but not toward upcomingBookings).
+      await mkBooking(studentA.id, classMon.id, membershipA.id, 'UPCOMING');
+      await mkBooking(studentB.id, classMon.id, membershipB.id, 'UPCOMING');
+      await mkBooking(studentA.id, classMon.id, membershipA.id, 'CANCELLED');
+      // Tuesday: 1 UPCOMING on a Class tagged both Judo and BJJ — fans out to both
+      // activity buckets, counts once in the day's own total.
+      await mkBooking(studentB.id, classTueMulti.id, membershipB.id, 'UPCOMING');
+      // Wednesday: 1 COMPLETED on a Class with no activities tags at all.
+      await mkBooking(studentA.id, classWedNoTags.id, membershipA.id, 'COMPLETED');
+      // Outside the requested range entirely — must never be counted.
+      await mkBooking(studentB.id, classOutOfRange.id, membershipB.id, 'UPCOMING');
+
+      schoolB = await superuser.school.create({ data: { id: randomUUID(), name: 'Bookings Summary Isolation School B' } });
+      ownerB = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `bookings-http-summary-owner-b-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'owner-b',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: schoolB.id } });
+      tokenOwnerB = signAccessToken(ownerB, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null }]);
+      classB = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: schoolB.id, title: 'School B Summary Class', activities: ['Judo'], startDate: dt(RANGE_FROM, 9), endDate: dt(RANGE_FROM, 10) },
+      });
+      const membershipPlanB = await superuser.membershipPlan.create({
+        data: { id: randomUUID(), schoolId: schoolB.id, type: 'SUBSCRIPTION', title: 'School B Unlimited', price: 5000 },
+      });
+      const membershipB2 = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: ownerB.id, membershipPlanId: membershipPlanB.id, schoolId: schoolB.id, status: 'ACTIVE', frequency: 'RECURRING', classesRemaining: null },
+      });
+      await superuser.booking.create({
+        data: { id: randomUUID(), studentId: ownerB.id, classId: classB.id, schoolId: schoolB.id, sourceMembershipId: membershipB2.id, status: 'UPCOMING' },
+      });
+    });
+
+    afterAll(async () => {
+      await superuser.booking.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.membership.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.membershipPlan.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.class.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.school.delete({ where: { id: schoolB.id } });
+      await superuser.user.delete({ where: { id: ownerB.id } });
+
+      await superuser.booking.deleteMany({ where: { id: { in: summaryBookingIds } } });
+      await superuser.membership.deleteMany({ where: { id: { in: summaryMembershipIds } } });
+      await superuser.class.deleteMany({ where: { id: { in: summaryClassIds } } });
+    });
+
+    it('returns correct total/upcoming counts and a day-by-day, per-activity-tag breakdown for the requested range', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.from).toBe(RANGE_FROM);
+      expect(res.body.to).toBe(RANGE_TO);
+      // 2 UPCOMING + 1 CANCELLED (Mon) + 1 UPCOMING (Tue) + 1 COMPLETED (Wed) = 5.
+      // The out-of-range Booking (2026-01-12) must not be counted.
+      expect(res.body.totalBookings).toBe(5);
+      expect(res.body.upcomingBookings).toBe(3);
+
+      expect(res.body.days).toHaveLength(7); // Mon..Sun inclusive
+      expect(res.body.days.map((d: { date: string }) => d.date)).toEqual([
+        '2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09', '2026-01-10', '2026-01-11',
+      ]);
+
+      const monday = res.body.days.find((d: { date: string }) => d.date === RANGE_FROM);
+      expect(monday.totalBookings).toBe(3);
+      expect(monday.upcomingBookings).toBe(2);
+      const mondayJudo = monday.activities.find((a: { activity: string }) => a.activity === 'Judo');
+      expect(mondayJudo.totalBookings).toBe(3);
+      expect(mondayJudo.upcomingBookings).toBe(2);
+
+      const tuesday = res.body.days.find((d: { date: string }) => d.date === '2026-01-06');
+      expect(tuesday.totalBookings).toBe(1);
+      expect(tuesday.upcomingBookings).toBe(1);
+      // Fan-out: a Class tagged Judo AND BJJ counts once in EACH tag's bucket, but
+      // only once in the day's own total above.
+      const tueJudo = tuesday.activities.find((a: { activity: string }) => a.activity === 'Judo');
+      const tueBjj = tuesday.activities.find((a: { activity: string }) => a.activity === 'BJJ');
+      expect(tueJudo.totalBookings).toBe(1);
+      expect(tueBjj.totalBookings).toBe(1);
+
+      const wednesday = res.body.days.find((d: { date: string }) => d.date === '2026-01-07');
+      expect(wednesday.totalBookings).toBe(1);
+      expect(wednesday.upcomingBookings).toBe(0);
+      const wedUnspecified = wednesday.activities.find((a: { activity: string }) => a.activity === 'Unspecified');
+      expect(wedUnspecified).toBeDefined();
+      expect(wedUnspecified.totalBookings).toBe(1);
+
+      // A day in-range with zero Bookings still appears, at zero — never a sparse array.
+      const thursday = res.body.days.find((d: { date: string }) => d.date === '2026-01-08');
+      expect(thursday.totalBookings).toBe(0);
+      expect(thursday.activities).toEqual([]);
+    });
+
+    it('a date-range narrower than the full fixture set excludes what falls outside it', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_FROM }) // Monday only
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.days).toHaveLength(1);
+      expect(res.body.totalBookings).toBe(3);
+    });
+
+    it('Staff-only — a Student caller gets 403, Branch Staff (not just the Owner) gets 200', async () => {
+      const studentRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(studentRes.status).toBe(403);
+
+      const staffRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenBranchStaff}`);
+      expect(staffRes.status).toBe(200);
+    });
+
+    it('cross-School isolation — School B\'s own Owner cannot read School A\'s summary, and School A\'s figures never include School B\'s Bookings', async () => {
+      const forbidden = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwnerB}`);
+      expect(forbidden.status).toBe(403);
+
+      // School B's own summary sees exactly its own 1 Booking, not School A's 5.
+      const ownRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolB.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwnerB}`);
+      expect(ownRes.status).toBe(200);
+      expect(ownRes.body.totalBookings).toBe(1);
+
+      // And School A's Owner querying School A's own summary still sees only 5 —
+      // School B's Booking on the exact same day never leaked in.
+      const aRes = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM, to: RANGE_TO })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(aRes.body.totalBookings).toBe(5);
+    });
+
+    it('from/to must both be supplied, or both omitted — 400 when only one is given, and when from is after to', async () => {
+      const onlyFrom = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_FROM })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(onlyFrom.status).toBe(400);
+
+      const reversed = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .query({ from: RANGE_TO, to: RANGE_FROM })
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(reversed.status).toBe(400);
+    });
+
+    it('defaults to the current Mon-Sun week when from/to are both omitted', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/bookings/summary`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.days).toHaveLength(7);
+      // Monday's weekday-number check — Date.UTC-based, same convention
+      // ranks/engine/days.ts's own dayNumber uses.
+      expect(new Date(`${res.body.from}T00:00:00.000Z`).getUTCDay()).toBe(1);
+      expect(new Date(`${res.body.to}T00:00:00.000Z`).getUTCDay()).toBe(0);
+    });
+  });
 });
