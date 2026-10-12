@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Classes page — row actions collapsed into a "⋮" kebab menu**: the 4
+  always-visible per-row buttons ("View bookings", "Show QR", "Roll call",
+  "Edit") were visually noisy at this row density; they're unchanged in
+  behavior and visibility logic, just revealed on click now. New shared
+  `RowActionsMenu` (`packages/ui`) — a small popover menu (outside-click/
+  `Escape` dismissal, same ingredients as `TimezoneField`'s/`PhoneField`'s
+  existing popovers; no dedicated `Menu`/`Dropdown` component existed yet),
+  added to `packages/ui` rather than kept page-local since dense list-page
+  tables with several per-row actions recur across this app (Branches,
+  Disciplines, Curriculum, …). Pure presentation change, no backend/DTO
+  change.
 - **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
   day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
   Dashboard page itself is new — no real implementation existed anywhere in

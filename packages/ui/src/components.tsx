@@ -849,6 +849,103 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   );
 }
 
+/* ---------------------------------------------------------------------- Row actions (kebab menu) */
+
+export interface RowAction {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  /** Visually distinguishes a destructive action (e.g. "Delete") — same
+   * red treatment `Button`'s `danger` variant uses elsewhere. */
+  variant?: 'default' | 'danger';
+}
+
+export interface RowActionsMenuProps {
+  /** Used as the trigger button's `aria-label` (e.g. `Actions for ${title}`) —
+   * every action is a `menuitem`, so a per-row label is the only way a screen
+   * reader distinguishes this row's "⋮" button from every other row's. Also
+   * doubles as the open menu's `aria-label`. */
+  label: string;
+  actions: RowAction[];
+}
+
+/** Collapses a row's always-visible action buttons behind a single "⋮" trigger
+ * — same popover ingredients `PhoneField`'s country picker and `TimezoneField`'s
+ * listbox already use (outside-`mousedown` dismissal, `Escape` to close,
+ * absolutely-positioned panel), since no dedicated `Menu`/`Dropdown` component
+ * existed in this package yet. Lives here rather than page-local because dense
+ * list-page tables with several per-row actions are a recurring shape across
+ * this app (Branches, Disciplines, Curriculum, …), not a one-off. */
+export function RowActionsMenu({ label, actions }: RowActionsMenuProps) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocPointerDown(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocPointerDown);
+    return () => document.removeEventListener('mousedown', onDocPointerDown);
+  }, [open]);
+
+  function close() {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  return (
+    <div
+      className="ultm8-row-actions"
+      ref={rootRef}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && open) {
+          e.preventDefault();
+          close();
+        }
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className="ultm8-row-actions__trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span aria-hidden="true">⋮</span>
+      </button>
+      {open ? (
+        <ul className="ultm8-row-actions__menu" role="menu" aria-label={label}>
+          {actions.map((action, i) => (
+            <li key={i} role="none">
+              <button
+                type="button"
+                role="menuitem"
+                disabled={action.disabled}
+                className={[
+                  'ultm8-row-actions__item',
+                  action.variant === 'danger' ? 'ultm8-row-actions__item--danger' : '',
+                ]
+                  .join(' ')
+                  .trim()}
+                onClick={() => {
+                  close();
+                  action.onClick();
+                }}
+              >
+                {action.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------------- Table */
 
 export interface TableColumn<T> {

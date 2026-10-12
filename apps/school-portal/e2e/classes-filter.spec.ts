@@ -43,17 +43,22 @@ test('Discipline and Search filters narrow the Classes list server-side', async 
   await signIn(page, s.ownerToken);
   await page.goto('/classes');
 
-  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Kids BJJ' })).toBeVisible();
+  // `exact: true` — the row's kebab trigger now carries an `aria-label` of
+  // "Actions for <title>", which (per the accessible-name-from-content
+  // algorithm) makes the whole Actions `<td>`'s own accessible name contain
+  // the title too, so a plain substring match on the title would also hit
+  // that cell.
+  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toBeVisible();
 
   await page.getByLabel('Discipline').fill('Judo');
-  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Kids BJJ' })).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toHaveCount(0);
 
   await page.getByLabel('Discipline').fill('');
   await page.getByLabel('Search classes').fill('kids');
-  await expect(page.getByRole('cell', { name: 'Kids BJJ' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals' })).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toHaveCount(0);
 });
 
 test('Prev/Next pages through Classes, and Prev returns to the first page', async ({ page }) => {
@@ -83,4 +88,38 @@ test('Prev/Next pages through Classes, and Prev returns to the first page', asyn
   await expect(page.getByText('Page 1')).toBeVisible();
   const backOnFirstPage = await page.getByRole('row', { name: /Pager Class/ }).first().textContent();
   expect(backOnFirstPage).toBe(firstPageFirstRow);
+});
+
+/**
+ * Redesign (post v1.2 backend backlog): the row's 4 always-visible action
+ * buttons ("View bookings"/"Show QR"/"Roll call"/"Edit") are now collapsed
+ * behind a per-row "⋮" kebab menu — same actions, same handlers, just hidden
+ * until opened.
+ */
+test('the kebab menu reveals a row\'s actions, and each one still works', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/classes');
+
+  const row = page.getByRole('row', { name: /Adult Judo Fundamentals/ });
+  const trigger = row.getByRole('button', { name: 'Actions for Adult Judo Fundamentals' });
+  await expect(trigger).toBeVisible();
+
+  // Not shown until the kebab is opened.
+  await expect(page.getByRole('menuitem', { name: 'Edit' })).toHaveCount(0);
+
+  await trigger.click();
+  const menu = page.getByRole('menu', { name: 'Actions for Adult Judo Fundamentals' });
+  await expect(menu.getByRole('menuitem', { name: 'View bookings' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'Show QR' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'Roll call' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
+
+  // Escape closes it without triggering anything.
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+
+  // The "Edit" action still opens the same edit modal as before.
+  await trigger.click();
+  await page.getByRole('menuitem', { name: 'Edit' }).click();
+  await expect(page.getByRole('dialog', { name: 'Edit class' })).toBeVisible();
 });
