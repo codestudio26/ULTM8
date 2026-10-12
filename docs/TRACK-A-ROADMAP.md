@@ -18,6 +18,42 @@ guess; load `skills/ultm8-domain-rules/SKILL.md` before any domain-rule work.
 
 ---
 
+## Update — 12 Oct 2026 reconciliation
+
+This doc's phase-by-phase narrative below was last extended through **Phase 57**
+(Decision 112, PR #77) and had drifted badly stale since: a separate, very active
+work stream landed **47 more commits on `master`** the same day (roughly PRs
+#114 and #148 through #221, spanning both Track A and Track B), and
+`docs/decisions/POST-SPEC-55-DECISION-LOG.md` now runs through **Decision 240**
+(was 112 when this doc was last updated). That work was tracked in real time in
+`docs/v1.2-backend-backlog.md` (now the current, authoritative page-by-page
+record of every School Portal redesign gap and whether it's built) — this doc
+is not being re-extended phase-by-phase to match line for line; for page-level
+detail, read the backlog doc directly rather than this section.
+
+**What this reconciliation did:**
+- Fast-forwarded this checkout from the stale local `master` (Decision 229) to
+  the real `origin/master` (Decision 237+, PR #221) before touching anything,
+  per CLAUDE.md's "verify against the repo, don't assume" rule.
+- Audited every one of this session's own 20 still-open backend-backlog PRs
+  (#163–#187) against current `master`. **18 had been independently
+  re-built and merged directly to `master` under a different endpoint
+  shape** while these branches sat open (e.g. `GET /instructors/:id/classes`
+  landed via #203; Classes/Branches/Franchises filters+pagination via #202;
+  the openapi-typescript `default:` bug fixed via #201 instead of this
+  session's CLI-flag approach via #186). Closed all 18 **without merging**,
+  each with a comment citing the exact superseding PR — merging them as-is
+  would have reverted already-shipped work. See each PR's own closing
+  comment for the specific citation: #163, #165, #167, #169, #170, #171,
+  #173, #174, #175, #177, #178, #179, #180, #181, #184, #185, #186, #187.
+- **2 of the 20 are genuine, still-un-duplicated gaps**, confirmed against
+  the current `docs/v1.2-backend-backlog.md` Notifications section, which
+  still lists both as unbuilt: **#182** (`POST
+  /schools/:schoolId/notifications/broadcast`) and **#183** (`DELETE
+  /notifications/:id`). Being rebased onto current `master` and landed next.
+
+---
+
 ## Where things stand right now
 
 - **57 phases shipped, all merged to master** (Phase 0 walking skeleton through
@@ -424,10 +460,100 @@ merged via PR #74).
 
 ---
 
-## What's actually left
+## What's actually left (reconciled 12 Oct 2026)
 
 Full cross-track detail (Track B, infra/deployment, and every open decision) now lives
-in `docs/ULTM8-MASTER-ROADMAP.md`. This section keeps only the Track A-specific items.
+in `docs/ULTM8-MASTER-ROADMAP.md` — not re-verified in this pass, may itself be stale
+against the 47-commit wave described above. This section keeps only the Track
+A-specific items, verified directly against the current `docs/v1.2-backend-backlog.md`
+and `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (through Decision 240) rather than
+carried forward from this doc's own prior draft.
+
+### A. Queued, about to land
+- **#182** — Notifications compose/broadcast (`POST
+  /schools/:schoolId/notifications/broadcast`). Confirmed still-unbuilt against the
+  current backlog doc's Notifications section ("the single biggest gap of any page
+  this session"). Branch predates the 47-commit wave; rebasing onto current `master`.
+- **#183** — `DELETE /notifications/:id`. Same section, also confirmed still-unbuilt.
+  Rebasing onto current `master` alongside #182.
+
+### B. Architect-tier scoping passes — approved to scope, design not yet written (do not build against either until the design lands)
+- **Full tenant/content offboarding, all 16 entities** (Decision 226). Gates Branch's
+  and Franchise's own missing Delete actions, and **Waiver's own retention period**
+  (Decision 110's flagged exception — still the one open piece of the otherwise-shipped
+  Phase 56/57 offboarding work).
+- **Curriculum learner-facing redesign** (Decision 227) — turning the shipped admin
+  Lesson CRUD into a learner-facing video-library browse experience (Category,
+  Favorite, Playlist, WatchHistory, Comment — all new entities). Decision 225's video
+  upload/caption integration (Cloudflare Stream/AWS Transcribe) folds into this same
+  scoping pass rather than running separately.
+
+### C. Named product/Architect decisions still open (small, but each blocks a specific build)
+- **Membership Plan edit → already-active Stripe Subscription behavior** — migrate vs.
+  grandfather the existing subscriber on a price/type change; undocumented today
+  (found during the Membership Plan wizard rebuild, Decision 228).
+- **`expiryDurationDays` × WEEKLY_PASS** — Spec 55 §6.1 and the DTO's own field
+  description contradict each other; the authoritative type→field mapping needs an
+  Architect call (Decision 228 item 8b).
+- **Waiver semantics** — does `termsWaiverRequired` mean "any signed Waiver at this
+  School" (what the code actually checks today) or "this School's one canonical
+  Waiver"? `skills/ultm8-domain-rules/SKILL.md` §13 still carries this as open.
+- **`WaiverSignature`'s missing "unsigned" state** — no code path ever writes
+  UNSIGNED/PENDING/EXPIRED; a real "who hasn't signed" view needs either an explicit
+  row-per-assignment model change or a decision to diff against the live roster
+  instead. (Worth re-checking against the Student-enrollment paths #215/#218 shipped
+  today — the backlog doc's own "no real roster population path" framing of this
+  item reads stale now and should get a sync pass, flagged here rather than resolved
+  by this reconciliation.)
+- **Address-lookup/geocoding provider** and the phone picker's **"based on your
+  location" IP-geolocation provider** — both confirmed, by full-text search of Spec 55
+  and the decision log, as never having been asked about at all (not merely deferred).
+  Two independent provider picks needed (Google Places/Loqate/getAddress.io; ipapi/
+  MaxMind/Cloudflare geo headers).
+- **CAD currency** — found as an impossible selection in Branch demo data; whether to
+  add it to the confirmed 6-currency list or treat Canada as out of scope for launch
+  is still just flagged, not decided.
+- **Decision 109** (Transaction Student-name resolution, PR #61) — still a
+  Developer-level inference awaiting Architect confirmation, unchanged since it was
+  first flagged.
+
+### D. Confirmed, unblocked, just not built yet
+- **Notifications Snooze** — needs a product decision on shape (`snoozedUntil` +
+  an un-snooze job is the likely shape) before any endpoint design; no PR queued.
+- **Push delivery-rate / Read-within-24h metrics** — approved for real build
+  (Decision 223), but blocked on **the user provisioning real FCM (Android)/APNs
+  (iOS) credentials** — nothing to build against until those exist.
+- **Membership Plan "Archive" action** — proposed in the mockup, no endpoint; needs a
+  new lifecycle state distinct from the existing `visible` boolean.
+- **Instructor Detail page** and **Student Detail page** — both still "designed, not
+  yet built" as dedicated screens, even though several individual fields feeding them
+  (email, status, belt, photo field, per-Student bookings/transactions) have been
+  resolved piecemeal elsewhere.
+- **Global search** — no backend endpoint exists anywhere; shown disabled
+  ("Search (coming soon)") in the app-shell header.
+- **Shared marketing footer** — needs a v1.1 scoping conversation (does an
+  authenticated staff portal even want a public-marketing-style footer at all) before
+  this is a build item, not just a missing field.
+
+### E. Unchanged, long-standing blocks
+- **`MobileAppPublishingModule` + `packages/build-pipeline`** — still blocked on the
+  Apple 4.2.6/4.3 template-farm compliance risk (Spec 55 §12.2); nothing to build
+  until that's resolved. Gates `SubscriptionPlansModule`'s own deferred
+  `whiteLabelApp` metered entitlement too.
+- **Guardian consent-management UI** — confirmed Track B's to build, not Track A's
+  (`Guardian` only ever has its own React Native app session). Unchanged.
+- **`apps/platform-admin` general tenant-data edit UI** — parked per Decision 105,
+  pending a named use case. Unchanged.
+- **`apps/platform-admin` home dashboard** — parked, cosmetic. Unchanged.
+
+---
+
+**Superseded by this reconciliation** (left here for the audit trail, not as open
+items): the pre-reconciliation "What's actually left" list below this line described
+Track A as having essentially one open module gap (`MobileAppPublishingModule`) and a
+couple of parked items. That was accurate as of Phase 57/Decision 112 — it undercounts
+badly once the 12 Oct work above is accounted for. Kept verbatim below for history,
+not as current status.
 
 ### 1. `SubscriptionPlansModule` — fully shipped except one blocked entitlement
 
@@ -591,19 +717,26 @@ responsive bugs — mobile-nav collapse and table horizontal-overflow (PR #31).
 
 ## Immediate next actions (not phases — just what's actually queued)
 
+**Superseded by the 12 Oct reconciliation above** — items 4 was resolved by the
+Timetable redesign (#221: real click-to-book shipped, the Architect question it
+was waiting on had already been closed 24 Aug 2026) before this list caught up to
+it. Current queue is section A of "What's actually left" above (#182, #183); current
+open decisions are sections B/C there. Kept below for history only:
+
 1. ~~`SubscriptionPlansModule`'s own `apps/platform-admin` authoring UI~~ — done
    (Phase 55, PR #76).
 2. ~~General tenant/content offboarding (Decision 110)~~ — done end to end: backend
    (Phase 56) and the `apps/platform-admin` close/reactivate UI (Phase 57), both on
    PR #77. Only `Waiver`'s own retention period (Decision 110's flagged exception)
-   remains an open question.
-3. Decision 109 (Transaction Student-name resolution, PR #61) is still a
-   Developer-level inference, flagged in the decision log but not yet given an
-   Architect confirmation — worth a short pass, though nothing is blocked on it.
-4. Book-from-Timetable (item 7 above, Decision 200) needs the Architect's call on
-   the `TimetableSlot` ↔ `Class` relationship before any endpoint design starts —
-   nothing to queue here until that lands.
+   remains an open question — now folded into the full 16-entity offboarding scoping
+   pass, Decision 226.
+3. ~~Decision 109 (Transaction Student-name resolution, PR #61)~~ — still open, see
+   section C above; carried forward, not resolved by this reconciliation.
+4. ~~Book-from-Timetable... needs the Architect's call on the `TimetableSlot` ↔
+   `Class` relationship~~ — **done**. The Timetable redesign (#221) shipped real
+   click-to-book against the already-confirmed relationship; this item's own premise
+   was stale by the time it was last read here.
 5. Everything else in "What's actually left" needs a decision, design pass, or both
    before code should be written against it — see `docs/ULTM8-MASTER-ROADMAP.md` for
-   the full prioritized path, including where Track A's open items overlap Track B's
-   and infra's.
+   the full prioritized path (not re-verified in this reconciliation pass), including
+   where Track A's open items overlap Track B's and infra's.
