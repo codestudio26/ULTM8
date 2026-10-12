@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StudentStatusDto } from './student-roster-query.dto';
 
 /** A Student roster row — a User holding an (active or revoked) STUDENT RoleGrant at a
@@ -18,6 +18,14 @@ export class StudentSummaryResponseDto {
 
   @ApiProperty()
   email!: string;
+
+  /** User.profilePhotoUrl — resolved the same way firstName/surname/email already
+   * are for this row (a direct User-row select for an ACTIVE-only roster, or
+   * resolveUserNames for the INACTIVE/ALL path; see
+   * SchoolsService.findAllStudentsForSchool). Nullable: most Students have no
+   * photo set. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  profilePhotoUrl!: string | null;
 
   /** When this Student's enrollment at this School began — RoleGrant.grantedAt, not
    * User.createdAt (which is account creation, not enrollment). For an ACTIVE

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
+import { Avatar } from '../lib/Avatar';
 import { useStudents, type StudentRosterStatus, type StudentSummary } from './studentQueries';
 
 /**
@@ -61,6 +62,11 @@ export function StudentsPage() {
             <Table<StudentSummary>
               rows={students}
               columns={[
+                {
+                  key: 'photo',
+                  header: '',
+                  render: (s) => <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={32} />,
+                },
                 { key: 'name', header: 'Name', render: (s) => <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link> },
                 { key: 'email', header: 'Email', render: (s) => s.email },
                 {

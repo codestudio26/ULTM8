@@ -15,6 +15,19 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Students roster now shows each Student's photo** (plumbing gap: `User.
+  profilePhotoUrl` already existed, resolved/editable via `GET`/`PATCH
+  /users/me`, apps/student's `ProfileScreen.tsx`, but `StudentSummaryResponseDto`
+  never resolved or exposed it, so the roster had no photo column at all).
+  `SchoolsService.findAllStudentsForSchool` now resolves `profilePhotoUrl`
+  from the same underlying `User` row other fields already come from — no new
+  query, for either the ACTIVE path's direct select or the INACTIVE/ALL
+  path's `resolveUserNames` (now carrying `profilePhotoUrl` for every one of
+  its other call sites too, all unaffected since they don't read it).
+  `StudentsPage.tsx` adds a small circular avatar column, reusing the existing
+  `Avatar` component (`apps/school-portal/src/lib/Avatar.tsx`, already used by
+  Instructors) — a real photo when set, an initials monogram fallback
+  otherwise. `packages/api-client` regenerated.
 - **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
   day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
   Dashboard page itself is new — no real implementation existed anywhere in
