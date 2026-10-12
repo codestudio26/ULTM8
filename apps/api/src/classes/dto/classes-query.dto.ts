@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 /**
@@ -32,4 +33,11 @@ export class ClassesQueryDto extends PaginationQueryDto {
   @IsString()
   @MaxLength(200)
   search?: string;
+
+  /** Decision 226 — archived Classes are excluded by default. */
+  @ApiPropertyOptional({ default: false, description: 'Include archived Classes too (excluded by default).' })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  includeArchived?: boolean;
 }

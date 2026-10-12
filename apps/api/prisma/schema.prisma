@@ -813,6 +813,20 @@ model Branch {
   logoUrl   String?
   bannerUrl String?
 
+  /// Decision 226 (POST-SPEC-55-DECISION-LOG.md) — entity-level tenant
+  /// offboarding. Same full archivedAt/purgeAt/purgedAt trio and 90-day
+  /// retention semantics as School/Franchise's own (Decision 110), but
+  /// School-Owner-gated (not Platform-Admin) and usable while the School
+  /// stays open — this removes ONE Branch, not the whole tenant. Blocked by
+  /// BranchesService.archive() while the Branch has any Class, Instructor
+  /// profile, Student (StudentHomeBranch) or active RoleGrant pointing at
+  /// it — see that method's own header comment for the full dependents
+  /// rule, including why RoleGrant is checked even though the task's own
+  /// starting hint didn't name it (RoleGrant.branchId cascades on delete).
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -825,6 +839,7 @@ model Branch {
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
+  @@index([purgeAt])
 }
 
 /// Class (domain-rules §9, Spec §6.1) — Phase 4. A bookable Class row is either
@@ -901,6 +916,16 @@ model Class {
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false) // default is opt-out (confirmed §6)
 
+  /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
+  /// comment for the full shape). Blocked by ClassesService.archive() while
+  /// the Class has any UPCOMING Booking or active (Waiting/Notified)
+  /// WaitlistEntry — archiving a Class students are actively booked into
+  /// would otherwise strand them with no record of why their class
+  /// disappeared.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -928,6 +953,7 @@ model Class {
   // Phase 14 — AcademiesService.findOne's "upcoming Classes" read range-filters
   // and orders by startDate for a given schoolId; see the Phase 14 migration.
   @@index([schoolId, startDate])
+  @@index([purgeAt])
 }
 
 /// TimetableSlot (Phase 5, Spec 55 §6.1/§9) — a School's recurring weekly schedule.
@@ -1005,6 +1031,15 @@ model TimetableSlot {
   refundCutoffHoursBeforeStart    Int?
   cancellationCharge              Int?
 
+  /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
+  /// comment for the full shape). Blocked by TimetableService.archive()
+  /// while any UPCOMING Booking exists for a Class generated from this slot
+  /// (Booking belongs to Class, never to TimetableSlot directly — Decision
+  /// 230 reconfirms the generation relationship this check relies on).
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1016,6 +1051,7 @@ model TimetableSlot {
   // Phase 14 — AcademiesService.findTimetable's "active slots only" read filters by
   // (schoolId, status); see the Phase 14 migration.
   @@index([schoolId, status])
+  @@index([purgeAt])
 }
 
 /// Instructor (Phase 6, Spec 55 §6.1) — a profile/bio *extension* for a person who
@@ -1104,6 +1140,17 @@ model Instructor {
   /// item is ever actually needed here.
   certificationConsentedAt DateTime?
 
+  /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
+  /// comment for the full shape). Blocked by InstructorsService.archive()
+  /// while this profile's own User (by userId, NOT this row's id — Class/
+  /// TimetableSlot.instructorId are User FKs, never Instructor FKs, per
+  /// this model's own header comment) is assigned to any still-ending-in-
+  /// the-future Class or any ON TimetableSlot. Archiving this profile never
+  /// touches the underlying User or their INSTRUCTOR RoleGrant.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1114,6 +1161,7 @@ model Instructor {
   @@index([schoolId])
   @@index([schoolId, branchId])
   @@index([userId])
+  @@index([purgeAt])
 }
 
 /// LegalDocument (Phase 7, Spec 55 SettingsModule row) — storage for GET
@@ -2054,6 +2102,20 @@ model Rank {
   tagColour   String?
   coralAccent String?
 
+  /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
+  /// comment for the full shape). Deliberately coexists with Decision 198's
+  /// already-shipped `DELETE /ranks/{id}` (deleteRank(), hard-delete only
+  /// when truly unused) rather than replacing it — this build adds a
+  /// REVERSIBLE alternative (archive/unarchive) for a School Owner who
+  /// wants to retire a belt without the permanence of Decision 198's
+  /// delete. RanksService.archive() reuses deleteRank()'s own three
+  /// dependents checks verbatim (holders, grading history, instructor-
+  /// declared) rather than a narrower rule, for consistency with the
+  /// already-approved "safe to remove" definition for this exact entity.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2067,6 +2129,7 @@ model Rank {
   @@unique([disciplineId, order])
   @@index([schoolId])
   @@index([disciplineId])
+  @@index([purgeAt])
 }
 
 /// RankStripeTier (Phase 10b, Spec 55 §5/§6.1) — belongs to Rank. Confirmed: "each
@@ -2251,6 +2314,22 @@ model Lesson {
 
   captionStatus CaptionStatus @default(PENDING)
 
+  /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
+  /// comment for the full shape). Deliberately coexists with Decision 198's
+  /// already-shipped `DELETE /lessons/{id}` (deleteLesson(), unconditional —
+  /// "nothing in a student's record points to a lesson") rather than
+  /// replacing it; archive/unarchive adds a reversible alternative, same
+  /// reasoning as Rank's own identical trio comment. CurriculumService.
+  /// archive() has no dependents to check today — verified directly:
+  /// nothing in this schema FKs to Lesson except LessonSkill/LessonContent
+  /// (its own owned children, both cascade away with it) — stated
+  /// explicitly rather than silently omitting a check against a table that
+  /// doesn't exist yet (the learner-facing Curriculum redesign, Decision
+  /// 227, is still only scoped).
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2261,6 +2340,7 @@ model Lesson {
   @@index([schoolId])
   @@index([instructorId])
   @@index([categoryId])
+  @@index([purgeAt])
 }
 
 /// A lesson's watchable content, apart from the lesson itself so the database
@@ -2599,6 +2679,27 @@ model Waiver {
   title String
   body  String
 
+  /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
+  /// comment for the full shape), with ONE deliberate exception applied at
+  /// purge time only: a Waiver is NEVER hard-deleted by
+  /// EntityOffboardingPurgeProcessor, no matter how long past purgeAt —
+  /// mirroring Decision 110's own School-level purge job, which already
+  /// refuses to delete a School that still owns Waiver rows (signed
+  /// WaiverSignature rows are legal records; "Waiver's own purge timing
+  /// needs real legal input... before it runs on the same 90-day clock as
+  /// everything else," Decision 110 part 1). Archiving/unarchiving a
+  /// Waiver itself works exactly like the other 6 entities — only the
+  /// purge half is special-cased, and it is an explicit, logged skip, not
+  /// a silent no-op. WaiverSignature.waiverId is also a DB-level
+  /// `ON DELETE RESTRICT` FK (not Cascade/SetNull — verified in this
+  /// phase's own migration review), which would independently block a
+  /// hard delete the instant any signature exists anyway; this trio/skip
+  /// is the explicit, intentional version of that protection, not an
+  /// accident of a caught P2003.
+  archivedAt DateTime?
+  purgeAt    DateTime?
+  purgedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2606,6 +2707,7 @@ model Waiver {
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
+  @@index([purgeAt])
 }
 
 /// WaiverSignature (Phase 10, Spec 55 §2.2/§6.1/§13; drawn-signature capture added

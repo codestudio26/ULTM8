@@ -10,12 +10,14 @@ export type CreateLessonInput = components['schemas']['CreateLessonDto'];
 export type UpdateLessonInput = components['schemas']['UpdateLessonDto'];
 
 /** No pagination in this UI yet — same established convention as
- * useInstructors/useDisciplines (see their own header comments). */
+ * useInstructors/useDisciplines (see their own header comments). Decision
+ * 226 — always fetches `includeArchived: true`, same "fetch everything,
+ * filter/toggle client-side" convention useBranches already established. */
 export function useLessons(schoolId: string | null) {
   return useQuery({
     queryKey: ['lessons', schoolId],
     queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/curriculum/lessons', { params: { path: { schoolId: schoolId! } } })),
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/curriculum/lessons', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true } } })),
     enabled: !!schoolId,
   });
 }
@@ -42,6 +44,25 @@ export function useDeleteLesson(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (lessonId: string) => unwrap(apiClient.DELETE('/v1/lessons/{id}', { params: { path: { id: lessonId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
+  });
+}
+
+/** Decision 226 — reversible alternative to useDeleteLesson above (coexists
+ * with it): School Owner/Manager only, idempotent, no dependents to block
+ * it today. */
+export function useArchiveLesson(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (lessonId: string) => unwrap(apiClient.POST('/v1/lessons/{id}/archive', { params: { path: { id: lessonId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
+  });
+}
+
+export function useUnarchiveLesson(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (lessonId: string) => unwrap(apiClient.POST('/v1/lessons/{id}/unarchive', { params: { path: { id: lessonId } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
   });
 }

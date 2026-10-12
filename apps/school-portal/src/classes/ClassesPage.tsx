@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useClasses, useCreateClass, useUpdateClass, type ClassResponse } from './classQueries';
+import { useArchiveClass, useClasses, useCreateClass, useUnarchiveClass, useUpdateClass, type ClassResponse } from './classQueries';
 import { ClassFormModal } from './ClassFormModal';
 
 export function ClassesPage() {
@@ -44,17 +44,24 @@ export function ClassesPage() {
     setPageIndex((i) => i + 1);
   }
 
+  // Decision 226 — archived Classes are excluded by default (server-side,
+  // since this list is cursor-paginated — unlike Branches' own client-side
+  // toggle, re-fetching here is the correct behavior for a paginated list).
+  const [showArchived, setShowArchived] = useState(false);
   const { data, isLoading, error } = useClasses(
     schoolId,
-    { activities: activitiesFilter.trim() || undefined, search: searchFilter.trim() || undefined },
+    { activities: activitiesFilter.trim() || undefined, search: searchFilter.trim() || undefined, includeArchived: showArchived },
     cursor,
   );
   const { data: branchData } = useBranches(schoolId);
   const { data: instructorData } = useInstructors(schoolId);
   const { data: disciplineData } = useDisciplines(schoolId);
   const createClass = useCreateClass(schoolId ?? '');
+  const archiveClass = useArchiveClass(schoolId ?? '');
+  const unarchiveClass = useUnarchiveClass(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<ClassResponse | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (!schoolId) return null;
 
@@ -63,6 +70,12 @@ export function ClassesPage() {
   const instructors = instructorData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
   const hasFilter = activitiesFilter.trim() !== '' || searchFilter.trim() !== '';
+
+  function archiveActionFor(c: ClassResponse) {
+    return c.archivedAt
+      ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveClass.mutate(c.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Class.') }); } }
+      : { label: 'Archive', onClick: () => { setActionError(null); archiveClass.mutate(c.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Class.') }); } };
+  }
 
   return (
     <>
@@ -102,9 +115,14 @@ export function ClassesPage() {
               </Field>
             </div>
           </div>
-          <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Classes view" />
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            {/* Decision 226 — archived Classes are hidden by default. */}
+            <Checkbox label="Show archived" checked={showArchived} onChange={(e) => { setShowArchived(e.target.checked); resetPaging(); }} />
+            <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Classes view" />
+          </div>
         </div>
       </Card>
+      {actionError ? <ErrorBanner message={actionError} /> : null}
       {isLoading ? <Spinner /> : null}
       {error ? <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Classes.'} /> : null}
       {!isLoading && !error ? (
@@ -128,6 +146,7 @@ export function ClassesPage() {
                   <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={40} />
                     <strong>{c.title}</strong>
+                    {c.archivedAt ? <Badge variant="default">Archived</Badge> : null}
                   </div>
                   <div style={{ margin: '8px 0' }}>
                     {c.activities.map((a, i) => (
@@ -152,6 +171,7 @@ export function ClassesPage() {
                         { label: 'Show QR', onClick: () => navigate(`/classes/${c.id}/qr-code`) },
                         { label: 'Roll call', onClick: () => navigate(`/classes/${c.id}/roll-call`) },
                         { label: 'Edit', onClick: () => setEditing(c) },
+                        archiveActionFor(c),
                       ]}
                     />
                   </div>
@@ -164,7 +184,7 @@ export function ClassesPage() {
             rows={classes}
             columns={[
               { key: 'banner', header: '', render: (c) => <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={32} /> },
-              { key: 'title', header: 'Title', render: (c) => c.title },
+              { key: 'title', header: 'Title', render: (c) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{c.title}{c.archivedAt ? <Badge variant="default">Archived</Badge> : null}</div>) },
               {
                 key: 'activities',
                 header: 'Activities',
@@ -211,6 +231,7 @@ export function ClassesPage() {
                       { label: 'Show QR', onClick: () => navigate(`/classes/${c.id}/qr-code`) },
                       { label: 'Roll call', onClick: () => navigate(`/classes/${c.id}/roll-call`) },
                       { label: 'Edit', onClick: () => setEditing(c) },
+                      archiveActionFor(c),
                     ]}
                   />
                 ),

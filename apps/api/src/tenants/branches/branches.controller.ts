@@ -33,7 +33,7 @@ export class BranchesController {
     @Param('schoolId') schoolId: string,
     @Query() query: BranchesQueryDto,
   ) {
-    return this.branchesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.city);
+    return this.branchesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.city, query.includeArchived);
   }
 
   @ApiOkResponse({ type: BranchResponseDto })
@@ -46,5 +46,19 @@ export class BranchesController {
   @Patch('branches/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateBranchDto) {
     return this.branchesService.update(user.sub, id, dto);
+  }
+
+  /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
+   * active dependents. See BranchesService.archive's own header comment. */
+  @ApiOkResponse({ type: BranchResponseDto })
+  @Post('branches/:id/archive')
+  archive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.branchesService.archive(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: BranchResponseDto })
+  @Post('branches/:id/unarchive')
+  unarchive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.branchesService.unarchive(user.sub, id);
   }
 }

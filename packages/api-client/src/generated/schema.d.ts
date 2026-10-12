@@ -324,6 +324,38 @@ export interface paths {
         patch: operations["BranchesController_update"];
         trace?: never;
     };
+    "/v1/branches/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BranchesController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/branches/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BranchesController_unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users/{userId}/role-grants": {
         parameters: {
             query?: never;
@@ -836,6 +868,38 @@ export interface paths {
         patch: operations["ClassesController_update"];
         trace?: never;
     };
+    "/v1/classes/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClassesController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/classes/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClassesController_unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/plans": {
         parameters: {
             query?: never;
@@ -1332,6 +1396,38 @@ export interface paths {
         patch: operations["TimetableController_update"];
         trace?: never;
     };
+    "/v1/timetable/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TimetableController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/timetable/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TimetableController_unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/timetable/{id}/occurrence": {
         parameters: {
             query?: never;
@@ -1394,6 +1490,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["InstructorsController_update"];
+        trace?: never;
+    };
+    "/v1/instructors/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorsController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/instructors/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InstructorsController_unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/instructors/{id}/classes": {
@@ -1826,6 +1954,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["RanksController_updateRank"];
+        trace?: never;
+    };
+    "/v1/ranks/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_archiveRank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ranks/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RanksController_unarchiveRank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/styles/{disciplineId}/skills": {
@@ -2388,6 +2548,38 @@ export interface paths {
         patch: operations["WaiversController_updateWaiver"];
         trace?: never;
     };
+    "/v1/waivers/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WaiversController_archiveWaiver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/waivers/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WaiversController_unarchiveWaiver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waivers/{id}/sign": {
         parameters: {
             query?: never;
@@ -2836,6 +3028,38 @@ export interface paths {
         patch: operations["CurriculumController_updateLesson"];
         trace?: never;
     };
+    "/v1/lessons/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CurriculumController_archiveLesson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/lessons/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CurriculumController_unarchiveLesson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/curriculum/categories": {
         parameters: {
             query?: never;
@@ -3261,6 +3485,12 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description Decision 226 — set when this Branch has been archived. Null when active. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. Always null in practice for a successfully-deleted row (the row itself is gone); kept for API shape consistency with School/Franchise. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3694,6 +3924,12 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /** @description Decision 226 — set when this Class has been archived. Null when active. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Class once this elapses (unless blocked by a FK, logged and retried). */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3959,6 +4195,12 @@ export interface components {
             qrAttendanceWindowMinutes?: number | null;
             refundCutoffHoursBeforeStart?: number | null;
             cancellationCharge?: number | null;
+            /** @description Decision 226 — set when this TimetableSlot has been archived. Null when active. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this slot once this elapses (unless blocked by a FK, logged and retried). */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -4051,6 +4293,12 @@ export interface components {
             certificationKey?: string | null;
             /** @description Set once this Instructor has consented to holding a certification record. */
             certificationConsentedAt?: string | null;
+            /** @description Decision 226 — set when this Instructor profile has been archived. Null when active. Never touches the underlying User or their INSTRUCTOR RoleGrant. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this profile once this elapses. */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -4127,6 +4375,12 @@ export interface components {
             certificationKey?: string | null;
             /** @description Set once this Instructor has consented to holding a certification record. */
             certificationConsentedAt?: string | null;
+            /** @description Decision 226 — set when this Instructor profile has been archived. Null when active. Never touches the underlying User or their INSTRUCTOR RoleGrant. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this profile once this elapses. */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
             /** @description False if the temp-passcode email could not be sent — the Instructor profile was still created. */
@@ -4484,6 +4738,12 @@ export interface components {
             tagColour?: string | null;
             coralAccent?: string | null;
             stripeTiers: components["schemas"]["RankStripeTierResponseDto"][];
+            /** @description Decision 226 — set when this Rank has been archived. Null when active. Coexists with Decision 198's own DELETE /ranks/{id} (hard-delete, unused belts only) as a reversible alternative. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Rank once this elapses, re-checking the same holders/history/declared conditions deleteRank() already enforces. */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -5045,6 +5305,12 @@ export interface components {
             schoolId: string;
             title: string;
             body: string;
+            /** @description Decision 226 — set when this Waiver has been archived. Null when active. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt. UNLIKE the other 6 entities, a Waiver is NEVER hard-purged once this elapses (legal-record exception, mirroring Decision 110's own School-level purge carve-out) — it stays archived forever. */
+            purgeAt?: string | null;
+            /** @description Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -5427,6 +5693,12 @@ export interface components {
             captionStatus: "PENDING" | "PROCESSING" | "READY" | "FAILED";
             captionTrackRef?: string | null;
             skillIds: string[];
+            /** @description Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198's own DELETE /lessons/{id} (always allowed) as a reversible alternative. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Lesson once this elapses. */
+            purgeAt?: string | null;
+            /** @description Decision 226 — set by the purge sweep once actually purged. */
+            purgedAt?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -5504,7 +5776,7 @@ export interface components {
             contentType: "image/png" | "image/jpeg" | "image/webp";
             /** @description Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student. */
             schoolId?: string;
-            /** @description Required for entityType FRANCHISE. */
+            /** @description For entityType FRANCHISE editing an EXISTING Franchise, this is required and must equal entityId. Omit both when creating a brand-new Franchise (mirrors POST /franchises itself, which needs no prior RoleGrant either). */
             franchiseId?: string;
             /** @description The existing Instructor/Branch/Class/Franchise row's own id, or the target Student's User id for entityType USER on-behalf-of. Omit when creating a brand-new entity (its id does not exist yet) or editing your own User row. */
             entityId?: string;
@@ -6001,6 +6273,8 @@ export interface operations {
                 limit?: number;
                 /** @description Case-insensitive substring match against Branch.address (no dedicated city column exists). */
                 city?: string;
+                /** @description Include archived Branches too (excluded by default). */
+                includeArchived?: boolean;
             };
             header?: never;
             path: {
@@ -6080,6 +6354,48 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateBranchDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponseDto"];
+                };
+            };
+        };
+    };
+    BranchesController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchResponseDto"];
+                };
+            };
+        };
+    };
+    BranchesController_unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -6897,6 +7213,8 @@ export interface operations {
                 activities?: string;
                 /** @description Case-insensitive substring match against Class.title. */
                 search?: string;
+                /** @description Include archived Classes too (excluded by default). */
+                includeArchived?: boolean;
             };
             header?: never;
             path: {
@@ -6976,6 +7294,48 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateClassDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassResponseDto"];
+                };
+            };
+        };
+    };
+    ClassesController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassResponseDto"];
+                };
+            };
+        };
+    };
+    ClassesController_unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -7691,6 +8051,8 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Include archived TimetableSlots too (excluded by default). */
+                includeArchived?: boolean;
             };
             header?: never;
             path: {
@@ -7781,6 +8143,48 @@ export interface operations {
             };
         };
     };
+    TimetableController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
+    TimetableController_unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimetableSlotResponseDto"];
+                };
+            };
+        };
+    };
     TimetableController_findOccurrence: {
         parameters: {
             query: {
@@ -7811,6 +8215,8 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Include archived Instructor profiles too (excluded by default). */
+                includeArchived?: boolean;
             };
             header?: never;
             path: {
@@ -7911,6 +8317,48 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateInstructorDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructorResponseDto"];
+                };
+            };
+        };
+    };
+    InstructorsController_unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -8569,7 +9017,10 @@ export interface operations {
     };
     RanksController_findAllRanks: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Decision 226 — include archived belts too (excluded by default). */
+                includeArchived?: boolean;
+            };
             header?: never;
             path: {
                 disciplineId: string;
@@ -8722,6 +9173,55 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateRankDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankResponseDto"];
+                };
+            };
+        };
+    };
+    RanksController_archiveRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankResponseDto"];
+                };
+            };
+            /** @description Someone holds the belt, it is in grading history, or an instructor has declared it. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RanksController_unarchiveRank: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -9545,6 +10045,8 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
+                /** @description Decision 226 — include archived Waivers too (excluded by default). */
+                includeArchived?: boolean;
             };
             header?: never;
             path: {
@@ -9673,6 +10175,48 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateWaiverDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverResponseDto"];
+                };
+            };
+        };
+    };
+    WaiversController_archiveWaiver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaiverResponseDto"];
+                };
+            };
+        };
+    };
+    WaiversController_unarchiveWaiver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -10305,7 +10849,10 @@ export interface operations {
     };
     CurriculumController_findLessonsForSchool: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Decision 226 — include archived Lessons too (excluded by default). */
+                includeArchived?: boolean;
+            };
             header?: never;
             path: {
                 schoolId: string;
@@ -10425,6 +10972,48 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateLessonDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_archiveLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_unarchiveLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

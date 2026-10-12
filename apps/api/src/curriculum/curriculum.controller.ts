@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseBoolPipe, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -40,9 +40,14 @@ export class CurriculumController {
   }
 
   @ApiOkResponse({ type: LessonListResponseDto })
+  @ApiQuery({ name: 'includeArchived', required: false, type: Boolean, description: 'Decision 226 — include archived Lessons too (excluded by default).' })
   @Get('schools/:schoolId/curriculum/lessons')
-  async findLessonsForSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
-    return { items: await this.curriculumService.findLessonsForSchool(user.sub, schoolId) };
+  async findLessonsForSchool(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Query('includeArchived', new ParseBoolPipe({ optional: true })) includeArchived?: boolean,
+  ) {
+    return { items: await this.curriculumService.findLessonsForSchool(user.sub, schoolId, includeArchived) };
   }
 
   @ApiOkResponse({ type: LessonListResponseDto })
@@ -68,6 +73,20 @@ export class CurriculumController {
   @Patch('lessons/:id')
   updateLesson(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateLessonDto) {
     return this.curriculumService.updateLesson(user.sub, id, dto);
+  }
+
+  /** Decision 226 — reversible alternative to deleteLesson() above, same
+   * School-Owner gate. Idempotent, no dependents to block it today. */
+  @ApiOkResponse({ type: LessonResponseDto })
+  @Post('lessons/:id/archive')
+  archiveLesson(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.curriculumService.archiveLesson(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: LessonResponseDto })
+  @Post('lessons/:id/unarchive')
+  unarchiveLesson(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.curriculumService.unarchiveLesson(user.sub, id);
   }
 
   // Lesson categories (Decisions 128.15, 191).

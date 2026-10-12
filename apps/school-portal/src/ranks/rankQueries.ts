@@ -10,11 +10,16 @@ export type UpdateRankInput = components['schemas']['UpdateRankDto'];
 
 /** Ranks are nested under a Discipline (`/styles/:disciplineId/ranks`), same
  * shape as Skills — no School-wide "list all Ranks" endpoint. Unpaginated
- * server-side (`{ items }` only, ordered by `order` already). */
+ * server-side (`{ items }` only, ordered by `order` already). Decision 226
+ * — always fetches `includeArchived: true`, same "fetch everything, filter/
+ * toggle client-side" convention useBranches already established, so the
+ * ladder editor can show an accurate count and let the caller toggle
+ * archived belts' visibility without a second request. */
 export function useRanks(disciplineId: string | null) {
   return useQuery({
     queryKey: ['ranks', disciplineId],
-    queryFn: () => unwrap(apiClient.GET('/v1/styles/{disciplineId}/ranks', { params: { path: { disciplineId: disciplineId! } } })),
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/styles/{disciplineId}/ranks', { params: { path: { disciplineId: disciplineId! }, query: { includeArchived: true } } })),
     enabled: !!disciplineId,
   });
 }
@@ -42,6 +47,26 @@ export function useDeleteRank(disciplineId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (rankId: string) => unwrap(apiClient.DELETE('/v1/ranks/{id}', { params: { path: { id: rankId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ranks', disciplineId] }),
+  });
+}
+
+/** Decision 226 — reversible alternative to useDeleteRank above (coexists
+ * with it): School Owner/Manager only, idempotent, blocked (409) by the
+ * identical holders/history/declared conditions deleteRank() already
+ * enforces. */
+export function useArchiveRank(disciplineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rankId: string) => unwrap(apiClient.POST('/v1/ranks/{id}/archive', { params: { path: { id: rankId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ranks', disciplineId] }),
+  });
+}
+
+export function useUnarchiveRank(disciplineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rankId: string) => unwrap(apiClient.POST('/v1/ranks/{id}/unarchive', { params: { path: { id: rankId } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ranks', disciplineId] }),
   });
 }

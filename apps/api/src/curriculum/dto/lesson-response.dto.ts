@@ -50,6 +50,15 @@ export class LessonResponseDto {
   @ApiProperty({ type: [String] })
   skillIds!: string[];
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198\'s own DELETE /lessons/{id} (always allowed) as a reversible alternative.' })
+  archivedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Lesson once this elapses.' })
+  purgeAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set by the purge sweep once actually purged.' })
+  purgedAt!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

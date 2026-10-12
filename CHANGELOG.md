@@ -15,6 +15,46 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Entity-level tenant offboarding for 7 entities with no delete/archive
+  mechanism before now** (Decision 226) — Branch, Class, TimetableSlot,
+  Instructor, Rank, Waiver, Lesson each get a real "Delete" action, usable
+  while the School stays open (not Decision 110's separate, already-shipped
+  whole-tenant close-account flow): soft-archive with the same full
+  `archivedAt`/`purgeAt`/`purgedAt` trio and 90-day retention window
+  School/Franchise use (Decision 110) — a disclosed judgment call over the
+  simpler bare-`archivedAt` shape `MembershipPlan` uses, since this project
+  now has two different existing archive shapes and the product owner's
+  answer didn't specify which. School-Owner-gated (same gate as each
+  entity's own create/update), idempotent, blocked with a 409 by active
+  dependents (verified per entity against the real schema — see each
+  service's own `archive()` header comment for the exact rule: a Class with
+  an upcoming Booking, a Rank someone holds or an instructor has declared,
+  a Waiver with any signature row, an Instructor assigned to an upcoming
+  Class/slot, a Branch with a Class/Instructor/Student/active role grant
+  on it, a TimetableSlot with an upcoming Booking against a generated
+  Class; Lesson has no real dependents to check today). **Rank and Lesson
+  already had an unconditional/conditional hard-`DELETE` from Decision
+  198** — this build adds the reversible archive/unarchive pair alongside
+  it, not in place of it. **Waiver is never hard-purged**, at any purgeAt,
+  mirroring Decision 110's own School-level legal-record exception — the
+  purge sweep finds and logs those rows but leaves them archived forever.
+  **api:** migration `20261112000000_entity_offboarding_7_entities`;
+  `BranchesService`/`ClassesService`/`TimetableService`/
+  `InstructorsService`/`RanksService`/`WaiversService`/`CurriculumService`
+  each gain `archive()`/`unarchive()` (TOCTOU-safe conditional update, same
+  pattern `TenantLifecycleService` already established) plus an
+  `includeArchived` list filter (excluded by default); new shared
+  `entity-offboarding-purge.processor.ts`/`Scheduler` (daily sweep,
+  `entity-offboarding-purge` queue) — Rank's own sweep re-derives the
+  holders/history/declared safety check rather than trusting the archive-
+  time state 90 days later. `packages/api-client` regenerated.
+  **school-portal:** Branches/Classes/Timetable/Instructors/Waivers pages
+  gain a "Show archived" toggle (archived rows excluded by default) and an
+  Archive/Unarchive row action; the Disciplines ladder editor and
+  Curriculum's lesson tables show archived rows inline instead (badged,
+  not hidden) — hiding them would have broken their own existing reorder
+  endpoints' "send every item of this set exactly once" validation, a
+  disclosed deviation from the hide-by-default convention used elsewhere.
 - **Membership purchase with a fresh card, via hosted Stripe Checkout**
   (Decision 243, Track B Slice 4b) — `apps/student`'s "Purchase" button on a
   Stripe-backed membership plan now completes end-to-end instead of showing

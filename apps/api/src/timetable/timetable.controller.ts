@@ -3,12 +3,12 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nest
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { TimetableService } from './timetable.service';
 import { CreateTimetableSlotDto } from './dto/create-timetable-slot.dto';
 import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
 import { TimetableSlotListResponseDto, TimetableSlotResponseDto } from './dto/timetable-slot-response.dto';
 import { TimetableOccurrenceQueryDto } from './dto/timetable-occurrence-query.dto';
+import { TimetableQueryDto } from './dto/timetable-query.dto';
 import { ClassResponseDto } from '../classes/dto/class-response.dto';
 
 // TimetableSlot CRUD only — no delete, same reasoning as School/Branch/Class (general
@@ -36,9 +36,9 @@ export class TimetableController {
   findAll(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: TimetableQueryDto,
   ) {
-    return this.timetableService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
+    return this.timetableService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.includeArchived);
   }
 
   @ApiOkResponse({ type: TimetableSlotResponseDto })
@@ -51,6 +51,20 @@ export class TimetableController {
   @Patch('timetable/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateTimetableSlotDto) {
     return this.timetableService.update(user.sub, id, dto);
+  }
+
+  /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
+   * an upcoming Booking against a generated Class. */
+  @ApiOkResponse({ type: TimetableSlotResponseDto })
+  @Post('timetable/:id/archive')
+  archive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.timetableService.archive(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: TimetableSlotResponseDto })
+  @Post('timetable/:id/unarchive')
+  unarchive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.timetableService.unarchive(user.sub, id);
   }
 
   /** Timetable page redesign (click-to-book) — see TimetableService.findOccurrence's

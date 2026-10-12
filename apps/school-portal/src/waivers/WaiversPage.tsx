@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useCreateWaiver, useUpdateWaiver, useWaivers, useWaiverSignatures, type WaiverResponse } from './waiverQueries';
+import { useArchiveWaiver, useCreateWaiver, useUnarchiveWaiver, useUpdateWaiver, useWaivers, useWaiverSignatures, type WaiverResponse } from './waiverQueries';
 import { WaiverFormModal } from './WaiverFormModal';
 
 /** Short list-row preview — Waiver.body can run up to 20,000 characters
@@ -30,15 +30,26 @@ export function WaiversPage() {
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useWaivers(schoolId);
   const createWaiver = useCreateWaiver(schoolId ?? '');
+  const archiveWaiver = useArchiveWaiver(schoolId ?? '');
+  const unarchiveWaiver = useUnarchiveWaiver(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<WaiverResponse | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // Decision 226 — archived Waivers are excluded by default, same
+  // "excluded by default, visible via a filter" convention this build
+  // applies to every one of the 7 entities; the full list (including
+  // archived) is always fetched (useWaivers passes includeArchived: true)
+  // so this toggle/count never needs a second request.
+  const [showArchived, setShowArchived] = useState(false);
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Waivers.'} />;
 
-  const waivers = data?.items ?? [];
+  const allWaivers = data?.items ?? [];
+  const archivedCount = allWaivers.filter((w) => w.archivedAt).length;
+  const waivers = showArchived ? allWaivers : allWaivers.filter((w) => !w.archivedAt);
   const selected = waivers.find((w) => w.id === selectedId) ?? waivers[0];
 
   return (
@@ -48,6 +59,13 @@ export function WaiversPage() {
         subtitle="Liability waivers Students sign before joining your School."
         actions={<Button onClick={() => setCreating(true)}>Add waiver</Button>}
       />
+
+      {actionError ? <ErrorBanner message={actionError} /> : null}
+
+      {/* Decision 226 — archived Waivers are hidden by default. */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <Checkbox label={`Show archived${archivedCount ? ` (${archivedCount})` : ''}`} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+      </div>
 
       {waivers.length === 0 ? (
         <Card>
@@ -74,8 +92,9 @@ export function WaiversPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  <span style={{ fontSize: 14, fontWeight: 600, color: isActive ? 'var(--text-accent)' : 'var(--text-primary)' }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: isActive ? 'var(--text-accent)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     {w.title}
+                    {w.archivedAt ? <Badge variant="default">Archived</Badge> : null}
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{rowPreview(w.body)}</span>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{estimateReading(w.body)}</span>
@@ -89,14 +108,37 @@ export function WaiversPage() {
             <Card>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
                 <div>
-                  <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 600, color: 'var(--text-primary)' }}>{selected.title}</h2>
+                  <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {selected.title}
+                    {selected.archivedAt ? <Badge variant="default">Archived</Badge> : null}
+                  </h2>
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>
                     {estimateReading(selected.body)} · Last updated {formatUpdatedLabel(selected.updatedAt)}
                   </p>
                 </div>
-                <Button variant="secondary" onClick={() => setEditing(selected)}>
-                  Edit
-                </Button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button variant="secondary" onClick={() => setEditing(selected)}>
+                    Edit
+                  </Button>
+                  {/* Decision 226 — School Owner/Manager only, idempotent,
+                      blocked (409) by any WaiverSignature row (signed or
+                      unsigned-assignment). */}
+                  {selected.archivedAt ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => { setActionError(null); unarchiveWaiver.mutate(selected.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Waiver.') }); }}
+                    >
+                      Unarchive
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => { setActionError(null); archiveWaiver.mutate(selected.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Waiver.') }); }}
+                    >
+                      Archive
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div

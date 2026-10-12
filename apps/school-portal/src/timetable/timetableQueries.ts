@@ -13,11 +13,15 @@ export type TimetableOccurrenceResponse = components['schemas']['ClassResponseDt
 
 /** No pagination in this UI yet — same established convention as
  * useBranches/useDisciplines/useInstructors/useClasses (see their own header
- * comments). */
+ * comments). Decision 226 — always fetches `includeArchived: true`, same
+ * "fetch everything, filter/toggle client-side" convention useBranches
+ * already established, so TimetablePage can show an accurate count and let
+ * the caller toggle archived slots' visibility without a second request. */
 export function useTimetableSlots(schoolId: string | null) {
   return useQuery({
     queryKey: ['timetable', schoolId],
-    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! } } })),
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true } } })),
     enabled: !!schoolId,
   });
 }
@@ -36,6 +40,24 @@ export function useUpdateTimetableSlot(schoolId: string, slotId: string) {
   return useMutation({
     mutationFn: (body: UpdateTimetableSlotInput) =>
       unwrap(apiClient.PATCH('/v1/timetable/{id}', { params: { path: { id: slotId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
+  });
+}
+
+/** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by an
+ * upcoming Booking against a generated Class. */
+export function useArchiveTimetableSlot(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (slotId: string) => unwrap(apiClient.POST('/v1/timetable/{id}/archive', { params: { path: { id: slotId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
+  });
+}
+
+export function useUnarchiveTimetableSlot(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (slotId: string) => unwrap(apiClient.POST('/v1/timetable/{id}/unarchive', { params: { path: { id: slotId } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
   });
 }

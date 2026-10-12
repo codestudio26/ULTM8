@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -37,13 +37,15 @@ export class WaiversController {
   }
 
   @ApiOkResponse({ type: WaiverListResponseDto })
+  @ApiQuery({ name: 'includeArchived', required: false, type: Boolean, description: 'Decision 226 — include archived Waivers too (excluded by default).' })
   @Get('schools/:schoolId/waivers')
   findAllWaivers(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
     @Query() query: PaginationQueryDto,
+    @Query('includeArchived', new ParseBoolPipe({ optional: true })) includeArchived?: boolean,
   ) {
-    return this.waiversService.findAllWaivers(user.sub, schoolId, query.cursor, query.limit);
+    return this.waiversService.findAllWaivers(user.sub, schoolId, query.cursor, query.limit, includeArchived);
   }
 
   /** v1.2 backend backlog — the Waivers page's "Signatures" panel. See
@@ -82,6 +84,20 @@ export class WaiversController {
   @Patch('waivers/:id')
   updateWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateWaiverDto) {
     return this.waiversService.updateWaiver(user.sub, id, dto);
+  }
+
+  /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
+   * any WaiverSignature row (signed or unsigned-assignment). */
+  @ApiOkResponse({ type: WaiverResponseDto })
+  @Post('waivers/:id/archive')
+  archiveWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.waiversService.archiveWaiver(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: WaiverResponseDto })
+  @Post('waivers/:id/unarchive')
+  unarchiveWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.waiversService.unarchiveWaiver(user.sub, id);
   }
 
   @ApiCreatedResponse({ type: WaiverSignatureResponseDto })

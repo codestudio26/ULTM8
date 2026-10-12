@@ -17,6 +17,7 @@ import { CompleteInstructorProfileDto } from './dto/complete-instructor-profile.
 import { RequestCertificationUploadUrlDto } from './dto/request-certification-upload-url.dto';
 
 const BCRYPT_ROUNDS = 12;
+const RETENTION_WINDOW_DAYS = 90;
 
 @Injectable()
 export class InstructorsService {
@@ -288,10 +289,16 @@ export class InstructorsService {
    * own list of profiles is exactly where InstructorsPage's Name column and every
    * other page reusing this same hook (Classes, Timetable) look up an Instructor's
    * display name, and none of them had one to show before this. */
-  async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number) {
+  /** Decision 226 — `includeArchived` (default false) excludes archived
+   * profiles from the default view. */
+  async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number, includeArchived?: boolean) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.instructor.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) => tx.instructor.findMany({ ...args, where: { schoolId, ...(includeArchived ? {} : { archivedAt: null }) } }),
+        cursor,
+        limit,
+      ),
     );
     const userIds = page.items.map((i) => i.userId);
     const names = await resolveUserNames(this.prismaAuth, userIds);
@@ -505,8 +512,88 @@ export class InstructorsService {
     });
   }
 
-  // No delete endpoint — same "general tenant offboarding is [UNRESOLVED]" reasoning as
-  // every other module (ultm8-app-publishing §4).
+  // ---------------------------------------------------------------------------
+  // Decision 226 — entity-level tenant offboarding. Same shape/reasoning as
+  // BranchesService's own archive()/unarchive() pair. Archiving this profile
+  // never touches the underlying User or their INSTRUCTOR RoleGrant — the
+  // same deliberate separation update()'s own gate already relies on (this
+  // table is a profile extension, never the source of truth for role-
+  // holding, per this model's own schema.prisma comment).
+  // ---------------------------------------------------------------------------
+
+  /** Active dependents that block archiving an Instructor profile — the
+   * task's own hint, resolved against the real schema: Class.instructorId/
+   * TimetableSlot.instructorId are User FKs, NOT Instructor FKs (this
+   * model's own header comment), so this checks the profile's `userId`,
+   * never its own `id`. "Assigned to any upcoming Class/TimetableSlot" reads
+   * as: a Class that hasn't ended yet, or an ON (active) TimetableSlot that
+   * will keep generating future occurrences for them. */
+  private async assertNoActiveDependents(callerId: string, instructorUserId: string): Promise<void> {
+    const now = new Date();
+    const [upcomingClasses, activeSlots] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.class.count({ where: { instructorId: instructorUserId, endDate: { gte: now } } }),
+        tx.timetableSlot.count({ where: { instructorId: instructorUserId, status: 'ON' } }),
+      ]),
+    );
+    const reasons: string[] = [];
+    if (upcomingClasses > 0) reasons.push(`${upcomingClasses} upcoming Class${upcomingClasses === 1 ? '' : 'es'}`);
+    if (activeSlots > 0) reasons.push(`${activeSlots} active TimetableSlot${activeSlots === 1 ? '' : 's'}`);
+    if (reasons.length > 0) {
+      throw new ConflictException(
+        `This Instructor can't be archived while they're assigned to ${reasons.join(' and ')}. Reassign them first.`,
+      );
+    }
+  }
+
+  async archive(callerId: string, instructorId: string) {
+    const existing = await this.findOne(callerId, instructorId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (existing.archivedAt) {
+      return existing;
+    }
+    await this.assertNoActiveDependents(callerId, existing.userId);
+
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.instructor.updateMany({ where: { id: instructorId, archivedAt: null }, data: { archivedAt: now, purgeAt } }),
+    );
+    return this.findOne(callerId, instructorId);
+  }
+
+  async unarchive(callerId: string, instructorId: string) {
+    const existing = await this.findOne(callerId, instructorId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (!existing.archivedAt) {
+      return existing;
+    }
+    if (existing.purgedAt) {
+      throw new ConflictException('This Instructor profile has already been purged and cannot be unarchived.');
+    }
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.instructor.updateMany({
+        where: { id: instructorId, archivedAt: { not: null }, purgedAt: null },
+        data: { archivedAt: null, purgeAt: null },
+      }),
+    );
+    if (count === 0) {
+      const current = await this.findOne(callerId, instructorId);
+      if (current.purgedAt) {
+        throw new ConflictException('This Instructor profile has already been purged and cannot be unarchived.');
+      }
+      return current;
+    }
+    return this.findOne(callerId, instructorId);
+  }
+
+  // No delete endpoint (beyond the archive/unarchive pair above) — same
+  // "general tenant offboarding is [UNRESOLVED]" reasoning every other
+  // module used BEFORE Decision 226 (ultm8-app-publishing §4); no hard-delete
+  // was built for Instructor by this decision either, only the reversible
+  // soft-archive pair above.
   //
   // What happens to this profile when the underlying RoleGrant is later revoked is NOT
   // addressed anywhere in Spec 55 — left untouched on revocation here, same

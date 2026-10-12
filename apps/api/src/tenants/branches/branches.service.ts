@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
@@ -6,6 +6,8 @@ import { SchoolsService } from '../schools/schools.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
+
+const RETENTION_WINDOW_DAYS = 90;
 
 @Injectable()
 export class BranchesService {
@@ -53,12 +55,16 @@ export class BranchesService {
    * Branch has no dedicated city column (see BranchesQueryDto's own header comment),
    * so this is a case-insensitive substring match against `address`. Omitted entirely,
    * it behaves exactly as before this filter existed. */
+  /** Decision 226 — `includeArchived` (default false) excludes archived Branches
+   * from the default view, same "excluded by default, visible via a filter"
+   * convention applied to every one of the 7 entities this build covers. */
   async findAllForSchool(
     callerId: string,
     schoolId: string,
     cursor?: string,
     limit?: number,
     city?: string,
+    includeArchived?: boolean,
   ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -66,7 +72,11 @@ export class BranchesService {
         (args) =>
           tx.branch.findMany({
             ...args,
-            where: { schoolId, ...(city ? { address: { contains: city, mode: 'insensitive' } } : {}) },
+            where: {
+              schoolId,
+              ...(city ? { address: { contains: city, mode: 'insensitive' } } : {}),
+              ...(includeArchived ? {} : { archivedAt: null }),
+            },
           }),
         cursor,
         limit,
@@ -112,5 +122,105 @@ export class BranchesService {
     );
   }
 
-  // No delete method — same reasoning as SchoolsService.
+  // ---------------------------------------------------------------------------
+  // Decision 226 — entity-level tenant offboarding. School Owner/Manager only
+  // (same gate as update() above), usable while the School stays open — this
+  // archives ONE Branch, not the whole School/Franchise (that's Decision 110's
+  // separate, already-shipped close-account flow). Soft-archive with the same
+  // full archivedAt/purgeAt/purgedAt trio and 90-day retention window as
+  // School/Franchise (Decision 110) — see this entity's own schema.prisma
+  // comment for why the fuller trio was chosen over MembershipPlan's simpler
+  // bare-archivedAt shape. Mirrors TenantLifecycleService.closeSchool's own
+  // TOCTOU-safe conditional-updateMany pattern (re-checked against the row's
+  // CURRENT state at write time, not a possibly-stale read) rather than
+  // MembershipsService.archivePlan's simpler read-then-update (that method has
+  // no dependents check to race against; this one does, and a second
+  // concurrent archive() call successfully slipping through the first one's
+  // dependents check is exactly the kind of race TenantLifecycleService's own
+  // header comment documents being found and fixed for School/Franchise).
+  // ---------------------------------------------------------------------------
+
+  /** Active dependents that block archiving a Branch — the safest
+   * (most conservative) reading found after checking this schema's real FKs:
+   * any Class, Instructor profile, or Student (StudentHomeBranch) currently
+   * pointing at this Branch (the task's own starting hint), PLUS any
+   * non-revoked RoleGrant scoped to it — added as this build's own judgment
+   * call, not in the original hint, because RoleGrant.branchId is an
+   * `ON DELETE CASCADE` FK (verified in this phase's migration review):
+   * purging an archived Branch that still has an active Branch-Staff/
+   * Instructor RoleGrant scoped to it would silently destroy that person's
+   * access grant, not just "remove a Branch" — the task's own standing
+   * instruction to apply the safest reasonable rule when a hint turns out to
+   * be incomplete once checked against the real schema. */
+  private async assertNoActiveDependents(callerId: string, branchId: string): Promise<void> {
+    const [classCount, instructorCount, studentCount, roleGrantCount] = await this.prismaApp.withTenantContext(
+      callerId,
+      (tx) =>
+        Promise.all([
+          tx.class.count({ where: { branchId } }),
+          tx.instructor.count({ where: { branchId } }),
+          tx.studentHomeBranch.count({ where: { branchId } }),
+          tx.roleGrant.count({ where: { branchId, revokedAt: null } }),
+        ]),
+    );
+    const reasons: string[] = [];
+    if (classCount > 0) reasons.push(`${classCount} Class${classCount === 1 ? '' : 'es'}`);
+    if (instructorCount > 0) reasons.push(`${instructorCount} Instructor profile${instructorCount === 1 ? '' : 's'}`);
+    if (studentCount > 0) reasons.push(`${studentCount} Student${studentCount === 1 ? '' : 's'} with this as their home branch`);
+    if (roleGrantCount > 0) reasons.push(`${roleGrantCount} active staff/instructor role grant${roleGrantCount === 1 ? '' : 's'} scoped to it`);
+    if (reasons.length > 0) {
+      throw new ConflictException(
+        `This Branch can't be archived while it still has ${reasons.join(', ')}. Move or remove them first.`,
+      );
+    }
+  }
+
+  async archive(callerId: string, branchId: string) {
+    const existing = await this.findOne(callerId, branchId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (existing.archivedAt) {
+      return existing; // idempotent — archiving an already-archived Branch is a no-op, not an error.
+    }
+    await this.assertNoActiveDependents(callerId, branchId);
+
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    // TOCTOU-safe: re-checked against the row's CURRENT state at write time
+    // (archivedAt: null), not the possibly-stale `existing` read above — see
+    // this section's own header comment.
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.branch.updateMany({ where: { id: branchId, archivedAt: null }, data: { archivedAt: now, purgeAt } }),
+    );
+    if (count === 0) {
+      return this.findOne(callerId, branchId); // lost the race to a concurrent archive() — idempotent either way.
+    }
+    return this.findOne(callerId, branchId);
+  }
+
+  async unarchive(callerId: string, branchId: string) {
+    const existing = await this.findOne(callerId, branchId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (!existing.archivedAt) {
+      return existing; // idempotent, same reasoning as archive() above.
+    }
+    if (existing.purgedAt) {
+      throw new ConflictException('This Branch has already been purged and cannot be unarchived.');
+    }
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.branch.updateMany({
+        where: { id: branchId, archivedAt: { not: null }, purgedAt: null },
+        data: { archivedAt: null, purgeAt: null },
+      }),
+    );
+    if (count === 0) {
+      const current = await this.findOne(callerId, branchId);
+      if (current.purgedAt) {
+        throw new ConflictException('This Branch has already been purged and cannot be unarchived.');
+      }
+      return current;
+    }
+    return this.findOne(callerId, branchId);
+  }
 }

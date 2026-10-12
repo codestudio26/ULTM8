@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseBoolPipe, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -90,9 +90,14 @@ export class RanksController {
   }
 
   @ApiOkResponse({ type: RankListResponseDto })
+  @ApiQuery({ name: 'includeArchived', required: false, type: Boolean, description: 'Decision 226 — include archived belts too (excluded by default).' })
   @Get('styles/:disciplineId/ranks')
-  async findAllRanks(@CurrentUser() user: JwtPayload, @Param('disciplineId') disciplineId: string) {
-    return { items: await this.ranksService.findAllRanks(user.sub, disciplineId) };
+  async findAllRanks(
+    @CurrentUser() user: JwtPayload,
+    @Param('disciplineId') disciplineId: string,
+    @Query('includeArchived', new ParseBoolPipe({ optional: true })) includeArchived?: boolean,
+  ) {
+    return { items: await this.ranksService.findAllRanks(user.sub, disciplineId, includeArchived) };
   }
 
   @ApiOkResponse({ type: RankListResponseDto, description: 'The style\'s belts in their new order.' })
@@ -125,6 +130,22 @@ export class RanksController {
   @Delete('ranks/:id')
   async deleteRank(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.ranksService.deleteRank(user.sub, id);
+  }
+
+  /** Decision 226 — reversible alternative to deleteRank() above, same
+   * School-Owner gate and "safe to remove" rule. Idempotent, blocked (409)
+   * by the identical holders/history/declared conditions. */
+  @ApiOkResponse({ type: RankResponseDto })
+  @ApiConflictResponse({ description: 'Someone holds the belt, it is in grading history, or an instructor has declared it.' })
+  @Post('ranks/:id/archive')
+  archiveRank(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.ranksService.archiveRank(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: RankResponseDto })
+  @Post('ranks/:id/unarchive')
+  unarchiveRank(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.ranksService.unarchiveRank(user.sub, id);
   }
 
   // ---- Skill — nested under the same Discipline resource; no dedicated route
