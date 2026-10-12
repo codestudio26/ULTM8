@@ -80,3 +80,18 @@ Each now has a test, except 164. No test found a bug; nothing in the code change
 | 181.4 — grants that existed before the toggles have every toggle on | `grading-permission-toggles.e2e-spec.ts`: a grant written with the old columns only |
 | 183.6 — an inviter needs a verified phone | `coach-invites.e2e-spec.ts` |
 
+## Left for later (to present again at the end of this phase)
+
+Gus asked on 12 Oct 2026 to keep this list and bring it back when the phase ends. Each item is held back by a decision, not forgotten.
+
+| Item | Why it waits |
+|---|---|
+| Grading events with pass/fail (a grading day as its own module) | Version 2 (Decisions 128.14, 158) |
+| Franchise-wide ladders and the franchise owner's switch | After v1.1 (Decisions 151, 160) |
+| Lessons in the student app | Wait for video hosting (Decisions 101, 155) |
+| Coach invites by text message | "Email now, text later" (Decision 183.2); needs a Twilio Messaging integration |
+| Deleting an account with its grading data | Waits on account deletion itself (Decisions 134, 141) |
+| Video pricing for lessons | Decided later (Decision 154.2) |
+| More languages for grading names | Later (Decision 179.2) |
+| Push notifications for grading notices | Approved (Decision 223), waiting for the Firebase and Apple push credentials; until then grading notices go in the app and by email |
+

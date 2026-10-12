@@ -10,6 +10,10 @@ jest.mock('./membershipQueries', () => ({ usePurchaseMembership: jest.fn() }));
 jest.mock('../payments/paymentMethodQueries', () => ({ usePaymentMethod: jest.fn() }));
 jest.mock('../auth/stepUpQueries', () => ({ useVerifyStepUp: jest.fn() }));
 
+// The first render loads every React Native component these screens use; on a
+// busy CI runner that alone can pass jest's default 5 s (as in myGrading.test.tsx).
+jest.setTimeout(30_000);
+
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
 
 const idlePurchase = () => ({ mutate: jest.fn(), data: undefined, isPending: false, isSuccess: false, isError: false, error: null });
