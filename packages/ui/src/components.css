@@ -164,6 +164,39 @@
   font-size: var(--font-size-footnote);
   color: var(--text-muted);
 }
+/* Photo upload — file picker + live preview, shared across every photo/logo/
+   banner field app-wide (see PhotoUploadField's own comment). */
+.ultm8-photo-upload__preview-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.ultm8-photo-upload__preview {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  object-fit: cover;
+  background: var(--surface-1);
+}
+.ultm8-photo-upload__preview--empty {
+  background: var(--surface-1);
+}
+.ultm8-photo-upload__input {
+  /* Visually hidden but still focusable/clickable via the Button's
+     `inputRef.current?.click()` — not `display: none`, which would make it
+     inert in some browsers' accessibility trees. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .ultm8-checkbox {
   display: flex;
   align-items: center;

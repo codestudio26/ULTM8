@@ -102,6 +102,13 @@ jobs:
       R2_ACCESS_KEY_ID: ci-test-r2-access-key
       R2_SECRET_ACCESS_KEY: ci-test-r2-secret-key-not-a-real-credential
       R2_BUCKET_NAME: ci-test-waiver-signatures
+      # UploadsModule's public-photo-url path (real photo uploads, product-owner-
+      # approved — see R2ClientService's own "SECOND access path" comment). Same
+      # "fake values are safe, give real coverage" reasoning as R2_BUCKET_NAME
+      # above — getPublicPhotoUploadUrl() never makes a network call either, and
+      # getPublicPhotoUrl() is pure string concatenation.
+      R2_PUBLIC_BUCKET_NAME: ci-test-public-photos
+      R2_PUBLIC_BASE_URL: https://ci-test-public-photos.example.test
       # Phase 51 — QrTokenService's two rotating-QR signing secrets (Decision 107).
       # Unlike PLATFORM_ADMIN_JWT_SECRET above, QrTokenService doesn't throw at boot
       # if these are unset (same "unconfigured dependency" convention as Stripe/R2

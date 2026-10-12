@@ -8893,6 +8893,42 @@
           }
         ]
       }
+    },
+    "/v1/uploads/public-photo-url": {
+      "post": {
+        "operationId": "UploadsController_requestPublicPhotoUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPublicPhotoUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPhotoUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "uploads"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -17156,6 +17192,62 @@
             "description": "The translated text for this screen/labelKey/locale."
           }
         }
+      },
+      "RequestPublicPhotoUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "USER",
+              "BRANCH",
+              "FRANCHISE",
+              "CLASS"
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ]
+          },
+          "schoolId": {
+            "type": "string",
+            "description": "Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student."
+          },
+          "franchiseId": {
+            "type": "string",
+            "description": "Required for entityType FRANCHISE."
+          },
+          "entityId": {
+            "type": "string",
+            "description": "The existing Instructor/Branch/Class/Franchise row's own id, or the target Student's User id for entityType USER on-behalf-of. Omit when creating a brand-new entity (its id does not exist yet) or editing your own User row."
+          }
+        },
+        "required": [
+          "entityType",
+          "contentType"
+        ]
+      },
+      "PublicPhotoUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned PUT URL, valid for 5 minutes — upload the photo file directly here, with the exact Content-Type this endpoint was called with."
+          },
+          "publicUrl": {
+            "type": "string",
+            "description": "The permanent, public URL to save onto the entity's photoUrl/logoUrl/bannerUrl/profilePhotoUrl field once the upload succeeds. Never expires or needs re-signing."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "publicUrl"
+        ]
       }
     }
   }

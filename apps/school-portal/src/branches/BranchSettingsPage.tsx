@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useBranch, useUpdateBranch } from './branchQueries';
 
 /**
@@ -24,6 +25,7 @@ export function BranchSettingsPage() {
   const updateBranch = useUpdateBranch(branch?.schoolId ?? '', branchId ?? '');
   const { data: languages } = useLanguages();
   const { data: currencies } = useCurrencies();
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   const [form, setForm] = useState({
     name: '',
@@ -158,11 +160,33 @@ export function BranchSettingsPage() {
           <Field label="Description" htmlFor="branch-settings-description">
             <TextField value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </Field>
-          <Field label="Logo URL" htmlFor="branch-settings-logo">
-            <TextField value={form.logoUrl} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} />
+          <Field label="Logo" htmlFor="branch-settings-logo">
+            <PhotoUploadField
+              value={form.logoUrl}
+              onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
+              requestUpload={(file) =>
+                requestPhotoUpload.mutateAsync({
+                  entityType: 'BRANCH',
+                  schoolId: branch.schoolId,
+                  entityId: branch.id,
+                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                })
+              }
+            />
           </Field>
-          <Field label="Banner URL" htmlFor="branch-settings-banner">
-            <TextField value={form.bannerUrl} onChange={(e) => setForm((f) => ({ ...f, bannerUrl: e.target.value }))} />
+          <Field label="Banner" htmlFor="branch-settings-banner">
+            <PhotoUploadField
+              value={form.bannerUrl}
+              onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
+              requestUpload={(file) =>
+                requestPhotoUpload.mutateAsync({
+                  entityType: 'BRANCH',
+                  schoolId: branch.schoolId,
+                  entityId: branch.id,
+                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                })
+              }
+            />
           </Field>
           <Button type="submit" loading={updateBranch.isPending}>
             Save

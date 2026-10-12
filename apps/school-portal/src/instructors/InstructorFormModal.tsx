@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, PhoneField, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
 
 /** Fields match CreateInstructorDto/UpdateInstructorDto exactly —
@@ -17,6 +18,7 @@ import type { EligibleInstructorUser, InstructorResponse } from './instructorQue
  * different User isn't a real product action, so it's fixed after creation. */
 export function InstructorFormModal({
   title,
+  schoolId,
   initial,
   branches,
   disciplines,
@@ -26,6 +28,10 @@ export function InstructorFormModal({
   onClose,
 }: {
   title: string;
+  /** Required so the Photo field's upload URL request can be authorized
+   * (School Owner at this School — see UploadsService's own comment) and
+   * correctly key-prefixed, on both create (no Instructor id yet) and edit. */
+  schoolId: string;
   initial?: Partial<InstructorResponse>;
   branches: BranchResponse[];
   /** The School's styles. With any, specialisations are picked from them
@@ -66,6 +72,7 @@ export function InstructorFormModal({
   const [styleIds, setStyleIds] = useState<string[]>(initial?.specializationStyleIds ?? []);
   const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -123,8 +130,19 @@ export function InstructorFormModal({
             options={[{ value: '', label: 'Whole School' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
           />
         </Field>
-        <Field label="Photo URL" htmlFor="instructor-photo">
-          <TextField value={form.photoUrl} onChange={(e) => setForm((f) => ({ ...f, photoUrl: e.target.value }))} />
+        <Field label="Photo" htmlFor="instructor-photo">
+          <PhotoUploadField
+            value={form.photoUrl}
+            onChange={(photoUrl) => setForm((f) => ({ ...f, photoUrl }))}
+            requestUpload={(file) =>
+              requestPhotoUpload.mutateAsync({
+                entityType: 'INSTRUCTOR',
+                schoolId,
+                entityId: initial?.id,
+                contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+              })
+            }
+          />
         </Field>
         {usesStyles ? (
           <Field label="Specializations" htmlFor="instructor-specializations" hint="The styles this instructor teaches.">
