@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, PhotoUploadField, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import { isoToLocalInput, localInputToIso } from '../lib/datetime';
+import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { ClassResponse } from './classQueries';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
@@ -60,6 +61,7 @@ export interface ClassFormValues {
  * validates it as free-form strings, not discipline ids). */
 export function ClassFormModal({
   title,
+  schoolId,
   initial,
   branches,
   instructors,
@@ -69,6 +71,10 @@ export function ClassFormModal({
   onClose,
 }: {
   title: string;
+  /** Required so the Banner field's upload URL request can be authorized
+   * (School Owner at this School — see UploadsService's own comment), on
+   * both create (no Class id yet) and edit. */
+  schoolId: string;
   initial?: Partial<ClassResponse>;
   branches: BranchResponse[];
   instructors: InstructorResponse[];
@@ -101,6 +107,7 @@ export function ClassFormModal({
   );
   const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
+  const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -258,8 +265,19 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, cancellationCharge: e.target.value }))}
           />
         </Field>
-        <Field label="Banner URL" htmlFor="class-banner">
-          <TextField value={form.bannerUrl} onChange={(e) => setForm((f) => ({ ...f, bannerUrl: e.target.value }))} />
+        <Field label="Banner" htmlFor="class-banner">
+          <PhotoUploadField
+            value={form.bannerUrl}
+            onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
+            requestUpload={(file) =>
+              requestPhotoUpload.mutateAsync({
+                entityType: 'CLASS',
+                schoolId,
+                entityId: initial?.id,
+                contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+              })
+            }
+          />
         </Field>
         <Field label="Description" htmlFor="class-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />

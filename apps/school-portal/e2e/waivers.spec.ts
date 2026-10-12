@@ -67,7 +67,10 @@ test('the Signatures panel shows who HAS signed, with their status — real data
   await page.getByRole('button', { name: 'Signed Waiver' }).click();
   const panel = page.getByRole('heading', { level: 3, name: 'Signatures' }).locator('..');
   await expect(panel.getByText('Sam Lee')).toBeVisible();
-  await expect(panel.getByText('SIGNED')).toBeVisible();
+  // exact: true — the new rollup line ("1 of 1 signed", v1.2 backend
+  // backlog gap 2) also contains the substring "signed" case-insensitively,
+  // which Playwright's default getByText match would otherwise also match.
+  await expect(panel.getByText('SIGNED', { exact: true })).toBeVisible();
   // The old inert placeholder text must be gone.
   await expect(page.getByText('Not available yet')).toHaveCount(0);
 });
@@ -80,4 +83,54 @@ test('shows "no one has signed yet" for a Waiver with no signatures', async ({ p
   await page.getByRole('button', { name: 'Unsigned Waiver' }).click();
   const panel = page.getByRole('heading', { level: 3, name: 'Signatures' }).locator('..');
   await expect(panel.getByText('No one has signed this Waiver yet.')).toBeVisible();
+});
+
+/**
+ * v1.2 backend backlog ("Waivers page", gap 2) — the real display side of the
+ * Unsigned-row-at-assignment-time gap: WaiverAssignmentService writes an
+ * explicit Unsigned row at assignment time now, so this endpoint's response
+ * (and this panel) carries "who hasn't signed yet" for real. Seeded directly
+ * as WaiverAssignmentService itself would write it (status UNSIGNED, every
+ * signer field null) rather than through the real assignment trigger
+ * (createWaiver()/join()) — same "seed the state this page's own UI can't
+ * produce" convention this file's own header comment already establishes for
+ * a Signed row above.
+ */
+test('the Signatures panel shows an Unsigned entry distinctly, with the rollup count, alongside a Signed one', async ({ page }) => {
+  const waiver = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Mixed Status Waiver', body: 'text' } });
+  waiverIds.push(waiver.id);
+  await db.waiverSignature.create({
+    data: {
+      id: randomUUID(),
+      waiverId: waiver.id,
+      studentId: s.student.id,
+      signedById: s.student.id,
+      schoolId: s.schoolId,
+      signerFullName: 'Sam Lee',
+      signatureText: 'Sam Lee',
+      status: 'SIGNED',
+    },
+  });
+  // An assignment-time row for newStudent — no signer fields set at all,
+  // exactly as WaiverAssignmentService.assignUnsignedRows() itself writes one.
+  await db.waiverSignature.create({
+    data: { id: randomUUID(), waiverId: waiver.id, studentId: s.newStudent.id, schoolId: s.schoolId, status: 'UNSIGNED' },
+  });
+
+  await page.goto('/waivers');
+  await page.getByRole('button', { name: 'Mixed Status Waiver' }).click();
+  const panel = page.getByRole('heading', { level: 3, name: 'Signatures' }).locator('..');
+
+  // The rollup count — "1 of 2 signed".
+  await expect(panel.getByText('1 of 2 signed')).toBeVisible();
+
+  // The Signed entry — unchanged from the existing "who HAS signed" test.
+  await expect(panel.getByText('Sam Lee')).toBeVisible();
+  await expect(panel.getByText('SIGNED', { exact: true })).toBeVisible();
+
+  // The Unsigned entry — falls back to the enrolled Student's own name
+  // (studentName) since its own signerFullName is null, and is shown with
+  // its own, distinct status badge.
+  await expect(panel.getByText(s.newStudent.name)).toBeVisible();
+  await expect(panel.getByText('UNSIGNED', { exact: true })).toBeVisible();
 });

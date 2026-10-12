@@ -2655,6 +2655,23 @@ model Waiver {
 /// `join()` is self-service-only), so this is only exercisable once a
 /// minor already holds a STUDENT RoleGrant by some other means — a
 /// separate, not-yet-built gap, not one this phase silently papers over.
+/// v1.2 backend backlog ("Waivers page", gap 2) / product-owner decision
+/// (see WaiverAssignmentService's own header comment for the full account):
+/// closes the "WaiverSignature has no concept of 'unsigned' today" gap.
+/// Previously `WaiversService.sign()` was the ONLY code path that ever
+/// created a row here, so a row's mere existence meant "signed" (this
+/// model's own `status @default(SIGNED)`), making "who hasn't signed yet"
+/// impossible to answer. Approved: write an explicit Unsigned row at
+/// "assignment" time instead of only at actual-signing time.
+/// `signerFullName`/`signatureText`/`signedById`/`signedDate` are now
+/// nullable, below — an Unsigned row has no signer, no typed name/signature,
+/// and no real signed date yet; all four are populated only once sign()
+/// actually runs (either creating a fresh SIGNED row, same as before, when no
+/// row existed yet, or — new — UPDATING an existing UNSIGNED/PENDING row in
+/// place rather than creating a second one for the same Student+Waiver,
+/// which the pre-existing partial unique index below would otherwise reject
+/// as a duplicate — see WaiversService.sign()'s own header comment for that
+/// create-vs-update branch).
 model WaiverSignature {
   id String @id @default(uuid())
 
@@ -2668,24 +2685,27 @@ model WaiverSignature {
   // §14 — "Guardian... full access to... waiver-signing authority... for each
   // linked minor", [CONFIRMED]): the actual human who signed, which is NOT
   // always studentId — a Guardian may sign on a linked minor's behalf
-  // (WaiversService.sign()'s own header comment). Always set, including for the
-  // ordinary self-signing case (signedById == studentId there) — no nullable
-  // "assume self if absent" convention, so every row states its real signer
-  // explicitly. Backfilled from studentId for every row that predates this
-  // column (this migration), since every signature before Phase 37 was
-  // necessarily self-signed (no Guardian-signing path existed yet).
-  signedById String
-  signedBy   User   @relation("WaiverSignatureSignedBy", fields: [signedById], references: [id])
+  // (WaiversService.sign()'s own header comment). Set once actually signed
+  // (self-signing: signedById == studentId). Null until then (see this
+  // model's own header comment, above) — an Unsigned "assignment" row has
+  // no signer yet. Backfilled from studentId for every row that predates
+  // this column (the Phase 37 migration), since every signature before
+  // Phase 37 was necessarily self-signed (no Guardian-signing path existed
+  // yet).
+  signedById String?
+  signedBy   User?  @relation("WaiverSignatureSignedBy", fields: [signedById], references: [id])
 
   // Denormalized from waiver.schoolId — same reasoning Membership.schoolId is
   // denormalized from membershipPlan.schoolId (Phase 9): keeps this row's own RLS
   // policy a direct column comparison rather than a join through Waiver.
   schoolId String
 
-  signerFullName    String
-  signatureText     String // see header comment — typed name, not a drawn-signature blob
+  // Nullable (see this model's own header comment) — null on an Unsigned
+  // "assignment" row; populated by sign() only once actually signed.
+  signerFullName    String?
+  signatureText     String? // see header comment — typed name, not a drawn-signature blob
   signatureImageKey String? // see header comment — R2 object key, nullable, PNG raster
-  signedDate        DateTime              @default(now())
+  signedDate        DateTime?
   status            WaiverSignatureStatus @default(SIGNED)
 
   createdAt DateTime @default(now())
