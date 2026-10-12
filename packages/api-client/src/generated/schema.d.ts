@@ -692,6 +692,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/me/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["NotificationsController_getCountsForCaller"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -3023,7 +3039,7 @@ export interface components {
             updatedAt: string;
         };
         JoinSchoolDto: {
-            /** @description Guardian-only: enroll this linked minor Student at the School instead of the caller. */
+            /** @description Enroll this person at the School instead of the caller — a Guardian enrolling a linked minor, or School Owner/Manager staff enrolling an already-registered person who found via the invite-candidate lookup (schools/:id/role-grants/invite-candidate). */
             studentId?: string;
             /** @description The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none. */
             branchId?: string;
@@ -3043,7 +3059,7 @@ export interface components {
             revokedAt?: string | null;
             createdAt: string;
             updatedAt: string;
-            /** @description Present for an ordinary self-service join; absent for a Guardian enrolling a linked minor (see this DTO's own header comment). */
+            /** @description Present for an ordinary self-service join; absent when someone else is doing the enrolling — a Guardian enrolling a linked minor, or Staff enrolling an existing person (see this DTO's own header comment). */
             accessToken?: string;
         };
         JoinFranchiseDto: {
@@ -3398,6 +3414,12 @@ export interface components {
             items: components["schemas"]["NotificationResponseDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        NotificationCountsResponseDto: {
+            /** @description The caller's total Notification count, across every page. */
+            total: number;
+            /** @description The caller's unread Notification count, across every page. */
+            unread: number;
         };
         RegisterDeviceTokenDto: {
             /** @enum {string} */
@@ -6437,6 +6459,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationListResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_getCountsForCaller: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationCountsResponseDto"];
                 };
             };
         };

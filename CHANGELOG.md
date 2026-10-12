@@ -32,6 +32,16 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   same pattern `AddInstructorManuallyModal`/`CoachInvitePage` already use);
   `StaffPage.tsx`'s own pre-existing invite form now surfaces this flag too.
   New `CreatedRoleGrantResponseDto`. `packages/api-client` regenerated.
+- **Notifications — a true, caller-wide Total/Unread stats ribbon**
+  (`docs/v1.2-backend-backlog.md`, closing the "True total/unread counts" gap
+  from Decision 204's Concept 5 finding): new `GET /notifications/me/counts`
+  (self-scoped, same convention as `GET /notifications/me`), returning
+  `{ total, unread }` computed server-side over the caller's full set of
+  `Notification` rows rather than whatever page of the list endpoint happens
+  to be loaded. `NotificationsPage.tsx` now shows a real two-tile stats
+  ribbon (Total/Unread) backed by this endpoint, same `StatTile` pattern
+  Transactions/Membership Plans already established. `packages/api-client`
+  regenerated.
 - **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
   day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
   Dashboard page itself is new — no real implementation existed anywhere in
@@ -94,6 +104,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     `StudentSummaryResponseDto` now carries a real `status`.
   All four are additive — a caller that sends none of the new query params
   sees unchanged behavior. `packages/api-client` regenerated.
+- **"Invite a Student"** (`docs/v1.2-backend-backlog.md`) — a Staff member can
+  now enroll an existing, already-registered-but-unenrolled person as a
+  Student at their own School, from a new `/students/invite` page (linked
+  from `StudentsPage.tsx`'s new "Invite a Student" button). Find-then-confirm,
+  reusing the same exact-email/phone-match `GET
+  .../role-grants/invite-candidate` lookup StaffPage's Instructor/Branch Staff
+  invite flow already uses. No new endpoint: `SchoolsService.join()` (`POST
+  /schools/:id/join`) gained a second on-behalf-of branch alongside its
+  existing Guardian one, gated the same way as the Instructor/Branch Staff
+  invite flow (School Owner/Manager only) — see this feature's own PR
+  description for why this, not a `RoleGrantsService.create()`/
+  `GrantableRoleDto` change, was the right-shaped fix, and for the explicit
+  product question it leaves open (no "add a brand-new person" path exists
+  here, unlike Instructors' own "Add manually"). `packages/api-client`
+  regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,

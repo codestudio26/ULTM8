@@ -21,8 +21,15 @@ import { RoleGrantResponseDto } from '../../role-grants/dto/role-grant-response.
  * there is nothing such a token would ever be used for. Reverted back to
  * optional here to model that honestly, rather than returning a token that
  * would be actively misleading (e.g. the Guardian's own, unchanged one).
+ * v1.2 backend backlog's Staff-on-behalf-of case (SchoolsService.join()'s own
+ * comment) is the same shape: the caller is Staff, not the person who just
+ * got enrolled, so there's equally nothing of the caller's own to refresh.
  */
 export class JoinSchoolResponseDto extends RoleGrantResponseDto {
-  @ApiPropertyOptional({ type: String, description: 'Present for an ordinary self-service join; absent for a Guardian enrolling a linked minor (see this DTO\'s own header comment).' })
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'Present for an ordinary self-service join; absent when someone else is doing the enrolling — a Guardian enrolling a linked minor, or Staff enrolling an existing person (see this DTO\'s own header comment).',
+  })
   accessToken?: string;
 }
