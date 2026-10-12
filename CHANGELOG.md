@@ -15,6 +15,26 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Waiver drawn-signature capture test coverage** (Track B, `apps/student`,
+  `docs/TRACK-B-ROADMAP.md` Phase 4/Slice 6b). The capture UI itself already
+  shipped on `master` (commit `318d491`, 11 Oct 2026): `WaiverRow.tsx` offers
+  an OPTIONAL `react-native-signature-canvas` pad alongside the required typed
+  full-name/typed-signature-text fields (the confirmed baseline, Decision
+  74/78) — "Clear signature" to redo, "Submit signature" to save — wired to
+  the real backend contract Phase 34/37 already shipped: a presigned-upload-URL
+  dance against R2 (`POST /waivers/{id}/signature-upload-url`, a direct PUT
+  of the PNG, no bytes through `apps/api`), then `signatureImageKey` on the
+  existing `sign()` call. That prior commit shipped without a `WaiverRow.test.tsx`;
+  this change adds one (8 cases: unsigned state, signed state, opening the
+  form, the submit-disabled gate, typed-only submit, draw-then-submit,
+  clear-signature, and the sign-error banner), matching this app's house
+  style of mocking every query module and native dependency entirely. **Doc
+  correction:** `docs/TRACK-B-ROADMAP.md`'s Phase 4 summary table still read
+  "6b still blocked — needs a design pass + schema change" even though the
+  backend (`signatureImageKey` on `WaiverSignature`, the DTOs, and the
+  signature-upload-url endpoint) was already real and the capture UI itself
+  had already shipped and been marked DONE further down the same doc — the
+  table row was simply never updated alongside that. Corrected here.
 - **Timetable page redesign — Daily/Weekly/Monthly views + real click-to-book**
   (`docs/v1.2-backend-backlog.md`): `TimetablePage.tsx` was a plain weekday-
   grouped CRUD grid (Add/Edit a slot only, no booking) — this redesign builds
