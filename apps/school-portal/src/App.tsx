@@ -43,12 +43,14 @@ import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
 import { Shell } from './layout/Shell';
 
-/** Owners land on their School; coaches on their dashboard (Decision 184);
- * anyone else on creating a School. */
+/** Owners land on the Dashboard (Bookings This Week + KPIs); coaches on their own
+ * dashboard (Decision 184, a different page — `/coach`); anyone else on creating a
+ * School. The School profile itself (`/school`) is still reachable from the nav,
+ * just no longer the landing page. */
 function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
-  return <Navigate to={schoolId ? '/school' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
+  return <Navigate to={schoolId ? '/dashboard' : coachSchoolId ? '/coach' : '/onboarding'} replace />;
 }
 
 export function App() {
