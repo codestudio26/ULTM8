@@ -4911,21 +4911,35 @@ export interface components {
             id: string;
             waiverId: string;
             studentId: string;
-            /** @description The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf. */
-            signedById: string;
+            /** @description The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf. Null until this row is actually signed. */
+            signedById?: string | null;
             schoolId: string;
-            signerFullName: string;
-            signatureText: string;
+            /** @description Null until this row is actually signed. */
+            signerFullName?: string | null;
+            /** @description Null until this row is actually signed. */
+            signatureText?: string | null;
             /** @description Presigned R2 GET URL, valid for 15 minutes — null if no drawn-signature image was captured. */
             signatureImageUrl?: string | null;
-            signedDate: string;
+            /** @description Null until this row is actually signed. */
+            signedDate?: string | null;
+            /** @description Signed / Unsigned / Expired / Pending — see skills/ultm8-domain-rules/SKILL.md §13. */
             status: string;
+            /** @description The enrolled Student's own name (firstName + surname) — only populated by the Signatures-panel endpoint (GET .../waivers/{id}/signatures); null from every other endpoint. Not a stored column. */
+            studentName?: string | null;
             createdAt: string;
             updatedAt: string;
+        };
+        WaiverSignatureSummaryDto: {
+            total: number;
+            signed: number;
+            unsigned: number;
+            expired: number;
+            pending: number;
         };
         WaiverSignatureListResponseDto: {
             items: components["schemas"]["WaiverSignatureResponseDto"][];
             nextCursor?: string | null;
+            summary?: components["schemas"]["WaiverSignatureSummaryDto"];
         };
         UpdateWaiverDto: {
             title?: string;

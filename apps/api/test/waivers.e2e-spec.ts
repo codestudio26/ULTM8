@@ -529,12 +529,22 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
   // ---------------------------------------------------------------------------
   // GET /schools/:schoolId/waivers/:id/signatures (v1.2 backend backlog — the
   // Waivers page's own "Signatures" panel) — School-Owner-gated, same gate as
-  // Waiver CRUD. Builds ONLY what the backlog says this already supports
-  // (who HAS signed, with what status) — no roster diff, deliberately.
+  // Waiver CRUD. Originally built to show ONLY who HAS signed (no Unsigned
+  // concept existed yet); now that WaiverAssignmentService writes a real
+  // Unsigned row at assignment time, the same query returns those too — this
+  // first test below was updated accordingly (see its own comment).
   // ---------------------------------------------------------------------------
 
   describe('GET /schools/:schoolId/waivers/:id/signatures', () => {
-    it('School Owner sees every signer\'s name/signed date/status for this Waiver', async () => {
+    it('School Owner sees every signer\'s name/signed date/status for this Waiver, PLUS a real Unsigned row for every other active Student', async () => {
+      // studentA/studentB/studentMinor all hold an active STUDENT RoleGrant at
+      // `school` already (seeded in beforeAll) — creating a Waiver here fans
+      // out an Unsigned assignment row to all three (WaiversService.
+      // createWaiver(), see its own comment). studentA/studentB then sign,
+      // which UPDATES their own Unsigned row to SIGNED in place rather than
+      // creating a second row (WaiversService.sign()'s own comment) —
+      // studentMinor never signs, so their row stays Unsigned, proving "who
+      // hasn't signed yet" is now real, not just "who has."
       const waiverRes = await request(app.getHttpServer())
         .post(`/v1/schools/${school.id}/waivers`)
         .set('Authorization', `Bearer ${tokenOwner}`)
@@ -561,15 +571,35 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
         .get(`/v1/schools/${school.id}/waivers/${signaturesWaiverId}/signatures`)
         .set('Authorization', `Bearer ${tokenOwner}`);
       expect(res.status).toBe(200);
-      expect(res.body.items).toHaveLength(2);
-      const names = res.body.items.map((s: { signerFullName: string }) => s.signerFullName).sort();
-      expect(names).toEqual(['Student A Panel', 'Student B Panel']);
+      // 3, not 2 — studentA, studentB (now SIGNED) and studentMinor (still
+      // UNSIGNED, assigned when the Waiver above was created, never signed).
+      expect(res.body.items).toHaveLength(3);
+
+      const bySignerName = new Map(res.body.items.map((s: { signerFullName: string | null; status: string }) => [s.signerFullName, s]));
+      expect((bySignerName.get('Student A Panel') as { status: string }).status).toBe('SIGNED');
+      expect((bySignerName.get('Student B Panel') as { status: string }).status).toBe('SIGNED');
+
+      const minorRow = res.body.items.find((s: { studentId: string }) => s.studentId === studentMinor.id);
+      expect(minorRow).toBeDefined();
+      expect(minorRow.status).toBe('UNSIGNED');
+      expect(minorRow.signerFullName).toBeNull();
+      expect(minorRow.signedById).toBeNull();
+      expect(minorRow.signedDate).toBeNull();
+      // No signerFullName yet — the roster falls back to the enrolled
+      // Student's own name instead (toSignatureResponse's own comment).
+      // mkUser's own fixture shape: firstName = the label passed in
+      // ('student-minor'), surname always 'Tenant'.
+      expect(minorRow.studentName).toBe('student-minor Tenant');
+      signatureIds.push(minorRow.id);
+
       for (const item of res.body.items) {
-        expect(item.status).toBe('SIGNED');
-        expect(typeof item.signedDate).toBe('string');
         // Never the raw R2 key — see toSignatureResponse's own header comment.
         expect(item).not.toHaveProperty('signatureImageKey');
       }
+
+      // The rollup count the backlog's own "Recommended display shape" named
+      // ("12 of 40 signed") — 2 of 3 signed for THIS Waiver specifically.
+      expect(res.body.summary).toEqual({ total: 3, signed: 2, unsigned: 1, expired: 0, pending: 0 });
     });
 
     it('a Student cannot read the Signatures panel — School Owner only', async () => {
@@ -600,6 +630,132 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
           .set('Authorization', `Bearer ${tokenOtherOwner}`);
         expect(res.status).toBe(404);
       } finally {
+        await superuser.roleGrant.deleteMany({ where: { schoolId: otherSchool.id } });
+        await superuser.school.delete({ where: { id: otherSchool.id } });
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // v1.2 backend backlog ("Waivers page", gap 2) — the Unsigned-row-at-
+  // assignment-time gap itself: WaiverAssignmentService, wired into the two
+  // real, already-wired moments this codebase has for "assignment"
+  // (WaiversService.createWaiver() — covered by the "PLUS a real Unsigned
+  // row" test above already — and SchoolsService.join(), covered here), plus
+  // sign()'s own update-in-place fix so the pre-existing partial unique index
+  // still holds correctly now that Unsigned rows are real.
+  // ---------------------------------------------------------------------------
+
+  describe('Unsigned-row assignment at "assignment" time (v1.2 backend backlog)', () => {
+    it('a newly-joined Student gets an Unsigned row for every Waiver already at the School (SchoolsService.join(), Decision 96)', async () => {
+      const freshStudent = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `waivers-http-fresh-join-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'FreshJoiner',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      const freshStudentToken = signAccessToken(freshStudent, []);
+
+      const joinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/join`)
+        .set('Authorization', `Bearer ${freshStudentToken}`)
+        .send({});
+      expect(joinRes.status).toBe(201);
+
+      // waiverIds[0] (and every other Waiver created earlier in this file)
+      // already existed at this School before freshStudent ever joined —
+      // join() should have assigned every one of them an Unsigned row, not
+      // just the most recent.
+      const rows = await superuser.waiverSignature.findMany({ where: { studentId: freshStudent.id } });
+      expect(rows.length).toBe(waiverIds.length);
+      expect(rows.every((r) => r.status === 'UNSIGNED')).toBe(true);
+      expect(rows.every((r) => r.signerFullName === null && r.signedById === null && r.signedDate === null)).toBe(true);
+      expect(new Set(rows.map((r) => r.waiverId))).toEqual(new Set(waiverIds));
+      signatureIds.push(...rows.map((r) => r.id));
+    });
+
+    it('sign() UPDATES the existing Unsigned assignment row in place — never a duplicate row for the same (waiverId, studentId)', async () => {
+      const waiverRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/waivers`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ title: 'Update-In-Place Waiver', body: 'text' });
+      expect(waiverRes.status).toBe(201);
+      const waiverId = waiverRes.body.id as string;
+      waiverIds.push(waiverId);
+
+      // createWaiver() just fanned out an Unsigned row to studentA (already
+      // an active STUDENT at this School) — confirm it before sign() runs.
+      const before = await superuser.waiverSignature.findMany({ where: { waiverId, studentId: studentA.id } });
+      expect(before).toHaveLength(1);
+      expect(before[0].status).toBe('UNSIGNED');
+      const assignedRowId = before[0].id;
+
+      const signRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${waiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ signerFullName: 'Student A Update', signatureText: 'Student A Update' });
+      expect(signRes.status).toBe(201);
+      // The SAME row, updated in place — not a new, second row.
+      expect(signRes.body.id).toBe(assignedRowId);
+      signatureIds.push(signRes.body.id);
+
+      const after = await superuser.waiverSignature.findMany({ where: { waiverId, studentId: studentA.id } });
+      expect(after).toHaveLength(1); // still exactly one row for this pair
+      expect(after[0].id).toBe(assignedRowId);
+      expect(after[0].status).toBe('SIGNED');
+      expect(after[0].signerFullName).toBe('Student A Update');
+
+      // The partial unique index (WaiverSignature_one_non_expired_per_
+      // student_per_waiver) still holds correctly with Unsigned rows now
+      // also existing — a second sign attempt is still a clean 409, same as
+      // before this feature, not a confusing duplicate-row state.
+      const secondSignRes = await request(app.getHttpServer())
+        .post(`/v1/waivers/${waiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ signerFullName: 'Student A Update Again', signatureText: 'Student A Update Again' });
+      expect(secondSignRes.status).toBe(409);
+      const finalRows = await superuser.waiverSignature.findMany({ where: { waiverId, studentId: studentA.id } });
+      expect(finalRows).toHaveLength(1);
+    });
+
+    it('cross-School isolation: a different School\'s Waiver assignment never reaches a Student enrolled only at THIS School', async () => {
+      const otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Waivers HTTP Isolation School' } });
+      const otherOwner = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `waivers-http-isolation-owner-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'IsolationOwner',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+        },
+      });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: otherOwner.id, schoolId: otherSchool.id } });
+      const tokenOtherOwner = signAccessToken(otherOwner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: otherSchool.id, branchId: null }]);
+
+      try {
+        // studentA is enrolled at `school` only, never at `otherSchool` —
+        // creating a Waiver at otherSchool must not reach studentA at all
+        // (createWaiver()'s own fan-out query is schoolId-scoped).
+        const otherWaiverRes = await request(app.getHttpServer())
+          .post(`/v1/schools/${otherSchool.id}/waivers`)
+          .set('Authorization', `Bearer ${tokenOtherOwner}`)
+          .send({ title: 'Other School Waiver', body: 'text' });
+        expect(otherWaiverRes.status).toBe(201);
+
+        const row = await superuser.waiverSignature.findFirst({
+          where: { waiverId: otherWaiverRes.body.id, studentId: studentA.id },
+        });
+        expect(row).toBeNull();
+      } finally {
+        await superuser.waiver.deleteMany({ where: { schoolId: otherSchool.id } }); // cascades its own WaiverSignature rows
         await superuser.roleGrant.deleteMany({ where: { schoolId: otherSchool.id } });
         await superuser.school.delete({ where: { id: otherSchool.id } });
       }

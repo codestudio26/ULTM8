@@ -14,6 +14,7 @@ import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
 import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url.dto';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
+import { WaiverAssignmentService } from './waiver-assignment.service';
 
 /**
  * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read of
@@ -41,6 +42,7 @@ export class WaiversService {
     private readonly schoolsService: SchoolsService,
     private readonly guardiansService: GuardiansService,
     private readonly r2Client: R2ClientService,
+    private readonly waiverAssignment: WaiverAssignmentService,
     @InjectQueue(WAIVER_SIGNATURE_REQUESTS_QUEUE) private readonly waiverSignatureRequestsQueue: Queue,
   ) {}
 
@@ -56,9 +58,29 @@ export class WaiversService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const id = randomUUID();
-    const waiver = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.waiver.create({ data: { id, schoolId, title: dto.title, body: dto.body } }),
-    );
+    const waiver = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const created = await tx.waiver.create({ data: { id, schoolId, title: dto.title, body: dto.body } });
+
+      // v1.2 backend backlog ("Waivers page", gap 2) — the explicit Unsigned-row-
+      // at-assignment-time gap. "Assignment" read structurally, same as
+      // WaiverSignatureRequestsProcessor's own notification fan-out below: this
+      // Waiver's creation meeting every Student ALREADY active at this School.
+      // Same query shape findAllStudentsForSchool/the processor itself already
+      // use for "the School's active Students" — kept identical on purpose, so
+      // every Student notified of a new Waiver also gets the Unsigned row that
+      // notification is actually about. The newer side of this gap (a Waiver
+      // already existing when a Student LATER joins) is handled the other way
+      // round, in SchoolsService.join() — see WaiverAssignmentService's own
+      // header comment for the full two-sided account.
+      const studentGrants = await tx.roleGrant.findMany({
+        where: { schoolId, role: 'STUDENT', revokedAt: null },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+      await this.waiverAssignment.assignUnsignedRows(tx, schoolId, [created.id], studentGrants.map((g) => g.userId));
+
+      return created;
+    });
 
     // "Assignment" read structurally (§2.1 of the Phase 10 kickoff prompt) — this
     // Waiver's own creation IS the assignment event this job fires on, since no
@@ -126,15 +148,27 @@ export class WaiversService {
   /**
    * GET /schools/{schoolId}/waivers/{id}/signatures (v1.2 backend backlog —
    * the Waivers page's own "Signatures" panel) — School-Owner-gated, same
-   * gate as Waiver CRUD above. Deliberately builds ONLY what the backlog
-   * says this already supports (showing who HAS signed, with what status) —
-   * "who hasn't signed" needs a real Student roster to diff against, a
-   * separate, explicitly out-of-scope gap the backlog itself flags.
+   * gate as Waiver CRUD above. Originally built to show ONLY who HAS signed
+   * (no Unsigned concept existed yet); now that WaiverAssignmentService writes
+   * a real Unsigned row at assignment time (see its own header comment), this
+   * same query already returns those rows too — no query change needed here,
+   * since it never filtered by status in the first place.
+   *
+   * Adds `summary` — the rollup count the backlog's own "Recommended display
+   * shape" named ("12 of 40 signed") — a `groupBy` over the SAME
+   * waiverId/schoolId predicate as the paginated list below, run in the same
+   * transaction. Deliberately NOT derived from `page.items` (which is only one
+   * page of up to `limit` rows) — the rollup must reflect the WHOLE roster,
+   * not just whatever page the caller happens to be viewing.
    *
    * Reuses toSignatureResponse() (the same serialization WaiversService.sign()/
    * findMySignatures() already route every row through) rather than returning
    * raw rows a second way — closes the same signatureImageKey-leak class of bug
-   * that helper's own header comment documents, for this new caller too.
+   * that helper's own header comment documents, for this new caller too. Also
+   * now passes along each row's Student name (`include: { student }`) — an
+   * Unsigned row has no `signerFullName` yet (nobody has typed one), so the
+   * roster needs the enrolled Student's own name as a fallback to show who
+   * each Unsigned entry actually is; see toSignatureResponse's own comment.
    * Queried under the CALLER's own tenant context: WaiverSignature's RLS is
    * the narrow "School Owner/Manager, or the row's own Student" shape (see its
    * own schema comment) — a School Owner's grant satisfies the "owner" branch
@@ -142,7 +176,13 @@ export class WaiversService {
    * MembershipsService.getMembershipStatus needs for Staff roles broader than
    * Owner that Membership's own (same-shape) RLS doesn't recognize.
    */
-  async findSignaturesForWaiver(callerId: string, schoolId: string, waiverId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+  async findSignaturesForWaiver(
+    callerId: string,
+    schoolId: string,
+    waiverId: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<CursorPage<{ id: string }> & { summary: WaiverSignatureSummary }> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
@@ -151,11 +191,26 @@ export class WaiversService {
       throw new NotFoundException('Waiver not found');
     }
 
-    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where: { waiverId, schoolId } }), cursor, limit),
-    );
-    const items = await Promise.all(page.items.map((item) => this.toSignatureResponse(item as WaiverSignature)));
-    return { ...page, items };
+    const { page, summary } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const pageResult = await cursorPaginate(
+        (args) =>
+          tx.waiverSignature.findMany({
+            ...args,
+            where: { waiverId, schoolId },
+            include: { student: { select: { firstName: true, surname: true } } },
+          }),
+        cursor,
+        limit,
+      );
+      const counts = await tx.waiverSignature.groupBy({
+        by: ['status'],
+        where: { waiverId, schoolId },
+        _count: { _all: true },
+      });
+      return { page: pageResult, summary: summarizeStatusCounts(counts) };
+    });
+    const items = await Promise.all(page.items.map((item) => this.toSignatureResponse(item)));
+    return { ...page, items, summary };
   }
 
   // ---------------------------------------------------------------------------
@@ -244,6 +299,21 @@ export class WaiversService {
    * a separate findFirst-then-create check — the same atomic create()+caught-
    * unique-violation shape Phase 9 already established for the two-simultaneous-
    * Active-Membership rule, not a TOCTOU-prone check-then-insert.
+   *
+   * v1.2 backend backlog ("Waivers page", gap 2) update: now that
+   * WaiverAssignmentService writes a real Unsigned row at assignment time, that
+   * SAME partial unique index means a blind create() here would almost always
+   * hit the pre-existing Unsigned row's own unique-index entry and 409 — wrongly
+   * reporting "already signed" for a Student who hasn't signed at all yet. Finds
+   * the existing non-Expired row for this (waiverId, studentId) FIRST, inside
+   * the same transaction as the eventual write (no separate check-then-write
+   * race): a SIGNED row still means "already signed" (same 409 as before); an
+   * UNSIGNED/PENDING row is UPDATED in place to SIGNED, never duplicated; no
+   * existing row at all (e.g. assignment never ran for this pair — a Guardian-
+   * signed row for a minor who was never actually enrolled through join(), or
+   * any other gap in the two assignment triggers) falls back to the original
+   * create() path, preserving this method's pre-existing behavior exactly for
+   * every caller that never went through assignment at all.
    */
   async sign(callerId: string, waiverId: string, dto: SignWaiverDto) {
     const studentId = dto.studentId ?? callerId;
@@ -280,24 +350,45 @@ export class WaiversService {
       }
     }
 
+    const signedData = {
+      status: 'SIGNED' as const,
+      signedById: callerId,
+      signerFullName: dto.signerFullName,
+      signatureText: dto.signatureText,
+      signatureImageKey: dto.signatureImageKey,
+      signedDate: new Date(),
+    };
+
     let created: WaiverSignature;
     try {
-      created = await this.prismaApp.withTenantContext(studentId, (tx) =>
-        tx.waiverSignature.create({
-          data: {
-            id: randomUUID(),
-            waiverId: waiver.id,
-            studentId,
-            signedById: callerId,
-            schoolId: waiver.schoolId,
-            signerFullName: dto.signerFullName,
-            signatureText: dto.signatureText,
-            signatureImageKey: dto.signatureImageKey,
-          },
-        }),
-      );
+      created = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        const existing = await tx.waiverSignature.findFirst({
+          where: { waiverId: waiver.id, studentId, status: { not: 'EXPIRED' } },
+        });
+        if (existing) {
+          if (existing.status === 'SIGNED') {
+            // Same message/status this method has always thrown for a genuine
+            // double-sign — a caller can't tell an Unsigned-row-promoted-to-
+            // SIGNED apart from the pre-assignment "no row existed yet" case,
+            // and shouldn't need to.
+            throw new ConflictException('This Student already holds a non-Expired signature for this Waiver.');
+          }
+          // UNSIGNED or PENDING — the assignment-time row this Student was
+          // always going to sign. Update in place rather than create a
+          // second row for the same (waiverId, studentId) pair.
+          return tx.waiverSignature.update({ where: { id: existing.id }, data: signedData });
+        }
+        return tx.waiverSignature.create({
+          data: { id: randomUUID(), waiverId: waiver.id, studentId, schoolId: waiver.schoolId, ...signedData },
+        });
+      });
     } catch (err) {
+      if (err instanceof ConflictException) throw err;
       if (this.isUniqueConstraintViolation(err)) {
+        // Only reachable via a genuine concurrent race (two simultaneous sign()
+        // calls both missing the same existing row) — the ordinary sequential
+        // case is already caught by the `existing.status === 'SIGNED'` branch
+        // above.
         throw new ConflictException('This Student already holds a non-Expired signature for this Waiver.');
       }
       throw err;
@@ -376,9 +467,20 @@ export class WaiversService {
    * instead, same as that precedent, with `signatureImageUrl` coming back null
    * rather than the request failing outright. The image itself isn't lost — the
    * key is durably stored; only this one response's convenience URL is affected.
+   *
+   * v1.2 backend backlog ("Waivers page", gap 2) addition: `student` (only
+   * passed by findSignaturesForWaiver(), which is the only caller that needs
+   * it) resolves to `studentName` — an Unsigned row's own `signerFullName` is
+   * null (nobody has typed one yet — see the model's own header comment), so
+   * the Signatures panel roster needs the enrolled Student's own name as a
+   * fallback to show who an Unsigned entry actually is. sign()/
+   * findMySignatures() don't pass it: their own `signerFullName` is always
+   * either already populated (a row this call just signed or previously
+   * signed) or not yet relevant (a caller reading their own list already
+   * knows who they are).
    */
-  private async toSignatureResponse(signature: WaiverSignature) {
-    const { signatureImageKey, ...rest } = signature;
+  private async toSignatureResponse(signature: WaiverSignature & { student?: { firstName: string; surname: string } }) {
+    const { signatureImageKey, student, ...rest } = signature;
     let signatureImageUrl: string | null = null;
     if (signatureImageKey) {
       try {
@@ -390,6 +492,43 @@ export class WaiversService {
         );
       }
     }
-    return { ...rest, signatureImageUrl };
+    const studentName = student ? `${student.firstName} ${student.surname}`.trim() : null;
+    return { ...rest, signatureImageUrl, studentName };
   }
+}
+
+/** The v1.2 backend backlog's own "Recommended display shape" rollup —
+ * "12 of 40 signed" — computed from a `groupBy` over WaiverSignature.status
+ * for one Waiver. `total` is every row regardless of status (Signed,
+ * Unsigned, Expired, and Pending — the full confirmed enum, SKILL.md §13),
+ * not just Signed+Unsigned, so an Expired row (e.g. a re-assignment cycle)
+ * still counts toward the denominator the frontend shows. */
+export interface WaiverSignatureSummary {
+  total: number;
+  signed: number;
+  unsigned: number;
+  expired: number;
+  pending: number;
+}
+
+function summarizeStatusCounts(counts: Array<{ status: string; _count: { _all: number } }>): WaiverSignatureSummary {
+  const summary: WaiverSignatureSummary = { total: 0, signed: 0, unsigned: 0, expired: 0, pending: 0 };
+  for (const { status, _count } of counts) {
+    summary.total += _count._all;
+    switch (status) {
+      case 'SIGNED':
+        summary.signed += _count._all;
+        break;
+      case 'UNSIGNED':
+        summary.unsigned += _count._all;
+        break;
+      case 'EXPIRED':
+        summary.expired += _count._all;
+        break;
+      case 'PENDING':
+        summary.pending += _count._all;
+        break;
+    }
+  }
+  return summary;
 }
