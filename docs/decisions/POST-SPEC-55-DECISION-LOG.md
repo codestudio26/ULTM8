@@ -3113,3 +3113,23 @@ No existing Playwright spec in `apps/school-portal/e2e` exercised any of the con
 
 User ("the best and most accurate... this needs to be genuinely accurate internationally, not a curated subset of launch markets"), approving `libphonenumber-js` directly, 12 Oct 2026.
 
+---
+
+## Decision 241 — Notifications page: Broadcast/compose, Snooze, and the Read-within-24h metric, all three built as scoped
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "Notifications page" section flagged three gaps against this module's real, narrow API surface (`GET /notifications/me`, `PATCH /notifications/:id/read`, `GET /notifications/me/counts`) — no endpoint for Staff to author a Notification, no snoozed/deferred state anywhere in the schema, and no timestamped read event to compute a time-to-read metric from. The product owner was given explicit trade-offs for each and approved all three as scoped below — nothing more (Delete and Push delivery rate, both shown on the same concept mockups, remain the backlog's own open items).
+
+1. **Broadcast/compose** — `POST /schools/:schoolId/notifications/broadcast`, School-Owner-gated same as Waiver/MembershipPlan CRUD. Three audience scopes: **All Students** (default), **one Branch** (via the real `StudentHomeBranch` model, Decisions 139/148 — intersected with an active `STUDENT` RoleGrant, since a home-Branch row can outlive the enrollment that created it), and **one Class's real roster** (every Booking against that Class, any status — the same shape `BookingsService.findAllForClass` already uses, deliberately not re-derived). Enqueues through the existing `notification-fanout` queue only, reusing `WaiverSignatureRequestsProcessor`'s own per-recipient job-dedup pattern (`notificationId`/`jobId` derived from one `broadcastId` + each recipient). Lives in its own module (`NotificationBroadcastModule`), not inside `NotificationsModule` — `NotificationsModule` is already imported BY `TenantsModule` (for `NotificationDeliveryService`), so importing `TenantsModule` back into it for `TenantAuthorizationService`/`SchoolsService` would be a genuine circular module dependency with no `forwardRef` precedent anywhere in this codebase; a separate module importing `TenantsModule` + `QueueModule`, imported by nothing, avoids that entirely.
+2. **Snooze** — new `Notification.snoozedUntil DateTime?` column; `PATCH /notifications/:id/snooze` takes either an explicit `until` timestamp or a `minutes` duration (a Developer-level presentation choice, not a business rule — the backlog's own note flagged needing *a* decision on shape, not a specific one). `GET /notifications/me/counts`'s `unread` total live-excludes a currently-snoozed Notification (`snoozedUntil` in the future) — computed the same "don't wait on a sweep job for correctness" way `Membership.status`'s own live-computed expiry already works in this codebase. A new scheduled `notification-unsnooze-sweep` job (same registration/retry shape as `booking-no-show-processing`) separately clears an elapsed `snoozedUntil` in storage, so the column itself doesn't keep claiming "still snoozed" long after the live computation already disagrees.
+3. **Read within 24h** — new `Notification.readAt DateTime?` column, set the first time `PATCH /notifications/:id/read` fires and never overwritten after (`NotificationsService.markRead`). `GET /notifications/me/counts` gains `readWithin24hPercent` (null until the caller has read at least one Notification — an unread Notification is excluded from both the numerator and denominator, never counted as a miss), plus `readWithin24hCount`/`readTotalCount` for transparency.
+4. **Frontend (`apps/school-portal`):** `NotificationsPage.tsx`'s row action menu is now a real `RowActionsMenu` (replacing the old always-visible "Mark read" `Button`) with working Mark read + Snooze items and a new "Snoozed" status badge; a School-Owner-only "Broadcast to Students" header action opens `BroadcastNotificationModal.tsx`; the stats ribbon gains a third "Read within 24h" tile alongside Total/Unread.
+
+### What this does NOT resolve
+
+Delete (`DELETE /notifications/:id`) and Push delivery rate — both shown on the same concept mockups this backlog entry references — were explicitly out of scope for tonight's approval and remain open, per the backlog doc's own updated entry.
+
+### Recorded by
+
+User, after being given explicit trade-offs for each of the three features, 12 Oct 2026.
+

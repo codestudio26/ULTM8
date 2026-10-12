@@ -15,6 +15,70 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Notifications page — Broadcast/compose, Snooze, and the Read-within-24h
+  metric** (`docs/v1.2-backend-backlog.md`, three product-owner-approved
+  features): the real API surface here was previously the narrowest of any
+  page redesigned this session (`GET /notifications/me`, `PATCH
+  /notifications/:id/read`, `GET /notifications/me/counts` — see the backlog
+  doc's own "Notifications page" section, now marked DONE for all three).
+  - **Broadcast/compose** — the single biggest gap the backlog entry flagged:
+    there was no endpoint for a School Owner/Staff member to author and send a
+    Notification; every real row was written only by the internal
+    `notification-fanout` job, itself only triggered by three system events.
+    New `POST /schools/:schoolId/notifications/broadcast`
+    (`NotificationBroadcastController`/`NotificationBroadcastService`, its own
+    module to avoid a circular import with `NotificationsModule` ↔
+    `TenantsModule`), School-Owner-gated the same way Waiver/MembershipPlan
+    CRUD already are. Three audience scopes: **All Students** (every active
+    `STUDENT` RoleGrant at the School — the same query
+    `SchoolsService.findAllStudentsForSchool`'s ACTIVE branch already uses),
+    **one Branch** (via the real `StudentHomeBranch` model, Decisions 139/148,
+    intersected with an active enrollment), and **one Class's real roster**
+    (the exact `where: { classId }` shape `BookingsService.findAllForClass`
+    already uses — every Booking status, not re-derived). Enqueues through the
+    existing `notification-fanout` queue, reusing
+    `WaiverSignatureRequestsProcessor`'s own per-recipient job-dedup pattern —
+    no second delivery path. `NotificationsPage.tsx` gets a School-Owner-only
+    "Broadcast to Students" header action opening a new
+    `BroadcastNotificationModal.tsx` (title/body + the three audience
+    options), matching this app's established form-modal house style.
+  - **Snooze** — previously shown disabled-styled in the backlog's referenced
+    concept mockup, with no `snoozedUntil`-shaped column anywhere in the
+    schema. New `Notification.snoozedUntil DateTime?` column; new `PATCH
+    /notifications/:id/snooze` (an explicit `until` timestamp or a `minutes`
+    duration from now — a Developer-level presentation choice per the
+    kickoff brief, not a business rule); a new scheduled
+    `notification-unsnooze-sweep` job (same registration/retry shape as
+    `booking-no-show-processing`) clears an elapsed `snoozedUntil`, returning
+    the Notification to the unread list. `GET /notifications/me/counts`'s
+    `unread` total now live-excludes a currently-snoozed Notification (the
+    same "don't wait on a sweep job for correctness" convention
+    `Membership.status`'s own live-computed expiry already established).
+    `NotificationsPage.tsx`'s row action menu (now a real `RowActionsMenu`,
+    replacing the old plain "Mark read" `Button`) gets a working "Snooze"
+    item opening `SnoozeNotificationModal.tsx` (preset durations), plus a new
+    "Snoozed" status badge.
+  - **Read within 24h** — `Notification.read` was a live boolean with no
+    timestamped read event. New `Notification.readAt DateTime?` column, set
+    the first time `PATCH /notifications/:id/read` fires and never
+    overwritten after (`NotificationsService.markRead`). `GET
+    /notifications/me/counts` gains `readWithin24hPercent` (null until the
+    caller has read at least one Notification — an unread Notification is
+    excluded from both the numerator and denominator, not counted as a
+    miss), `readWithin24hCount`, and `readTotalCount`. `NotificationsPage.tsx`
+    wires `readWithin24hPercent` into a third `StatTile` alongside the
+    existing Total/Unread tiles.
+  - One migration for both new columns (`snoozedUntil`, `readAt`). New e2e
+    coverage: `notification-broadcast.e2e-spec.ts` (audience-targeting
+    correctness for all three scopes, the School-Owner-only gate, and
+    cross-School isolation on both the School path param and a
+    Branch/Class id from a different School) and extended
+    `notifications.e2e-spec.ts` (Snooze hides from the unread count and the
+    scheduled sweep un-snoozes correctly via direct processor invocation;
+    `readAt` set once and never overwritten; the Read-within-24h percentage
+    computed correctly). New Playwright coverage on
+    `notifications.spec.ts` for the Broadcast modal, Snooze action, and the
+    new stat tile. `packages/api-client` regenerated.
 - **Timetable page redesign — Daily/Weekly/Monthly views + real click-to-book**
   (`docs/v1.2-backend-backlog.md`): `TimetablePage.tsx` was a plain weekday-
   grouped CRUD grid (Add/Edit a slot only, no booking) — this redesign builds

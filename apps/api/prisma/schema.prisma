@@ -3053,6 +3053,27 @@ model Notification {
   /// Developer-level addition — see the model's own header comment.
   type String?
 
+  /// Developer-level addition (v1.2 backend backlog — Notifications page
+  /// Snooze gap), same "reasonable-minimum, flagged for Architect review"
+  /// treatment as `type` above: Spec 55's own confirmed field list has no
+  /// snoozed/deferred state at all. Null = not snoozed. When set, the
+  /// Notification is hidden from GET /notifications/me/counts's unread total
+  /// while `snoozedUntil` is still in the future (NotificationsService.
+  /// getCountsForCaller live-computes this, the same "don't wait on a sweep
+  /// job for correctness" convention Membership.status's own live-computed
+  /// expiry already established) and is cleared back to null by the
+  /// notification-unsnooze-sweep background job once it elapses, returning the
+  /// Notification to the ordinary unread list. Snoozing does not touch `read`.
+  snoozedUntil DateTime?
+
+  /// Developer-level addition (v1.2 backend backlog — "Read within 24h"
+  /// metric), same treatment as `type`/`snoozedUntil` above: Spec 55 confirms
+  /// only a live `read` boolean, no timestamped read event. Set exactly once,
+  /// the first time PATCH /notifications/:id/read fires for this row
+  /// (NotificationsService.markRead) — never overwritten on a later call, so
+  /// this is genuinely "time to first read", not "time of last read".
+  readAt DateTime?
+
   createdAt DateTime @default(now())
 
   // Composite index matching NotificationsService.findAllForCaller's actual
@@ -3063,6 +3084,13 @@ model Notification {
   // together; neither prior index actually served it, and one served nothing
   // in this phase's own code at all (no query filters by `read` alone).
   @@index([userId, createdAt, id])
+  // Serves notification-unsnooze-sweep's own query shape (WHERE snoozedUntil
+  // IS NOT NULL AND snoozedUntil <= now) — a cross-tenant sweep over every
+  // School's Notifications, same reasoning booking-no-show-processing's own
+  // Class.endDate/qrAttendanceEndAt index needs (not added there either,
+  // flagged the same way: small table today, revisit if this ever shows up in
+  // a slow-query report).
+  @@index([snoozedUntil])
 }
 
 /// DeviceToken (Phase 15, Spec 55 §6.1, Decision 46, page 28) — confirmed field

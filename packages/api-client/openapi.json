@@ -2132,6 +2132,51 @@
         ]
       }
     },
+    "/v1/notifications/{id}/snooze": {
+      "patch": {
+        "operationId": "NotificationsController_snooze",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnoozeNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications/device-tokens": {
       "post": {
         "operationId": "NotificationsController_registerDeviceToken",
@@ -8059,6 +8104,51 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/notifications/broadcast": {
+      "post": {
+        "operationId": "NotificationBroadcastController_broadcast",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{id}/fee-charges": {
       "get": {
         "operationId": "FranchiseFeesController_findAllForFranchise",
@@ -10976,6 +11066,16 @@
           },
           "createdAt": {
             "type": "string"
+          },
+          "snoozedUntil": {
+            "type": "string",
+            "nullable": true,
+            "description": "Snoozed until this timestamp, or null if not snoozed. Developer-level addition — see the Prisma model comment."
+          },
+          "readAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment."
           }
         },
         "required": [
@@ -11015,13 +11115,42 @@
           },
           "unread": {
             "type": "number",
-            "description": "The caller's unread Notification count, across every page."
+            "description": "The caller's unread Notification count, across every page. Excludes a Notification that is currently snoozed (snoozedUntil in the future) — see NotificationsService.getCountsForCaller's own header comment."
+          },
+          "readWithin24hPercent": {
+            "type": "number",
+            "nullable": true,
+            "description": "Percentage (0–100) of the caller's own READ Notifications whose readAt fell within 24h of createdAt. Null when the caller has never read a Notification (nothing to compute a rate over)."
+          },
+          "readWithin24hCount": {
+            "type": "number",
+            "description": "How many of the caller's READ Notifications were read within 24h of createdAt."
+          },
+          "readTotalCount": {
+            "type": "number",
+            "description": "How many of the caller's Notifications have ever been read (readAt is set) — the denominator readWithin24hPercent is computed over."
           }
         },
         "required": [
           "total",
-          "unread"
+          "unread",
+          "readWithin24hPercent",
+          "readWithin24hCount",
+          "readTotalCount"
         ]
+      },
+      "SnoozeNotificationDto": {
+        "type": "object",
+        "properties": {
+          "until": {
+            "type": "string",
+            "description": "Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both."
+          },
+          "minutes": {
+            "type": "number",
+            "description": "Snooze for this many minutes from now (1 to 10080 / 7 days — a Developer-chosen upper bound, not a confirmed business rule). Provide this OR `until`, not both."
+          }
+        }
       },
       "RegisterDeviceTokenDto": {
         "type": "object",
@@ -16667,6 +16796,67 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "BroadcastNotificationDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Notification title."
+          },
+          "body": {
+            "type": "string",
+            "description": "Notification body."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "BRANCH",
+              "CLASS"
+            ],
+            "description": "Who receives this broadcast."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when audience is BRANCH — must be a Branch of this School."
+          },
+          "classId": {
+            "type": "string",
+            "description": "Required when audience is CLASS — must be a Class of this School."
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "audience"
+        ]
+      },
+      "BroadcastResponseDto": {
+        "type": "object",
+        "properties": {
+          "broadcastId": {
+            "type": "string",
+            "description": "Correlates every Notification this call fanned out — used as the shared prefix of each one's notificationId/jobId."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "BRANCH",
+              "CLASS"
+            ]
+          },
+          "recipientCount": {
+            "type": "number",
+            "description": "How many distinct Students this broadcast was enqueued for."
+          }
+        },
+        "required": [
+          "broadcastId",
+          "audience",
+          "recipientCount"
         ]
       },
       "FranchiseFeeChargeResponseDto": {
