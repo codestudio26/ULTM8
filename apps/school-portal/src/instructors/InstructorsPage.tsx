@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -36,6 +37,7 @@ function SpecializationBadges({ specializations }: { specializations: string[] }
 }
 
 export function InstructorsPage() {
+  const navigate = useNavigate();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useInstructors(schoolId);
   const { data: branchData } = useBranches(schoolId);
@@ -116,9 +118,14 @@ export function InstructorsPage() {
                 key: 'actions',
                 header: '',
                 render: (i) => (
-                  <Button variant="secondary" onClick={() => setEditing(i)}>
-                    Edit
-                  </Button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button variant="secondary" onClick={() => navigate(`/instructors/${i.id}`)}>
+                      View
+                    </Button>
+                    <Button variant="secondary" onClick={() => setEditing(i)}>
+                      Edit
+                    </Button>
+                  </div>
                 ),
               },
             ]}

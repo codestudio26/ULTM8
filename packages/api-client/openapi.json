@@ -3869,6 +3869,61 @@
         ]
       }
     },
+    "/v1/instructors/{id}/classes": {
+      "get": {
+        "operationId": "InstructorsController_findClasses",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorClassListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/instructors/add-manually": {
       "post": {
         "operationId": "InstructorsController_createManually",
@@ -4285,6 +4340,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/active-count": {
+      "get": {
+        "operationId": "MembershipsController_getActiveCount",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanActiveCountResponseDto"
                 }
               }
             }
@@ -6696,6 +6786,69 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/waivers/{id}/signatures": {
+      "get": {
+        "operationId": "WaiversController_findSignatures",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverSignatureListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waivers/me": {
       "get": {
         "operationId": "WaiversController_findMySignatures",
@@ -7133,6 +7286,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BookingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/bookings": {
+      "get": {
+        "operationId": "BookingsController_findAllForStudent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBookingListResponseDto"
                 }
               }
             }
@@ -11869,6 +12082,76 @@
           }
         }
       },
+      "InstructorClassResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "activities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number",
+            "nullable": true,
+            "description": "null = unlimited (domain-rules §9)."
+          },
+          "enrolledCount": {
+            "type": "number",
+            "description": "Every attendee across every UPCOMING Booking for this Class — same definition as \"Full\" (domain-rules §9)."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "activities",
+          "startDate",
+          "endDate",
+          "enrolledCount"
+        ]
+      },
+      "InstructorClassListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructorClassResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "CreateInstructorManuallyDto": {
         "type": "object",
         "properties": {
@@ -12445,6 +12728,17 @@
             "description": "ISO 8601 date-time. Pass null to clear."
           }
         }
+      },
+      "MembershipPlanActiveCountResponseDto": {
+        "type": "object",
+        "properties": {
+          "activeCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "activeCount"
+        ]
       },
       "PurchaseMembershipDto": {
         "type": "object",
@@ -15318,6 +15612,102 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BookingResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StudentBookingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string"
+          },
+          "classStartDate": {
+            "type": "string"
+          },
+          "classEndDate": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "sourceMembershipId": {
+            "type": "string"
+          },
+          "overriddenById": {
+            "type": "string",
+            "nullable": true
+          },
+          "overrideReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkInMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "refundResolution": {
+            "type": "string",
+            "nullable": true
+          },
+          "attendees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingAttendeeResponseDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "classId",
+          "classTitle",
+          "classStartDate",
+          "classEndDate",
+          "schoolId",
+          "status",
+          "sourceMembershipId",
+          "attendees",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "StudentBookingListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentBookingResponseDto"
             }
           },
           "nextCursor": {

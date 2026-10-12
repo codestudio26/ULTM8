@@ -14,6 +14,7 @@ import {
   MembershipStatusResponseDto,
   PurchaseMembershipResponseDto,
 } from './dto/membership-response.dto';
+import { MembershipPlanActiveCountResponseDto } from './dto/membership-plan-active-count-response.dto';
 
 // MembershipPlan CRUD + purchase (self-service, or Guardian-on-behalf-of a linked
 // minor as of Phase 39) + Student/Staff reads — no refund, no credit-restore, no
@@ -56,6 +57,15 @@ export class MembershipsController {
   @Patch('membership-plans/:id')
   updatePlan(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateMembershipPlanDto) {
     return this.membershipsService.updatePlan(user.sub, id, dto);
+  }
+
+  /** v1.2 backend backlog — MembershipPlansPage's "Active members" stat tile.
+   * See MembershipsService.getActiveMemberCount's own header comment. */
+  @ApiOkResponse({ type: MembershipPlanActiveCountResponseDto })
+  @Get('membership-plans/:id/active-count')
+  async getActiveCount(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    const activeCount = await this.membershipsService.getActiveMemberCount(user.sub, id);
+    return { activeCount };
   }
 
   // Decision 236's own follow-up — required only when dto.payWithSavedCard is

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -44,6 +44,21 @@ export class WaiversController {
     @Query() query: PaginationQueryDto,
   ) {
     return this.waiversService.findAllWaivers(user.sub, schoolId, query.cursor, query.limit);
+  }
+
+  /** v1.2 backend backlog — the Waivers page's "Signatures" panel. See
+   * WaiversService.findSignaturesForWaiver's own header comment. */
+  @ApiOkResponse({ type: WaiverSignatureListResponseDto })
+  @ApiQuery({ name: 'cursor', required: false, description: 'nextCursor from the previous page.' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Get('schools/:schoolId/waivers/:id/signatures')
+  findSignatures(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId') schoolId: string,
+    @Param('id') id: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.waiversService.findSignaturesForWaiver(user.sub, schoolId, id, query.cursor, query.limit);
   }
 
   // NOTE ordering: 'waivers/me' MUST be registered before 'waivers/:id' — both

@@ -16,6 +16,7 @@ import { InstructorListResponseDto, InstructorResponseDto } from './dto/instruct
 import { CreateInstructorManuallyResponseDto } from './dto/create-instructor-manually-response.dto';
 import { CertificationUploadUrlResponseDto } from './dto/certification-upload-url-response.dto';
 import { EligibleInstructorListResponseDto } from './dto/eligible-instructor-response.dto';
+import { InstructorClassListResponseDto } from './dto/instructor-class-response.dto';
 
 /** Each Add Manually call sends an email — limited per account, same tier as
  * CoachInvitesController's own invite-send throttle. */
@@ -70,6 +71,19 @@ export class InstructorsController {
   @Patch('instructors/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateInstructorDto) {
     return this.instructorsService.update(user.sub, id, dto);
+  }
+
+  /** v1.2 backend backlog — "Instructor Class" grid, the real replacement for
+   * the School Portal's client-side filter-the-School's-Classes workaround.
+   * See InstructorsService.findClassesForInstructor's own header comment. */
+  @ApiOkResponse({ type: InstructorClassListResponseDto })
+  @Get('instructors/:id/classes')
+  findClasses(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.instructorsService.findClassesForInstructor(user.sub, id, query.cursor, query.limit);
   }
 
   // Decision 1/230/237 — Instructor "Add Manually". See InstructorsService's

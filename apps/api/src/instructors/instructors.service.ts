@@ -7,7 +7,7 @@ import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
-import { cursorPaginate } from '../common/pagination/cursor-paginate';
+import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
@@ -373,6 +373,70 @@ export class InstructorsService {
       email: names.get(found.userId)?.email ?? '',
       status: statuses.get(found.userId) ?? 'REVOKED',
     };
+  }
+
+  /**
+   * GET /instructors/{id}/classes (v1.2 backend backlog) — the real
+   * replacement for the School Portal's own client-side filter-the-School's-
+   * Classes-by-instructorId workaround (see InstructorClassResponseDto's own
+   * header comment for the full citation). `instructorId` on Class is a
+   * User.id FK (§6.1, confirmed by the backlog itself: "the filter has to
+   * match Instructor.userId against Class.instructorId"), not this
+   * Instructor row's own `id` — resolved via findOne() below, same as every
+   * other method here that needs this profile's schoolId/userId.
+   *
+   * Staff-gated (assertStaffAtSchool, same defense-in-depth convention
+   * BookingsService.findAllForClass already established for a Booking-
+   * derived read) — findOne() itself only enforces RLS visibility (any
+   * active RoleGrant holder), but computing enrolledCount below reads
+   * Booking rows, whose broad SELECT policy is Staff-only (domain-rules
+   * §10/Decision 89) — this endpoint is the School Portal's own Staff-facing
+   * Instructor Detail screen, so there's no real caller this excludes.
+   */
+  async findClassesForInstructor(callerId: string, instructorId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    const instructor = await this.findOne(callerId, instructorId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertStaffAtSchool(callerId, instructor.schoolId, instructor.branchId);
+
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) => tx.class.findMany({ ...args, where: { schoolId: instructor.schoolId, instructorId: instructor.userId } }),
+        cursor,
+        limit,
+      ),
+    );
+    const enrolledCounts = await this.resolveEnrolledCounts(callerId, page.items.map((c) => c.id));
+    return {
+      ...page,
+      items: page.items.map((c) => ({ ...c, enrolledCount: enrolledCounts.get(c.id) ?? 0 })),
+    };
+  }
+
+  /** Batched "every attendee across every UPCOMING Booking" count (domain-rules
+   * §9's own Full-status definition, reused here rather than invented a second
+   * time) across an entire page of Classes in two queries total — not
+   * BookingsService.countOccupiedSeats()'s own per-Class pair of queries, which
+   * would be a real N+1 here. BookingAttendee has no classId column of its own
+   * (only bookingId — see its own schema comment), so its rows are attributed
+   * to a Class via a nested select through the Booking relation rather than a
+   * groupBy (this codebase has no existing groupBy precedent to follow; a
+   * fetch-then-count-in-JS pass matches the established convention
+   * resolveInstructorStatuses/resolveUserNames already use for this exact class
+   * of "batch it, don't N+1 it" problem). */
+  private async resolveEnrolledCounts(callerId: string, classIds: string[]): Promise<Map<string, number>> {
+    const counts = new Map<string, number>(classIds.map((id) => [id, 0]));
+    if (classIds.length === 0) return counts;
+    const [bookings, attendees] = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      Promise.all([
+        tx.booking.findMany({ where: { classId: { in: classIds }, status: 'UPCOMING' }, select: { classId: true } }),
+        tx.bookingAttendee.findMany({
+          where: { booking: { classId: { in: classIds }, status: 'UPCOMING' } },
+          select: { booking: { select: { classId: true } } },
+        }),
+      ]),
+    );
+    for (const b of bookings) counts.set(b.classId, (counts.get(b.classId) ?? 0) + 1);
+    for (const a of attendees) counts.set(a.booking.classId, (counts.get(a.booking.classId) ?? 0) + 1);
+    return counts;
   }
 
   /** School Owner/Manager only — resolved via the profile's own schoolId, not a route param. */

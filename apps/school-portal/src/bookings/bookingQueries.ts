@@ -4,6 +4,7 @@ import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
 export type BookingResponse = components['schemas']['BookingResponseDto'];
+export type StudentBookingResponse = components['schemas']['StudentBookingResponseDto'];
 
 /** Read-only — GET /classes/:id/bookings (School Owner/Manager, Branch Staff, or
  * Instructor). FOUND ON REVIEW: this endpoint never existed before this phase —
@@ -14,5 +15,23 @@ export function useClassBookings(classId: string | null) {
     queryKey: ['classBookings', classId],
     queryFn: () => unwrap(apiClient.GET('/v1/classes/{id}/bookings', { params: { path: { id: classId! } } })),
     enabled: !!classId,
+  });
+}
+
+/** v1.2 backend backlog — Student Detail's "Upcoming Booking". Read-only —
+ * GET /students/:id/bookings (Staff: School Owner/Manager, Branch Staff, or
+ * Instructor), `schoolId` a required query param — see
+ * BookingsService.findAllForStudent's own header comment. No pagination in
+ * this UI yet, same established convention as useClassBookings above. */
+export function useStudentBookings(studentId: string | null, schoolId: string | null) {
+  return useQuery({
+    queryKey: ['studentBookings', studentId, schoolId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/students/{id}/bookings', {
+          params: { path: { id: studentId! }, query: { schoolId: schoolId! } },
+        }),
+      ),
+    enabled: !!studentId && !!schoolId,
   });
 }

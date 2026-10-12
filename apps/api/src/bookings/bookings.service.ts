@@ -465,6 +465,54 @@ export class BookingsService {
     };
   }
 
+  /**
+   * GET /students/{id}/bookings (v1.2 backend backlog — Student Detail's
+   * "Upcoming Booking") — Staff-only (School Owner/Manager, Branch Staff, or
+   * Instructor), same `schoolId` required-query-param shape
+   * MembershipsService.getMembershipStatus / GradingService's own
+   * students/{id}/... reads already established (a Student's Bookings are
+   * School-scoped, and without it this can't know which School's data to
+   * read). Queried under the CALLER's own tenant context, not the target
+   * Student's — Booking's RLS already carries a broad, SELECT-only policy
+   * admitting any active Staff RoleGrant holder at the School (the same
+   * `booking_staff_read` policy findAllForClass() above already relies on),
+   * so there's no narrow-RLS reason here to borrow the target-tenant-context
+   * substitution MembershipsService.getMembershipStatus needs for
+   * Membership's own narrower policy.
+   */
+  async findAllForStudent(
+    callerId: string,
+    studentId: string,
+    schoolId: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<CursorPage<{ id: string }>> {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      cursorPaginate(
+        (args) =>
+          tx.booking.findMany({
+            ...args,
+            where: { studentId, schoolId },
+            include: { attendees: true, class: { select: { title: true, startDate: true, endDate: true } } },
+          }),
+        cursor,
+        limit,
+      ),
+    );
+    return {
+      ...page,
+      items: page.items.map((b) => {
+        const { class: cls, ...rest } = b;
+        return { ...rest, classTitle: cls.title, classStartDate: cls.startDate, classEndDate: cls.endDate };
+      }),
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------

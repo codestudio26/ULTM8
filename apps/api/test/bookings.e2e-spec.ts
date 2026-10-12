@@ -1363,4 +1363,78 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     const asOutsider = await withUser(outsider.id, (tx) => tx.booking.findMany({ where: { schoolId: school.id } }));
     expect(asOutsider).toHaveLength(0);
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /students/:id/bookings (v1.2 backend backlog — Student Detail's
+  // "Upcoming Booking") — a real per-Student, School-scoped Staff read.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /students/:id/bookings', () => {
+    it('Staff (School Owner) reads this Student\'s own Bookings at this School, with the Class title/dates joined on', async () => {
+      // A dedicated Class fixture, not classBasic — studentA already holds a
+      // Booking against classBasic from earlier tests in this suite, and
+      // Booking's own (studentId, classId) uniqueness would turn a second
+      // direct-insert attempt there into an unrelated 500, not a clean fixture.
+      const future = new Date(Date.now() + 24 * 3_600_000);
+      const classForStudentBookingsRead = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school.id, title: 'Student Bookings Read Fixture', startDate: future, endDate: new Date(future.getTime() + 3_600_000) },
+      });
+      const membership = await mkActiveMembership(studentA.id, subscriptionPlanId, null);
+      const booking = await superuser.booking.create({
+        data: { id: randomUUID(), studentId: studentA.id, classId: classForStudentBookingsRead.id, schoolId: school.id, sourceMembershipId: membership.id, status: 'UPCOMING' },
+      });
+      bookingIds.push(booking.id);
+
+      try {
+        const res = await request(app.getHttpServer())
+          .get(`/v1/students/${studentA.id}/bookings`)
+          .query({ schoolId: school.id })
+          .set('Authorization', `Bearer ${tokenOwner}`);
+        expect(res.status).toBe(200);
+        const row = res.body.items.find((b: { id: string }) => b.id === booking.id);
+        expect(row).toBeDefined();
+        expect(row.classTitle).toBe('Student Bookings Read Fixture');
+        expect(typeof row.classStartDate).toBe('string');
+        expect(row.status).toBe('UPCOMING');
+        // Another Student's own Booking at the same School must not leak in.
+        expect(res.body.items.some((b: { studentId: string }) => b.studentId === studentB.id)).toBe(false);
+      } finally {
+        // Booking must go first — Booking_classId_fkey would otherwise reject
+        // deleting the Class while this fixture Booking still references it.
+        await superuser.booking.delete({ where: { id: booking.id } });
+        await superuser.class.delete({ where: { id: classForStudentBookingsRead.id } });
+      }
+    });
+
+    it('Branch Staff (not just the Owner) may also read it — the same broad Staff-read policy findAllForClass relies on', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${tokenBranchStaff}`);
+      expect(res.status).toBe(200);
+    });
+
+    it('a Student (not Staff) cannot read it through this endpoint — 403', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('an outsider with no RoleGrant at this School cannot read it — 403', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .query({ schoolId: school.id })
+        .set('Authorization', `Bearer ${tokenOutsider}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('requires the schoolId query param — 400 when omitted', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/students/${studentA.id}/bookings`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(400);
+    });
+  });
 });

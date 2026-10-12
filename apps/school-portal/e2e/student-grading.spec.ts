@@ -1,5 +1,6 @@
+import { randomUUID } from 'crypto';
 import { expect, test, type Page } from '@playwright/test';
-import { cleanup, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Student grading panel (roadmap Phase 4, item 2), against the real API:
@@ -140,4 +141,60 @@ test('works with the keyboard only', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(dialog).toBeHidden();
   await expect(card.getByText('Note: Keyboard grade')).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// v1.2 backend backlog — Student Detail's "Upcoming Booking" and
+// "Revoke Enrollment", both wired onto this same real page (no separate
+// mockup-matching Student Detail page exists in this app).
+// ---------------------------------------------------------------------------
+
+test('shows the student\'s upcoming Booking', async ({ page }) => {
+  const cls = await db.class.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      title: 'Open Mat',
+      startDate: new Date(Date.now() + 24 * 3_600_000),
+      endDate: new Date(Date.now() + 25 * 3_600_000),
+    },
+  });
+  const plan = await db.membershipPlan.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 },
+  });
+  const membership = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'RECURRING' },
+  });
+  const booking = await db.booking.create({
+    data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: membership.id, status: 'UPCOMING' },
+  });
+
+  try {
+    await page.goto(`/students/${s.student.id}`);
+    const panel = page.getByRole('heading', { name: 'Upcoming Booking' }).locator('..');
+    await expect(panel.getByText('Open Mat')).toBeVisible();
+  } finally {
+    await db.booking.delete({ where: { id: booking.id } });
+    await db.membership.delete({ where: { id: membership.id } });
+    await db.membershipPlan.delete({ where: { id: plan.id } });
+    await db.class.delete({ where: { id: cls.id } });
+  }
+});
+
+test('shows "No upcoming Booking" when the student has none', async ({ page }) => {
+  await page.goto(`/students/${s.newStudent.id}`);
+  const panel = page.getByRole('heading', { name: 'Upcoming Booking' }).locator('..');
+  await expect(panel.getByText('No upcoming Booking.')).toBeVisible();
+});
+
+test('the owner revokes a student\'s enrollment', async ({ page }) => {
+  await page.goto(`/students/${s.newStudent.id}`);
+  await page.getByRole('button', { name: 'Revoke enrollment' }).click();
+  const dialog = page.getByRole('dialog', { name: `Revoke ${s.newStudent.name}'s enrollment?` });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Revoke' }).click();
+
+  await expect(page).toHaveURL(/\/students$/);
+  const grant = await db.roleGrant.findFirstOrThrow({ where: { userId: s.newStudent.id, schoolId: s.schoolId, role: 'STUDENT' } });
+  expect(grant.revokedAt).not.toBeNull();
 });

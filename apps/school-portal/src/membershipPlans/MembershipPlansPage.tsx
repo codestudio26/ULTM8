@@ -5,7 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useClasses } from '../classes/classQueries';
 import { formatMoney } from '../lib/money';
-import { useMembershipPlans, useUpdateMembershipPlanVisibility, type MembershipPlanResponse } from './membershipPlanQueries';
+import { useActiveMemberTotal, useMembershipPlans, useUpdateMembershipPlanVisibility, type MembershipPlanResponse } from './membershipPlanQueries';
 
 const TYPE_LABELS: Record<string, string> = {
   SUBSCRIPTION: 'Subscription',
@@ -52,6 +52,10 @@ export function MembershipPlansPage() {
   const { data: classData } = useClasses(schoolId);
   const toggleVisibility = useUpdateMembershipPlanVisibility(schoolId ?? '');
   const [toggleError, setToggleError] = useState<string | null>(null);
+  // Hoisted above the early returns below (Rules of Hooks — every hook here
+  // must run on every render, loading/error states included) — computed from
+  // `data` directly rather than the post-guard `plans` local below.
+  const activeMembers = useActiveMemberTotal((data?.items ?? []).map((p) => p.id));
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
@@ -70,20 +74,18 @@ export function MembershipPlansPage() {
       />
 
       {/* Stats ribbon (Decision — see POST-SPEC-55-DECISION-LOG.md): Total/Visible/
-          Hidden are real, computed here from the same `plans` list rendered below —
-          nothing fabricated. Active members is a proposed placeholder: no per-plan
-          membership-count endpoint exists anywhere in MembershipsController (only
-          Student-scoped findMyMemberships/getMembershipStatus) — logged as a backend
-          backlog item rather than guessed at. */}
+          Hidden are real, computed here from the same `plans` list rendered below.
+          Active members (v1.2 backend backlog) is now real too — summed across every
+          plan's own GET /membership-plans/{id}/active-count (see
+          useActiveMemberTotal's own header comment for why it's a fan-out sum, not a
+          single bulk endpoint). */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
         <StatTile label="Total plans" value={plans.length} />
         <StatTile label="Visible" value={visibleCount} />
         <StatTile label="Hidden" value={plans.length - visibleCount} />
         <StatTile
           label="Active members"
-          value="—"
-          proposed
-          note="Not available yet — no per-plan membership-count endpoint exists on the backend (see docs/v1.2-backend-backlog.md)."
+          value={activeMembers.isLoading ? <Spinner /> : activeMembers.error ? '—' : activeMembers.total}
         />
       </div>
 

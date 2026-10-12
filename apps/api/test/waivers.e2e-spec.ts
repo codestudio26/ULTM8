@@ -525,4 +525,84 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
     const asStudentASelf = await withUser(studentA.id, (tx) => tx.waiverSignature.findMany({ where: { studentId: studentA.id } }));
     expect(asStudentASelf.length).toBeGreaterThan(0);
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /schools/:schoolId/waivers/:id/signatures (v1.2 backend backlog — the
+  // Waivers page's own "Signatures" panel) — School-Owner-gated, same gate as
+  // Waiver CRUD. Builds ONLY what the backlog says this already supports
+  // (who HAS signed, with what status) — no roster diff, deliberately.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /schools/:schoolId/waivers/:id/signatures', () => {
+    it('School Owner sees every signer\'s name/signed date/status for this Waiver', async () => {
+      const waiverRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/waivers`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ title: 'Signatures Panel Waiver', body: 'text' });
+      expect(waiverRes.status).toBe(201);
+      const signaturesWaiverId = waiverRes.body.id as string;
+      waiverIds.push(signaturesWaiverId);
+
+      const signA = await request(app.getHttpServer())
+        .post(`/v1/waivers/${signaturesWaiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ signerFullName: 'Student A Panel', signatureText: 'Student A Panel' });
+      expect(signA.status).toBe(201);
+      signatureIds.push(signA.body.id);
+
+      const signB = await request(app.getHttpServer())
+        .post(`/v1/waivers/${signaturesWaiverId}/sign`)
+        .set('Authorization', `Bearer ${tokenStudentB}`)
+        .send({ signerFullName: 'Student B Panel', signatureText: 'Student B Panel' });
+      expect(signB.status).toBe(201);
+      signatureIds.push(signB.body.id);
+
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/waivers/${signaturesWaiverId}/signatures`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body.items).toHaveLength(2);
+      const names = res.body.items.map((s: { signerFullName: string }) => s.signerFullName).sort();
+      expect(names).toEqual(['Student A Panel', 'Student B Panel']);
+      for (const item of res.body.items) {
+        expect(item.status).toBe('SIGNED');
+        expect(typeof item.signedDate).toBe('string');
+        // Never the raw R2 key — see toSignatureResponse's own header comment.
+        expect(item).not.toHaveProperty('signatureImageKey');
+      }
+    });
+
+    it('a Student cannot read the Signatures panel — School Owner only', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${school.id}/waivers/${waiverIds[0]}/signatures`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('cannot read another tenant\'s Waiver signatures', async () => {
+      const otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Waivers HTTP Other School' } });
+      const otherOwner = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `waivers-http-other-owner-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'OtherOwner',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+        },
+      });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: otherOwner.id, schoolId: otherSchool.id } });
+      const tokenOtherOwner = signAccessToken(otherOwner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: otherSchool.id, branchId: null }]);
+      try {
+        const res = await request(app.getHttpServer())
+          .get(`/v1/schools/${otherSchool.id}/waivers/${waiverIds[0]}/signatures`)
+          .set('Authorization', `Bearer ${tokenOtherOwner}`);
+        expect(res.status).toBe(404);
+      } finally {
+        await superuser.roleGrant.deleteMany({ where: { schoolId: otherSchool.id } });
+        await superuser.school.delete({ where: { id: otherSchool.id } });
+      }
+    });
+  });
 });
