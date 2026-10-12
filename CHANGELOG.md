@@ -15,6 +15,30 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **`StudentUpdate.dc.html` — a Staff member can now edit a Student's profile
+  on their behalf** (`docs/v1.2-backend-backlog.md`): previously a proposed
+  new capability, not a build-out of anything already wired — the only
+  profile-edit endpoint anywhere was the self-service-only `PATCH /users/me`.
+  New `PATCH /schools/:schoolId/students/:studentId/profile` (Staff-only —
+  School Owner/Manager, Branch Staff, or Instructor at that School;
+  `TenantAuthorizationService.assertStaffAtSchool`, the same gate
+  `BookingsService.findAllForStudent`/`getWeeklySummary` already use for a
+  Staff member acting on a specific Student), with a new, additive RLS
+  policy on `User` authorizing the write (the pre-existing self-only policy
+  never covered a caller writing a different User's row). New
+  `UpdateStudentProfileDto` reuses `UpdateUserDto` outright — same field set,
+  same exclusion of `email`/`phone` (unique login/OTP identifiers Staff must
+  not be able to redirect on a Student's behalf). New dedicated
+  `StudentUpdatePage.tsx` (`/students/:id/edit`, not a Modal — mirrors
+  Decision 231's Branch-settings-page precedent, since this is its own named
+  screen in the design canvas, not a plain confirmation dialog), reached via
+  a new "Edit profile" action on the real Student Detail screen
+  (`StudentGradingPage.tsx`). Known limitation, disclosed rather than
+  hidden: there is still no single-Student detail read endpoint, so only
+  `firstName`/`surname` (known from the roster) are pre-filled — every other
+  field starts blank and is sent only if typed, so this form can set a value
+  but can't yet clear one it has no way to see. `packages/api-client`
+  regenerated.
 - **Notifications — a true, caller-wide Total/Unread stats ribbon**
   (`docs/v1.2-backend-backlog.md`, closing the "True total/unread counts" gap
   from Decision 204's Concept 5 finding): new `GET /notifications/me/counts`

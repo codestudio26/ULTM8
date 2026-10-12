@@ -58,6 +58,29 @@ export class UsersService {
    * (`"id" = current_setting('app.current_user_id', true)`) is reached.
    */
   async updateMe(callerId: string, dto: UpdateUserDto) {
+    return this.updateProfileFor(callerId, callerId, dto);
+  }
+
+  /**
+   * Shared by `updateMe` (targetUserId === callerId) and, as of the v1.2 backend
+   * backlog's Student Detail "Edit" gap, `SchoolsService.updateStudentProfile`
+   * (targetUserId === the Student being edited, callerId === the Staff member acting
+   * on their behalf). Deliberately the SAME validation and the SAME field set for
+   * both callers — `UpdateStudentProfileDto` reuses `UpdateUserDto` outright (see its
+   * own header comment) rather than this method special-casing who's calling it.
+   *
+   * Still routed through `withTenantContext(callerId, ...)`, never a different
+   * connection identity, so the caller's own RLS context — not the target's — governs
+   * every query here. For the Staff-on-behalf-of case this relies on the narrow,
+   * additive `user_staff_update_student_profile` RLS policy (see that migration's own
+   * comment) alongside the pre-existing self-only `user_self_or_shared_school` WITH
+   * CHECK — SchoolsService.updateStudentProfile re-derives the same
+   * Staff-at-this-School + active-Student-at-this-School facts in the app layer
+   * BEFORE this is ever reached (TenantAuthorizationService.assertStaffAtSchool + its
+   * own active-STUDENT-RoleGrant check), per this project's defense-in-depth
+   * convention — this method does not re-check authorization itself.
+   */
+  async updateProfileFor(callerId: string, targetUserId: string, dto: UpdateUserDto) {
     // firstName/surname/dateOfBirth are NOT NULL on User, but `@IsOptional()` on
     // UpdateUserDto only skips validation for `undefined`, not an explicit `null`
     // (class-validator's own IsOptional behavior) — so `{"firstName": null}` would
@@ -87,7 +110,7 @@ export class UsersService {
     if (dto.username) {
       const duplicate = await this.prismaApp.withTenantContext(callerId, (tx) =>
         tx.user.findFirst({
-          where: { username: dto.username, id: { not: callerId } },
+          where: { username: dto.username, id: { not: targetUserId } },
           select: { id: true },
         }),
       );
@@ -98,7 +121,7 @@ export class UsersService {
 
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.user.update({
-        where: { id: callerId },
+        where: { id: targetUserId },
         data: {
           firstName: dto.firstName,
           surname: dto.surname,

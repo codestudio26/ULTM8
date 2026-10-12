@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test, type Page } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Student grading panel (roadmap Phase 4, item 2), against the real API:
@@ -197,4 +197,52 @@ test('the owner revokes a student\'s enrollment', async ({ page }) => {
   await expect(page).toHaveURL(/\/students$/);
   const grant = await db.roleGrant.findFirstOrThrow({ where: { userId: s.newStudent.id, schoolId: s.schoolId, role: 'STUDENT' } });
   expect(grant.revokedAt).not.toBeNull();
+});
+
+// ---------------------------------------------------------------------------
+// v1.2 backend backlog — `StudentUpdate.dc.html`: a Staff member editing a
+// Student's own profile on their behalf, on its own dedicated page (reached
+// from this page's "Edit profile" button), not a Modal over this page.
+// ---------------------------------------------------------------------------
+
+test('the owner edits a student\'s profile on their behalf, on the dedicated Update page', async ({ page }) => {
+  await page.goto(`/students/${s.newStudent.id}`);
+  await page.getByRole('button', { name: 'Edit profile' }).click();
+  await expect(page).toHaveURL(new RegExp(`/students/${s.newStudent.id}/edit$`));
+  await expect(page.getByRole('heading', { level: 1, name: `Edit ${s.newStudent.name}'s profile` })).toBeVisible();
+  // Pre-filled from the roster's own known fields.
+  await expect(page.getByLabel('First name')).toHaveValue('Nia');
+  await expect(page.getByLabel('Surname')).toHaveValue('Park');
+  // No email/phone field exists on this form at all.
+  await expect(page.getByLabel('Email')).toHaveCount(0);
+  await expect(page.getByLabel('Phone')).toHaveCount(0);
+
+  await page.getByLabel('Surname').fill('Park-Smith');
+  await page.getByLabel('Address').fill('221B Dojo Lane');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Profile saved.')).toBeVisible();
+
+  await page.getByRole('button', { name: /^Back to/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/students/${s.newStudent.id}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Nia Park-Smith' })).toBeVisible();
+  const user = await db.user.findUniqueOrThrow({ where: { id: s.newStudent.id } });
+  expect(user.surname).toBe('Park-Smith');
+  expect(user.address).toBe('221B Dojo Lane');
+});
+
+test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ page }) => {
+  // Plain INSTRUCTOR RoleGrant, no grading permission at all — Edit profile is
+  // gated by the backend's assertStaffAtSchool (any Staff role), not by
+  // per-discipline grading permissions, so it must still show.
+  const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await signIn(page, coach.token);
+  await page.goto(`/students/${s.student.id}`);
+  await page.getByRole('button', { name: 'Edit profile' }).click();
+  await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}/edit$`));
+  await page.getByLabel('Gender').fill('Non-binary');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Profile saved.')).toBeVisible();
+
+  const user = await db.user.findUniqueOrThrow({ where: { id: s.student.id } });
+  expect(user.gender).toBe('Non-binary');
 });

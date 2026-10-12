@@ -14,6 +14,7 @@ import { CoachInviteLinksController, CoachInvitesController } from './coach-invi
 import { CoachInvitesService } from './coach-invites/coach-invites.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { StripeClientService } from '../payments/stripe-client.service';
+import { UsersModule } from '../users/users.module';
 
 /**
  * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
@@ -58,9 +59,14 @@ import { StripeClientService } from '../payments/stripe-client.service';
  * PaymentsModule now uses FranchisesService.findOne() the same way it already used
  * SchoolsService.findOne() (Phase 16 closes the "no FranchisesService.findOne() exists
  * yet" gap PaymentsService.createForFranchise/findForFranchise both flagged in Phase 8).
+ *
+ * Imports UsersModule (v1.2 backend backlog's Student Detail "Edit" gap) so
+ * SchoolsService.updateStudentProfile() can call UsersService.updateProfileFor() —
+ * one-directional, confirmed the same way as AuthModule/GuardiansModule above:
+ * UsersModule imports nothing from tenants.
  */
 @Module({
-  imports: [AuthModule, GuardiansModule, NotificationsModule],
+  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
   providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService],

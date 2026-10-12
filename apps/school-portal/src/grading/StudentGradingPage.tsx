@@ -114,11 +114,26 @@ export function StudentGradingPage() {
         title={studentName}
         subtitle="Ranks, progress toward the next grade, skills and history, for each style at your School."
         actions={
-          my.isOwner && activeStudentGrant ? (
-            <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
-              Revoke enrollment
-            </Button>
-          ) : undefined
+          <>
+            {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — any Staff
+              * reaching this page (School Owner/Manager, Branch Staff, or
+              * Instructor) may use it, matching the backend's own
+              * assertStaffAtSchool gate — not Owner-only like Revoke
+              * enrollment below, which the backend separately restricts via
+              * assertSchoolOwner. A dedicated page (StudentUpdatePage.tsx at
+              * /students/:id/edit), not a Modal — see that page's own header
+              * comment for why. */}
+            {student ? (
+              <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
+                Edit profile
+              </Button>
+            ) : null}
+            {my.isOwner && activeStudentGrant ? (
+              <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
+                Revoke enrollment
+              </Button>
+            ) : null}
+          </>
         }
       />
 

@@ -14,6 +14,8 @@ import { JoinFranchiseDto } from './dto/join-franchise.dto';
 import { StudentListResponseDto } from './dto/student-summary-response.dto';
 import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
+import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
+import { UserResponseDto } from '../../users/dto/user-response.dto';
 
 // Create / read / update only — no delete endpoint (general tenant offboarding is
 // [UNRESOLVED], ultm8-app-publishing §4 — not ultm8-domain-rules §2, which is about
@@ -70,6 +72,20 @@ export class SchoolsController {
     @Body() dto: SetHomeBranchDto,
   ) {
     return this.schoolsService.setStudentHomeBranch(user.sub, id, studentId, dto);
+  }
+
+  /** Staff (School Owner/Manager, Branch Staff, or Instructor) editing a Student's
+   * own profile on their behalf — see SchoolsService.updateStudentProfile's own
+   * header comment for the full authorization/field-scope account. */
+  @ApiOkResponse({ type: UserResponseDto })
+  @Patch(':id/students/:studentId/profile')
+  updateStudentProfile(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Body() dto: UpdateStudentProfileDto,
+  ) {
+    return this.schoolsService.updateStudentProfile(user.sub, id, studentId, dto);
   }
 
   @ApiCreatedResponse({ type: JoinSchoolResponseDto })

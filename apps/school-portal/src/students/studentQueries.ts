@@ -5,6 +5,8 @@ import { apiClient } from '../api';
 
 export type StudentSummary = components['schemas']['StudentSummaryResponseDto'];
 export type JoinSchoolInput = components['schemas']['JoinSchoolDto'];
+export type UpdateStudentProfileInput = components['schemas']['UpdateStudentProfileDto'];
+export type StudentProfileResponse = components['schemas']['UserResponseDto'];
 // GET /schools/:id/students' query params are inlined onto the operation by
 // NestJS Swagger (a query DTO's own properties, not a referenced schema component
 // — confirmed by grepping the generated schema.d.ts for a few other query DTOs,
@@ -47,6 +49,31 @@ export function useInviteStudent() {
       unwrap(apiClient.POST('/v1/schools/{id}/join', { params: { path: { id: schoolId } }, body })),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['students', variables.schoolId] });
+    },
+  });
+}
+
+/**
+ * v1.2 backend backlog — Student Detail "Edit" gap: a Staff member editing a
+ * Student's own profile on their behalf (`PATCH /schools/{id}/students/{studentId}/profile`,
+ * SchoolsController.updateStudentProfile). Invalidates `['students', schoolId]`
+ * (the roster — StudentsPage and this page's own `useStudents` call both key off
+ * it, so a renamed Student shows up to date immediately everywhere) rather than
+ * patching the cache in place, same convention useRevokeRoleGrant above already
+ * uses for its own invalidation.
+ */
+export function useUpdateStudentProfile(schoolId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ studentId, body }: { studentId: string; body: UpdateStudentProfileInput }) =>
+      unwrap(
+        apiClient.PATCH('/v1/schools/{id}/students/{studentId}/profile', {
+          params: { path: { id: schoolId!, studentId } },
+          body,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students', schoolId] });
     },
   });
 }

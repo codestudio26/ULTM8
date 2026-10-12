@@ -26,6 +26,7 @@ import { InstructorDetailPage } from './instructors/InstructorDetailPage';
 import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
 import { StudentsPage } from './students/StudentsPage';
 import { InviteStudentPage } from './students/InviteStudentPage';
+import { StudentUpdatePage } from './students/StudentUpdatePage';
 import { StudentGradingPage } from './grading/StudentGradingPage';
 import { GradingBoardPage } from './grading/GradingBoardPage';
 import { GradingPermissionsPage } from './grading/GradingPermissionsPage';
@@ -240,6 +241,19 @@ export function App() {
           <RequireAuth>
             <Shell>
               <StudentGradingPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — a dedicated page, not
+        * a Modal over StudentGradingPage; see StudentUpdatePage.tsx's own
+        * header comment for why. */}
+      <Route
+        path="/students/:id/edit"
+        element={
+          <RequireAuth>
+            <Shell>
+              <StudentUpdatePage />
             </Shell>
           </RequireAuth>
         }

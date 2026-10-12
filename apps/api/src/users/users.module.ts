@@ -11,9 +11,16 @@ import { UsersService } from './users.service';
  * (imported directly by the controller, same as every other module) — unlike every
  * other phase so far, this module needs no TenantsModule import: everything it does is
  * scoped to the caller's own User row, with no School/Branch/RoleGrant lookups.
+ *
+ * v1.2 backend backlog's Student Detail "Edit" gap: exports UsersService so
+ * TenantsModule can import it and have SchoolsService call
+ * UsersService.updateProfileFor() on a Staff member's behalf, reusing the exact same
+ * field-set/validation UpdateUserDto already established rather than duplicating it —
+ * still one-directional (UsersModule still imports nothing from tenants).
  */
 @Module({
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}
