@@ -23,6 +23,9 @@ const SELF_PROFILE_SELECT = {
   currency: true,
   address: true,
   profilePhotoUrl: true,
+  weightCategory: true,
+  kimonoSize: true,
+  beltSize: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -133,6 +136,13 @@ export class UsersService {
           currency: dto.currency,
           address: dto.address,
           profilePhotoUrl: dto.profilePhotoUrl,
+          // Decision 220/246 — plain pass-through, same as gender/nationality/
+          // language/currency/address above: `undefined` (omitted) leaves the
+          // existing value alone, an explicit `null` clears it (these are nullable
+          // on `User`), never special-cased like firstName/surname/dateOfBirth.
+          weightCategory: dto.weightCategory,
+          kimonoSize: dto.kimonoSize,
+          beltSize: dto.beltSize,
         },
         select: SELF_PROFILE_SELECT,
       }),

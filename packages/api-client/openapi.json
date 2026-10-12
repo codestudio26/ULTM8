@@ -9781,6 +9781,18 @@
           },
           "profilePhotoUrl": {
             "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           }
         }
       },
@@ -9837,6 +9849,21 @@
           "profilePhotoUrl": {
             "type": "string",
             "nullable": true
+          },
+          "weightCategory": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           },
           "createdAt": {
             "type": "string"
@@ -11383,6 +11410,18 @@
           },
           "profilePhotoUrl": {
             "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           }
         }
       },
@@ -13482,7 +13521,7 @@
           },
           "useHostedCheckout": {
             "type": "boolean",
-            "description": "Collect a fresh card via a hosted Stripe Checkout Session (Decision 241) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard."
+            "description": "Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard."
           }
         }
       },
@@ -13563,7 +13602,7 @@
           },
           "checkoutUrl": {
             "type": "string",
-            "description": "Hosted Stripe Checkout Session URL (Decision 241, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment."
+            "description": "Hosted Stripe Checkout Session URL (Decision 243, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment."
           },
           "membership": {
             "description": "Present only when outcome is active.",
@@ -17667,7 +17706,7 @@
           },
           "franchiseId": {
             "type": "string",
-            "description": "Required for entityType FRANCHISE."
+            "description": "For entityType FRANCHISE editing an EXISTING Franchise, this is required and must equal entityId. Omit both when creating a brand-new Franchise (mirrors POST /franchises itself, which needs no prior RoleGrant either)."
           },
           "entityId": {
             "type": "string",

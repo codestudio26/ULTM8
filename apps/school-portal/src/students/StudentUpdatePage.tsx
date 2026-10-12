@@ -66,6 +66,9 @@ export function StudentUpdatePage() {
     currency: string;
     address: string;
     profilePhotoUrl: string;
+    weightCategory: string;
+    kimonoSize: string;
+    beltSize: string;
   } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -87,6 +90,9 @@ export function StudentUpdatePage() {
       currency: '',
       address: '',
       profilePhotoUrl: '',
+      weightCategory: '',
+      kimonoSize: '',
+      beltSize: '',
     });
   }
 
@@ -121,6 +127,9 @@ export function StudentUpdatePage() {
           currency: safeForm.currency || undefined,
           address: safeForm.address || undefined,
           profilePhotoUrl: safeForm.profilePhotoUrl || undefined,
+          weightCategory: safeForm.weightCategory || undefined,
+          kimonoSize: safeForm.kimonoSize || undefined,
+          beltSize: safeForm.beltSize || undefined,
         },
       });
       setSaved(true);
@@ -182,6 +191,15 @@ export function StudentUpdatePage() {
           </Field>
           <Field label="Address" htmlFor="student-update-address" hint="Leave blank to keep unchanged.">
             <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f!, address: e.target.value }))} />
+          </Field>
+          <Field label="Weight category" htmlFor="student-update-weight-category" hint="Free text — no confirmed unit/scale (Decision 220/246). Leave blank to keep unchanged.">
+            <TextField value={form.weightCategory} onChange={(e) => setForm((f) => ({ ...f!, weightCategory: e.target.value }))} />
+          </Field>
+          <Field label="Kimono size" htmlFor="student-update-kimono-size" hint="Free text — no confirmed size chart (Decision 220/246). Leave blank to keep unchanged.">
+            <TextField value={form.kimonoSize} onChange={(e) => setForm((f) => ({ ...f!, kimonoSize: e.target.value }))} />
+          </Field>
+          <Field label="Belt size" htmlFor="student-update-belt-size" hint="Free text — no confirmed size chart (Decision 220/246). Leave blank to keep unchanged.">
+            <TextField value={form.beltSize} onChange={(e) => setForm((f) => ({ ...f!, beltSize: e.target.value }))} />
           </Field>
           <Field label="Photo" htmlFor="student-update-photo" hint="Leave unchanged to keep the existing photo.">
             <PhotoUploadField

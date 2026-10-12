@@ -3182,6 +3182,12 @@ export interface components {
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string;
         };
         UserResponseDto: {
             id: string;
@@ -3199,6 +3205,12 @@ export interface components {
             currency?: string | null;
             address?: string | null;
             profilePhotoUrl?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3630,6 +3642,12 @@ export interface components {
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */
@@ -5504,7 +5522,7 @@ export interface components {
             contentType: "image/png" | "image/jpeg" | "image/webp";
             /** @description Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student. */
             schoolId?: string;
-            /** @description Required for entityType FRANCHISE. */
+            /** @description For entityType FRANCHISE editing an EXISTING Franchise, this is required and must equal entityId. Omit both when creating a brand-new Franchise (mirrors POST /franchises itself, which needs no prior RoleGrant either). */
             franchiseId?: string;
             /** @description The existing Instructor/Branch/Class/Franchise row's own id, or the target Student's User id for entityType USER on-behalf-of. Omit when creating a brand-new entity (its id does not exist yet) or editing your own User row. */
             entityId?: string;

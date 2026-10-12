@@ -3212,3 +3212,22 @@ User, choosing "Keep as permanent record, no delete" over adding a real `DELETE 
 
 User, choosing "Scope it as a technical design exercise" over deferring entirely or holding for legal counsel first, 12 Oct 2026.
 
+---
+
+## Decision 246 — Student Measurements built: three real nullable `String` fields on `User`, free text, wired into both existing profile-edit surfaces
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** Decision 220's own "implementation's call which [model]" — the model/shape choice Decision 220 deliberately left open when approving Student Detail's Measurements fields (Weight Category, Kimono Size, Belt Size) for build.
+
+1. **Model placement: `User`, not `StudentRank`.** `weightCategory`, `kimonoSize`, `beltSize` — three new nullable `String?` columns, camelCase matching every other `User` field's convention. Person-level physical attributes that don't vary by Discipline, so `User` (ULTM8's shared base identity) is the right home; `StudentRank` is per-Student-per-Discipline grading data and would be the wrong home — a Student's kimono size doesn't change between their Judo and Karate enrollments.
+2. **Shape: free-text `String?`, not an enum or a typed unit.** Nothing in Spec 55, `skills/ultm8-domain-rules/SKILL.md`, or this schema grounds any enum, unit system, or canonical code list for any of the three — exactly the gap `docs/v1.2-backend-backlog.md` had flagged (Fully Proposed). Free text is a developer-level presentation choice, not an invented business rule, same convention already used elsewhere in this codebase for an ungrounded field shape (e.g. Decision 222's Snooze shape) and the same shape this model's own existing `gender`/`nationality`/`language`/`currency` columns already use for the identical reason. `@MaxLength(50)` on all three — a reasonable bound, not a confirmed limit.
+3. **Both existing Student profile-edit surfaces wired, via the SAME change.** `UpdateUserDto` gains all three fields (`@IsOptional() @IsString() @MaxLength(50)`), and `UserResponseDto` gains them as the read side. Because `UpdateStudentProfileDto` (the Staff-on-behalf-of-a-Student DTO, `PATCH /schools/:id/students/:studentId/profile`) already `extends UpdateUserDto` outright, and both that endpoint and the Student's own self-service `PATCH /users/me` already share `UsersService.updateProfileFor()`, adding the three fields to `UpdateUserDto` once wires BOTH surfaces — no second DTO, no second service method, no drift risk between them. This is the same reasoning `UpdateStudentProfileDto`'s own header comment already gives for reusing `UpdateUserDto` wholesale instead of hand-copying a field list.
+4. **Frontend:** `StudentUpdatePage.tsx` (`apps/school-portal`, Staff-on-behalf-of) and `ProfileScreen.tsx` (`apps/student`, the Student's own self-service profile editor) both gain the three fields as plain text inputs. Wiring the self-service surface too (not just the Staff one) was a judgment call, not mandated by Decision 220's wording — made because a Student editing their own kimono/belt size on their own profile is a practical, everyday edit, no different in kind from the gender/nationality/address fields that screen already lets them change themselves.
+5. **Migration** `20261112000000_student_measurements` — three nullable `TEXT` columns added to `"User"`, no GRANT/RLS change needed (a table-level grant already covers `User`; adding nullable columns needs no new grant, same reasoning `20261107000000_branch_settings_fields` already gives for the same situation on `Branch`).
+6. **`packages/api-client` regenerated** from the live OpenAPI export. New e2e coverage added to `users.e2e-spec.ts` (self-service) and `student-profile-update.e2e-spec.ts` (Staff-on-behalf-of): each field round-trips set → read back → cleared with an explicit `null`, a `@MaxLength(50)` rejection case, and an explicit check that cross-tenant isolation is unaffected (plain `User` columns under the existing RLS policies — no new cross-tenant surface).
+7. **`docs/v1.2-backend-backlog.md`'s Measurements entry** updated from "Fully Proposed" to DONE, dated.
+
+### Recorded by
+
+Developer, exercising the "implementation's call" latitude Decision 220 explicitly granted for the model/shape choice; the choice disclosed here (free text on `User`, both edit surfaces wired) rather than made silently, per this project's own "flag an ungrounded gap, don't fill it silently" rule, 12 Oct 2026.
+
