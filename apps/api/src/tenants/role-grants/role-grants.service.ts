@@ -5,17 +5,23 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { CoachInvitesService } from '../coach-invites/coach-invites.service';
+import { SchoolsService } from '../schools/schools.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
+import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
+
+const BCRYPT_ROUNDS = 12;
 
 /** Display label per GrantableRoleDto value, for the "you've been granted..."
  * notification email's subject/body — this endpoint only ever creates these two
@@ -57,6 +63,7 @@ export class RoleGrantsService {
     private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly coachInvites: CoachInvitesService,
+    private readonly schoolsService: SchoolsService,
     private readonly delivery: NotificationDeliveryService,
   ) {}
 
@@ -210,6 +217,123 @@ export class RoleGrantsService {
     }
 
     return { ...grant, emailSent };
+  }
+
+  /** Strict variant of portalBaseUrl() above, for createStaffManually() only — mirrors
+   * InstructorsService's own private portalBaseUrl() exactly. Unlike create()'s
+   * "you've been granted a role" notification (which isn't the only way the grantee
+   * learns of their new role — they already have an account and can just log in), a
+   * temp-passcode email from Add Manually genuinely IS the only way the new Staff
+   * member can ever learn their own passcode, so this must fail LOUD and BEFORE
+   * anything is created, not swallowed inside a non-blocking try/catch. */
+  private strictPortalBaseUrl(): string {
+    const url = process.env.PORTAL_BASE_URL?.trim().replace(/\/+$/, '');
+    if (!url) throw new ServiceUnavailableException('Staff "Add Manually" is not set up yet: PORTAL_BASE_URL is not configured.');
+    return url;
+  }
+
+  /**
+   * POST /schools/:schoolId/role-grants/add-manually (Decision 246) — Staff "Add
+   * Manually", closing the exact gap Decision 237's own "What this does NOT resolve"
+   * section flagged: "Whether AccountInvitation... should still exist for Staff's own
+   * identical from-zero-invite gap." The product owner's own direct answer, when asked:
+   * "Yes — same pattern as Instructor: real User+RoleGrant created immediately, temp
+   * passcode emailed, forced change on first login."
+   *
+   * Lives here on RoleGrantsService, not as a new module/controller, because
+   * RoleGrantsService already owns all Staff CRUD (GRANTABLE_ROLES above) — "Staff" is
+   * not a separate Role or profile table the way Instructor is its own table; it IS a
+   * RoleGrant row with role: 'BRANCH_STAFF'. So unlike
+   * InstructorsService.createManually() (User + RoleGrant + a third Instructor profile
+   * row), this method creates only User + RoleGrant — there is no third row to create.
+   *
+   * branchId is REQUIRED outright (CreateStaffManuallyDto's own validation), not
+   * conditional on whether the School has branches the way Instructor's own add-
+   * manually flow is — Branch Staff always needs a branchId, full stop (same rule
+   * create() above already enforces for an existing-user BRANCH_STAFF grant, and the
+   * same thing StaffPage.tsx's own `needsBranch` logic already assumes client-side).
+   *
+   * School Owner/Manager only — same gate create() above already uses (Spec §8.2).
+   */
+  async createStaffManually(callerId: string, schoolId: string, dto: CreateStaffManuallyDto) {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 110 (Phase 56) — a closed School accepts no further writes.
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const email = dto.email.trim().toLowerCase();
+    const baseUrl = this.strictPortalBaseUrl();
+
+    // Branch Staff always belongs to a specific Branch — CreateStaffManuallyDto
+    // already makes branchId required at the validation layer; this just checks it
+    // actually belongs to this School, same as create()'s own branchId check below.
+    await this.tenantAuth.assertBranchBelongsToSchool(callerId, dto.branchId, schoolId);
+
+    // Decision 116's existing-email check, same PrismaAuthService pre-tenant-context
+    // lookup InstructorsService.createManually()/create() below/AuthService.register()
+    // all already use — closes the risk of two divergent paths (Add Manually vs. an
+    // existing account) ever producing two accounts for one person.
+    const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingUser) {
+      throw new ConflictException('An account with this email already exists — use "Invite staff" instead.');
+    }
+
+    const userId = randomUUID();
+    const roleGrantId = randomUUID();
+    const tempPasscode = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const passcodeHash = await bcrypt.hash(tempPasscode, BCRYPT_ROUNDS);
+
+    const grant = await this.prismaApp.withMultiTenantContext(async (tx, setContext) => {
+      // Bootstrap trick (AuthService.register()'s own pattern, reused by
+      // InstructorsService.createManually()/GuardiansService.createMinor()): User's RLS
+      // WITH CHECK only permits inserting a row whose id equals the CURRENT tenant
+      // context, so the new Staff member's User row is created under ITS OWN
+      // (about-to-exist) id.
+      await setContext(userId);
+      await tx.user.create({
+        data: {
+          id: userId,
+          email,
+          firstName: dto.firstName,
+          surname: dto.surname,
+          passcodeHash,
+          mustChangePasscode: true,
+          // phone/dateOfBirth deliberately left null — filled in by the Staff
+          // member themselves after their first login, same as Instructor's own
+          // Add Manually flow.
+        },
+      });
+
+      await setContext(callerId);
+      return tx.roleGrant.create({
+        data: { id: roleGrantId, role: 'BRANCH_STAFF', userId, schoolId, branchId: dto.branchId, grantedById: callerId },
+      });
+    });
+
+    // Same non-blocking-email-failure shape as CoachInvitesService.create()/
+    // InstructorsService.createManually(): creation already succeeded; only the
+    // delivery can fail independently of it.
+    let emailSent = true;
+    try {
+      await this.delivery.sendEmail(
+        email,
+        'Your ULTM8 staff account is ready',
+        [
+          "You've been added as Staff on ULTM8.",
+          '',
+          `Sign in with this email address (${email}) and the temporary passcode below — you'll be asked to choose your own passcode right away.`,
+          '',
+          `Temporary passcode: ${tempPasscode}`,
+          '',
+          `${baseUrl}/login`,
+        ].join('\n'),
+      );
+    } catch (err) {
+      emailSent = false;
+      this.logger.warn(`Staff RoleGrant ${grant.id}: the temp-passcode email could not be sent — ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    return { ...grant, userFirstName: dto.firstName, userSurname: dto.surname, email, emailSent };
   }
 
   /**

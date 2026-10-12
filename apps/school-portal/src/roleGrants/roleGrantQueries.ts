@@ -6,6 +6,8 @@ import { apiClient } from '../api';
 export type RoleGrantResponse = components['schemas']['RoleGrantResponseDto'];
 export type CreateRoleGrantInput = components['schemas']['CreateRoleGrantDto'];
 export type InviteCandidateResponse = components['schemas']['InviteCandidateResponseDto'];
+export type CreateStaffManuallyInput = components['schemas']['CreateStaffManuallyDto'];
+export type CreateStaffManuallyResponse = components['schemas']['CreateStaffManuallyResponseDto'];
 
 /**
  * There is no "list all RoleGrants at my School" endpoint — Phase 2 built
@@ -75,5 +77,22 @@ export function useRevokeRoleGrant() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['roleGrants', variables.targetUserId] });
     },
+  });
+}
+
+/**
+ * POST /schools/{schoolId}/role-grants/add-manually (Decision 246) — Staff "Add
+ * Manually": creates a real User + RoleGrant (role: BRANCH_STAFF) immediately from
+ * just name+email+branchId; the response's `emailSent` flag is non-blocking, same
+ * shape useCreateInstructorManually()'s own InstructorsPage.tsx banner already
+ * treats as a warning, not an error. No query key to invalidate here the way
+ * useCreateInstructorManually() invalidates `['instructors', schoolId]` — there is
+ * no "list my School's staff" query this result would need to refresh (see this
+ * file's own header comment on fetchUserRoleGrants' one-user-at-a-time scope).
+ */
+export function useCreateStaffManually(schoolId: string) {
+  return useMutation({
+    mutationFn: (body: CreateStaffManuallyInput) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/role-grants/add-manually', { params: { path: { schoolId } }, body })),
   });
 }

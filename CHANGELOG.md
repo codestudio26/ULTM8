@@ -15,6 +15,35 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staff "Add Manually"** (Decision 246) — closes the exact gap Decision
+  237's own "What this does NOT resolve" section flagged for Staff's
+  identical from-zero-invite problem: the Staff page's "Invite staff"
+  find-by-email/phone step used to just say "No ULTM8 account found," full
+  stop, with no fallback. Mirrors Decision 237's Instructor "Add Manually"
+  exactly — a real `User` + `RoleGrant` (role: `BRANCH_STAFF`) created
+  immediately from just a name, email, and Branch, no invite/acceptance
+  step; a server-generated temp passcode emailed; forced passcode change on
+  first login (reuses the existing `mustChangePasscode`/
+  `POST /auth/passcode-change/first-login` infrastructure Decision 237
+  already built — untouched here). Since "Staff" is `BRANCH_STAFF` in the
+  `Role` enum, not a separate profile table the way `Instructor` is its own
+  table, this creates only `User` + `RoleGrant` — no third profile row.
+  **api:** new `RoleGrantsService.createStaffManually()` (added to
+  `RoleGrantsService`, which already owns all Staff CRUD, rather than a new
+  module) behind `POST /schools/:schoolId/role-grants/add-manually`,
+  School-Owner-gated, same 20/hour throttle tier as
+  `InstructorsController`'s own add-manually route. New
+  `CreateStaffManuallyDto` — `branchId` is **required outright** here, not
+  conditional on whether the School has branches the way Instructor's own
+  flow is (Branch Staff always needs a Branch). New
+  `CreateStaffManuallyResponseDto` (extends `RoleGrantResponseDto` — the
+  RoleGrant row this creates IS the Staff record — plus `email`/
+  `emailSent`). **school-portal:** new
+  `apps/school-portal/src/roleGrants/AddStaffManuallyModal.tsx`, a second
+  "Add staff manually" entry point on `StaffPage.tsx` beside the existing
+  invite-by-email/phone form, with the same non-blocking `emailSent` banner
+  pattern `InstructorsPage.tsx` already uses. `packages/api-client`
+  regenerated.
 - **Membership purchase with a fresh card, via hosted Stripe Checkout**
   (Decision 243, Track B Slice 4b) — `apps/student`'s "Purchase" button on a
   Stripe-backed membership plan now completes end-to-end instead of showing
