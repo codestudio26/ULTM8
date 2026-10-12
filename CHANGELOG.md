@@ -15,6 +15,49 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Timetable page redesign — Daily/Weekly/Monthly views + real click-to-book**
+  (`docs/v1.2-backend-backlog.md`): `TimetablePage.tsx` was a plain weekday-
+  grouped CRUD grid (Add/Edit a slot only, no booking) — this redesign builds
+  the mockup's three described capabilities for real. **Correction to the
+  backlog doc's own entry:** its "Blocking architectural gap" note describing
+  the `TimetableSlot`↔`Class` relationship as `[UNRESOLVED]` was stale —
+  `skills/ultm8-domain-rules/SKILL.md` §9 has stated this `[CONFIRMED]` since
+  24 Aug 2026 (a bookable `Class` is either materialized ahead of time from an
+  active, recurring `TimetableSlot` via the real, running
+  `class-occurrence-generation` job — 4 weeks ahead, daily cron — or created
+  as an independent one-off; `Class`'s own
+  `@@unique([timetableSlotId, occurrenceDate])` guarantees at most one
+  materialized row per slot+date). There was no remaining architecture
+  question to resolve.
+  - **New backend endpoint:** `GET timetable/:id/occurrence?date=YYYY-MM-DD`
+    (`TimetableController.findOccurrence`/`TimetableService.findOccurrence`),
+    Staff-only (`assertStaffAtSchool`, same gate `BookingsService` already
+    uses), resolving a slot + calendar date to its materialized `Class` via
+    the unique-constraint lookup. A date with nothing materialized yet (beyond
+    the 4-week horizon, or the job hasn't run) is a clean, disclosed 404 —
+    never created on demand (that would re-open the already-resolved
+    "materialize ahead of time vs. on-demand" question) and never an
+    unhandled 500. `packages/api-client` regenerated.
+  - **Frontend:** a new Day/Week/Month range control (independent of the
+    established `ViewToggle` Rows/Grid layout toggle also added here — Rows is
+    the day-grouped agenda list, Grid is a day-columns look with left-border-
+    colored cards) and a "Book" action on every rendered occurrence across all
+    three range modes (agenda cards on Day/Week, dots on Month). The
+    confirmation dialog (`TimetableBookingDialog.tsx`) is wired to the real
+    `GET /schools/:id/students` roster and the real `POST /classes/:id/book`
+    (`BookingsService.bookClass`'s existing Staff-on-behalf-of path, unchanged)
+    — Confirm stays disabled until a Student is selected. A date beyond the
+    generation horizon shows a plain "Not bookable yet" state instead of
+    hiding the Book action or erroring — a disclosed limitation of the 4-week
+    window, not a bug. No mockup was reachable this session (same situation
+    `DashboardPage.tsx` was in) — the three views and the dialog were designed
+    fresh against the backlog doc's own description of what was settled on.
+    Payment is deliberately not collected inline (no other Staff-on-behalf-of
+    booking entry point in this app does either); see the PR description for
+    the disclosed layout judgment calls. New e2e coverage: an apps/api e2e
+    spec for the occurrence endpoint (found/404/cross-School/non-Staff cases)
+    and a Playwright spec for the page (view switching, booking flow, Student
+    gating, the "not bookable yet" state).
 - **Classes page — banner thumbnail and membership-inclusion badge**
   (`docs/v1.2-backend-backlog.md`): `Class.bannerUrl` and
   `Class.membershipInclusion` were already real, confirmed fields
