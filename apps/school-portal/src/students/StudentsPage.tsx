@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
+import { Avatar } from '../lib/Avatar';
 import { useStudents, type StudentRosterStatus, type StudentSummary } from './studentQueries';
 
 /**
@@ -79,7 +80,10 @@ export function StudentsPage() {
               {students.map((s) => (
                 <Card key={s.id}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={32} />
+                      <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link>
+                    </div>
                     <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? 'Active' : 'Inactive'}</Badge>
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{s.email}</p>
@@ -91,6 +95,11 @@ export function StudentsPage() {
             <Table<StudentSummary>
               rows={students}
               columns={[
+                {
+                  key: 'photo',
+                  header: '',
+                  render: (s) => <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={32} />,
+                },
                 { key: 'name', header: 'Name', render: (s) => <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link> },
                 { key: 'email', header: 'Email', render: (s) => s.email },
                 {

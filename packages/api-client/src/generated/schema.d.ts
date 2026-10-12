@@ -3019,6 +3019,7 @@ export interface components {
             firstName: string;
             surname: string;
             email: string;
+            profilePhotoUrl?: string | null;
             enrolledAt: string;
             status: components["schemas"]["StudentStatus"];
         };
