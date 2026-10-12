@@ -28,6 +28,23 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `Avatar` component (`apps/school-portal/src/lib/Avatar.tsx`, already used by
   Instructors) — a real photo when set, an initials monogram fallback
   otherwise. `packages/api-client` regenerated.
+- **Instructors — "Invite to Instructor Role" (existing-user invite, distinct
+  from "Add manually")** (`docs/v1.2-backend-backlog.md`): a School Owner/
+  Manager can now grant the Instructor role to a User who already has a ULTM8
+  account (e.g. as a Student or Guardian), found by exact email/phone match —
+  no new User created, unlike "Add manually". New
+  `apps/school-portal/src/instructors/InviteToInstructorRoleModal.tsx`, a
+  third entry point on `InstructorsPage.tsx` beside "Add manually"/"Add
+  instructor", reusing the existing candidate-lookup endpoint and
+  `POST /users/{userId}/role-grants` (both already real; no new backend
+  endpoint needed — `INSTRUCTOR` was already a grantable role there).
+  `RoleGrantsService.create()` now also sends a "you've been granted this
+  role" notification email on every grant it creates (Instructor or Branch
+  Staff alike) — previously missing entirely. Non-blocking: a delivery
+  failure never undoes the grant (`emailSent: false` in the response, the
+  same pattern `AddInstructorManuallyModal`/`CoachInvitePage` already use);
+  `StaffPage.tsx`'s own pre-existing invite form now surfaces this flag too.
+  New `CreatedRoleGrantResponseDto`. `packages/api-client` regenerated.
 - **Classes page — row actions collapsed into a "⋮" kebab menu**: the 4
   always-visible per-row buttons ("View bookings", "Show QR", "Roll call",
   "Edit") were visually noisy at this row density; they're unchanged in

@@ -61,6 +61,80 @@ test('a School with branches requires one before Add Manually will submit', asyn
   await expect(page.getByText(/was added/)).toBeVisible();
 });
 
+// ---------------------------------------------------------------------------
+// "Invite to Instructor Role" — distinct from "Add manually" above: the
+// target already has a ULTM8 account (e.g. as a Student), found by exact
+// email/phone match, and only the INSTRUCTOR RoleGrant is created (no new
+// User, and no Instructor profile yet — that's still a separate "Add
+// instructor" step, same two-step shape StaffPage's own invite flow and
+// InstructorsService.create()'s header comment both already establish).
+// ---------------------------------------------------------------------------
+
+test('the owner invites an existing eligible user (already a Student) to the Instructor role', async ({ page }) => {
+  const existing = await addPerson('Already', 'AStudent', [{ role: 'STUDENT', schoolId: s.schoolId }]);
+  await signIn(page, s.ownerToken);
+  await page.goto('/instructors');
+  await page.getByRole('button', { name: 'Invite existing user' }).click();
+  await expect(page.getByRole('dialog', { name: 'Invite to Instructor role' })).toBeVisible();
+  await page.getByLabel('Email').fill(existing.email);
+  await page.getByRole('button', { name: 'Find' }).click();
+  await expect(page.getByText(`Found Already AStudent (${existing.email}).`)).toBeVisible();
+  await page.getByRole('button', { name: 'Grant Instructor role' }).click();
+
+  // No email provider in the test environment: the grant is still made, with
+  // a warning — same convention coach-invites.spec.ts/this file's own "Add
+  // Manually" test already establish.
+  await expect(page.getByText(/the notification email could not be sent/)).toBeVisible();
+
+  const grant = await db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR', revokedAt: null } });
+  expect(grant).not.toBeNull();
+  // Their existing STUDENT role is kept, not replaced (RoleGrant allows more
+  // than one role per User — domain-rules §3).
+  const roles = (await db.roleGrant.findMany({ where: { userId: existing.id, revokedAt: null } })).map((g) => g.role).sort();
+  expect(roles).toEqual(['INSTRUCTOR', 'STUDENT']);
+
+  // They're now an eligible candidate for "Add instructor" — the role grant
+  // and the Instructor profile are deliberately separate steps (see
+  // InstructorsService.create()'s own header comment).
+  await page.getByRole('button', { name: 'Add instructor' }).click();
+  await expect(page.getByLabel('User')).toContainText(`Already AStudent (${existing.email})`);
+});
+
+test('no existing account is found by email/phone — a clear message, no grant created', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/instructors');
+  await page.getByRole('button', { name: 'Invite existing user' }).click();
+  await page.getByLabel('Email').fill(`nobody.${randomUUID()}@example.test`);
+  await page.getByRole('button', { name: 'Find' }).click();
+  await expect(page.getByText('No ULTM8 account found with that email or phone.')).toBeVisible();
+  // Still on the search form — no "Grant Instructor role" step to even reach.
+  await expect(page.getByRole('button', { name: 'Find' })).toBeVisible();
+});
+
+test('a School with branches requires one before granting the Instructor role will submit', async ({ page }) => {
+  await addBranch(s, 'North');
+  const existing = await addPerson('Needs', 'Branch', [{ role: 'STUDENT', schoolId: s.schoolId }]);
+  await signIn(page, s.ownerToken);
+  await page.goto('/instructors');
+  await page.getByRole('button', { name: 'Invite existing user' }).click();
+  await page.getByLabel('Email').fill(existing.email);
+  await page.getByRole('button', { name: 'Find' }).click();
+  await page.getByRole('button', { name: 'Grant Instructor role' }).click();
+  // The Branch <select> is a native `required` field — submission is blocked
+  // client-side, same regression class the "Add Manually" branch test above
+  // already covers.
+  await expect(page.getByRole('dialog', { name: 'Invite to Instructor role' })).toBeVisible();
+  await expect(
+    db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } }),
+  ).resolves.toBeNull();
+
+  await page.getByLabel('Branch').selectOption({ label: 'North' });
+  await page.getByRole('button', { name: 'Grant Instructor role' }).click();
+  await expect(page.getByText(/Instructor role granted/)).toBeVisible();
+  const grant = await db.roleGrant.findFirst({ where: { userId: existing.id, schoolId: s.schoolId, role: 'INSTRUCTOR' } });
+  expect(grant?.branchId).toBeDefined();
+});
+
 test("an Instructor completes their own profile's deferred fields", async ({ page }) => {
   const coach = await addPerson('Deferred', 'Fields', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });

@@ -23,6 +23,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -58,8 +59,24 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     return jwt.sign({ sub: user.id, email: user.email, grants });
   }
 
+  // RoleGrantsService.create()'s new "you've been granted this role" notification —
+  // same overrideProvider(NotificationDeliveryService) capture pattern
+  // instructors.e2e-spec.ts already established for its own temp-passcode email. A
+  // `to` address containing "email-fail" simulates total delivery failure, to prove
+  // the grant itself still commits (emailSent: false) rather than being undone.
+  const sentEmails: Array<{ to: string; subject: string; body: string }> = [];
+
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    process.env.PORTAL_BASE_URL = 'https://portal.example.test';
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(NotificationDeliveryService)
+      .useValue({
+        sendEmail: async (to: string, subject: string, body: string) => {
+          if (to.includes('email-fail')) throw new Error('Simulated delivery failure');
+          sentEmails.push({ to, subject, body });
+        },
+      })
+      .compile();
     app = moduleRef.createNestApplication();
     // Mirrors main.ts's bootstrap exactly, so this exercises the real request pipeline.
     app.setGlobalPrefix('v1');
@@ -484,6 +501,133 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .query({ email: verifiedInvitee.email })
       .set('Authorization', `Bearer ${tokenOwnerB}`);
     expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
+  // "Invite to Instructor Role" (apps/school-portal/src/instructors) — an
+  // existing eligible User (found via the invite-candidate lookup above) is
+  // granted INSTRUCTOR through this same POST .../role-grants endpoint, and
+  // RoleGrantsService.create() now sends a "you've been granted this role"
+  // notification email — previously missing entirely (the grant always
+  // succeeded, but nothing ever told the invited user).
+  // ---------------------------------------------------------------------------
+
+  function mkFixtureUser(label: string) {
+    return superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-invite-role-${label}-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: label,
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+  }
+
+  it('inviting an existing eligible user grants the Instructor role and emails them', async () => {
+    const candidate = await mkFixtureUser('candidate');
+    // A School with no branches: the grant is School-wide (Decision 169), same
+    // shape as the "single-site" fixture above.
+    const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Invite Role Single-Site School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: school.id } });
+    const token = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/users/${candidate.id}/role-grants`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'INSTRUCTOR', schoolId: school.id });
+      expect(res.status).toBe(201);
+      expect(res.body.role).toBe('INSTRUCTOR');
+      expect(res.body.emailSent).toBe(true);
+
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: candidate.id, schoolId: school.id, role: 'INSTRUCTOR', revokedAt: null },
+      });
+      expect(grant).not.toBeNull();
+
+      const sent = sentEmails.find((e) => e.to === candidate.email);
+      expect(sent).toBeDefined();
+      expect(sent!.subject).toContain('Instructor role');
+      expect(sent!.subject).toContain('Invite Role Single-Site School');
+      expect(sent!.body).toContain('https://portal.example.test/login');
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
+      await superuser.user.delete({ where: { id: candidate.id } });
+      await superuser.school.delete({ where: { id: school.id } });
+    }
+  });
+
+  it('rejects granting a role to a non-existent User — 404, no grant created', async () => {
+    const nonExistentId = randomUUID();
+    const res = await request(app.getHttpServer())
+      .post(`/v1/users/${nonExistentId}/role-grants`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ role: 'INSTRUCTOR', schoolId: schoolA.id, branchId: branchA.id });
+    expect(res.status).toBe(404);
+    expect(await superuser.roleGrant.count({ where: { userId: nonExistentId } })).toBe(0);
+  });
+
+  it('a non-owner caller (Branch Staff) cannot grant a role — 403', async () => {
+    const staffUser = await mkFixtureUser('staff-caller');
+    const target = await mkFixtureUser('staff-caller-target');
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staffUser.id, schoolId: schoolA.id, branchId: branchA.id },
+    });
+    const staffToken = signAccessToken(staffUser, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: schoolA.id, branchId: branchA.id }]);
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/users/${target.id}/role-grants`)
+        .set('Authorization', `Bearer ${staffToken}`)
+        .send({ role: 'INSTRUCTOR', schoolId: schoolA.id, branchId: branchA.id });
+      expect(res.status).toBe(403);
+      const grant = await superuser.roleGrant.findFirst({ where: { userId: target.id, schoolId: schoolA.id, role: 'INSTRUCTOR' } });
+      expect(grant).toBeNull();
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { userId: staffUser.id } });
+      await superuser.user.deleteMany({ where: { id: { in: [staffUser.id, target.id] } } });
+    }
+  });
+
+  it('still creates the grant even when the notification email fails to send — emailSent: false, non-blocking', async () => {
+    // "email-fail" in the address is this suite's own trigger (see the
+    // overrideProvider above) for a simulated total delivery failure.
+    const candidate = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-email-fail-${randomUUID()}@example.test`,
+        phone: `+1650${2 + Math.floor(Math.random() * 8)}${Math.floor(10 + Math.random() * 90)}${Math.floor(1000 + Math.random() * 9000)}`,
+        firstName: 'EmailFail',
+        surname: 'Tenant',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Email Failure Single-Site School' } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: school.id } });
+    const token = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/users/${candidate.id}/role-grants`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'INSTRUCTOR', schoolId: school.id });
+      expect(res.status).toBe(201);
+      expect(res.body.emailSent).toBe(false);
+
+      // The grant committed regardless of the email failure — the whole point
+      // of making this non-blocking.
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: candidate.id, schoolId: school.id, role: 'INSTRUCTOR', revokedAt: null },
+      });
+      expect(grant).not.toBeNull();
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
+      await superuser.user.delete({ where: { id: candidate.id } });
+      await superuser.school.delete({ where: { id: school.id } });
+    }
   });
 
   // ---------------------------------------------------------------------------
