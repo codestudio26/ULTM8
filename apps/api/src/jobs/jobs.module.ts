@@ -16,6 +16,7 @@ import { TenantLifecyclePurgeProcessor, TenantLifecyclePurgeScheduler } from './
 import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-restriction.processor';
 import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from './membership-expiry-sweep.processor';
 import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './grading-notifications.processor';
+import { MembershipPlanPriceMigrationProcessor } from './membership-plan-price-migration.processor';
 import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler } from './notification-unsnooze-sweep.processor';
 
 /**
@@ -110,6 +111,13 @@ import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler 
  * student or a minor's guardians. Fans out through NOTIFICATION_FANOUT_QUEUE
  * like the others; no new module import.
  *
+ * v1.2 backend backlog (Subscription price-change migrate-vs-grandfather
+ * prompt) adds MembershipPlanPriceMigrationProcessor — event-triggered only,
+ * no Scheduler (same shape as ChargebackPatternRestrictionProcessor's own
+ * reasoning). Needs PaymentsService directly (its own
+ * migrateSubscriptionToNewPrice()) — already available via the PaymentsModule
+ * import above; no new module import needed.
+ *
  * v1.2 backend backlog ("Notifications page" — Snooze, approved by the
  * product owner) adds NotificationUnsnoozeSweepProcessor/Scheduler — a pure
  * scheduled sweep, same shape as BookingNoShowProcessingScheduler/
@@ -139,6 +147,7 @@ import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler 
     MembershipExpirySweepScheduler,
     GradingNotificationsProcessor,
     GradingNotificationsScheduler,
+    MembershipPlanPriceMigrationProcessor,
     NotificationUnsnoozeSweepProcessor,
     NotificationUnsnoozeSweepScheduler,
   ],

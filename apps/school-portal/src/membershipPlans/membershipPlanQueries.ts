@@ -78,6 +78,20 @@ export function useUpdateMembershipPlan(schoolId: string, planId: string) {
  * useMembershipPlans itself already accepts), not a new performance
  * assumption this page didn't already make.
  */
+/** v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+ * prompt. Single-plan read of the same GET /membership-plans/{id}/active-count
+ * endpoint useActiveMemberTotal fans out over — MembershipPlanFormPage needs
+ * exactly one plan's own count (to decide whether the Migrate/Grandfather
+ * prompt is even relevant) rather than a School-wide sum, so this is its own
+ * small hook rather than reusing useActiveMemberTotal with a one-item array. */
+export function useMembershipPlanActiveCount(id: string | null) {
+  return useQuery({
+    queryKey: ['membershipPlan', id, 'active-count'],
+    queryFn: () => unwrap(apiClient.GET('/v1/membership-plans/{id}/active-count', { params: { path: { id: id! } } })),
+    enabled: !!id,
+  });
+}
+
 export function useActiveMemberTotal(planIds: string[]) {
   const results = useQueries({
     queries: planIds.map((id) => ({
@@ -101,6 +115,26 @@ export function useUpdateMembershipPlanVisibility(schoolId: string) {
           body: { visible } as UpdateMembershipPlanInput,
         }),
       ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['membershipPlans', schoolId] }),
+  });
+}
+
+/** v1.2 backend backlog "Archive action" — MembershipPlansPage's row action.
+ * Not bound to one planId ahead of time, same shape
+ * useUpdateMembershipPlanVisibility already established for a list-page
+ * inline mutation. */
+export function useArchiveMembershipPlan(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => unwrap(apiClient.POST('/v1/membership-plans/{id}/archive', { params: { path: { id } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['membershipPlans', schoolId] }),
+  });
+}
+
+export function useUnarchiveMembershipPlan(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => unwrap(apiClient.POST('/v1/membership-plans/{id}/unarchive', { params: { path: { id } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['membershipPlans', schoolId] }),
   });
 }

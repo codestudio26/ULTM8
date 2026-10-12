@@ -33,6 +33,9 @@ export class MembershipPlanResponseDto {
   @ApiProperty()
   visible!: boolean;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'v1.2 backend backlog — set when this plan has been archived (permanent-retirement state, distinct from visible). Null when not archived.' })
+  archivedAt!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   refundFeeDate!: string | null;
 

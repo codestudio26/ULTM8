@@ -4558,6 +4558,111 @@
         ]
       }
     },
+    "/v1/membership-plans/{id}/archive": {
+      "post": {
+        "operationId": "MembershipsController_archivePlan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/unarchive": {
+      "post": {
+        "operationId": "MembershipsController_unarchivePlan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/price-changes": {
+      "get": {
+        "operationId": "MembershipsController_findPriceChanges",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanPriceChangeListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/membership-plans/{id}/purchase": {
       "post": {
         "operationId": "MembershipsController_purchase",
@@ -13118,6 +13223,11 @@
           "visible": {
             "type": "boolean"
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "v1.2 backend backlog — set when this plan has been archived (permanent-retirement state, distinct from visible). Null when not archived."
+          },
           "refundFeeDate": {
             "type": "string",
             "nullable": true
@@ -13246,6 +13356,14 @@
             "type": "string",
             "nullable": true,
             "description": "ISO 8601 date-time. Pass null to clear."
+          },
+          "priceChangeStrategy": {
+            "type": "string",
+            "enum": [
+              "MIGRATE",
+              "GRANDFATHER"
+            ],
+            "description": "Required only when editing a SUBSCRIPTION plan whose price is actually changing AND it already has at least one active Stripe-backed subscriber. MIGRATE moves every existing subscriber to the new price (no proration, applied at their next billing cycle); GRANDFATHER leaves existing subscribers on their original price and applies the new price to new signups only. Rejected (400) if required and omitted."
           }
         }
       },
@@ -13258,6 +13376,97 @@
         },
         "required": [
           "activeCount"
+        ]
+      },
+      "MembershipPlanPriceChangeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "MIGRATE",
+              "GRANDFATHER"
+            ]
+          },
+          "oldPrice": {
+            "type": "number"
+          },
+          "newPrice": {
+            "type": "number"
+          },
+          "oldCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "newCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "decidedById": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "affectedMembershipCount": {
+            "type": "number"
+          },
+          "migratedCount": {
+            "type": "number"
+          },
+          "failedCount": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "membershipPlanId",
+          "schoolId",
+          "decision",
+          "oldPrice",
+          "newPrice",
+          "decidedById",
+          "status",
+          "affectedMembershipCount",
+          "migratedCount",
+          "failedCount",
+          "createdAt"
+        ]
+      },
+      "MembershipPlanPriceChangeListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipPlanPriceChangeResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "PurchaseMembershipDto": {

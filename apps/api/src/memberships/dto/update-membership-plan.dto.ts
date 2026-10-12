@@ -1,8 +1,19 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
 import { CreateMembershipPlanDto } from './create-membership-plan.dto';
 
 const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate'] as const;
+
+/** v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+ * prompt. MembershipsService.updatePlan() requires exactly one of these
+ * whenever a SUBSCRIPTION plan's price is actually changing AND it already
+ * has at least one active Stripe-backed subscriber — see that method's own
+ * header comment for the full decision tree, including why a brand-new plan
+ * with zero subscribers needs no choice at all. */
+export enum MembershipPlanPriceChangeStrategyDto {
+  MIGRATE = 'MIGRATE',
+  GRANDFATHER = 'GRANDFATHER',
+}
 
 /**
  * FOUND PROACTIVELY (Phase 18, before school-portal's own edit-MembershipPlan
@@ -59,4 +70,13 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @IsOptional()
   @IsDateString()
   refundFeeDate?: string | null;
+
+  @ApiPropertyOptional({
+    enum: MembershipPlanPriceChangeStrategyDto,
+    description:
+      'Required only when editing a SUBSCRIPTION plan whose price is actually changing AND it already has at least one active Stripe-backed subscriber. MIGRATE moves every existing subscriber to the new price (no proration, applied at their next billing cycle); GRANDFATHER leaves existing subscribers on their original price and applies the new price to new signups only. Rejected (400) if required and omitted.',
+  })
+  @IsOptional()
+  @IsEnum(MembershipPlanPriceChangeStrategyDto)
+  priceChangeStrategy?: MembershipPlanPriceChangeStrategyDto;
 }
