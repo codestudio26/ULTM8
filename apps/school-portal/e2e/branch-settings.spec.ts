@@ -45,7 +45,9 @@ test('fills in and saves the Decision 231 fields, then they survive a reload', a
   await page.getByLabel('Type').fill('Dojo');
   await page.getByLabel('Activities').fill('BJJ, Judo');
   await page.getByLabel('Facilities').fill('Mats, Showers');
-  await page.getByLabel('Default language').fill('en-GB');
+  // Default language is now a real <select> (backed by GET /settings/languages),
+  // replacing the old free-text input this test used to .fill() directly.
+  await page.getByLabel('Default language').selectOption('en-GB');
   await page.getByLabel('Description').fill('Our flagship location.');
   await page.getByRole('button', { name: 'Save' }).click();
 

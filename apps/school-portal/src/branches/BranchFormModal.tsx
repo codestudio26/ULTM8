@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { useCurrencies } from '../settings/settingsQueries';
 import type { BranchResponse } from './branchQueries';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
@@ -44,6 +45,7 @@ export function BranchFormModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
+  const { data: currencies } = useCurrencies();
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     address: initial?.address ?? '',
@@ -90,7 +92,12 @@ export function BranchFormModal({
           <TextField value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} />
         </Field>
         <Field label="Currency override" htmlFor="branch-currency">
-          <TextField value={form.currencyOverride} onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))} />
+          <SelectField
+            id="branch-currency"
+            value={form.currencyOverride}
+            onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))}
+            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+          />
         </Field>
         <Field label="Logo URL" htmlFor="branch-logo">
           <TextField value={form.logoUrl} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} />

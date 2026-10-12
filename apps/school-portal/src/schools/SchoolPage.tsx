@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Badge, Button, Card, Checkbox, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool } from './schoolQueries';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
@@ -12,6 +13,8 @@ export function SchoolPage() {
   const schoolId = useOwnedSchoolId();
   const { data: school, isLoading, error: loadError } = useSchool(schoolId);
   const updateSchool = useUpdateSchool(schoolId ?? '');
+  const { data: languages } = useLanguages();
+  const { data: currencies } = useCurrencies();
 
   const [form, setForm] = useState<{
     name: string;
@@ -116,10 +119,20 @@ export function SchoolPage() {
             <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
           </Field>
           <Field label="Default language" htmlFor="edit-language">
-            <TextField value={form.defaultLanguage} onChange={(e) => set('defaultLanguage', e.target.value)} />
+            <SelectField
+              id="edit-language"
+              value={form.defaultLanguage}
+              onChange={(e) => set('defaultLanguage', e.target.value)}
+              options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+            />
           </Field>
           <Field label="Default currency" htmlFor="edit-currency">
-            <TextField value={form.defaultCurrency} onChange={(e) => set('defaultCurrency', e.target.value)} />
+            <SelectField
+              id="edit-currency"
+              value={form.defaultCurrency}
+              onChange={(e) => set('defaultCurrency', e.target.value)}
+              options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+            />
           </Field>
           <Field label="Timezone" htmlFor="edit-timezone" hint="IANA name, e.g. America/New_York. Used for classes without a branch timezone.">
             <TextField value={form.timezone} onChange={(e) => set('timezone', e.target.value)} />
