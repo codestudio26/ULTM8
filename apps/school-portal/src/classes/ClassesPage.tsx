@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
@@ -24,6 +24,12 @@ export function ClassesPage() {
   // one-off control, not a new shared one.
   const [activitiesFilter, setActivitiesFilter] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
+  // Rows/Grid is a pure presentation choice over the same fetched page of data —
+  // kept as local, in-memory state (defaulting to "Rows"), not persisted: no
+  // school-portal page persists a view/UI preference today (no localStorage usage
+  // exists in this app), so there's no existing convention to match, and a
+  // per-session default is the documented low-effort choice here.
+  const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null]);
   const [pageIndex, setPageIndex] = useState(0);
   const cursor = cursorStack[pageIndex];
@@ -66,34 +72,37 @@ export function ClassesPage() {
         actions={<Button onClick={() => setCreating(true)}>Add class</Button>}
       />
       <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 200 }}>
-            <Field label="Discipline" htmlFor="classes-activity-filter" hint="Exact match against one of the Class's Activities.">
-              <TextField
-                id="classes-activity-filter"
-                placeholder="e.g. Jiu Jitsu"
-                value={activitiesFilter}
-                onChange={(e) => {
-                  setActivitiesFilter(e.target.value);
-                  resetPaging();
-                }}
-              />
-            </Field>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 200 }}>
+              <Field label="Discipline" htmlFor="classes-activity-filter" hint="Exact match against one of the Class's Activities.">
+                <TextField
+                  id="classes-activity-filter"
+                  placeholder="e.g. Jiu Jitsu"
+                  value={activitiesFilter}
+                  onChange={(e) => {
+                    setActivitiesFilter(e.target.value);
+                    resetPaging();
+                  }}
+                />
+              </Field>
+            </div>
+            <div style={{ minWidth: 200 }}>
+              <Field label="Search classes" htmlFor="classes-search-filter">
+                <TextField
+                  id="classes-search-filter"
+                  type="search"
+                  placeholder="Search by title…"
+                  value={searchFilter}
+                  onChange={(e) => {
+                    setSearchFilter(e.target.value);
+                    resetPaging();
+                  }}
+                />
+              </Field>
+            </div>
           </div>
-          <div style={{ minWidth: 200 }}>
-            <Field label="Search classes" htmlFor="classes-search-filter">
-              <TextField
-                id="classes-search-filter"
-                type="search"
-                placeholder="Search by title…"
-                value={searchFilter}
-                onChange={(e) => {
-                  setSearchFilter(e.target.value);
-                  resetPaging();
-                }}
-              />
-            </Field>
-          </div>
+          <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Classes view" />
         </div>
       </Card>
       {isLoading ? <Spinner /> : null}
@@ -105,6 +114,46 @@ export function ClassesPage() {
             title={hasFilter ? 'No Classes match these filters' : 'No Classes yet'}
             description={hasFilter ? 'Try a different discipline or search term, or clear the filters.' : 'Add your first Class to get started.'}
           />
+        ) : viewMode === 'grid' ? (
+          <CardGrid>
+            {classes.map((c) => {
+              // Class.instructorId is a direct FK into User (schema.prisma's own
+              // comment: "NOT a separate Instructor table"), so the match is on
+              // instructor.userId, not instructor.id — same lookup the Rows
+              // table's own "Instructor" column uses.
+              const instructor = instructors.find((i) => i.userId === c.instructorId);
+              const branchName = branches.find((b) => b.id === c.branchId)?.name ?? (c.branchId ? c.branchId : 'Whole School');
+              return (
+                <Card key={c.id}>
+                  <strong>{c.title}</strong>
+                  <div style={{ margin: '8px 0' }}>
+                    {c.activities.map((a, i) => (
+                      <Badge key={`${a}-${i}`}>{a}</Badge>
+                    ))}
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                    {instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—'}
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                    {new Date(c.startDate).toLocaleString()} – {new Date(c.endDate).toLocaleString()}
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>Capacity: {c.capacity ?? 'Unlimited'}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{branchName}</p>
+                  <div style={{ marginTop: 12 }}>
+                    <RowActionsMenu
+                      label={`Actions for ${c.title}`}
+                      actions={[
+                        { label: 'View bookings', onClick: () => navigate(`/classes/${c.id}`) },
+                        { label: 'Show QR', onClick: () => navigate(`/classes/${c.id}/qr-code`) },
+                        { label: 'Roll call', onClick: () => navigate(`/classes/${c.id}/roll-call`) },
+                        { label: 'Edit', onClick: () => setEditing(c) },
+                      ]}
+                    />
+                  </div>
+                </Card>
+              );
+            })}
+          </CardGrid>
         ) : (
           <Table<ClassResponse>
             rows={classes}
@@ -141,20 +190,15 @@ export function ClassesPage() {
                 key: 'actions',
                 header: '',
                 render: (c) => (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}`)}>
-                      View bookings
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/qr-code`)}>
-                      Show QR
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/roll-call`)}>
-                      Roll call
-                    </Button>
-                    <Button variant="secondary" onClick={() => setEditing(c)}>
-                      Edit
-                    </Button>
-                  </div>
+                  <RowActionsMenu
+                    label={`Actions for ${c.title}`}
+                    actions={[
+                      { label: 'View bookings', onClick: () => navigate(`/classes/${c.id}`) },
+                      { label: 'Show QR', onClick: () => navigate(`/classes/${c.id}/qr-code`) },
+                      { label: 'Roll call', onClick: () => navigate(`/classes/${c.id}/roll-call`) },
+                      { label: 'Edit', onClick: () => setEditing(c) },
+                    ]}
+                  />
                 ),
               },
             ]}

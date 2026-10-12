@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
@@ -17,6 +17,12 @@ export function BranchesPage() {
   // submit button, since a single-field substring filter doesn't need one the way
   // TranslationsPage's two-field form does.
   const [cityFilter, setCityFilter] = useState('');
+  // Rows/Grid is a pure presentation choice over the same fetched data — kept as
+  // local, in-memory state (defaulting to "Rows"), not persisted: no school-portal
+  // page persists a view/UI preference today (no localStorage usage exists in this
+  // app), so there's no existing convention to match, and a per-session default is
+  // the documented low-effort choice here.
+  const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const { data, isLoading, error } = useBranches(schoolId, cityFilter.trim() || undefined);
   const createBranch = useCreateBranch(schoolId ?? '');
   const [creating, setCreating] = useState(false);
@@ -33,14 +39,19 @@ export function BranchesPage() {
         actions={<Button onClick={() => setCreating(true)}>Add branch</Button>}
       />
       <Card>
-        <Field label="City" htmlFor="branches-city-filter" hint="Matches anywhere in a Branch's address.">
-          <TextField
-            id="branches-city-filter"
-            placeholder="Filter by city…"
-            value={cityFilter}
-            onChange={(e) => setCityFilter(e.target.value)}
-          />
-        </Field>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 220 }}>
+            <Field label="City" htmlFor="branches-city-filter" hint="Matches anywhere in a Branch's address.">
+              <TextField
+                id="branches-city-filter"
+                placeholder="Filter by city…"
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+              />
+            </Field>
+          </div>
+          <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Branches view" />
+        </div>
       </Card>
       {isLoading ? (
         <Spinner />
@@ -53,6 +64,26 @@ export function BranchesPage() {
               title={cityFilter ? 'No Branches match that city' : 'No Branches yet'}
               description={cityFilter ? 'Try a different city, or clear the filter.' : 'Add your first Branch to get started.'}
             />
+          ) : viewMode === 'grid' ? (
+            <CardGrid>
+              {branches.map((b) => (
+                <Card key={b.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <strong>{b.name}</strong>
+                    {b.timezone ? <Badge>{b.timezone}</Badge> : null}
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.address ?? '—'}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.contactPhone ?? '—'}</p>
+                  <div style={{ marginTop: 12 }}>
+                    {/* Decision 231 — a dedicated settings screen replaces the
+                        previous edit-via-modal path. */}
+                    <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
+                      Settings
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </CardGrid>
           ) : (
             <Table<BranchResponse>
               rows={branches}

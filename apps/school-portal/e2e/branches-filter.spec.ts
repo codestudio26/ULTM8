@@ -47,3 +47,26 @@ test('typing a city filters the Branches list to only matching addresses', async
   await page.getByLabel('City').fill('');
   await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toBeVisible();
 });
+
+test('toggling to Grid view shows the same Branches as cards, and toggling back restores the table', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/branches');
+
+  await expect(page.getByRole('table')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Downtown Toronto' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Grid' }).click();
+
+  // The table is gone — the same two Branches now render as cards instead.
+  await expect(page.getByRole('table')).toHaveCount(0);
+  await expect(page.getByText('Downtown Toronto')).toBeVisible();
+  await expect(page.getByText('123 Main St, Toronto, ON')).toBeVisible();
+  await expect(page.getByText('Vaughan Mills')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Rows' }).click();
+
+  await expect(page.getByRole('table')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Downtown Toronto' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toBeVisible();
+});

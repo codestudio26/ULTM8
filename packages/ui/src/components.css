@@ -289,6 +289,75 @@
   text-align: center;
 }
 
+/* Row actions (kebab menu) — collapses a table row's action buttons behind a
+   single "⋮" trigger. Same popover shape as .ultm8-phone-field__popover
+   above: position:relative wrapper, absolutely-positioned panel, dismissed on
+   outside-mousedown or Escape (see RowActionsMenu). */
+.ultm8-row-actions {
+  position: relative;
+  display: inline-block;
+}
+.ultm8-row-actions__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: var(--font-size-input);
+  line-height: 1;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ultm8-row-actions__trigger:hover {
+  background: var(--bg-accent);
+  border-color: var(--border);
+}
+.ultm8-row-actions__trigger[aria-expanded='true'] {
+  background: var(--bg-accent);
+  border-color: var(--border);
+}
+.ultm8-row-actions__menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 20;
+  min-width: 180px;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}
+.ultm8-row-actions__item {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-footnote);
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+.ultm8-row-actions__item:hover:not(:disabled) {
+  background: var(--color-accent-100);
+}
+.ultm8-row-actions__item:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.ultm8-row-actions__item--danger {
+  color: var(--text-danger);
+}
+
 /* Card */
 .ultm8-card {
   background: var(--surface-1);
@@ -344,6 +413,49 @@
 }
 .ultm8-table tr:last-child td {
   border-bottom: none;
+}
+
+/* View toggle */
+.ultm8-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.ultm8-view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  background: var(--surface-0);
+  border: none;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.ultm8-view-toggle__btn + .ultm8-view-toggle__btn {
+  border-left: 1px solid var(--border);
+}
+.ultm8-view-toggle__btn:hover {
+  color: var(--text-primary);
+}
+.ultm8-view-toggle__btn--active,
+.ultm8-view-toggle__btn--active:hover {
+  background: var(--fill-accent);
+  color: var(--on-accent);
+}
+
+/* Card grid — responsive card layout for a list page's Grid view */
+.ultm8-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
 }
 
 /* Badge */

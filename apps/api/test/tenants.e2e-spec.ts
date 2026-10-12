@@ -849,6 +849,106 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Staff-on-behalf-of enrollment (v1.2 backend backlog, "Invite a Student") —
+  // SchoolsService.join()'s second on-behalf-of branch, mirroring Phase 38's
+  // Guardian one above. Scoped to School Owner/Manager only (the same gate
+  // RoleGrantsService.create()/StaffPage's own Instructor/Branch Staff invite
+  // flow already use), not the broader assertStaffAtSchool.
+  // ---------------------------------------------------------------------------
+
+  it('a School Owner/Manager CAN enroll an existing, already-registered person as a Student — no access token comes back, and the grant is issued by the Owner', async () => {
+    const existingPerson = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-staff-enroll-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Already',
+        surname: 'Registered',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+
+    try {
+      const joinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenOwnerB}`)
+        .send({ studentId: existingPerson.id, branchId: branchB.id });
+      expect(joinRes.status).toBe(201);
+      const minorHome = await superuser.studentHomeBranch.findUniqueOrThrow({
+        where: { schoolId_studentId: { schoolId: schoolB.id, studentId: existingPerson.id } },
+      });
+      expect([minorHome.branchId, minorHome.assignedById]).toEqual([branchB.id, ownerB.id]);
+      expect(joinRes.body.role).toBe('STUDENT');
+      expect(joinRes.body.userId).toBe(existingPerson.id);
+      expect(joinRes.body.schoolId).toBe(schoolB.id);
+      expect(joinRes.body.accessToken).toBeUndefined();
+
+      const grant = await superuser.roleGrant.findFirst({
+        where: { userId: existingPerson.id, schoolId: schoolB.id, role: 'STUDENT', revokedAt: null },
+      });
+      expect(grant).not.toBeNull();
+      expect(grant!.grantedById).toBe(ownerB.id);
+
+      // Idempotency — same partial unique index as the self-join/Guardian
+      // paths above, proven independently for the Staff path too.
+      const secondJoinRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenOwnerB}`)
+        .send({ studentId: existingPerson.id });
+      expect(secondJoinRes.status).toBe(409);
+      expect(secondJoinRes.body.error.message).toMatch(/already enrolled/);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { userId: existingPerson.id } });
+      await superuser.studentHomeBranch.deleteMany({ where: { studentId: existingPerson.id } });
+      await superuser.user.delete({ where: { id: existingPerson.id } });
+    }
+  });
+
+  it('a School Owner/Manager CANNOT enroll someone else at another tenant\'s School — 403', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolB.id}/join`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`) // owns School A, not School B
+      .send({ studentId: verifiedInvitee.id });
+    expect(res.status).toBe(403);
+    expect(await superuser.roleGrant.count({ where: { userId: verifiedInvitee.id, schoolId: schoolB.id, role: 'STUDENT' } })).toBe(0);
+  });
+
+  it('a Branch Staff member (not School Owner/Manager) cannot enroll someone else — 403, same gate as the Instructor/Branch Staff invite flow', async () => {
+    const branchStaffUser = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `tenants-http-staff-not-owner-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Branch',
+        surname: 'Staffer',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('1995-01-01'),
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    await superuser.roleGrant.create({
+      data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: branchStaffUser.id, schoolId: schoolB.id, branchId: branchB.id },
+    });
+    const tokenBranchStaff = signAccessToken(branchStaffUser, [
+      { role: 'BRANCH_STAFF', franchiseId: null, schoolId: schoolB.id, branchId: branchB.id },
+    ]);
+
+    try {
+      const res = await request(app.getHttpServer())
+        .post(`/v1/schools/${schoolB.id}/join`)
+        .set('Authorization', `Bearer ${tokenBranchStaff}`)
+        .send({ studentId: verifiedInvitee.id });
+      expect(res.status).toBe(403);
+      expect(await superuser.roleGrant.count({ where: { userId: verifiedInvitee.id, schoolId: schoolB.id, role: 'STUDENT' } })).toBe(0);
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { userId: branchStaffUser.id } });
+      await superuser.user.delete({ where: { id: branchStaffUser.id } });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // FranchisesModule (Phase 16) — self-service creation mirrors School's own
   // Decision-79 pattern exactly; cross-tenant isolation mirrors School's own tests
   // above, against the same franchise_tenant_isolation RLS shape.

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
@@ -155,12 +155,46 @@ export class SchoolsService {
    * and a unique-constraint violation (P2002) becomes the 409, the same
    * "atomic create() + caught P2002" pattern already established elsewhere
    * in this codebase (e.g. Waiver creation dedup).
+   *
+   * v1.2 backend backlog ("Invite a Student") added a SECOND on-behalf-of
+   * case, Staff enrolling an existing-but-unenrolled person at their own
+   * School (find-then-confirm, `GET .../role-grants/invite-candidate`
+   * ahead of this call — the account-creation half of the original mockup
+   * was explicitly removed by the product owner, 28 Sep; StaffPage's own
+   * Instructor/Branch Staff invite flow is the shape this mirrors). Same
+   * `dto.studentId` on-behalf-of field Phase 38 already established — there
+   * is no separate DTO field to distinguish "Guardian" from "Staff" caller,
+   * so which one applies is DISCOVERED, not declared: try the School-Owner
+   * gate RoleGrantsService.create()/StaffPage's own invite flow already use
+   * for this exact kind of action first (this page lives behind the
+   * School-Owner-only part of the portal, same as StaffPage), and only fall
+   * back to `assertGuardianOfStudent` if the caller doesn't hold that grant
+   * — the same "try one path, fall back to the other" idiom
+   * BookingsService.bookClass()/cancelBooking() already use to tell their
+   * own Guardian-vs-Staff on-behalf-of callers apart. A caller who is
+   * neither gets assertGuardianOfStudent's own 403, unchanged.
+   *
+   * Deliberately NOT a change to RoleGrantsService.create()/GrantableRoleDto
+   * — that enum's own header comment is explicit that granting STUDENT "has
+   * no confirmed authorization rule" through that path, and Decision 96's
+   * STUDENT RoleGrant is created exclusively here; widening the grantable-
+   * roles enum would be a second, divergent creation path for the exact
+   * same role, not a fix.
    */
   async join(callerId: string, schoolId: string, dto?: JoinSchoolDto) {
     const studentId = dto?.studentId ?? callerId;
-    const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
-    if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
+    let isGuardianAction = false;
+    let isStaffAction = false;
+    if (isOnBehalfOf) {
+      try {
+        await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+        isStaffAction = true;
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+        isGuardianAction = true;
+      }
     }
 
     const roleGrantId = randomUUID();
@@ -187,7 +221,7 @@ export class SchoolsService {
       } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
           throw new ConflictException(
-            isGuardianAction ? 'This Student is already enrolled at this School.' : 'You are already a Student at this School.',
+            isOnBehalfOf ? 'This Student is already enrolled at this School.' : 'You are already a Student at this School.',
           );
         }
         throw err;
@@ -215,10 +249,11 @@ export class SchoolsService {
       return created;
     });
 
-    if (isGuardianAction) {
-      // No access token to mint — see JoinSchoolResponseDto's own comment: a
-      // Guardian-managed minor's account is permanently blocked from
-      // independent login, so there is nothing a token would ever be used for.
+    if (isGuardianAction || isStaffAction) {
+      // No access token to mint — the caller (Guardian or Staff) isn't the
+      // one who just got the new grant, so there is nothing on their own
+      // session to refresh (see JoinSchoolResponseDto's own comment for the
+      // Guardian case, which this now also covers for Staff).
       return roleGrant;
     }
 

@@ -28,6 +28,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `Avatar` component (`apps/school-portal/src/lib/Avatar.tsx`, already used by
   Instructors) — a real photo when set, an initials monogram fallback
   otherwise. `packages/api-client` regenerated.
+- **Classes page — row actions collapsed into a "⋮" kebab menu**: the 4
+  always-visible per-row buttons ("View bookings", "Show QR", "Roll call",
+  "Edit") were visually noisy at this row density; they're unchanged in
+  behavior and visibility logic, just revealed on click now. New shared
+  `RowActionsMenu` (`packages/ui`) — a small popover menu (outside-click/
+  `Escape` dismissal, same ingredients as `TimezoneField`'s/`PhoneField`'s
+  existing popovers; no dedicated `Menu`/`Dropdown` component existed yet),
+  added to `packages/ui` rather than kept page-local since dense list-page
+  tables with several per-row actions recur across this app (Branches,
+  Disciplines, Curriculum, …). Pure presentation change, no backend/DTO
+  change.
+- **Notifications — a true, caller-wide Total/Unread stats ribbon**
+  (`docs/v1.2-backend-backlog.md`, closing the "True total/unread counts" gap
+  from Decision 204's Concept 5 finding): new `GET /notifications/me/counts`
+  (self-scoped, same convention as `GET /notifications/me`), returning
+  `{ total, unread }` computed server-side over the caller's full set of
+  `Notification` rows rather than whatever page of the list endpoint happens
+  to be loaded. `NotificationsPage.tsx` now shows a real two-tile stats
+  ribbon (Total/Unread) backed by this endpoint, same `StatTile` pattern
+  Transactions/Membership Plans already established. `packages/api-client`
+  regenerated.
 - **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
   day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
   Dashboard page itself is new — no real implementation existed anywhere in
@@ -90,6 +111,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     `StudentSummaryResponseDto` now carries a real `status`.
   All four are additive — a caller that sends none of the new query params
   sees unchanged behavior. `packages/api-client` regenerated.
+- **"Invite a Student"** (`docs/v1.2-backend-backlog.md`) — a Staff member can
+  now enroll an existing, already-registered-but-unenrolled person as a
+  Student at their own School, from a new `/students/invite` page (linked
+  from `StudentsPage.tsx`'s new "Invite a Student" button). Find-then-confirm,
+  reusing the same exact-email/phone-match `GET
+  .../role-grants/invite-candidate` lookup StaffPage's Instructor/Branch Staff
+  invite flow already uses. No new endpoint: `SchoolsService.join()` (`POST
+  /schools/:id/join`) gained a second on-behalf-of branch alongside its
+  existing Guardian one, gated the same way as the Instructor/Branch Staff
+  invite flow (School Owner/Manager only) — see this feature's own PR
+  description for why this, not a `RoleGrantsService.create()`/
+  `GrantableRoleDto` change, was the right-shaped fix, and for the explicit
+  product question it leaves open (no "add a brand-new person" path exists
+  here, unlike Instructors' own "Add manually"). `packages/api-client`
+  regenerated.
 - **Create/Update Membership Plan is now a dedicated page, built as a
   multi-step wizard** (Decision 228) — the first entity in the app to move
   off the List + Modal pattern, given how large this form is (12 fields,
