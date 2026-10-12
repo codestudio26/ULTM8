@@ -47,6 +47,57 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   unreachable from this session's network; retrieved via a public
   open-source mirror that cites them as its source, disclosed in that
   decision and in `currencies.ts`'s own header comment).
+- **Waivers page — explicit Unsigned `WaiverSignature` row at assignment time**
+  (`docs/v1.2-backend-backlog.md` → "Waivers page" gap 2, approved by the
+  product owner). Previously `WaiversService.sign()` was the ONLY code path
+  that ever created a `WaiverSignature` row, and `schema.prisma` declared
+  `status WaiverSignatureStatus @default(SIGNED)` — a row's mere existence
+  meant "signed," so "who hasn't signed yet" was impossible to answer. Now a
+  real Unsigned row is written at the two real, already-wired moments this
+  codebase has for "assignment": a NEW Waiver meeting every Student already
+  active at the School (`WaiversService.createWaiver()` — the exact
+  population `WaiverSignatureRequestsProcessor` already notifies), and an
+  EXISTING Waiver meeting a newly-joined Student (`SchoolsService.join()`,
+  Decision 96 — the one real, production-reachable path that creates a
+  `STUDENT` RoleGrant through the actual API). Both are handled by a new,
+  dependency-free `WaiverAssignmentService`/`WaiverAssignmentModule`, kept
+  separate from `WaiversService` itself specifically to avoid a circular
+  module dependency between `WaiversModule` and `TenantsModule` (see that
+  service's own header comment) — the same "duplicate a stateless
+  registration rather than add a cross-module dependency edge" convention
+  `TenantsModule` already used for `StripeClientService`/`R2ClientService`.
+  - **Schema:** `WaiverSignature.signerFullName`/`signatureText`/`signedById`/
+    `signedDate` are now nullable (migration
+    `20261111000002_waiver_signature_unsigned_assignment`) — an Unsigned row
+    has no signer, typed name/signature, or real signed date yet. The
+    pre-existing partial unique index
+    (`WaiverSignature_one_non_expired_per_student_per_waiver`) needed no
+    change — it already covered Unsigned/Pending rows exactly like Signed
+    ones.
+  - **`WaiversService.sign()`** now UPDATES an existing Unsigned/Pending row
+    to Signed in place when one exists for that Student+Waiver, rather than
+    creating a second row (which the partial unique index would otherwise
+    reject as a duplicate, wrongly reporting "already signed"). A genuine
+    double-sign attempt (an already-Signed row) is still a clean 409, same
+    as before.
+  - **`GET /schools/{schoolId}/waivers/{id}/signatures`** (`WaiversService.
+    findSignaturesForWaiver`) now returns real Unsigned rows alongside Signed
+    ones, plus a new `summary` rollup (`{ total, signed, unsigned, expired,
+    pending }`) and a `studentName` fallback label (the enrolled Student's
+    own name) for rows with no `signerFullName` yet.
+  - **`WaiversPage.tsx`'s `SignaturesPanel`** now shows the rollup count the
+    backlog's own "Recommended display shape" named ("12 of 40 signed") and
+    renders Unsigned entries distinctly (their own badge color, falling back
+    to `studentName` for the signer label) in the same per-Student roster.
+  - **`skills/ultm8-domain-rules/SKILL.md` §13** reconciliation: also marks
+    the separate "any signed Waiver at the School vs. one canonical Waiver"
+    question the backlog doc raised as resolved by the product owner ("any
+    waiver at the School," matching current `BookingsService` code exactly)
+    — no code change for that half, since the code was already correct.
+  - `packages/api-client` regenerated. New/extended e2e coverage in
+    `apps/api/test/waivers.e2e-spec.ts` (assignment at both trigger points,
+    update-in-place, the partial unique index, cross-School isolation) and
+    `apps/school-portal/e2e/waivers.spec.ts` (the panel's new display).
 - **Waiver drawn-signature capture test coverage** (Track B, `apps/student`,
   `docs/TRACK-B-ROADMAP.md` Phase 4/Slice 6b). The capture UI itself already
   shipped on `master` (commit `318d491`, 11 Oct 2026): `WaiverRow.tsx` offers

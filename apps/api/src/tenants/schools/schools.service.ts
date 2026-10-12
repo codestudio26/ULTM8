@@ -11,6 +11,7 @@ import { AuthService } from '../../auth/auth.service';
 import { GuardiansService } from '../../guardians/guardians.service';
 import { StripeClientService } from '../../payments/stripe-client.service';
 import { UsersService } from '../../users/users.service';
+import { WaiverAssignmentService } from '../../waivers/waiver-assignment.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
@@ -31,6 +32,7 @@ export class SchoolsService {
     private readonly guardiansService: GuardiansService,
     private readonly stripeClient: StripeClientService,
     private readonly usersService: UsersService,
+    private readonly waiverAssignment: WaiverAssignmentService,
   ) {}
 
   /**
@@ -249,6 +251,24 @@ export class SchoolsService {
       } else if (dto?.branchId) {
         throw new BadRequestException('This School has no branches, so no branch can be chosen.');
       }
+
+      // v1.2 backend backlog ("Waivers page", gap 2) — the other real
+      // "assignment" moment this codebase has: an existing Waiver meeting a
+      // NEWLY-JOINED Student (the other side is WaiversService.createWaiver(),
+      // a NEW Waiver meeting existing Students — see WaiverAssignmentService's
+      // own header comment for the full two-sided account). Queried in the
+      // same transaction, AFTER the STUDENT grant above — that grant is what
+      // lets this context see this School's Waivers at all (Waiver's RLS is
+      // "any active RoleGrant holder at the School"), same reasoning the home
+      // branch lookup just above already relies on for Branch's own RLS.
+      const waivers = await tx.waiver.findMany({ where: { schoolId }, select: { id: true } });
+      await this.waiverAssignment.assignUnsignedRows(
+        tx,
+        schoolId,
+        waivers.map((w) => w.id),
+        [studentId],
+      );
+
       return created;
     });
 
