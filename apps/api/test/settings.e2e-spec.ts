@@ -70,13 +70,27 @@ describeIfDb('SettingsModule — GET /settings/languages, /settings/currencies, 
     );
   });
 
-  it('GET /settings/currencies returns the 6 observed currencies, unauthenticated', async () => {
+  it('GET /settings/currencies returns every Stripe-supported currency, unauthenticated', async () => {
+    // Grew from the old hardcoded 6 (GBP/EUR/USD/BRL/AED/MYR) to every currency
+    // Stripe supports (~135 ISO 4217 codes) — product-owner-approved 11/12 Oct
+    // 2026, see CHANGELOG.md -> Unreleased and CURRENCIES' own header comment
+    // in apps/api/src/settings/constants/currencies.ts for how the list was
+    // sourced. Asserts shape and that the full set is present (incl. the
+    // previous 6) rather than hand-pinning an exact count, so a legitimate
+    // future addition/removal to CURRENCIES doesn't need this test rewritten.
     const res = await request(app.getHttpServer()).get('/v1/settings/currencies');
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(6);
-    expect(res.body.map((c: { code: string }) => c.code).sort()).toEqual(
-      ['AED', 'BRL', 'EUR', 'GBP', 'MYR', 'USD'].sort(),
-    );
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(100);
+    const codes = res.body.map((c: { code: string; name: string }) => c.code);
+    expect(new Set(codes).size).toBe(codes.length); // no duplicate codes
+    for (const c of res.body) {
+      expect(typeof c.code).toBe('string');
+      expect(c.code).toMatch(/^[A-Z]{3}$/);
+      expect(typeof c.name).toBe('string');
+      expect(c.name.length).toBeGreaterThan(0);
+    }
+    expect(codes).toEqual(expect.arrayContaining(['AED', 'BRL', 'EUR', 'GBP', 'MYR', 'USD']));
   });
 
   it('GET /legal/terms-and-conditions returns 200 with content: null (seeded, not-yet-populated state)', async () => {

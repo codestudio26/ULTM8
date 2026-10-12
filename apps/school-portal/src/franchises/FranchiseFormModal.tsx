@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField } from '@ultm8/ui';
+import { Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -135,11 +135,12 @@ export function FranchiseFormModal({
           />
         </Field>
         <Field label="Default currency" htmlFor="franchise-currency">
-          <SelectField
+          <CurrencyField
             id="franchise-currency"
             value={form.defaultCurrency}
-            onChange={(e) => setForm((f) => ({ ...f, defaultCurrency: e.target.value }))}
-            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+            onChange={(code) => setForm((f) => ({ ...f, defaultCurrency: code }))}
+            options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
+            placeholder="Not set"
           />
         </Field>
         <Field label="Description" htmlFor="franchise-description">

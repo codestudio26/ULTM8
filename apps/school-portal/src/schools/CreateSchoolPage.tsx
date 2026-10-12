@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthCard, Button, Checkbox, ErrorBanner, Field, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
+import { AuthCard, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -128,11 +128,12 @@ export function CreateSchoolPage() {
           />
         </Field>
         <Field label="Default currency" htmlFor="school-currency">
-          <SelectField
+          <CurrencyField
             id="school-currency"
             value={form.defaultCurrency}
-            onChange={(e) => set('defaultCurrency', e.target.value)}
-            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+            onChange={(code) => set('defaultCurrency', code)}
+            options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
+            placeholder="Not set"
           />
         </Field>
         <Field label="Timezone" htmlFor="school-timezone" hint="Used for classes without a branch timezone.">
