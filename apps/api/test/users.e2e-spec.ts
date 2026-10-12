@@ -179,6 +179,63 @@ describeIfDb('UsersModule — GET/PATCH /users/me', () => {
     expect(res.status).toBe(400);
   });
 
+  // ---------------------------------------------------------------------------
+  // Decision 220/246 — Student Measurements (weightCategory/kimonoSize/beltSize),
+  // built as real nullable String columns on User. Same self-service surface as
+  // every other optional profile field: round-trips set -> read back -> cleared
+  // with an explicit null, same as gender/nationality/etc.
+  // ---------------------------------------------------------------------------
+
+  it('PATCH /users/me sets weightCategory/kimonoSize/beltSize, and GET /users/me reads them back', async () => {
+    const res = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ weightCategory: '-73kg', kimonoSize: 'A3', beltSize: '3' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ weightCategory: '-73kg', kimonoSize: 'A3', beltSize: '3' });
+
+    const getRes = await request(app.getHttpServer())
+      .get('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body).toMatchObject({ weightCategory: '-73kg', kimonoSize: 'A3', beltSize: '3' });
+
+    const persisted = await superuser.user.findUniqueOrThrow({ where: { id: userA.id } });
+    expect(persisted.weightCategory).toBe('-73kg');
+    expect(persisted.kimonoSize).toBe('A3');
+    expect(persisted.beltSize).toBe('3');
+  });
+
+  it('PATCH /users/me clears weightCategory/kimonoSize/beltSize with an explicit null', async () => {
+    const setRes = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ weightCategory: '-73kg', kimonoSize: 'A3', beltSize: '3' });
+    expect(setRes.status).toBe(200);
+
+    const clearRes = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ weightCategory: null, kimonoSize: null, beltSize: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.weightCategory).toBeNull();
+    expect(clearRes.body.kimonoSize).toBeNull();
+    expect(clearRes.body.beltSize).toBeNull();
+
+    const persisted = await superuser.user.findUniqueOrThrow({ where: { id: userA.id } });
+    expect(persisted.weightCategory).toBeNull();
+    expect(persisted.kimonoSize).toBeNull();
+    expect(persisted.beltSize).toBeNull();
+  });
+
+  it('PATCH /users/me rejects a weightCategory/kimonoSize/beltSize longer than 50 characters', async () => {
+    const res = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ weightCategory: 'x'.repeat(51) });
+    expect(res.status).toBe(400);
+  });
+
   it('PATCH /users/me rejects a username already taken by another User', async () => {
     const claimRes = await request(app.getHttpServer())
       .patch('/v1/users/me')
