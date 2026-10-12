@@ -64,6 +64,25 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * v1.2 backend backlog ("Notifications page", Decision 204's Concept 5
+   * finding) — a true, caller-wide total/unread count, not derived from
+   * whatever page of `findAllForCaller` happens to be loaded client-side.
+   * Same `withTenantContext` scoping as every other method here (self-only
+   * RLS on `Notification`), plus the explicit `userId: callerId` filter —
+   * belt-and-suspenders with RLS, matching `findAllForCaller`'s own
+   * convention rather than relying on RLS alone.
+   */
+  async getCountsForCaller(callerId: string) {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const [total, unread] = await Promise.all([
+        tx.notification.count({ where: { userId: callerId } }),
+        tx.notification.count({ where: { userId: callerId, read: false } }),
+      ]);
+      return { total, unread };
+    });
+  }
+
   /** Idempotent — marking an already-read Notification as read again is not a
    * conflicting state transition the way e.g. Booking status changes are (no
    * data loss, no double-processing risk), so this uses a plain `update`, not

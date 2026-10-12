@@ -193,6 +193,112 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   });
 
   // ---------------------------------------------------------------------------
+  // GET /notifications/me/counts — true, caller-wide total/unread (v1.2
+  // backend backlog, Decision 204's Concept 5 finding: "Total/Unread are
+  // real but page-scoped" — this endpoint is the fix for that, so it must be
+  // proven over MORE rows than a single page would ever hold, not just a
+  // couple of notifications that would pass either way.
+  // ---------------------------------------------------------------------------
+
+  describe('GET /notifications/me/counts', () => {
+    it('counts are correct for a caller with a mix of read/unread notifications, across more rows than a single list page holds', async () => {
+      // A fresh caller (not studentA/studentB, whose rows the earlier `it`
+      // above already seeded) — avoids this test's exact counts depending on
+      // execution order against shared fixture rows.
+      const counter = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `notifications-http-counts-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'Counts',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      userIds.push(counter.id);
+      await superuser.roleGrant.create({
+        data: { id: randomUUID(), role: 'STUDENT', userId: counter.id, schoolId: school.id },
+      });
+      const tokenCounter = signAccessToken(counter, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
+
+      // `resolveLimit`'s DEFAULT_LIMIT is 20 (resolveLimit.ts) — so 30 rows
+      // (18 unread, 12 read) genuinely spans more than one default-sized
+      // page of GET /notifications/me, proving this endpoint counts ALL of
+      // the caller's rows via its own direct `count()`, not derived from
+      // whatever page of the list endpoint happens to be loaded.
+      const rows = Array.from({ length: 30 }, (_, i) => ({
+        id: randomUUID(),
+        userId: counter.id,
+        title: `Counts fixture ${i}`,
+        body: 'body',
+        read: i < 12,
+      }));
+      await superuser.notification.createMany({ data: rows });
+      notificationIds.push(...rows.map((r) => r.id));
+
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenCounter}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ total: 30, unread: 18 });
+    });
+
+    it('a caller with no notifications at all gets { total: 0, unread: 0 }', async () => {
+      const empty = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `notifications-http-counts-empty-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'Empty',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      userIds.push(empty.id);
+      await superuser.roleGrant.create({
+        data: { id: randomUUID(), role: 'STUDENT', userId: empty.id, schoolId: school.id },
+      });
+      const tokenEmpty = signAccessToken(empty, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
+
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenEmpty}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ total: 0, unread: 0 });
+    });
+
+    it("never counts a DIFFERENT caller's notifications, and is rejected unauthenticated", async () => {
+      // studentB has its own fixture row from the list/mark-read `it` above
+      // (`forB`) — studentA must never see it reflected in its own counts.
+      const resA = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(resA.status).toBe(200);
+      const resB = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentB}`);
+      expect(resB.status).toBe(200);
+      // Each caller's own total/unread must account for exactly their own
+      // rows — cross-checked against a superuser (RLS-bypassing) count per
+      // caller, not a guessed literal, so this stays correct regardless of
+      // what the list/mark-read `it` above left behind.
+      const [expectedTotalA, expectedUnreadA, expectedTotalB, expectedUnreadB] = await Promise.all([
+        superuser.notification.count({ where: { userId: studentA.id } }),
+        superuser.notification.count({ where: { userId: studentA.id, read: false } }),
+        superuser.notification.count({ where: { userId: studentB.id } }),
+        superuser.notification.count({ where: { userId: studentB.id, read: false } }),
+      ]);
+      expect(resA.body).toEqual({ total: expectedTotalA, unread: expectedUnreadA });
+      expect(resB.body).toEqual({ total: expectedTotalB, unread: expectedUnreadB });
+      // A's own rows include at least `older`/`newer` from the earlier `it`
+      // above, so if isolation were broken and A's count silently included
+      // B's `forB` row too, resA.total would overshoot expectedTotalA by one
+      // — already ruled out by the `toEqual` above, restated here as the
+      // concrete scenario this test exists to catch.
+      expect(resA.body.total).toBeGreaterThanOrEqual(2);
+
+      const unauthRes = await request(app.getHttpServer()).get('/v1/notifications/me/counts');
+      expect(unauthRes.status).toBe(401);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // DeviceToken registration
   // ---------------------------------------------------------------------------
 
