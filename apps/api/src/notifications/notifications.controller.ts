@@ -6,6 +6,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { NotificationsService } from './notifications.service';
 import { NotificationListResponseDto, NotificationResponseDto } from './dto/notification-response.dto';
+import { NotificationCountsResponseDto } from './dto/notification-counts-response.dto';
 import { RegisterDeviceTokenDto } from './dto/device-token.dto';
 import { DeviceTokenResponseDto } from './dto/device-token-response.dto';
 
@@ -28,6 +29,17 @@ export class NotificationsController {
   @Get('me')
   findAllForCaller(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
     return this.notificationsService.findAllForCaller(user.sub, query.cursor, query.limit);
+  }
+
+  /** v1.2 backend backlog — a true, caller-wide total/unread count (Decision
+   * 204's Concept 5 finding). A static `me/counts` segment, declared before
+   * the `:id/read` route below — no ordering ambiguity either way since that
+   * route's second segment is the literal `read`, not a second wildcard, but
+   * static routes still come first here as this controller's own convention. */
+  @ApiOkResponse({ type: NotificationCountsResponseDto })
+  @Get('me/counts')
+  getCountsForCaller(@CurrentUser() user: JwtPayload) {
+    return this.notificationsService.getCountsForCaller(user.sub);
   }
 
   @ApiOkResponse({ type: NotificationResponseDto })

@@ -26,6 +26,16 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   tables with several per-row actions recur across this app (Branches,
   Disciplines, Curriculum, …). Pure presentation change, no backend/DTO
   change.
+- **Notifications — a true, caller-wide Total/Unread stats ribbon**
+  (`docs/v1.2-backend-backlog.md`, closing the "True total/unread counts" gap
+  from Decision 204's Concept 5 finding): new `GET /notifications/me/counts`
+  (self-scoped, same convention as `GET /notifications/me`), returning
+  `{ total, unread }` computed server-side over the caller's full set of
+  `Notification` rows rather than whatever page of the list endpoint happens
+  to be loaded. `NotificationsPage.tsx` now shows a real two-tile stats
+  ribbon (Total/Unread) backed by this endpoint, same `StatTile` pattern
+  Transactions/Membership Plans already established. `packages/api-client`
+  regenerated.
 - **Dashboard — real "Bookings This Week" / "Upcoming" figures, plus a
   day-by-day, per-activity drill-down** (`docs/v1.2-backend-backlog.md`): the
   Dashboard page itself is new — no real implementation existed anywhere in
