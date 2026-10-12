@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, TextField } from '@ultm8/ui';
+import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, PhoneField, TextField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 
 /** Fields match RegisterDto exactly (apps/api/src/auth/dto/register.dto.ts) — nothing
  * added or removed. Required fields first; the rest of the confirmed base User fields
@@ -99,8 +100,8 @@ export function RegisterPage() {
         <Field label="Email" htmlFor="reg-email">
           <TextField type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} />
         </Field>
-        <Field label="Phone" htmlFor="reg-phone" hint="E.164 format, e.g. +15551234567">
-          <TextField type="tel" required value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+        <Field label="Phone" htmlFor="reg-phone">
+          <PhoneField required value={form.phone} onChange={(v) => set('phone', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
         <div className="ultm8-field-row">
           <Field label="First name" htmlFor="reg-firstName">

@@ -30,6 +30,32 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `BookingsDrilldownPage.tsx` (the day-by-day/per-activity view, with its own
   editable date range) — a new "Dashboard" nav item routes to both.
   `packages/api-client` regenerated.
+- **Every Timezone field is now a searchable combobox with live UTC offsets**
+  (product-approved), replacing the plain free-text "IANA name" `TextField` on
+  Branch create/edit (`BranchFormModal`, `BranchSettingsPage`) and School
+  create/edit (`CreateSchoolPage`, `SchoolPage`). New shared
+  `TimezoneField` (`packages/ui`): type-to-filter over the full IANA tz
+  database (`Intl.supportedValuesOf('timeZone')`, ~418 zones on this runtime —
+  not a hand-maintained list), each option showing its current, DST-aware
+  UTC offset computed live via `Intl.DateTimeFormat`. Follows the ARIA 1.2
+  editable-combobox pattern (`role="combobox"`/`aria-expanded`/
+  `aria-activedescendant`, full keyboard support). The committed value stays
+  a plain IANA string, same shape the free-text field carried — no
+  DTO/backend change. First test infra added to `packages/ui` (Vitest +
+  Testing Library + jsdom), this package having shipped with none; no other
+  web app here unit-tests components either, only `apps/school-portal`'s
+  Playwright e2e, which `branch-settings.spec.ts` now also covers for this
+  field's actual combobox interaction (not `.selectOption()`).
+- **Every mobile-number field now has a real country-code picker, worldwide**
+  (Decision 240) — a new `PhoneField` (`packages/ui`, consumed by
+  `apps/school-portal`; a parallel `apps/student` implementation, same
+  `libphonenumber-js` logic) replaces plain free text on every phone/mobile
+  field in both apps: Register/Forgot-Passcode/Reset-Passcode/Verify-OTP in
+  both apps, School/Franchise `mobileNumber`, Branch `contactPhone` (both
+  `BranchFormModal` and `BranchSettingsPage`), Instructor `phone`, and the
+  Staff invite-candidate phone lookup. Always composes to a plain E.164
+  string — no DTO or backend change. The app's `PhoneField` is Track B
+  (`docs/TRACK-B-ROADMAP.md`).
 - **Real server-side filters and pagination for the Branches, Franchises,
   Classes, and Students portal pages** (`docs/v1.2-backend-backlog.md`) —
   four pages whose list/filter controls previously only worked against an
