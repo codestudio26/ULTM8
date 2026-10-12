@@ -45,6 +45,12 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       null as never,
       null as never,
       stepUpService as never,
+      // v1.2 backend backlog — the price-migration queue injection
+      // (@InjectQueue(MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE)); unused by the
+      // purchaseWithSavedCard path this spec file exercises, same "null as
+      // never for a dependency this test's code path never touches"
+      // convention every other argument here already follows.
+      null as never,
     );
     return { service, prismaApp, paymentsService, stepUpService };
   }
