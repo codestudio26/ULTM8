@@ -740,6 +740,22 @@ export interface paths {
         patch: operations["NotificationsController_markRead"];
         trace?: never;
     };
+    "/v1/notifications/{id}/snooze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["NotificationsController_snooze"];
+        trace?: never;
+    };
     "/v1/notifications/device-tokens": {
         parameters: {
             query?: never;
@@ -2644,6 +2660,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/notifications/broadcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationBroadcastController_broadcast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{id}/fee-charges": {
         parameters: {
             query?: never;
@@ -3493,6 +3525,10 @@ export interface components {
             /** @description Developer-level discriminator — not spec-confirmed, see the Prisma model comment. */
             type?: string | null;
             createdAt: string;
+            /** @description Snoozed until this timestamp, or null if not snoozed. Developer-level addition — see the Prisma model comment. */
+            snoozedUntil?: string | null;
+            /** @description Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment. */
+            readAt?: string | null;
         };
         NotificationListResponseDto: {
             items: components["schemas"]["NotificationResponseDto"][];
@@ -3502,8 +3538,20 @@ export interface components {
         NotificationCountsResponseDto: {
             /** @description The caller's total Notification count, across every page. */
             total: number;
-            /** @description The caller's unread Notification count, across every page. */
+            /** @description The caller's unread Notification count, across every page. Excludes a Notification that is currently snoozed (snoozedUntil in the future) — see NotificationsService.getCountsForCaller's own header comment. */
             unread: number;
+            /** @description Percentage (0–100) of the caller's own READ Notifications whose readAt fell within 24h of createdAt. Null when the caller has never read a Notification (nothing to compute a rate over). */
+            readWithin24hPercent: number | null;
+            /** @description How many of the caller's READ Notifications were read within 24h of createdAt. */
+            readWithin24hCount: number;
+            /** @description How many of the caller's Notifications have ever been read (readAt is set) — the denominator readWithin24hPercent is computed over. */
+            readTotalCount: number;
+        };
+        SnoozeNotificationDto: {
+            /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both. */
+            until?: string;
+            /** @description Snooze for this many minutes from now (1 to 10080 / 7 days — a Developer-chosen upper bound, not a confirmed business rule). Provide this OR `until`, not both. */
+            minutes?: number;
         };
         RegisterDeviceTokenDto: {
             /** @enum {string} */
@@ -5210,6 +5258,29 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
+        BroadcastNotificationDto: {
+            /** @description Notification title. */
+            title: string;
+            /** @description Notification body. */
+            body: string;
+            /**
+             * @description Who receives this broadcast.
+             * @enum {string}
+             */
+            audience: "ALL" | "BRANCH" | "CLASS";
+            /** @description Required when audience is BRANCH — must be a Branch of this School. */
+            branchId?: string;
+            /** @description Required when audience is CLASS — must be a Class of this School. */
+            classId?: string;
+        };
+        BroadcastResponseDto: {
+            /** @description Correlates every Notification this call fanned out — used as the shared prefix of each one's notificationId/jobId. */
+            broadcastId: string;
+            /** @enum {string} */
+            audience: "ALL" | "BRANCH" | "CLASS";
+            /** @description How many distinct Students this broadcast was enqueued for. */
+            recipientCount: number;
+        };
         FranchiseFeeChargeResponseDto: {
             id: string;
             franchiseId: string;
@@ -6619,6 +6690,31 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_snooze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnoozeNotificationDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -9942,6 +10038,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcademyTimetableListResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationBroadcastController_broadcast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastNotificationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastResponseDto"];
                 };
             };
         };

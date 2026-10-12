@@ -240,7 +240,11 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
 
       const res = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenCounter}`);
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ total: 30, unread: 18 });
+      // v1.2 backend backlog (Snooze + Read within 24h, approved by the
+      // product owner) added three fields to this response — none of this
+      // fixture's 30 rows were ever marked read, so the read-metric fields
+      // are all zero/null regardless.
+      expect(res.body).toEqual({ total: 30, unread: 18, readWithin24hPercent: null, readWithin24hCount: 0, readTotalCount: 0 });
     });
 
     it('a caller with no notifications at all gets { total: 0, unread: 0 }', async () => {
@@ -264,7 +268,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
 
       const res = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenEmpty}`);
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ total: 0, unread: 0 });
+      expect(res.body).toEqual({ total: 0, unread: 0, readWithin24hPercent: null, readWithin24hCount: 0, readTotalCount: 0 });
     });
 
     it("never counts a DIFFERENT caller's notifications, and is rejected unauthenticated", async () => {
@@ -284,8 +288,14 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
         superuser.notification.count({ where: { userId: studentB.id } }),
         superuser.notification.count({ where: { userId: studentB.id, read: false } }),
       ]);
-      expect(resA.body).toEqual({ total: expectedTotalA, unread: expectedUnreadA });
-      expect(resB.body).toEqual({ total: expectedTotalB, unread: expectedUnreadB });
+      // Asserted field-by-field (not a whole-object toEqual) — the v1.2
+      // backend backlog's read-metric fields (readWithin24hPercent/Count,
+      // readTotalCount) have their own dedicated correctness tests below;
+      // this test's own job is isolation of total/unread specifically.
+      expect(resA.body.total).toBe(expectedTotalA);
+      expect(resA.body.unread).toBe(expectedUnreadA);
+      expect(resB.body.total).toBe(expectedTotalB);
+      expect(resB.body.unread).toBe(expectedUnreadB);
       // A's own rows include at least `older`/`newer` from the earlier `it`
       // above, so if isolation were broken and A's count silently included
       // B's `forB` row too, resA.total would overshoot expectedTotalA by one
@@ -295,6 +305,161 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
 
       const unauthRes = await request(app.getHttpServer()).get('/v1/notifications/me/counts');
       expect(unauthRes.status).toBe(401);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // PATCH /notifications/:id/snooze + notification-unsnooze-sweep (v1.2
+  // backend backlog — Snooze, approved by the product owner).
+  // ---------------------------------------------------------------------------
+
+  describe('PATCH /notifications/:id/snooze', () => {
+    it('hides the Notification from the unread count while snoozed; validates input; self-only', async () => {
+      const before = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      const unreadBefore = before.body.unread as number;
+
+      const n = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Snooze me', body: 'body' },
+      });
+      notificationIds.push(n.id);
+
+      // Neither `until` nor `minutes` — a real 400, not a silent no-op.
+      const missingBoth = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({});
+      expect(missingBoth.status).toBe(400);
+
+      // A past timestamp — snoozing "until the past" would be a no-op that
+      // silently claims success.
+      const pastSnooze = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ until: new Date(Date.now() - 60_000).toISOString() });
+      expect(pastSnooze.status).toBe(400);
+
+      // Cross-caller snooze is RLS-blocked — indistinguishable from
+      // not-found, same design as every other self-only resource.
+      const crossSnooze = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentB}`)
+        .send({ minutes: 60 });
+      expect(crossSnooze.status).toBe(404);
+
+      const snoozeRes = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/snooze`)
+        .set('Authorization', `Bearer ${tokenStudentA}`)
+        .send({ minutes: 60 });
+      expect(snoozeRes.status).toBe(200);
+      expect(new Date(snoozeRes.body.snoozedUntil).getTime()).toBeGreaterThan(Date.now());
+
+      // Counts the exact same unread total as before this Notification was
+      // created — the newly-created, newly-snoozed row is excluded, not just
+      // "no worse than before any fixture existed".
+      const after = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(after.body.unread).toBe(unreadBefore);
+    });
+
+    it('notification-unsnooze-sweep clears an elapsed snoozedUntil, returning the Notification to the unread list (direct processor invocation, no Redis/polling)', async () => {
+      const n = await superuser.notification.create({
+        data: {
+          id: randomUUID(),
+          userId: studentA.id,
+          title: 'Already elapsed',
+          body: 'body',
+          snoozedUntil: new Date(Date.now() - 60_000), // already in the past
+        },
+      });
+      notificationIds.push(n.id);
+
+      const before = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      // Live-computed (NotificationsService.getCountsForCaller) — already
+      // counts as unread even before the sweep runs, since snoozedUntil is
+      // in the past.
+      const n0 = await superuser.notification.findUnique({ where: { id: n.id } });
+      expect(n0!.snoozedUntil).not.toBeNull();
+
+      const { NotificationUnsnoozeSweepProcessor } = await import('../src/jobs/notification-unsnooze-sweep.processor');
+      const moduleRef = await Test.createTestingModule({
+        providers: [NotificationUnsnoozeSweepProcessor, PrismaJobsService],
+      }).compile();
+      const processor = moduleRef.get(NotificationUnsnoozeSweepProcessor);
+      await processor.process({ id: 'test-unsnooze-sweep' } as never);
+
+      const n1 = await superuser.notification.findUnique({ where: { id: n.id } });
+      expect(n1!.snoozedUntil).toBeNull();
+
+      const after = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(after.body.unread).toBeGreaterThanOrEqual(before.body.unread);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // readAt — set once, never overwritten (v1.2 backend backlog — Read within
+  // 24h metric, approved by the product owner).
+  // ---------------------------------------------------------------------------
+
+  describe('readAt + readWithin24hPercent', () => {
+    it('PATCH :id/read sets readAt only the FIRST time, never overwriting it on a later call', async () => {
+      const n = await superuser.notification.create({
+        data: { id: randomUUID(), userId: studentA.id, title: 'Read-at fixture', body: 'body' },
+      });
+      notificationIds.push(n.id);
+
+      const firstRead = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/read`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(firstRead.status).toBe(200);
+      expect(firstRead.body.readAt).not.toBeNull();
+      const firstReadAt = firstRead.body.readAt;
+
+      // A later mark-read call (idempotent on `read`) must NOT move readAt —
+      // this is "time to FIRST read", not "time of last read".
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const secondRead = await request(app.getHttpServer())
+        .patch(`/v1/notifications/${n.id}/read`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(secondRead.status).toBe(200);
+      expect(secondRead.body.readAt).toBe(firstReadAt);
+    });
+
+    it('readWithin24hPercent is computed only over READ Notifications, excluding ones never read', async () => {
+      const counter = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `notifications-http-readmetric-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: 'ReadMetric',
+          surname: 'Tenant',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+      userIds.push(counter.id);
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: counter.id, schoolId: school.id } });
+      const tokenCounter = signAccessToken(counter, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
+
+      // One read within 24h, one read AFTER 24h (readAt backdated via direct
+      // DB write — PATCH :id/read always reads "now"), one never read at all
+      // (must be excluded from both numerator and denominator).
+      const createdAt = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      const withinWindow = await superuser.notification.create({
+        data: { id: randomUUID(), userId: counter.id, title: 'Within', body: 'b', createdAt, read: true, readAt: new Date(createdAt.getTime() + 60_000) },
+      });
+      const outsideWindow = await superuser.notification.create({
+        data: { id: randomUUID(), userId: counter.id, title: 'Outside', body: 'b', createdAt, read: true, readAt: new Date(createdAt.getTime() + 25 * 60 * 60 * 1000) },
+      });
+      const neverRead = await superuser.notification.create({
+        data: { id: randomUUID(), userId: counter.id, title: 'Never read', body: 'b', createdAt },
+      });
+      notificationIds.push(withinWindow.id, outsideWindow.id, neverRead.id);
+
+      const res = await request(app.getHttpServer()).get('/v1/notifications/me/counts').set('Authorization', `Bearer ${tokenCounter}`);
+      expect(res.status).toBe(200);
+      expect(res.body.readTotalCount).toBe(2); // neverRead excluded
+      expect(res.body.readWithin24hCount).toBe(1);
+      expect(res.body.readWithin24hPercent).toBe(50);
     });
   });
 

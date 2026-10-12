@@ -9,14 +9,21 @@ import { NotificationListResponseDto, NotificationResponseDto } from './dto/noti
 import { NotificationCountsResponseDto } from './dto/notification-counts-response.dto';
 import { RegisterDeviceTokenDto } from './dto/device-token.dto';
 import { DeviceTokenResponseDto } from './dto/device-token-response.dto';
+import { SnoozeNotificationDto } from './dto/snooze-notification.dto';
 
 /**
- * Phase 15 scope only: read-side notifications (list/mark-read) and DeviceToken
- * registration. See NotificationsService's own header comment for what's
- * deliberately not here (the write side lives in
+ * Phase 15 scope: read-side notifications (list/mark-read/counts) and
+ * DeviceToken registration. v1.2 backend backlog (approved by the product
+ * owner) adds snooze (below) — still the caller's own notifications only, no
+ * cross-user write here. See NotificationsService's own header comment for
+ * what's deliberately not here (the fan-out WRITE side lives in
  * apps/api/src/jobs/notification-fanout.processor.ts, a background job, not
- * this controller) and NotificationsModule's own header comment for the full
- * phase-scoping rationale (push dispatch deferred, email delivery real).
+ * this controller — the broadcast/compose entry point that feeds it is
+ * `POST /schools/:schoolId/notifications/broadcast`, a separate, School-
+ * Owner-gated endpoint in NotificationBroadcastController, not here, since
+ * that one is NOT self-only) and NotificationsModule's own header comment for
+ * the full phase-scoping rationale (push dispatch deferred, email delivery
+ * real).
  */
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -46,6 +53,14 @@ export class NotificationsController {
   @Patch(':id/read')
   markRead(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.notificationsService.markRead(user.sub, id);
+  }
+
+  /** v1.2 backend backlog — Snooze, approved by the product owner. See
+   * NotificationsService.snooze's own header comment for the body shape. */
+  @ApiOkResponse({ type: NotificationResponseDto })
+  @Patch(':id/snooze')
+  snooze(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: SnoozeNotificationDto) {
+    return this.notificationsService.snooze(user.sub, id, dto);
   }
 
   @ApiCreatedResponse({ type: DeviceTokenResponseDto })

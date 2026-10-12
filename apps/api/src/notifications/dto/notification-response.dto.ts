@@ -24,6 +24,20 @@ export class NotificationResponseDto {
 
   @ApiProperty()
   createdAt!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Snoozed until this timestamp, or null if not snoozed. Developer-level addition — see the Prisma model comment.',
+  })
+  snoozedUntil!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment.',
+  })
+  readAt!: string | null;
 }
 
 export class NotificationListResponseDto {
