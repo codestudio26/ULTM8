@@ -15,6 +15,23 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Membership purchase with a fresh card, via hosted Stripe Checkout**
+  (Decision 241, Track B Slice 4b) — `apps/student`'s "Purchase" button on a
+  Stripe-backed membership plan now completes end-to-end instead of showing
+  "online payment isn't available in the app yet": it opens a hosted Stripe
+  Checkout page in the device's own browser, the same `mode: 'setup'` pattern
+  Decision 238 (saved payment methods) already built for saving a card,
+  extended to `mode: 'payment'` for an actual one-time charge — no native
+  Stripe SDK, no custom dev client. **api:** `PaymentsService.
+  createPurchaseCheckoutSession()`; `PurchaseMembershipDto` gains
+  `useHostedCheckout` (scoped like `payWithSavedCard` — CLASS_PACK/
+  WEEKLY_PASS/TRIAL_MEMBERSHIP, a Stripe-configured School — but not blocked
+  for a Guardian-driven purchase); `PurchaseMembershipResponseDto` gains the
+  `requires_checkout` outcome (`checkoutUrl`). Settlement reuses the existing
+  `payment_intent.succeeded` webhook handler verbatim — no change to
+  `stripe-webhook-processing.processor.ts`. `packages/api-client`
+  regenerated. The app's screen (`MembershipPlanRow.tsx`) is Track B
+  (`docs/TRACK-B-ROADMAP.md`).
 - **Waiver drawn-signature capture test coverage** (Track B, `apps/student`,
   `docs/TRACK-B-ROADMAP.md` Phase 4/Slice 6b). The capture UI itself already
   shipped on `master` (commit `318d491`, 11 Oct 2026): `WaiverRow.tsx` offers

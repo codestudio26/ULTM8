@@ -1,14 +1,16 @@
 import React from 'react';
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import * as WebBrowser from 'expo-web-browser';
 import * as membershipQueries from './membershipQueries';
 import * as paymentMethodQueries from '../payments/paymentMethodQueries';
 import * as stepUpQueries from '../auth/stepUpQueries';
 import { MembershipPlanRow } from './MembershipPlanRow';
 
-jest.mock('./membershipQueries', () => ({ usePurchaseMembership: jest.fn() }));
+jest.mock('./membershipQueries', () => ({ usePurchaseMembership: jest.fn(), useInvalidateMyMemberships: jest.fn() }));
 jest.mock('../payments/paymentMethodQueries', () => ({ usePaymentMethod: jest.fn() }));
 jest.mock('../auth/stepUpQueries', () => ({ useVerifyStepUp: jest.fn() }));
+jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
 
 // The first render loads every React Native component these screens use; on a
 // busy CI runner that alone can pass jest's default 5 s (as in myGrading.test.tsx).
@@ -40,12 +42,15 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
 
   let purchase: ReturnType<typeof idlePurchase>;
   let verifyStepUp: ReturnType<typeof mkVerifyStepUp>;
+  let invalidateMyMemberships: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
     purchase = idlePurchase();
     verifyStepUp = mkVerifyStepUp();
+    invalidateMyMemberships = jest.fn();
     mocked(membershipQueries.usePurchaseMembership).mockReturnValue(purchase);
+    mocked(membershipQueries.useInvalidateMyMemberships).mockReturnValue(invalidateMyMemberships);
     mocked(stepUpQueries.useVerifyStepUp).mockReturnValue(verifyStepUp);
   });
 
@@ -94,13 +99,87 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
     expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1', payWithSavedCard: true, stepUpToken: 'step-up-token-abc' });
   });
 
-  it('"Purchase" still sends a plain, fresh-card request — no payWithSavedCard, no step-up', async () => {
+  it('"Purchase" sends useHostedCheckout (Decision 241) — no payWithSavedCard, no step-up', async () => {
     mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: true } } as never);
 
     const { getByText } = await render(<MembershipPlanRow plan={CLASS_PACK as never} schoolId="school-1" />);
     await fireEvent.press(getByText('Purchase'));
 
     expect(verifyStepUp.mutate).not.toHaveBeenCalled();
-    expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1' });
+    expect(purchase.mutate).toHaveBeenCalledWith(
+      { planId: 'plan-1', useHostedCheckout: true },
+      expect.objectContaining({ onSuccess: expect.anything() }),
+    );
+  });
+});
+
+/**
+ * Decision 241 (Track B Slice 4b) — "Purchase" now completes a Stripe-backed
+ * CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP purchase end-to-end: it sends
+ * useHostedCheckout, and on the real `requires_checkout` outcome opens the
+ * returned checkoutUrl in the device's own browser via the exact same
+ * `WebBrowser.openAuthSessionAsync` call PaymentMethodsScreen's own
+ * card-saving flow (Decision 238) already established — then, mirroring that
+ * same screen's own documented single-refetch-after-return choice, invalidates
+ * the My Memberships query cache once the browser session ends.
+ */
+describe('MembershipPlanRow — Decision 241 hosted Checkout', () => {
+  let invalidateMyMemberships: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    invalidateMyMemberships = jest.fn();
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    mocked(membershipQueries.useInvalidateMyMemberships).mockReturnValue(invalidateMyMemberships);
+  });
+
+  it('tapping "Purchase" opens the hosted Checkout URL on requires_checkout, then invalidates My Memberships once the browser session ends', async () => {
+    const purchase = {
+      ...idlePurchase(),
+      mutate: jest.fn((_vars: unknown, opts: { onSuccess?: (result: unknown) => void } | undefined) => {
+        opts?.onSuccess?.({ outcome: 'requires_checkout', checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', transactionId: 'txn-1' });
+      }),
+    };
+    mocked(membershipQueries.usePurchaseMembership).mockReturnValue(purchase as never);
+    mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({ type: 'dismiss' } as never);
+
+    const { getByText } = await render(<MembershipPlanRow plan={CLASS_PACK as never} schoolId="school-1" />);
+    await fireEvent.press(getByText('Purchase'));
+
+    await waitFor(() => {
+      expect(WebBrowser.openAuthSessionAsync).toHaveBeenCalledWith(
+        'https://checkout.stripe.com/pay/cs_1',
+        'ultm8-student://membership-purchase/complete',
+      );
+      expect(invalidateMyMemberships).toHaveBeenCalled();
+    });
+  });
+
+  it('shows a "Payment submitted" message, with no Purchase/Pay-with-saved-card buttons, once outcome is requires_checkout', async () => {
+    const purchase = {
+      ...idlePurchase(),
+      isSuccess: true,
+      data: { outcome: 'requires_checkout', checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', transactionId: 'txn-1' },
+    };
+    mocked(membershipQueries.usePurchaseMembership).mockReturnValue(purchase as never);
+
+    const { getByText, queryByText } = await render(<MembershipPlanRow plan={CLASS_PACK as never} schoolId="school-1" />);
+
+    expect(getByText(/Payment submitted/)).toBeTruthy();
+    expect(queryByText('Purchase')).toBeNull();
+    expect(queryByText('Pay with saved card')).toBeNull();
+  });
+
+  it('a SUBSCRIPTION plan still falls back to the old requires_payment "not available" message — Decision 241 does not cover Subscriptions', async () => {
+    const purchase = {
+      ...idlePurchase(),
+      isSuccess: true,
+      data: { outcome: 'requires_payment', clientSecret: 'secret_1', transactionId: 'txn-2' },
+    };
+    mocked(membershipQueries.usePurchaseMembership).mockReturnValue(purchase as never);
+
+    const { getByText } = await render(<MembershipPlanRow plan={SUBSCRIPTION as never} schoolId="school-1" />);
+
+    expect(getByText(/isn't available in the app yet/)).toBeTruthy();
   });
 });

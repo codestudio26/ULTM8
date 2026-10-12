@@ -58,16 +58,22 @@ export class MembershipListResponseDto {
  * PaymentAccount.provider and the plan's type.
  */
 export class PurchaseMembershipResponseDto {
-  @ApiProperty({ enum: ['requires_payment', 'pending_confirmation', 'active'] })
-  outcome!: 'requires_payment' | 'pending_confirmation' | 'active';
+  @ApiProperty({ enum: ['requires_payment', 'requires_checkout', 'pending_confirmation', 'active'] })
+  outcome!: 'requires_payment' | 'requires_checkout' | 'pending_confirmation' | 'active';
 
   @ApiPropertyOptional({ description: 'Stripe PaymentIntent client secret — present only when outcome is requires_payment.' })
   clientSecret?: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Hosted Stripe Checkout Session URL (Decision 241, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment.',
+  })
+  checkoutUrl?: string;
+
   @ApiPropertyOptional({ type: MembershipResponseDto, description: 'Present only when outcome is active.' })
   membership?: MembershipResponseDto;
 
-  @ApiPropertyOptional({ description: 'The created Transaction id — present for requires_payment, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236).' })
+  @ApiPropertyOptional({ description: 'The created Transaction id — present for requires_payment, requires_checkout, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236).' })
   transactionId?: string;
 }
 

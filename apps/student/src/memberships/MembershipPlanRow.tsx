@@ -1,42 +1,56 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatMoney } from '../lib/formatMoney';
 import { StepUpPrompt } from '../auth/StepUpPrompt';
 import { usePaymentMethod } from '../payments/paymentMethodQueries';
-import { usePurchaseMembership } from './membershipQueries';
+import { useInvalidateMyMemberships, usePurchaseMembership } from './membershipQueries';
 
 type MembershipPlan = components['schemas']['AcademyMembershipPlanDto'];
+type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
 
-/** One membership plan on AcademyDetailScreen (Slice 4a). Three real outcomes from
- * POST /membership-plans/{id}/purchase (verified in MembershipsService.purchase()):
+/** One membership plan on AcademyDetailScreen (Slice 4a, extended by Track B
+ * Slice 4b — Decision 241). Four real outcomes from POST
+ * /membership-plans/{id}/purchase (verified in MembershipsService.purchase()):
  * `active` (an immediate, £0 grant, OR Decision 236's payWithSavedCard branch below),
  * `pending_confirmation` (Cash/Bank Transfer — awaiting Staff confirmation, no further
- * Student action), and `requires_payment` (a fresh-card Stripe purchase — Slice 4b,
- * still not built; shown honestly rather than silently failing).
+ * Student action), `requires_checkout` (Decision 241 — a hosted Stripe Checkout
+ * Session, opened in the device's own browser), and `requires_payment` (a bare
+ * Stripe Elements clientSecret this app has no SDK to render — unreachable from
+ * the plain "Purchase" button as of Decision 241, which always sends
+ * useHostedCheckout; still the real outcome for a SUBSCRIPTION plan, which
+ * Decision 241 deliberately does not cover — PaymentsService.subscribe()'s own
+ * pre-existing "throwaway Customer every call" limitation, same one
+ * payWithSavedCard's SUBSCRIPTION block below is scoped around — so that one
+ * message stays, shown honestly rather than silently failing).
  *
- * KNOWN, ACCEPTED COST of `requires_payment` (found on review, not fixed here): a tap
- * on "Purchase" for a Stripe-backed plan still runs the real server-side purchase()
- * branch, which creates an actual Transaction row and a live Stripe PaymentIntent/
- * subscription before this screen shows its "not available yet" message — the client
- * has no way to avoid this today because neither AcademyMembershipPlanDto nor
- * AcademyDetailDto exposes any signal about whether a plan's School uses Stripe
- * (PaymentAccount detail is Staff/school-portal-only). Flagged as a backend follow-up
- * (a `requiresOnlinePayment` field on AcademyMembershipPlanDto would let the client
- * pre-filter), not silently worked around with a guess.
+ * Decision 241 (Track B Slice 4b) — "Purchase" now completes end-to-end for a
+ * Stripe-backed CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP plan: it sends
+ * `useHostedCheckout: true`, and on `requires_checkout` opens the returned
+ * `checkoutUrl` in the device's own browser via `WebBrowser.openAuthSessionAsync`
+ * — the exact same call PaymentMethodsScreen's own card-saving flow already
+ * uses (Decision 238), auto-returning via the same `ultm8-student://` scheme.
+ * The real confirmation is the async `payment_intent.succeeded` webhook
+ * (StripeWebhookProcessingProcessor — reused as-is, no new handler), which can
+ * land a moment after the browser closes — mirrors PaymentMethodsScreen's own
+ * documented choice exactly: one refetch (here, invalidating the My
+ * Memberships list — see useInvalidateMyMemberships's own header comment)
+ * right after the browser session ends, accepting a brief staleness window
+ * rather than an infinite poll/retry loop. Revisiting My Memberships always
+ * shows the settled state.
  *
  * Decision 236's own follow-up — "Pay with saved card" (Decision 238's saved
  * payment method, gated by step-up re-authentication) is offered as a second
  * action alongside "Purchase" whenever this Student has one saved for this
- * School. Unlike the fresh-card path above, this one IS synchronous — no
- * Stripe Elements confirmation step, the outcome (`active`, or a thrown
- * 400/402) is known immediately — so it's built here even though the
- * fresh-card flow still isn't. Not offered for SUBSCRIPTION plans
- * (MembershipsService.purchase()'s own explicit block — PaymentsService.
- * subscribe() doesn't reuse StudentPaymentMethod, a separate pre-existing
- * limitation, not fixed by this follow-up).
+ * School. Unlike the hosted-Checkout path above, this one IS synchronous — no
+ * browser round-trip, the outcome (`active`, or a thrown 400/402) is known
+ * immediately. Not offered for SUBSCRIPTION plans (MembershipsService.
+ * purchase()'s own explicit block — PaymentsService.subscribe() doesn't reuse
+ * StudentPaymentMethod, a separate pre-existing limitation, not fixed by this
+ * follow-up).
  *
  * Purchase outcome is read directly from the mutation's own state (`purchase.data`/
  * `purchase.isSuccess`) rather than mirrored into a separate useState — found on
@@ -45,15 +59,30 @@ type MembershipPlan = components['schemas']['AcademyMembershipPlanDto'];
  * purchase.error into a second `actionError` state that could drift from it. */
 export function MembershipPlanRow({ plan, schoolId }: { plan: MembershipPlan; schoolId: string }) {
   const purchase = usePurchaseMembership();
+  const invalidateMyMemberships = useInvalidateMyMemberships();
   const { data: paymentMethod } = usePaymentMethod(schoolId);
   const [steppingUp, setSteppingUp] = useState(false);
   const isFriendPass = plan.type === 'FRIEND_PASS';
   const outcome = purchase.isSuccess ? purchase.data.outcome : null;
   const canPayWithSavedCard = !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
 
+  async function openCheckoutAndRefetch(checkoutUrl: string) {
+    try {
+      await WebBrowser.openAuthSessionAsync(checkoutUrl, 'ultm8-student://membership-purchase/complete');
+    } finally {
+      invalidateMyMemberships();
+    }
+  }
+
+  function handlePurchaseSuccess(result: PurchaseOutcome) {
+    if (result.outcome === 'requires_checkout' && result.checkoutUrl) {
+      openCheckoutAndRefetch(result.checkoutUrl);
+    }
+  }
+
   function handlePurchase() {
     if (purchase.isPending) return;
-    purchase.mutate({ planId: plan.id });
+    purchase.mutate({ planId: plan.id, useHostedCheckout: true }, { onSuccess: handlePurchaseSuccess });
   }
 
   function openPayWithSavedCard() {
@@ -103,6 +132,12 @@ export function MembershipPlanRow({ plan, schoolId }: { plan: MembershipPlan; sc
 
       {outcome === 'pending_confirmation' ? (
         <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>Payment pending confirmation by the School.</Text>
+      ) : null}
+
+      {outcome === 'requires_checkout' ? (
+        <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
+          Payment submitted — check My Memberships shortly once it's confirmed.
+        </Text>
       ) : null}
 
       {outcome === 'requires_payment' ? (

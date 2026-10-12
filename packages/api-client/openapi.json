@@ -13105,6 +13105,10 @@
           "payWithSavedCard": {
             "type": "boolean",
             "description": "Self-purchase only: charge the saved payment method (Decision 238) instead of collecting a fresh card. Requires the X-Step-Up-Token header (Decision 236)."
+          },
+          "useHostedCheckout": {
+            "type": "boolean",
+            "description": "Collect a fresh card via a hosted Stripe Checkout Session (Decision 241) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard."
           }
         }
       },
@@ -13174,6 +13178,7 @@
             "type": "string",
             "enum": [
               "requires_payment",
+              "requires_checkout",
               "pending_confirmation",
               "active"
             ]
@@ -13181,6 +13186,10 @@
           "clientSecret": {
             "type": "string",
             "description": "Stripe PaymentIntent client secret — present only when outcome is requires_payment."
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "description": "Hosted Stripe Checkout Session URL (Decision 241, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment."
           },
           "membership": {
             "description": "Present only when outcome is active.",
@@ -13192,7 +13201,7 @@
           },
           "transactionId": {
             "type": "string",
-            "description": "The created Transaction id — present for requires_payment, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236)."
+            "description": "The created Transaction id — present for requires_payment, requires_checkout, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236)."
           }
         },
         "required": [

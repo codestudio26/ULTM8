@@ -303,6 +303,13 @@ export class MembershipsService {
     if (dto?.payWithSavedCard && isGuardianAction) {
       throw new BadRequestException('Paying with a saved card is not supported for a Guardian-driven purchase — pay with a new card instead.');
     }
+    // Decision 241 — the two fresh-card-collection mechanisms are mutually
+    // exclusive flags on the same request, same "fail loudly on an
+    // unsupported combination rather than silently prefer one" discipline the
+    // check above already follows.
+    if (dto?.payWithSavedCard && dto?.useHostedCheckout) {
+      throw new BadRequestException('payWithSavedCard and useHostedCheckout are mutually exclusive — choose one.');
+    }
 
     const plan = await this.findOnePlan(studentId, planId);
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
@@ -345,6 +352,17 @@ export class MembershipsService {
     }
     if (dto?.payWithSavedCard && paymentAccount.provider !== 'STRIPE') {
       throw new BadRequestException('Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.');
+    }
+    // Decision 241 — Track B Slice 4b's hosted-Checkout path, scoped
+    // identically to payWithSavedCard's own two checks immediately above
+    // (CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP, Stripe-configured School only).
+    // Unlike payWithSavedCard, this is NOT rejected for a Guardian-driven
+    // purchase — see PurchaseMembershipDto's own header comment for why.
+    if (dto?.useHostedCheckout && plan.type === 'SUBSCRIPTION') {
+      throw new BadRequestException('Hosted Checkout for a SUBSCRIPTION plan is not supported yet — pay with a new card instead.');
+    }
+    if (dto?.useHostedCheckout && paymentAccount.provider !== 'STRIPE') {
+      throw new BadRequestException('Hosted Checkout requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.');
     }
 
     // £0-immediate path (Spec 55 §6.1: "any Cash/Bank-eligible plan priced at 0...
@@ -419,6 +437,14 @@ export class MembershipsService {
       // here; CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only.
       if (dto?.payWithSavedCard) {
         return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, stepUpToken);
+      }
+
+      // Decision 241 (Track B Slice 4b) — hosted Stripe Checkout, the fresh-
+      // card path apps/student can actually complete. SUBSCRIPTION already
+      // took its own branch above and never reaches here; CLASS_PACK/
+      // WEEKLY_PASS/TRIAL_MEMBERSHIP only, same scope as payWithSavedCard.
+      if (dto?.useHostedCheckout) {
+        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency);
       }
 
       const { paymentIntentId, clientSecret } = await this.paymentsService.charge(studentId, plan.schoolId, plan.price, currency, plan.title);
@@ -564,6 +590,61 @@ export class MembershipsService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Decision 241 (Track B Slice 4b) — `purchase()`'s `useHostedCheckout`
+   * branch. apps/student has no Stripe SDK dependency (Decision 113/238), so
+   * the bare PaymentIntent `clientSecret` the `charge()` branch above returns
+   * (`requires_payment`) is a dead end there — nothing in that app can render
+   * Stripe Elements/PaymentSheet against it. This instead wraps the identical
+   * one-time charge in a hosted Stripe Checkout Session (Decision 238's own
+   * `mode: 'setup'` card-saving pattern, extended to `mode: 'payment'`),
+   * opened in the device's own browser via `expo-web-browser`.
+   *
+   * The Transaction created below is, deliberately, shaped EXACTLY like the
+   * `charge()` branch's own Transaction — same PENDING/STRIPE/
+   * stripePaymentIntentId — because `PaymentsService.
+   * createPurchaseCheckoutSession()`'s own header comment confirms a
+   * `mode: 'payment'` Checkout Session's underlying PaymentIntent exists
+   * synchronously, at Session-creation time. That's what lets this reuse the
+   * EXISTING `payment_intent.succeeded` webhook handler
+   * (`StripeWebhookProcessingProcessor.handlePaymentIntentSucceeded`)
+   * verbatim for Membership creation and collision handling, instead of a
+   * second, parallel path keyed off `checkout.session.completed` — no
+   * processor change needed for this purchase path at all.
+   */
+  private async purchaseViaHostedCheckout(
+    studentId: string,
+    plan: { id: string; schoolId: string; price: number; title: string },
+    paymentAccountId: string,
+    currency: string,
+  ) {
+    const { checkoutUrl, paymentIntentId } = await this.paymentsService.createPurchaseCheckoutSession(
+      studentId,
+      plan.schoolId,
+      plan.price,
+      currency,
+      plan.title,
+    );
+    const transactionId = randomUUID();
+    await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.transaction.create({
+        data: {
+          id: transactionId,
+          schoolId: plan.schoolId,
+          studentId,
+          paymentAccountId,
+          membershipPlanId: plan.id,
+          amount: plan.price,
+          currency,
+          status: 'PENDING',
+          paymentMethod: 'STRIPE',
+          stripePaymentIntentId: paymentIntentId,
+        },
+      }),
+    );
+    return { outcome: 'requires_checkout' as const, checkoutUrl, transactionId };
   }
 
   /**
