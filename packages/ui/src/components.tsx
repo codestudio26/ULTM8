@@ -886,6 +886,80 @@ export function Table<T extends { id: string }>({ columns, rows }: { columns: Ta
   );
 }
 
+/* ---------------------------------------------------------------------- View toggle */
+
+function RowsViewIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="2" y="3" width="12" height="2.4" rx="1" fill="currentColor" />
+      <rect x="2" y="6.8" width="12" height="2.4" rx="1" fill="currentColor" />
+      <rect x="2" y="10.6" width="12" height="2.4" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function GridViewIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor" />
+      <rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor" />
+      <rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor" />
+      <rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+export type ViewMode = 'rows' | 'grid';
+
+export interface ViewToggleProps {
+  value: ViewMode;
+  onChange: (mode: ViewMode) => void;
+  /** Group label for assistive tech — defaults to "View" since every call site so
+   * far is a single Rows/Grid switch for "the list below," not something that
+   * needs a per-page label to disambiguate. */
+  'aria-label'?: string;
+}
+
+/** Rows/Grid segmented control for a list page's rendering mode — the two buttons
+ * stay mutually exclusive (`aria-pressed`, one active at a time), same semantics a
+ * radio group would have, but as a button pair since there's no form submission
+ * involved. No existing icon-button or segmented-control component in this package
+ * already fit (`ultm8-btn` is a single standalone button; `ultm8-segmented-code` is
+ * OTP-digit boxes, not a mode switch) — this is its own small, reusable class. */
+export function ViewToggle({ value, onChange, 'aria-label': ariaLabel = 'View' }: ViewToggleProps) {
+  return (
+    <div className="ultm8-view-toggle" role="group" aria-label={ariaLabel}>
+      <button
+        type="button"
+        className={['ultm8-view-toggle__btn', value === 'rows' ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
+        aria-pressed={value === 'rows'}
+        onClick={() => onChange('rows')}
+      >
+        <RowsViewIcon />
+        Rows
+      </button>
+      <button
+        type="button"
+        className={['ultm8-view-toggle__btn', value === 'grid' ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
+        aria-pressed={value === 'grid'}
+        onClick={() => onChange('grid')}
+      >
+        <GridViewIcon />
+        Grid
+      </button>
+    </div>
+  );
+}
+
+/** Minimal responsive card container for a list page's Grid view — each child is
+ * expected to be a `Card` (or similar) representing one row's data. Columns are
+ * fluid (`auto-fill`/`minmax`), not a fixed count, so it reflows correctly down to
+ * phone width without a breakpoint-specific rule, same no-horizontal-overflow
+ * requirement `Table`'s own scroll wrapper comment cites. */
+export function CardGrid({ children }: { children: ReactNode }) {
+  return <div className="ultm8-card-grid">{children}</div>;
+}
+
 /* ---------------------------------------------------------------------- Feedback */
 
 export function Badge({ children, variant = 'default' }: { children: ReactNode; variant?: 'default' | 'accent' | 'success' | 'danger' }) {
