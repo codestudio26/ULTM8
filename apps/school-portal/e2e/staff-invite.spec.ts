@@ -26,13 +26,15 @@ test('submitting the invite with no Branch chosen shows the page error, not a na
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
 
-  await page.getByLabel('Email').fill(candidate.email);
-  await page.getByRole('button', { name: 'Find' }).click();
+  // This form shares the page with CoachInvitesSection's own "Coach's
+  // email"/"Branch"/"Send invite" form below it; it's the first <form> in
+  // document order.
+  const staffForm = page.locator('form').first();
+  await staffForm.getByLabel('Email', { exact: true }).fill(candidate.email);
+  await staffForm.getByRole('button', { name: 'Find' }).click();
   await expect(page.getByText('Found Nora Newcoach.')).toBeVisible();
 
-  await page.getByLabel('Role').selectOption({ label: 'Branch Staff' });
-  // Two "Send invite" buttons are on this page (this form's and
-  // CoachInvitesSection's below it); this one is the first.
-  await page.getByRole('button', { name: 'Send invite' }).first().click();
+  await staffForm.getByLabel('Role', { exact: true }).selectOption({ label: 'Branch Staff' });
+  await staffForm.getByRole('button', { name: 'Send invite' }).click();
   await expect(page.getByText('Select a Branch for Branch Staff.')).toBeVisible();
 });
