@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, SegmentedCodeInput, TextField } from '@ultm8/ui';
+import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, PhoneField, SegmentedCodeInput } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 
 export function ResetPasscodePage() {
   const navigate = useNavigate();
@@ -49,8 +50,8 @@ export function ResetPasscodePage() {
     <AuthCard title="Set a new passcode" subtitle="Enter the code we sent, then choose a new 6-digit passcode.">
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Phone" htmlFor="reset-phone" hint="E.164 format, e.g. +15551234567">
-          <TextField type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Field label="Phone" htmlFor="reset-phone">
+          <PhoneField required value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Field label="Verification code" htmlFor="reset-code">
           <SegmentedCodeInput value={code} onChange={setCode} required />

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
+import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useBranch, useUpdateBranch } from './branchQueries';
 
@@ -120,7 +121,11 @@ export function BranchSettingsPage() {
             <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
           </Field>
           <Field label="Contact phone" htmlFor="branch-settings-phone">
-            <TextField value={form.contactPhone} onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))} />
+            <PhoneField
+              value={form.contactPhone}
+              onChange={(v) => setForm((f) => ({ ...f, contactPhone: v }))}
+              defaultCountry={guessDefaultCountry()}
+            />
           </Field>
           <Field label="Timezone" htmlFor="branch-settings-timezone">
             <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />

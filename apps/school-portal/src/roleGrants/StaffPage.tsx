@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import {
   fetchInviteCandidate,
   fetchUserRoleGrants,
@@ -153,8 +154,8 @@ export function StaffPage() {
             <Field label="Email" htmlFor="invite-email" hint="Exact match only. Provide email or phone (or both).">
               <TextField type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
             </Field>
-            <Field label="Phone" htmlFor="invite-phone" hint="E.164 format, e.g. +14155551234">
-              <TextField value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} />
+            <Field label="Phone" htmlFor="invite-phone" hint="Exact match only.">
+              <PhoneField value={invitePhone} onChange={setInvitePhone} defaultCountry={guessDefaultCountry()} />
             </Field>
             <Button type="submit" loading={findLoading}>
               Find

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Card, Checkbox, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool } from './schoolQueries';
 
@@ -104,7 +105,7 @@ export function SchoolPage() {
             <TextField required value={form.name} onChange={(e) => set('name', e.target.value)} />
           </Field>
           <Field label="Mobile number" htmlFor="edit-mobile">
-            <TextField value={form.mobileNumber} onChange={(e) => set('mobileNumber', e.target.value)} />
+            <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
           </Field>
           <Field label="Address" htmlFor="edit-address">
             <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthCard, Button, Checkbox, ErrorBanner, Field, SelectField, TextField, TimezoneField } from '@ultm8/ui';
+import { AuthCard, Button, Checkbox, ErrorBanner, Field, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useCreateSchool } from './schoolQueries';
 
@@ -104,7 +105,7 @@ export function CreateSchoolPage() {
           <TextField required value={form.name} onChange={(e) => set('name', e.target.value)} />
         </Field>
         <Field label="Mobile number" htmlFor="school-mobile">
-          <TextField value={form.mobileNumber} onChange={(e) => set('mobileNumber', e.target.value)} />
+          <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Field label="Address" htmlFor="school-address">
           <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
