@@ -217,12 +217,10 @@ function MembershipPlanForm({
   const showClassesIncluded = form.type === 'CLASS_PACK' || form.type === 'FRIEND_PASS';
   const showScopedClass = form.type === 'CLASS_PACK' || form.type === 'FRIEND_PASS';
   // SUBSCRIPTION is Stripe-cycle-driven, not expiry-driven — no stored
-  // day-count applies. WEEKLY_PASS is left showing it: Spec 55 §6.1 describes
-  // Weekly Pass as "governed by an expiry date," while this same DTO's own
-  // field description says "Not used by WEEKLY_PASS" — a genuine, unresolved
-  // contradiction between two primary sources (flagged in the backend notes,
-  // not guessed at here; showing the field is the safer default of the two,
-  // since hiding it would block setting a value that may turn out to matter).
+  // day-count applies. WEEKLY_PASS keeps showing it — Decision 249 confirms
+  // Spec 55 §6.1's reading (Weekly Pass IS governed by this field) as
+  // authoritative; the DTO's old "Not used by WEEKLY_PASS" description was
+  // simply wrong and has been corrected to match.
   const showExpiryDuration = form.type !== 'SUBSCRIPTION';
   const priceLocked = form.type === 'FRIEND_PASS';
 

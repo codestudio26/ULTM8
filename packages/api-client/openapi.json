@@ -13138,11 +13138,11 @@
           },
           "currency": {
             "type": "string",
-            "description": "One of the 6 supported currencies (School's own choice, no conversion applied)."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241)."
           },
           "expiryDurationDays": {
             "type": "number",
-            "description": "Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS."
+            "description": "Computes each purchased Membership's expiry date at creation time — used by every plan type, including WEEKLY_PASS (Decision 249; a prior version of this description incorrectly said otherwise)."
           },
           "classesIncluded": {
             "type": "number",
@@ -13334,7 +13334,7 @@
           },
           "currency": {
             "type": "string",
-            "description": "One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear.",
+            "description": "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear.",
             "nullable": true
           },
           "expiryDurationDays": {
@@ -13482,7 +13482,7 @@
           },
           "useHostedCheckout": {
             "type": "boolean",
-            "description": "Collect a fresh card via a hosted Stripe Checkout Session (Decision 241) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard."
+            "description": "Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard."
           }
         }
       },
@@ -13563,7 +13563,7 @@
           },
           "checkoutUrl": {
             "type": "string",
-            "description": "Hosted Stripe Checkout Session URL (Decision 241, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment."
+            "description": "Hosted Stripe Checkout Session URL (Decision 243, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment."
           },
           "membership": {
             "description": "Present only when outcome is active.",
@@ -17667,7 +17667,7 @@
           },
           "franchiseId": {
             "type": "string",
-            "description": "Required for entityType FRANCHISE."
+            "description": "For entityType FRANCHISE editing an EXISTING Franchise, this is required and must equal entityId. Omit both when creating a brand-new Franchise (mirrors POST /franchises itself, which needs no prior RoleGrant either)."
           },
           "entityId": {
             "type": "string",

@@ -4168,9 +4168,9 @@ export interface components {
             title: string;
             /** @description Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS. */
             price: number;
-            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). */
             currency?: string;
-            /** @description Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS. */
+            /** @description Computes each purchased Membership's expiry date at creation time — used by every plan type, including WEEKLY_PASS (Decision 249; a prior version of this description incorrectly said otherwise). */
             expiryDurationDays?: number;
             /** @description CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set. */
             classesIncluded?: number;
@@ -4232,7 +4232,7 @@ export interface components {
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
             includesLessons?: boolean;
-            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear. */
             currency?: string | null;
             /** @description Computes each purchased Membership's expiry date at creation time. Pass null to clear. */
             expiryDurationDays?: number | null;
@@ -5504,7 +5504,7 @@ export interface components {
             contentType: "image/png" | "image/jpeg" | "image/webp";
             /** @description Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student. */
             schoolId?: string;
-            /** @description Required for entityType FRANCHISE. */
+            /** @description For entityType FRANCHISE editing an EXISTING Franchise, this is required and must equal entityId. Omit both when creating a brand-new Franchise (mirrors POST /franchises itself, which needs no prior RoleGrant either). */
             franchiseId?: string;
             /** @description The existing Instructor/Branch/Class/Franchise row's own id, or the target Student's User id for entityType USER on-behalf-of. Omit when creating a brand-new entity (its id does not exist yet) or editing your own User row. */
             entityId?: string;
