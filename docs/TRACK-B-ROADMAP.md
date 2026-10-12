@@ -978,6 +978,23 @@ added there — check that job's result for this file specifically before mergin
 `apps/student`: `tsc --noEmit`; full `npm run test` (64 tests across 12 suites,
 including the new `src/transactions/transactionHistory.test.tsx`, all passing).
 
+## Session refresh — access tokens no longer expire mid-session (`POST /auth/refresh`, `/auth/logout`) — DONE
+
+A real, flagged-but-never-closed gap: `secureTokenStore.ts`'s own header comment already said "15-minute TTL, no refresh token yet" before this. apps/api mints a 15-minute access token and a 30-day refresh token on login, but nothing in this app ever stored, used, or revoked the refresh token — every session silently started failing every API call with a raw 401 exactly 15 minutes after login, with no recovery except logging back in by hand.
+
+### What was built
+- **`packages/api-client`** (shared with apps/school-portal): `createApiClient` gains an opt-in `onUnauthorized` option — on a 401, calls it once, retries the original request (body included) with whatever token it resolves to, and gives up cleanly (original 401 passed through) if it resolves null or a retry also fails. Single-flight by construction: concurrent 401s all await the same in-flight call rather than each starting their own — load-bearing, not an optimization, because apps/api's refresh-token rotation treats a second concurrent redemption of the same token as a reuse/compromise signal and signs the account out **everywhere** as a precaution. Opt-in: apps/school-portal doesn't pass it and sees no behavior change.
+- **apps/student**: `secureTokenStore.ts` now also holds the refresh token (SecureStore, same as the access token). `login()` stores it; a new `refreshSession()` (wired as `apiClient`'s `onUnauthorized`, via a small bridge module since `api.ts`'s client is a module-level singleton created before `AuthProvider` mounts) redeems it via `POST /auth/refresh` and persists the rotated successor; `logout()` now also revokes the current refresh token server-side via `POST /auth/logout` (best-effort — a failed revoke never blocks the local sign-out).
+- **A second, deliberately plain client** (`authClient`, no `onUnauthorized`) for the three direct auth calls (login/refresh/logout) — login can genuinely 401 on a wrong passcode, and refresh can genuinely 401 on a dead refresh token; running either through the retry-enabled client would read that as "go refresh and retry," calling straight back into the same request and hanging forever. Found and fixed before this ever shipped, not after.
+- **Verified with a real test**, not just review, given the severe failure mode a dedup bug here has: `src/auth/apiClientRefresh.test.ts` (6 cases) exercises `createApiClient` against a mocked `fetch` directly — single-flight dedup under two concurrent 401s, body preservation on a retried PATCH, clean give-up when refresh fails, no second retry on a retry that also 401s, and zero behavior change when `onUnauthorized` isn't passed.
+
+### Not yet
+- **Proactive refresh** (e.g. on app launch, before the access token has actually expired) — this only refreshes reactively, after a request 401s. Closes the actual gap (no more getting stuck) without the extra complexity of decoding the JWT's `exp` claim and scheduling ahead of it; worth revisiting if a snappier cold-launch matters more than it does today.
+- **apps/school-portal has the identical gap** (verified: zero references to `refreshToken`/`auth/refresh`/`auth/logout` anywhere in its source) — out of scope here since it's Track A, but the shared `onUnauthorized` option in `packages/api-client` is ready for it to opt into the same way.
+
+### Verified
+`tsc --noEmit` for `packages/api-client`, `apps/student`, and `apps/school-portal` (confirming zero behavior change there); `jest` `src/auth/apiClientRefresh.test.ts` (6); full `apps/student` jest suite re-run for regressions.
+
 ## Explicitly blocked — do not scope a slice for these yet
 
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own
