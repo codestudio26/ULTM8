@@ -15,6 +15,60 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Membership Plans — Archive lifecycle state, and a Subscription
+  price-change migrate-vs-grandfather prompt** (`docs/v1.2-backend-backlog.md`):
+  two previously-flagged backlog items, both approved by the product owner
+  and built together.
+  - **Archive.** `MembershipPlan.archivedAt` (nullable timestamp — same
+    lifecycle-flag shape `Franchise`/`School` already established for their
+    own `archivedAt`) is a real, permanent-retirement state distinct from
+    `visible` (temporarily unlisted, reversible with no special gate).
+    `POST /membership-plans/:id/archive` and `.../unarchive`
+    (`MembershipsService.archivePlan`/`unarchivePlan`), School-Owner-gated,
+    same convention as every other MembershipPlan mutation. An archived plan
+    never appears in the Student-facing purchase list
+    (`AcademiesService.findOne`'s own `where` clause, and the
+    `membership_plan_discovery_read` RLS policy, both updated) but existing
+    `Membership` rows that reference it keep working unchanged — no
+    cascade-delete, no FK change. `MembershipsService.purchase()` also
+    rejects a direct purchase-by-id against an archived plan (a disclosed
+    judgment call — archiving is reasoned as stronger than `visible=false`,
+    which does not block a direct purchase today).
+    `MembershipPlansPage.tsx`'s Total/Visible/Hidden stats ribbon gains a 4th
+    **Archived** tile (Visible/Hidden now scope to non-archived plans only,
+    so an archived-but-visible-flagged plan isn't double-counted); the row's
+    own action menu (`RowActionsMenu`, same component `ClassesPage.tsx`
+    already uses) gains Archive/Unarchive alongside Duplicate.
+  - **Price-change migrate-vs-grandfather prompt.** Editing a live
+    SUBSCRIPTION plan's price now requires an explicit choice whenever that
+    plan already has at least one active, Stripe-backed subscriber:
+    **Migrate** (every existing subscriber's Stripe Subscription moves to the
+    new Stripe Price, `proration_behavior: 'none'` — no immediate charge/
+    credit, the new price applies starting their next billing cycle — a
+    disclosed, reasonable implementation choice among Stripe's own documented
+    options, not a re-litigation of the migrate/grandfather product
+    decision) or **Grandfather** (existing subscribers keep billing at their
+    original price indefinitely; a new persisted Stripe Price is created and
+    referenced by `MembershipPlan.stripePriceId`/`stripeProductId` for new
+    signups only). `UpdateMembershipPlanDto.priceChangeStrategy`
+    (`MIGRATE`/`GRANDFATHER`) is required (400 if missing) exactly when a
+    SUBSCRIPTION plan's price is actually changing and it has active
+    subscribers; rejected if sent when not applicable. Migrate runs as a new
+    background job (`membership-plan-price-migration.processor.ts`,
+    event-triggered, same shape as `chargeback-pattern-restriction`) rather
+    than blocking the edit's own HTTP request, matching
+    `franchise-fee-usage-reporting.processor.ts`'s own established per-row
+    bulk-Stripe-operation pattern. Every decision is recorded, auditable, in
+    a new `MembershipPlanPriceChange` table
+    (`GET /membership-plans/:id/price-changes`, School-Owner-gated).
+    `PaymentsService.subscribe()`'s pre-existing throwaway-Product/inline-
+    `price_data` purchase flow (Phase 9) is untouched for any plan that never
+    reaches a price-change decision — only a plan that has gained a
+    persisted `stripePriceId` reuses it for new purchases.
+    `MembershipPlanFormPage.tsx`'s Pricing & Access step shows the required
+    Migrate/Grandfather choice inline (fetched proactively via
+    `GET /membership-plans/:id/active-count`, not only surfaced after a 400)
+    and blocks Save until one is picked.
 - **Waiver drawn-signature capture test coverage** (Track B, `apps/student`,
   `docs/TRACK-B-ROADMAP.md` Phase 4/Slice 6b). The capture UI itself already
   shipped on `master` (commit `318d491`, 11 Oct 2026): `WaiverRow.tsx` offers

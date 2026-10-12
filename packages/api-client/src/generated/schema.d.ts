@@ -1540,6 +1540,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-plans/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_archivePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_unarchivePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/price-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_findPriceChanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/membership-plans/{id}/purchase": {
         parameters: {
             query?: never;
@@ -4088,6 +4136,8 @@ export interface components {
             classesIncluded?: number | null;
             scopedClassId?: string | null;
             visible: boolean;
+            /** @description v1.2 backend backlog — set when this plan has been archived (permanent-retirement state, distinct from visible). Null when not archived. */
+            archivedAt?: string | null;
             refundFeeDate?: string | null;
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
@@ -4128,9 +4178,36 @@ export interface components {
             cancellationCharge?: number | null;
             /** @description ISO 8601 date-time. Pass null to clear. */
             refundFeeDate?: string | null;
+            /**
+             * @description Required only when editing a SUBSCRIPTION plan whose price is actually changing AND it already has at least one active Stripe-backed subscriber. MIGRATE moves every existing subscriber to the new price (no proration, applied at their next billing cycle); GRANDFATHER leaves existing subscribers on their original price and applies the new price to new signups only. Rejected (400) if required and omitted.
+             * @enum {string}
+             */
+            priceChangeStrategy?: "MIGRATE" | "GRANDFATHER";
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
+        };
+        MembershipPlanPriceChangeResponseDto: {
+            id: string;
+            membershipPlanId: string;
+            schoolId: string;
+            /** @enum {string} */
+            decision: "MIGRATE" | "GRANDFATHER";
+            oldPrice: number;
+            newPrice: number;
+            oldCurrency?: string | null;
+            newCurrency?: string | null;
+            decidedById: string;
+            /** @enum {string} */
+            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+            affectedMembershipCount: number;
+            migratedCount: number;
+            failedCount: number;
+            createdAt: string;
+            completedAt?: string | null;
+        };
+        MembershipPlanPriceChangeListResponseDto: {
+            items: components["schemas"]["MembershipPlanPriceChangeResponseDto"][];
         };
         PurchaseMembershipDto: {
             /** @description Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller. */
@@ -7967,6 +8044,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipPlanActiveCountResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_archivePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_unarchivePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_findPriceChanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanPriceChangeListResponseDto"];
                 };
             };
         };

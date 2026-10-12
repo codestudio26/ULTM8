@@ -11,6 +11,7 @@ import { isoToLocalInput, localInputToIso } from '../lib/datetime';
 import {
   useCreateMembershipPlan,
   useMembershipPlan,
+  useMembershipPlanActiveCount,
   useUpdateMembershipPlan,
   type MembershipPlanResponse,
 } from './membershipPlanQueries';
@@ -73,6 +74,12 @@ export function MembershipPlanFormPage() {
   const { data: classData } = useClasses(schoolId);
   const { data: disciplineData } = useDisciplines(schoolId);
   const { data: existingPlan, isLoading: planLoading, error: planError } = useMembershipPlan(id ?? null);
+  // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+  // prompt. Fetched eagerly (not just on submit attempt) so the prompt can
+  // render as soon as the price field actually changes, rather than only
+  // surfacing after a 400 from the server — only ever relevant on Edit, so
+  // `null` on Create skips the request entirely (useQuery's own `enabled`).
+  const { data: activeCountData } = useMembershipPlanActiveCount(isEdit ? id ?? null : null);
   const createPlan = useCreateMembershipPlan(schoolId ?? '');
   const updatePlan = useUpdateMembershipPlan(schoolId ?? '', id ?? '');
 
@@ -99,6 +106,7 @@ export function MembershipPlanFormPage() {
       classes={classData?.items ?? []}
       disciplines={disciplineData?.items ?? []}
       defaultCurrency={school?.defaultCurrency ?? undefined}
+      activeSubscriberCount={activeCountData?.activeCount ?? 0}
       submitting={isEdit ? updatePlan.isPending : createPlan.isPending}
       onSubmit={async (values) => {
         if (isEdit) {
@@ -130,6 +138,12 @@ interface MembershipPlanFormValues {
   termsWaiverRequired: boolean;
   disciplineIds: string[];
   includesLessons: boolean;
+  // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+  // prompt. Only ever set (and only ever sent to the server) when editing a
+  // SUBSCRIPTION plan whose price actually changed and which already has at
+  // least one active subscriber — see requiresPriceChangeDecision below.
+  // Omitted (undefined) on every other submit, including every Create.
+  priceChangeStrategy?: 'MIGRATE' | 'GRANDFATHER';
 }
 
 /** Fields match CreateMembershipPlanDto/UpdateMembershipPlanDto exactly —
@@ -147,6 +161,7 @@ function MembershipPlanForm({
   classes,
   disciplines,
   defaultCurrency,
+  activeSubscriberCount,
   submitting,
   onSubmit,
   onCancel,
@@ -156,6 +171,10 @@ function MembershipPlanForm({
   classes: ClassResponse[];
   disciplines: DisciplineResponse[];
   defaultCurrency?: string;
+  /** v1.2 backend backlog — how many ACTIVE, Stripe-backed subscribers this
+   * plan currently has. Always 0 on Create (nothing to migrate/grandfather
+   * for a plan that doesn't exist yet). */
+  activeSubscriberCount: number;
   submitting: boolean;
   onSubmit: (values: MembershipPlanFormValues) => Promise<void>;
   onCancel: () => void;
@@ -187,6 +206,11 @@ function MembershipPlanForm({
   const [includesLessons, setIncludesLessons] = useState<boolean | null>(initial?.includesLessons ?? null);
   const [error, setError] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
+  // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+  // prompt. No pre-selected default — the whole point of a required choice
+  // is that staff make it deliberately, not fall through to whichever option
+  // happened to be listed first.
+  const [priceChangeStrategy, setPriceChangeStrategy] = useState<'MIGRATE' | 'GRANDFATHER' | ''>('');
 
   const priced = form.type !== 'FRIEND_PASS' && Number(form.price) > 0;
   const lessonsOn = includesLessons ?? priced;
@@ -208,6 +232,21 @@ function MembershipPlanForm({
   // since hiding it would block setting a value that may turn out to matter).
   const showExpiryDuration = form.type !== 'SUBSCRIPTION';
   const priceLocked = form.type === 'FRIEND_PASS';
+
+  // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+  // prompt. Required exactly when MembershipsService.updatePlan() itself
+  // would require it server-side (mirrored client-side so the prompt shows
+  // up front rather than only after a 400): editing an existing SUBSCRIPTION
+  // plan, staying SUBSCRIPTION, whose price is actually changing, AND which
+  // already has at least one active Stripe-backed subscriber. A brand-new
+  // plan (mode === 'create') or one with zero subscribers needs no choice —
+  // same reasoning that method's own header comment documents.
+  const priceChangeDecisionRequired =
+    mode === 'edit' &&
+    initial?.type === 'SUBSCRIPTION' &&
+    form.type === 'SUBSCRIPTION' &&
+    Number(form.price) !== initial?.price &&
+    activeSubscriberCount > 0;
 
   function handleTypeChange(nextType: PlanType) {
     setForm((f) => {
@@ -242,6 +281,16 @@ function MembershipPlanForm({
       setError('Price is required.');
       return;
     }
+    // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+    // prompt. Blocks the save client-side (same "jump back to the step that
+    // needs attention" pattern as Title/Price above) rather than letting it
+    // round-trip to the server's own identical 400 — the choice is required
+    // before the save completes, not merely before the price takes effect.
+    if (priceChangeDecisionRequired && !priceChangeStrategy) {
+      setStepIndex(1);
+      setError('This plan has active subscribers — choose Migrate or Grandfather before saving a price change.');
+      return;
+    }
     try {
       await onSubmit({
         type: form.type,
@@ -259,6 +308,11 @@ function MembershipPlanForm({
         termsWaiverRequired: form.termsWaiverRequired,
         disciplineIds: form.disciplineIds,
         includesLessons: lessonsOn,
+        // Omitted (undefined) whenever not required — sending it when the
+        // server doesn't expect one is itself rejected (400), per
+        // MembershipsService.updatePlan()'s own "a value with no effect is a
+        // caller mistake worth surfacing" discipline.
+        priceChangeStrategy: priceChangeDecisionRequired && priceChangeStrategy ? priceChangeStrategy : undefined,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
@@ -321,6 +375,44 @@ function MembershipPlanForm({
               onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
             />
           </Field>
+          {priceChangeDecisionRequired ? (
+            // v1.2 backend backlog — Subscription price-change
+            // migrate-vs-grandfather prompt. Shown only when it's actually
+            // relevant (see priceChangeDecisionRequired's own comment above)
+            // — a required choice, not a dismissible hint, so Save stays
+            // blocked (handleSubmit's own check) until one is picked.
+            <Field label="This price change affects existing subscribers" htmlFor="plan-price-change-strategy">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+                  {activeSubscriberCount} active subscriber{activeSubscriberCount === 1 ? '' : 's'} currently billing at the old price.
+                  Choose how this change applies before saving.
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Button
+                    type="button"
+                    variant={priceChangeStrategy === 'MIGRATE' ? 'primary' : 'secondary'}
+                    onClick={() => setPriceChangeStrategy('MIGRATE')}
+                  >
+                    Migrate everyone to the new price
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={priceChangeStrategy === 'GRANDFATHER' ? 'primary' : 'secondary'}
+                    onClick={() => setPriceChangeStrategy('GRANDFATHER')}
+                  >
+                    Grandfather existing subscribers
+                  </Button>
+                </div>
+                <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+                  {priceChangeStrategy === 'MIGRATE'
+                    ? 'Every existing subscriber moves to the new price starting their next billing cycle — no immediate charge or credit.'
+                    : priceChangeStrategy === 'GRANDFATHER'
+                      ? "Existing subscribers keep billing at their original price indefinitely — the new price applies to new signups only."
+                      : 'Pick one to continue.'}
+                </p>
+              </div>
+            </Field>
+          ) : null}
           <Field label="Currency" htmlFor="plan-currency" hint="Your School's own choice — no conversion applied.">
             <SelectField
               value={form.currency}

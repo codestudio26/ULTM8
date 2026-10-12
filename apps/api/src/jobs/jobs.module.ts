@@ -16,6 +16,7 @@ import { TenantLifecyclePurgeProcessor, TenantLifecyclePurgeScheduler } from './
 import { ChargebackPatternRestrictionProcessor } from './chargeback-pattern-restriction.processor';
 import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from './membership-expiry-sweep.processor';
 import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './grading-notifications.processor';
+import { MembershipPlanPriceMigrationProcessor } from './membership-plan-price-migration.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -108,6 +109,13 @@ import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './
  * action, plus a daily sweep) and the routing of "you've been promoted" to the
  * student or a minor's guardians. Fans out through NOTIFICATION_FANOUT_QUEUE
  * like the others; no new module import.
+ *
+ * v1.2 backend backlog (Subscription price-change migrate-vs-grandfather
+ * prompt) adds MembershipPlanPriceMigrationProcessor — event-triggered only,
+ * no Scheduler (same shape as ChargebackPatternRestrictionProcessor's own
+ * reasoning). Needs PaymentsService directly (its own
+ * migrateSubscriptionToNewPrice()) — already available via the PaymentsModule
+ * import above; no new module import needed.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -131,6 +139,7 @@ import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './
     MembershipExpirySweepScheduler,
     GradingNotificationsProcessor,
     GradingNotificationsScheduler,
+    MembershipPlanPriceMigrationProcessor,
   ],
 })
 export class JobsModule {}

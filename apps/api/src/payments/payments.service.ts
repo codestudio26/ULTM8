@@ -439,23 +439,32 @@ export class PaymentsService {
     amount: number,
     currency: string,
     productName: string,
+    // v1.2 backend backlog — once a SUBSCRIPTION plan has reached its first
+    // price-change decision (Migrate or Grandfather), MembershipsService
+    // passes the plan's own persisted `stripePriceId` here so every NEW
+    // purchase attaches to that same tracked Price instead of a fresh
+    // throwaway one — Grandfather's own confirmed "the new price only
+    // applies to new signups" requirement. `undefined` (every plan that's
+    // never had a price-change decision) leaves this method's original
+    // Phase 9 behavior byte-for-byte unchanged below.
+    existingPriceId?: string,
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const customer = await stripe.customers.create({ email: studentEmail });
-    const product = await stripe.products.create({ name: productName });
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [
-        {
+    const item = existingPriceId
+      ? { price: existingPriceId }
+      : {
           price_data: {
             currency,
             unit_amount: amount,
-            recurring: { interval: 'month' },
-            product: product.id,
+            recurring: { interval: 'month' as const },
+            product: (await stripe.products.create({ name: productName })).id,
           },
-        },
-      ],
+        };
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [item],
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
       expand: ['latest_invoice.payment_intent'],
@@ -466,6 +475,100 @@ export class PaymentsService {
       throw new Error('Stripe Subscription did not return an expandable latest_invoice.payment_intent');
     }
     return { subscriptionId: subscription.id, paymentIntentId: paymentIntent.id, clientSecret: paymentIntent.client_secret };
+  }
+
+  // ---------------------------------------------------------------------------
+  // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+  // prompt. Extends the exact same "PaymentsModule wraps the Stripe SDK,
+  // MembershipsService owns the DB writes and calls these for the actual
+  // Stripe API calls" split `subscribe()`/`charge()` above already establish
+  // — no new pattern invented. `connectedAccountId` is taken directly rather
+  // than `callerId`+`schoolId` (unlike every other method in this file) so
+  // both the caller-scoped edit path (MembershipsService.updatePlan(), a real
+  // RLS-bound caller) and the background MIGRATE job (running under
+  // PrismaJobsService/ultm8_jobs, no single caller to scope a tenant read to)
+  // can share one implementation — `getStripeConnectedAccountId` below is the
+  // one caller-scoped lookup, used only by the former.
+  // ---------------------------------------------------------------------------
+
+  /** Thin, caller-scoped wrapper around `resolveStripePaymentAccount` for
+   * MembershipsService.updatePlan() — exposed because that private method's
+   * own RLS-bound shape is exactly what a staff-initiated price edit needs,
+   * and duplicating resolveStripePaymentAccount's lookup+validation there
+   * would be the same gap this codebase's other "PaymentsModule wraps the
+   * Stripe SDK" splits already avoid. */
+  async getStripeConnectedAccountId(callerId: string, schoolId: string): Promise<string> {
+    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    return account.stripeConnectedAccountId!;
+  }
+
+  /**
+   * Creates a new Stripe Price for the given amount/currency, attached to an
+   * existing Product id if one is passed, or a freshly-created one otherwise.
+   * Verified directly against Stripe's own API/SDK types before writing this
+   * (not assumed): a Price's `unit_amount`/`currency` are immutable once
+   * created — "changing a plan's price" at Stripe's own API level always
+   * means creating a NEW Price object, never PATCHing an existing one. A
+   * Product, unlike a Price, IS a reusable shell multiple Prices can attach
+   * to over time, hence `existingProductId` being accepted and reused rather
+   * than always creating a fresh one (unlike `subscribe()`'s own throwaway
+   * Product-per-subscription simplification above, which this method's own
+   * callers deliberately move away from once a plan reaches its first
+   * price-change decision — see MembershipPlan.stripeProductId's own
+   * schema.prisma comment).
+   */
+  async createPriceForPlan(
+    connectedAccountId: string,
+    params: { existingProductId?: string | null; productName: string; amount: number; currency: string },
+  ): Promise<{ productId: string; priceId: string }> {
+    const stripe = this.stripeClient.scopedClient(connectedAccountId);
+    const productId = params.existingProductId ?? (await stripe.products.create({ name: params.productName })).id;
+    const price = await stripe.prices.create({
+      product: productId,
+      unit_amount: params.amount,
+      currency: params.currency,
+      // Monthly, matching subscribe()'s own hardcoded interval above — same
+      // "no MembershipPlan-level interval field exists" reasoning, flagged
+      // there, applies identically here.
+      recurring: { interval: 'month' },
+    });
+    return { productId, priceId: price.id };
+  }
+
+  /**
+   * MIGRATE path — moves one already-active Stripe Subscription onto a new
+   * Price. Verified directly against Stripe's own SDK types before writing
+   * this: `subscriptions.update()`'s `items[].price` field is exactly how an
+   * existing Subscription Item's Price is swapped (distinct from updating
+   * `MembershipPlan.price` in our own DB, which the backlog's own open
+   * question flagged as having "undocumented effect" on a live Subscription
+   * — this method is that documented effect, now built deliberately).
+   *
+   * `proration_behavior: 'none'` is this build's own explicit, disclosed
+   * choice (flagged in this feature's PR description, not re-litigating the
+   * already-made Migrate-vs-Grandfather product decision): no prorated
+   * invoice item is generated for the mid-cycle swap, so the subscriber sees
+   * no surprise immediate charge/credit — the new Price only starts billing
+   * on their NEXT invoice, at their existing billing-cycle anchor (left
+   * unchanged). Stripe's other documented options
+   * (`create_prorations`/`always_invoice`) would bill a partial difference
+   * immediately instead — a reasonable alternative, not chosen here.
+   *
+   * Retrieves the Subscription fresh rather than trusting a cached item id —
+   * this is called from a background job days/weeks after the Subscription
+   * was created, so no in-memory item id survives that long anyway.
+   */
+  async migrateSubscriptionToNewPrice(connectedAccountId: string, stripeSubscriptionId: string, newPriceId: string): Promise<void> {
+    const stripe = this.stripeClient.scopedClient(connectedAccountId);
+    const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    const item = subscription.items.data[0];
+    if (!item) {
+      throw new Error(`Stripe Subscription ${stripeSubscriptionId} has no Subscription Item to migrate.`);
+    }
+    await stripe.subscriptions.update(stripeSubscriptionId, {
+      items: [{ id: item.id, price: newPriceId }],
+      proration_behavior: 'none',
+    });
   }
 
   // ---------------------------------------------------------------------------

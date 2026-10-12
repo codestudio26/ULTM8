@@ -15,6 +15,7 @@ import {
   PurchaseMembershipResponseDto,
 } from './dto/membership-response.dto';
 import { MembershipPlanActiveCountResponseDto } from './dto/membership-plan-active-count-response.dto';
+import { MembershipPlanPriceChangeListResponseDto } from './dto/membership-plan-price-change-response.dto';
 
 // MembershipPlan CRUD + purchase (self-service, or Guardian-on-behalf-of a linked
 // minor as of Phase 39) + Student/Staff reads — no refund, no credit-restore, no
@@ -66,6 +67,33 @@ export class MembershipsController {
   async getActiveCount(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     const activeCount = await this.membershipsService.getActiveMemberCount(user.sub, id);
     return { activeCount };
+  }
+
+  /** v1.2 backend backlog "Archive action" — School Owner/Manager only, same
+   * gate as createPlan/updatePlan. Idempotent — see
+   * MembershipsService.archivePlan's own header comment. */
+  @ApiOkResponse({ type: MembershipPlanResponseDto })
+  @Post('membership-plans/:id/archive')
+  archivePlan(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.membershipsService.archivePlan(user.sub, id);
+  }
+
+  /** v1.2 backend backlog "Archive action" — un-archiving, same gate, reverses
+   * the flag. */
+  @ApiOkResponse({ type: MembershipPlanResponseDto })
+  @Post('membership-plans/:id/unarchive')
+  unarchivePlan(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.membershipsService.unarchivePlan(user.sub, id);
+  }
+
+  /** v1.2 backend backlog "Subscription price-change migrate-vs-grandfather
+   * prompt" — the auditable decision log, newest first. School Owner/Manager
+   * only, same gate as every other MembershipPlan read/write. */
+  @ApiOkResponse({ type: MembershipPlanPriceChangeListResponseDto })
+  @Get('membership-plans/:id/price-changes')
+  async findPriceChanges(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    const items = await this.membershipsService.findPriceChanges(user.sub, id);
+    return { items };
   }
 
   // Decision 236's own follow-up — required only when dto.payWithSavedCard is

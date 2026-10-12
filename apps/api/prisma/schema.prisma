@@ -342,6 +342,7 @@ model User {
   lessonsAuthored              Lesson[]                @relation("LessonInstructor")
   memberships                  Membership[]            @relation("MembershipStudent")
   membershipsGifted            Membership[]            @relation("MembershipGiftedBy")
+  membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
   transactionsPaid             Transaction[]           @relation("TransactionPayer")
   studentRanks                 StudentRank[]
   promotionEventsPerformed     PromotionEvent[]        @relation("PromotionEventPerformedBy")
@@ -1408,6 +1409,55 @@ model MembershipPlan {
 
   visible Boolean @default(true)
 
+  /// v1.2 backend backlog "Archive action" — a permanent-retirement state,
+  /// distinct from `visible` (temporarily unlisted, reversible by any School
+  /// Owner/Manager action, no special gate beyond the ordinary update path).
+  /// Same single-nullable-timestamp convention Franchise/School already
+  /// established for their own `archivedAt` (Decision 110) — picked over a
+  /// second boolean column since this schema already has exactly one
+  /// lifecycle-flag shape for "closed/retired," and a plain boolean would
+  /// lose the "since when" a School Owner/Manager might reasonably want for
+  /// an eventual retention/reporting pass. Unlike Franchise/School's trio,
+  /// there is no `purgeAt`/`purgedAt` here — Decision 110's 90-day purge is a
+  /// whole-tenant offboarding mechanism (TenantLifecyclePurgeProcessor);
+  /// archiving one MembershipPlan is narrower and was never asked to cascade
+  /// into that job. Archiving never deletes or detaches existing Membership
+  /// rows that reference this plan (FK stays RESTRICT/CASCADE exactly as
+  /// before) — historical/reporting reads keep working, only
+  /// AcademiesService's Discovery-facing read excludes an archived plan
+  /// (membership_plan_discovery_read policy, see that migration's own
+  /// comment). MembershipsService.purchase() also rejects a direct
+  /// purchase-by-id attempt against an archived plan — a developer-level
+  /// judgment call (not explicitly asked for), reasoned from "archived" being
+  /// a stronger, intended-permanent state than "hidden," which does NOT block
+  /// a direct purchase-by-id today.
+  archivedAt DateTime?
+
+  /// v1.2 backend backlog "Subscription price-change migrate-vs-grandfather
+  /// prompt" — the persisted Stripe Product/Price this plan's SUBSCRIPTION
+  /// purchases attach to, once any price-change decision has been recorded
+  /// (MembershipPlanPriceChange below). Null until the first price edit with
+  /// an existing subscriber base; `PaymentsService.subscribe()`'s own
+  /// pre-existing throwaway-Product/inline-price_data path (Phase 9) is left
+  /// completely untouched for every plan that never reaches this — see that
+  /// method's own header comment for why a persisted Price wasn't built
+  /// there originally. Once set, `stripePriceId` is what every subsequent
+  /// `subscribe()` call reuses for NEW purchases of this plan (reads the
+  /// latest price this plan was edited to, Grandfather's own confirmed
+  /// "the new price only applies to new signups" requirement) — never
+  /// rewritten retroactively onto an existing Membership's own Stripe
+  /// Subscription except by the Migrate background job
+  /// (membership-plan-price-migration.processor.ts), which is the only
+  /// writer that ever calls Stripe's Subscription-update API. `stripeProductId`
+  /// is reused (not re-created) across repeated price edits — Stripe Prices
+  /// are immutable once created (confirmed directly against the Stripe API
+  /// before building this — a Price's `unit_amount`/`currency` cannot be
+  /// changed after creation, only superseded by creating a new Price object),
+  /// but a Product is just a reusable named "shell" multiple Prices can
+  /// attach to over this plan's lifetime.
+  stripeProductId String?
+  stripePriceId   String?
+
   /// Lessons (Decision 195): the School's styles this plan covers, and
   /// whether a live membership on it can watch those styles' lessons. On by
   /// default for priced plans, off for free ones; the owner can change it.
@@ -1423,10 +1473,78 @@ model MembershipPlan {
 
   memberships  Membership[]
   transactions Transaction[]
+  priceChanges MembershipPlanPriceChange[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
   @@index([scopedClassId])
+}
+
+enum MembershipPlanPriceChangeDecision {
+  MIGRATE
+  GRANDFATHER
+}
+
+enum MembershipPlanPriceChangeStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// v1.2 backend backlog "Subscription price-change migrate-vs-grandfather
+/// prompt" — one auditable row per staff-made price-change decision on a
+/// SUBSCRIPTION-type MembershipPlan that already has at least one active
+/// subscriber (MembershipsService.updatePlan() only ever creates a row here
+/// when that's true; a price edit with zero active subscribers has nothing
+/// to migrate/grandfather and needs no decision or row). `schoolId` is
+/// denormalized from membershipPlan.schoolId — same RLS-scoping reasoning
+/// Membership.schoolId's own header comment already documents, so this row's
+/// own policy is a direct column comparison, not a join through
+/// MembershipPlan.
+///
+/// `decision` is permanent once recorded — this is a decision LOG, not a
+/// mutable setting; a later price edit creates its own new row rather than
+/// updating this one. `status`/`migratedCount`/`failedCount`/`completedAt`
+/// only ever change for a MIGRATE row (GRANDFATHER resolves to COMPLETED
+/// synchronously the moment it's recorded — nothing further to do, since
+/// Grandfather's whole point is "touch nothing else"); see
+/// membership-plan-price-migration.processor.ts for the MIGRATE-only
+/// background job that owns those fields from PENDING onward.
+model MembershipPlanPriceChange {
+  id String @id @default(uuid())
+
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id])
+
+  // Denormalized from membershipPlan.schoolId — see header comment.
+  schoolId String
+
+  decision MembershipPlanPriceChangeDecision
+
+  oldPrice    Int
+  newPrice    Int
+  oldCurrency String?
+  newCurrency String?
+
+  decidedById String
+  decidedBy   User   @relation("MembershipPlanPriceChangeDecidedBy", fields: [decidedById], references: [id])
+
+  status MembershipPlanPriceChangeStatus @default(PENDING)
+
+  // Snapshot at decision time of how many ACTIVE Memberships on this plan had
+  // a real Stripe Subscription — informational only (the MIGRATE job re-reads
+  // live data at run time, this is just "what staff were told when they
+  // decided").
+  affectedMembershipCount Int @default(0)
+  migratedCount           Int @default(0)
+  failedCount             Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([schoolId])
+  @@index([membershipPlanId])
 }
 
 /// Membership (Phase 9, Spec 55 §6.1) — a Student's purchased instance of a
