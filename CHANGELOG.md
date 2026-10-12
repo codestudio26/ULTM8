@@ -15,6 +15,32 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Student Measurements — Weight Category, Kimono Size, Belt Size — built as
+  real fields** (Decision 220/246): Student Detail's Measurements fields,
+  previously flagged Fully Proposed in `docs/v1.2-backend-backlog.md` (no
+  such field existed anywhere on `User` or `StudentRank`), approved by the
+  product owner for build, overriding the Developer recommendation to drop
+  them for lack of grounding. **api:** three new nullable `String?` columns
+  on `User` — `weightCategory`, `kimonoSize`, `beltSize` — placed on `User`
+  (person-level, not per-Discipline, so not `StudentRank`); free text, no
+  enum/unit/canonical code list confirmed anywhere, same convention as this
+  model's existing `gender`/`nationality`/`language`/`currency` columns
+  (a developer-level presentation choice, not an invented business rule —
+  same category as Decision 222's Snooze shape). `UpdateUserDto`/
+  `UserResponseDto` gain all three (`@IsOptional() @IsString()
+  @MaxLength(50)`); since `UpdateStudentProfileDto` already `extends
+  UpdateUserDto` and both `PATCH /users/me` (self-service) and `PATCH
+  /schools/:id/students/:studentId/profile` (Staff-on-behalf-of) already
+  share `UsersService.updateProfileFor`, this wires BOTH edit surfaces at
+  once — no separate DTO/service path needed. **school-portal:**
+  `StudentUpdatePage.tsx` gains the three fields. **student:**
+  `ProfileScreen.tsx` (the Student's own self-service profile editor) gains
+  the three fields too, since a Student editing their own kimono/belt size
+  on their own profile is the natural home for it. `packages/api-client`
+  regenerated. New e2e coverage in `users.e2e-spec.ts` and
+  `student-profile-update.e2e-spec.ts`: set -> read back -> cleared with an
+  explicit `null`, plus a cross-tenant-isolation check (plain `User`
+  columns, no new cross-tenant surface).
 - **Membership Plans — two stale-comment fixes, no behavior change** (Decisions
   241/249). `CreateMembershipPlanDto`/`UpdateMembershipPlanDto`'s `currency`
   field still described "one of the 6 supported currencies," missed by the

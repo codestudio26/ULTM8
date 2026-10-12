@@ -143,4 +143,47 @@ describeIfDb('Staff-on-behalf-of Student profile update (v1.2 backend backlog)',
     const res = await patch('owner', 'Home Dojo', 'elsewhereStudent', { firstName: 'Nope' });
     expect(res.status).toBe(404);
   });
+
+  // ---------------------------------------------------------------------------
+  // Decision 220/246 — Student Measurements (weightCategory/kimonoSize/beltSize).
+  // Staff-on-behalf-of surface shares UpdateUserDto/UsersService.updateProfileFor
+  // with self-service, so the round-trip (set -> read back -> cleared with an
+  // explicit null) and multi-tenant isolation are exercised here too — plain User
+  // columns, no new cross-tenant surface.
+  // ---------------------------------------------------------------------------
+
+  it('Staff can set weightCategory/kimonoSize/beltSize on a Student\'s behalf, and it reads back', async () => {
+    const res = await patch('owner', 'Home Dojo', 'student', { weightCategory: '-73kg', kimonoSize: 'A3', beltSize: '3' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ weightCategory: '-73kg', kimonoSize: 'A3', beltSize: '3' });
+
+    const persisted = await superuser.user.findUniqueOrThrow({ where: { id: id.student } });
+    expect(persisted.weightCategory).toBe('-73kg');
+    expect(persisted.kimonoSize).toBe('A3');
+    expect(persisted.beltSize).toBe('3');
+  });
+
+  it('Staff can clear weightCategory/kimonoSize/beltSize on a Student\'s behalf with an explicit null', async () => {
+    const setRes = await patch('owner', 'Home Dojo', 'student', { weightCategory: '-73kg', kimonoSize: 'A3', beltSize: '3' });
+    expect(setRes.status).toBe(200);
+
+    const clearRes = await patch('owner', 'Home Dojo', 'student', { weightCategory: null, kimonoSize: null, beltSize: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.weightCategory).toBeNull();
+    expect(clearRes.body.kimonoSize).toBeNull();
+    expect(clearRes.body.beltSize).toBeNull();
+
+    const persisted = await superuser.user.findUniqueOrThrow({ where: { id: id.student } });
+    expect(persisted.weightCategory).toBeNull();
+    expect(persisted.kimonoSize).toBeNull();
+    expect(persisted.beltSize).toBeNull();
+  });
+
+  it('a Staff member at a DIFFERENT School still cannot set weightCategory/kimonoSize/beltSize (cross-tenant isolation unaffected)', async () => {
+    const res = await patch('otherOwner', 'Home Dojo', 'student', { weightCategory: 'Should Not Apply' });
+    expect([403, 404]).toContain(res.status);
+
+    const persisted = await superuser.user.findUniqueOrThrow({ where: { id: id.student } });
+    expect(persisted.weightCategory).not.toBe('Should Not Apply');
+  });
 });

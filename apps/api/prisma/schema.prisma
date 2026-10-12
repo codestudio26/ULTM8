@@ -331,6 +331,24 @@ model User {
   address         String?
   profilePhotoUrl String?
 
+  /// Decision 220/246 — Student Detail's Measurements fields, approved for build as
+  /// real fields (product owner's call, overriding the Developer's "drop for lack of
+  /// grounding" recommendation). Person-level, not per-Discipline, hence on `User`
+  /// rather than `StudentRank` (StudentRank is per-Student-per-Discipline grading
+  /// data — the wrong home for a physical attribute that doesn't vary by Discipline).
+  /// Free-text `String?`, same as `gender`/`nationality`/`language`/`currency` above:
+  /// nothing in Spec 55, the domain-rules skill, or this schema grounds any enum,
+  /// unit, or canonical code list for these three, so a developer-level presentation
+  /// choice (free text, not a fabricated enum) rather than a business rule — same
+  /// convention as every other "Developer-level presentation choice, not a business
+  /// rule" call already made in this codebase (e.g. Decision 222's Snooze shape).
+  /// Despite the name, not restricted to Students in the schema itself — same as
+  /// every other field on this shared base `User` model; only Student-facing UI
+  /// exposes them today.
+  weightCategory String?
+  kimonoSize     String?
+  beltSize       String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
