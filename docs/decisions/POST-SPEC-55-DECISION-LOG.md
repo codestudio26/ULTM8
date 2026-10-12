@@ -3179,3 +3179,36 @@ Same two items Decision 239 already flagged, untouched by this decision: `Paymen
 
 User, approving the extension of Decision 238's hosted-Checkout pattern to a one-time purchase instead of adopting a native PaymentSheet dev client, 12 Oct 2026.
 
+---
+
+## Decision 244 — Notifications keep no hard-delete; every Notification stays a permanent record
+
+**Date:** 12 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** whether `DELETE /notifications/:id` should exist — flagged as explicitly out of scope by Decision 242's own "What this does NOT resolve" note, and shown disabled-styled on the Notifications concept mockups this whole redesign has been building against.
+
+No delete endpoint is built. A Notification behaves the same way a Waiver signature or a Transaction already does in this codebase — a permanent, append-only record of something that happened, never user-deletable. Snooze (Decision 222) already covers "get this out of my unread list without destroying it," which was the actual user-facing need the mockup's disabled Delete button was gesturing at. No code change — this decision closes the open question against the already-shipped, delete-free behavior.
+
+### Recorded by
+
+User, choosing "Keep as permanent record, no delete" over adding a real `DELETE /notifications/:id`, 12 Oct 2026.
+
+---
+
+## Decision 245 — GDPR/LGPD data residency and per-user erasure: scoped as a technical design exercise, not yet built, not legal advice
+
+**Date:** 12 Oct 2026 · **Status:** Scoped by product owner request — **design only, nothing built, requires legal review before any of this is implemented**
+**Resolves:** the systemic tracking gap `docs/ULTM8-MASTER-ROADMAP.md` has carried since Decision 110 explicitly excluded it ("An individual Student/User's 'erase my personal data' request is a different legal mechanism... a different trigger... a different technical shape") — this entry gives that gap its own first design pass, at the product owner's explicit request, with the explicit caveat that none of the below is legal advice and real counsel must review the actual retention-period and residency requirements before this is built against any real EU/Brazil user.
+
+**This decision records technical design OPTIONS, not a chosen implementation** — nothing here authorizes building any of it yet.
+
+1. **Per-user erasure (GDPR Art. 17 / LGPD Art. 18, right to erasure).** Two real technical shapes exist in this codebase's own precedent:
+   - **Anonymize-in-place** (same shape Decision 110 already uses for School/Franchise soft-archive, extended to a single `User` row): null out `firstName`/`surname`/`email`/`phone`/`dateOfBirth`/`passcodeHash`/any R2-stored photo, replace with a stable placeholder (`"Erased User"` + a retained internal id for FK integrity), but leave `Transaction`/`WaiverSignature`/`Booking`/`StudentRank` rows intact and still linked — satisfies "erase personal data" while preserving the financial/legal/audit trail every one of those tables already exists to protect (payment records, signed legal documents, grading history). This is the standard approach SaaS platforms with billing/legal-record obligations use, since GDPR Art. 17(3)(b)/(e) and LGPD Art. 16 both carve out exceptions for legal/contractual retention obligations — exactly the carve-out a real lawyer needs to confirm applies to each specific row type here.
+   - **Hard-delete the User row and cascade:** simpler to reason about, but breaks referential integrity on every table above (a Transaction with no User would be a corrupted financial record, not a compliant one) — not recommended without first building a parallel "erasure log" that is itself a financial/legal record outliving the erased User, which is more engineering, not less.
+   - **Recommendation if/when this gets built:** anonymize-in-place, gated behind a new Platform-Admin-mediated action (same authorization tier as Decision 110's close-account action), with its own confirmation step and an audit row recording who erased whom and when (the erasure log itself is the one thing that must NOT be erasable).
+2. **Data residency.** Spec 55 §11.6 already commits to AWS (RDS/ElastiCache/Fargate) as the confirmed infra target, but no region has ever been chosen in any decision-log entry — `infra/terraform/` has no region-pinning today. Two shapes: a single-region deployment (simplest, but may not satisfy an EU customer's residency requirement) vs. a region-per-tenant-market architecture (Franchise or School carries a `dataRegion` field, provisioning routes to the matching AWS region's database) — the second is a substantial infra/deployment redesign, not a schema tweak, and should not be started speculatively before a real customer contract requires it.
+3. **What this does NOT resolve:** which specific markets/customers actually require either of these (that's a sales/legal question, not an engineering one), the actual retention periods required by GDPR/LGPD for financial records in this specific business (payment processors and most jurisdictions require 5-7 years minimum for transaction records — a lawyer must confirm the real number, not this document), and whether `Waiver`'s own still-pending retention period (Decision 110's one remaining open piece) should be decided together with this or separately.
+
+### Recorded by
+
+User, choosing "Scope it as a technical design exercise" over deferring entirely or holding for legal counsel first, 12 Oct 2026.
+

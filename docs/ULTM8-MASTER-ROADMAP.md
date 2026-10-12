@@ -590,8 +590,12 @@ final provisioning step needs the product owner directly)
     (Phase 54's own scope explicitly excluded this — see item 8).
 
 **G. Compliance program**
-20. Formalize the GDPR/LGPD data-residency tracking gap into a real decision-log entry
-    and, eventually, an actual program — currently has no owner anywhere.
+20. ~~Formalize the GDPR/LGPD data-residency tracking gap into a real decision-log entry~~
+    — done (Decision 245, 12 Oct 2026): a technical-design scoping pass (anonymize-in-place
+    vs. hard-delete for erasure, single-region vs. region-per-tenant for residency),
+    explicitly not legal advice and not yet built. Still needs: a real program with an
+    actual owner, and legal counsel's review of the real retention/residency requirements
+    before any of Decision 245's options are implemented.
 
 ---
 
