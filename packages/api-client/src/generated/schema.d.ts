@@ -4422,9 +4422,9 @@ export interface components {
             title: string;
             /** @description Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS. */
             price: number;
-            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). */
             currency?: string;
-            /** @description Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS. */
+            /** @description Computes each purchased Membership's expiry date at creation time — used by every plan type, including WEEKLY_PASS (Decision 249; a prior version of this description incorrectly said otherwise). */
             expiryDurationDays?: number;
             /** @description CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set. */
             classesIncluded?: number;
@@ -4486,7 +4486,7 @@ export interface components {
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
             includesLessons?: boolean;
-            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear. */
             currency?: string | null;
             /** @description Computes each purchased Membership's expiry date at creation time. Pass null to clear. */
             expiryDurationDays?: number | null;

@@ -55,6 +55,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   not hidden) — hiding them would have broken their own existing reorder
   endpoints' "send every item of this set exactly once" validation, a
   disclosed deviation from the hide-by-default convention used elsewhere.
+- **Membership Plans — two stale-comment fixes, no behavior change** (Decisions
+  241/249). `CreateMembershipPlanDto`/`UpdateMembershipPlanDto`'s `currency`
+  field still described "one of the 6 supported currencies," missed by the
+  currency-expansion PR (Decision 241) since it only touched
+  School/Franchise/User DTOs — corrected to point at the real
+  `GET /settings/currencies` list. `CreateMembershipPlanDto.expiryDurationDays`'s
+  "Not used by WEEKLY_PASS" description was simply wrong (Decision 249,
+  verified directly against `MembershipsService.createMembershipAndReturn()`,
+  which already applies it uniformly across every plan type) — corrected to
+  match; `MembershipPlanFormPage.tsx`'s own code comment updated to match,
+  the field was already shown for WEEKLY_PASS as the safe default.
 - **Membership purchase with a fresh card, via hosted Stripe Checkout**
   (Decision 243, Track B Slice 4b) — `apps/student`'s "Purchase" button on a
   Stripe-backed membership plan now completes end-to-end instead of showing

@@ -43,7 +43,7 @@ export enum MembershipPlanPriceChangeStrategyDto {
  * are resolved jointly with type — nothing to "clear" on their own).
  */
 export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembershipPlanDto, NULLABLE_ON_UPDATE)) {
-  @ApiPropertyOptional({ description: "One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear.", type: String, nullable: true })
+  @ApiPropertyOptional({ description: "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear.", type: String, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(10)
