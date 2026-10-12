@@ -9418,7 +9418,7 @@
         "properties": {
           "studentId": {
             "type": "string",
-            "description": "Guardian-only: enroll this linked minor Student at the School instead of the caller."
+            "description": "Enroll this person at the School instead of the caller — a Guardian enrolling a linked minor, or School Owner/Manager staff enrolling an already-registered person who found via the invite-candidate lookup (schools/:id/role-grants/invite-candidate)."
           },
           "branchId": {
             "type": "string",
@@ -9483,7 +9483,7 @@
           },
           "accessToken": {
             "type": "string",
-            "description": "Present for an ordinary self-service join; absent for a Guardian enrolling a linked minor (see this DTO's own header comment)."
+            "description": "Present for an ordinary self-service join; absent when someone else is doing the enrolling — a Guardian enrolling a linked minor, or Staff enrolling an existing person (see this DTO's own header comment)."
           }
         },
         "required": [

@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Badge, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Link, useNavigate } from 'react-router-dom';
+import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useStudents, type StudentRosterStatus, type StudentSummary } from './studentQueries';
 
 /**
- * Read-only Student roster — there is no create/edit flow here, since a Staff
- * member doesn't create a Student profile directly: a Student joins a School
- * themselves (or a Guardian enrolls a linked minor), both via the STUDENT
- * RoleGrant path (SchoolsService.join()), not this page.
+ * Read-only Student roster, apart from one entry point: there is no in-line
+ * create/edit here, since a Staff member doesn't create a Student profile
+ * directly. A Student joins a School themselves, a Guardian enrolls a linked
+ * minor, or (v1.2 backend backlog, "Invite a Student") Staff enrolls an
+ * existing-but-unenrolled person they found by email/phone — all three via
+ * the STUDENT RoleGrant path (SchoolsService.join()), the last one through
+ * the dedicated /students/invite page linked below, not this page itself.
  */
 export function StudentsPage() {
   const schoolId = useOwnedSchoolId();
+  const navigate = useNavigate();
   // Active/Inactive/All filter (GET /schools/:id/students?status=) — defaults to
   // ACTIVE, the exact pre-existing behavior for this page (v1.2 backend backlog,
   // "Students page" Active/Inactive gap).
@@ -31,7 +35,11 @@ export function StudentsPage() {
 
   return (
     <>
-      <PageHeader title="Students" subtitle="Everyone currently enrolled at your School. Open a student to see and change their ranks." />
+      <PageHeader
+        title="Students"
+        subtitle="Everyone currently enrolled at your School. Open a student to see and change their ranks."
+        actions={<Button onClick={() => navigate('/students/invite')}>Invite a Student</Button>}
+      />
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ maxWidth: 220 }}>

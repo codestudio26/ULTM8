@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components, paths } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
 export type StudentSummary = components['schemas']['StudentSummaryResponseDto'];
+export type JoinSchoolInput = components['schemas']['JoinSchoolDto'];
 // GET /schools/:id/students' query params are inlined onto the operation by
 // NestJS Swagger (a query DTO's own properties, not a referenced schema component
 // — confirmed by grepping the generated schema.d.ts for a few other query DTOs,
@@ -27,5 +28,25 @@ export function useStudents(schoolId: string | null, status?: StudentRosterStatu
     queryFn: () =>
       unwrap(apiClient.GET('/v1/schools/{id}/students', { params: { path: { id: schoolId! }, query: { status } } })),
     enabled: !!schoolId,
+  });
+}
+
+/**
+ * "Invite a Student" (v1.2 backend backlog) — School Owner/Manager staff
+ * enrolling an existing-but-unenrolled person at their own School. Reuses
+ * `POST /schools/{id}/join` (SchoolsService.join()'s own Staff-on-behalf-of
+ * branch, mirroring the pre-existing Guardian-on-behalf-of one) rather than
+ * a new endpoint — the invite target must already hold a ULTM8 account,
+ * found first via `fetchInviteCandidate` (same lookup StaffPage's Instructor/
+ * Branch Staff invite flow already uses), so this is the confirm step only.
+ */
+export function useInviteStudent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ schoolId, body }: { schoolId: string; body: JoinSchoolInput }) =>
+      unwrap(apiClient.POST('/v1/schools/{id}/join', { params: { path: { id: schoolId } }, body })),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['students', variables.schoolId] });
+    },
   });
 }
