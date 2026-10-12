@@ -2018,6 +2018,32 @@
         ]
       }
     },
+    "/v1/notifications/me/counts": {
+      "get": {
+        "operationId": "NotificationsController_getCountsForCaller",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationCountsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications/{id}/read": {
       "patch": {
         "operationId": "NotificationsController_markRead",
@@ -10694,6 +10720,23 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "NotificationCountsResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "The caller's total Notification count, across every page."
+          },
+          "unread": {
+            "type": "number",
+            "description": "The caller's unread Notification count, across every page."
+          }
+        },
+        "required": [
+          "total",
+          "unread"
         ]
       },
       "RegisterDeviceTokenDto": {
