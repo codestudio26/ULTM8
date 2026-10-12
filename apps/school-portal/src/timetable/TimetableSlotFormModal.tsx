@@ -50,11 +50,15 @@ export interface TimetableSlotFormValues {
 /** Fields match CreateTimetableSlotDto/UpdateTimetableSlotDto exactly —
  * apps/api/src/timetable/dto/create-timetable-slot.dto.ts. This is the
  * recurring weekly TEMPLATE (weekday + HH:mm times), a separate resource
- * from Class per that DTO's own header comment — Spec 55 doesn't confirm how
- * (or whether) a bookable Class gets generated from a slot occurrence, so
- * this screen manages the template only, same as the backend. `title`/
- * `activities`/etc. are template copies of the same fields CreateClassDto
- * has, kept in sync with that form's own field set and validation limits. */
+ * from Class per that DTO's own header comment. SKILL.md §9 is `[CONFIRMED]`
+ * (resolved 24 Aug 2026) on how a bookable Class gets generated from a slot
+ * occurrence — either materialized ahead of time from an active, recurring
+ * TimetableSlot via the real, running class-occurrence-generation job, or
+ * created as an independent one-off (`Class`'s own
+ * `@@unique([timetableSlotId, occurrenceDate])` constraint) — but this screen
+ * still manages the template only, same as the backend. `title`/`activities`/
+ * etc. are template copies of the same fields CreateClassDto has, kept in
+ * sync with that form's own field set and validation limits. */
 export function TimetableSlotFormModal({
   title,
   initial,
