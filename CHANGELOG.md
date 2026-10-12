@@ -41,6 +41,35 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `student-profile-update.e2e-spec.ts`: set -> read back -> cleared with an
   explicit `null`, plus a cross-tenant-isolation check (plain `User`
   columns, no new cross-tenant surface).
+- **Staff "Add Manually"** (Decision 251) — closes the exact gap Decision
+  237's own "What this does NOT resolve" section flagged for Staff's
+  identical from-zero-invite problem: the Staff page's "Invite staff"
+  find-by-email/phone step used to just say "No ULTM8 account found," full
+  stop, with no fallback. Mirrors Decision 237's Instructor "Add Manually"
+  exactly — a real `User` + `RoleGrant` (role: `BRANCH_STAFF`) created
+  immediately from just a name, email, and Branch, no invite/acceptance
+  step; a server-generated temp passcode emailed; forced passcode change on
+  first login (reuses the existing `mustChangePasscode`/
+  `POST /auth/passcode-change/first-login` infrastructure Decision 237
+  already built — untouched here). Since "Staff" is `BRANCH_STAFF` in the
+  `Role` enum, not a separate profile table the way `Instructor` is its own
+  table, this creates only `User` + `RoleGrant` — no third profile row.
+  **api:** new `RoleGrantsService.createStaffManually()` (added to
+  `RoleGrantsService`, which already owns all Staff CRUD, rather than a new
+  module) behind `POST /schools/:schoolId/role-grants/add-manually`,
+  School-Owner-gated, same 20/hour throttle tier as
+  `InstructorsController`'s own add-manually route. New
+  `CreateStaffManuallyDto` — `branchId` is **required outright** here, not
+  conditional on whether the School has branches the way Instructor's own
+  flow is (Branch Staff always needs a Branch). New
+  `CreateStaffManuallyResponseDto` (extends `RoleGrantResponseDto` — the
+  RoleGrant row this creates IS the Staff record — plus `email`/
+  `emailSent`). **school-portal:** new
+  `apps/school-portal/src/roleGrants/AddStaffManuallyModal.tsx`, a second
+  "Add staff manually" entry point on `StaffPage.tsx` beside the existing
+  invite-by-email/phone form, with the same non-blocking `emailSent` banner
+  pattern `InstructorsPage.tsx` already uses. `packages/api-client`
+  regenerated.
 - **Membership Plans — two stale-comment fixes, no behavior change** (Decisions
   241/249). `CreateMembershipPlanDto`/`UpdateMembershipPlanDto`'s `currency`
   field still described "one of the 6 supported currencies," missed by the
