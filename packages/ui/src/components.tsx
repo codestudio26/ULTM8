@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef, useState, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import React, { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { NavLink } from 'react-router-dom';
 
 /* ---------------------------------------------------------------------- Button */
@@ -95,6 +95,241 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(({ op
   </select>
 ));
 SelectField.displayName = 'SelectField';
+
+/* ---------------------------------------------------------------------- Timezone combobox */
+
+/** The full IANA tz database the runtime ships, not a hand-maintained list — this is
+ * exactly what `Intl.supportedValuesOf('timeZone')` exists for (Node 18+ / every
+ * evergreen browser). The `typeof` guard and short fallback below are defensive only;
+ * this app's supported runtimes all have it. */
+const ALL_TIMEZONES: string[] = (() => {
+  try {
+    if (typeof Intl.supportedValuesOf === 'function') {
+      return Intl.supportedValuesOf('timeZone');
+    }
+  } catch {
+    /* fall through to the fallback below */
+  }
+  return [
+    'UTC',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'Europe/London',
+    'Europe/Paris',
+    'Asia/Tokyo',
+    'Asia/Shanghai',
+    'Australia/Sydney',
+  ];
+})();
+
+/** Live, DST-aware UTC offset for `zone` at `at` — computed from the runtime's own
+ * tz database via `Intl.DateTimeFormat`, never a hardcoded offset table (which would
+ * go stale at every DST transition). `timeZoneName: 'longOffset'` is the option that
+ * reliably yields a numeric `GMT±HH:MM` part across zones; some implementations
+ * render the zero-offset zone as plain `GMT`, normalized to `UTC+00:00` here so every
+ * zone's label has the same shape. */
+function getUtcOffsetLabel(zone: string, at: Date): string {
+  try {
+    const part = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'longOffset' })
+      .formatToParts(at)
+      .find((p) => p.type === 'timeZoneName')?.value;
+    if (!part) return '';
+    return part === 'GMT' ? 'UTC+00:00' : part.replace('GMT', 'UTC');
+  } catch {
+    return '';
+  }
+}
+
+function formatTimezoneOption(zone: string, at: Date): string {
+  const offset = getUtcOffsetLabel(zone, at);
+  return offset ? `${zone} (${offset})` : zone;
+}
+
+const TIMEZONE_MAX_RESULTS = 50;
+
+export interface TimezoneFieldProps {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  'aria-invalid'?: React.AriaAttributes['aria-invalid'];
+  'aria-describedby'?: string;
+}
+
+/** Searchable combobox over the full IANA timezone list, each option showing its
+ * live UTC offset (Decision: replaces the plain free-text "IANA name" `TextField`
+ * every Branch/School timezone field used — product-approved full combobox, not a
+ * `<datalist>`). The committed value stays a plain IANA string (e.g.
+ * `"America/New_York"`), same shape the free-text field carried, so no DTO/backend
+ * change is needed.
+ *
+ * Follows the ARIA 1.2 "editable combobox with list autocomplete" pattern: `role`
+ * lives on the `<input>` itself (`combobox`/`aria-expanded`/`aria-controls`/
+ * `aria-autocomplete="list"`/`aria-activedescendant`), with a sibling `listbox` of
+ * `option`s. No existing component in this package already had a dropdown/listbox
+ * to match — `Modal` is the only other floating-layer pattern, so this borrows its
+ * surface/shadow/radius tokens for the popover rather than inventing new ones. */
+export function TimezoneField({
+  id,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  required,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
+}: TimezoneFieldProps) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const baseId = id ?? 'ultm8-timezone';
+  const listboxId = `${baseId}-listbox`;
+  const optionId = (zone: string) => `${baseId}-option-${zone.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+  // Computed once per render, not cached across renders — cheap (one
+  // `Intl.DateTimeFormat` per visible option) and keeps the offset correct across a
+  // DST transition without any extra wiring.
+  const now = new Date();
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const matches = !q
+      ? ALL_TIMEZONES
+      : ALL_TIMEZONES.filter((zone) => {
+          const normalized = zone.toLowerCase();
+          // Matches the raw IANA name AND its underscore-free reading (e.g. typing
+          // "new york" still finds "America/New_York") — still a plain substring
+          // match on the zone name, just normalized for the one punctuation
+          // difference between how these names are typed vs. written.
+          return normalized.includes(q) || normalized.replace(/_/g, ' ').includes(q);
+        });
+    return matches.slice(0, TIMEZONE_MAX_RESULTS);
+  }, [query]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setQuery('');
+        setActiveIndex(-1);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [isOpen]);
+
+  function openDropdown() {
+    setQuery('');
+    setIsOpen(true);
+    setActiveIndex(-1);
+  }
+
+  function closeDropdown() {
+    setIsOpen(false);
+    setQuery('');
+    setActiveIndex(-1);
+  }
+
+  function selectZone(zone: string) {
+    onChange(zone);
+    closeDropdown();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!isOpen) {
+          openDropdown();
+        } else {
+          setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (isOpen) setActiveIndex((i) => Math.max(i - 1, 0));
+        break;
+      case 'Enter':
+        if (isOpen && activeIndex >= 0 && results[activeIndex]) {
+          e.preventDefault();
+          selectZone(results[activeIndex]);
+        }
+        break;
+      case 'Escape':
+        if (isOpen) {
+          e.preventDefault();
+          closeDropdown();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  // While open, the input shows what's being typed (`query`); while closed, it
+  // shows the committed value's formatted "zone (offset)" label.
+  const displayValue = isOpen ? query : value ? formatTimezoneOption(value, now) : '';
+
+  return (
+    <div className="ultm8-combobox" ref={containerRef}>
+      <input
+        id={id}
+        role="combobox"
+        type="text"
+        autoComplete="off"
+        className="ultm8-input"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listboxId : undefined}
+        aria-autocomplete="list"
+        aria-activedescendant={isOpen && activeIndex >= 0 ? optionId(results[activeIndex]) : undefined}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
+        disabled={disabled}
+        required={required}
+        placeholder={placeholder}
+        value={displayValue}
+        onFocus={openDropdown}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setIsOpen(true);
+          setActiveIndex(-1);
+        }}
+        onKeyDown={handleKeyDown}
+        onBlur={closeDropdown}
+      />
+      {isOpen ? (
+        <ul className="ultm8-combobox__listbox" role="listbox" id={listboxId}>
+          {results.length === 0 ? (
+            <li className="ultm8-combobox__empty">No matching timezone</li>
+          ) : (
+            results.map((zone, i) => (
+              <li
+                key={zone}
+                id={optionId(zone)}
+                role="option"
+                aria-selected={zone === value}
+                className={['ultm8-combobox__option', i === activeIndex ? 'ultm8-combobox__option--active' : ''].join(' ').trim()}
+                // `preventDefault` on mousedown keeps focus in the input across the
+                // click, so no `blur` fires before `onClick`'s `selectZone` runs.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selectZone(zone)}
+                onMouseEnter={() => setActiveIndex(i)}
+              >
+                {formatTimezoneOption(zone, now)}
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 function EyeIcon() {
   return (

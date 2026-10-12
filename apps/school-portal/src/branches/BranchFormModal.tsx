@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCurrencies } from '../settings/settingsQueries';
 import type { BranchResponse } from './branchQueries';
@@ -88,8 +88,8 @@ export function BranchFormModal({
         <Field label="Contact phone" htmlFor="branch-phone">
           <TextField value={form.contactPhone} onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))} />
         </Field>
-        <Field label="Timezone" htmlFor="branch-timezone" hint="IANA name, e.g. America/New_York">
-          <TextField value={form.timezone} onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))} />
+        <Field label="Timezone" htmlFor="branch-timezone">
+          <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
         </Field>
         <Field label="Currency override" htmlFor="branch-currency">
           <SelectField
