@@ -67,3 +67,27 @@ test('fills in and saves the Decision 231 fields, then they survive a reload', a
   await expect(page.getByLabel('Default language')).toHaveValue('en-GB');
   await expect(page.getByLabel('Description')).toHaveValue('Our flagship location.');
 });
+
+/** Timezone combobox — replaces the old plain-text "IANA name" input with a
+ * searchable `TimezoneField` (`@ultm8/ui`). Not a native `<select>`, so the
+ * interaction is type-to-filter + click the matching option, not `.selectOption()`
+ * (and the field isn't covered by the shared round-trip test above since it needs
+ * this different interaction). */
+test('sets the Branch timezone via the searchable combobox, and it survives a reload', async ({ page }) => {
+  await page.goto(`/branches/${branchId}`);
+
+  const timezoneInput = page.getByLabel('Timezone');
+  await timezoneInput.click();
+  await timezoneInput.fill('new york');
+  await page.getByRole('option', { name: /America\/New_York/ }).click();
+
+  await expect(timezoneInput).toHaveValue(/^America\/New_York \(UTC[+-]\d{2}:\d{2}\)$/);
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Branch settings saved.')).toBeVisible();
+
+  const updated = await db.branch.findUniqueOrThrow({ where: { id: branchId } });
+  expect(updated.timezone).toBe('America/New_York');
+
+  await page.reload();
+  await expect(page.getByLabel('Timezone')).toHaveValue(/^America\/New_York \(UTC[+-]\d{2}:\d{2}\)$/);
+});

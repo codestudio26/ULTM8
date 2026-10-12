@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Every Timezone field is now a searchable combobox with live UTC offsets**
+  (product-approved), replacing the plain free-text "IANA name" `TextField` on
+  Branch create/edit (`BranchFormModal`, `BranchSettingsPage`) and School
+  create/edit (`CreateSchoolPage`, `SchoolPage`). New shared
+  `TimezoneField` (`packages/ui`): type-to-filter over the full IANA tz
+  database (`Intl.supportedValuesOf('timeZone')`, ~418 zones on this runtime —
+  not a hand-maintained list), each option showing its current, DST-aware
+  UTC offset computed live via `Intl.DateTimeFormat`. Follows the ARIA 1.2
+  editable-combobox pattern (`role="combobox"`/`aria-expanded`/
+  `aria-activedescendant`, full keyboard support). The committed value stays
+  a plain IANA string, same shape the free-text field carried — no
+  DTO/backend change. First test infra added to `packages/ui` (Vitest +
+  Testing Library + jsdom), this package having shipped with none; no other
+  web app here unit-tests components either, only `apps/school-portal`'s
+  Playwright e2e, which `branch-settings.spec.ts` now also covers for this
+  field's actual combobox interaction (not `.selectOption()`).
 - **Every mobile-number field now has a real country-code picker, worldwide**
   (Decision 240) — a new `PhoneField` (`packages/ui`, consumed by
   `apps/school-portal`; a parallel `apps/student` implementation, same
