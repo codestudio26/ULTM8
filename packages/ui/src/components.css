@@ -346,6 +346,49 @@
   border-bottom: none;
 }
 
+/* View toggle */
+.ultm8-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.ultm8-view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  background: var(--surface-0);
+  border: none;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.ultm8-view-toggle__btn + .ultm8-view-toggle__btn {
+  border-left: 1px solid var(--border);
+}
+.ultm8-view-toggle__btn:hover {
+  color: var(--text-primary);
+}
+.ultm8-view-toggle__btn--active,
+.ultm8-view-toggle__btn--active:hover {
+  background: var(--fill-accent);
+  color: var(--on-accent);
+}
+
+/* Card grid — responsive card layout for a list page's Grid view */
+.ultm8-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
 /* Badge */
 .ultm8-badge {
   display: inline-flex;
