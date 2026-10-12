@@ -3,8 +3,9 @@ import { ScrollView, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { Button, ErrorBanner, Field, Screen, SuccessBanner, TextField } from '../components/ui';
+import { Button, ErrorBanner, Field, PhoneField, Screen, SuccessBanner, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'VerifyOtp'>;
@@ -55,8 +56,8 @@ export function VerifyOtpScreen({ route, navigation }: Props) {
         </Text>
         {error ? <ErrorBanner message={error} /> : null}
         {resent ? <SuccessBanner message="Code resent." /> : null}
-        <Field label="Phone" hint="E.164 format, e.g. +15551234567">
-          <TextField keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+        <Field label="Phone">
+          <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Field label="Verification code">
           <TextField keyboardType="number-pad" value={code} onChangeText={setCode} />

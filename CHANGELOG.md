@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Every mobile-number field now has a real country-code picker, worldwide**
+  (Decision 240) — a new `PhoneField` (`packages/ui`, consumed by
+  `apps/school-portal`; a parallel `apps/student` implementation, same
+  `libphonenumber-js` logic) replaces plain free text on every phone/mobile
+  field in both apps: Register/Forgot-Passcode/Reset-Passcode/Verify-OTP in
+  both apps, School/Franchise `mobileNumber`, Branch `contactPhone` (both
+  `BranchFormModal` and `BranchSettingsPage`), Instructor `phone`, and the
+  Staff invite-candidate phone lookup. Always composes to a plain E.164
+  string — no DTO or backend change. The app's `PhoneField` is Track B
+  (`docs/TRACK-B-ROADMAP.md`).
 - **Real server-side filters and pagination for the Branches, Franchises,
   Classes, and Students portal pages** (`docs/v1.2-backend-backlog.md`) —
   four pages whose list/filter controls previously only worked against an
