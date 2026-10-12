@@ -63,7 +63,7 @@ export function StaffPage() {
 
   const [addingManually, setAddingManually] = useState(false);
   // Same non-blocking emailSent treatment as inviteNotice above, for Decision
-  // 244's own temp-passcode email.
+  // 246's own temp-passcode email.
   const [addManuallyNotice, setAddManuallyNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
   const [lookupUserId, setLookupUserId] = useState('');
