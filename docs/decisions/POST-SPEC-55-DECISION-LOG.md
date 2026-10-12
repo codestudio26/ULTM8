@@ -3235,3 +3235,61 @@ Nothing further — this was the one remaining piece Decision 237 itself named a
 
 User, confirming "Yes — same pattern as Instructor" when Decision 237's own flagged follow-up was re-asked directly, 12 Oct 2026.
 
+---
+
+## Decision 247 — White-label app distribution: one shared app, School selected after install — not a per-tenant App Store listing
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner — architecture decided, nothing built yet
+**Resolves:** the Apple 4.2.6 ("Minimum Functionality")/4.3 ("Spam") template-farm compliance risk that has blocked `MobileAppPublishingModule`/`packages/build-pipeline`, Track B Phase 9, and `SubscriptionPlansModule`'s deferred `whiteLabelApp` entitlement since it was first flagged in `docs/ULTM8-MASTER-ROADMAP.md`. Apple's policy explicitly targets exactly the pattern `skills/ultm8-app-publishing/SKILL.md` had assumed — many interchangeable apps differing only in branding/content, submitted from one shared codebase — and has a documented history of mass-removing exactly this shape of app without individual warning (gym-chain/fitness-SaaS "white-label app factories" are the canonical example).
+
+**Decision:** one single app, submitted once, in the App Store. A Student/Guardian/Staff member picks (or is routed to) their own School after install — via a join code, an email-domain match, or a simple School search/select screen — rather than each School getting its own separate listing/icon. In-app theming (colors, logo, School name shown in headers) still applies per-tenant once a session is scoped to a School; what does NOT exist is a separate App Store Connect entry, bundle id, or app icon per School.
+
+1. **Why this over the alternatives considered:** a true per-School native-app fleet is the highest-risk option — it is the exact pattern Apple's policy is written to catch, and avoiding rejection would require either genuine per-app functional differentiation (not just branding) or Apple's Custom Apps enterprise program, which is designed for internal company distribution, not a consumer-facing minor/guardian-data app. A PWA ("Add to Home Screen") sidesteps App Store review entirely but was not chosen — it gives up native push-notification quality and some camera/QR-scan UX polish this product already depends on (QR check-in, step-up re-auth flows). The one-shared-app model is the approach established fitness/gym-SaaS platforms (Mindbody, Glofox, and similar) actually ship today, confirming it is a proven, non-speculative pattern for this exact business shape.
+2. **What this decision does NOT do:** it does not design the actual School-selection UX (join code vs. search vs. domain-match), does not resolve how/whether a School still gets ANY visual distinction (app icon badge, splash screen) within the single-app constraint, and does not touch `MobileAppPublishingModule`/`packages/build-pipeline`'s own still-fully-unbuilt status — those remain genuinely unbuilt and need their own dedicated build pass, now unblocked to start, but not scoped by this entry.
+3. **Downstream effect:** `skills/ultm8-app-publishing/SKILL.md`'s existing entitlement model, publishing pipeline, and `TenantAppConfig` design assumed the per-tenant-app shape and need a fresh pass reconciling them against this decision before any of that module gets built — flagged here, not resolved here.
+
+### Recorded by
+
+User, choosing "One shared app, School picked after install" over a true per-tenant app fleet or a PWA, when presented with Apple's specific policy risk and the market precedent, 12 Oct 2026.
+
+---
+
+## Decision 248 — Track B native Stripe PaymentSheet: deferred, hosted Checkout stays the shipped path
+
+**Date:** 12 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** whether to additionally build `@stripe/stripe-react-native`'s native PaymentSheet in-app card form for Track B's fresh-card membership purchase, now that Decision 243's hosted-Checkout path (opens in the device browser via `expo-web-browser`, no native SDK) already ships end-to-end tonight.
+
+Deferred. The native PaymentSheet would be a UX improvement only (staying in-app instead of one browser hand-off) — not a functional gap, since Decision 243's path already works fully. Building it requires moving `apps/student` off Expo's fully-managed workflow onto a custom dev client (EAS Build, slower over-the-air update story going forward) — a real, one-time infrastructure cost not currently justified by a UX-polish-only improvement. Revisit only if a separate feature independently forces the native-dev-client move, so that infrastructure tax is paid once for a real reason, not twice.
+
+### Recorded by
+
+User, choosing "Defer — hosted Checkout is good enough for now" over taking on the native dev-client migration now, 12 Oct 2026.
+
+---
+
+## Decision 249 — WEEKLY_PASS DOES use `expiryDurationDays`; the DTO's "Not used by WEEKLY_PASS" comment was simply wrong
+
+**Date:** 12 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** `docs/v1.2-backend-backlog.md`'s flagged contradiction between Spec 55 §6.1 (Weekly Pass "governed by an expiry date instead of a recurring billing cycle," implying `expiryDurationDays` applies) and `CreateMembershipPlanDto.expiryDurationDays`'s own field description ("Not used by WEEKLY_PASS").
+
+**Verified directly against the actual runtime code before asking:** `MembershipsService.createMembershipAndReturn()` (memberships.service.ts, the line computing `expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24*60*60*1000) : undefined`) already applies `expiryDurationDays` uniformly across every plan type, with no WEEKLY_PASS exception anywhere in that path. The actual behavior already matches Spec 55's reading — only the DTO's field-description comment (and `MembershipPlanFormPage.tsx`'s field-visibility reasoning, if it still cites the old claim) was wrong. No behavior change; this decision authorizes correcting the stale comment/doc text, not a code change.
+
+### Recorded by
+
+User, choosing "Confirm Spec 55's reading" after being shown the actual runtime code already matches it, 12 Oct 2026.
+
+---
+
+## Decision 250 — Push notification delivery: route both iOS and Android through FCM
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner — architecture decided, still blocked on real credentials
+**Resolves:** which delivery architecture `DeviceToken`'s real SEND implementation (Decision 223) should target, while the product owner provisions the real Firebase/APNs credentials that decision already flagged as a prerequisite.
+
+Both platforms route through Firebase Cloud Messaging — FCM can deliver to APNs under the hood for iOS, so the backend needs one integration point (one SDK, one credential set) instead of maintaining a separate direct-APNs client alongside FCM for Android. This is the standard, well-supported pattern for a cross-platform app and was chosen over maintaining two independent native pipelines, which would only be justified by a specific reason to avoid routing iOS push through Firebase — none exists here.
+
+**Still blocked:** Decision 223's own prerequisite stands — real FCM and Apple Push Notification service credentials, provisioned by the product owner (a Firebase project, and an Apple Developer Program membership if one doesn't already exist), are required before any of this can be built against a real device.
+
+### Recorded by
+
+User, choosing "Route both iOS and Android through FCM" while the real credentials are still pending, 12 Oct 2026.
+
