@@ -67,7 +67,17 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
       </Text>
 
       {effectiveSignature ? (
-        <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>Signed {formatDate(effectiveSignature.signedDate)} ✓</Text>
+        <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>
+          {/* v1.2 backend backlog ("Waivers page", gap 2) — signedDate is now
+              nullable on the DTO (an Unsigned "assignment" row has none yet),
+              but `effectiveSignature` here is always either a row the parent
+              already filtered to status === 'SIGNED' (WaiversScreen.tsx) or
+              this screen's own just-succeeded sign() response — both cases
+              sign() itself always stamps a real signedDate on, so the `?? ''`
+              branch is unreachable in practice, not a silent "unknown date"
+              UI state being accepted. */}
+          Signed {formatDate(effectiveSignature.signedDate ?? '')} ✓
+        </Text>
       ) : signing ? (
         <View style={{ marginTop: 8 }}>
           <Field label="Full name">

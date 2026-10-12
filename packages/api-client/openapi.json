@@ -8893,6 +8893,42 @@
           }
         ]
       }
+    },
+    "/v1/uploads/public-photo-url": {
+      "post": {
+        "operationId": "UploadsController_requestPublicPhotoUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPublicPhotoUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPhotoUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "uploads"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -15693,16 +15729,21 @@
           },
           "signedById": {
             "type": "string",
-            "description": "The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf."
+            "nullable": true,
+            "description": "The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf. Null until this row is actually signed."
           },
           "schoolId": {
             "type": "string"
           },
           "signerFullName": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Null until this row is actually signed."
           },
           "signatureText": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Null until this row is actually signed."
           },
           "signatureImageUrl": {
             "type": "string",
@@ -15710,10 +15751,18 @@
             "description": "Presigned R2 GET URL, valid for 15 minutes — null if no drawn-signature image was captured."
           },
           "signedDate": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Null until this row is actually signed."
           },
           "status": {
-            "type": "string"
+            "type": "string",
+            "description": "Signed / Unsigned / Expired / Pending — see skills/ultm8-domain-rules/SKILL.md §13."
+          },
+          "studentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The enrolled Student's own name (firstName + surname) — only populated by the Signatures-panel endpoint (GET .../waivers/{id}/signatures); null from every other endpoint. Not a stored column."
           },
           "createdAt": {
             "type": "string"
@@ -15726,14 +15775,37 @@
           "id",
           "waiverId",
           "studentId",
-          "signedById",
           "schoolId",
-          "signerFullName",
-          "signatureText",
-          "signedDate",
           "status",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "WaiverSignatureSummaryDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "signed": {
+            "type": "number"
+          },
+          "unsigned": {
+            "type": "number"
+          },
+          "expired": {
+            "type": "number"
+          },
+          "pending": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "signed",
+          "unsigned",
+          "expired",
+          "pending"
         ]
       },
       "WaiverSignatureListResponseDto": {
@@ -15748,6 +15820,9 @@
           "nextCursor": {
             "type": "string",
             "nullable": true
+          },
+          "summary": {
+            "$ref": "#/components/schemas/WaiverSignatureSummaryDto"
           }
         },
         "required": [
@@ -17165,6 +17240,62 @@
             "description": "The translated text for this screen/labelKey/locale."
           }
         }
+      },
+      "RequestPublicPhotoUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "USER",
+              "BRANCH",
+              "FRANCHISE",
+              "CLASS"
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ]
+          },
+          "schoolId": {
+            "type": "string",
+            "description": "Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student."
+          },
+          "franchiseId": {
+            "type": "string",
+            "description": "Required for entityType FRANCHISE."
+          },
+          "entityId": {
+            "type": "string",
+            "description": "The existing Instructor/Branch/Class/Franchise row's own id, or the target Student's User id for entityType USER on-behalf-of. Omit when creating a brand-new entity (its id does not exist yet) or editing your own User row."
+          }
+        },
+        "required": [
+          "entityType",
+          "contentType"
+        ]
+      },
+      "PublicPhotoUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned PUT URL, valid for 5 minutes — upload the photo file directly here, with the exact Content-Type this endpoint was called with."
+          },
+          "publicUrl": {
+            "type": "string",
+            "description": "The permanent, public URL to save onto the entity's photoUrl/logoUrl/bannerUrl/profilePhotoUrl field once the upload succeeds. Never expires or needs re-signing."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "publicUrl"
+        ]
       }
     }
   }
