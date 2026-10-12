@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
+import { Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies } from '../settings/settingsQueries';
@@ -109,11 +109,12 @@ export function BranchFormModal({
           <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
         </Field>
         <Field label="Currency override" htmlFor="branch-currency">
-          <SelectField
+          <CurrencyField
             id="branch-currency"
             value={form.currencyOverride}
-            onChange={(e) => setForm((f) => ({ ...f, currencyOverride: e.target.value }))}
-            options={[{ value: '', label: 'Not set' }, ...(currencies ?? []).map((c) => ({ value: c.code, label: c.name }))]}
+            onChange={(code) => setForm((f) => ({ ...f, currencyOverride: code }))}
+            options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
+            placeholder="Not set"
           />
         </Field>
         <Field label="Logo" htmlFor="branch-logo">
