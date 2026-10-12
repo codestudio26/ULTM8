@@ -2776,6 +2776,8 @@ Rather than a separate Instructor-only rank structure, Instructor profiles will 
 
 User, choosing "Yes, reuse the Student rank system", 10 Oct 2026.
 
+**Status update (12 Oct 2026):** already built, before this decision was logged. Decision 188 (PR #142) gave instructors an `InstructorBelt` per style, chosen from the School's own Discipline/Rank/Stripe ladder (the same one students use) and verified by the owner; the old free-text `beltRanking` field is gone. No separate design pass is needed.
+
 ---
 
 ## Decision 220 — Build Student Measurements as real fields
