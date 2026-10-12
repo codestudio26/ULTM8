@@ -650,6 +650,174 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(
 );
 PhoneField.displayName = 'PhoneField';
 
+/* ---------------------------------------------------------------------- Photo upload */
+
+const DEFAULT_PHOTO_MAX_BYTES = 5 * 1024 * 1024; // 5MB — no existing size-limit
+// convention anywhere else in this codebase to inherit (grepped for one before
+// picking a number); chosen as a reasonable cap for a profile/logo/banner
+// photo given this phase deliberately does NOT add client-side resizing/
+// compression (Cloudflare Images' job, explicitly not chosen this phase — see
+// R2ClientService's own header comment). Disclosed here, and in the PR
+// description, as a judgment call rather than a confirmed business rule.
+const DEFAULT_PHOTO_ACCEPT = 'image/png,image/jpeg,image/webp';
+
+export interface PhotoUploadResult {
+  /** Presigned PUT URL — this component itself performs the `fetch(uploadUrl,
+   * { method: 'PUT', ... })`, matching the pre-existing CompleteInstructorProfilePage
+   * pattern this generalizes, so no caller has to duplicate that fetch call. */
+  uploadUrl: string;
+  /** The permanent, public URL to call `onChange` with once the upload succeeds. */
+  publicUrl: string;
+}
+
+export interface PhotoUploadFieldProps {
+  id?: string;
+  /** The entity's current photoUrl/logoUrl/bannerUrl/profilePhotoUrl value —
+   * shown as the preview until a new file is picked (then a local blob preview
+   * takes over) and successfully uploaded (then `value` itself should be
+   * updated via `onChange` by the caller's own form state, same as every other
+   * controlled field in this package). */
+  value: string;
+  onChange: (url: string) => void;
+  /** Request a presigned upload URL for the picked file — the caller owns
+   * calling the right backend endpoint for ITS entity/authorization specifics
+   * (e.g. `POST /uploads/public-photo-url` with that entity's own `entityType`/
+   * `schoolId`/`entityId`); this component only drives the picker/preview/PUT/
+   * onChange sequence around whatever that call returns. */
+  requestUpload: (file: File) => Promise<PhotoUploadResult>;
+  /** Default 5MB — see DEFAULT_PHOTO_MAX_BYTES's own comment. */
+  maxSizeBytes?: number;
+  /** Default `image/png,image/jpeg,image/webp` — matches
+   * RequestPublicPhotoUploadUrlDto's own allowed Content-Types exactly, so a
+   * file this input accepts is never rejected by the backend for its type. */
+  accept?: string;
+  disabled?: boolean;
+  'aria-invalid'?: 'true' | 'false';
+  'aria-describedby'?: string;
+}
+
+/** A file picker + live preview + upload-in-progress state, built once and
+ * reused across every photo/logo/banner field app-wide (Instructor.photoUrl,
+ * User.profilePhotoUrl, Branch/Franchise logoUrl/bannerUrl, Class.bannerUrl) —
+ * same "build the shared component once" discipline PhoneField/TimezoneField
+ * already established, replacing what was a plain `TextField` labeled "Photo
+ * URL"/"Banner URL" on each of those forms. Deliberately does NOT do any
+ * client-side resizing/compression (Cloudflare Images' job, not chosen this
+ * phase) — it uploads the file exactly as picked, after only a MIME-type and
+ * max-size check.
+ *
+ * `value` remains the single source of truth for what's actually saved — this
+ * component never stores its own "committed" state, so a parent form's Cancel/
+ * reset behavior keeps working exactly as it does for every other controlled
+ * field here. While a file is mid-upload, the preview shows the LOCAL blob (so
+ * the person sees immediate feedback) rather than the stale `value` — swapped
+ * back to `value` if the upload fails (`onChange` is never called with
+ * anything but a real, successfully-uploaded `publicUrl`).
+ */
+export function PhotoUploadField({
+  id,
+  value,
+  onChange,
+  requestUpload,
+  maxSizeBytes = DEFAULT_PHOTO_MAX_BYTES,
+  accept = DEFAULT_PHOTO_ACCEPT,
+  disabled,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
+}: PhotoUploadFieldProps) {
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  // Revokes the previous blob: URL whenever a new one replaces it, and on
+  // unmount — object URLs otherwise leak for the life of the document.
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
+
+  async function handleFileSelected(file: File) {
+    setError(null);
+    if (!accept.split(',').includes(file.type)) {
+      setError('Please choose a PNG, JPEG, or WebP image.');
+      return;
+    }
+    if (file.size > maxSizeBytes) {
+      setError(`This file is too large — the maximum is ${Math.round(maxSizeBytes / (1024 * 1024))}MB.`);
+      return;
+    }
+
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    const blobUrl = URL.createObjectURL(file);
+    objectUrlRef.current = blobUrl;
+    setLocalPreviewUrl(blobUrl);
+    setUploading(true);
+    try {
+      const { uploadUrl, publicUrl } = await requestUpload(file);
+      const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+      if (!putRes.ok) {
+        throw new Error('The photo could not be uploaded — please try again.');
+      }
+      onChange(publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The photo could not be uploaded — please try again.');
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+      setLocalPreviewUrl(null);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const previewSrc = localPreviewUrl ?? (value || null);
+
+  return (
+    <div className="ultm8-photo-upload">
+      <div className="ultm8-photo-upload__preview-row">
+        {previewSrc ? (
+          <img className="ultm8-photo-upload__preview" src={previewSrc} alt="Current photo" />
+        ) : (
+          <div className="ultm8-photo-upload__preview ultm8-photo-upload__preview--empty" aria-hidden="true" />
+        )}
+        <div>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={disabled || uploading}
+            loading={uploading}
+            onClick={() => inputRef.current?.click()}
+          >
+            {uploading ? 'Uploading…' : previewSrc ? 'Change photo' : 'Upload photo'}
+          </Button>
+          <input
+            ref={inputRef}
+            id={id}
+            type="file"
+            accept={accept}
+            disabled={disabled || uploading}
+            aria-invalid={ariaInvalid}
+            aria-describedby={ariaDescribedBy}
+            className="ultm8-photo-upload__input"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = ''; // allows picking the exact same file again later
+              if (file) void handleFileSelected(file);
+            }}
+          />
+        </div>
+      </div>
+      {error ? (
+        <span className="ultm8-field__error" role="alert">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function EyeIcon() {
   return (
     <svg width="20" height="14" viewBox="0 0 20 14" fill="none" aria-hidden="true">

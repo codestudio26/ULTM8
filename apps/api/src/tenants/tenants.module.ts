@@ -15,6 +15,7 @@ import { CoachInvitesService } from './coach-invites/coach-invites.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { UsersModule } from '../users/users.module';
+import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 
 /**
  * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
@@ -64,9 +65,21 @@ import { UsersModule } from '../users/users.module';
  * SchoolsService.updateStudentProfile() can call UsersService.updateProfileFor() —
  * one-directional, confirmed the same way as AuthModule/GuardiansModule above:
  * UsersModule imports nothing from tenants.
+ *
+ * Imports WaiverAssignmentModule (v1.2 backend backlog's "Unsigned row at
+ * assignment time" gap) so SchoolsService.join() can write an Unsigned
+ * WaiverSignature row for every Waiver already at the School a Student just
+ * joined. NOT WaiversModule itself — WaiversModule already imports
+ * TenantsModule (for SchoolsService/TenantAuthorizationService), so the reverse
+ * edge would be circular; WaiverAssignmentModule is its own tiny,
+ * dependency-free module for exactly this reason (see
+ * WaiverAssignmentService's own header comment) — the same "duplicate a
+ * stateless/config-only registration rather than add a cross-module
+ * dependency edge" convention this file's own StripeClientService paragraph
+ * above already established.
  */
 @Module({
-  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule],
+  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
   providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService],

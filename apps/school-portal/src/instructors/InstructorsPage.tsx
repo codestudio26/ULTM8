@@ -152,6 +152,7 @@ export function InstructorsPage() {
       {creating ? (
         <InstructorFormModal
           title="Add instructor"
+          schoolId={schoolId}
           branches={branches}
           disciplines={disciplines}
           eligibleUsers={eligibleUsersData?.items ?? []}
@@ -234,6 +235,7 @@ function EditInstructorModal({
   return (
     <InstructorFormModal
       title="Edit instructor"
+      schoolId={schoolId}
       initial={instructor}
       branches={branches}
       disciplines={disciplines}

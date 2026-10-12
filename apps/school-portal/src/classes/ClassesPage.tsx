@@ -236,6 +236,7 @@ export function ClassesPage() {
       {creating ? (
         <ClassFormModal
           title="Add class"
+          schoolId={schoolId}
           branches={branches}
           instructors={instructors}
           disciplines={disciplines}
@@ -265,13 +266,17 @@ export function ClassesPage() {
 }
 
 /**
- * Minimal one-off thumbnail for `Class.bannerUrl` — a plain URL string, same
- * convention as Branch.logoUrl/bannerUrl and Instructor.photoUrl (no real
- * upload pipeline exists app-wide). Doesn't reuse the shared `Avatar`
- * component (`../lib/Avatar.tsx`): Avatar's placeholder is a firstName/
- * surname initials monogram, and a Class has neither — a plain "no banner"
- * placeholder square (the title's first letter) fits better than forcing a
- * two-letter-initials shape onto a Class title.
+ * Minimal one-off thumbnail for `Class.bannerUrl` — a read-only roster-row
+ * display, not a form field (the form's own Banner field is a
+ * `PhotoUploadField` as of the real-photo-uploads phase — see
+ * `ClassFormModal.tsx`), so a plain `<img>` is all this needs regardless of
+ * whether `bannerUrl` came from an upload or (for a Class banner saved before
+ * this phase) a pasted URL — both are just a URL by the time this renders.
+ * Doesn't reuse the shared `Avatar` component (`../lib/Avatar.tsx`): Avatar's
+ * placeholder is a firstName/surname initials monogram, and a Class has
+ * neither — a plain "no banner" placeholder square (the title's first
+ * letter) fits better than forcing a two-letter-initials shape onto a Class
+ * title.
  */
 function ClassThumbnail({ bannerUrl, title, size }: { bannerUrl: string | null | undefined; title: string; size: number }) {
   if (bannerUrl) {
@@ -324,6 +329,7 @@ function EditClassModal({
   return (
     <ClassFormModal
       title="Edit class"
+      schoolId={schoolId}
       initial={classItem}
       branches={branches}
       instructors={instructors}
