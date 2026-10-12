@@ -183,7 +183,6 @@ export function StaffPage() {
                 hint={role === 'INSTRUCTOR' ? 'For an instructor who teaches at several branches, invite them once per branch.' : undefined}
               >
                 <SelectField
-                  required
                   value={branchId}
                   onChange={(e) => setBranchId(e.target.value)}
                   options={[{ value: '', label: 'Select a Branch…' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
