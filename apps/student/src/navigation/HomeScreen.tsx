@@ -31,6 +31,7 @@ export function HomeScreen({ navigation }: Props) {
       {isStudent ? <Button title="My grading" onPress={() => navigation.navigate('MyGrading')} /> : null}
       <Button title="My bookings" onPress={() => navigation.navigate('MyBookings')} />
       <Button title="My memberships" onPress={() => navigation.navigate('MyMemberships')} />
+      <Button title="Payment history" variant="secondary" onPress={() => navigation.navigate('TransactionHistory')} />
       <Button title="Waivers" onPress={() => navigation.navigate('Waivers')} />
       {isStudent ? <Button title="Payment methods" onPress={() => navigation.navigate('PaymentMethods')} /> : null}
       {isStudent ? <Button title="Lessons" onPress={() => navigation.navigate('Lessons')} /> : null}

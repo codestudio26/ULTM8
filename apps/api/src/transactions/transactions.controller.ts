@@ -7,6 +7,13 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { TransactionsService } from './transactions.service';
 import { TransactionListResponseDto } from './dto/transaction-response.dto';
 
+// Staff-facing School ledger + the Student's own self-read. No route-ordering
+// conflict between 'transactions/me' and the Staff route below — different
+// path shapes ('schools/:schoolId/transactions' vs 'transactions/me'), same
+// non-issue BookingsController's own comment already notes for 'bookings/me'.
+// There is currently no 'transactions/:id' route to worry about either (unlike
+// WaiversController's 'waivers/me' vs 'waivers/:id' ordering hazard) — if one
+// is ever added, 'transactions/me' MUST stay registered first.
 @ApiTags('transactions')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -22,5 +29,14 @@ export class TransactionsController {
     @Query() query: PaginationQueryDto,
   ) {
     return this.transactionsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
+  }
+
+  /** Student-scoped transaction history / receipt viewing — closes the
+   * TRACK-B-ROADMAP.md "Explicitly blocked" gap of the same name. See
+   * TransactionsService's own header comment for scope/RLS. */
+  @ApiOkResponse({ type: TransactionListResponseDto })
+  @Get('transactions/me')
+  findMyTransactions(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
+    return this.transactionsService.findMyTransactions(user.sub, query.cursor, query.limit);
   }
 }

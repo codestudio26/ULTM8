@@ -923,6 +923,61 @@ No screen anywhere in this app had ever read this endpoint before, despite it be
 ### Verified
 `tsc --noEmit`.
 
+## Student-scoped transaction history (receipt viewing) — DONE (2026-10-12)
+
+Closes the "Explicitly blocked" gap of the same name below: the endpoints a
+Student-facing payment history/receipt view would need didn't exist yet as real
+controllers, despite appearing in a "representative" table in one of the skills.
+Pure plumbing — the `Transaction` model already had everything needed
+(`studentId`, `schoolId`, `membershipPlanId`, `amount`, `currency`, `billingDate`,
+`status`, `paymentMethod`); no open product question here.
+
+### What was built
+- **API:** `GET /transactions/me` (`apps/api/src/transactions/transactions.controller.ts`),
+  paginated the same way as `GET /schools/{id}/transactions` (cursor/limit,
+  `PaginationQueryDto`), scoped strictly to `user.sub` as the Transaction's own
+  `studentId` — same shape and reasoning as `BookingsService.findMyBookings`: the
+  `where: { studentId: callerId }` clause is defense-in-depth on top of
+  Transaction's own RLS policy (`transaction_school_staff_or_self`), which already
+  lets a caller see only their own row or a School Owner/Manager's. No School-Owner
+  authorization check is needed or added. `TransactionResponseDto` gained a new
+  `membershipPlanTitle` field (joined from `Transaction.membershipPlan`, a plain
+  Prisma `include` — unlike the `Transaction.student` join, `MembershipPlan` isn't
+  subject to the RoleGrant-revocation gotcha Decision 117 found, so no
+  `resolveUserNames`-style workaround was needed here), shared by both the Staff
+  ledger read and this new self-read, so a Student can actually tell what each
+  charge was for. `packages/api-client` regenerated (`npm run export:openapi` in
+  `apps/api`, then `npm run generate` in `packages/api-client`).
+- **Student app:** `src/transactions/TransactionHistoryScreen.tsx`, reachable from
+  Home ("Payment history", next to "My memberships", same convention every other
+  secondary screen there already follows). Each row: what it paid for (the joined
+  membership plan title), amount+currency (`formatMoney`, the same helper
+  `MembershipPlanRow` already uses — `Transaction.amount` is minor-unit, same
+  convention as `MembershipPlan.price`), the billing date (`formatDate`), and
+  status. Built on the existing `PaginatedListScreen` extraction, same as My
+  Bookings/My Memberships — no new list pattern. New query hook
+  `src/transactions/transactionQueries.ts` (`useMyTransactions`), matching
+  `useMyMemberships`'/`useMyBookings`' `usePaginatedQuery` convention.
+
+### Not yet
+- **PDF/invoice generation.** No PDF infra exists anywhere in this codebase
+  (confirmed — searched for any such dependency/service before starting). "Receipt
+  viewing" here means this real, readable list of each Transaction, not a
+  downloadable document; a future PDF-export feature would be new infra, not an
+  extension of this.
+
+### Verified
+`apps/api`: `tsc --noEmit`; `nest build`; unit suite (482 tests, all passing); new
+`test/transactions.e2e-spec.ts` (unauthenticated rejected, self-read only ever
+returns the caller's own rows and never another Student's, pagination via
+cursor/limit) — written against the same `describeIfDb`-gated, real-Postgres
+convention every other e2e spec in this repo uses; the sandbox this was built in had
+no way to stand up a live Postgres itself, so this file's own run depends on CI's
+Postgres-backed cross-tenant-isolation job going green, same as any other e2e spec
+added there — check that job's result for this file specifically before merging.
+`apps/student`: `tsc --noEmit`; full `npm run test` (64 tests across 12 suites,
+including the new `src/transactions/transactionHistory.test.tsx`, all passing).
+
 ## Explicitly blocked — do not scope a slice for these yet
 
 *(Superseded in most cases by the Version 1 Plan section above and each Slice's own
@@ -931,13 +986,11 @@ section — kept here only for what's still genuinely blocked as of 2026-09-22.)
 - **Per-School white-label branding** — `packages/build-pipeline` is still an unbuilt
   placeholder; nothing to build against yet, and it's a standalone business decision
   (one app with dynamic theming vs. per-School app-store listings) beyond scope here.
-- **Invoice/receipt viewing, Student-scoped transaction history** — the endpoints
-  these would need don't exist yet as real controllers, despite appearing in a
-  "representative" table in one of the skills.
 
 Everything else previously listed here (Attendance QR check-in, Guardian-facing
-screens, Offline caching) has since been scoped and/or built — see the Version 1 Plan
-section and each item's own section above for the current, accurate status.
+screens, Offline caching, Invoice/receipt viewing + Student-scoped transaction
+history) has since been scoped and/or built — see the Version 1 Plan section and
+each item's own section above for the current, accurate status.
 
 ---
 

@@ -1,10 +1,24 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Field-for-field match of the Transaction Prisma model, plus two joined
- * fields: studentFirstName/studentSurname come from Transaction.student
- * (a User relation), not a Transaction column — see
- * TransactionsService.findAllForSchool for the join.
+ * Field-for-field match of the Transaction Prisma model, plus three joined
+ * fields: studentFirstName/studentSurname come from Transaction.student (a
+ * User relation, resolved via resolveUserNames — see
+ * TransactionsService.findAllForSchool); membershipPlanTitle comes from
+ * Transaction.membershipPlan (a MembershipPlan relation, a plain Prisma
+ * `include` — unlike the User-relation join above, MembershipPlan isn't
+ * subject to the RoleGrant-revocation gotcha Decision 117 found, since a
+ * School's own MembershipPlan rows are never revoked the way a Student's
+ * RoleGrant can be).
+ *
+ * Shared by both the School Owner/Manager ledger read
+ * (GET /schools/{id}/transactions) and the Student's own self-read
+ * (GET /transactions/me) — the self-read never populates
+ * studentFirstName/studentSurname (the caller already knows it's themselves,
+ * same reasoning BookingsService.findMyBookings already established for
+ * BookingListResponseDto), so those two fields are absent, not empty
+ * strings, on that path's actual JSON response despite being typed
+ * required here.
  */
 export class TransactionResponseDto {
   @ApiProperty()
@@ -27,6 +41,12 @@ export class TransactionResponseDto {
 
   @ApiProperty()
   membershipPlanId!: string;
+
+  /** What this charge was for — added for the Student-facing self-read
+   * (GET /transactions/me): the raw membershipPlanId alone doesn't tell a
+   * Student what they paid for. */
+  @ApiProperty()
+  membershipPlanTitle!: string;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   membershipId!: string | null;

@@ -7,6 +7,7 @@ import { JoinSchoolScreen } from '../academies/JoinSchoolScreen';
 import { AcademyDetailScreen } from '../academies/AcademyDetailScreen';
 import { MyBookingsScreen } from '../bookings/MyBookingsScreen';
 import { MyMembershipsScreen } from '../memberships/MyMembershipsScreen';
+import { TransactionHistoryScreen } from '../transactions/TransactionHistoryScreen';
 import { NotificationsScreen } from '../notifications/NotificationsScreen';
 import { WaiversScreen } from '../waivers/WaiversScreen';
 import { PaymentMethodsScreen } from '../payments/PaymentMethodsScreen';
@@ -45,6 +46,7 @@ export function AppNavigator() {
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: 'My Memberships' }} />
+      <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} options={{ title: 'Payment History' }} />
       <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Payment Methods' }} />
       <Stack.Screen name="Lessons" component={LessonsScreen} options={{ title: 'Lessons' }} />
