@@ -155,3 +155,180 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     });
   });
 });
+
+/**
+ * Decision 243 (Track B Slice 4b) — `MembershipsService.purchase()`'s
+ * `useHostedCheckout` branch (purchaseViaHostedCheckout, private — called
+ * here via direct cast, same technique the payWithSavedCard describe block
+ * above uses). apps/student has no Stripe Elements/PaymentSheet SDK, so the
+ * bare clientSecret `charge()`/`requires_payment` would return is unusable
+ * there — this wraps the identical one-time charge in a hosted Stripe
+ * Checkout Session instead. Unlike payWithSavedCard, there is no live Stripe
+ * call to avoid in e2e here either way — PaymentsService.
+ * createPurchaseCheckoutSession() is mocked directly, the same split
+ * payments.service.spec.ts's own Decision 243 block already establishes
+ * (e2e cannot exercise a real Checkout Session create against a fixture
+ * `acct_fixture_...` connected account id, so this Transaction-creation
+ * logic is unit-tested here instead). The webhook-settlement half (once
+ * payment_intent.succeeded fires for the Session's own PaymentIntent) is
+ * NOT re-tested here — it is the exact same Transaction shape, and the exact
+ * same handler, `charge()`'s own requires_payment path already produces and
+ * stripe-webhook-processing.e2e-spec.ts already covers end-to-end.
+ */
+describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
+  function makeTx(overrides: { transactionCreate?: jest.Mock } = {}) {
+    return { transaction: { create: overrides.transactionCreate ?? jest.fn().mockResolvedValue({ id: 'transaction-1' }) } };
+  }
+
+  function makeService(opts: { tx: ReturnType<typeof makeTx>; createPurchaseCheckoutSession: jest.Mock }) {
+    const prismaApp = { withTenantContext: jest.fn((_userId: string, cb: (tx: unknown) => unknown) => cb(opts.tx)) };
+    const paymentsService = { createPurchaseCheckoutSession: opts.createPurchaseCheckoutSession };
+    const service = new MembershipsService(
+      prismaApp as never,
+      null as never,
+      null as never,
+      paymentsService as never,
+      null as never,
+      null as never,
+      null as never,
+      null as never,
+    );
+    return { service, prismaApp, paymentsService };
+  }
+
+  const hostedCheckoutPlan = { id: 'plan-1', schoolId: 'school-1', price: 3000, title: 'Pack' };
+
+  function callPurchaseViaHostedCheckout(service: MembershipsService) {
+    return (
+      service as unknown as {
+        purchaseViaHostedCheckout: (
+          studentId: string,
+          plan: typeof hostedCheckoutPlan,
+          paymentAccountId: string,
+          currency: string,
+        ) => Promise<unknown>;
+      }
+    ).purchaseViaHostedCheckout('student-1', hostedCheckoutPlan, 'account-1', 'usd');
+  }
+
+  it("creates a PENDING Transaction carrying the Checkout Session's own synchronously-created PaymentIntent id, and returns the hosted checkoutUrl", async () => {
+    const tx = makeTx();
+    const createPurchaseCheckoutSession = jest
+      .fn()
+      .mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', paymentIntentId: 'pi_checkout_1' });
+    const { service } = makeService({ tx, createPurchaseCheckoutSession });
+
+    const result = (await callPurchaseViaHostedCheckout(service)) as { outcome: string; checkoutUrl: string; transactionId: string };
+
+    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack');
+    expect(result.outcome).toBe('requires_checkout');
+    expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
+    expect(typeof result.transactionId).toBe('string');
+    expect(tx.transaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          id: result.transactionId,
+          schoolId: 'school-1',
+          studentId: 'student-1',
+          paymentAccountId: 'account-1',
+          membershipPlanId: 'plan-1',
+          amount: 3000,
+          currency: 'usd',
+          status: 'PENDING',
+          paymentMethod: 'STRIPE',
+          stripePaymentIntentId: 'pi_checkout_1',
+        }),
+      }),
+    );
+  });
+});
+
+/**
+ * Decision 243's own scope checks, exercised against the full public
+ * `purchase()` method rather than the private branch directly — these are
+ * pure validation/authorization logic reachable before any Stripe call, the
+ * same "no live Stripe credentials needed" territory
+ * memberships.e2e-spec.ts's own payWithSavedCard guard tests already occupy,
+ * covered here at the unit level instead since the Guardian-ALLOWED case
+ * below needs to observe that `purchaseViaHostedCheckout` (and therefore
+ * `PaymentsService.createPurchaseCheckoutSession`) was actually reached —
+ * something e2e cannot assert without a live Stripe call.
+ */
+describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)', () => {
+  function makeService(opts: {
+    plan: Record<string, unknown>;
+    paymentAccount: Record<string, unknown> | null;
+    student?: Record<string, unknown>;
+    createPurchaseCheckoutSession?: jest.Mock;
+  }) {
+    const tx = {
+      membershipPlan: { findUnique: jest.fn().mockResolvedValue(opts.plan) },
+      paymentAccount: { findUnique: jest.fn().mockResolvedValue(opts.paymentAccount) },
+      user: { findUniqueOrThrow: jest.fn().mockResolvedValue(opts.student ?? { email: 'minor@example.test', paymentRestrictedAt: null }) },
+      transaction: { create: jest.fn().mockResolvedValue({ id: 'transaction-1' }) },
+    };
+    const prismaApp = { withTenantContext: jest.fn((_userId: string, cb: (tx: unknown) => unknown) => cb(tx)) };
+    const paymentsService = {
+      createPurchaseCheckoutSession:
+        opts.createPurchaseCheckoutSession ??
+        jest.fn().mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', paymentIntentId: 'pi_checkout_1' }),
+    };
+    const guardiansService = { assertGuardianOfStudent: jest.fn().mockResolvedValue(undefined) };
+    const subscriptionGate = { assertNotDegraded: jest.fn().mockResolvedValue(undefined) };
+    const service = new MembershipsService(
+      prismaApp as never,
+      null as never,
+      null as never,
+      paymentsService as never,
+      guardiansService as never,
+      subscriptionGate as never,
+      null as never,
+      null as never,
+    );
+    return { service, tx, paymentsService, guardiansService };
+  }
+
+  const scopePlan = { id: 'plan-1', schoolId: 'school-1', type: 'CLASS_PACK', price: 3000, title: 'Pack', currency: 'usd' };
+  const stripeAccount = { id: 'account-1', provider: 'STRIPE' };
+  const cashBankAccount = { id: 'account-1', provider: 'CASH_BANK_TRANSFER' };
+
+  it('a Guardian-driven purchase with useHostedCheckout is NOT rejected the way payWithSavedCard would be — reaches the hosted-Checkout branch, for the MINOR\'s own School context', async () => {
+    const { service, tx, paymentsService, guardiansService } = makeService({ plan: scopePlan, paymentAccount: stripeAccount });
+
+    const result = (await service.purchase('guardian-1', 'plan-1', { studentId: 'minor-1', useHostedCheckout: true })) as {
+      outcome: string;
+      checkoutUrl: string;
+    };
+
+    expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1');
+    expect(result.outcome).toBe('requires_checkout');
+    expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
+    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'usd', 'Pack');
+    expect(tx.transaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ studentId: 'minor-1', paymentAccountId: 'account-1' }) }),
+    );
+  });
+
+  it('rejects combining payWithSavedCard and useHostedCheckout — 400, before any plan lookup', async () => {
+    const { service, tx } = makeService({ plan: scopePlan, paymentAccount: stripeAccount });
+
+    await expect(
+      service.purchase('student-1', 'plan-1', { payWithSavedCard: true, useHostedCheckout: true }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(tx.membershipPlan.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects useHostedCheckout for a SUBSCRIPTION plan — 400, before any Stripe call', async () => {
+    const { service, paymentsService } = makeService({ plan: { ...scopePlan, type: 'SUBSCRIPTION' }, paymentAccount: stripeAccount });
+
+    await expect(service.purchase('student-1', 'plan-1', { useHostedCheckout: true })).rejects.toBeInstanceOf(BadRequestException);
+    expect(paymentsService.createPurchaseCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it('rejects useHostedCheckout at a Cash/Bank-provider School — 400', async () => {
+    const { service, paymentsService } = makeService({ plan: scopePlan, paymentAccount: cashBankAccount });
+
+    await expect(service.purchase('student-1', 'plan-1', { useHostedCheckout: true })).rejects.toBeInstanceOf(BadRequestException);
+    expect(paymentsService.createPurchaseCheckoutSession).not.toHaveBeenCalled();
+  });
+});

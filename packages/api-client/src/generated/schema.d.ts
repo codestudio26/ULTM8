@@ -4278,6 +4278,8 @@ export interface components {
             studentId?: string;
             /** @description Self-purchase only: charge the saved payment method (Decision 238) instead of collecting a fresh card. Requires the X-Step-Up-Token header (Decision 236). */
             payWithSavedCard?: boolean;
+            /** @description Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard. */
+            useHostedCheckout?: boolean;
         };
         MembershipResponseDto: {
             id: string;
@@ -4296,12 +4298,14 @@ export interface components {
         };
         PurchaseMembershipResponseDto: {
             /** @enum {string} */
-            outcome: "requires_payment" | "pending_confirmation" | "active";
+            outcome: "requires_payment" | "requires_checkout" | "pending_confirmation" | "active";
             /** @description Stripe PaymentIntent client secret — present only when outcome is requires_payment. */
             clientSecret?: string;
+            /** @description Hosted Stripe Checkout Session URL (Decision 243, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment. */
+            checkoutUrl?: string;
             /** @description Present only when outcome is active. */
             membership?: components["schemas"]["MembershipResponseDto"];
-            /** @description The created Transaction id — present for requires_payment, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236). */
+            /** @description The created Transaction id — present for requires_payment, requires_checkout, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236). */
             transactionId?: string;
         };
         MembershipListResponseDto: {

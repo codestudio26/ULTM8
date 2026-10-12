@@ -21,27 +21,45 @@ export function useMyMemberships() {
  * apps/api/src/memberships/memberships.service.ts): `active` (immediate — a
  * £0-priced plan, OR Decision 236's payWithSavedCard branch below, which is
  * also synchronous), `pending_confirmation` (Cash/Bank Transfer, Staff
- * confirms later via a Staff-only endpoint — out of scope here), or
- * `requires_payment` (a fresh-card Stripe purchase — Slice 4b, still not
- * built; this is the one outcome this hook/MembershipPlanRow cannot complete
- * client-side, since it needs a Stripe Elements confirmation step this app
- * has no SDK for). The caller (MembershipPlanRow) decides what UI each
- * outcome gets; this hook just relays the real response and invalidates the
- * Memberships list on an immediate `active` grant.
+ * confirms later via a Staff-only endpoint — out of scope here),
+ * `requires_checkout` (Decision 243, Track B Slice 4b — a hosted Stripe
+ * Checkout Session URL; MembershipPlanRow opens it via expo-web-browser), or
+ * `requires_payment` (a bare Stripe Elements clientSecret — unreachable from
+ * this app's own "Purchase" button as of Decision 243, which always sends
+ * useHostedCheckout instead; still returned for a SUBSCRIPTION plan, which
+ * Decision 243 explicitly does not cover — PaymentsService.subscribe()'s own
+ * pre-existing limitation, see MembershipPlanRow's own header comment). The
+ * caller (MembershipPlanRow) decides what UI each outcome gets; this hook
+ * just relays the real response and invalidates the Memberships list on an
+ * immediate `active` grant.
  *
  * Decision 236's own follow-up — `payWithSavedCard`/`stepUpToken` let the
  * Student reuse their saved card (Decision 238) instead of a fresh one,
  * sent as the `X-Step-Up-Token` header, same optional-header shape
  * guardianQueries.ts's useWithdrawConsent() already established for this
- * exact mechanism's first consumer. */
+ * exact mechanism's first consumer.
+ *
+ * Decision 243's own follow-up — `useHostedCheckout` collects a fresh card
+ * via a hosted Stripe Checkout Session instead (mutually exclusive with
+ * payWithSavedCard, enforced server-side). */
 export function usePurchaseMembership() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ planId, payWithSavedCard, stepUpToken }: { planId: string; payWithSavedCard?: boolean; stepUpToken?: string }) =>
+    mutationFn: ({
+      planId,
+      payWithSavedCard,
+      useHostedCheckout,
+      stepUpToken,
+    }: {
+      planId: string;
+      payWithSavedCard?: boolean;
+      useHostedCheckout?: boolean;
+      stepUpToken?: string;
+    }) =>
       unwrap(
         apiClient.POST('/v1/membership-plans/{id}/purchase', {
           params: { path: { id: planId } },
-          body: payWithSavedCard ? { payWithSavedCard: true } : {},
+          body: payWithSavedCard ? { payWithSavedCard: true } : useHostedCheckout ? { useHostedCheckout: true } : {},
           headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
         }),
       ),
@@ -51,4 +69,25 @@ export function usePurchaseMembership() {
       }
     },
   });
+}
+
+/**
+ * Decision 243's own post-return refresh — mirrors Decision 238's
+ * PaymentMethodsScreen, which refetches its own per-School GET query right
+ * after `WebBrowser.openAuthSessionAsync` resolves, accepting the same
+ * documented "the real confirmation is a webhook that can land a moment
+ * after the browser closes" staleness window rather than an infinite
+ * poll/retry loop. A Membership purchase has no equivalent single
+ * per-School/per-plan GET query to re-run from MembershipPlanRow itself (`My
+ * Memberships` is a separate screen), so this invalidates the
+ * `['my-memberships']` query cache instead — the next time that screen (or
+ * this row, if it ever grows its own read) is visited, it fetches fresh.
+ * Kept as its own hook (rather than inlined in the component) purely so the
+ * component test can mock it the same wholesale-module way every other query
+ * hook here already is, without needing a real QueryClientProvider in the
+ * render tree.
+ */
+export function useInvalidateMyMemberships() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: ['my-memberships'] });
 }

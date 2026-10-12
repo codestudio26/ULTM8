@@ -676,6 +676,98 @@ export class PaymentsService {
     await this.prismaApp.withTenantContext(callerId, (tx) => tx.studentPaymentMethod.delete({ where: { id: saved.id } }));
   }
 
+  // ---------------------------------------------------------------------------
+  // Hosted Checkout for a one-time fresh-card purchase (Track B Slice 4b,
+  // `docs/TRACK-B-ROADMAP.md`'s own Slice 4b entry). apps/student has no Stripe
+  // SDK dependency at all (Decision 113) and is plain Expo-managed with no
+  // custom native dev client, so `charge()` above's bare PaymentIntent
+  // `clientSecret` (the `requires_payment` outcome) has nothing in that app to
+  // render it with — Stripe Elements/PaymentSheet both need a native module
+  // this app's build setup doesn't have. Exactly Decision 238's own reasoning
+  // for `createSetupSession()` above, extended from mode: 'setup' (saving a
+  // card) to mode: 'payment' (actually charging one, once, for a specific
+  // MembershipPlan amount).
+  // ---------------------------------------------------------------------------
+
+  /**
+   * `MembershipsService.purchase()`'s `useHostedCheckout` branch — a hosted
+   * Stripe Checkout Session (`mode: 'payment'`) for a one-time CLASS_PACK/
+   * WEEKLY_PASS/TRIAL_MEMBERSHIP purchase, opened in the device's own browser
+   * via `expo-web-browser` exactly like `createSetupSession()` above, same
+   * `ultm8-student://` auto-return scheme.
+   *
+   * **Deliberately reuses the EXISTING `payment_intent.succeeded` webhook
+   * handler** (`StripeWebhookProcessingProcessor.handlePaymentIntentSucceeded`)
+   * as the completion signal, rather than adding a second, parallel
+   * Membership-creation path keyed off `checkout.session.completed` the way
+   * `createSetupSession()`'s own mode:'setup' flow has to (a Setup Intent has
+   * no Membership/Transaction of its own to settle — a Checkout `payment`-mode
+   * Session's underlying PaymentIntent does). Verified directly against the
+   * installed Stripe SDK's own type definitions before relying on this: a
+   * `mode: 'payment'` Checkout Session creates its underlying PaymentIntent
+   * SYNCHRONOUSLY at Session-creation time — `Session.payment_intent` is a
+   * real, expandable field from the moment `sessions.create()` returns, the
+   * identical shape `subscribe()`'s own `expand: ['latest_invoice.payment_intent']`
+   * already relies on for the same reason (needing the PaymentIntent id
+   * immediately, to stash on the Transaction before any webhook ever fires).
+   * So `MembershipsService.purchase()`'s caller sets
+   * `Transaction.stripePaymentIntentId` at CREATION time here, exactly like
+   * the plain `charge()` branch already does — once the Student completes
+   * payment on the hosted page, Stripe fires `payment_intent.succeeded` for
+   * that SAME PaymentIntent, already matched, collision-resolved (Spec 55
+   * §6.1's two-simultaneous-Active-Membership race), and turned into a
+   * Membership by the one handler that already exists. Deliberately NOT a new
+   * `checkout.session.completed` branch for `mode: 'payment'`: Stripe fires
+   * BOTH events for a successful card Checkout, and building a second
+   * Membership-creation path keyed off the Session would duplicate
+   * `handlePaymentIntentSucceeded`'s own logic for no benefit while opening a
+   * real risk of the two deliveries racing each other — a second source of
+   * truth, not a safer one. (Also recorded as Decision 243,
+   * `docs/decisions/POST-SPEC-55-DECISION-LOG.md`.)
+   */
+  async createPurchaseCheckoutSession(
+    callerId: string,
+    schoolId: string,
+    amount: number,
+    currency: string,
+    description: string,
+  ): Promise<{ checkoutUrl: string; paymentIntentId: string }> {
+    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            currency,
+            unit_amount: amount,
+            // Inline product_data, same simplification charge()/subscribe()
+            // above already use (no persisted MembershipPlan<->Stripe Product
+            // mapping exists) — unlike subscribe()'s own Price, a Checkout
+            // line item's price_data DOES accept inline product_data (verified
+            // against the installed SDK's own type definitions, same check
+            // subscribe()'s own header comment already did for the opposite
+            // answer on Subscriptions).
+            product_data: { name: description },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: 'ultm8-student://membership-purchase/complete',
+      cancel_url: 'ultm8-student://membership-purchase/cancel',
+      expand: ['payment_intent'],
+    });
+    if (!session.url) {
+      throw new Error('Stripe Checkout Session did not return a hosted URL.');
+    }
+    const paymentIntent = session.payment_intent;
+    const paymentIntentId = typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id;
+    if (!paymentIntentId) {
+      throw new Error("Stripe Checkout Session (mode: 'payment') did not return an expandable PaymentIntent.");
+    }
+    return { checkoutUrl: session.url, paymentIntentId };
+  }
+
   /**
    * The actual off-session charge — Decision 234's own late-cancellation fee is
    * the first real caller (BookingsService.cancelBooking()), reusing whatever
