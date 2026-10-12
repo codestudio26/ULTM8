@@ -39,6 +39,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   field starts blank and is sent only if typed, so this form can set a value
   but can't yet clear one it has no way to see. `packages/api-client`
   regenerated.
+- **Classes page — row actions collapsed into a "⋮" kebab menu**: the 4
+  always-visible per-row buttons ("View bookings", "Show QR", "Roll call",
+  "Edit") were visually noisy at this row density; they're unchanged in
+  behavior and visibility logic, just revealed on click now. New shared
+  `RowActionsMenu` (`packages/ui`) — a small popover menu (outside-click/
+  `Escape` dismissal, same ingredients as `TimezoneField`'s/`PhoneField`'s
+  existing popovers; no dedicated `Menu`/`Dropdown` component existed yet),
+  added to `packages/ui` rather than kept page-local since dense list-page
+  tables with several per-row actions recur across this app (Branches,
+  Disciplines, Curriculum, …). Pure presentation change, no backend/DTO
+  change.
 - **Notifications — a true, caller-wide Total/Unread stats ribbon**
   (`docs/v1.2-backend-backlog.md`, closing the "True total/unread counts" gap
   from Decision 204's Concept 5 finding): new `GET /notifications/me/counts`
