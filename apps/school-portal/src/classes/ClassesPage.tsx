@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
@@ -139,19 +139,16 @@ export function ClassesPage() {
                   </p>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>Capacity: {c.capacity ?? 'Unlimited'}</p>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{branchName}</p>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}`)}>
-                      View bookings
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/qr-code`)}>
-                      Show QR
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/roll-call`)}>
-                      Roll call
-                    </Button>
-                    <Button variant="secondary" onClick={() => setEditing(c)}>
-                      Edit
-                    </Button>
+                  <div style={{ marginTop: 12 }}>
+                    <RowActionsMenu
+                      label={`Actions for ${c.title}`}
+                      actions={[
+                        { label: 'View bookings', onClick: () => navigate(`/classes/${c.id}`) },
+                        { label: 'Show QR', onClick: () => navigate(`/classes/${c.id}/qr-code`) },
+                        { label: 'Roll call', onClick: () => navigate(`/classes/${c.id}/roll-call`) },
+                        { label: 'Edit', onClick: () => setEditing(c) },
+                      ]}
+                    />
                   </div>
                 </Card>
               );
@@ -193,20 +190,15 @@ export function ClassesPage() {
                 key: 'actions',
                 header: '',
                 render: (c) => (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}`)}>
-                      View bookings
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/qr-code`)}>
-                      Show QR
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate(`/classes/${c.id}/roll-call`)}>
-                      Roll call
-                    </Button>
-                    <Button variant="secondary" onClick={() => setEditing(c)}>
-                      Edit
-                    </Button>
-                  </div>
+                  <RowActionsMenu
+                    label={`Actions for ${c.title}`}
+                    actions={[
+                      { label: 'View bookings', onClick: () => navigate(`/classes/${c.id}`) },
+                      { label: 'Show QR', onClick: () => navigate(`/classes/${c.id}/qr-code`) },
+                      { label: 'Roll call', onClick: () => navigate(`/classes/${c.id}/roll-call`) },
+                      { label: 'Edit', onClick: () => setEditing(c) },
+                    ]}
+                  />
                 ),
               },
             ]}
