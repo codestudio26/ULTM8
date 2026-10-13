@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import type { UseMutationResult } from '@tanstack/react-query';
 import {
   Badge,
   Button,
   Card,
+  Checkbox,
   EmptyState,
   ErrorBanner,
   PageHeader,
@@ -21,8 +23,10 @@ import { useStudents } from '../students/studentQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { titleCase } from '../lib/text';
 import {
+  useArchiveTimetableSlot,
   useCreateTimetableSlot,
   useTimetableSlots,
+  useUnarchiveTimetableSlot,
   useUpdateTimetableSlot,
   type TimetableSlotResponse,
 } from './timetableQueries';
@@ -96,6 +100,8 @@ export function TimetablePage() {
   const { data: disciplineData } = useDisciplines(schoolId);
   const { data: studentData } = useStudents(schoolId);
   const createSlot = useCreateTimetableSlot(schoolId ?? '');
+  const archiveSlot = useArchiveTimetableSlot(schoolId ?? '');
+  const unarchiveSlot = useUnarchiveTimetableSlot(schoolId ?? '');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<TimetableSlotResponse | null>(null);
   const [rangeMode, setRangeMode] = useState<RangeMode>('week');
@@ -103,11 +109,19 @@ export function TimetablePage() {
   const [anchor, setAnchor] = useState(() => new Date());
   const [booking, setBooking] = useState<BookingTarget | null>(null);
   const [bookedMessage, setBookedMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // Decision 226 — archived TimetableSlots are excluded by default (hidden
+  // from the whole calendar — Day/Week agenda, Grid columns, and Month
+  // dots alike), same "excluded by default, visible via a filter"
+  // convention this build applies to every one of the 7 entities.
+  const [showArchived, setShowArchived] = useState(false);
 
   // Must run on every render regardless of loading/error state — a hook can never
   // sit after a conditional early return (Rules of Hooks); see this page's own
   // prior incident comment (kept below on the memo it originally guarded).
-  const slots = data?.items ?? [];
+  const allSlots = data?.items ?? [];
+  const archivedCount = allSlots.filter((s) => s.archivedAt).length;
+  const slots = showArchived ? allSlots : allSlots.filter((s) => !s.archivedAt);
 
   const { rangeStart, rangeEnd } = useMemo(() => {
     if (rangeMode === 'day') {
@@ -190,9 +204,15 @@ export function TimetablePage() {
             </Button>
             <span style={{ fontWeight: 500 }}>{rangeLabel}</span>
           </div>
-          {rangeMode !== 'month' ? <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Timetable view" /> : null}
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            {/* Decision 226 — archived slots are hidden from the whole calendar by default. */}
+            <Checkbox label={`Show archived${archivedCount ? ` (${archivedCount})` : ''}`} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            {rangeMode !== 'month' ? <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Timetable view" /> : null}
+          </div>
         </div>
       </Card>
+
+      {actionError ? <ErrorBanner message={actionError} /> : null}
 
       {!hasAnySlots ? (
         <Card>
@@ -207,13 +227,13 @@ export function TimetablePage() {
       ) : viewMode === 'grid' ? (
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto' }}>
           {days.map((day) => (
-            <DayColumn key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} />
+            <DayColumn key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
           ))}
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
           {days.map((day) => (
-            <DayAgendaCard key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} />
+            <DayAgendaCard key={day.date} day={day} branches={branches} onBook={setBooking} onEdit={setEditing} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
           ))}
         </div>
       )}
@@ -262,6 +282,13 @@ function branchLabel(branches: BranchResponse[], branchId: string | null | undef
   return branches.find((b) => b.id === branchId)?.name ?? (branchId ? branchId : 'Whole School');
 }
 
+/** Decision 226 — shared shape for the archive/unarchive mutations every
+ * occurrence-rendering component below forwards down to OccurrenceCard's
+ * own RowActionsMenu, so a slot can be archived/unarchived from any
+ * range mode or layout without duplicating the mutation wiring per
+ * component. */
+type ArchiveMutation = UseMutationResult<TimetableSlotResponse, unknown, string>;
+
 /** One occurrence's agenda card — shared by the Rows day-sections and the Grid day
  * columns, so "Book"/"Edit slot" behave identically regardless of layout. An OFF
  * slot still renders (dimmed, no Book action) rather than disappearing — it has no
@@ -273,14 +300,21 @@ function OccurrenceCard({
   branches,
   onBook,
   onEdit,
+  archiveSlot,
+  unarchiveSlot,
+  setActionError,
 }: {
   slot: TimetableSlotResponse;
   date: string;
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
   onEdit: (slot: TimetableSlotResponse) => void;
+  archiveSlot: ArchiveMutation;
+  unarchiveSlot: ArchiveMutation;
+  setActionError: (message: string | null) => void;
 }) {
   const isOn = slot.status === 'ON';
+  const isArchived = !!slot.archivedAt;
   return (
     <div
       style={{
@@ -288,7 +322,7 @@ function OccurrenceCard({
         borderRadius: 6,
         background: 'var(--fill-muted, #f5f5f5)',
         padding: '8px 12px',
-        opacity: isOn ? 1 : 0.6,
+        opacity: isOn && !isArchived ? 1 : 0.6,
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
@@ -301,8 +335,13 @@ function OccurrenceCard({
         <RowActionsMenu
           label={`Actions for ${slot.title} on ${date}`}
           actions={[
-            ...(isOn ? [{ label: 'Book', onClick: () => onBook({ slotId: slot.id, slotTitle: slot.title, date }) }] : []),
+            ...(isOn && !isArchived ? [{ label: 'Book', onClick: () => onBook({ slotId: slot.id, slotTitle: slot.title, date }) }] : []),
             { label: 'Edit slot', onClick: () => onEdit(slot) },
+            // Decision 226 — School Owner/Manager only, idempotent, blocked
+            // (409) by an upcoming Booking against a generated Class.
+            isArchived
+              ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this slot.') }); } }
+              : { label: 'Archive', onClick: () => { setActionError(null); archiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this slot.') }); } },
           ]}
         />
       </div>
@@ -311,6 +350,7 @@ function OccurrenceCard({
           <Badge key={`${a}-${i}`}>{a}</Badge>
         ))}
         {!isOn ? <Badge>Off</Badge> : null}
+        {isArchived ? <Badge variant="default">Archived</Badge> : null}
       </div>
     </div>
   );
@@ -326,11 +366,17 @@ function DayAgendaCard({
   branches,
   onBook,
   onEdit,
+  archiveSlot,
+  unarchiveSlot,
+  setActionError,
 }: {
   day: DayOccurrences;
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
   onEdit: (slot: TimetableSlotResponse) => void;
+  archiveSlot: ArchiveMutation;
+  unarchiveSlot: ArchiveMutation;
+  setActionError: (message: string | null) => void;
 }) {
   return (
     <Card>
@@ -342,7 +388,7 @@ function DayAgendaCard({
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
           {day.slots.map((slot) => (
-            <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} />
+            <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
           ))}
         </div>
       )}
@@ -355,11 +401,17 @@ function DayColumn({
   branches,
   onBook,
   onEdit,
+  archiveSlot,
+  unarchiveSlot,
+  setActionError,
 }: {
   day: DayOccurrences;
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
   onEdit: (slot: TimetableSlotResponse) => void;
+  archiveSlot: ArchiveMutation;
+  unarchiveSlot: ArchiveMutation;
+  setActionError: (message: string | null) => void;
 }) {
   return (
     <div style={{ minWidth: 220, flex: '1 0 220px' }}>
@@ -372,7 +424,7 @@ function DayColumn({
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {day.slots.map((slot) => (
-              <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} />
+              <OccurrenceCard key={slot.id} slot={slot} date={day.date} branches={branches} onBook={onBook} onEdit={onEdit} archiveSlot={archiveSlot} unarchiveSlot={unarchiveSlot} setActionError={setActionError} />
             ))}
           </div>
         )}

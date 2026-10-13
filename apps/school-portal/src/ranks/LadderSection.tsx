@@ -6,7 +6,7 @@ import type { SkillResponse } from '../skills/skillQueries';
 import { BeltChip } from '../grading/BeltChip';
 import { BeltEditorModal, type BeltValues } from './BeltEditorModal';
 import { moveItem, useDragReorder } from './dragReorder';
-import { type RankResponse, useCreateRank, useDeleteRank, useReorderRanks, useRungHolders, useUpdateRank } from './rankQueries';
+import { type RankResponse, useArchiveRank, useCreateRank, useDeleteRank, useReorderRanks, useRungHolders, useUnarchiveRank, useUpdateRank } from './rankQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 
 const stripesLabel = (n: number) => (n === 0 ? 'No stripes' : n === 1 ? '1 stripe' : `${n} stripes`);
@@ -31,6 +31,17 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
   const [editing, setEditing] = useState<RankResponse | null>(null);
   const [deleting, setDeleting] = useState<RankResponse | null>(null);
   const deleteRank = useDeleteRank(discipline.id);
+  // Decision 226 — reversible alternative to Delete. Shown INLINE (badged),
+  // not hidden-by-default the way the other 6 entities' list pages are: the
+  // ladder's own "Save order" send every belt's id exactly once
+  // (reorderRanks' own validation) — hiding an archived belt from `shown`
+  // while leaving it out of a saved reorder would either drop it from the
+  // ladder order entirely or need extra bookkeeping to splice it back in.
+  // Same "show archived inline, badged" treatment MembershipPlansPage
+  // already established as this codebase's other real precedent. Disclosed
+  // deviation, not an oversight — see the PR description.
+  const archiveRank = useArchiveRank(discipline.id);
+  const unarchiveRank = useUnarchiveRank(discipline.id);
   const [error, setError] = useState<string | null>(null);
 
   const holders = useMemo(() => {
@@ -118,6 +129,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                   <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
                   {tiers[0] ? <BeltChip rung={{ id: tiers[0].id, rankId: rank.id, rank, tier: tiers[0], index: 0, name: tiers[0].name }} /> : null}
                   <strong style={{ flex: 1, minWidth: 120 }}>{rank.name}</strong>
+                  {rank.archivedAt ? <Badge variant="default">Archived</Badge> : null}
                   <span className="ultm8-field__hint">
                     {stripesLabel(Math.max(0, ...tiers.map((t) => t.count)))}
                   </span>
@@ -131,6 +143,27 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                   <Button variant="secondary" onClick={() => move(i, 1)} disabled={i === shown.length - 1} aria-label={`Move ${rank.name} down`}>
                     ↓
                   </Button>
+                  {/* Decision 226 — reversible alternative to Delete below,
+                      same School-Owner gate and "safe to remove" rule
+                      (holders/history/declared), idempotent. */}
+                  {rank.archivedAt ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => { setError(null); unarchiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : 'Could not unarchive this belt.')); }}
+                      aria-label={`Unarchive ${rank.name}`}
+                    >
+                      Unarchive
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => { setError(null); archiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : 'Could not archive this belt.')); }}
+                      disabled={changed}
+                      aria-label={`Archive ${rank.name}`}
+                    >
+                      Archive
+                    </Button>
+                  )}
                   <Button variant="secondary" onClick={() => setDeleting(rank)} disabled={changed} aria-label={`Delete ${rank.name}`}>
                     Delete
                   </Button>

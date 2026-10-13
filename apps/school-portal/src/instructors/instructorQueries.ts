@@ -13,12 +13,14 @@ export type CertificationContentType = components['schemas']['RequestCertificati
 export type InstructorClassResponse = components['schemas']['InstructorClassResponseDto'];
 
 /** No pagination in this UI yet — same established convention as
- * useBranches/useDisciplines (see their own header comments). */
+ * useBranches/useDisciplines (see their own header comments). Decision 226
+ * — always fetches `includeArchived: true`, same "fetch everything, filter/
+ * toggle client-side" convention useBranches already established. */
 export function useInstructors(schoolId: string | null) {
   return useQuery({
     queryKey: ['instructors', schoolId],
     queryFn: () =>
-      unwrap(apiClient.GET('/v1/schools/{schoolId}/instructors', { params: { path: { schoolId: schoolId! } } })),
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/instructors', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true } } })),
     enabled: !!schoolId,
     // FOUND ON REVIEW (Phase 17): Classes/Timetable both call this same hook
     // to populate an Instructor dropdown — see useBranches' own comment for
@@ -82,6 +84,25 @@ export function useUpdateInstructor(schoolId: string, instructorId: string) {
   return useMutation({
     mutationFn: (body: UpdateInstructorInput) =>
       unwrap(apiClient.PATCH('/v1/instructors/{id}', { params: { path: { id: instructorId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors', schoolId] }),
+  });
+}
+
+/** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by an
+ * upcoming Class or active TimetableSlot assignment. Never touches the
+ * underlying User or their INSTRUCTOR RoleGrant. */
+export function useArchiveInstructor(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (instructorId: string) => unwrap(apiClient.POST('/v1/instructors/{id}/archive', { params: { path: { id: instructorId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors', schoolId] }),
+  });
+}
+
+export function useUnarchiveInstructor(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (instructorId: string) => unwrap(apiClient.POST('/v1/instructors/{id}/unarchive', { params: { path: { id: instructorId } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['instructors', schoolId] }),
   });
 }

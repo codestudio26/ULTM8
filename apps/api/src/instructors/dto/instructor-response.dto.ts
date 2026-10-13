@@ -76,6 +76,15 @@ export class InstructorResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Set once this Instructor has consented to holding a certification record.' })
   certificationConsentedAt!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Instructor profile has been archived. Null when active. Never touches the underlying User or their INSTRUCTOR RoleGrant.' })
+  archivedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this profile once this elapses.' })
+  purgeAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set by the purge sweep once actually purged.' })
+  purgedAt!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

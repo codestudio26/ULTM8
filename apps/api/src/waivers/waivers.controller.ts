@@ -12,6 +12,7 @@ import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url
 import { WaiverListResponseDto, WaiverResponseDto } from './dto/waiver-response.dto';
 import { WaiverSignatureListResponseDto, WaiverSignatureResponseDto } from './dto/waiver-signature-response.dto';
 import { SignatureUploadUrlResponseDto } from './dto/signature-upload-url-response.dto';
+import { WaiversQueryDto } from './dto/waivers-query.dto';
 
 // Waiver CRUD + Student self-signing (typed name, or typed name + drawn-signature
 // capture as of Phase 34), plus Guardian-on-behalf-of-a-linked-minor signing as
@@ -41,9 +42,9 @@ export class WaiversController {
   findAllWaivers(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: WaiversQueryDto,
   ) {
-    return this.waiversService.findAllWaivers(user.sub, schoolId, query.cursor, query.limit);
+    return this.waiversService.findAllWaivers(user.sub, schoolId, query.cursor, query.limit, query.includeArchived);
   }
 
   /** v1.2 backend backlog — the Waivers page's "Signatures" panel. See
@@ -82,6 +83,20 @@ export class WaiversController {
   @Patch('waivers/:id')
   updateWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateWaiverDto) {
     return this.waiversService.updateWaiver(user.sub, id, dto);
+  }
+
+  /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
+   * any WaiverSignature row (signed or unsigned-assignment). */
+  @ApiOkResponse({ type: WaiverResponseDto })
+  @Post('waivers/:id/archive')
+  archiveWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.waiversService.archiveWaiver(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: WaiverResponseDto })
+  @Post('waivers/:id/unarchive')
+  unarchiveWaiver(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.waiversService.unarchiveWaiver(user.sub, id);
   }
 
   @ApiCreatedResponse({ type: WaiverSignatureResponseDto })

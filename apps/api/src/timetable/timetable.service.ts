@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { resolveClassStyles } from '../classes/class-styles';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -7,6 +7,8 @@ import { SchoolsService } from '../tenants/schools/schools.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { CreateTimetableSlotDto } from './dto/create-timetable-slot.dto';
 import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
+
+const RETENTION_WINDOW_DAYS = 90;
 
 /**
  * `@db.Time(0)` columns round-trip through Prisma as a `Date` whose time-of-day
@@ -115,15 +117,22 @@ export class TimetableService {
    * level grant (sees every slot, any Branch) or a Branch-scoped grant (their own
    * Branch's slots plus School-wide ones — timetable_slot_tenant_isolation, this
    * phase's migration; same three-way structure as class_tenant_isolation). */
+  /** Decision 226 — `includeArchived` (default false) excludes archived
+   * slots from the default view. */
   async findAllForSchool(
     callerId: string,
     schoolId: string,
     cursor?: string,
     limit?: number,
+    includeArchived?: boolean,
   ): Promise<CursorPage<ReturnType<TimetableService['toResponse']>>> {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.timetableSlot.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) => tx.timetableSlot.findMany({ ...args, where: { schoolId, ...(includeArchived ? {} : { archivedAt: null }) } }),
+        cursor,
+        limit,
+      ),
     );
     return { ...page, items: page.items.map((slot) => this.toResponse(slot)) };
   }
@@ -266,6 +275,78 @@ export class TimetableService {
       );
     }
     return occurrence;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Decision 226 — entity-level tenant offboarding. Same shape/reasoning as
+  // BranchesService's own archive()/unarchive() pair.
+  // ---------------------------------------------------------------------------
+
+  /** Active dependents that block archiving a TimetableSlot — the task's own
+   * hint: "any upcoming Booking referencing it," resolved via Class (Booking
+   * belongs to Class, never to TimetableSlot directly — Class.timetableSlotId
+   * is the link the class-occurrence-generation job maintains, reconfirmed by
+   * Decision 230). */
+  private async assertNoActiveDependents(callerId: string, slotId: string): Promise<void> {
+    const upcomingBookings = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.booking.count({ where: { status: 'UPCOMING', class: { timetableSlotId: slotId } } }),
+    );
+    if (upcomingBookings > 0) {
+      throw new ConflictException(
+        `This TimetableSlot can't be archived while it still has ${upcomingBookings} upcoming booking${upcomingBookings === 1 ? '' : 's'} against its generated Classes.`,
+      );
+    }
+  }
+
+  async archive(callerId: string, slotId: string) {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.timetableSlot.findUnique({ where: { id: slotId } }));
+    if (!existing) {
+      throw new NotFoundException('TimetableSlot not found');
+    }
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (existing.archivedAt) {
+      return this.toResponse(existing);
+    }
+    await this.assertNoActiveDependents(callerId, slotId);
+
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await tx.timetableSlot.updateMany({ where: { id: slotId, archivedAt: null }, data: { archivedAt: now, purgeAt } });
+      return tx.timetableSlot.findUniqueOrThrow({ where: { id: slotId } });
+    });
+    return this.toResponse(updated);
+  }
+
+  async unarchive(callerId: string, slotId: string) {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.timetableSlot.findUnique({ where: { id: slotId } }));
+    if (!existing) {
+      throw new NotFoundException('TimetableSlot not found');
+    }
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (!existing.archivedAt) {
+      return this.toResponse(existing);
+    }
+    if (existing.purgedAt) {
+      throw new ConflictException('This TimetableSlot has already been purged and cannot be unarchived.');
+    }
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await tx.timetableSlot.updateMany({
+        where: { id: slotId, archivedAt: { not: null }, purgedAt: null },
+        data: { archivedAt: null, purgeAt: null },
+      });
+      return tx.timetableSlot.findUniqueOrThrow({ where: { id: slotId } });
+    });
+    // Re-checked against the fresh row rather than only on the TOCTOU-race
+    // branch (Branch/Instructor/Rank/Lesson/Class's own pattern) — covers the
+    // same race either way, since a lost updateMany (another caller purged it
+    // first) and a won one both land here with the row's real current state.
+    if (updated.purgedAt) {
+      throw new ConflictException('This TimetableSlot has already been purged and cannot be unarchived.');
+    }
+    return this.toResponse(updated);
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]

@@ -62,6 +62,15 @@ export class ClassResponseDto {
   @ApiProperty()
   membershipInclusion!: boolean;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Class has been archived. Null when active.' })
+  archivedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Class once this elapses (unless blocked by a FK, logged and retried).' })
+  purgeAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set by the purge sweep once actually purged.' })
+  purgedAt!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

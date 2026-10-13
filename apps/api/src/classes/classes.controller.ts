@@ -36,7 +36,15 @@ export class ClassesController {
     @Param('schoolId') schoolId: string,
     @Query() query: ClassesQueryDto,
   ) {
-    return this.classesService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.activities, query.search);
+    return this.classesService.findAllForSchool(
+      user.sub,
+      schoolId,
+      query.cursor,
+      query.limit,
+      query.activities,
+      query.search,
+      query.includeArchived,
+    );
   }
 
   @ApiOkResponse({ type: ClassResponseDto })
@@ -49,5 +57,19 @@ export class ClassesController {
   @Patch('classes/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateClassDto) {
     return this.classesService.update(user.sub, id, dto);
+  }
+
+  /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
+   * an upcoming Booking or active WaitlistEntry. */
+  @ApiOkResponse({ type: ClassResponseDto })
+  @Post('classes/:id/archive')
+  archive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.classesService.archive(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: ClassResponseDto })
+  @Post('classes/:id/unarchive')
+  unarchive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.classesService.unarchive(user.sub, id);
   }
 }

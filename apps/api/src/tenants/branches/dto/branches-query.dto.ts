@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 /**
@@ -21,4 +22,13 @@ export class BranchesQueryDto extends PaginationQueryDto {
   @IsString()
   @MaxLength(500)
   city?: string;
+
+  /** Decision 226 — archived Branches are excluded by default (same
+   * "excluded by default, visible via a filter" convention this build applies
+   * to every one of the 7 entities); set true to include them too. */
+  @ApiPropertyOptional({ default: false, description: 'Include archived Branches too (excluded by default).' })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  includeArchived?: boolean;
 }

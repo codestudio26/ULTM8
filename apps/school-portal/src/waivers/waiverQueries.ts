@@ -9,11 +9,14 @@ export type UpdateWaiverInput = components['schemas']['UpdateWaiverDto'];
 export type WaiverSignatureResponse = components['schemas']['WaiverSignatureResponseDto'];
 
 /** No pagination in this UI yet — same established convention as the other
- * list screens (see e.g. useBranches' own header comment). */
+ * list screens (see e.g. useBranches' own header comment). Decision 226 —
+ * always fetches `includeArchived: true`, same "fetch everything, filter/
+ * toggle client-side" convention useBranches already established. */
 export function useWaivers(schoolId: string | null) {
   return useQuery({
     queryKey: ['waivers', schoolId],
-    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/waivers', { params: { path: { schoolId: schoolId! } } })),
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/waivers', { params: { path: { schoolId: schoolId! }, query: { includeArchived: true } } })),
     enabled: !!schoolId,
   });
 }
@@ -32,6 +35,25 @@ export function useUpdateWaiver(schoolId: string, waiverId: string) {
   return useMutation({
     mutationFn: (body: UpdateWaiverInput) =>
       unwrap(apiClient.PATCH('/v1/waivers/{id}', { params: { path: { id: waiverId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['waivers', schoolId] }),
+  });
+}
+
+/** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
+ * ANY WaiverSignature row (signed or unsigned-assignment). Never
+ * hard-purged once archived — see WaiverResponseDto's own purgeAt comment. */
+export function useArchiveWaiver(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (waiverId: string) => unwrap(apiClient.POST('/v1/waivers/{id}/archive', { params: { path: { id: waiverId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['waivers', schoolId] }),
+  });
+}
+
+export function useUnarchiveWaiver(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (waiverId: string) => unwrap(apiClient.POST('/v1/waivers/{id}/unarchive', { params: { path: { id: waiverId } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['waivers', schoolId] }),
   });
 }

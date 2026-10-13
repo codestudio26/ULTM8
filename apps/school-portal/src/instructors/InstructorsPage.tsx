@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner, Table } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, SuccessBanner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
@@ -10,10 +10,12 @@ import { nullsToUndefined } from '../lib/nullableFields';
 import { Avatar } from '../lib/Avatar';
 import { useInviteStaff } from '../roleGrants/roleGrantQueries';
 import {
+  useArchiveInstructor,
   useCreateInstructor,
   useCreateInstructorManually,
   useEligibleInstructorUsers,
   useInstructors,
+  useUnarchiveInstructor,
   useUpdateInstructor,
   type InstructorResponse,
 } from './instructorQueries';
@@ -49,6 +51,8 @@ export function InstructorsPage() {
   const { data: eligibleUsersData } = useEligibleInstructorUsers(schoolId);
   const createInstructor = useCreateInstructor(schoolId ?? '');
   const createInstructorManually = useCreateInstructorManually(schoolId ?? '');
+  const archiveInstructor = useArchiveInstructor(schoolId ?? '');
+  const unarchiveInstructor = useUnarchiveInstructor(schoolId ?? '');
   const inviteToInstructorRole = useInviteStaff();
   const [creating, setCreating] = useState(false);
   const [addingManually, setAddingManually] = useState(false);
@@ -61,12 +65,21 @@ export function InstructorsPage() {
   // Same non-blocking emailSent treatment, for the "you've been granted the
   // Instructor role" notification RoleGrantsService.create() now sends.
   const [inviteRoleNotice, setInviteRoleNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // Decision 226 — archived Instructor profiles are excluded by default,
+  // same "excluded by default, visible via a filter" convention this build
+  // applies to every one of the 7 entities; the full list (including
+  // archived) is always fetched (useInstructors passes includeArchived:
+  // true) so this toggle/count never needs a second request.
+  const [showArchived, setShowArchived] = useState(false);
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Instructors.'} />;
 
-  const instructors = data?.items ?? [];
+  const allInstructors = data?.items ?? [];
+  const archivedCount = allInstructors.filter((i) => i.archivedAt).length;
+  const instructors = showArchived ? allInstructors : allInstructors.filter((i) => !i.archivedAt);
   const branches = branchData?.items ?? [];
   const disciplines = disciplineData?.items ?? [];
 
@@ -91,7 +104,12 @@ export function InstructorsPage() {
           </>
         }
       />
+      {actionError ? <ErrorBanner message={actionError} /> : null}
       <Card>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          {/* Decision 226 — archived Instructor profiles are hidden by default. */}
+          <Checkbox label={`Show archived${archivedCount ? ` (${archivedCount})` : ''}`} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+        </div>
         {instructors.length === 0 ? (
           <EmptyState
             title="No Instructor profiles yet"
@@ -106,7 +124,7 @@ export function InstructorsPage() {
                 header: 'Image',
                 render: (i) => <Avatar firstName={i.firstName} surname={i.surname} photoUrl={i.photoUrl} />,
               },
-              { key: 'name', header: 'Instructor', render: (i) => `${i.firstName} ${i.surname}`.trim() },
+              { key: 'name', header: 'Instructor', render: (i) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{`${i.firstName} ${i.surname}`.trim()}{i.archivedAt ? <Badge variant="default">Archived</Badge> : null}</div>) },
               {
                 key: 'specializations',
                 header: 'Specializations',
@@ -139,6 +157,18 @@ export function InstructorsPage() {
                     <Button variant="secondary" onClick={() => setEditing(i)}>
                       Edit
                     </Button>
+                    {/* Decision 226 — School Owner/Manager only, idempotent,
+                        blocked (409) by an upcoming Class/TimetableSlot
+                        assignment. Never touches the underlying User or
+                        their INSTRUCTOR RoleGrant. */}
+                    <RowActionsMenu
+                      label={`Actions for ${i.firstName} ${i.surname}`.trim()}
+                      actions={[
+                        i.archivedAt
+                          ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Instructor profile.') }); } }
+                          : { label: 'Archive', onClick: () => { setActionError(null); archiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Instructor profile.') }); } },
+                      ]}
+                    />
                   </div>
                 ),
               },

@@ -86,6 +86,15 @@ export class RankResponseDto {
   @ApiProperty({ type: [RankStripeTierResponseDto] })
   stripeTiers!: RankStripeTierResponseDto[];
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Rank has been archived. Null when active. Coexists with Decision 198\'s own DELETE /ranks/{id} (hard-delete, unused belts only) as a reversible alternative.' })
+  archivedAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Rank once this elapses, re-checking the same holders/history/declared conditions deleteRank() already enforces.' })
+  purgeAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set by the purge sweep once actually purged.' })
+  purgedAt!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

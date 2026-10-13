@@ -5,6 +5,7 @@ import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
 import {
+  useArchiveLesson,
   useCreateLesson,
   useCreateLessonCategory,
   useDeleteLesson,
@@ -14,6 +15,7 @@ import {
   useOrderLessonCategories,
   useRenameLessonCategory,
   useSchoolSkillGroups,
+  useUnarchiveLesson,
   useUpdateLesson,
   type DisciplineSkillGroup,
   type LessonCategory,
@@ -43,6 +45,18 @@ export function CurriculumPage() {
   const [editing, setEditing] = useState<LessonResponse | null>(null);
   const [deleting, setDeleting] = useState<LessonResponse | null>(null);
   const deleteLesson = useDeleteLesson(schoolId ?? '');
+  // Decision 226 — reversible alternative to Delete. Shown INLINE (badged),
+  // not hidden-by-default the way the other 5 non-ladder entities' list
+  // pages are: a category's own "move up/down" reorder sends every lesson
+  // already in that category exactly once (orderCategoryLessons' own
+  // validation) — hiding an archived lesson from `inCategory` would break
+  // that invariant the same way it would for Rank's own ladder reorder
+  // (see LadderSection.tsx's identical disclosed deviation). Same "show
+  // archived inline, badged" treatment MembershipPlansPage already
+  // established.
+  const archiveLesson = useArchiveLesson(schoolId ?? '');
+  const unarchiveLesson = useUnarchiveLesson(schoolId ?? '');
+  const [actionError, setActionError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<LessonCategory | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
 
@@ -91,6 +105,7 @@ export function CurriculumPage() {
         <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
           {l.title}
           {l.free ? <Badge variant="success">Free</Badge> : null}
+          {l.archivedAt ? <Badge variant="default">Archived</Badge> : null}
         </span>
       ),
     },
@@ -131,6 +146,25 @@ export function CurriculumPage() {
             <Button variant="secondary" onClick={() => setEditing(l)} aria-label={`Edit ${l.title}`}>
               Edit
             </Button>
+            {/* Decision 226 — reversible alternative to Delete below, same
+                School-Owner gate; no dependents to block it today. */}
+            {l.archivedAt ? (
+              <Button
+                variant="secondary"
+                onClick={() => { setActionError(null); unarchiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, 'Could not unarchive this Lesson.'))); }}
+                aria-label={`Unarchive ${l.title}`}
+              >
+                Unarchive
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => { setActionError(null); archiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, 'Could not archive this Lesson.'))); }}
+                aria-label={`Archive ${l.title}`}
+              >
+                Archive
+              </Button>
+            )}
             <Button variant="secondary" onClick={() => setDeleting(l)} aria-label={`Delete ${l.title}`}>
               Delete
             </Button>
@@ -148,6 +182,7 @@ export function CurriculumPage() {
         actions={<Button onClick={() => setCreating(true)}>Add lesson</Button>}
       />
       {moveError ? <ErrorBanner message={moveError} /> : null}
+      {actionError ? <ErrorBanner message={actionError} /> : null}
       <CategoriesCard schoolId={schoolId} categories={categories} onMove={moveCategory} onRename={setRenaming} />
 
       {lessons.length === 0 ? (

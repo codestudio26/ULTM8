@@ -13,6 +13,8 @@ import { OrderCategoryLessonsDto, OrderLessonCategoriesDto } from './dto/lesson-
 /** `content` is null when the database doesn't let the caller read it (Decision 208). */
 const LESSON_INCLUDE = { skills: { include: { skill: { select: { disciplineId: true } } } }, category: { select: { name: true } }, content: true } as const;
 
+const RETENTION_WINDOW_DAYS = 90;
+
 /** What a caller may watch (Decisions 154, 190, 195): staff everything; a
  * student, or a guardian on their behalf, free lessons and those of the styles
  * their live memberships cover on plans that include lessons. */
@@ -90,11 +92,16 @@ export class CurriculumService {
     });
   }
 
-  async findLessonsForSchool(callerId: string, schoolId: string) {
+  /** Decision 226 — `includeArchived` (default false) excludes archived
+   * Lessons from the default view. Staff-facing only in practice (a Student/
+   * Guardian reaches Lesson through findLessonsForStudent below, which is
+   * unaffected — a Student should never see an archived Lesson regardless of
+   * this flag, so that method always filters it out, unconditionally). */
+  async findLessonsForSchool(callerId: string, schoolId: string, includeArchived?: boolean) {
     await this.schoolsService.findOne(callerId, schoolId);
     const access = await this.accessFor(callerId, schoolId);
     const lessons = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.lesson.findMany({ where: { schoolId }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
+      tx.lesson.findMany({ where: { schoolId, ...(includeArchived ? {} : { archivedAt: null }) }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
     );
     return lessons.map((l) => this.shapeLessonResponse(l, access));
   }
@@ -141,8 +148,11 @@ export class CurriculumService {
     );
     if (!enrolled) throw new NotFoundException('This person isn\'t a student at this School.');
     const access = await this.studentStyles(studentId, schoolId);
+    // Decision 226 — a Student/Guardian never sees an archived Lesson,
+    // unconditionally (no includeArchived escape hatch here, unlike the
+    // Staff-facing findLessonsForSchool above).
     const lessons = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.lesson.findMany({ where: { schoolId }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
+      tx.lesson.findMany({ where: { schoolId, archivedAt: null }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
     );
     return lessons.map((l) => this.shapeLessonResponse(l, access));
   }
@@ -183,6 +193,61 @@ export class CurriculumService {
       await tx.lessonContent.deleteMany({ where: { lessonId } });
       await tx.lesson.delete({ where: { id: lessonId } });
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Decision 226 — entity-level tenant offboarding, REVERSIBLE alternative to
+  // Decision 198's deleteLesson() above (coexists with it, same reasoning as
+  // Rank's own identical archive/delete coexistence). No dependents to check
+  // — verified directly: nothing in this schema FKs to Lesson except its own
+  // owned LessonSkill/LessonContent children (both cascade away with it, not
+  // a "dependent" in the sense this build's other 6 entities check). Stated
+  // explicitly rather than silently skipping a check, since the learner-
+  // facing Curriculum redesign (Decision 227) that would eventually add real
+  // Lesson-referencing entities (WatchHistory, Playlist, ...) is still only
+  // scoped, not built.
+  // ---------------------------------------------------------------------------
+
+  async archiveLesson(callerId: string, lessonId: string) {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
+    if (!existing) throw new NotFoundException('Lesson not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (existing.archivedAt) {
+      return this.findOneLesson(callerId, lessonId);
+    }
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.lesson.updateMany({ where: { id: lessonId, archivedAt: null }, data: { archivedAt: now, purgeAt } }),
+    );
+    return this.findOneLesson(callerId, lessonId);
+  }
+
+  async unarchiveLesson(callerId: string, lessonId: string) {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
+    if (!existing) throw new NotFoundException('Lesson not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (!existing.archivedAt) {
+      return this.findOneLesson(callerId, lessonId);
+    }
+    if (existing.purgedAt) {
+      throw new ConflictException('This Lesson has already been purged and cannot be unarchived.');
+    }
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.lesson.updateMany({
+        where: { id: lessonId, archivedAt: { not: null }, purgedAt: null },
+        data: { archivedAt: null, purgeAt: null },
+      }),
+    );
+    if (count === 0) {
+      const current = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUniqueOrThrow({ where: { id: lessonId } }));
+      if (current.purgedAt) {
+        throw new ConflictException('This Lesson has already been purged and cannot be unarchived.');
+      }
+    }
+    return this.findOneLesson(callerId, lessonId);
   }
 
   async updateLesson(callerId: string, lessonId: string, dto: UpdateLessonDto) {

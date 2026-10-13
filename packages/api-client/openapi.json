@@ -843,6 +843,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived Branches too (excluded by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -923,6 +933,76 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/branches/{id}/archive": {
+      "post": {
+        "operationId": "BranchesController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/branches/{id}/unarchive": {
+      "post": {
+        "operationId": "BranchesController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -2438,6 +2518,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived Classes too (excluded by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -2518,6 +2608,76 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/archive": {
+      "post": {
+        "operationId": "ClassesController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/classes/{id}/unarchive": {
+      "post": {
+        "operationId": "ClassesController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -3785,6 +3945,16 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived TimetableSlots too (excluded by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -3865,6 +4035,76 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/timetable/{id}/archive": {
+      "post": {
+        "operationId": "TimetableController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableSlotResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/timetable/{id}/unarchive": {
+      "post": {
+        "operationId": "TimetableController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -4005,6 +4245,16 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived Instructor profiles too (excluded by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -4120,6 +4370,76 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/{id}/archive": {
+      "post": {
+        "operationId": "InstructorsController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/instructors/{id}/unarchive": {
+      "post": {
+        "operationId": "InstructorsController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -5299,6 +5619,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Decision 226 — include archived belts too (excluded by default).",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -5498,6 +5827,79 @@
           },
           "409": {
             "description": "Someone holds the belt, or it is in grading history."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/ranks/{id}/archive": {
+      "post": {
+        "operationId": "RanksController_archiveRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Someone holds the belt, it is in grading history, or an instructor has declared it."
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/ranks/{id}/unarchive": {
+      "post": {
+        "operationId": "RanksController_unarchiveRank",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankResponseDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -7127,6 +7529,16 @@
               "default": 20,
               "type": "number"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived Waivers too (excluded by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -7317,6 +7729,76 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waivers/{id}/archive": {
+      "post": {
+        "operationId": "WaiversController_archiveWaiver",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaiverResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/waivers/{id}/unarchive": {
+      "post": {
+        "operationId": "WaiversController_unarchiveWaiver",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -8543,6 +9025,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Decision 226 — include archived Lessons too (excluded by default).",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -8684,6 +9175,76 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/lessons/{id}/archive": {
+      "post": {
+        "operationId": "CurriculumController_archiveLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/lessons/{id}/unarchive": {
+      "post": {
+        "operationId": "CurriculumController_unarchiveLesson",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -10135,6 +10696,21 @@
           "bannerUrl": {
             "type": "string",
             "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Branch has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried)."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged. Always null in practice for a successfully-deleted row (the row itself is gone); kept for API shape consistency with School/Franchise."
           },
           "createdAt": {
             "type": "string"
@@ -11756,6 +12332,21 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Class has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Class once this elapses (unless blocked by a FK, logged and retried)."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -12606,6 +13197,21 @@
             "type": "number",
             "nullable": true
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this TimetableSlot has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this slot once this elapses (unless blocked by a FK, logged and retried)."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -12882,6 +13488,21 @@
             "type": "string",
             "nullable": true,
             "description": "Set once this Instructor has consented to holding a certification record."
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Instructor profile has been archived. Null when active. Never touches the underlying User or their INSTRUCTOR RoleGrant."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this profile once this elapses."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged."
           },
           "createdAt": {
             "type": "string"
@@ -13174,6 +13795,21 @@
             "type": "string",
             "nullable": true,
             "description": "Set once this Instructor has consented to holding a certification record."
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Instructor profile has been archived. Null when active. Never touches the underlying User or their INSTRUCTOR RoleGrant."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this profile once this elapses."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged."
           },
           "createdAt": {
             "type": "string"
@@ -14371,6 +15007,21 @@
             "items": {
               "$ref": "#/components/schemas/RankStripeTierResponseDto"
             }
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Rank has been archived. Null when active. Coexists with Decision 198's own DELETE /ranks/{id} (hard-delete, unused belts only) as a reversible alternative."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Rank once this elapses, re-checking the same holders/history/declared conditions deleteRank() already enforces."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged."
           },
           "createdAt": {
             "type": "string"
@@ -16203,6 +16854,21 @@
           "body": {
             "type": "string"
           },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Waiver has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt. UNLIKE the other 6 entities, a Waiver is NEVER hard-purged once this elapses (legal-record exception, mirroring Decision 110's own School-level purge carve-out) — it stays archived forever."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -17571,6 +18237,21 @@
             "items": {
               "type": "string"
             }
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198's own DELETE /lessons/{id} (always allowed) as a reversible alternative."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Lesson once this elapses."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set by the purge sweep once actually purged."
           },
           "createdAt": {
             "type": "string"

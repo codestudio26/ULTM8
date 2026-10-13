@@ -7,6 +7,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { InstructorsService } from './instructors.service';
+import { InstructorsQueryDto } from './dto/instructors-query.dto';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { CreateInstructorManuallyDto } from './dto/create-instructor-manually.dto';
@@ -49,9 +50,9 @@ export class InstructorsController {
   findAll(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
-    @Query() query: PaginationQueryDto,
+    @Query() query: InstructorsQueryDto,
   ) {
-    return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit);
+    return this.instructorsService.findAllForSchool(user.sub, schoolId, query.cursor, query.limit, query.includeArchived);
   }
 
   /** Candidate pool for InstructorFormModal's picker (Decision 115). */
@@ -71,6 +72,20 @@ export class InstructorsController {
   @Patch('instructors/:id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateInstructorDto) {
     return this.instructorsService.update(user.sub, id, dto);
+  }
+
+  /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
+   * an upcoming Class or active TimetableSlot assignment. */
+  @ApiOkResponse({ type: InstructorResponseDto })
+  @Post('instructors/:id/archive')
+  archive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.instructorsService.archive(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: InstructorResponseDto })
+  @Post('instructors/:id/unarchive')
+  unarchive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.instructorsService.unarchive(user.sub, id);
   }
 
   /** v1.2 backend backlog — "Instructor Class" grid, the real replacement for

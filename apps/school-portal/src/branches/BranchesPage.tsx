@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useBranches, useCreateBranch, type BranchResponse } from './branchQueries';
+import { useArchiveBranch, useBranches, useCreateBranch, useUnarchiveBranch, type BranchResponse } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
 
 export function BranchesPage() {
@@ -25,11 +25,22 @@ export function BranchesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const { data, isLoading, error } = useBranches(schoolId, cityFilter.trim() || undefined);
   const createBranch = useCreateBranch(schoolId ?? '');
+  const archiveBranch = useArchiveBranch(schoolId ?? '');
+  const unarchiveBranch = useUnarchiveBranch(schoolId ?? '');
   const [creating, setCreating] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // Decision 226 — archived Branches are excluded by default, same
+  // "excluded by default, visible via a filter" convention this build
+  // applies to every one of the 7 entities; the full list (including
+  // archived) is always fetched (useBranches passes includeArchived: true)
+  // so this toggle/count never needs a second request.
+  const [showArchived, setShowArchived] = useState(false);
 
   if (!schoolId) return null;
 
-  const branches = data?.items ?? [];
+  const allBranches = data?.items ?? [];
+  const archivedCount = allBranches.filter((b) => b.archivedAt).length;
+  const branches = showArchived ? allBranches : allBranches.filter((b) => !b.archivedAt);
 
   return (
     <>
@@ -50,9 +61,14 @@ export function BranchesPage() {
               />
             </Field>
           </div>
-          <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Branches view" />
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            {/* Decision 226 — archived Branches are hidden by default. */}
+            <Checkbox label={`Show archived${archivedCount ? ` (${archivedCount})` : ''}`} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Branches view" />
+          </div>
         </div>
       </Card>
+      {actionError ? <ErrorBanner message={actionError} /> : null}
       {isLoading ? (
         <Spinner />
       ) : error ? (
@@ -70,16 +86,27 @@ export function BranchesPage() {
                 <Card key={b.id}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                     <strong>{b.name}</strong>
-                    {b.timezone ? <Badge>{b.timezone}</Badge> : null}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {b.archivedAt ? <Badge variant="default">Archived</Badge> : null}
+                      {b.timezone ? <Badge>{b.timezone}</Badge> : null}
+                    </div>
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.address ?? '—'}</p>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.contactPhone ?? '—'}</p>
-                  <div style={{ marginTop: 12 }}>
+                  <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
                     {/* Decision 231 — a dedicated settings screen replaces the
                         previous edit-via-modal path. */}
                     <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
                       Settings
                     </Button>
+                    <RowActionsMenu
+                      label={`Actions for ${b.name}`}
+                      actions={[
+                        b.archivedAt
+                          ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Branch.') }); } }
+                          : { label: 'Archive', onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Branch.') }); } },
+                      ]}
+                    />
                   </div>
                 </Card>
               ))}
@@ -88,7 +115,7 @@ export function BranchesPage() {
             <Table<BranchResponse>
               rows={branches}
               columns={[
-                { key: 'name', header: 'Name', render: (b) => b.name },
+                { key: 'name', header: 'Name', render: (b) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{b.name}{b.archivedAt ? <Badge variant="default">Archived</Badge> : null}</div>) },
                 { key: 'address', header: 'Address', render: (b) => b.address ?? '—' },
                 { key: 'phone', header: 'Contact phone', render: (b) => b.contactPhone ?? '—' },
                 { key: 'timezone', header: 'Timezone', render: (b) => (b.timezone ? <Badge>{b.timezone}</Badge> : '—') },
@@ -96,11 +123,21 @@ export function BranchesPage() {
                   key: 'actions',
                   header: '',
                   render: (b) => (
-                    // Decision 231 — a dedicated settings screen replaces the
-                    // previous edit-via-modal path.
-                    <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
-                      Settings
-                    </Button>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {/* Decision 231 — a dedicated settings screen replaces the
+                          previous edit-via-modal path. */}
+                      <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
+                        Settings
+                      </Button>
+                      <RowActionsMenu
+                        label={`Actions for ${b.name}`}
+                        actions={[
+                          b.archivedAt
+                            ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Branch.') }); } }
+                            : { label: 'Archive', onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Branch.') }); } },
+                        ]}
+                      />
+                    </div>
                   ),
                 },
               ]}

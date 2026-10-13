@@ -62,3 +62,11 @@ export const GRADING_NOTIFICATIONS_QUEUE = 'grading-notifications';
 // it elapses, returning the Notification to the ordinary unread list — same
 // shape as booking-no-show-processing's own scheduled sweep.
 export const NOTIFICATION_UNSNOOZE_SWEEP_QUEUE = 'notification-unsnooze-sweep';
+// Decision 226 — the second half of the entity-level tenant-offboarding
+// lifecycle (Branch/Class/TimetableSlot/Instructor/Rank/Waiver/Lesson archive/
+// unarchive, this phase's own service methods start the countdown). Same
+// shape as TENANT_LIFECYCLE_PURGE_QUEUE's own daily sweep (Decision 110),
+// scoped to these 7 entities instead of School/Franchise. Waiver is
+// deliberately swept but never purged — see the processor's own header
+// comment.
+export const ENTITY_OFFBOARDING_PURGE_QUEUE = 'entity-offboarding-purge';

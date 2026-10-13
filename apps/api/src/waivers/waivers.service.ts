@@ -16,6 +16,8 @@ import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { WaiverAssignmentService } from './waiver-assignment.service';
 
+const RETENTION_WINDOW_DAYS = 90;
+
 /**
  * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read of
  * their signatures. Phase 34 added drawn-signature capture (typed name remains
@@ -117,10 +119,22 @@ export class WaiversService {
     return waiver;
   }
 
-  async findAllWaivers(callerId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+  /** Decision 226 — `includeArchived` (default false) excludes archived
+   * Waivers from the default view. */
+  async findAllWaivers(
+    callerId: string,
+    schoolId: string,
+    cursor?: string,
+    limit?: number,
+    includeArchived?: boolean,
+  ): Promise<CursorPage<{ id: string }>> {
     await this.schoolsService.findOne(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.waiver.findMany({ ...args, where: { schoolId } }), cursor, limit),
+      cursorPaginate(
+        (args) => tx.waiver.findMany({ ...args, where: { schoolId, ...(includeArchived ? {} : { archivedAt: null }) } }),
+        cursor,
+        limit,
+      ),
     );
   }
 
@@ -142,8 +156,77 @@ export class WaiversService {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Decision 226 — entity-level tenant offboarding. Same shape/reasoning as
+  // BranchesService's own archive()/unarchive() pair, with ONE difference
+  // applied only at purge time (never here): a Waiver is NEVER hard-purged —
+  // see this entity's own schema.prisma comment and
+  // EntityOffboardingPurgeProcessor's own header comment for the full
+  // reasoning. Archiving/unarchiving itself works identically to the other 6.
+  // ---------------------------------------------------------------------------
+
+  /** Active dependents that block archiving a Waiver — the task's own hint:
+   * ANY WaiverSignature row at all, signed or not (the Unsigned-at-
+   * assignment-time rows this session's own earlier build introduced count
+   * too — a real legal-assignment record, not just a completed signature).
+   * This is also independently DB-enforced: WaiverSignature.waiverId is an
+   * `ON DELETE RESTRICT` FK (verified in this phase's own migration
+   * review) — this check is the explicit, friendly version of that
+   * protection, not an accident of a caught P2003. */
+  private async assertNoActiveDependents(callerId: string, waiverId: string): Promise<void> {
+    const signatureCount = await this.prismaApp.withTenantContext(callerId, (tx) => tx.waiverSignature.count({ where: { waiverId } }));
+    if (signatureCount > 0) {
+      throw new ConflictException(
+        `This Waiver can't be archived while it has ${signatureCount} signature${signatureCount === 1 ? '' : 's'}/assignment record${signatureCount === 1 ? '' : 's'} against it (legal records). It can still be edited in place if needed.`,
+      );
+    }
+  }
+
+  async archiveWaiver(callerId: string, waiverId: string) {
+    const existing = await this.findOneWaiver(callerId, waiverId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (existing.archivedAt) {
+      return existing;
+    }
+    await this.assertNoActiveDependents(callerId, waiverId);
+
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + RETENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.waiver.updateMany({ where: { id: waiverId, archivedAt: null }, data: { archivedAt: now, purgeAt } }),
+    );
+    return this.findOneWaiver(callerId, waiverId);
+  }
+
+  async unarchiveWaiver(callerId: string, waiverId: string) {
+    const existing = await this.findOneWaiver(callerId, waiverId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (!existing.archivedAt) {
+      return existing;
+    }
+    // purgedAt is never actually set for Waiver (see the header comment
+    // above) — this branch exists only for API shape consistency with the
+    // other 6 entities and can never be reached today.
+    if (existing.purgedAt) {
+      throw new ConflictException('This Waiver has already been purged and cannot be unarchived.');
+    }
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.waiver.updateMany({
+        where: { id: waiverId, archivedAt: { not: null }, purgedAt: null },
+        data: { archivedAt: null, purgeAt: null },
+      }),
+    );
+    if (count === 0) {
+      return this.findOneWaiver(callerId, waiverId);
+    }
+    return this.findOneWaiver(callerId, waiverId);
+  }
+
   // No delete method — same reasoning ClassesModule/School/Branch/MembershipPlan
-  // already established (general tenant offboarding is [UNRESOLVED]).
+  // already established (general tenant offboarding was [UNRESOLVED] until
+  // Decision 226's reversible archive/unarchive pair above).
 
   /**
    * GET /schools/{schoolId}/waivers/{id}/signatures (v1.2 backend backlog —

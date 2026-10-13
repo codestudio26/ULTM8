@@ -323,11 +323,15 @@ export class RanksService {
     });
   }
 
-  async findAllRanks(callerId: string, disciplineId: string) {
+  /** Decision 226 — `includeArchived` (default false) excludes archived
+   * belts from the ladder's default view, same "excluded by default,
+   * visible via a filter" convention applied to every one of the 7
+   * entities this build covers. */
+  async findAllRanks(callerId: string, disciplineId: string, includeArchived?: boolean) {
     const discipline = await this.findOneDiscipline(callerId, disciplineId);
     const ranks = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.rank.findMany({
-        where: { disciplineId: discipline.id },
+        where: { disciplineId: discipline.id, ...(includeArchived ? {} : { archivedAt: null }) },
         orderBy: { order: 'asc' },
         include: RANK_INCLUDE,
       }),
@@ -533,6 +537,31 @@ export class RanksService {
     });
   }
 
+  /** Shared by deleteRank() (Decision 198) and archive() (Decision 226) —
+   * both need the identical "is this belt safe to remove" answer: nobody
+   * holds it or any of its stripes, it isn't in anyone's grading history,
+   * and no instructor has declared it. Extracted here (Decision 226) rather
+   * than duplicated a second time, so the two actions can never silently
+   * drift into two different definitions of "safe" for the same entity.
+   * Throws ConflictException with the specific reason if not safe; the
+   * caller must already hold `tx` inside a transaction that also locked the
+   * ladder (lockLadder) if it's about to mutate anything off the result. */
+  private async assertRankSafeToRemove(
+    tx: Pick<Prisma.TransactionClient, 'studentRank' | 'promotionEvent' | 'instructorBelt'>,
+    rankId: string,
+    tierIds: string[],
+    action: 'deleted' | 'archived',
+  ): Promise<void> {
+    const holders = await tx.studentRank.count({ where: { OR: [{ currentRankId: rankId }, { currentStripeId: { in: tierIds } }] } });
+    if (holders > 0) throw new ConflictException(`${holders} student${holders === 1 ? ' holds' : 's hold'} this belt, so it can't be ${action}.`);
+    const history = await tx.promotionEvent.count({
+      where: { OR: [{ fromRankId: rankId }, { toRankId: rankId }, { fromStripeTierId: { in: tierIds } }, { toStripeTierId: { in: tierIds } }] },
+    });
+    if (history > 0) throw new ConflictException(`This belt is in students' grading history, so it can't be ${action}.`);
+    const declared = await tx.instructorBelt.count({ where: { OR: [{ rankId }, { stripeTierId: { in: tierIds } }] } });
+    if (declared > 0) throw new ConflictException(`An instructor has declared this belt, so it can't be ${action}.`);
+  }
+
   /** Deleting a belt (Decision 198): only when nobody holds it or any of its
    * stripes now, it isn't in anyone's grading history, and no instructor has
    * declared it. The belts after it move up one place. Owner only. */
@@ -545,14 +574,7 @@ export class RanksService {
     const tierIds = rank.stripeTiers.map((t) => t.id);
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
       await lockLadder(tx, rank.disciplineId);
-      const holders = await tx.studentRank.count({ where: { OR: [{ currentRankId: rankId }, { currentStripeId: { in: tierIds } }] } });
-      if (holders > 0) throw new ConflictException(`${holders} student${holders === 1 ? ' holds' : 's hold'} this belt, so it can't be deleted.`);
-      const history = await tx.promotionEvent.count({
-        where: { OR: [{ fromRankId: rankId }, { toRankId: rankId }, { fromStripeTierId: { in: tierIds } }, { toStripeTierId: { in: tierIds } }] },
-      });
-      if (history > 0) throw new ConflictException('This belt is in students\' grading history, so it can\'t be deleted.');
-      const declared = await tx.instructorBelt.count({ where: { OR: [{ rankId }, { stripeTierId: { in: tierIds } }] } });
-      if (declared > 0) throw new ConflictException('An instructor has declared this belt, so it can\'t be deleted.');
+      await this.assertRankSafeToRemove(tx, rankId, tierIds, 'deleted');
 
       await tx.rankStripeTier.deleteMany({ where: { rankId } });
       await tx.rank.delete({ where: { id: rankId } });
@@ -561,6 +583,68 @@ export class RanksService {
       for (const [i, r] of rest.entries()) await tx.rank.update({ where: { id: r.id }, data: { order: -1 - i } });
       for (const [i, r] of rest.entries()) await tx.rank.update({ where: { id: r.id }, data: { order: i } });
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Decision 226 — entity-level tenant offboarding, REVERSIBLE alternative to
+  // Decision 198's deleteRank() above (coexists with it; see Rank's own
+  // schema.prisma comment for why this build adds archive rather than
+  // replacing the already-shipped hard-delete). Same School-Owner gate,
+  // same ranksToggle gate, and the identical "safe to remove" definition
+  // deleteRank() already established (assertRankSafeToRemove) — a Rank
+  // blocked from deletion is equally blocked from archiving, by design.
+  // ---------------------------------------------------------------------------
+
+  async archiveRank(callerId: string, rankId: string) {
+    const rank = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.rank.findUnique({ where: { id: rankId }, include: { stripeTiers: { select: { id: true } } } }),
+    );
+    if (!rank) throw new NotFoundException('Rank not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, rank.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, rank.schoolId);
+    await this.assertRanksEnabled(callerId, rank.schoolId);
+    if (rank.archivedAt) {
+      return this.findOneRank(callerId, rankId); // idempotent.
+    }
+    const tierIds = rank.stripeTiers.map((t) => t.id);
+    const now = new Date();
+    const purgeAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await lockLadder(tx, rank.disciplineId);
+      await this.assertRankSafeToRemove(tx, rankId, tierIds, 'archived');
+      // TOCTOU-safe conditional update, same pattern every other entity in
+      // this build uses — re-checked against the row's CURRENT state at
+      // write time, not the possibly-stale `rank` read above.
+      await tx.rank.updateMany({ where: { id: rankId, archivedAt: null }, data: { archivedAt: now, purgeAt } });
+    });
+    return this.findOneRank(callerId, rankId);
+  }
+
+  async unarchiveRank(callerId: string, rankId: string) {
+    const rank = await this.prismaApp.withTenantContext(callerId, (tx) => tx.rank.findUnique({ where: { id: rankId } }));
+    if (!rank) throw new NotFoundException('Rank not found');
+    await this.tenantAuth.assertSchoolOwner(callerId, rank.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, rank.schoolId);
+    await this.assertRanksEnabled(callerId, rank.schoolId);
+    if (!rank.archivedAt) {
+      return this.findOneRank(callerId, rankId); // idempotent.
+    }
+    if (rank.purgedAt) {
+      throw new ConflictException('This Rank has already been purged and cannot be unarchived.');
+    }
+    const { count } = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.rank.updateMany({
+        where: { id: rankId, archivedAt: { not: null }, purgedAt: null },
+        data: { archivedAt: null, purgeAt: null },
+      }),
+    );
+    if (count === 0) {
+      const current = await this.prismaApp.withTenantContext(callerId, (tx) => tx.rank.findUniqueOrThrow({ where: { id: rankId } }));
+      if (current.purgedAt) {
+        throw new ConflictException('This Rank has already been purged and cannot be unarchived.');
+      }
+    }
+    return this.findOneRank(callerId, rankId);
   }
 
   /** Who holds each rung of a style, for the ladder editor's confirmations

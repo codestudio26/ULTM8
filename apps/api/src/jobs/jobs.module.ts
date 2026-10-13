@@ -18,6 +18,7 @@ import { MembershipExpirySweepProcessor, MembershipExpirySweepScheduler } from '
 import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './grading-notifications.processor';
 import { MembershipPlanPriceMigrationProcessor } from './membership-plan-price-migration.processor';
 import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler } from './notification-unsnooze-sweep.processor';
+import { EntityOffboardingPurgeProcessor, EntityOffboardingPurgeScheduler } from './entity-offboarding-purge.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -124,6 +125,13 @@ import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler 
  * ClassOccurrenceGenerationScheduler, needing no new module import (only
  * PrismaJobsService, already global, and its own queue, already registered
  * in QueueModule).
+ *
+ * Decision 226 adds EntityOffboardingPurgeProcessor/Scheduler — a pure
+ * scheduled sweep for the 7 entity-level tenant-offboarding archive()
+ * methods (Branch/Class/TimetableSlot/Instructor/Rank/Waiver/Lesson), same
+ * shape as TenantLifecyclePurgeProcessor/Scheduler above. No new module
+ * import needed — only PrismaJobsService (already global) and its own
+ * queue (already registered in QueueModule).
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -150,6 +158,8 @@ import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler 
     MembershipPlanPriceMigrationProcessor,
     NotificationUnsnoozeSweepProcessor,
     NotificationUnsnoozeSweepScheduler,
+    EntityOffboardingPurgeProcessor,
+    EntityOffboardingPurgeScheduler,
   ],
 })
 export class JobsModule {}
