@@ -333,15 +333,16 @@ export class TimetableService {
       throw new ConflictException('This TimetableSlot has already been purged and cannot be unarchived.');
     }
     const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const { count } = await tx.timetableSlot.updateMany({
+      await tx.timetableSlot.updateMany({
         where: { id: slotId, archivedAt: { not: null }, purgedAt: null },
         data: { archivedAt: null, purgeAt: null },
       });
-      if (count === 0) {
-        return tx.timetableSlot.findUniqueOrThrow({ where: { id: slotId } });
-      }
       return tx.timetableSlot.findUniqueOrThrow({ where: { id: slotId } });
     });
+    // Re-checked against the fresh row rather than only on the TOCTOU-race
+    // branch (Branch/Instructor/Rank/Lesson/Class's own pattern) — covers the
+    // same race either way, since a lost updateMany (another caller purged it
+    // first) and a won one both land here with the row's real current state.
     if (updated.purgedAt) {
       throw new ConflictException('This TimetableSlot has already been purged and cannot be unarchived.');
     }
