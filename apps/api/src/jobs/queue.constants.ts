@@ -70,3 +70,11 @@ export const NOTIFICATION_UNSNOOZE_SWEEP_QUEUE = 'notification-unsnooze-sweep';
 // deliberately swept but never purged — see the processor's own header
 // comment.
 export const ENTITY_OFFBOARDING_PURGE_QUEUE = 'entity-offboarding-purge';
+// Decision 227/254 — Curriculum learner-facing redesign's actual video-
+// upload/captioning-pipeline wiring (Decision 101's picked vendors, left
+// unbuilt by Phase 44). Polls CloudflareStreamService/TranscribeService to
+// completion for every Lesson whose captionStatus is PROCESSING — see
+// video-processing-poll.processor.ts's own header comment for the full
+// state-machine account (a genuinely new, un-precedented async-external-API-
+// poll shape in this codebase, not an established convention).
+export const VIDEO_PROCESSING_POLL_QUEUE = 'video-processing-poll';
