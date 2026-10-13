@@ -10130,7 +10130,7 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
-                /** @description Decision 226 — include archived Waivers too (excluded by default). */
+                /** @description Include archived Waivers too (excluded by default). */
                 includeArchived?: boolean;
             };
             header?: never;

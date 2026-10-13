@@ -7534,8 +7534,9 @@
             "name": "includeArchived",
             "required": false,
             "in": "query",
-            "description": "Decision 226 — include archived Waivers too (excluded by default).",
+            "description": "Include archived Waivers too (excluded by default).",
             "schema": {
+              "default": false,
               "type": "boolean"
             }
           }

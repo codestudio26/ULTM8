@@ -29,7 +29,12 @@ test.afterAll(async () => {
 
 test('clicking Settings on a Branch row navigates to the dedicated settings screen, not a modal', async ({ page }) => {
   await page.goto('/branches');
-  await expect(page.getByRole('cell', { name: 'Downtown Branch' })).toBeVisible();
+  // exact: true — Decision 226's new per-row "Actions for <name>" button
+  // (RowActionsMenu) sits in its own cell alongside "Settings", whose
+  // computed accessible name ("Settings Actions for Downtown Branch")
+  // contains this Branch's name as a substring too; a non-exact match would
+  // ambiguously resolve to both cells.
+  await expect(page.getByRole('cell', { name: 'Downtown Branch', exact: true })).toBeVisible();
 
   await page.getByRole('row', { name: /Downtown Branch/ }).getByRole('button', { name: 'Settings' }).click();
 

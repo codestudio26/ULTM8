@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -12,6 +12,7 @@ import { RequestSignatureUploadUrlDto } from './dto/request-signature-upload-url
 import { WaiverListResponseDto, WaiverResponseDto } from './dto/waiver-response.dto';
 import { WaiverSignatureListResponseDto, WaiverSignatureResponseDto } from './dto/waiver-signature-response.dto';
 import { SignatureUploadUrlResponseDto } from './dto/signature-upload-url-response.dto';
+import { WaiversQueryDto } from './dto/waivers-query.dto';
 
 // Waiver CRUD + Student self-signing (typed name, or typed name + drawn-signature
 // capture as of Phase 34), plus Guardian-on-behalf-of-a-linked-minor signing as
@@ -37,15 +38,13 @@ export class WaiversController {
   }
 
   @ApiOkResponse({ type: WaiverListResponseDto })
-  @ApiQuery({ name: 'includeArchived', required: false, type: Boolean, description: 'Decision 226 — include archived Waivers too (excluded by default).' })
   @Get('schools/:schoolId/waivers')
   findAllWaivers(
     @CurrentUser() user: JwtPayload,
     @Param('schoolId') schoolId: string,
-    @Query() query: PaginationQueryDto,
-    @Query('includeArchived', new ParseBoolPipe({ optional: true })) includeArchived?: boolean,
+    @Query() query: WaiversQueryDto,
   ) {
-    return this.waiversService.findAllWaivers(user.sub, schoolId, query.cursor, query.limit, includeArchived);
+    return this.waiversService.findAllWaivers(user.sub, schoolId, query.cursor, query.limit, query.includeArchived);
   }
 
   /** v1.2 backend backlog — the Waivers page's "Signatures" panel. See

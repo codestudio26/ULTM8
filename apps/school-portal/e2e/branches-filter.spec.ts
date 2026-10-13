@@ -35,17 +35,22 @@ test('typing a city filters the Branches list to only matching addresses', async
   await signIn(page, s.ownerToken);
   await page.goto('/branches');
 
-  await expect(page.getByRole('cell', { name: 'Downtown Toronto' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toBeVisible();
+  // exact: true — Decision 226's new per-row "Actions for <name>" button
+  // (RowActionsMenu) sits in its own cell alongside "Settings", whose
+  // computed accessible name ("Settings Actions for Downtown Toronto")
+  // contains this Branch's name as a substring too; a non-exact match would
+  // ambiguously resolve to both cells.
+  await expect(page.getByRole('cell', { name: 'Downtown Toronto', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Vaughan Mills', exact: true })).toBeVisible();
 
   await page.getByLabel('City').fill('Toronto');
 
-  await expect(page.getByRole('cell', { name: 'Downtown Toronto' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'Downtown Toronto', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Vaughan Mills', exact: true })).toHaveCount(0);
 
   // Clearing the filter brings both back.
   await page.getByLabel('City').fill('');
-  await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Vaughan Mills', exact: true })).toBeVisible();
 });
 
 test('toggling to Grid view shows the same Branches as cards, and toggling back restores the table', async ({ page }) => {
@@ -53,8 +58,9 @@ test('toggling to Grid view shows the same Branches as cards, and toggling back 
   await page.goto('/branches');
 
   await expect(page.getByRole('table')).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Downtown Toronto' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toBeVisible();
+  // exact: true — see the other test's own comment above for why.
+  await expect(page.getByRole('cell', { name: 'Downtown Toronto', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Vaughan Mills', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Grid' }).click();
 
@@ -67,6 +73,6 @@ test('toggling to Grid view shows the same Branches as cards, and toggling back 
   await page.getByRole('button', { name: 'Rows' }).click();
 
   await expect(page.getByRole('table')).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Downtown Toronto' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Vaughan Mills' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Downtown Toronto', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Vaughan Mills', exact: true })).toBeVisible();
 });

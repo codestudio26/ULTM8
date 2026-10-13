@@ -582,6 +582,27 @@ describeIfDb('Decision 226 — entity-level tenant offboarding (7 entities)', ()
       const succeeds = await request(app.getHttpServer()).post(`/v1/waivers/${waiver.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
       expect(succeeds.status).toBe(201);
     });
+
+    // Regression test: GET .../waivers previously bound the whole query
+    // string to the shared, non-extended PaginationQueryDto via
+    // `@Query() query: PaginationQueryDto` while ALSO separately extracting
+    // `@Query('includeArchived', ...)` as its own parameter. NestJS's global
+    // ValidationPipe({ forbidNonWhitelisted: true }) validates the whole
+    // incoming query string against whatever class `@Query()` is bound to —
+    // it does not "subtract" a parameter extracted separately — so this
+    // request used to be rejected outright with "property includeArchived
+    // should not exist," breaking the Waivers list page entirely (caught via
+    // Playwright, not this suite, since this suite never exercised the list
+    // endpoint's query string before now). Fixed by WaiversQueryDto, the
+    // same per-entity query-DTO shape every other one of the 7 entities
+    // already used.
+    it('GET .../waivers?includeArchived=true is accepted, not rejected by whitelist validation', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/schools/${schoolA.id}/waivers?includeArchived=true`)
+        .set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.items)).toBe(true);
+    });
   });
 
   // ===========================================================================
