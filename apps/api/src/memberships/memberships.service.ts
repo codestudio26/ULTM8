@@ -361,8 +361,12 @@ export class MembershipsService {
     }
   }
 
-  // No delete method — same reasoning ClassesModule/School/Branch already
-  // established (general tenant offboarding is [UNRESOLVED]).
+  // No delete/archive method, by deliberate decision (Decision 253) — a
+  // Membership is a real purchase/billing record tied to its Transaction's
+  // own Stripe payment/refund/dispute history, treated the same as Waiver's
+  // own never-purged exception. Its own ACTIVE/EXPIRED lifecycle already
+  // covers "this Membership is over" (Decisions 111/122's force-Expiry
+  // paths) without a separate delete/archive layered on top.
 
   // ---------------------------------------------------------------------------
   // v1.2 backend backlog "Archive action" — School Owner/Manager only, same
