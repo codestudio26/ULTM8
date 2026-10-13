@@ -3385,3 +3385,29 @@ This closes item 7 of the punch list as "no further build needed," not as "fully
 
 User, choosing "Treat like Waiver — never delete" over building a new soft-archive mechanism or a narrower list-filter-only option, 13 Oct 2026.
 
+---
+
+## Decision 255 — Multi-School coach/Branch Staff switcher built; `useOwnedSchoolId`'s identical gap found but deliberately left for its own decision
+
+**Date:** 13 Oct 2026 · **Status:** Built
+**Resolves:** Decision 184 item 4's own named follow-up — "a coach at several Schools sees the first one for now (no School switcher yet)" — on both `apps/school-portal` and `apps/student`'s Coach dashboard.
+
+1. **No backend change** — the JWT already carries every active grant (`RoleGrant`, not a role column, is the source of truth for multi-School membership — `ultm8-domain-rules` §3/§6.1/§8.3, `[CONFIRMED]`), and every coach/grading endpoint is already School-scoped by its own `schoolId` request param. This was purely a client-side "which School is currently being read" gap: `useCoachSchoolId()` took whichever grant happened to sort first, with no way to see or act on a second one.
+2. **Built on both platforms, same mechanism:** an explicit, persisted "active School" selection (sessionStorage on the School Portal, matching `sessionStorageTokenStore`'s own tab-scoped reasoning; AsyncStorage on `apps/student`, since a School id isn't a secret the way the access/refresh token is) that `useCoachSchoolId()` now prefers when it names a School the caller still actually holds a grant at, falling back to the first (stable-sorted) School otherwise — every existing caller (`useGradingSchoolId`, `CoachDashboardPage`/`CoachDashboardScreen`, `GradingBoardPage`, etc.) picks this up with no call-site changes. A new `SchoolSwitcher` (School Portal: `TopBar`; `apps/student`: the Coach dashboard screen, the one screen that needs it since every other coach screen receives `schoolId` as a navigation param from there) renders only when the caller actually holds 2+ distinct Schools' worth of INSTRUCTOR/BRANCH_STAFF grants — invisible for the common single-School case.
+3. **Found, not fixed: `useOwnedSchoolId` (School Portal) has the identical first-match bug** — nothing in the schema stops a `User` holding `SCHOOL_OWNER_MANAGER` at more than one School (no `@@unique([userId, role])` on `RoleGrant`), and that hook's own existing code comment ("a display hint only... the API re-checks") never mentioned the ordering gap the way Decision 184 item 4 did for coaches. Deliberately NOT folded into this build — it's a different, not-yet-approved piece of scope (an Owner's "which School" switch plausibly wants different placement/affordances than a coach's), flagged here for its own future decision rather than guessed at silently.
+
+### What this does NOT resolve
+
+The `useOwnedSchoolId` gap above, and extending either switcher to `apps/platform-admin` or any other realm — neither was in scope.
+
+### Built
+
+**School Portal:** `AuthContext.tsx` (`useCoachSchoolId`/new `useCoachSchoolIds`, sessionStorage-backed active selection, cleared on logout), `schools/schoolQueries.ts` (new `useSchoolNames`, one query per School via `useQueries` — the same fan-out `useSchoolSkillGroups` already established), new `coach/SchoolSwitcher.tsx`, wired into `layout/TopBar.tsx`.
+**apps/student:** `auth/AuthContext.tsx` (same shape, AsyncStorage-backed), `coach/coachQueries.ts` (new `useSchoolNames`, same fan-out pattern), new `SchoolSwitcher` in `coach/CoachDashboardScreen.tsx` using the existing `SearchablePickerField`.
+
+**Tests:** School Portal — Playwright `e2e/coach-school-switcher.spec.ts` (4 new: single-School sees nothing, two-School switch sticks across navigation, option labels, a School Owner with a second coached School never sees it); `fixtures.ts`'s `addPerson` grant-role union widened to include `SCHOOL_OWNER_MANAGER` for that last test. `apps/student` — 2 new cases in `coach/coachScreens.test.tsx` (no switcher at one School; switching at two calls `setActiveCoachSchoolId`).
+
+### Recorded by
+
+Developer, building Decision 184 item 4's own already-approved follow-up; the `useOwnedSchoolId` finding is disclosed reasoning, not a further product-owner decision, 13 Oct 2026.
+

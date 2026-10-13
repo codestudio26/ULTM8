@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -13,6 +13,21 @@ export function useSchool(schoolId: string | null) {
     queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}', { params: { path: { id: schoolId! } } })),
     enabled: !!schoolId,
   });
+}
+
+/** One query per School via `useQueries` — same fan-out pattern
+ * `useSchoolSkillGroups` already established for a dynamic-length id list
+ * (curriculumQueries.ts), here for `SchoolSwitcher`'s option labels. Returns
+ * `null` for a name still loading or that failed to load, rather than
+ * blocking the whole switcher on every School resolving. */
+export function useSchoolNames(schoolIds: string[]): Array<{ id: string; name: string | null }> {
+  const results = useQueries({
+    queries: schoolIds.map((id) => ({
+      queryKey: ['school', id],
+      queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}', { params: { path: { id } } })),
+    })),
+  });
+  return schoolIds.map((id, i) => ({ id, name: results[i]?.data?.name ?? null }));
 }
 
 export function useCreateSchool() {
