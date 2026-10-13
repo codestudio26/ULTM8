@@ -26,6 +26,33 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `SCHOOL_OWNER_MANAGER` at more than one School) was found while building
   this and deliberately left for its own decision, not folded in here
   (Decision 255).
+- **`GET /transactions/{id}/invoice` — PDF/receipt downloads for payment
+  history** (`apps/api`, plus Track B's `apps/student` and
+  `apps/school-portal`, `docs/TRACK-B-ROADMAP.md`'s "Student-scoped
+  transaction history" section). Closes Spec 55 §7's own confirmed
+  `GET /transactions/{id}/invoice (download)` shape, deferred out of
+  Phase 9's original scope — with **zero new PDF-rendering infra**: Stripe
+  already hosts a receipt page per Charge (`Charge.receipt_url`, verified
+  directly against the installed `stripe` SDK's own types), so this surfaces
+  that rather than generating a document. New
+  `StripeClientService.getReceiptUrl(connectedAccountId, paymentIntentId)`;
+  new `TransactionsService.getReceiptUrl`, authorized the same way the
+  existing bulk ledger read is (self, or that School's Owner/Manager);
+  `receiptUrl` is `null` — a real, normal state, not an error — for a
+  CASH/BANK_TRANSFER Transaction. `apps/student`'s `TransactionHistoryScreen.tsx`
+  gets a "View receipt" row action, handed off to the device browser via
+  `expo-web-browser` (the same pattern `PaymentMethodsScreen.tsx` already
+  established for Stripe Checkout); `apps/school-portal`'s
+  `TransactionsPage.tsx` gets a "Receipt" table column (Decision 202's own
+  rejected-mockup "Download invoice" idea, now actually built). New e2e
+  coverage (`transactions.e2e-spec.ts`, 5 new tests) and extended
+  `apps/student/src/transactions/transactionHistory.test.tsx` (2 new tests).
+  The live Stripe-API round-trip itself is unverified against a real account
+  (same posture every other real-vendor-dependent flow in this codebase
+  takes); `apps/school-portal`'s own addition has no Playwright coverage —
+  disclosed, not silently skipped, since no prior test file existed for that
+  page to extend and the backend path it calls is already fully e2e-proven.
+  `packages/api-client` regenerated.
 - **Track B: profile photo self-upload** (`apps/student`, `docs/TRACK-B-ROADMAP.md`
   "My Profile" section) — closes the "Profile photo" gap that section's own "Not
   yet" list had named: `UpdateUserDto.profilePhotoUrl` took a plain pasted URL,
@@ -42,6 +69,30 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   web equivalent, already set). New `src/components/Avatar.tsx` — this app's
   first avatar component, mirroring `apps/school-portal`'s own (real photo, or
   an initials monogram). New `src/profile/profilePhoto.test.tsx` (6 tests).
+- **Fixed the undefined-vs-null `PATCH /users/me` contract gap** (`apps/api`,
+  plus Track B's `apps/student`, `docs/TRACK-B-ROADMAP.md` "My Profile"
+  section). `UpdateUserDto`'s username/gender/nationality/language/currency/
+  address/weightCategory/kimonoSize/beltSize were typed `string | undefined`
+  only — each is nullable on `User` and `UsersService.updateProfileFor` already
+  cleared it correctly on an explicit `null` (confirmed for weightCategory/
+  kimonoSize/beltSize by a pre-existing `users.e2e-spec.ts` round-trip test),
+  but the DTO's own type never admitted `null`, so no generated client could
+  construct a type-safe call to actually send one. Now typed `string | null`
+  for all nine fields (no backend logic change — `@IsOptional()` already skips
+  validation for both `null` and `undefined`, verified directly against the
+  installed `class-validator`'s own source). `apps/student`'s `ProfileScreen.tsx`
+  now sends `null`, not `undefined`, for its plain-text fields when cleared —
+  safe there because every field is always pre-filled from the real current
+  profile, so blank unambiguously means "clear it." `apps/school-portal`'s
+  `StudentUpdatePage.tsx` deliberately left untouched: its fields start blank
+  by design (no single-Student full-profile read endpoint exists yet), so
+  blank there still has to mean "leave alone," not "clear" — adopting this
+  fix there would risk a Staff member accidentally wiping a field they never
+  touched. `language`/`currency` on `ProfileScreen` also left out of the
+  UI-level fix (though not the type fix) — neither picker offers a "none"
+  selection, so there's nothing to send `null` for yet. New e2e coverage
+  (`users.e2e-spec.ts`) and a new `apps/student/src/profile/profileEdit.test.tsx`
+  (4 tests). `packages/api-client` regenerated.
 
 - **Entity-level tenant offboarding for 7 entities with no delete/archive
   mechanism before now** (Decision 226) — Branch, Class, TimetableSlot,

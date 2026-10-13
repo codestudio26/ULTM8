@@ -1003,13 +1003,14 @@ No screen anywhere in this app had ever read this endpoint before, despite it be
 - **My Profile** (`src/profile/ProfileScreen.tsx`), off Home. Shows email/phone read-only (with verified status) and edits everything `UpdateUserDto` allows: first name, surname, username, date of birth, gender, nationality, address, language, currency. Language/currency pick from the real confirmed lists (`GET /settings/languages`/`/settings/currencies`) via plain chip buttons rather than free text — no Picker dependency exists anywhere in this app, and these two fields don't justify adding one.
 - **API:** nothing new — `GET`/`PATCH /users/me` and `GET /settings/languages`/`/settings/currencies` all already existed.
 - **Profile photo self-upload** (added later, closing the "Not yet" gap below): a new `useUploadMyProfilePhoto` mutation (`profileQueries.ts`) composes `POST /uploads/public-photo-url` (`entityType: USER`, no `entityId`/`schoolId` — the shared app-wide photo-upload endpoint's own self-service branch, `UploadsService.authorizeAndResolveScope`, needed no backend change at all) + a PUT of the picked image + `PATCH /users/me` with the resulting public URL, same 3-step composition `useSignWaiver`'s own drawn-signature upload already established. New `expo-image-picker` dependency (bundled for this Expo SDK; `expo-av`'s own sibling `expo-camera` already set the "stay Expo Go-compatible" precedent this follows) drives "Take Photo"/"Choose Photo" buttons, both normalized through one `handlePickedAsset` check (same 5MB / PNG+JPEG+WebP limits `PhotoUploadField`, the web equivalent, already established — no new convention invented). New RN `Avatar` component (`src/components/Avatar.tsx`) — the real photo once set, otherwise an initials monogram, mirroring `apps/school-portal/src/lib/Avatar.tsx`'s own behavior; this app had no avatar component of its own until now.
+- **Clearing a profile field back to empty** (added later, closing the "Not yet" gap below): `UpdateUserDto`'s username/gender/nationality/language/currency/address/weightCategory/kimonoSize/beltSize are now typed `string | null`, not just `string | undefined` — each was already nullable on `User` and already cleared correctly by `users.service.ts`'s plain pass-through on an explicit `null` (confirmed for weightCategory/kimonoSize/beltSize by `users.e2e-spec.ts`'s own pre-existing round-trip test), but the DTO's own type never admitted `null`, so no generated client could construct a type-safe call to send one. `ProfileScreen` now sends `null`, not `undefined`, when its username/gender/nationality/address/weightCategory/kimonoSize/beltSize plain-text fields are cleared to empty — safe here specifically because every field on this screen is always pre-filled from the real current profile, so blank unambiguously means "the Student emptied this," unlike `StudentUpdatePage.tsx` on the Staff-on-behalf-of side (deliberately left untouched — see that file's own header comment on why blank has to keep meaning "leave alone" there until a real single-Student profile-read endpoint exists). `language`/`currency` deliberately NOT included in this fix — neither picker in this screen offers a "none" selection, so there is still no way to blank either from this screen; disclosed, not silently expanded scope.
 
 ### Not yet
-- **Clearing an optional field back to empty.** `UpdateUserDto`'s optional fields are typed `string | undefined`, never `| null`, and `users.service.ts`'s `updateMe` relies on Prisma's "`undefined` = leave alone" semantics — there is no type-safe call this client can make to blank out a gender/nationality/address/username/language/currency once set. A real contract gap, not a client shortcut; see `profileQueries.ts`'s own comment.
+- **Clearing `language`/`currency` specifically.** Both pickers in this screen only ever offer a real value, never a "none" — closing this needs a product/UX decision on what an unset language/currency even looks like in the picker UI, not just the DTO-type fix above (which these two DO already have, for whenever that UI exists).
 - **Email/phone changes.** Deliberately excluded by `UpdateUserDto` itself (both are login/OTP identifiers needing re-verification, not a bare profile edit) — not this screen's gap to close.
 
 ### Verified
-`tsc --noEmit`; jest `src/profile/profilePhoto.test.tsx` (6) plus the app's full pre-existing suite (no regressions).
+`tsc --noEmit`; jest `src/profile/profilePhoto.test.tsx` (6) and `src/profile/profileEdit.test.tsx` (4) plus the app's full pre-existing suite (no regressions); API e2e `users.e2e-spec.ts` (2 new tests: clearing username/gender/nationality/language/currency/address with an explicit null, and confirming omitting a field still leaves it alone).
 
 ## Student-scoped transaction history (receipt viewing) — DONE (2026-10-12)
 
@@ -1046,25 +1047,56 @@ Pure plumbing — the `Transaction` model already had everything needed
   Bookings/My Memberships — no new list pattern. New query hook
   `src/transactions/transactionQueries.ts` (`useMyTransactions`), matching
   `useMyMemberships`'/`useMyBookings`' `usePaginatedQuery` convention.
+- **PDF/invoice generation (added later, closing the "Not yet" gap below with
+  ZERO new PDF-rendering infra):** Spec 55 §7 itself already confirmed the shape
+  — `GET /transactions/{id}/invoice (download)` — this just hadn't been built.
+  Stripe already hosts a receipt page per Charge (`Charge.receipt_url`, verified
+  directly against the installed `stripe` SDK's own types, not assumed), so this
+  surfaces THAT rather than generating a document: new
+  `StripeClientService.getReceiptUrl(connectedAccountId, paymentIntentId)`
+  (`apps/api/src/payments/stripe-client.service.ts`), new
+  `TransactionsService.getReceiptUrl`/`GET transactions/{id}/invoice`
+  (`TransactionReceiptUrlResponseDto`, `{ receiptUrl: string | null }` —
+  `null` for a CASH/BANK_TRANSFER Transaction, a real/normal state, not an
+  error). Student app: a "View receipt" row action on
+  `TransactionHistoryScreen.tsx`, handed off to the device browser via
+  `expo-web-browser`'s `openBrowserAsync` — the same "hand off to the browser
+  for a Stripe-hosted page" pattern `PaymentMethodsScreen.tsx` already
+  established for Checkout. School-portal: a "Receipt" column on
+  `TransactionsPage.tsx`'s table, opening in a new tab. **Judgment call,
+  disclosed:** the actual Stripe-API round-trip is unverified against a live
+  account (this environment's own `STRIPE_SECRET_KEY` is a placeholder, same
+  posture every other real-vendor-dependent flow in this codebase takes) — only
+  the authorization gate and the non-Stripe `null` path are proven over real
+  HTTP.
 
 ### Not yet
-- **PDF/invoice generation.** No PDF infra exists anywhere in this codebase
-  (confirmed — searched for any such dependency/service before starting). "Receipt
-  viewing" here means this real, readable list of each Transaction, not a
-  downloadable document; a future PDF-export feature would be new infra, not an
-  extension of this.
+- **A generated PDF document, specifically.** This closes the Spec §7 gap with
+  Stripe's own hosted receipt page, not a document this codebase renders
+  itself — if a real product need for an actually-downloadable, self-hosted PDF
+  ever surfaces (vs. "a link to a receipt page is fine," which nothing has ever
+  said it isn't), that's new infra, same as this entry used to say about the
+  whole feature.
 
 ### Verified
 `apps/api`: `tsc --noEmit`; `nest build`; unit suite (482 tests, all passing); new
 `test/transactions.e2e-spec.ts` (unauthenticated rejected, self-read only ever
 returns the caller's own rows and never another Student's, pagination via
-cursor/limit) — written against the same `describeIfDb`-gated, real-Postgres
-convention every other e2e spec in this repo uses; the sandbox this was built in had
-no way to stand up a live Postgres itself, so this file's own run depends on CI's
+cursor/limit, plus 5 new tests for `GET /transactions/{id}/invoice`: auth gate,
+School-Owner access, cross-Student 404 via RLS, nonexistent-id 404, and the
+BANK_TRANSFER "`receiptUrl: null`, no Stripe call needed" path) — written
+against the same `describeIfDb`-gated, real-Postgres convention every other
+e2e spec in this repo uses; the sandbox this was built in had no way to stand
+up a live Postgres itself, so this file's own run depends on CI's
 Postgres-backed cross-tenant-isolation job going green, same as any other e2e spec
 added there — check that job's result for this file specifically before merging.
-`apps/student`: `tsc --noEmit`; full `npm run test` (64 tests across 12 suites,
-including the new `src/transactions/transactionHistory.test.tsx`, all passing).
+`apps/student`: `tsc --noEmit`; full `npm run test` (92 tests across 17 suites,
+including the extended `src/transactions/transactionHistory.test.tsx`, all
+passing). `apps/school-portal`: `tsc --noEmit` only — no existing unit-test
+runner or prior Playwright spec for `TransactionsPage.tsx` to extend; a new
+Playwright suite from scratch for this one small drill-down column was judged
+disproportionate given the backend path it calls is already fully e2e-proven
+above — disclosed, not silently skipped.
 
 ## Session refresh — access tokens no longer expire mid-session (`POST /auth/refresh`, `/auth/logout`) — DONE
 

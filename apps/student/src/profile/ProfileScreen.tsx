@@ -69,6 +69,14 @@ function formFrom(profile: UserProfile): Form {
  * read-only — the DTO deliberately excludes both, since changing either is a
  * login/OTP identifier change, not a bare profile edit.
  *
+ * Every plain-text field here (username/gender/nationality/address/
+ * weightCategory/kimonoSize/beltSize) now sends `null`, not `undefined`, when
+ * cleared to empty — `handleSave`'s own comment explains why this screen,
+ * unlike `StudentUpdatePage.tsx` on the Staff-on-behalf-of side, can safely
+ * treat "blank" as "clear it": every field here starts pre-filled from the
+ * real current profile (`formFrom`, right above), so blank unambiguously means
+ * the Student emptied it, not "I never touched this field."
+ *
  * `language`/`currency` pick from the real confirmed lists (`GET
  * /settings/languages`/`/settings/currencies`). Language (4 entries, domain-rules
  * §1) stays a row of plain chip buttons — the same pattern LessonRow.tsx already
@@ -77,7 +85,14 @@ function formFrom(profile: UserProfile): Form {
  * hardcoded 6 — product-owner-approved 11/12 Oct 2026, see `CHANGELOG.md` →
  * Unreleased) uses `SearchablePickerField` instead — a chip row that size would
  * wrap into an unusable wall of buttons; see that component's own header comment
- * for why a Modal+search, not a new Picker dependency, solves it. */
+ * for why a Modal+search, not a new Picker dependency, solves it. Both pickers
+ * still send `undefined` when left at their initial empty value — neither
+ * offers a "none"/"clear" option in its own UI (every option is a real
+ * language/currency), so there is still no way to blank EITHER of these two
+ * specifically from this screen. A real, disclosed, narrower remaining gap,
+ * not silently expanded scope: closing it means deciding what an "unset"
+ * language/currency state should even look like in the picker UI, which is a
+ * product/UX call this task doesn't make on its own. */
 export function ProfileScreen() {
   const profile = useMyProfile();
   const languages = useLanguages();
@@ -104,16 +119,27 @@ export function ProfileScreen() {
       {
         firstName: form.firstName.trim(),
         surname: form.surname.trim(),
-        username: form.username.trim() || undefined,
+        // `null`, not `undefined`, when blank — `UpdateUserDto` now accepts
+        // `null` for each of these to CLEAR them (see profileQueries.ts's own
+        // header comment); `undefined` still means "leave the existing value
+        // alone" (used nowhere in this screen's own save path, since every
+        // field here is always pre-filled with the real current value — see
+        // this component's own header comment for why that's what makes
+        // blank-means-clear safe here).
+        username: form.username.trim() || null,
         dateOfBirth: form.dateOfBirth.trim(),
-        gender: form.gender.trim() || undefined,
-        nationality: form.nationality.trim() || undefined,
-        address: form.address.trim() || undefined,
+        gender: form.gender.trim() || null,
+        nationality: form.nationality.trim() || null,
+        address: form.address.trim() || null,
+        // Still `undefined`, not `null`, for these two — neither picker offers
+        // a "none" selection, so an empty `form.language`/`form.currency`
+        // genuinely can't happen via this screen's own UI today; see this
+        // component's own header comment.
         language: form.language || undefined,
         currency: form.currency || undefined,
-        weightCategory: form.weightCategory.trim() || undefined,
-        kimonoSize: form.kimonoSize.trim() || undefined,
-        beltSize: form.beltSize.trim() || undefined,
+        weightCategory: form.weightCategory.trim() || null,
+        kimonoSize: form.kimonoSize.trim() || null,
+        beltSize: form.beltSize.trim() || null,
       },
       { onSuccess: () => setSaved(true) },
     );

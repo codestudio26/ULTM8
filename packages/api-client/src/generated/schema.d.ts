@@ -1828,6 +1828,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/transactions/{id}/invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TransactionsController_getReceiptUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/disciplines": {
         parameters: {
             query?: never;
@@ -3602,24 +3618,27 @@ export interface components {
         UpdateStudentProfileDto: {
             firstName?: string;
             surname?: string;
-            /** @description Mobile-only per confirmed field list */
-            username?: string;
+            /** @description Mobile-only per confirmed field list. Null clears it. */
+            username?: string | null;
             /** @description ISO 8601 date, no time component */
             dateOfBirth?: string;
-            gender?: string;
-            nationality?: string;
-            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
-            language?: string;
-            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
-            currency?: string;
-            address?: string;
+            /** @description Null clears it. */
+            gender?: string | null;
+            /** @description Null clears it. */
+            nationality?: string | null;
+            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it. */
+            language?: string | null;
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it. */
+            currency?: string | null;
+            /** @description Null clears it. */
+            address?: string | null;
             profilePhotoUrl?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            weightCategory?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            kimonoSize?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            beltSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            beltSize?: string | null;
         };
         UserResponseDto: {
             id: string;
@@ -4094,24 +4113,27 @@ export interface components {
         UpdateUserDto: {
             firstName?: string;
             surname?: string;
-            /** @description Mobile-only per confirmed field list */
-            username?: string;
+            /** @description Mobile-only per confirmed field list. Null clears it. */
+            username?: string | null;
             /** @description ISO 8601 date, no time component */
             dateOfBirth?: string;
-            gender?: string;
-            nationality?: string;
-            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
-            language?: string;
-            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
-            currency?: string;
-            address?: string;
+            /** @description Null clears it. */
+            gender?: string | null;
+            /** @description Null clears it. */
+            nationality?: string | null;
+            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it. */
+            language?: string | null;
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it. */
+            currency?: string | null;
+            /** @description Null clears it. */
+            address?: string | null;
             profilePhotoUrl?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            weightCategory?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            kimonoSize?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            beltSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            beltSize?: string | null;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */
@@ -4845,6 +4867,10 @@ export interface components {
         TransactionListResponseDto: {
             items: components["schemas"]["TransactionResponseDto"][];
             nextCursor?: string | null;
+        };
+        TransactionReceiptUrlResponseDto: {
+            /** @description Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet. */
+            receiptUrl?: string | null;
         };
         CreateDisciplineDto: {
             name: string;
@@ -9194,6 +9220,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TransactionListResponseDto"];
+                };
+            };
+        };
+    };
+    TransactionsController_getReceiptUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionReceiptUrlResponseDto"];
                 };
             };
         };

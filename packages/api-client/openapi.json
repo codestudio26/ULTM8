@@ -5274,6 +5274,41 @@
         ]
       }
     },
+    "/v1/transactions/{id}/invoice": {
+      "get": {
+        "operationId": "TransactionsController_getReceiptUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionReceiptUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "transactions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/disciplines": {
       "post": {
         "operationId": "RanksController_createDiscipline",
@@ -11098,43 +11133,55 @@
           },
           "username": {
             "type": "string",
-            "description": "Mobile-only per confirmed field list"
+            "description": "Mobile-only per confirmed field list. Null clears it.",
+            "nullable": true
           },
           "dateOfBirth": {
             "type": "string",
             "description": "ISO 8601 date, no time component"
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "nationality": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "language": {
             "type": "string",
-            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1)."
+            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it.",
+            "nullable": true
           },
           "currency": {
             "type": "string",
-            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it.",
+            "nullable": true
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "profilePhotoUrl": {
             "type": "string"
           },
           "weightCategory": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "kimonoSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "beltSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           }
         }
       },
@@ -12842,43 +12889,55 @@
           },
           "username": {
             "type": "string",
-            "description": "Mobile-only per confirmed field list"
+            "description": "Mobile-only per confirmed field list. Null clears it.",
+            "nullable": true
           },
           "dateOfBirth": {
             "type": "string",
             "description": "ISO 8601 date, no time component"
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "nationality": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "language": {
             "type": "string",
-            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1)."
+            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it.",
+            "nullable": true
           },
           "currency": {
             "type": "string",
-            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it.",
+            "nullable": true
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "profilePhotoUrl": {
             "type": "string"
           },
           "weightCategory": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "kimonoSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "beltSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           }
         }
       },
@@ -15268,6 +15327,16 @@
         "required": [
           "items"
         ]
+      },
+      "TransactionReceiptUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "receiptUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet."
+          }
+        }
       },
       "CreateDisciplineDto": {
         "type": "object",
