@@ -5274,6 +5274,41 @@
         ]
       }
     },
+    "/v1/transactions/{id}/invoice": {
+      "get": {
+        "operationId": "TransactionsController_getReceiptUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionReceiptUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "transactions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/disciplines": {
       "post": {
         "operationId": "RanksController_createDiscipline",
@@ -14532,6 +14567,16 @@
         "required": [
           "items"
         ]
+      },
+      "TransactionReceiptUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "receiptUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet."
+          }
+        }
       },
       "CreateDisciplineDto": {
         "type": "object",

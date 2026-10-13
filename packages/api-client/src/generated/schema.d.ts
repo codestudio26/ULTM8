@@ -1828,6 +1828,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/transactions/{id}/invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TransactionsController_getReceiptUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/disciplines": {
         parameters: {
             query?: never;
@@ -4653,6 +4669,10 @@ export interface components {
         TransactionListResponseDto: {
             items: components["schemas"]["TransactionResponseDto"][];
             nextCursor?: string | null;
+        };
+        TransactionReceiptUrlResponseDto: {
+            /** @description Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet. */
+            receiptUrl?: string | null;
         };
         CreateDisciplineDto: {
             name: string;
@@ -8910,6 +8930,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TransactionListResponseDto"];
+                };
+            };
+        };
+    };
+    TransactionsController_getReceiptUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionReceiptUrlResponseDto"];
                 };
             };
         };
