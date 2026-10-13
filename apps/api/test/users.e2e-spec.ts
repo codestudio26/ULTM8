@@ -252,4 +252,65 @@ describeIfDb('UsersModule — GET/PATCH /users/me', () => {
     const unchangedB = await superuser.user.findUniqueOrThrow({ where: { id: userB.id } });
     expect(unchangedB.username).not.toBe(claimRes.body.username);
   });
+
+  // ---------------------------------------------------------------------------
+  // Closes the undefined-vs-null DTO contract gap: username/gender/nationality/
+  // language/currency/address are nullable on User, and UsersService.updateProfileFor
+  // already passes each straight through to Prisma (same shape as weightCategory/
+  // kimonoSize/beltSize above) — the only thing that was missing was UpdateUserDto's
+  // own type admitting `null` at all. Omitting a field still leaves it alone;
+  // sending an explicit null now clears it, same contract as every other optional
+  // field in this DTO.
+  // ---------------------------------------------------------------------------
+
+  it('PATCH /users/me clears username/gender/nationality/language/currency/address with an explicit null', async () => {
+    const setRes = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        username: `clear-me-${randomUUID()}`,
+        gender: 'non-binary',
+        nationality: 'Testland',
+        language: 'en',
+        currency: 'USD',
+        address: '123 Test St',
+      });
+    expect(setRes.status).toBe(200);
+
+    const clearRes = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ username: null, gender: null, nationality: null, language: null, currency: null, address: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.username).toBeNull();
+    expect(clearRes.body.gender).toBeNull();
+    expect(clearRes.body.nationality).toBeNull();
+    expect(clearRes.body.language).toBeNull();
+    expect(clearRes.body.currency).toBeNull();
+    expect(clearRes.body.address).toBeNull();
+
+    const persisted = await superuser.user.findUniqueOrThrow({ where: { id: userA.id } });
+    expect(persisted.username).toBeNull();
+    expect(persisted.gender).toBeNull();
+    expect(persisted.nationality).toBeNull();
+    expect(persisted.language).toBeNull();
+    expect(persisted.currency).toBeNull();
+    expect(persisted.address).toBeNull();
+  });
+
+  it('PATCH /users/me omitting gender/nationality/etc. leaves the existing value untouched (undefined still means "leave alone")', async () => {
+    const setRes = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ gender: 'woman', nationality: 'Testlandia' });
+    expect(setRes.status).toBe(200);
+
+    const untouchedRes = await request(app.getHttpServer())
+      .patch('/v1/users/me')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ firstName: 'StillB' });
+    expect(untouchedRes.status).toBe(200);
+    expect(untouchedRes.body.gender).toBe('woman');
+    expect(untouchedRes.body.nationality).toBe('Testlandia');
+  });
 });
