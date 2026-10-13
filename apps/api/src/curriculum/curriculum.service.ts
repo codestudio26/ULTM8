@@ -368,10 +368,24 @@ export class CurriculumService {
    * Student's behalf (favorite, watch-progress, comment): 404 if the Lesson
    * doesn't exist OR has been archived (Decision 226 — an archived Lesson
    * can't be newly favorited/commented/watched; an existing Favorite on a
-   * since-archived Lesson is left alone, no retroactive cleanup), 403 if
+   * since-archived Lesson is left alone, no retroactive cleanup), 404 if
+   * `expectedSchoolId` (the caller's own `:schoolId` route param) doesn't
+   * match the Lesson's real School — same "cross-tenant mismatch is a 404,
+   * not a 403" convention Decision 252's own 7-entity build already
+   * established, and the same "thread the path schoolId through and verify
+   * it, don't just bind-and-ignore it" shape WaiversController.
+   * findSignatures already uses (found on review: these routes originally
+   * bound only `:id`, silently ignoring `:schoolId` even though it's part of
+   * the URL — fixed here, not left as a cosmetic client-typing gap). 403 if
    * `isLocked` says the caller may not watch it (Decisions 154, 190, 195).
+   *
+   * `expectedSchoolId` is optional — addPlaylistItem's own call site has none
+   * to check against (a Playlist deliberately has no School of its own, see
+   * its schema.prisma comment, so there is no path `:schoolId` to verify a
+   * added Lesson against); every other call site passes its own route's
+   * `:schoolId` and gets the cross-tenant-mismatch check.
    */
-  private async assertCanWatchLesson(callerId: string, lessonId: string): Promise<{ schoolId: string }> {
+  private async assertCanWatchLesson(callerId: string, expectedSchoolId: string | undefined, lessonId: string): Promise<{ schoolId: string }> {
     const lesson = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.lesson.findUnique({
         where: { id: lessonId },
@@ -383,7 +397,7 @@ export class CurriculumService {
         },
       }),
     );
-    if (!lesson || lesson.archivedAt) {
+    if (!lesson || lesson.archivedAt || (expectedSchoolId !== undefined && lesson.schoolId !== expectedSchoolId)) {
       throw new NotFoundException('Lesson not found');
     }
     const access = await this.accessFor(callerId, lesson.schoolId);
@@ -506,8 +520,8 @@ export class CurriculumService {
 
   /** Idempotent — favoriting an already-favorited Lesson is a no-op success,
    * not a 409. */
-  async addFavorite(callerId: string, lessonId: string) {
-    const { schoolId } = await this.assertCanWatchLesson(callerId, lessonId);
+  async addFavorite(callerId: string, schoolId: string, lessonId: string) {
+    await this.assertCanWatchLesson(callerId, schoolId, lessonId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const row = await tx.favorite.upsert({
         where: { studentId_lessonId: { studentId: callerId, lessonId } },
@@ -518,10 +532,12 @@ export class CurriculumService {
     });
   }
 
-  /** Idempotent — unfavoriting a Lesson that isn't favorited is a no-op
-   * success, not a 404. */
-  async removeFavorite(callerId: string, lessonId: string): Promise<void> {
-    await this.prismaApp.withTenantContext(callerId, (tx) => tx.favorite.deleteMany({ where: { studentId: callerId, lessonId } }));
+  /** Idempotent — unfavoriting a Lesson that isn't favorited (or isn't this
+   * School's) is a no-op success, not a 404. `schoolId` filters the delete
+   * directly (Favorite already stores its own denormalized schoolId) rather
+   * than needing a separate Lesson lookup just to check it. */
+  async removeFavorite(callerId: string, schoolId: string, lessonId: string): Promise<void> {
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.favorite.deleteMany({ where: { studentId: callerId, lessonId, schoolId } }));
   }
 
   async findFavorites(callerId: string, schoolId: string, cursor?: string, limit?: number) {
@@ -550,8 +566,8 @@ export class CurriculumService {
    * `dto.completed` is explicitly true; omitting it (or sending false) never
    * clears an already-set completedAt. There is no "mark incomplete" feature.
    */
-  async upsertWatchProgress(callerId: string, lessonId: string, dto: UpsertWatchProgressDto) {
-    const { schoolId } = await this.assertCanWatchLesson(callerId, lessonId);
+  async upsertWatchProgress(callerId: string, schoolId: string, lessonId: string, dto: UpsertWatchProgressDto) {
+    await this.assertCanWatchLesson(callerId, schoolId, lessonId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const row = await tx.watchHistory.upsert({
         where: { studentId_lessonId: { studentId: callerId, lessonId } },
@@ -635,7 +651,9 @@ export class CurriculumService {
 
   async addPlaylistItem(callerId: string, playlistId: string, dto: AddPlaylistItemDto) {
     const playlist = await this.loadOwnPlaylist(callerId, playlistId);
-    await this.assertCanWatchLesson(callerId, dto.lessonId);
+    // No expectedSchoolId — a Playlist has none of its own (see
+    // assertCanWatchLesson's own header comment).
+    await this.assertCanWatchLesson(callerId, undefined, dto.lessonId);
     const itemId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const last = await tx.playlistItem.aggregate({ where: { playlistId }, _max: { order: true } });
@@ -734,8 +752,8 @@ export class CurriculumService {
 
   /** Comments require the same watch-access as the Lesson's own content — a
    * locked Lesson can't be commented on. */
-  async createComment(callerId: string, lessonId: string, dto: CreateCommentDto) {
-    const { schoolId } = await this.assertCanWatchLesson(callerId, lessonId);
+  async createComment(callerId: string, schoolId: string, lessonId: string, dto: CreateCommentDto) {
+    await this.assertCanWatchLesson(callerId, schoolId, lessonId);
     const row = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.comment.create({ data: { id: randomUUID(), lessonId, authorId: callerId, schoolId, body: dto.body } }),
     );
@@ -749,8 +767,8 @@ export class CurriculumService {
    * unlike every other list here, which is newest-first — so `lt`/`gt` are
    * flipped relative to the DESC lists above, written out explicitly rather
    * than reusing their shape unchanged. */
-  async findComments(callerId: string, lessonId: string, cursor?: string, limit?: number) {
-    await this.assertCanWatchLesson(callerId, lessonId);
+  async findComments(callerId: string, schoolId: string, lessonId: string, cursor?: string, limit?: number) {
+    await this.assertCanWatchLesson(callerId, schoolId, lessonId);
     const take = resolveLimit(limit);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const decoded = cursor ? decodeDescCursor(cursor) : null;
@@ -830,9 +848,9 @@ export class CurriculumService {
    * (assertStaffAtSchool + assertSchoolNotArchived, updateLesson's own
    * gate) — the controller does not duplicate this check.
    */
-  async requestVideoUploadUrl(callerId: string, lessonId: string) {
+  async requestVideoUploadUrl(callerId: string, schoolId: string, lessonId: string) {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
-    if (!existing) {
+    if (!existing || existing.schoolId !== schoolId) {
       throw new NotFoundException('Lesson not found');
     }
     await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);

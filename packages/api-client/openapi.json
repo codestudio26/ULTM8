@@ -9528,6 +9528,14 @@
         "operationId": "CurriculumController_addFavorite",
         "parameters": [
           {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -9560,6 +9568,14 @@
       "delete": {
         "operationId": "CurriculumController_removeFavorite",
         "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "id",
             "required": true,
@@ -9643,6 +9659,14 @@
       "post": {
         "operationId": "CurriculumController_upsertWatchProgress",
         "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "id",
             "required": true,
@@ -10055,6 +10079,14 @@
         "operationId": "CurriculumController_createComment",
         "parameters": [
           {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -10097,6 +10129,14 @@
       "get": {
         "operationId": "CurriculumController_findComments",
         "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "id",
             "required": true,
@@ -10180,6 +10220,14 @@
       "post": {
         "operationId": "CurriculumController_requestVideoUploadUrl",
         "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "id",
             "required": true,

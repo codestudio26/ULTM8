@@ -148,15 +148,23 @@ export class CurriculumController {
 
   @ApiCreatedResponse({ type: FavoriteResponseDto })
   @Post('schools/:schoolId/curriculum/lessons/:id/favorite')
-  addFavorite(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
-    return this.curriculumService.addFavorite(user.sub, id);
+  addFavorite(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.curriculumService.addFavorite(user.sub, schoolId, id);
   }
 
   @ApiNoContentResponse({ description: 'Idempotent — a no-op if it wasn\'t favorited.' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('schools/:schoolId/curriculum/lessons/:id/favorite')
-  async removeFavorite(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    await this.curriculumService.removeFavorite(user.sub, id);
+  async removeFavorite(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.curriculumService.removeFavorite(user.sub, schoolId, id);
   }
 
   @ApiOkResponse({ type: FavoriteListResponseDto })
@@ -167,8 +175,13 @@ export class CurriculumController {
 
   @ApiCreatedResponse({ type: WatchHistoryResponseDto })
   @Post('schools/:schoolId/curriculum/lessons/:id/watch-progress')
-  upsertWatchProgress(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpsertWatchProgressDto) {
-    return this.curriculumService.upsertWatchProgress(user.sub, id, dto);
+  upsertWatchProgress(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertWatchProgressDto,
+  ) {
+    return this.curriculumService.upsertWatchProgress(user.sub, schoolId, id, dto);
   }
 
   @ApiOkResponse({ type: WatchHistoryListResponseDto })
@@ -233,14 +246,24 @@ export class CurriculumController {
 
   @ApiCreatedResponse({ type: CommentResponseDto })
   @Post('schools/:schoolId/curriculum/lessons/:id/comments')
-  createComment(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateCommentDto) {
-    return this.curriculumService.createComment(user.sub, id, dto);
+  createComment(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateCommentDto,
+  ) {
+    return this.curriculumService.createComment(user.sub, schoolId, id, dto);
   }
 
   @ApiOkResponse({ type: CommentListResponseDto })
   @Get('schools/:schoolId/curriculum/lessons/:id/comments')
-  findComments(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query() query: PaginationQueryDto) {
-    return this.curriculumService.findComments(user.sub, id, query.cursor, query.limit);
+  findComments(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.curriculumService.findComments(user.sub, schoolId, id, query.cursor, query.limit);
   }
 
   @ApiNoContentResponse({ description: 'Deleted — by its own author or School staff (Comment\'s own schema.prisma comment).' })
@@ -255,7 +278,11 @@ export class CurriculumController {
    * other write endpoint in this controller. */
   @ApiCreatedResponse({ type: VideoUploadUrlResponseDto })
   @Post('schools/:schoolId/curriculum/lessons/:id/video-upload-url')
-  requestVideoUploadUrl(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
-    return this.curriculumService.requestVideoUploadUrl(user.sub, id);
+  requestVideoUploadUrl(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.curriculumService.requestVideoUploadUrl(user.sub, schoolId, id);
   }
 }
