@@ -67,6 +67,53 @@ export function useUnarchiveLesson(schoolId: string) {
   });
 }
 
+export type VideoUploadUrlResponse = components['schemas']['VideoUploadUrlResponseDto'];
+
+/** Decision 101's long-unbuilt video pipeline is now wired for real
+ * (`curriculum.service.ts`'s own `requestVideoUploadUrl`, staff-gated): a
+ * Cloudflare Stream "direct creator upload" URL the caller PUTs the raw
+ * video file to directly (never through this app's own backend — see
+ * VideoUploadModal's own header comment). The backend sets
+ * `captionStatus` to PROCESSING and writes `videoRef` onto the Lesson the
+ * instant THIS call succeeds — before the actual PUT even starts — so
+ * invalidating `['lessons', schoolId]` here immediately reflects that, same
+ * as every other mutation in this file; it does not, and cannot, tell us
+ * when the async Cloudflare Stream + AWS Transcribe pipeline
+ * (`VideoProcessingPollScheduler`) actually finishes and flips captionStatus
+ * to READY.
+ *
+ * FOUND ON REVIEW: the generated operation type
+ * (`CurriculumController_requestVideoUploadUrl`) only declares `id` as a path
+ * param — matching `curriculum.controller.ts`'s route handler, which never
+ * reads `:schoolId` from the URL at all (the service derives the School from
+ * the Lesson itself, same as the sibling favorite/watch-progress/comments
+ * endpoints) — even though the literal path template below still contains
+ * `{schoolId}`. openapi-fetch's runtime path serializer does a blind
+ * regex-replace of every `{token}` in the URL string using whatever keys
+ * exist in `params.path`, with no regard for the declared type; omitting
+ * schoolId here would leave the literal substring `{schoolId}` in the
+ * request URL and 404. `pathParams` is built as its own (non-literal)
+ * variable specifically so TypeScript's excess-property check on object
+ * literals doesn't fire for the extra `schoolId` key the declared type
+ * doesn't know about. */
+/** Decision 227/254's own review pass fixed the backend to actually bind and
+ * verify `:schoolId` (previously present in the URL but silently ignored by
+ * the controller — see CurriculumService.requestVideoUploadUrl's own
+ * comment) — the generated client type now genuinely includes `schoolId`,
+ * so no path-param workaround is needed here. */
+export function useRequestVideoUploadUrl(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (lessonId: string) =>
+      unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/curriculum/lessons/{id}/video-upload-url', {
+          params: { path: { schoolId, id: lessonId } },
+        }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lessons', schoolId] }),
+  });
+}
+
 export type LessonCategory = components['schemas']['LessonCategoryResponseDto'];
 
 /** The School's lesson categories, in order (Decisions 128.15, 191). */
