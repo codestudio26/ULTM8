@@ -1,9 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import { Button, ErrorBanner, Field, SearchablePickerField, SuccessBanner, TextField } from '../components/ui';
+import * as ImagePicker from 'expo-image-picker';
+import { Avatar } from '../components/Avatar';
+import { Button, ErrorBanner, Field, InlineError, SearchablePickerField, SuccessBanner, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
-import { useCurrencies, useLanguages, useMyProfile, useUpdateProfile, type CodeName, type UserProfile } from './profileQueries';
+import {
+  useCurrencies,
+  useLanguages,
+  useMyProfile,
+  useUpdateProfile,
+  useUploadMyProfilePhoto,
+  type CodeName,
+  type ProfilePhotoContentType,
+  type UserProfile,
+} from './profileQueries';
+
+/** Same 5MB/PNG+JPEG+WebP limits `PhotoUploadField` (packages/ui, the web
+ * equivalent for Instructor/Branch/Franchise/Class photos) already
+ * established — CHANGELOG.md's own entry for that build discloses there was
+ * no prior size-limit convention to inherit from; this reuses ITS number
+ * rather than picking a second, different one for the same kind of field. */
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const ALLOWED_CONTENT_TYPES: ProfilePhotoContentType[] = ['image/png', 'image/jpeg', 'image/webp'];
 
 const Muted = ({ children }: { children: React.ReactNode }) => (
   <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote }}>{children}</Text>
@@ -42,10 +61,11 @@ function formFrom(profile: UserProfile): Form {
 }
 
 /** Off Home — the first screen anywhere in this app to read/edit `GET`/`PATCH
- * /users/me`. Covers every PATCH-able field on `UpdateUserDto` except
- * `profilePhotoUrl` (see profileQueries.ts's own header comment: that field
- * takes a plain URL, not an upload flow, and nothing resolves "pick a photo" to
- * one yet — a real gap, not built around here). `email`/`phone` are shown
+ * /users/me`. Covers every PATCH-able field on `UpdateUserDto`, including
+ * `profilePhotoUrl` — set via its own dedicated pick/upload flow
+ * (`useUploadMyProfilePhoto`), not a plain text field, since it's a real R2
+ * upload (the shared `POST /uploads/public-photo-url` presign endpoint, USER
+ * entityType, self-service), not a pasted URL. `email`/`phone` are shown
  * read-only — the DTO deliberately excludes both, since changing either is a
  * login/OTP identifier change, not a bare profile edit.
  *
@@ -63,9 +83,11 @@ export function ProfileScreen() {
   const languages = useLanguages();
   const currencies = useCurrencies();
   const updateProfile = useUpdateProfile();
+  const uploadPhoto = useUploadMyProfilePhoto();
 
   const [form, setForm] = useState<Form | null>(null);
   const [saved, setSaved] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile.data && form === null) setForm(formFrom(profile.data));
@@ -97,6 +119,46 @@ export function ProfileScreen() {
     );
   }
 
+  /** Shared by both pickers below — rejects a type/size the backend would also
+   * reject (same checks `PhotoUploadField`'s own `handleFileSelected` makes on
+   * the web side), then runs the request→PUT→save composition in
+   * `useUploadMyProfilePhoto`. */
+  function handlePickedAsset(asset: ImagePicker.ImagePickerAsset) {
+    setPhotoError(null);
+    const contentType = (asset.mimeType ?? 'image/jpeg') as ProfilePhotoContentType;
+    if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
+      setPhotoError('Please choose a PNG, JPEG, or WebP image.');
+      return;
+    }
+    if (asset.fileSize && asset.fileSize > MAX_PHOTO_BYTES) {
+      setPhotoError('This file is too large — the maximum is 5MB.');
+      return;
+    }
+    uploadPhoto.mutate({ uri: asset.uri, contentType });
+  }
+
+  async function pickPhotoFromLibrary() {
+    setPhotoError(null);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setPhotoError('Photo library access is needed to choose a photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (!result.canceled && result.assets[0]) handlePickedAsset(result.assets[0]);
+  }
+
+  async function takePhoto() {
+    setPhotoError(null);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setPhotoError('Camera access is needed to take a photo.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (!result.canceled && result.assets[0]) handlePickedAsset(result.assets[0]);
+  }
+
   if (profile.isLoading) return <ActivityIndicator style={{ marginTop: spacing[6] }} />;
   if (profile.isError && !profile.data) {
     return (
@@ -109,6 +171,18 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
+      <View style={{ alignItems: 'center', marginBottom: spacing[4] }}>
+        <Avatar firstName={profile.data.firstName} surname={profile.data.surname} photoUrl={profile.data.profilePhotoUrl} size={96} />
+        <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[3] }}>
+          <Button title="Take Photo" variant="secondary" loading={uploadPhoto.isPending} onPress={takePhoto} />
+          <Button title="Choose Photo" variant="secondary" loading={uploadPhoto.isPending} onPress={pickPhotoFromLibrary} />
+        </View>
+        {photoError ? <InlineError message={photoError} /> : null}
+        {uploadPhoto.isError ? (
+          <InlineError message={getApiErrorMessage(uploadPhoto.error, 'Could not upload this photo — please try again.')} />
+        ) : null}
+      </View>
+
       <Field label="Email">
         <Text style={{ fontSize: fontSize.input, color: theme.textPrimary }}>{profile.data.email}</Text>
       </Field>
