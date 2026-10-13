@@ -7,6 +7,7 @@ import { ProfileScreen } from './ProfileScreen';
 jest.mock('./profileQueries', () => ({
   useMyProfile: jest.fn(),
   useUpdateProfile: jest.fn(),
+  useUploadMyProfilePhoto: jest.fn(),
   useLanguages: jest.fn(),
   useCurrencies: jest.fn(),
 }));
@@ -48,6 +49,7 @@ describe('ProfileScreen — clearing a field sends null, not undefined', () => {
     updateProfile = idleMutation();
     mocked(q.useMyProfile).mockReturnValue({ data: PROFILE, isLoading: false, isError: false, error: null });
     mocked(q.useUpdateProfile).mockReturnValue(updateProfile);
+    mocked(q.useUploadMyProfilePhoto).mockReturnValue(idleMutation());
     mocked(q.useLanguages).mockReturnValue({ data: [{ code: 'en', name: 'English' }], isLoading: false });
     mocked(q.useCurrencies).mockReturnValue({ data: [{ code: 'USD', name: 'US Dollar' }], isLoading: false });
   });
