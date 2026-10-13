@@ -495,7 +495,7 @@ load-bearing for planning.
 ### Blocks a whole module or UI surface
 | Item | Blocks | Owner needed |
 |---|---|---|
-| Apple 4.2.6/4.3 template-farm compliance risk | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 5, Track B's per-School white-label branding, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement — the entire branded-app tier | Product/legal |
+| Apple 4.2.6/4.3 template-farm compliance risk — **the core policy question is resolved** (**Decision 247**, 12 Oct 2026: one shared app, School selected after install, not a per-tenant App Store listing), but `MobileAppPublishingModule`/`packages/build-pipeline` are still fully unbuilt, the School-selection UX (join code vs. search vs. domain-match) is undesigned, and `skills/ultm8-app-publishing/SKILL.md`'s entitlement model/`TenantAppConfig` design assumed the old per-tenant-app shape and needs a reconciliation pass before either gets built | `MobileAppPublishingModule`, `packages/build-pipeline`, Track A item 5, Track B's per-School white-label branding, `SubscriptionPlansModule`'s own deferred `whiteLabelApp` entitlement — the entire branded-app tier | Product (School-selection UX), then Developer (build pipeline + SKILL.md reconciliation) |
 | GDPR/LGPD data-residency program + per-user erasure | Launch in any market with real data-protection law requiring either | Legal/compliance owner — Decision 245 did a technical-design scoping pass only (13 Oct 2026), not a program; see "A tracking gap" below |
 
 Resolved since this table last needed a full pass — kept here as a record of what
