@@ -1035,25 +1035,56 @@ Pure plumbing — the `Transaction` model already had everything needed
   Bookings/My Memberships — no new list pattern. New query hook
   `src/transactions/transactionQueries.ts` (`useMyTransactions`), matching
   `useMyMemberships`'/`useMyBookings`' `usePaginatedQuery` convention.
+- **PDF/invoice generation (added later, closing the "Not yet" gap below with
+  ZERO new PDF-rendering infra):** Spec 55 §7 itself already confirmed the shape
+  — `GET /transactions/{id}/invoice (download)` — this just hadn't been built.
+  Stripe already hosts a receipt page per Charge (`Charge.receipt_url`, verified
+  directly against the installed `stripe` SDK's own types, not assumed), so this
+  surfaces THAT rather than generating a document: new
+  `StripeClientService.getReceiptUrl(connectedAccountId, paymentIntentId)`
+  (`apps/api/src/payments/stripe-client.service.ts`), new
+  `TransactionsService.getReceiptUrl`/`GET transactions/{id}/invoice`
+  (`TransactionReceiptUrlResponseDto`, `{ receiptUrl: string | null }` —
+  `null` for a CASH/BANK_TRANSFER Transaction, a real/normal state, not an
+  error). Student app: a "View receipt" row action on
+  `TransactionHistoryScreen.tsx`, handed off to the device browser via
+  `expo-web-browser`'s `openBrowserAsync` — the same "hand off to the browser
+  for a Stripe-hosted page" pattern `PaymentMethodsScreen.tsx` already
+  established for Checkout. School-portal: a "Receipt" column on
+  `TransactionsPage.tsx`'s table, opening in a new tab. **Judgment call,
+  disclosed:** the actual Stripe-API round-trip is unverified against a live
+  account (this environment's own `STRIPE_SECRET_KEY` is a placeholder, same
+  posture every other real-vendor-dependent flow in this codebase takes) — only
+  the authorization gate and the non-Stripe `null` path are proven over real
+  HTTP.
 
 ### Not yet
-- **PDF/invoice generation.** No PDF infra exists anywhere in this codebase
-  (confirmed — searched for any such dependency/service before starting). "Receipt
-  viewing" here means this real, readable list of each Transaction, not a
-  downloadable document; a future PDF-export feature would be new infra, not an
-  extension of this.
+- **A generated PDF document, specifically.** This closes the Spec §7 gap with
+  Stripe's own hosted receipt page, not a document this codebase renders
+  itself — if a real product need for an actually-downloadable, self-hosted PDF
+  ever surfaces (vs. "a link to a receipt page is fine," which nothing has ever
+  said it isn't), that's new infra, same as this entry used to say about the
+  whole feature.
 
 ### Verified
 `apps/api`: `tsc --noEmit`; `nest build`; unit suite (482 tests, all passing); new
 `test/transactions.e2e-spec.ts` (unauthenticated rejected, self-read only ever
 returns the caller's own rows and never another Student's, pagination via
-cursor/limit) — written against the same `describeIfDb`-gated, real-Postgres
-convention every other e2e spec in this repo uses; the sandbox this was built in had
-no way to stand up a live Postgres itself, so this file's own run depends on CI's
+cursor/limit, plus 5 new tests for `GET /transactions/{id}/invoice`: auth gate,
+School-Owner access, cross-Student 404 via RLS, nonexistent-id 404, and the
+BANK_TRANSFER "`receiptUrl: null`, no Stripe call needed" path) — written
+against the same `describeIfDb`-gated, real-Postgres convention every other
+e2e spec in this repo uses; the sandbox this was built in had no way to stand
+up a live Postgres itself, so this file's own run depends on CI's
 Postgres-backed cross-tenant-isolation job going green, same as any other e2e spec
 added there — check that job's result for this file specifically before merging.
-`apps/student`: `tsc --noEmit`; full `npm run test` (64 tests across 12 suites,
-including the new `src/transactions/transactionHistory.test.tsx`, all passing).
+`apps/student`: `tsc --noEmit`; full `npm run test` (92 tests across 17 suites,
+including the extended `src/transactions/transactionHistory.test.tsx`, all
+passing). `apps/school-portal`: `tsc --noEmit` only — no existing unit-test
+runner or prior Playwright spec for `TransactionsPage.tsx` to extend; a new
+Playwright suite from scratch for this one small drill-down column was judged
+disproportionate given the backend path it calls is already fully e2e-proven
+above — disclosed, not silently skipped.
 
 ## Session refresh — access tokens no longer expire mid-session (`POST /auth/refresh`, `/auth/logout`) — DONE
 

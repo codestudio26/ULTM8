@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
+import { StripeClientService } from '../payments/stripe-client.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 
 /**
@@ -24,10 +25,9 @@ import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate
  * independently enforces the same boundary — a caller can never even reach
  * another Student's row at the Postgres layer, this `where` clause is
  * defense-in-depth on top of that, not the only thing standing in the way.
- * No PDF/invoice generation here either — "receipt viewing" per the backlog
- * item's own wording means a real, readable list of each Transaction (amount,
- * currency, date, status, what it paid for), not a downloadable document;
- * there is no PDF infra anywhere in this codebase to build that against.
+ * GET /transactions/{id}/invoice (added later, closing Spec 55 §7's own
+ * explicitly-deferred half of this module) — see its own method comment
+ * below for why this needed no PDF-generation infra after all.
  */
 @Injectable()
 export class TransactionsService {
@@ -36,6 +36,7 @@ export class TransactionsService {
     private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly stripeClient: StripeClientService,
   ) {}
 
   /** Shared by findAllForSchool/findMyTransactions below — flattens the
@@ -102,5 +103,50 @@ export class TransactionsService {
       ),
     );
     return { ...page, items: page.items.map((t) => this.withMembershipPlanTitle(t)) };
+  }
+
+  /**
+   * GET /transactions/{id}/invoice — Spec 55 §7's own confirmed shape,
+   * deferred out of this module's original scope (this class's own header
+   * comment). Surfaces Stripe's own hosted receipt page
+   * (`StripeClientService.getReceiptUrl` — see its own header comment for why
+   * that needs no PDF-rendering infra) rather than generating a document.
+   *
+   * `findUnique` here, not scoped by `studentId`/`schoolId` the way
+   * findAllForSchool/findMyTransactions are — this is a single-resource
+   * lookup by its own id, same shape as every other "by id" method in this
+   * codebase (e.g. WaiversService's own `findOne`). The RLS policy
+   * (`transaction_school_staff_or_self`) already restricts which rows even
+   * come back; `assertSchoolOwner` below is the same defense-in-depth
+   * `findAllForSchool` already applies on top of it (not RLS-only), for a
+   * clean 403 with a specific message rather than a bare 404 standing in for
+   * "you're not allowed," and ALSO narrows the already-RLS-visible set
+   * (self, or SCHOOL_OWNER_MANAGER) to exactly the same gate the bulk ledger
+   * read uses — consistent, not a new authorization shape for this one
+   * action.
+   */
+  async getReceiptUrl(callerId: string, transactionId: string): Promise<{ receiptUrl: string | null }> {
+    const transaction = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.transaction.findUnique({
+        where: { id: transactionId },
+        select: { schoolId: true, studentId: true, stripePaymentIntentId: true, paymentAccount: { select: { stripeConnectedAccountId: true } } },
+      }),
+    );
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+    if (transaction.studentId !== callerId) {
+      await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
+    }
+    // CASH/BANK_TRANSFER transactions have no Stripe charge at all — a real,
+    // normal state (not every Transaction is Stripe-paid), not an error.
+    if (!transaction.stripePaymentIntentId || !transaction.paymentAccount.stripeConnectedAccountId) {
+      return { receiptUrl: null };
+    }
+    const receiptUrl = await this.stripeClient.getReceiptUrl(
+      transaction.paymentAccount.stripeConnectedAccountId,
+      transaction.stripePaymentIntentId,
+    );
+    return { receiptUrl };
   }
 }

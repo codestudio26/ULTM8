@@ -7,6 +7,18 @@
  * ground rule as every other e2e spec in this repo: prove over real HTTP, not
  * just by reading the code.
  *
+ * Also covers GET /transactions/{id}/invoice (Spec 55 §7's own deferred shape,
+ * closed later with zero PDF infra — TransactionsService.getReceiptUrl's own
+ * header comment). Every fixture Transaction here is BANK_TRANSFER, not
+ * STRIPE, so these tests only exercise the authorization gate and the
+ * genuinely-no-Stripe-call "null, not an error" path for a non-Stripe
+ * Transaction — the actual Stripe-API round-trip (a real `stripe_test_...`
+ * key against a live account) is NOT exercised, same "flagged, not built
+ * around" posture every other real-vendor-dependent flow in this codebase
+ * takes (this env's own `STRIPE_SECRET_KEY` is a placeholder, confirmed
+ * before writing this — a live call with it would just 401 against Stripe's
+ * real API, not prove anything about this code).
+ *
  * Fixture Transaction rows are created directly via the superuser client
  * (bypassing the real purchase flow, same shorthand bookings.e2e-spec.ts's own
  * mkActiveMembership helper uses for Membership) — the purchase flow itself is
@@ -48,8 +60,10 @@ describeIfDb('TransactionsModule: GET /transactions/me — Student self-read, pa
   let school: { id: string };
   let studentA: { id: string; email: string };
   let studentB: { id: string; email: string };
+  let owner: { id: string; email: string };
   let tokenStudentA: string;
   let tokenStudentB: string;
+  let tokenOwner: string;
   let paymentAccountId: string;
   let membershipPlanId: string;
   const transactionIds: string[] = [];
@@ -100,16 +114,19 @@ describeIfDb('TransactionsModule: GET /transactions/me — Student self-read, pa
 
     studentA = await mkUser('student-a');
     studentB = await mkUser('student-b');
+    owner = await mkUser('owner');
 
     await superuser.roleGrant.createMany({
       data: [
         { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: school.id },
         { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: school.id },
+        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id },
       ],
     });
 
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentB = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
+    tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
 
     const paymentAccount = await superuser.paymentAccount.create({
       data: { id: randomUUID(), schoolId: school.id, provider: 'BANK_TRANSFER', accountTitle: 'Fixture', country: 'GB' },
@@ -185,5 +202,50 @@ describeIfDb('TransactionsModule: GET /transactions/me — Student self-read, pa
     expect(second.status).toBe(200);
     expect(second.body.items.length).toBe(1);
     expect(second.body.items[0].id).not.toBe(first.body.items[0].id);
+  });
+
+  describe('GET /transactions/{id}/invoice', () => {
+    it('is rejected unauthenticated — 401', async () => {
+      const tx = await mkTransaction(studentA.id, 1000);
+      transactionIds.push(tx.id);
+      const res = await request(app.getHttpServer()).get(`/v1/transactions/${tx.id}/invoice`);
+      expect(res.status).toBe(401);
+    });
+
+    it("a BANK_TRANSFER Transaction (no Stripe charge) returns receiptUrl: null to the Student who paid it — no Stripe call needed", async () => {
+      const tx = await mkTransaction(studentA.id, 1000);
+      transactionIds.push(tx.id);
+      const res = await request(app.getHttpServer())
+        .get(`/v1/transactions/${tx.id}/invoice`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ receiptUrl: null });
+    });
+
+    it("the School Owner can also read it — same null, same 200", async () => {
+      const tx = await mkTransaction(studentA.id, 1000);
+      transactionIds.push(tx.id);
+      const res = await request(app.getHttpServer())
+        .get(`/v1/transactions/${tx.id}/invoice`)
+        .set('Authorization', `Bearer ${tokenOwner}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ receiptUrl: null });
+    });
+
+    it("another Student at the SAME School, who neither paid this Transaction nor owns the School, gets 404 — RLS hides the row entirely, not a 403 leak", async () => {
+      const tx = await mkTransaction(studentA.id, 1000);
+      transactionIds.push(tx.id);
+      const res = await request(app.getHttpServer())
+        .get(`/v1/transactions/${tx.id}/invoice`)
+        .set('Authorization', `Bearer ${tokenStudentB}`);
+      expect(res.status).toBe(404);
+    });
+
+    it('a nonexistent Transaction id returns 404', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/v1/transactions/${randomUUID()}/invoice`)
+        .set('Authorization', `Bearer ${tokenStudentA}`);
+      expect(res.status).toBe(404);
+    });
   });
 });

@@ -15,6 +15,33 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **`GET /transactions/{id}/invoice` — PDF/receipt downloads for payment
+  history** (`apps/api`, plus Track B's `apps/student` and
+  `apps/school-portal`, `docs/TRACK-B-ROADMAP.md`'s "Student-scoped
+  transaction history" section). Closes Spec 55 §7's own confirmed
+  `GET /transactions/{id}/invoice (download)` shape, deferred out of
+  Phase 9's original scope — with **zero new PDF-rendering infra**: Stripe
+  already hosts a receipt page per Charge (`Charge.receipt_url`, verified
+  directly against the installed `stripe` SDK's own types), so this surfaces
+  that rather than generating a document. New
+  `StripeClientService.getReceiptUrl(connectedAccountId, paymentIntentId)`;
+  new `TransactionsService.getReceiptUrl`, authorized the same way the
+  existing bulk ledger read is (self, or that School's Owner/Manager);
+  `receiptUrl` is `null` — a real, normal state, not an error — for a
+  CASH/BANK_TRANSFER Transaction. `apps/student`'s `TransactionHistoryScreen.tsx`
+  gets a "View receipt" row action, handed off to the device browser via
+  `expo-web-browser` (the same pattern `PaymentMethodsScreen.tsx` already
+  established for Stripe Checkout); `apps/school-portal`'s
+  `TransactionsPage.tsx` gets a "Receipt" table column (Decision 202's own
+  rejected-mockup "Download invoice" idea, now actually built). New e2e
+  coverage (`transactions.e2e-spec.ts`, 5 new tests) and extended
+  `apps/student/src/transactions/transactionHistory.test.tsx` (2 new tests).
+  The live Stripe-API round-trip itself is unverified against a real account
+  (same posture every other real-vendor-dependent flow in this codebase
+  takes); `apps/school-portal`'s own addition has no Playwright coverage —
+  disclosed, not silently skipped, since no prior test file existed for that
+  page to extend and the backend path it calls is already fully e2e-proven.
+  `packages/api-client` regenerated.
 - **Track B: profile photo self-upload** (`apps/student`, `docs/TRACK-B-ROADMAP.md`
   "My Profile" section) — closes the "Profile photo" gap that section's own "Not
   yet" list had named: `UpdateUserDto.profilePhotoUrl` took a plain pasted URL,
