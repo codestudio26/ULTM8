@@ -3357,3 +3357,31 @@ User, confirming "Yes — same pattern as Instructor" when Decision 237's own fl
 
 User, via direct AskUserQuestion answers on scope/semantics/dependents this session, 12 Oct 2026; every item under "Judgment calls" and "What this does NOT resolve" above is the Developer's own disclosed reasoning once those answers were checked against the real schema, not a further product-owner decision.
 
+---
+
+## Decision 253 — Tenant offboarding "remaining gap" claim corrected; Membership confirmed never-deletable, same as Waiver
+
+**Date:** 13 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** a planning-doc miscount, caught before any code was written against it. A punch list this session produced claimed "9 of 16 entities still have no delete/archive action (Membership, Transaction, PaymentAccount, Booking, RoleGrant, +others)." Verified directly against real code before building anything further — that claim was wrong on every count.
+
+### What was actually verified, file by file
+
+- **Discipline and Skill already have real hard-delete** (`RanksService.deleteDiscipline()`/`deleteSkill()`) with their own dependents checks (holders, grading history, Class/TimetableSlot style references, linked Lessons) — not a gap at all, despite Decision 252's own text listing them among "the remaining 9."
+- **School and Franchise** already have Decision 110's whole-tenant close-account flow (`TenantLifecycleModule`) — a different mechanism (closing the whole tenant) from a per-row delete, but not a missing mechanism.
+- **MembershipPlan** already has its own simpler bare-`archivedAt` archive (this session's earlier build, Decision 228's own item 8 follow-up area).
+- **Transaction, PaymentAccount, Booking, and RoleGrant were never named anywhere** — not in Decision 110's own original text, not in any code comment carrying the "general tenant offboarding is `[UNRESOLVED]`" marker Decision 110 introduced. A repo-wide grep for that marker, re-run after Decision 252's build, confirms it. These four were the punch list's own invention, not a real, previously-flagged gap.
+- **The only entity still genuinely carrying Decision 110's original `[UNRESOLVED]` marker, untouched by Decision 252, is `Membership`** (the enrollment/purchase record — distinct from `MembershipPlan`) — `MembershipsService`'s own comment, unchanged since Decision 110, confirmed by direct read.
+- Three now-stale comments (TimetableSlot, Class, Lesson) still claimed "no delete method" after Decision 252 gave each of them a real archive()/unarchive() pair — fixed directly (comment-only, no behavior change), not left to mislead the next session.
+
+### Decision
+
+**`Membership` is never deletable or archivable via a new mechanism — treated the same as `Waiver`'s own exception**, not given a Decision-226/252-style soft-archive. A `Membership` row is a real purchase/billing record, directly linked to its originating `Transaction` (Stripe payment history, refund/dispute state) — deleting or purging one would destroy financial audit trail the same way purging a signed `Waiver` would destroy a legal record, which is exactly why Decision 110 carved Waiver out in the first place. `Membership`'s own natural lifecycle (`ACTIVE`/`EXPIRED`, force-expiry on dispute loss or Subscription cancellation, Decisions 111/122) already covers "this Membership is over" without needing a separate delete/archive action layered on top.
+
+### What this does NOT resolve
+
+This closes item 7 of the punch list as "no further build needed," not as "fully audited forever." If a genuine need to purge old `Membership`/`Transaction` rows surfaces later (e.g. a real data-retention policy), it deserves its own decision with real legal input, the same way Waiver's own retention period still does — not a silent extension of this entry.
+
+### Recorded by
+
+User, choosing "Treat like Waiver — never delete" over building a new soft-archive mechanism or a narrower list-filter-only option, 13 Oct 2026.
+
