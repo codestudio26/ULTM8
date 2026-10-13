@@ -352,52 +352,56 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants                   RoleGrant[]             @relation("RoleGrantUser")
-  grantsIssued                 RoleGrant[]             @relation("RoleGrantGrantedBy")
-  classesTaught                Class[]                 @relation("ClassInstructor")
-  timetableSlotsTaught         TimetableSlot[]         @relation("TimetableSlotInstructor")
-  instructorProfiles           Instructor[]
-  lessonsAuthored              Lesson[]                @relation("LessonInstructor")
-  memberships                  Membership[]            @relation("MembershipStudent")
-  membershipsGifted            Membership[]            @relation("MembershipGiftedBy")
+  roleGrants                        RoleGrant[]                 @relation("RoleGrantUser")
+  grantsIssued                      RoleGrant[]                 @relation("RoleGrantGrantedBy")
+  classesTaught                     Class[]                     @relation("ClassInstructor")
+  timetableSlotsTaught              TimetableSlot[]             @relation("TimetableSlotInstructor")
+  instructorProfiles                Instructor[]
+  lessonsAuthored                   Lesson[]                    @relation("LessonInstructor")
+  memberships                       Membership[]                @relation("MembershipStudent")
+  membershipsGifted                 Membership[]                @relation("MembershipGiftedBy")
   membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
-  transactionsPaid             Transaction[]           @relation("TransactionPayer")
-  studentRanks                 StudentRank[]
-  promotionEventsPerformed     PromotionEvent[]        @relation("PromotionEventPerformedBy")
-  promotionEventsVoided        PromotionEvent[]        @relation("PromotionEventVoidedBy")
-  promotionEventNotesEdited    PromotionEvent[]        @relation("PromotionEventNoteEditedBy")
-  promotionEventNoteChanges    PromotionEventNoteLog[] @relation("PromotionEventNoteLogChangedBy")
-  skillSignOffChanges          SkillSignOffLog[]       @relation("SkillSignOffLogChangedBy")
-  homeBranches                 StudentHomeBranch[]     @relation("StudentHomeBranchStudent")
-  rankVerifications            StudentRank[]           @relation("StudentRankVerifiedBy")
-  homeBranchesAssigned         StudentHomeBranch[]     @relation("StudentHomeBranchAssignedBy")
-  gradingPermissions           GradingPermission[]     @relation("GradingPermissionUser")
-  gradingPermissionsGiven      GradingPermission[]     @relation("GradingPermissionGrantedBy")
-  staffPermissions             StaffPermission[]       @relation("StaffPermissionUser")
-  staffPermissionsGiven        StaffPermission[]       @relation("StaffPermissionGrantedBy")
-  coachInvitesSent             CoachInvite[]           @relation("CoachInviteInvitedBy")
-  coachInvitesAccepted         CoachInvite[]           @relation("CoachInviteAcceptedBy")
-  coachInvitesCancelled        CoachInvite[]           @relation("CoachInviteCancelledBy")
-  instructorBelts              InstructorBelt[]        @relation("InstructorBeltUser")
-  instructorBeltsVerified      InstructorBelt[]        @relation("InstructorBeltVerifiedBy")
-  waiverSignatures             WaiverSignature[]       @relation("WaiverSignatureStudent")
-  waiverSignaturesSigned       WaiverSignature[]       @relation("WaiverSignatureSignedBy")
-  bookings                     Booking[]               @relation("BookingStudent")
-  paymentMethods               StudentPaymentMethod[]
-  bookingsOverridden           Booking[]               @relation("BookingOverriddenBy")
-  bookingsResolved             Booking[]               @relation("BookingResolvedBy")
-  bookingsCheckedIn            Booking[]               @relation("BookingCheckedInBy")
-  bookingAttendeesResolved     BookingAttendee[]       @relation("BookingAttendeeResolvedBy")
-  waitlistEntries              WaitlistEntry[]         @relation("WaitlistEntryStudent")
-  guardianLinksAsGuardian      GuardianLink[]          @relation("GuardianLinkGuardian")
-  guardianLinksAsStudent       GuardianLink[]          @relation("GuardianLinkStudent")
-  consentRecordsAsGuardian     ConsentRecord[]         @relation("ConsentRecordGuardian")
-  consentRecordsAsStudent      ConsentRecord[]         @relation("ConsentRecordStudent")
-  bookingDelegationsAsGuardian BookingDelegation[]     @relation("BookingDelegationGuardian")
-  bookingDelegationsAsStudent  BookingDelegation[]     @relation("BookingDelegationStudent")
-  notifications                Notification[]
-  deviceTokens                 DeviceToken[]
-  refreshTokens                RefreshToken[]
+  transactionsPaid                  Transaction[]               @relation("TransactionPayer")
+  studentRanks                      StudentRank[]
+  promotionEventsPerformed          PromotionEvent[]            @relation("PromotionEventPerformedBy")
+  promotionEventsVoided             PromotionEvent[]            @relation("PromotionEventVoidedBy")
+  promotionEventNotesEdited         PromotionEvent[]            @relation("PromotionEventNoteEditedBy")
+  promotionEventNoteChanges         PromotionEventNoteLog[]     @relation("PromotionEventNoteLogChangedBy")
+  skillSignOffChanges               SkillSignOffLog[]           @relation("SkillSignOffLogChangedBy")
+  homeBranches                      StudentHomeBranch[]         @relation("StudentHomeBranchStudent")
+  rankVerifications                 StudentRank[]               @relation("StudentRankVerifiedBy")
+  homeBranchesAssigned              StudentHomeBranch[]         @relation("StudentHomeBranchAssignedBy")
+  gradingPermissions                GradingPermission[]         @relation("GradingPermissionUser")
+  gradingPermissionsGiven           GradingPermission[]         @relation("GradingPermissionGrantedBy")
+  staffPermissions                  StaffPermission[]           @relation("StaffPermissionUser")
+  staffPermissionsGiven             StaffPermission[]           @relation("StaffPermissionGrantedBy")
+  coachInvitesSent                  CoachInvite[]               @relation("CoachInviteInvitedBy")
+  coachInvitesAccepted              CoachInvite[]               @relation("CoachInviteAcceptedBy")
+  coachInvitesCancelled             CoachInvite[]               @relation("CoachInviteCancelledBy")
+  instructorBelts                   InstructorBelt[]            @relation("InstructorBeltUser")
+  instructorBeltsVerified           InstructorBelt[]            @relation("InstructorBeltVerifiedBy")
+  waiverSignatures                  WaiverSignature[]           @relation("WaiverSignatureStudent")
+  waiverSignaturesSigned            WaiverSignature[]           @relation("WaiverSignatureSignedBy")
+  favorites                         Favorite[]                  @relation("FavoriteStudent")
+  watchHistories                    WatchHistory[]              @relation("WatchHistoryStudent")
+  playlists                         Playlist[]                  @relation("PlaylistStudent")
+  comments                          Comment[]                   @relation("CommentAuthor")
+  bookings                          Booking[]                   @relation("BookingStudent")
+  paymentMethods                    StudentPaymentMethod[]
+  bookingsOverridden                Booking[]                   @relation("BookingOverriddenBy")
+  bookingsResolved                  Booking[]                   @relation("BookingResolvedBy")
+  bookingsCheckedIn                 Booking[]                   @relation("BookingCheckedInBy")
+  bookingAttendeesResolved          BookingAttendee[]           @relation("BookingAttendeeResolvedBy")
+  waitlistEntries                   WaitlistEntry[]             @relation("WaitlistEntryStudent")
+  guardianLinksAsGuardian           GuardianLink[]              @relation("GuardianLinkGuardian")
+  guardianLinksAsStudent            GuardianLink[]              @relation("GuardianLinkStudent")
+  consentRecordsAsGuardian          ConsentRecord[]             @relation("ConsentRecordGuardian")
+  consentRecordsAsStudent           ConsentRecord[]             @relation("ConsentRecordStudent")
+  bookingDelegationsAsGuardian      BookingDelegation[]         @relation("BookingDelegationGuardian")
+  bookingDelegationsAsStudent       BookingDelegation[]         @relation("BookingDelegationStudent")
+  notifications                     Notification[]
+  deviceTokens                      DeviceToken[]
+  refreshTokens                     RefreshToken[]
 
   @@index([email])
   @@index([phone])
@@ -2289,13 +2293,10 @@ enum CaptionStatus {
 /// in this schema (Class, Waiver, MembershipPlan, ...), not the Platform Admin
 /// realm.
 ///
-/// [UNRESOLVED, deliberately not modeled] Spec 55's own field row also says Lesson
-/// "Belongs to a Category" — no Category entity exists anywhere else in the
-/// document (verified directly against the extracted spec text: the word
-/// "Category" occurs exactly once in the whole document, this one relationship
-/// clause, one line below `category` used as a plain field). Treated as a spec
-/// doc-bug, not built as a relation — `category` below is a plain string only.
-/// Flag to the Architect before ever promoting this to a real model.
+/// Stale comment fixed: Spec 55's own "Belongs to a Category" field row was
+/// originally treated as a spec doc-bug and left unmodeled, but Decisions
+/// 128.15/191 later built a real `LessonCategory` relation (see `categoryId`/
+/// `category` below) — this is now a genuine FK, not a plain string.
 ///
 /// `instructorId` mirrors Class.instructorId's own established shape exactly (a
 /// User holding an active INSTRUCTOR RoleGrant at this School, validated via
@@ -2351,9 +2352,13 @@ model Lesson {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  skills  LessonSkill[]
+  skills         LessonSkill[]
+  favorites      Favorite[]
+  watchHistories WatchHistory[]
+  playlistItems  PlaylistItem[]
+  comments       Comment[]
   /// What only those who may watch the lesson can read (Decision 208).
-  content LessonContent?
+  content        LessonContent?
 
   @@index([schoolId])
   @@index([instructorId])
@@ -2413,6 +2418,136 @@ model LessonSkill {
 
   @@id([lessonId, skillId])
   @@index([skillId])
+}
+
+/// Curriculum learner-facing redesign (Decision 227/254) — a Student favoriting
+/// a Lesson. Self-only (same RLS shape as DeviceToken — no ultm8_jobs grant
+/// needed, nothing writes a Favorite for anyone but the caller). `schoolId`
+/// denormalized from `lesson.schoolId` for the per-School list endpoint
+/// (`GET /schools/{schoolId}/curriculum/favorites`, same per-School listing
+/// shape every other Curriculum endpoint already uses) — not part of the RLS
+/// predicate itself, since self-only is already the maximal restriction.
+/// Favoriting a locked Lesson is rejected at the service layer (CurriculumService's
+/// own existing `LessonAccess` check, Decision 195/208), not re-derived here.
+model Favorite {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation("FavoriteStudent", fields: [studentId], references: [id])
+  lessonId  String
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  schoolId  String
+
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, lessonId])
+  @@index([studentId, createdAt, id])
+  @@index([schoolId])
+}
+
+/// Curriculum learner-facing redesign (Decision 227/254) — one row per
+/// (Student, Lesson), the "continue watching" / completion signal a video
+/// player pings on progress. Upserted, not inserted fresh each time (same
+/// idempotent-upsert shape `NotificationFanoutProcessor` already established)
+/// — `updatedAt` is the real ordering key for "resume where you left off,"
+/// not `createdAt`. Self-only RLS, same reasoning as Favorite above.
+model WatchHistory {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation("WatchHistoryStudent", fields: [studentId], references: [id])
+  lessonId  String
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  schoolId  String
+
+  lastPositionSeconds Int       @default(0)
+  completedAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, lessonId])
+  @@index([studentId, updatedAt, id])
+  @@index([schoolId])
+}
+
+/// Curriculum learner-facing redesign (Decision 227/254) — a Student-curated,
+/// named, ordered list of Lessons. Deliberately NOT School-scoped (no
+/// `schoolId` column) — a disclosed judgment call: a Playlist may mix Lessons
+/// from any School the Student is enrolled at, since nothing about "my own
+/// saved list" needs to respect a School boundary the way a staff-facing
+/// query would. Self-only RLS, same reasoning as Favorite/WatchHistory.
+/// Instructor/Staff-curated "official" Playlists are explicitly out of scope
+/// for this build — Playlist ownership is Student-only; see Decision 254's own
+/// "what this does NOT resolve" for the disclosed reasoning.
+model Playlist {
+  id String @id @default(uuid())
+
+  studentId String
+  student   User   @relation("PlaylistStudent", fields: [studentId], references: [id])
+
+  name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items PlaylistItem[]
+
+  @@index([studentId, createdAt, id])
+}
+
+/// One Lesson within a Playlist, with its own position. `studentId` is
+/// denormalized from `playlist.studentId` (not a join) so this table's own
+/// RLS can be a plain self-only check, same shape as every other table here
+/// — matches this schema's established "denormalize the tenant/owner column
+/// onto the child row" convention (Decision 30), applied to ownership instead
+/// of tenancy since Playlist has no School of its own (see above).
+model PlaylistItem {
+  id String @id @default(uuid())
+
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  lessonId   String
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  studentId  String
+
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([playlistId, lessonId])
+  @@index([playlistId, order])
+  @@index([studentId])
+}
+
+/// Curriculum learner-facing redesign (Decision 227/254) — a Comment on a
+/// Lesson, visible to anyone with an active RoleGrant at the School (same
+/// "RLS admits any role, business-layer narrows writes" split `class_tenant_
+/// isolation` established) — a Comment thread is social/visible-to-the-class
+/// content, unlike Favorite/WatchHistory/Playlist, which are genuinely
+/// private. No edit (deliberately — see Decision 254): a Comment can only be
+/// created or deleted, by its own author or by Staff at the School (staff
+/// moderation enforced at the service layer, same "RLS is the tenant
+/// boundary, the service layer is the specific-action gate" split every
+/// other write-authorization check in this codebase already uses — not
+/// pushed into RLS itself). Guardian-on-behalf-of-a-minor commenting is
+/// explicitly out of scope for this build, same flagged gap Track B's own
+/// Lessons screen already has for viewing a linked minor's Lessons at all.
+model Comment {
+  id String @id @default(uuid())
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation("CommentAuthor", fields: [authorId], references: [id])
+  schoolId String
+
+  body String
+
+  createdAt DateTime @default(now())
+
+  @@index([lessonId, createdAt, id])
+  @@index([schoolId])
 }
 
 /// StudentRank (Phase 10b, Spec 55 §5/§6.1) — belongs to Student; one row per
@@ -2813,7 +2948,7 @@ model WaiverSignature {
   // Phase 37 was necessarily self-signed (no Guardian-signing path existed
   // yet).
   signedById String?
-  signedBy   User?  @relation("WaiverSignatureSignedBy", fields: [signedById], references: [id])
+  signedBy   User?   @relation("WaiverSignatureSignedBy", fields: [signedById], references: [id])
 
   // Denormalized from waiver.schoolId — same reasoning Membership.schoolId is
   // denormalized from membershipPlan.schoolId (Phase 9): keeps this row's own RLS
