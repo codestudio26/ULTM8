@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import type { Lesson } from './curriculumQueries';
 
@@ -7,7 +7,9 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
   <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote }}>{children}</Text>
 );
 
-function Chip({ label, tone }: { label: string; tone: 'accent' | 'success' | 'muted' }) {
+/** Exported — LessonDetailScreen.tsx reuses this for its own format/duration
+ * chip row rather than duplicating it. */
+export function Chip({ label, tone }: { label: string; tone: 'accent' | 'success' | 'muted' }) {
   const bg = tone === 'success' ? theme.bgSuccess : tone === 'accent' ? theme.border : theme.surface0;
   const fg = tone === 'success' ? theme.textSuccess : tone === 'accent' ? theme.textAccent : theme.textSecondary;
   return (
@@ -17,7 +19,7 @@ function Chip({ label, tone }: { label: string; tone: 'accent' | 'success' | 'mu
   );
 }
 
-function formatDuration(seconds: number | null | undefined): string | null {
+export function formatDuration(seconds: number | null | undefined): string | null {
   if (!seconds) return null;
   return `${Math.round(seconds / 60)} min`;
 }
@@ -29,15 +31,41 @@ function formatDuration(seconds: number | null | undefined): string | null {
  * `description` is already stripped by the backend (null, not just hidden here),
  * so this only ever renders a description when the backend actually sent one.
  *
- * No video playback anywhere in this file — Decision 101 named Cloudflare Stream
- * as the vendor but the integration itself isn't built (`videoRef` is always null
- * until it is, per the DTO's own comment and CurriculumPage's matching subtitle on
- * the Staff side), so there is nothing to play yet. */
-export function LessonRow({ lesson }: { lesson: Lesson }) {
+ * Tappable (`Pressable`, same pattern MyMinorsScreen's row already uses) — navigates
+ * to LessonDetailScreen, where video playback, the Favorite toggle, Add-to-Playlist,
+ * and the comment thread all live (Curriculum learner-facing redesign, Decision
+ * 227/254). `favorited` is a prop, not a hook called here — fetched ONCE for the
+ * whole LessonsScreen (`useFavorites`) and passed down as a `Set<string>` lookup, per
+ * this slice's own task description (no N+1 favorites fetch per row). */
+export function LessonRow({
+  lesson,
+  favorited,
+  onPress,
+}: {
+  lesson: Lesson;
+  favorited: boolean;
+  onPress: () => void;
+}) {
   const duration = formatDuration(lesson.durationSeconds);
   return (
-    <View style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}>
-      <Text style={{ fontWeight: fontWeight.heading, fontSize: fontSize.body, color: theme.textPrimary }}>{lesson.title}</Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        { paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border },
+        pressed ? { opacity: 0.7 } : null,
+      ]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={{ fontWeight: fontWeight.heading, fontSize: fontSize.body, color: theme.textPrimary, flex: 1 }}>
+          {lesson.title}
+        </Text>
+        {favorited ? (
+          <Text style={{ color: theme.textAccent, fontSize: fontSize.body, marginLeft: spacing[2] }} accessibilityLabel="Favorited">
+            ★
+          </Text>
+        ) : null}
+      </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing[1], flexWrap: 'wrap' }}>
         {lesson.free ? <Chip label="Free" tone="success" /> : null}
@@ -52,6 +80,6 @@ export function LessonRow({ lesson }: { lesson: Lesson }) {
           {lesson.description}
         </Text>
       ) : null}
-    </View>
+    </Pressable>
   );
 }

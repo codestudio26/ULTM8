@@ -990,14 +990,14 @@ No screen anywhere in this app had ever read this endpoint before, despite it be
 ### What was built
 - **My Profile** (`src/profile/ProfileScreen.tsx`), off Home. Shows email/phone read-only (with verified status) and edits everything `UpdateUserDto` allows: first name, surname, username, date of birth, gender, nationality, address, language, currency. Language/currency pick from the real confirmed lists (`GET /settings/languages`/`/settings/currencies`) via plain chip buttons rather than free text — no Picker dependency exists anywhere in this app, and these two fields don't justify adding one.
 - **API:** nothing new — `GET`/`PATCH /users/me` and `GET /settings/languages`/`/settings/currencies` all already existed.
+- **Profile photo self-upload** (added later, closing the "Not yet" gap below): a new `useUploadMyProfilePhoto` mutation (`profileQueries.ts`) composes `POST /uploads/public-photo-url` (`entityType: USER`, no `entityId`/`schoolId` — the shared app-wide photo-upload endpoint's own self-service branch, `UploadsService.authorizeAndResolveScope`, needed no backend change at all) + a PUT of the picked image + `PATCH /users/me` with the resulting public URL, same 3-step composition `useSignWaiver`'s own drawn-signature upload already established. New `expo-image-picker` dependency (bundled for this Expo SDK; `expo-av`'s own sibling `expo-camera` already set the "stay Expo Go-compatible" precedent this follows) drives "Take Photo"/"Choose Photo" buttons, both normalized through one `handlePickedAsset` check (same 5MB / PNG+JPEG+WebP limits `PhotoUploadField`, the web equivalent, already established — no new convention invented). New RN `Avatar` component (`src/components/Avatar.tsx`) — the real photo once set, otherwise an initials monogram, mirroring `apps/school-portal/src/lib/Avatar.tsx`'s own behavior; this app had no avatar component of its own until now.
 
 ### Not yet
-- **Profile photo.** `UpdateUserDto.profilePhotoUrl` takes a plain URL string, not an upload flow — unlike Waiver signatures, nothing resolves "pick a photo" to a URL for this field. Needs either a dedicated presigned-upload endpoint (the same shape as Waivers') or a confirmed decision to reuse that one for profile photos too.
 - **Clearing an optional field back to empty.** `UpdateUserDto`'s optional fields are typed `string | undefined`, never `| null`, and `users.service.ts`'s `updateMe` relies on Prisma's "`undefined` = leave alone" semantics — there is no type-safe call this client can make to blank out a gender/nationality/address/username/language/currency once set. A real contract gap, not a client shortcut; see `profileQueries.ts`'s own comment.
 - **Email/phone changes.** Deliberately excluded by `UpdateUserDto` itself (both are login/OTP identifiers needing re-verification, not a bare profile edit) — not this screen's gap to close.
 
 ### Verified
-`tsc --noEmit`.
+`tsc --noEmit`; jest `src/profile/profilePhoto.test.tsx` (6) plus the app's full pre-existing suite (no regressions).
 
 ## Student-scoped transaction history (receipt viewing) — DONE (2026-10-12)
 

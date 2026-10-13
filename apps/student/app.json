@@ -34,6 +34,13 @@
         {
           "cameraPermission": "ULTM8 uses your camera to scan the Class check-in QR code."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ULTM8 uses your photos to set your profile picture.",
+          "cameraPermission": "ULTM8 uses your camera to take your profile picture."
+        }
       ]
     ]
   }
