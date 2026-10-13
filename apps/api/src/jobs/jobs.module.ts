@@ -19,6 +19,9 @@ import { GradingNotificationsProcessor, GradingNotificationsScheduler } from './
 import { MembershipPlanPriceMigrationProcessor } from './membership-plan-price-migration.processor';
 import { NotificationUnsnoozeSweepProcessor, NotificationUnsnoozeSweepScheduler } from './notification-unsnooze-sweep.processor';
 import { EntityOffboardingPurgeProcessor, EntityOffboardingPurgeScheduler } from './entity-offboarding-purge.processor';
+import { VideoProcessingPollProcessor, VideoProcessingPollScheduler } from './video-processing-poll.processor';
+import { CloudflareStreamService } from '../common/video/cloudflare-stream.service';
+import { TranscribeService } from '../common/video/transcribe.service';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -132,6 +135,19 @@ import { EntityOffboardingPurgeProcessor, EntityOffboardingPurgeScheduler } from
  * shape as TenantLifecyclePurgeProcessor/Scheduler above. No new module
  * import needed — only PrismaJobsService (already global) and its own
  * queue (already registered in QueueModule).
+ *
+ * Decision 227/254 adds VideoProcessingPollProcessor/Scheduler — a genuinely
+ * new shape in this directory, not another plain sweep (see that
+ * processor's own header comment for the full state-machine account): polls
+ * Cloudflare Stream/AWS Transcribe to completion for every Lesson whose
+ * captionStatus is PROCESSING. Needs CloudflareStreamService and
+ * TranscribeService directly — neither has its own NestJS module (same as
+ * every other plain-@Injectable() vendor client in this codebase, e.g.
+ * R2ClientService), so both are added as plain providers here rather than
+ * imported from elsewhere; CurriculumModule separately provides
+ * CloudflareStreamService for its own requestVideoUploadUrl() — Nest allows
+ * the same provider class to be instantiated per-module this way, and the
+ * two have no shared state to desync.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -160,6 +176,10 @@ import { EntityOffboardingPurgeProcessor, EntityOffboardingPurgeScheduler } from
     NotificationUnsnoozeSweepScheduler,
     EntityOffboardingPurgeProcessor,
     EntityOffboardingPurgeScheduler,
+    VideoProcessingPollProcessor,
+    VideoProcessingPollScheduler,
+    CloudflareStreamService,
+    TranscribeService,
   ],
 })
 export class JobsModule {}

@@ -2,6 +2,10 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
+import { resolveUserNames, ResolvedUserName } from '../common/prisma/resolve-user-names';
+import { resolveLimit, encodeDescCursor, decodeDescCursor } from '../common/pagination/cursor-paginate';
+import { CloudflareStreamService } from '../common/video/cloudflare-stream.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { GuardiansService } from '../guardians/guardians.service';
@@ -9,11 +13,38 @@ import { isMembershipLive } from '../memberships/memberships.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { OrderCategoryLessonsDto, OrderLessonCategoriesDto } from './dto/lesson-category.dto';
+import { UpsertWatchProgressDto } from './dto/watch-history.dto';
+import {
+  AddPlaylistItemDto,
+  CreatePlaylistDto,
+  RenamePlaylistDto,
+  ReorderPlaylistItemsDto,
+} from './dto/playlist.dto';
+import { CreateCommentDto } from './dto/comment.dto';
 
 /** `content` is null when the database doesn't let the caller read it (Decision 208). */
 const LESSON_INCLUDE = { skills: { include: { skill: { select: { disciplineId: true } } } }, category: { select: { name: true } }, content: true } as const;
 
 const RETENTION_WINDOW_DAYS = 90;
+
+/** Shared select shape for a PlaylistItem joined with just enough of its own
+ * Lesson to compute `locked`/`lessonTitle` (CurriculumService.
+ * shapePlaylistItem). */
+const PLAYLIST_ITEM_SELECT = {
+  id: true,
+  playlistId: true,
+  order: true,
+  createdAt: true,
+  lessonId: true,
+  lesson: {
+    select: {
+      title: true,
+      free: true,
+      schoolId: true,
+      skills: { select: { skill: { select: { disciplineId: true } } } },
+    },
+  },
+} satisfies Prisma.PlaylistItemSelect;
 
 /** What a caller may watch (Decisions 154, 190, 195): staff everything; a
  * student, or a guardian on their behalf, free lessons and those of the styles
@@ -47,9 +78,11 @@ const LESSON_ORDER: Prisma.LessonOrderByWithRelationInput[] = [{ category: { ord
 export class CurriculumService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaAuth: PrismaAuthService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
     private readonly guardiansService: GuardiansService,
+    private readonly cloudflareStream: CloudflareStreamService,
   ) {}
 
   async createLesson(callerId: string, schoolId: string, dto: CreateLessonDto) {
@@ -306,8 +339,7 @@ export class CurriculumService {
 
   private shapeLessonResponse(lesson: Prisma.LessonGetPayload<{ include: typeof LESSON_INCLUDE }>, access: LessonAccess = 'all') {
     const { skills, category, content, ...rest } = lesson;
-    // A lesson's styles are its skills' styles (Decision 195).
-    const locked = access !== 'all' && !lesson.free && !skills.some((s) => access.has(s.skill.disciplineId));
+    const locked = this.isLocked(lesson, access);
     // A locked lesson shows what it is, not its content. The database applies
     // the same rule (Decision 208): content it won't give is null either way.
     const shown = locked ? null : content;
@@ -320,6 +352,45 @@ export class CurriculumService {
       videoRef: shown?.videoRef ?? null,
       captionTrackRef: shown?.captionTrackRef ?? null,
     };
+  }
+
+  /** A lesson's styles are its skills' styles (Decision 195). Extracted from
+   * shapeLessonResponse above (Decision 227/254) so the learner-facing
+   * Favorite/WatchHistory/Playlist/Comment endpoints below can reject acting
+   * on a Lesson the caller may not watch, using the exact same rule. */
+  private isLocked(lesson: { free: boolean; skills: { skill: { disciplineId: string } }[] }, access: LessonAccess): boolean {
+    return access !== 'all' && !lesson.free && !lesson.skills.some((s) => access.has(s.skill.disciplineId));
+  }
+
+  /**
+   * Curriculum learner-facing redesign (Decision 227/254) — the shared gate
+   * for every new endpoint below that acts on a specific Lesson on a
+   * Student's behalf (favorite, watch-progress, comment): 404 if the Lesson
+   * doesn't exist OR has been archived (Decision 226 — an archived Lesson
+   * can't be newly favorited/commented/watched; an existing Favorite on a
+   * since-archived Lesson is left alone, no retroactive cleanup), 403 if
+   * `isLocked` says the caller may not watch it (Decisions 154, 190, 195).
+   */
+  private async assertCanWatchLesson(callerId: string, lessonId: string): Promise<{ schoolId: string }> {
+    const lesson = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.lesson.findUnique({
+        where: { id: lessonId },
+        select: {
+          schoolId: true,
+          free: true,
+          skills: { select: { skill: { select: { disciplineId: true } } } },
+          archivedAt: true,
+        },
+      }),
+    );
+    if (!lesson || lesson.archivedAt) {
+      throw new NotFoundException('Lesson not found');
+    }
+    const access = await this.accessFor(callerId, lesson.schoolId);
+    if (this.isLocked(lesson, access)) {
+      throw new ForbiddenException('You may not watch this Lesson (Decisions 154, 190, 195).');
+    }
+    return { schoolId: lesson.schoolId };
   }
 
   /** The next free place at the end of a category (or of the uncategorised). */
@@ -418,6 +489,368 @@ export class CurriculumService {
   }
 
   // ---------------------------------------------------------------------------
+  // Curriculum learner-facing redesign (Decision 227/254) — Favorite,
+  // WatchHistory, Playlist/PlaylistItem, Comment, and the actual Cloudflare
+  // Stream/AWS Transcribe video-upload wiring (Decision 101's picked vendors,
+  // left unbuilt by Phase 44 — see this class's own header comment). Every
+  // method below runs under the caller's own tenant context
+  // (PrismaAppService.withTenantContext); Favorite/WatchHistory/Playlist/
+  // PlaylistItem are all self-only RLS (the database would already refuse a
+  // cross-Student read/write regardless of what id is passed), so the
+  // explicit own-row checks below follow this file's own established "load,
+  // check, 404 on mismatch" convention for a clean error rather than relying
+  // on RLS alone to produce one.
+  // ---------------------------------------------------------------------------
+
+  // --- Favorite ---------------------------------------------------------
+
+  /** Idempotent — favoriting an already-favorited Lesson is a no-op success,
+   * not a 409. */
+  async addFavorite(callerId: string, lessonId: string) {
+    const { schoolId } = await this.assertCanWatchLesson(callerId, lessonId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const row = await tx.favorite.upsert({
+        where: { studentId_lessonId: { studentId: callerId, lessonId } },
+        create: { id: randomUUID(), studentId: callerId, lessonId, schoolId },
+        update: {},
+      });
+      return shapeFavorite(row);
+    });
+  }
+
+  /** Idempotent — unfavoriting a Lesson that isn't favorited is a no-op
+   * success, not a 404. */
+  async removeFavorite(callerId: string, lessonId: string): Promise<void> {
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.favorite.deleteMany({ where: { studentId: callerId, lessonId } }));
+  }
+
+  async findFavorites(callerId: string, schoolId: string, cursor?: string, limit?: number) {
+    const take = resolveLimit(limit);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const decoded = cursor ? decodeDescCursor(cursor) : null;
+      const where: Prisma.FavoriteWhereInput = {
+        studentId: callerId,
+        schoolId,
+        ...(decoded
+          ? { OR: [{ createdAt: { lt: decoded.sortValue } }, { createdAt: decoded.sortValue, id: { lt: decoded.id } }] }
+          : {}),
+      };
+      const rows = await tx.favorite.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: take + 1 });
+      const hasMore = rows.length > take;
+      const items = hasMore ? rows.slice(0, take) : rows;
+      const last = items[items.length - 1];
+      return { items: items.map(shapeFavorite), nextCursor: hasMore ? encodeDescCursor(last.createdAt, last.id) : null };
+    });
+  }
+
+  // --- WatchHistory -------------------------------------------------------
+
+  /**
+   * `completed` is one-directional — only ever SETS completedAt when
+   * `dto.completed` is explicitly true; omitting it (or sending false) never
+   * clears an already-set completedAt. There is no "mark incomplete" feature.
+   */
+  async upsertWatchProgress(callerId: string, lessonId: string, dto: UpsertWatchProgressDto) {
+    const { schoolId } = await this.assertCanWatchLesson(callerId, lessonId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const row = await tx.watchHistory.upsert({
+        where: { studentId_lessonId: { studentId: callerId, lessonId } },
+        create: {
+          id: randomUUID(),
+          studentId: callerId,
+          lessonId,
+          schoolId,
+          lastPositionSeconds: dto.lastPositionSeconds,
+          completedAt: dto.completed ? new Date() : undefined,
+        },
+        update: {
+          lastPositionSeconds: dto.lastPositionSeconds,
+          ...(dto.completed ? { completedAt: new Date() } : {}),
+        },
+      });
+      return shapeWatchHistory(row);
+    });
+  }
+
+  async findWatchHistory(callerId: string, schoolId: string, cursor?: string, limit?: number) {
+    const take = resolveLimit(limit);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const decoded = cursor ? decodeDescCursor(cursor) : null;
+      const where: Prisma.WatchHistoryWhereInput = {
+        studentId: callerId,
+        schoolId,
+        ...(decoded
+          ? { OR: [{ updatedAt: { lt: decoded.sortValue } }, { updatedAt: decoded.sortValue, id: { lt: decoded.id } }] }
+          : {}),
+      };
+      const rows = await tx.watchHistory.findMany({ where, orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }], take: take + 1 });
+      const hasMore = rows.length > take;
+      const items = hasMore ? rows.slice(0, take) : rows;
+      const last = items[items.length - 1];
+      return { items: items.map(shapeWatchHistory), nextCursor: hasMore ? encodeDescCursor(last.updatedAt, last.id) : null };
+    });
+  }
+
+  // --- Playlist / PlaylistItem ---------------------------------------------
+
+  async createPlaylist(callerId: string, dto: CreatePlaylistDto) {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const row = await tx.playlist.create({ data: { id: randomUUID(), studentId: callerId, name: dto.name } });
+      return shapePlaylist(row);
+    });
+  }
+
+  async renamePlaylist(callerId: string, playlistId: string, dto: RenamePlaylistDto) {
+    await this.loadOwnPlaylist(callerId, playlistId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) =>
+      shapePlaylist(await tx.playlist.update({ where: { id: playlistId }, data: { name: dto.name } })),
+    );
+  }
+
+  async deletePlaylist(callerId: string, playlistId: string): Promise<void> {
+    await this.loadOwnPlaylist(callerId, playlistId);
+    // PlaylistItem rows cascade away with it (ON DELETE CASCADE).
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.playlist.delete({ where: { id: playlistId } }));
+  }
+
+  async findPlaylists(callerId: string, cursor?: string, limit?: number) {
+    const take = resolveLimit(limit);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const decoded = cursor ? decodeDescCursor(cursor) : null;
+      // No schoolId filter — Playlist has none (deliberate, see its own
+      // schema.prisma comment).
+      const where: Prisma.PlaylistWhereInput = {
+        studentId: callerId,
+        ...(decoded
+          ? { OR: [{ createdAt: { lt: decoded.sortValue } }, { createdAt: decoded.sortValue, id: { lt: decoded.id } }] }
+          : {}),
+      };
+      const rows = await tx.playlist.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: take + 1 });
+      const hasMore = rows.length > take;
+      const items = hasMore ? rows.slice(0, take) : rows;
+      const last = items[items.length - 1];
+      return { items: items.map(shapePlaylist), nextCursor: hasMore ? encodeDescCursor(last.createdAt, last.id) : null };
+    });
+  }
+
+  async addPlaylistItem(callerId: string, playlistId: string, dto: AddPlaylistItemDto) {
+    const playlist = await this.loadOwnPlaylist(callerId, playlistId);
+    await this.assertCanWatchLesson(callerId, dto.lessonId);
+    const itemId = randomUUID();
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const last = await tx.playlistItem.aggregate({ where: { playlistId }, _max: { order: true } });
+      // studentId denormalized from the playlist we already loaded above, not
+      // a second lookup (PlaylistItem's own self-only RLS needs this column
+      // set correctly — see its schema.prisma comment).
+      await tx.playlistItem.create({
+        data: { id: itemId, playlistId, lessonId: dto.lessonId, studentId: playlist.studentId, order: (last._max.order ?? -1) + 1 },
+      });
+      const full = await tx.playlistItem.findUniqueOrThrow({ where: { id: itemId }, select: PLAYLIST_ITEM_SELECT });
+      const access = await this.accessFor(callerId, full.lesson.schoolId);
+      return this.shapePlaylistItem(full, access);
+    });
+  }
+
+  /** `where: { id: itemId, playlistId }` so a caller can't delete another
+   * Playlist's item by sending the wrong playlistId in the path. Idempotent
+   * — deleting an item that's already gone is a no-op success. */
+  async removePlaylistItem(callerId: string, playlistId: string, itemId: string): Promise<void> {
+    await this.loadOwnPlaylist(callerId, playlistId);
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.playlistItem.deleteMany({ where: { id: itemId, playlistId } }));
+  }
+
+  /** Every PlaylistItem of this Playlist, in the new order — reorders by the
+   * item's OWN id (not lessonId), same "send the full current set exactly
+   * once" validation shape as orderCategoryLessons above. */
+  async reorderPlaylistItems(callerId: string, playlistId: string, dto: ReorderPlaylistItemsDto) {
+    await this.loadOwnPlaylist(callerId, playlistId);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const sent = new Set(dto.itemIds);
+      if (sent.size !== dto.itemIds.length) throw new BadRequestException('Each item can appear only once.');
+      const current = await tx.playlistItem.findMany({ where: { playlistId }, select: { id: true } });
+      if (current.length !== dto.itemIds.length || current.some((i) => !sent.has(i.id))) {
+        throw new ConflictException('Send every item currently in this Playlist; the list may have changed — please reload.');
+      }
+      for (const [order, id] of dto.itemIds.entries()) await tx.playlistItem.update({ where: { id }, data: { order } });
+      const full = await tx.playlistItem.findMany({ where: { playlistId }, orderBy: { order: 'asc' }, select: PLAYLIST_ITEM_SELECT });
+      const accessCache = await this.buildAccessCache(callerId, full.map((i) => i.lesson.schoolId));
+      return { items: full.map((i) => this.shapePlaylistItem(i, accessCache.get(i.lesson.schoolId)!)) };
+    });
+  }
+
+  /**
+   * NOT paginated (PlaylistItemListResponseDto, flat array) — a Playlist's
+   * own item count is bounded by how many Lessons a School even has.
+   *
+   * A Playlist can mix Lessons from several Schools, so `locked` can't be
+   * computed from one `accessFor` call for the whole list — this calls it
+   * once per DISTINCT schoolId among the items (buildAccessCache below),
+   * never once per item.
+   */
+  async findPlaylistItems(callerId: string, playlistId: string) {
+    await this.loadOwnPlaylist(callerId, playlistId);
+    const items = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.playlistItem.findMany({ where: { playlistId }, orderBy: { order: 'asc' }, select: PLAYLIST_ITEM_SELECT }),
+    );
+    const accessCache = await this.buildAccessCache(callerId, items.map((i) => i.lesson.schoolId));
+    return { items: items.map((i) => this.shapePlaylistItem(i, accessCache.get(i.lesson.schoolId)!)) };
+  }
+
+  /** Explicit own-row check for a clean 404, same convention as every other
+   * load-then-mutate method in this file — RLS would also block a
+   * cross-Student read/write, but a plain `null` isn't a confirmed-shaped
+   * error on its own. */
+  private async loadOwnPlaylist(callerId: string, playlistId: string) {
+    const playlist = await this.prismaApp.withTenantContext(callerId, (tx) => tx.playlist.findUnique({ where: { id: playlistId } }));
+    if (!playlist || playlist.studentId !== callerId) {
+      throw new NotFoundException('Playlist not found');
+    }
+    return playlist;
+  }
+
+  /** One `accessFor` call per DISTINCT schoolId, not per item — see
+   * findPlaylistItems's own header comment. */
+  private async buildAccessCache(callerId: string, schoolIds: string[]): Promise<Map<string, LessonAccess>> {
+    const cache = new Map<string, LessonAccess>();
+    for (const schoolId of new Set(schoolIds)) {
+      cache.set(schoolId, await this.accessFor(callerId, schoolId));
+    }
+    return cache;
+  }
+
+  private shapePlaylistItem(item: Prisma.PlaylistItemGetPayload<{ select: typeof PLAYLIST_ITEM_SELECT }>, access: LessonAccess) {
+    return {
+      id: item.id,
+      playlistId: item.playlistId,
+      lessonId: item.lessonId,
+      order: item.order,
+      createdAt: item.createdAt.toISOString(),
+      lessonTitle: item.lesson.title,
+      locked: this.isLocked(item.lesson, access),
+    };
+  }
+
+  // --- Comment --------------------------------------------------------------
+
+  /** Comments require the same watch-access as the Lesson's own content — a
+   * locked Lesson can't be commented on. */
+  async createComment(callerId: string, lessonId: string, dto: CreateCommentDto) {
+    const { schoolId } = await this.assertCanWatchLesson(callerId, lessonId);
+    const row = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.comment.create({ data: { id: randomUUID(), lessonId, authorId: callerId, schoolId, body: dto.body } }),
+    );
+    const names = await resolveUserNames(this.prismaAuth, [callerId]);
+    return this.shapeComment(row, names);
+  }
+
+  /** Same locked-content gate as createComment above — a Comment thread on a
+   * Lesson the caller may not watch stays hidden. Ordered `(createdAt, id)`
+   * ASCENDING (oldest first) — a comment thread reads chronologically,
+   * unlike every other list here, which is newest-first — so `lt`/`gt` are
+   * flipped relative to the DESC lists above, written out explicitly rather
+   * than reusing their shape unchanged. */
+  async findComments(callerId: string, lessonId: string, cursor?: string, limit?: number) {
+    await this.assertCanWatchLesson(callerId, lessonId);
+    const take = resolveLimit(limit);
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const decoded = cursor ? decodeDescCursor(cursor) : null;
+      const where: Prisma.CommentWhereInput = {
+        lessonId,
+        ...(decoded
+          ? { OR: [{ createdAt: { gt: decoded.sortValue } }, { createdAt: decoded.sortValue, id: { gt: decoded.id } }] }
+          : {}),
+      };
+      const rows = await tx.comment.findMany({ where, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: take + 1 });
+      const hasMore = rows.length > take;
+      const items = hasMore ? rows.slice(0, take) : rows;
+      const names = await resolveUserNames(this.prismaAuth, items.map((c) => c.authorId));
+      const last = items[items.length - 1];
+      return {
+        items: items.map((c) => this.shapeComment(c, names)),
+        nextCursor: hasMore ? encodeDescCursor(last.createdAt, last.id) : null,
+      };
+    });
+  }
+
+  /** Author or Staff at the School may delete (Comment's own schema.prisma/
+   * migration comment) — RLS only enforces the tenant boundary for DELETE,
+   * this is the specific-action gate, same "RLS is the tenant boundary, the
+   * service layer is the specific-action gate" split this codebase already
+   * uses for every other write-authorization check. */
+  async deleteComment(callerId: string, commentId: string): Promise<void> {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.comment.findUnique({ where: { id: commentId } }));
+    if (!existing) {
+      throw new NotFoundException('Comment not found');
+    }
+    if (existing.authorId !== callerId) {
+      try {
+        await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+      } catch (err) {
+        if (!(err instanceof ForbiddenException)) throw err;
+        throw new ForbiddenException('Only the Comment\'s own author, or School staff, may delete it.');
+      }
+    }
+    await this.prismaApp.withTenantContext(callerId, (tx) => tx.comment.deleteMany({ where: { id: commentId } }));
+  }
+
+  /** `authorName` is resolved via PrismaAuthService/resolveUserNames (the
+   * same pattern InstructorsService.findAllForSchool already established),
+   * not an RLS-scoped join — see resolveUserNames's own header comment for
+   * why a plain tenant-context `include` on User is the wrong tool here. */
+  private shapeComment(
+    c: { id: string; lessonId: string; authorId: string; schoolId: string; body: string; createdAt: Date },
+    names: Map<string, ResolvedUserName>,
+  ) {
+    const name = names.get(c.authorId);
+    return {
+      id: c.id,
+      lessonId: c.lessonId,
+      authorId: c.authorId,
+      authorName: name ? `${name.firstName} ${name.surname}` : '',
+      schoolId: c.schoolId,
+      body: c.body,
+      createdAt: c.createdAt.toISOString(),
+    };
+  }
+
+  // --- Video upload (Decision 101's picked vendors, wired here) --------------
+
+  /**
+   * `Lesson.captionStatus` predates this pipeline (Phase 44's own header
+   * comment) and wasn't designed with this exact mapping in mind — stated
+   * explicitly here rather than assumed: this method deliberately reuses the
+   * existing 4-state enum for the WHOLE upload+caption pipeline, not just
+   * captions — PENDING = no video uploaded yet; PROCESSING = video upload
+   * started OR the video/its captions are still being processed by the
+   * vendors; READY = both playable and captioned (set by
+   * VideoProcessingPollScheduler once AWS Transcribe completes); FAILED =
+   * either stage failed (also set by that scheduler).
+   *
+   * Staff-gated the same way every other Lesson write in this file is
+   * (assertStaffAtSchool + assertSchoolNotArchived, updateLesson's own
+   * gate) — the controller does not duplicate this check.
+   */
+  async requestVideoUploadUrl(callerId: string, lessonId: string) {
+    const existing = await this.prismaApp.withTenantContext(callerId, (tx) => tx.lesson.findUnique({ where: { id: lessonId } }));
+    if (!existing) {
+      throw new NotFoundException('Lesson not found');
+    }
+    await this.tenantAuth.assertStaffAtSchool(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+
+    const { uploadUrl, videoRef } = await this.cloudflareStream.createDirectUploadUrl();
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      await tx.lessonContent.upsert({
+        where: { lessonId },
+        create: { lessonId, videoRef },
+        update: { videoRef },
+      });
+      await tx.lesson.update({ where: { id: lessonId }, data: { captionStatus: 'PROCESSING' } });
+    });
+    return { uploadUrl, videoRef };
+  }
+
+  // ---------------------------------------------------------------------------
   // Shared validation helpers
   // ---------------------------------------------------------------------------
 
@@ -433,4 +866,34 @@ export class CurriculumService {
 
 function shapeCategory(c: { id: string; schoolId: string; name: string; order: number }) {
   return { id: c.id, schoolId: c.schoolId, name: c.name, order: c.order };
+}
+
+function shapeFavorite(f: { id: string; studentId: string; lessonId: string; schoolId: string; createdAt: Date }) {
+  return { id: f.id, studentId: f.studentId, lessonId: f.lessonId, schoolId: f.schoolId, createdAt: f.createdAt.toISOString() };
+}
+
+function shapeWatchHistory(w: {
+  id: string;
+  studentId: string;
+  lessonId: string;
+  schoolId: string;
+  lastPositionSeconds: number;
+  completedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: w.id,
+    studentId: w.studentId,
+    lessonId: w.lessonId,
+    schoolId: w.schoolId,
+    lastPositionSeconds: w.lastPositionSeconds,
+    completedAt: w.completedAt?.toISOString() ?? null,
+    createdAt: w.createdAt.toISOString(),
+    updatedAt: w.updatedAt.toISOString(),
+  };
+}
+
+function shapePlaylist(p: { id: string; studentId: string; name: string; createdAt: Date; updatedAt: Date }) {
+  return { id: p.id, studentId: p.studentId, name: p.name, createdAt: p.createdAt.toISOString(), updatedAt: p.updatedAt.toISOString() };
 }
