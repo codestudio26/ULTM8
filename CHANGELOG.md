@@ -15,6 +15,23 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Track B: profile photo self-upload** (`apps/student`, `docs/TRACK-B-ROADMAP.md`
+  "My Profile" section) — closes the "Profile photo" gap that section's own "Not
+  yet" list had named: `UpdateUserDto.profilePhotoUrl` took a plain pasted URL,
+  with no upload flow behind it. No backend change needed — the shared
+  `POST /uploads/public-photo-url` endpoint (built for Instructor/Branch/
+  Franchise/Class photos, see the "Real photo uploads" entry below) already had
+  a `USER`, self-service branch requiring no `entityId`/`schoolId` at all. New
+  `useUploadMyProfilePhoto` (`profileQueries.ts`) composes that presign call + a
+  direct PUT of the picked image + `PATCH /users/me` with the resulting public
+  URL — the same 3-step shape `useSignWaiver`'s own drawn-signature upload
+  already established for this app. New `expo-image-picker` dependency drives
+  "Take Photo"/"Choose Photo" on `ProfileScreen.tsx`, both normalized through
+  one size/type check (same 5MB / PNG+JPEG+WebP limits `PhotoUploadField`, the
+  web equivalent, already set). New `src/components/Avatar.tsx` — this app's
+  first avatar component, mirroring `apps/school-portal`'s own (real photo, or
+  an initials monogram). New `src/profile/profilePhoto.test.tsx` (6 tests).
+
 - **Entity-level tenant offboarding for 7 entities with no delete/archive
   mechanism before now** (Decision 226) — Branch, Class, TimetableSlot,
   Instructor, Rank, Waiver, Lesson each get a real "Delete" action, usable
