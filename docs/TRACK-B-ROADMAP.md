@@ -933,7 +933,7 @@ generated type's own comment) — deliberately not used for any icon/categorizat
 Decision 184 asks for the coach dashboard "on both the mobile app and the web portal"; the web portal's came first (`apps/school-portal/src/coach/`). This is the mobile one, on the same API calls, for Instructors and Branch Staff (Decision 186).
 
 ### What was built
-- **Landing:** a person with an Instructor or Branch Staff grant lands on **Coach** (`src/coach/CoachDashboardScreen.tsx`) instead of the student home (Decision 184 item 4); **Student home** is one tap away, and the student home has a **Coach dashboard** button. A coach at several Schools sees one (sorted; no School switcher yet).
+- **Landing:** a person with an Instructor or Branch Staff grant lands on **Coach** (`src/coach/CoachDashboardScreen.tsx`) instead of the student home (Decision 184 item 4); **Student home** is one tap away, and the student home has a **Coach dashboard** button. A coach at several Schools can now pick which one they're acting as (Decision 184 item 4's own named follow-up, resolved — see "Multi-School coach/Branch Staff switcher" below); it defaults to the first (sorted) School until they pick.
 - **Dashboard:** Grading (the styles they grade, from `GET /schools/{id}/grading-permissions/me`, with ready / getting there / total counts from the board), My classes (their weekly slots and the next 10 classes, matched on `instructorId`), Notifications (latest 5, "See all" opens the existing screen), and My training when they also hold a Student grant there.
 - **Grading Board** (`GradingBoardScreen.tsx`): one style, the three columns as sections, highest progress first, search, the active-only switch and the "N inactive hidden" count. Students are the coach's own branches' (the API decides, Decision 168).
 - **Student panel** (`CoachStudentScreen.tsx`): stripe, date, progress (classes, or per class type; days; skills), the skills for the next grade (tap to cycle when the coach may sign off), the history, and only the actions the coach's toggles allow (Decision 181): award the next stripe or grade to the next belt (the skills acknowledgement when skills are missing and the style allows it, refused when it requires them), move down one stripe with a reason, log a class, verify a declared belt. Every grade sends the stripe the coach saw (`expectedCurrentRungId`, Decision 185), so a grade someone else made first is refused.
@@ -943,6 +943,18 @@ Skipping stripes, back-dating, starting classes, bulk promote, dragging between 
 
 ### Verified
 `tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (10): the dashboard shows only the coach's styles and classes, the board filters and groups, each action appears only with its toggle and sends the right body.
+
+## Multi-School coach/Branch Staff switcher (Decision 184 item 4's own follow-up) — DONE
+
+Both `useOwnedSchoolId` (School Portal) and `useCoachSchoolId` (School Portal + this app) resolved to whichever grant happened to sort first, with no way to see or act on a second School — named explicitly as deferred in Decision 184 item 4. Closed on the School Portal and this app's own Coach dashboard; `useOwnedSchoolId` turned out to carry the identical gap (a School Owner holding `SCHOOL_OWNER_MANAGER` at more than one School — the schema has no constraint against it), found while building this, but left as its own, not-yet-approved follow-up rather than silently expanded into here.
+
+### What was built
+- **Backend:** none — the JWT already carries every active grant, and every coach/grading endpoint is already School-scoped by its own `schoolId` param; this was purely a "which School is the client currently reading" gap.
+- **School Portal:** `AuthContext.tsx`'s `useCoachSchoolId()` now resolves an explicit, sessionStorage-persisted pick (cleared on logout) when the caller holds INSTRUCTOR/BRANCH_STAFF grants at 2+ Schools, falling back to the first (stable-sorted) School otherwise — every existing call site (`useGradingSchoolId`, `CoachDashboardPage`, `GradingBoardPage`, etc.) picks this up for free, no call-site changes needed. New `coach/SchoolSwitcher.tsx` in `TopBar`, rendered only when there's a real choice to make.
+- **This app:** the same mechanism, AsyncStorage-backed instead of sessionStorage (a School id isn't a secret the way the access token is), in `AuthContext.tsx`. New `SchoolSwitcher` in `CoachDashboardScreen.tsx` (a `SearchablePickerField`, the same picker `PhoneField`'s country selector already established) — the one screen that needs it, since every other coach screen receives `schoolId` as a navigation param from here.
+
+### Verified
+School Portal: `tsc --noEmit`; Playwright `coach-school-switcher.spec.ts` (4, new) plus the full coach/grading regression suite (`coach-dashboard`, `coach-invites`, `grading-board`, `grading-permissions`, `student-grading`, `verify-belts-notice`, `branch-staff`, `instructor-belts` — 43 total). This app: `tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (12, 2 new) plus the full suite (88 total, 16 files).
 
 ## My grading, read-only (Decisions 132, 142, 155, 161) — DONE
 

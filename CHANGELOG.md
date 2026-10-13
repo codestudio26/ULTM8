@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Multi-School coach/Branch Staff switcher** (Decision 184 item 4's own
+  named follow-up, resolved) — a coach or Branch Staff member holding an
+  active grant at more than one School can now pick which one they're
+  acting as, on both the School Portal (`TopBar`) and `apps/student`'s Coach
+  dashboard (Track B), instead of always landing on whichever School
+  happened to sort first. No backend change — every coach/grading endpoint
+  was already School-scoped; this closes a client-side "which School" gap
+  only. `useOwnedSchoolId`'s identical gap (a School Owner holding
+  `SCHOOL_OWNER_MANAGER` at more than one School) was found while building
+  this and deliberately left for its own decision, not folded in here
+  (Decision 255).
 - **`GET /transactions/{id}/invoice` — PDF/receipt downloads for payment
   history** (`apps/api`, plus Track B's `apps/student` and
   `apps/school-portal`, `docs/TRACK-B-ROADMAP.md`'s "Student-scoped

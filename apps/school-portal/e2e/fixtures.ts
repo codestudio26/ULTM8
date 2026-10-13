@@ -150,7 +150,7 @@ export async function addCoach(s: GradingSchool, first: string, last: string) {
 export async function addPerson(
   first: string,
   last: string,
-  grants: Array<{ role: 'STUDENT' | 'INSTRUCTOR' | 'BRANCH_STAFF'; schoolId: string; branchId?: string }> = [],
+  grants: Array<{ role: 'STUDENT' | 'INSTRUCTOR' | 'BRANCH_STAFF' | 'SCHOOL_OWNER_MANAGER'; schoolId: string; branchId?: string }> = [],
 ) {
   const u = await mkUser(first, last);
   for (const g of grants) {

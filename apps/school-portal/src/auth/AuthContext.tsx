@@ -31,9 +31,41 @@ interface AuthContextValue {
    * inside the accepted staleness window on purpose (same section).
    */
   setAccessToken: (token: string) => void;
+  /** See `useCoachSchoolId`/`SchoolSwitcher` — the School a multi-School coach
+   * has explicitly picked, if any. Most callers want `useCoachSchoolId()`
+   * instead of reading this directly. */
+  activeCoachSchoolId: string | null;
+  setActiveCoachSchoolId: (schoolId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+/** Which School a multi-School coach/Branch Staff member is currently acting as
+ * (Decision 184 item 4's own named follow-up: "no School switcher yet"). Same
+ * sessionStorage reasoning as `sessionStorageTokenStore` — tab-scoped, cleared on
+ * logout, not a standing cross-session artifact — but a separate key so it isn't
+ * confused with the token itself. A display/filter preference only, like every
+ * other claim read in this file: `useCoachSchoolId()` below still only ever
+ * returns a School the caller actually holds a current grant at, and every API
+ * call it feeds into is re-checked server-side regardless. */
+const ACTIVE_COACH_SCHOOL_KEY = 'ultm8.activeCoachSchoolId';
+
+function readActiveCoachSchoolId(): string | null {
+  try {
+    return sessionStorage.getItem(ACTIVE_COACH_SCHOOL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeActiveCoachSchoolId(schoolId: string | null) {
+  try {
+    if (schoolId) sessionStorage.setItem(ACTIVE_COACH_SCHOOL_KEY, schoolId);
+    else sessionStorage.removeItem(ACTIVE_COACH_SCHOOL_KEY);
+  } catch {
+    /* noop — same degrade-to-first-School fallback as a failed read */
+  }
+}
 
 function readClaims(): { accessToken: string | null; claims: JwtClaims | null } {
   const token = sessionStorageTokenStore.get();
@@ -44,7 +76,13 @@ function readClaims(): { accessToken: string | null; claims: JwtClaims | null } 
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [{ accessToken, claims }, setState] = useState(readClaims);
+  const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState(readActiveCoachSchoolId);
   const queryClient = useQueryClient();
+
+  const setActiveCoachSchoolId = useCallback((schoolId: string) => {
+    writeActiveCoachSchoolId(schoolId);
+    setActiveCoachSchoolIdState(schoolId);
+  }, []);
 
   const applyToken = useCallback((token: string) => {
     sessionStorageTokenStore.set(token);
@@ -65,7 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     sessionStorageTokenStore.clear();
+    writeActiveCoachSchoolId(null);
     setState({ accessToken: null, claims: null });
+    setActiveCoachSchoolIdState(null);
     // FOUND ON REVIEW (Phase 24, surfaced by the new Notifications inbox —
     // the first query in this codebase keyed with no per-caller scoping
     // identifier at all, e.g. `['notifications']` vs. every other query's
@@ -80,8 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   const value = useMemo(
-    () => ({ accessToken, claims, login, logout, setAccessToken: applyToken }),
-    [accessToken, claims, login, logout, applyToken],
+    () => ({ accessToken, claims, login, logout, setAccessToken: applyToken, activeCoachSchoolId, setActiveCoachSchoolId }),
+    [accessToken, claims, login, logout, applyToken, activeCoachSchoolId, setActiveCoachSchoolId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -105,15 +145,35 @@ export function useOwnedSchoolId(): string | null {
   return grant?.schoolId ?? null;
 }
 
-/** The School a coach or Branch Staff member works at (Decision 184; Branch
- * Staff get the same screens, Phase 7): their first INSTRUCTOR or BRANCH_STAFF
- * grant's School. A display hint only, like useOwnedSchoolId; the API
- * re-checks. Someone at several Schools sees the first one (no School
- * switcher yet). */
-export function useCoachSchoolId(): string | null {
+/** Every distinct School a coach or Branch Staff member works at (Decision 184;
+ * Branch Staff get the same screens, Phase 7) — sorted for a stable, deterministic
+ * order (the JWT's own `grants` array carries no ordering guarantee; AuthService's
+ * token issuance has no `orderBy`), so the default selection in `useCoachSchoolId`
+ * below doesn't vary between logins for the same coach. `SchoolSwitcher` is the
+ * one real consumer of the full list; everywhere else wants `useCoachSchoolId()`. */
+export function useCoachSchoolIds(): string[] {
   const { claims } = useAuth();
-  if (!claims) return null;
-  return claims.grants.find((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId)?.schoolId ?? null;
+  if (!claims) return [];
+  const ids = new Set(claims.grants.filter((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId).map((g) => g.schoolId as string));
+  return [...ids].sort();
+}
+
+/** The School a coach or Branch Staff member is currently acting as (Decision 184
+ * item 4, resolved: a School switcher now exists — see `SchoolSwitcher.tsx`). A
+ * display hint only, like useOwnedSchoolId; the API re-checks every grant
+ * server-side regardless.
+ *
+ * Defaults to the first School (stable sort order, see useCoachSchoolIds) when
+ * nothing has been explicitly picked yet, or when a previously-picked School is
+ * no longer in the caller's current grant set (e.g. it was revoked, or this is a
+ * stale selection left over from a different account in the same browser tab) —
+ * never trusts the stored selection blindly against the live claims. */
+export function useCoachSchoolId(): string | null {
+  const { activeCoachSchoolId } = useAuth();
+  const schoolIds = useCoachSchoolIds();
+  if (schoolIds.length === 0) return null;
+  if (activeCoachSchoolId && schoolIds.includes(activeCoachSchoolId)) return activeCoachSchoolId;
+  return schoolIds[0];
 }
 
 /** The School the grading screens work in: the owner's, else the coach's. */
