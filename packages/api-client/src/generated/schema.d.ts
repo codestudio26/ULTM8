@@ -404,6 +404,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/role-grants/add-manually": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_createStaffManually"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises": {
         parameters: {
             query?: never;
@@ -3578,6 +3594,32 @@ export interface components {
             surname?: string | null;
             email?: string | null;
         };
+        CreateStaffManuallyDto: {
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @description Required — Branch Staff always belongs to a specific Branch (unlike Instructor, which only needs one when the School itself has branches). */
+            branchId: string;
+        };
+        CreateStaffManuallyResponseDto: {
+            id: string;
+            /** @enum {string} */
+            role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
+            userId: string;
+            userFirstName: string;
+            userSurname: string;
+            franchiseId?: string | null;
+            schoolId?: string | null;
+            branchId?: string | null;
+            grantedById?: string | null;
+            grantedAt: string;
+            revokedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            email: string;
+            /** @description False if the temp-passcode email could not be sent — the Staff account was still created. */
+            emailSent: boolean;
+        };
         CreateFranchiseDto: {
             name: string;
             mobileNumber?: string;
@@ -6518,6 +6560,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InviteCandidateResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_createStaffManually: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStaffManuallyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateStaffManuallyResponseDto"];
                 };
             };
         };

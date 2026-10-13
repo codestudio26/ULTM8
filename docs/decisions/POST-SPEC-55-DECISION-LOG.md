@@ -3231,8 +3231,6 @@ User, choosing "Scope it as a technical design exercise" over deferring entirely
 
 Developer, exercising the "implementation's call" latitude Decision 220 explicitly granted for the model/shape choice; the choice disclosed here (free text on `User`, both edit surfaces wired) rather than made silently, per this project's own "flag an ungrounded gap, don't fill it silently" rule, 12 Oct 2026.
 
----
-
 ## Decision 247 — White-label app distribution: one shared app, School selected after install — not a per-tenant App Store listing
 
 **Date:** 12 Oct 2026 · **Status:** Approved by product owner — architecture decided, nothing built yet
@@ -3291,7 +3289,30 @@ User, choosing "Route both iOS and Android through FCM" while the real credentia
 
 ---
 
-## Decision 251 — Entity-level tenant offboarding built for the 7 entities with no delete/archive mechanism: Branch, Class, TimetableSlot, Instructor, Rank, Waiver, Lesson
+## Decision 251 — Staff "Add Manually": same pattern as Instructor (Decision 237) — real record created immediately, temp passcode emailed, forced change on first login
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** Decision 237's own "What this does NOT resolve" section, which explicitly flagged this exact follow-up: "Whether `AccountInvitation`... should still exist for Staff's own identical from-zero-invite gap." Re-asked directly, the product owner's answer mirrors Decision 237 exactly: "Yes — same pattern as Instructor: real User+RoleGrant created immediately, temp passcode emailed, forced change on first login."
+
+1. **Mirrors Decision 1/230/237's Instructor "Add Manually" exactly** — a real `User` + `RoleGrant` (role: `BRANCH_STAFF`) created immediately from just a first name, surname, email, and branch, with no invite/acceptance step. "Staff" is not a separate `Role` or a profile table the way `Instructor` is its own table — it IS a `RoleGrant` row with `role: 'BRANCH_STAFF'` (`schema.prisma`'s `Role` enum has no separate `STAFF` value). So this closes the gap with only a `User` + `RoleGrant`, no third profile row the way Instructor's own flow also creates an `Instructor` row.
+2. **`branchId` is required outright**, not conditional on whether the School has branches the way Instructor's own flow is — `StaffPage.tsx`'s own existing `needsBranch` logic already treats `BRANCH_STAFF` as always needing a branch, and `RoleGrantsService.create()`'s own existing `dto.role === 'BRANCH_STAFF' && !dto.branchId` 400 check already enforces the same rule for an existing-user grant. `CreateStaffManuallyDto.branchId` makes this a validation-layer guarantee (`@IsUUID()`, no `@IsOptional()`), not a service-layer check.
+3. **First-login credential mechanism is untouched, reused as-is** — the same server-generated 6-digit temp passcode (bcrypt-hashed, `BCRYPT_ROUNDS = 12`), `User.mustChangePasscode`, and narrow passcode-change-only JWT (`POST /auth/passcode-change/first-login`) Decision 237 already built for Instructor. Nothing in `auth.service.ts`/`jwt.strategy.ts` changed — this is genuinely shared infrastructure, already role-agnostic.
+4. **Lives on `RoleGrantsService` directly** (`createStaffManually()`), not a new module/controller — `RoleGrantsService` already owns all Staff CRUD (its own `GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF']`), so adding this method there is the most consistent placement, not a new concern needing its own home. New endpoint: `POST /schools/:schoolId/role-grants/add-manually` — follows the existing `GET /schools/:schoolId/role-grants/invite-candidate` route's own `schools/:schoolId/role-grants/...` shape (Decision 116), same School-Owner gate, same 20/hour-per-account throttle tier as `InstructorsController`'s own add-manually route.
+5. **New `CreateStaffManuallyResponseDto` extends `RoleGrantResponseDto`** (not `InstructorResponseDto`'s firstName/surname/status shape) — a judgment call, since the task gave either option: the RoleGrant row this creates IS the Staff record (no profile table), and this also matches what `StaffPage.tsx`'s own existing "look up a user's grants" table already renders (`RoleGrantResponseDto`'s `userFirstName`/`userSurname`, joined from the User relation). `email`/`emailSent` added on top for the frontend's success banner.
+6. **Frontend:** new `apps/school-portal/src/roleGrants/AddStaffManuallyModal.tsx`, a second "Add staff manually" entry point on `StaffPage.tsx` beside the existing invite-by-email/phone form (which previously dead-ended with "No ULTM8 account found," full stop) — same non-blocking `emailSent` banner pattern `InstructorsPage.tsx` already uses for its own Instructor "Add Manually" flow.
+7. **Tests:** `apps/api/test/staff-add-manually.e2e-spec.ts` mirrors `instructors.e2e-spec.ts`'s own "Add Manually" coverage (happy path, duplicate email 409, non-owner 403, missing/cross-tenant branchId 400, full login-through-forced-passcode-change smoke test) minus the third-profile-row assertions. `apps/school-portal/e2e/staff-add-manually.spec.ts` mirrors `instructors.spec.ts`'s own Playwright coverage, modeled closely on it.
+
+### What this does NOT resolve
+
+Nothing further — this was the one remaining piece Decision 237 itself named as unresolved for Staff, and it is now closed the same way.
+
+### Recorded by
+
+User, confirming "Yes — same pattern as Instructor" when Decision 237's own flagged follow-up was re-asked directly, 12 Oct 2026.
+
+---
+
+## Decision 252 — Entity-level tenant offboarding built for the 7 entities with no delete/archive mechanism: Branch, Class, TimetableSlot, Instructor, Rank, Waiver, Lesson
 
 **Date:** 12 Oct 2026 · **Status:** Product-owner design decisions made directly this session (via AskUserQuestion), then built
 **Resolves:** Decision 226's own scoping ("approved to scope the full tenant-offboarding design now... the actual design is a separate, dedicated pass, not written here") for 7 of the 16 entities Decision 110 originally named — the remaining 9 (School, Franchise, MembershipPlan, Discipline, Skill, and the others Decision 110 lists) are untouched by this entry; School/Franchise already have Decision 110's own whole-tenant close-account flow, and MembershipPlan already has its own simpler archive (this session's earlier build).

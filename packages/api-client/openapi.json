@@ -1218,6 +1218,51 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/role-grants/add-manually": {
+      "post": {
+        "operationId": "RoleGrantsController_createStaffManually",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffManuallyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateStaffManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -10964,6 +11009,106 @@
         },
         "required": [
           "found"
+        ]
+      },
+      "CreateStaffManuallyDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required — Branch Staff always belongs to a specific Branch (unlike Instructor, which only needs one when the School itself has branches)."
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "email",
+          "branchId"
+        ]
+      },
+      "CreateStaffManuallyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "SCHOOL_OWNER_MANAGER",
+              "BRANCH_STAFF",
+              "INSTRUCTOR",
+              "FRANCHISE_OWNER",
+              "GUARDIAN"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userFirstName": {
+            "type": "string"
+          },
+          "userSurname": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "emailSent": {
+            "type": "boolean",
+            "description": "False if the temp-passcode email could not be sent — the Staff account was still created."
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "userId",
+          "userFirstName",
+          "userSurname",
+          "grantedAt",
+          "createdAt",
+          "updatedAt",
+          "email",
+          "emailSent"
         ]
       },
       "CreateFranchiseDto": {
