@@ -52,6 +52,26 @@ in-scope is deliberately deferred, not forgotten.
 - Fix the Membership authorization gap flagged in Slice 4a's review
   (`MembershipsService.findAllPlans()`/`purchase()` appear to have no tenant/enrollment
   check beyond a valid Student JWT) — a real security risk, must close before V1 ships.
+  ✅ **DONE — correction (13 Oct 2026): no code change was needed, only proof.**
+  `findAllPlans()` had already gained an explicit `assertSchoolOwner` gate in a prior
+  pass (its own "FOUND ON REVIEW (Track B Slice 4a)" comment). `purchase()`/
+  `findOnePlan()` were traced directly against `membership_plan_tenant_isolation`
+  (`prisma/migrations/20260912000000_memberships_transactions_module/migration.sql`):
+  it requires an active RoleGrant (any role) at the plan's School for the `ultm8_app`
+  Postgres role both methods run under via `withTenantContext` — the wider
+  `membership_plan_discovery_read` policy (`USING (true)` when `visible = true`) is
+  scoped `TO ultm8_discovery` only, a separate role used solely by
+  `AcademiesService`'s browse path, and never applies here. Proven live against the
+  real running API, not just read: a freshly created user with zero RoleGrant
+  anywhere got `404 Not Found` on both `GET /membership-plans/{id}` and
+  `POST /membership-plans/{id}/purchase` against another School's plan. This matches
+  the same RLS-only enforcement convention `BookingsService.bookClass()` already uses
+  for the same kind of Student self-service action — adding a redundant app-layer
+  check to `purchase()` alone would have been inconsistent with that established
+  pattern, not a fix. The one real gap was a missing regression test, not a missing
+  check — added as `test/memberships.e2e-spec.ts`'s new "an Outsider (no RoleGrant at
+  this School) cannot read or purchase a MembershipPlan here" case, passing against a
+  real local Postgres.
 - Extract the shared paginated-list component (now duplicated 4x across
   `ClassBookingRow`/`NotificationRow`/`MembershipRow`/the underlying list-screen shape).
   ✅ **DONE (2026-09-22), with a correction**: the screen-shell extraction this line

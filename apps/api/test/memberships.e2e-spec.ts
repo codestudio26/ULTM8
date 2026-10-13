@@ -371,6 +371,43 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   });
 
   // ---------------------------------------------------------------------------
+  // Purchase — an Outsider (a valid Student JWT, but zero RoleGrant anywhere at
+  // this School) is rejected on both reading and purchasing a plan.
+  //
+  // Flagged in docs/TRACK-B-ROADMAP.md as "MembershipsService.findAllPlans()/
+  // purchase() appear to have no tenant/enrollment check beyond a valid Student
+  // JWT" — traced directly against membership_plan_tenant_isolation
+  // (prisma/migrations/20260912000000_memberships_transactions_module/
+  // migration.sql): it requires an active RoleGrant (any role) at the plan's
+  // School for the ultm8_app role findOnePlan()/purchase() both run under —
+  // membership_plan_discovery_read's wider USING(true) is a separate policy
+  // scoped TO ultm8_discovery only (AcademiesService's browse path), and never
+  // applies here. So the flagged gap does not exist at the RLS layer; this test
+  // is the missing proof the roadmap note asked for, not a code fix — no
+  // application code changed.
+  // ---------------------------------------------------------------------------
+
+  it('an Outsider (no RoleGrant at this School) cannot read or purchase a MembershipPlan here — 404 both ways', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'TRIAL_MEMBERSHIP', title: 'Outsider-Blocked Trial', price: 0 });
+    expect(planRes.status).toBe(201);
+    membershipPlanIds.push(planRes.body.id);
+
+    const readRes = await request(app.getHttpServer())
+      .get(`/v1/membership-plans/${planRes.body.id}`)
+      .set('Authorization', `Bearer ${tokenOutsider}`);
+    expect(readRes.status).toBe(404);
+
+    const purchaseRes = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenOutsider}`)
+      .send({});
+    expect(purchaseRes.status).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
   // Purchase — Guardian-on-behalf-of-a-linked-minor (Phase 39).
   // ---------------------------------------------------------------------------
 
