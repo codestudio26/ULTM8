@@ -12,6 +12,9 @@ import { NotificationsScreen } from '../notifications/NotificationsScreen';
 import { WaiversScreen } from '../waivers/WaiversScreen';
 import { PaymentMethodsScreen } from '../payments/PaymentMethodsScreen';
 import { LessonsScreen } from '../curriculum/LessonsScreen';
+import { LessonDetailScreen } from '../curriculum/LessonDetailScreen';
+import { PlaylistsScreen } from '../curriculum/PlaylistsScreen';
+import { PlaylistDetailScreen } from '../curriculum/PlaylistDetailScreen';
 import { MinorConsentScreen } from '../guardians/MinorConsentScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
 import { KidModePinScreen } from '../kidmode/KidModePinScreen';
@@ -50,6 +53,17 @@ export function AppNavigator() {
       <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Payment Methods' }} />
       <Stack.Screen name="Lessons" component={LessonsScreen} options={{ title: 'Lessons' }} />
+      <Stack.Screen
+        name="LessonDetail"
+        component={LessonDetailScreen}
+        options={({ route }) => ({ title: route.params.lesson.title })}
+      />
+      <Stack.Screen name="Playlists" component={PlaylistsScreen} options={{ title: 'My Playlists' }} />
+      <Stack.Screen
+        name="PlaylistDetail"
+        component={PlaylistDetailScreen}
+        options={({ route }) => ({ title: route.params.name })}
+      />
       <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: 'My Minors' }} />
       <Stack.Screen name="MinorConsent" component={MinorConsentScreen} options={({ route }) => ({ title: route.params.name })} />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: 'Kid Mode' }} />
