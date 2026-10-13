@@ -343,6 +343,15 @@ export class CurriculumService {
     // A locked lesson shows what it is, not its content. The database applies
     // the same rule (Decision 208): content it won't give is null either way.
     const shown = locked ? null : content;
+    // Only once captionStatus is READY — Cloudflare Stream's own readiness
+    // (isVideoReady) and caption readiness are polled together by
+    // VideoProcessingPollScheduler and READY only once both are done (that
+    // scheduler's own header comment), so this never hands out a URL for a
+    // video still mid-transcode. getPublicPlaybackUrl itself never throws
+    // (plain string build, no network call) even when CloudflareStreamService
+    // isn't configured — it returns an obviously-placeholder "unconfigured"
+    // URL rather than a real one in that case.
+    const playbackUrl = shown?.videoRef && lesson.captionStatus === 'READY' ? this.cloudflareStream.getPublicPlaybackUrl(shown.videoRef) : null;
     return {
       ...rest,
       category: category?.name ?? null,
@@ -351,6 +360,7 @@ export class CurriculumService {
       description: shown?.description ?? null,
       videoRef: shown?.videoRef ?? null,
       captionTrackRef: shown?.captionTrackRef ?? null,
+      playbackUrl,
     };
   }
 

@@ -5944,6 +5944,8 @@ export interface components {
             /** @enum {string} */
             captionStatus: "PENDING" | "PROCESSING" | "READY" | "FAILED";
             captionTrackRef?: string | null;
+            /** @description The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment). */
+            playbackUrl?: string | null;
             skillIds: string[];
             /** @description Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198's own DELETE /lessons/{id} (always allowed) as a reversible alternative. */
             archivedAt?: string | null;
