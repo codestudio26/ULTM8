@@ -9,9 +9,9 @@ import { UpdateClassDto } from './dto/update-class.dto';
 import { ClassListResponseDto, ClassResponseDto } from './dto/class-response.dto';
 import { ClassesQueryDto } from './dto/classes-query.dto';
 
-// Class CRUD only this phase — no booking/waitlist, no TimetableSlot materialization.
-// See the Phase 4 kickoff prompt for the full scoping rationale. No delete endpoint,
-// same reasoning as School/Branch (general tenant offboarding is [UNRESOLVED]).
+// Class CRUD this phase, plus archive()/unarchive() (Decision 226/252 — stale
+// comment fixed: Class DOES have a real, reversible soft-archive mechanism now,
+// just no hard-delete endpoint).
 @ApiTags('classes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)

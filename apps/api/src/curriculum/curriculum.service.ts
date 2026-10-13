@@ -300,11 +300,6 @@ export class CurriculumService {
     });
   }
 
-  // No delete method — same reasoning as Discipline/Rank above (general tenant
-  // content offboarding is [UNRESOLVED]); doubly so here, since a Lesson may
-  // already be linked from a Student's profile or the grading flow by the time
-  // any real UI calls this.
-
   // ---------------------------------------------------------------------------
   // Shared response shaping
   // ---------------------------------------------------------------------------
