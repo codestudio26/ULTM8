@@ -24,22 +24,21 @@ export function useMyProfile() {
  * header comment: both are unique login/OTP identifiers that need re-verification
  * care, not a bare PATCH field — deferred, not an oversight) and `profilePhotoUrl`
  * (UpdateUserDto takes a plain URL string, `@IsUrl()`-validated, not an upload
- * flow — unlike WaiverSignature's dedicated `signature-upload-url` endpoint,
- * nothing resolves "pick a photo" to a URL for this field yet, so a UI for it
- * would mean asking someone to paste a URL, which isn't a real feature). Both
- * are real, confirmed gaps, not guessed around here.
+ * flow — nothing resolves "pick a photo" to a URL for this field in this
+ * screen). Both are real, confirmed gaps, not guessed around here.
  *
- * `UpdateUserDto`'s optional fields (gender/nationality/address/username/
- * language/currency) are typed `string | undefined`, never `| null` —
- * `undefined` (an omitted key) is Prisma's own "leave this field alone"
- * signal (`users.service.ts`'s `updateMe`: `data: { ... }` with undefined
- * values spread straight through), and the generated client's type for this
- * DTO has no `null` variant to send instead. So once a Student sets one of
- * these, there is no type-safe call this client can make to blank it back to
- * empty — ProfileScreen sends `undefined` for an empty field, which leaves
- * the previous value in place rather than clearing it. A real, confirmed
- * contract gap (the DTO's own type, not a client shortcut), not worked
- * around with an unchecked cast. */
+ * `UpdateUserDto`'s username/gender/nationality/language/currency/address (and
+ * weightCategory/kimonoSize/beltSize) are now typed `string | null`, not just
+ * `string | undefined` — closing what used to be a real contract gap: each is
+ * nullable on `User` itself and the backend already cleared it on an explicit
+ * `null` (confirmed in `users.e2e-spec.ts`'s own round-trip test for
+ * weightCategory/kimonoSize/beltSize), but the DTO's own type never admitted
+ * `null`, so no generated client — this one included — could construct a
+ * type-safe call to blank one of these back out. `ProfileScreen` now sends
+ * `null`, not `undefined`, for the four plain-text fields it lets a Student
+ * clear (username/gender/nationality/address) — see its own header comment for
+ * why `language`/`currency` (picker-only fields with no "none" option in this
+ * screen's UI) are deliberately left out of that change for now. */
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({

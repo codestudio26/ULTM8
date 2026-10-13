@@ -15,6 +15,31 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fixed the undefined-vs-null `PATCH /users/me` contract gap** (`apps/api`,
+  plus Track B's `apps/student`, `docs/TRACK-B-ROADMAP.md` "My Profile"
+  section). `UpdateUserDto`'s username/gender/nationality/language/currency/
+  address/weightCategory/kimonoSize/beltSize were typed `string | undefined`
+  only — each is nullable on `User` and `UsersService.updateProfileFor` already
+  cleared it correctly on an explicit `null` (confirmed for weightCategory/
+  kimonoSize/beltSize by a pre-existing `users.e2e-spec.ts` round-trip test),
+  but the DTO's own type never admitted `null`, so no generated client could
+  construct a type-safe call to actually send one. Now typed `string | null`
+  for all nine fields (no backend logic change — `@IsOptional()` already skips
+  validation for both `null` and `undefined`, verified directly against the
+  installed `class-validator`'s own source). `apps/student`'s `ProfileScreen.tsx`
+  now sends `null`, not `undefined`, for its plain-text fields when cleared —
+  safe there because every field is always pre-filled from the real current
+  profile, so blank unambiguously means "clear it." `apps/school-portal`'s
+  `StudentUpdatePage.tsx` deliberately left untouched: its fields start blank
+  by design (no single-Student full-profile read endpoint exists yet), so
+  blank there still has to mean "leave alone," not "clear" — adopting this
+  fix there would risk a Staff member accidentally wiping a field they never
+  touched. `language`/`currency` on `ProfileScreen` also left out of the
+  UI-level fix (though not the type fix) — neither picker offers a "none"
+  selection, so there's nothing to send `null` for yet. New e2e coverage
+  (`users.e2e-spec.ts`) and a new `apps/student/src/profile/profileEdit.test.tsx`
+  (4 tests). `packages/api-client` regenerated.
+
 - **Entity-level tenant offboarding for 7 entities with no delete/archive
   mechanism before now** (Decision 226) — Branch, Class, TimetableSlot,
   Instructor, Rank, Waiver, Lesson each get a real "Delete" action, usable
