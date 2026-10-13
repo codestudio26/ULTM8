@@ -349,9 +349,9 @@ export class TimetableService {
     return this.toResponse(updated);
   }
 
-  // No delete method — general tenant offboarding is [UNRESOLVED]
-  // (ultm8-app-publishing §4 — not ultm8-domain-rules §2, which covers Franchise/
-  // School/Branch structure, not offboarding), same reasoning as School/Branch/Class.
+  // No hard-delete endpoint — stale comment fixed: TimetableSlot DOES have a
+  // real, reversible archive()/unarchive() pair above (Decision 226/252), not
+  // "no mechanism" the way this comment used to claim.
 
   // Whether two TimetableSlots may overlap for the same Instructor (or the same
   // Branch/room) in time is not addressed anywhere in Spec 55 — no confirmed rule
