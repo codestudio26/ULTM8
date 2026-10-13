@@ -3135,3 +3135,177 @@ Whether `School.defaultCurrency`/`Branch.currencyOverride`/`User.currency`/`Memb
 
 User, after being told explicitly that Stripe's own supported-currency set is the practical ceiling since every payment routes through Stripe, 12 Oct 2026.
 
+---
+
+## Decision 242 — Notifications page: Broadcast/compose, Snooze, and the Read-within-24h metric, all three built as scoped
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "Notifications page" section flagged three gaps against this module's real, narrow API surface (`GET /notifications/me`, `PATCH /notifications/:id/read`, `GET /notifications/me/counts`) — no endpoint for Staff to author a Notification, no snoozed/deferred state anywhere in the schema, and no timestamped read event to compute a time-to-read metric from. The product owner was given explicit trade-offs for each and approved all three as scoped below — nothing more (Delete and Push delivery rate, both shown on the same concept mockups, remain the backlog's own open items).
+
+1. **Broadcast/compose** — `POST /schools/:schoolId/notifications/broadcast`, School-Owner-gated same as Waiver/MembershipPlan CRUD. Three audience scopes: **All Students** (default), **one Branch** (via the real `StudentHomeBranch` model, Decisions 139/148 — intersected with an active `STUDENT` RoleGrant, since a home-Branch row can outlive the enrollment that created it), and **one Class's real roster** (every Booking against that Class, any status — the same shape `BookingsService.findAllForClass` already uses, deliberately not re-derived). Enqueues through the existing `notification-fanout` queue only, reusing `WaiverSignatureRequestsProcessor`'s own per-recipient job-dedup pattern (`notificationId`/`jobId` derived from one `broadcastId` + each recipient). Lives in its own module (`NotificationBroadcastModule`), not inside `NotificationsModule` — `NotificationsModule` is already imported BY `TenantsModule` (for `NotificationDeliveryService`), so importing `TenantsModule` back into it for `TenantAuthorizationService`/`SchoolsService` would be a genuine circular module dependency with no `forwardRef` precedent anywhere in this codebase; a separate module importing `TenantsModule` + `QueueModule`, imported by nothing, avoids that entirely.
+2. **Snooze** — new `Notification.snoozedUntil DateTime?` column; `PATCH /notifications/:id/snooze` takes either an explicit `until` timestamp or a `minutes` duration (a Developer-level presentation choice, not a business rule — the backlog's own note flagged needing *a* decision on shape, not a specific one). `GET /notifications/me/counts`'s `unread` total live-excludes a currently-snoozed Notification (`snoozedUntil` in the future) — computed the same "don't wait on a sweep job for correctness" way `Membership.status`'s own live-computed expiry already works in this codebase. A new scheduled `notification-unsnooze-sweep` job (same registration/retry shape as `booking-no-show-processing`) separately clears an elapsed `snoozedUntil` in storage, so the column itself doesn't keep claiming "still snoozed" long after the live computation already disagrees.
+3. **Read within 24h** — new `Notification.readAt DateTime?` column, set the first time `PATCH /notifications/:id/read` fires and never overwritten after (`NotificationsService.markRead`). `GET /notifications/me/counts` gains `readWithin24hPercent` (null until the caller has read at least one Notification — an unread Notification is excluded from both the numerator and denominator, never counted as a miss), plus `readWithin24hCount`/`readTotalCount` for transparency.
+4. **Frontend (`apps/school-portal`):** `NotificationsPage.tsx`'s row action menu is now a real `RowActionsMenu` (replacing the old always-visible "Mark read" `Button`) with working Mark read + Snooze items and a new "Snoozed" status badge; a School-Owner-only "Broadcast to Students" header action opens `BroadcastNotificationModal.tsx`; the stats ribbon gains a third "Read within 24h" tile alongside Total/Unread.
+
+### What this does NOT resolve
+
+Delete (`DELETE /notifications/:id`) and Push delivery rate — both shown on the same concept mockups this backlog entry references — were explicitly out of scope for tonight's approval and remain open, per the backlog doc's own updated entry.
+
+### Recorded by
+
+User, after being given explicit trade-offs for each of the three features, 12 Oct 2026.
+
+---
+
+## Decision 243 — Track B Slice 4b (fresh-card membership purchase): a hosted Stripe Checkout Session (`mode: 'payment'`), not a native PaymentSheet dev client — extends Decision 238's `mode: 'setup'` pattern
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** `docs/TRACK-B-ROADMAP.md`'s Slice 4b — `MembershipsService.purchase()`'s fresh-card Stripe path returns `{ outcome: 'requires_payment', clientSecret, transactionId }`, a PaymentIntent client secret meant for Stripe Elements/PaymentSheet confirmation. `apps/student` is plain Expo-managed with no custom native dev client (Decision 113) and has no Stripe native SDK dependency at all (Decision 238's own header comment), so that outcome has been a dead end from this app since Slice 4a shipped — shown honestly as "online payment isn't available in the app yet" rather than built against a guess.
+
+**Real precedent already existed in this exact codebase for exactly this situation**: Decision 238 built a hosted Stripe Checkout Session (`mode: 'setup'`) for saving a card — opened in the device's browser via `expo-web-browser`, confirmed via the `checkout.session.completed` webhook, no native SDK needed at all. The product owner approved extending this same pattern to a one-time fresh-card purchase, instead of adopting `@stripe/stripe-react-native`'s PaymentSheet and the native-dev-client workflow change the roadmap's own Slice 4b research had flagged as the real open decision.
+
+1. **New `PaymentsService.createPurchaseCheckoutSession()`** — a Checkout Session in `mode: 'payment'` (not `'setup'`), with an inline `price_data`/`product_data` line item for the plan's exact amount/currency/title (same simplification `charge()`/`subscribe()` already use — no persisted MembershipPlan↔Stripe Product mapping). Same hosted-browser, same `ultm8-student://` auto-return scheme as Decision 238, different success/cancel paths (`membership-purchase/complete`/`cancel`).
+2. **Deliberately reuses the EXISTING `payment_intent.succeeded` webhook handler** (`StripeWebhookProcessingProcessor.handlePaymentIntentSucceeded`) as the completion signal — **no change to `stripe-webhook-processing.processor.ts` at all.** Verified directly against the installed Stripe SDK's own type definitions before relying on this: a `mode: 'payment'` Checkout Session creates its underlying PaymentIntent SYNCHRONOUSLY at Session-creation time (`Session.payment_intent` is a real, expandable field the instant `sessions.create()` returns — the identical shape `subscribe()`'s own `expand: ['latest_invoice.payment_intent']` already relies on). `createPurchaseCheckoutSession()` expands and returns that PaymentIntent id, and `MembershipsService`'s new `purchaseViaHostedCheckout()` stashes it on the Transaction at creation time — exactly the shape the pre-existing `charge()`/`requires_payment` branch already produces. Once the Student completes payment on the hosted page, Stripe fires `payment_intent.succeeded` for that same PaymentIntent, already matched, collision-resolved (the two-simultaneous-Active-Membership race), and turned into a Membership by the handler that already exists.
+3. **Deliberately NOT a new `checkout.session.completed` branch for `mode: 'payment'`**, despite that being the shape Decision 238's own `mode: 'setup'` flow needed: Stripe fires BOTH `checkout.session.completed` and `payment_intent.succeeded` for a successful card Checkout, and building a second Membership-creation path keyed off the Session would duplicate `handlePaymentIntentSucceeded`'s own logic for no benefit, while opening a real risk of the two deliveries racing each other — a second source of truth, not a safer one. A Setup Intent (Decision 238's own case) has no Transaction/Membership of its own to settle, which is why that flow genuinely needed the Session-completion event and this one doesn't.
+4. **`PurchaseMembershipDto.useHostedCheckout`** — scoped identically to Decision 236's `payWithSavedCard` (CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only; SUBSCRIPTION and a Cash/Bank-provider School both rejected 400, before any Stripe call), mutually exclusive with `payWithSavedCard`. Unlike `payWithSavedCard`, **not** rejected for a Guardian-driven purchase — the hosted Checkout page opens in whoever is calling the endpoint's own browser session (the Guardian's, in practice), the same "completes it in their own app session" shape the SUBSCRIPTION/fresh-card branches already rely on; no saved-payment-method lookup is involved, so `payWithSavedCard`'s self-only restriction doesn't apply.
+5. **Response gains a new outcome**, `requires_checkout`, with `checkoutUrl` (alongside the existing `clientSecret` for `requires_payment`) — a natural sibling to `requires_payment`/`pending_confirmation`/`active`, not a bolted-on parallel field.
+6. **`apps/student`'s `MembershipPlanRow`**: "Purchase" now always sends `useHostedCheckout: true` (this app has no other way to complete a Stripe-paid purchase), and on `requires_checkout` opens `checkoutUrl` via the exact same `WebBrowser.openAuthSessionAsync` call Decision 238's card-saving flow already uses, same `ultm8-student://` scheme. Mirrors that same screen's own documented choice exactly: one refetch (here, invalidating the My Memberships query cache via a new `useInvalidateMyMemberships()` hook) right after the browser session ends, accepting a brief staleness window — the real confirmation is the async webhook — rather than an infinite poll/retry loop. A SUBSCRIPTION plan still returns `requires_payment` (unchanged, still a dead end in this app) — `PaymentsService.subscribe()`'s own pre-existing "throwaway Customer every call" limitation, same scope boundary `payWithSavedCard` already respects, not fixed here.
+
+### What this does NOT resolve
+
+Same two items Decision 239 already flagged, untouched by this decision: `PaymentsService.subscribe()`'s "throwaway Customer every call" limitation (blocks a hosted-Checkout or saved-card path for SUBSCRIPTION plans alike), and Guardian-driven saved-card reuse for a linked minor (a design question about whose card that even means). Also unresolved: `AcademyMembershipPlanDto`'s own pre-existing lack of a `requiresOnlinePayment`/provider signal (Slice 4a's own flagged follow-up) — a tap on "Purchase" for ANY Stripe-backed plan still runs the real server-side `purchase()` branch and creates a live Checkout Session before the client can pre-filter; this was already true for `requires_payment` and remains true for `requires_checkout`, not worsened or improved by this decision.
+
+### Recorded by
+
+User, approving the extension of Decision 238's hosted-Checkout pattern to a one-time purchase instead of adopting a native PaymentSheet dev client, 12 Oct 2026.
+
+---
+
+## Decision 244 — Notifications keep no hard-delete; every Notification stays a permanent record
+
+**Date:** 12 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** whether `DELETE /notifications/:id` should exist — flagged as explicitly out of scope by Decision 242's own "What this does NOT resolve" note, and shown disabled-styled on the Notifications concept mockups this whole redesign has been building against.
+
+No delete endpoint is built. A Notification behaves the same way a Waiver signature or a Transaction already does in this codebase — a permanent, append-only record of something that happened, never user-deletable. Snooze (Decision 222) already covers "get this out of my unread list without destroying it," which was the actual user-facing need the mockup's disabled Delete button was gesturing at. No code change — this decision closes the open question against the already-shipped, delete-free behavior.
+
+### Recorded by
+
+User, choosing "Keep as permanent record, no delete" over adding a real `DELETE /notifications/:id`, 12 Oct 2026.
+
+---
+
+## Decision 245 — GDPR/LGPD data residency and per-user erasure: scoped as a technical design exercise, not yet built, not legal advice
+
+**Date:** 12 Oct 2026 · **Status:** Scoped by product owner request — **design only, nothing built, requires legal review before any of this is implemented**
+**Resolves:** the systemic tracking gap `docs/ULTM8-MASTER-ROADMAP.md` has carried since Decision 110 explicitly excluded it ("An individual Student/User's 'erase my personal data' request is a different legal mechanism... a different trigger... a different technical shape") — this entry gives that gap its own first design pass, at the product owner's explicit request, with the explicit caveat that none of the below is legal advice and real counsel must review the actual retention-period and residency requirements before this is built against any real EU/Brazil user.
+
+**This decision records technical design OPTIONS, not a chosen implementation** — nothing here authorizes building any of it yet.
+
+1. **Per-user erasure (GDPR Art. 17 / LGPD Art. 18, right to erasure).** Two real technical shapes exist in this codebase's own precedent:
+   - **Anonymize-in-place** (same shape Decision 110 already uses for School/Franchise soft-archive, extended to a single `User` row): null out `firstName`/`surname`/`email`/`phone`/`dateOfBirth`/`passcodeHash`/any R2-stored photo, replace with a stable placeholder (`"Erased User"` + a retained internal id for FK integrity), but leave `Transaction`/`WaiverSignature`/`Booking`/`StudentRank` rows intact and still linked — satisfies "erase personal data" while preserving the financial/legal/audit trail every one of those tables already exists to protect (payment records, signed legal documents, grading history). This is the standard approach SaaS platforms with billing/legal-record obligations use, since GDPR Art. 17(3)(b)/(e) and LGPD Art. 16 both carve out exceptions for legal/contractual retention obligations — exactly the carve-out a real lawyer needs to confirm applies to each specific row type here.
+   - **Hard-delete the User row and cascade:** simpler to reason about, but breaks referential integrity on every table above (a Transaction with no User would be a corrupted financial record, not a compliant one) — not recommended without first building a parallel "erasure log" that is itself a financial/legal record outliving the erased User, which is more engineering, not less.
+   - **Recommendation if/when this gets built:** anonymize-in-place, gated behind a new Platform-Admin-mediated action (same authorization tier as Decision 110's close-account action), with its own confirmation step and an audit row recording who erased whom and when (the erasure log itself is the one thing that must NOT be erasable).
+2. **Data residency.** Spec 55 §11.6 already commits to AWS (RDS/ElastiCache/Fargate) as the confirmed infra target, but no region has ever been chosen in any decision-log entry — `infra/terraform/` has no region-pinning today. Two shapes: a single-region deployment (simplest, but may not satisfy an EU customer's residency requirement) vs. a region-per-tenant-market architecture (Franchise or School carries a `dataRegion` field, provisioning routes to the matching AWS region's database) — the second is a substantial infra/deployment redesign, not a schema tweak, and should not be started speculatively before a real customer contract requires it.
+3. **What this does NOT resolve:** which specific markets/customers actually require either of these (that's a sales/legal question, not an engineering one), the actual retention periods required by GDPR/LGPD for financial records in this specific business (payment processors and most jurisdictions require 5-7 years minimum for transaction records — a lawyer must confirm the real number, not this document), and whether `Waiver`'s own still-pending retention period (Decision 110's one remaining open piece) should be decided together with this or separately.
+
+### Recorded by
+
+User, choosing "Scope it as a technical design exercise" over deferring entirely or holding for legal counsel first, 12 Oct 2026.
+
+---
+
+## Decision 246 — Student Measurements built: three real nullable `String` fields on `User`, free text, wired into both existing profile-edit surfaces
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** Decision 220's own "implementation's call which [model]" — the model/shape choice Decision 220 deliberately left open when approving Student Detail's Measurements fields (Weight Category, Kimono Size, Belt Size) for build.
+
+1. **Model placement: `User`, not `StudentRank`.** `weightCategory`, `kimonoSize`, `beltSize` — three new nullable `String?` columns, camelCase matching every other `User` field's convention. Person-level physical attributes that don't vary by Discipline, so `User` (ULTM8's shared base identity) is the right home; `StudentRank` is per-Student-per-Discipline grading data and would be the wrong home — a Student's kimono size doesn't change between their Judo and Karate enrollments.
+2. **Shape: free-text `String?`, not an enum or a typed unit.** Nothing in Spec 55, `skills/ultm8-domain-rules/SKILL.md`, or this schema grounds any enum, unit system, or canonical code list for any of the three — exactly the gap `docs/v1.2-backend-backlog.md` had flagged (Fully Proposed). Free text is a developer-level presentation choice, not an invented business rule, same convention already used elsewhere in this codebase for an ungrounded field shape (e.g. Decision 222's Snooze shape) and the same shape this model's own existing `gender`/`nationality`/`language`/`currency` columns already use for the identical reason. `@MaxLength(50)` on all three — a reasonable bound, not a confirmed limit.
+3. **Both existing Student profile-edit surfaces wired, via the SAME change.** `UpdateUserDto` gains all three fields (`@IsOptional() @IsString() @MaxLength(50)`), and `UserResponseDto` gains them as the read side. Because `UpdateStudentProfileDto` (the Staff-on-behalf-of-a-Student DTO, `PATCH /schools/:id/students/:studentId/profile`) already `extends UpdateUserDto` outright, and both that endpoint and the Student's own self-service `PATCH /users/me` already share `UsersService.updateProfileFor()`, adding the three fields to `UpdateUserDto` once wires BOTH surfaces — no second DTO, no second service method, no drift risk between them. This is the same reasoning `UpdateStudentProfileDto`'s own header comment already gives for reusing `UpdateUserDto` wholesale instead of hand-copying a field list.
+4. **Frontend:** `StudentUpdatePage.tsx` (`apps/school-portal`, Staff-on-behalf-of) and `ProfileScreen.tsx` (`apps/student`, the Student's own self-service profile editor) both gain the three fields as plain text inputs. Wiring the self-service surface too (not just the Staff one) was a judgment call, not mandated by Decision 220's wording — made because a Student editing their own kimono/belt size on their own profile is a practical, everyday edit, no different in kind from the gender/nationality/address fields that screen already lets them change themselves.
+5. **Migration** `20261112000000_student_measurements` — three nullable `TEXT` columns added to `"User"`, no GRANT/RLS change needed (a table-level grant already covers `User`; adding nullable columns needs no new grant, same reasoning `20261107000000_branch_settings_fields` already gives for the same situation on `Branch`).
+6. **`packages/api-client` regenerated** from the live OpenAPI export. New e2e coverage added to `users.e2e-spec.ts` (self-service) and `student-profile-update.e2e-spec.ts` (Staff-on-behalf-of): each field round-trips set → read back → cleared with an explicit `null`, a `@MaxLength(50)` rejection case, and an explicit check that cross-tenant isolation is unaffected (plain `User` columns under the existing RLS policies — no new cross-tenant surface).
+7. **`docs/v1.2-backend-backlog.md`'s Measurements entry** updated from "Fully Proposed" to DONE, dated.
+
+### Recorded by
+
+Developer, exercising the "implementation's call" latitude Decision 220 explicitly granted for the model/shape choice; the choice disclosed here (free text on `User`, both edit surfaces wired) rather than made silently, per this project's own "flag an ungrounded gap, don't fill it silently" rule, 12 Oct 2026.
+
+## Decision 247 — White-label app distribution: one shared app, School selected after install — not a per-tenant App Store listing
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner — architecture decided, nothing built yet
+**Resolves:** the Apple 4.2.6 ("Minimum Functionality")/4.3 ("Spam") template-farm compliance risk that has blocked `MobileAppPublishingModule`/`packages/build-pipeline`, Track B Phase 9, and `SubscriptionPlansModule`'s deferred `whiteLabelApp` entitlement since it was first flagged in `docs/ULTM8-MASTER-ROADMAP.md`. Apple's policy explicitly targets exactly the pattern `skills/ultm8-app-publishing/SKILL.md` had assumed — many interchangeable apps differing only in branding/content, submitted from one shared codebase — and has a documented history of mass-removing exactly this shape of app without individual warning (gym-chain/fitness-SaaS "white-label app factories" are the canonical example).
+
+**Decision:** one single app, submitted once, in the App Store. A Student/Guardian/Staff member picks (or is routed to) their own School after install — via a join code, an email-domain match, or a simple School search/select screen — rather than each School getting its own separate listing/icon. In-app theming (colors, logo, School name shown in headers) still applies per-tenant once a session is scoped to a School; what does NOT exist is a separate App Store Connect entry, bundle id, or app icon per School.
+
+1. **Why this over the alternatives considered:** a true per-School native-app fleet is the highest-risk option — it is the exact pattern Apple's policy is written to catch, and avoiding rejection would require either genuine per-app functional differentiation (not just branding) or Apple's Custom Apps enterprise program, which is designed for internal company distribution, not a consumer-facing minor/guardian-data app. A PWA ("Add to Home Screen") sidesteps App Store review entirely but was not chosen — it gives up native push-notification quality and some camera/QR-scan UX polish this product already depends on (QR check-in, step-up re-auth flows). The one-shared-app model is the approach established fitness/gym-SaaS platforms (Mindbody, Glofox, and similar) actually ship today, confirming it is a proven, non-speculative pattern for this exact business shape.
+2. **What this decision does NOT do:** it does not design the actual School-selection UX (join code vs. search vs. domain-match), does not resolve how/whether a School still gets ANY visual distinction (app icon badge, splash screen) within the single-app constraint, and does not touch `MobileAppPublishingModule`/`packages/build-pipeline`'s own still-fully-unbuilt status — those remain genuinely unbuilt and need their own dedicated build pass, now unblocked to start, but not scoped by this entry.
+3. **Downstream effect:** `skills/ultm8-app-publishing/SKILL.md`'s existing entitlement model, publishing pipeline, and `TenantAppConfig` design assumed the per-tenant-app shape and need a fresh pass reconciling them against this decision before any of that module gets built — flagged here, not resolved here.
+
+### Recorded by
+
+User, choosing "One shared app, School picked after install" over a true per-tenant app fleet or a PWA, when presented with Apple's specific policy risk and the market precedent, 12 Oct 2026.
+
+---
+
+## Decision 248 — Track B native Stripe PaymentSheet: deferred, hosted Checkout stays the shipped path
+
+**Date:** 12 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** whether to additionally build `@stripe/stripe-react-native`'s native PaymentSheet in-app card form for Track B's fresh-card membership purchase, now that Decision 243's hosted-Checkout path (opens in the device browser via `expo-web-browser`, no native SDK) already ships end-to-end tonight.
+
+Deferred. The native PaymentSheet would be a UX improvement only (staying in-app instead of one browser hand-off) — not a functional gap, since Decision 243's path already works fully. Building it requires moving `apps/student` off Expo's fully-managed workflow onto a custom dev client (EAS Build, slower over-the-air update story going forward) — a real, one-time infrastructure cost not currently justified by a UX-polish-only improvement. Revisit only if a separate feature independently forces the native-dev-client move, so that infrastructure tax is paid once for a real reason, not twice.
+
+### Recorded by
+
+User, choosing "Defer — hosted Checkout is good enough for now" over taking on the native dev-client migration now, 12 Oct 2026.
+
+---
+
+## Decision 249 — WEEKLY_PASS DOES use `expiryDurationDays`; the DTO's "Not used by WEEKLY_PASS" comment was simply wrong
+
+**Date:** 12 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** `docs/v1.2-backend-backlog.md`'s flagged contradiction between Spec 55 §6.1 (Weekly Pass "governed by an expiry date instead of a recurring billing cycle," implying `expiryDurationDays` applies) and `CreateMembershipPlanDto.expiryDurationDays`'s own field description ("Not used by WEEKLY_PASS").
+
+**Verified directly against the actual runtime code before asking:** `MembershipsService.createMembershipAndReturn()` (memberships.service.ts, the line computing `expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24*60*60*1000) : undefined`) already applies `expiryDurationDays` uniformly across every plan type, with no WEEKLY_PASS exception anywhere in that path. The actual behavior already matches Spec 55's reading — only the DTO's field-description comment (and `MembershipPlanFormPage.tsx`'s field-visibility reasoning, if it still cites the old claim) was wrong. No behavior change; this decision authorizes correcting the stale comment/doc text, not a code change.
+
+### Recorded by
+
+User, choosing "Confirm Spec 55's reading" after being shown the actual runtime code already matches it, 12 Oct 2026.
+
+---
+
+## Decision 250 — Push notification delivery: route both iOS and Android through FCM
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner — architecture decided, still blocked on real credentials
+**Resolves:** which delivery architecture `DeviceToken`'s real SEND implementation (Decision 223) should target, while the product owner provisions the real Firebase/APNs credentials that decision already flagged as a prerequisite.
+
+Both platforms route through Firebase Cloud Messaging — FCM can deliver to APNs under the hood for iOS, so the backend needs one integration point (one SDK, one credential set) instead of maintaining a separate direct-APNs client alongside FCM for Android. This is the standard, well-supported pattern for a cross-platform app and was chosen over maintaining two independent native pipelines, which would only be justified by a specific reason to avoid routing iOS push through Firebase — none exists here.
+
+**Still blocked:** Decision 223's own prerequisite stands — real FCM and Apple Push Notification service credentials, provisioned by the product owner (a Firebase project, and an Apple Developer Program membership if one doesn't already exist), are required before any of this can be built against a real device.
+
+### Recorded by
+
+User, choosing "Route both iOS and Android through FCM" while the real credentials are still pending, 12 Oct 2026.
+
+---
+
+## Decision 251 — Staff "Add Manually": same pattern as Instructor (Decision 237) — real record created immediately, temp passcode emailed, forced change on first login
+
+**Date:** 12 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** Decision 237's own "What this does NOT resolve" section, which explicitly flagged this exact follow-up: "Whether `AccountInvitation`... should still exist for Staff's own identical from-zero-invite gap." Re-asked directly, the product owner's answer mirrors Decision 237 exactly: "Yes — same pattern as Instructor: real User+RoleGrant created immediately, temp passcode emailed, forced change on first login."
+
+1. **Mirrors Decision 1/230/237's Instructor "Add Manually" exactly** — a real `User` + `RoleGrant` (role: `BRANCH_STAFF`) created immediately from just a first name, surname, email, and branch, with no invite/acceptance step. "Staff" is not a separate `Role` or a profile table the way `Instructor` is its own table — it IS a `RoleGrant` row with `role: 'BRANCH_STAFF'` (`schema.prisma`'s `Role` enum has no separate `STAFF` value). So this closes the gap with only a `User` + `RoleGrant`, no third profile row the way Instructor's own flow also creates an `Instructor` row.
+2. **`branchId` is required outright**, not conditional on whether the School has branches the way Instructor's own flow is — `StaffPage.tsx`'s own existing `needsBranch` logic already treats `BRANCH_STAFF` as always needing a branch, and `RoleGrantsService.create()`'s own existing `dto.role === 'BRANCH_STAFF' && !dto.branchId` 400 check already enforces the same rule for an existing-user grant. `CreateStaffManuallyDto.branchId` makes this a validation-layer guarantee (`@IsUUID()`, no `@IsOptional()`), not a service-layer check.
+3. **First-login credential mechanism is untouched, reused as-is** — the same server-generated 6-digit temp passcode (bcrypt-hashed, `BCRYPT_ROUNDS = 12`), `User.mustChangePasscode`, and narrow passcode-change-only JWT (`POST /auth/passcode-change/first-login`) Decision 237 already built for Instructor. Nothing in `auth.service.ts`/`jwt.strategy.ts` changed — this is genuinely shared infrastructure, already role-agnostic.
+4. **Lives on `RoleGrantsService` directly** (`createStaffManually()`), not a new module/controller — `RoleGrantsService` already owns all Staff CRUD (its own `GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF']`), so adding this method there is the most consistent placement, not a new concern needing its own home. New endpoint: `POST /schools/:schoolId/role-grants/add-manually` — follows the existing `GET /schools/:schoolId/role-grants/invite-candidate` route's own `schools/:schoolId/role-grants/...` shape (Decision 116), same School-Owner gate, same 20/hour-per-account throttle tier as `InstructorsController`'s own add-manually route.
+5. **New `CreateStaffManuallyResponseDto` extends `RoleGrantResponseDto`** (not `InstructorResponseDto`'s firstName/surname/status shape) — a judgment call, since the task gave either option: the RoleGrant row this creates IS the Staff record (no profile table), and this also matches what `StaffPage.tsx`'s own existing "look up a user's grants" table already renders (`RoleGrantResponseDto`'s `userFirstName`/`userSurname`, joined from the User relation). `email`/`emailSent` added on top for the frontend's success banner.
+6. **Frontend:** new `apps/school-portal/src/roleGrants/AddStaffManuallyModal.tsx`, a second "Add staff manually" entry point on `StaffPage.tsx` beside the existing invite-by-email/phone form (which previously dead-ended with "No ULTM8 account found," full stop) — same non-blocking `emailSent` banner pattern `InstructorsPage.tsx` already uses for its own Instructor "Add Manually" flow.
+7. **Tests:** `apps/api/test/staff-add-manually.e2e-spec.ts` mirrors `instructors.e2e-spec.ts`'s own "Add Manually" coverage (happy path, duplicate email 409, non-owner 403, missing/cross-tenant branchId 400, full login-through-forced-passcode-change smoke test) minus the third-profile-row assertions. `apps/school-portal/e2e/staff-add-manually.spec.ts` mirrors `instructors.spec.ts`'s own Playwright coverage, modeled closely on it.
+
+### What this does NOT resolve
+
+Nothing further — this was the one remaining piece Decision 237 itself named as unresolved for Staff, and it is now closed the same way.
+
+### Recorded by
+
+User, confirming "Yes — same pattern as Instructor" when Decision 237's own flagged follow-up was re-asked directly, 12 Oct 2026.

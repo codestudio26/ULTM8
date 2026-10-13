@@ -20,7 +20,7 @@ Detail for each Slice is in its own section below; this table is the map.
 |---|---|---|---|
 | 1 | **Foundation** | 1 (walking skeleton), 2 (booking/waitlist), 3 (rank/grading) | ✅ DONE |
 | 2 | **Engagement** | 5 (notifications, read-side) | ✅ DONE |
-| 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe/PaymentSheet) | 4a ✅ DONE; 4b blocked on your decision |
+| 3 | **Commerce** | 4a (Cash/Bank membership purchase + My Memberships), 4b (Stripe fresh-card purchase) | 4a ✅ DONE; 4b ✅ DONE (12 Oct 2026, Decision 243 — hosted Stripe Checkout, not PaymentSheet) |
 | 4 | **Compliance & Guardian** | 6a (waiver signing, typed name), 6b (drawn-signature), 7 (Guardian-facing screens) | 6a ✅ DONE; 7 ✅ candidate committed (My Minors + consent grant/withdraw); 6b ✅ DONE (11 Oct 2026) — **correction (12 Oct 2026): this row was stale.** The backend (`WaiverSignature.signatureImageKey`, the DTOs, `POST /waivers/{id}/signature-upload-url`) was already real by the time this row was last edited — no schema change or design pass was ever actually needed, only the capture UI; see this Phase's own detail section below for what shipped and `CHANGELOG.md` → Unreleased for the test-coverage follow-up |
 | 5 | **Attendance** | 8 (QR check-in) | ✅ DONE (11 Oct 2026) — the backend endpoint, the `apps/school-portal` QR display screen, and both of this section's own "needs your call" product questions were already resolved (Decisions 107/235); the `apps/student` camera-scan screen (`QrScanner.tsx`, via `QrCheckInScreen`'s new mode toggle) closed the last piece |
 | 6 | **Platform** | 9 (per-School white-label branding) | Blocked — `packages/build-pipeline` is still an unbuilt placeholder on `master` too |
@@ -718,12 +718,18 @@ during the test.
 
 ---
 
-## Slice 4b — Stripe/PaymentSheet path — researched, recommendation below, NOT built
+## Slice 4b — Stripe fresh-card purchase — DONE (12 Oct 2026, Decision 243 — hosted Checkout, not PaymentSheet)
 
-Real money, real Stripe integration, a genuinely new "real decision" — not built this
-session per the user's own explicit instruction to set aside anything needing their
-judgment rather than guess on a payment flow. What follows is the research needed to
-make that decision, grounded in the real backend code, not assumed.
+**Originally researched as "Stripe/PaymentSheet path," left NOT built** pending the
+user's decision on the native-dev-client workflow cost below — kept as-written for
+the historical record of that research. **What actually shipped instead, once the
+decision was made:** a hosted Stripe Checkout Session (`mode: 'payment'`), extending
+the exact `mode: 'setup'` pattern Decision 238 (saved payment methods) had already
+built for this same app — no PaymentSheet, no native dev client, no change to
+`apps/student`'s plain Expo-managed build at all. See "What was built" below for the
+full account; the research that follows this paragraph is kept for context on why
+PaymentSheet was the original front-runner and what made the hosted-Checkout
+alternative possible once Decision 238 existed to extend.
 
 ### There is no existing precedent anywhere in this codebase to copy
 
@@ -786,7 +792,7 @@ make, more than "which library":
    workflow) — worth asking the user whether that's worth splitting out rather than
    waiting on the Stripe decision to unblock everything membership-related.
 
-### Recommendation
+### Recommendation (original research, superseded by the decision below)
 
 `@stripe/stripe-react-native`'s PaymentSheet, card-only for a first cut, Apple/Google
 Pay as an explicit follow-up once real merchant accounts exist — but the decision that
@@ -794,6 +800,56 @@ actually needs the user's sign-off isn't the library, it's **taking on the
 custom-dev-client workflow change** (losing the web-preview verification path this
 whole track has relied on) **right now**, versus shipping the non-Stripe
 `pending_confirmation` path first as a smaller, unblocking slice.
+
+### What was built (12 Oct 2026, Decision 243)
+
+The user chose neither of the two PaymentSheet-era options above — by the time this
+was revisited, Decision 238 (saved payment methods, 11 Oct 2026) had already built a
+hosted Stripe Checkout Session (`mode: 'setup'`) for saving a card, proving the exact
+pattern this slice needed: `apps/student` opens a Stripe-hosted URL in the device's
+own browser (`expo-web-browser`), no native SDK, no dev-client workflow change, same
+`ultm8-student://` auto-return scheme already registered. The user approved extending
+that same mechanism from `mode: 'setup'` to `mode: 'payment'` for an actual one-time
+charge, instead of adopting PaymentSheet.
+
+- **Backend**: `PaymentsService.createPurchaseCheckoutSession()` — a `mode: 'payment'`
+  Checkout Session for a specific plan's amount, with an inline `price_data` line
+  item. `MembershipsService.purchase()` gains a `useHostedCheckout` flag
+  (`PurchaseMembershipDto`), scoped identically to Decision 236's `payWithSavedCard`
+  (CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP, a Stripe-configured School, mutually
+  exclusive with `payWithSavedCard` — but, unlike it, NOT blocked for a Guardian-driven
+  purchase, since the hosted page opens in whoever is calling the endpoint's own
+  browser). Returns a new sibling outcome, `requires_checkout`, with `checkoutUrl`.
+- **No webhook-processor change.** A `mode: 'payment'` Checkout Session's underlying
+  PaymentIntent exists synchronously at Session-creation time (confirmed against the
+  installed Stripe SDK's own types) — `createPurchaseCheckoutSession()` expands and
+  returns it, and the Transaction is created with `stripePaymentIntentId` already set,
+  exactly like the pre-existing `charge()`/`requires_payment` branch. The existing
+  `payment_intent.succeeded` handler (Membership creation, the
+  two-simultaneous-Active-Membership collision/refund) handles settlement verbatim —
+  deliberately NOT a second path keyed off `checkout.session.completed`, which would
+  duplicate that logic and risk the two Stripe-fired events racing each other.
+- **Frontend**: `MembershipPlanRow`'s "Purchase" button now always sends
+  `useHostedCheckout: true` and, on `requires_checkout`, opens `checkoutUrl` via the
+  same `WebBrowser.openAuthSessionAsync` call Decision 238's card-saving flow already
+  uses. Mirrors that same flow's own documented choice: one refetch (invalidating the
+  My Memberships query cache) right after the browser session ends, accepting a brief
+  staleness window while the async webhook settles, rather than a poll loop. A
+  SUBSCRIPTION plan is unaffected — still `requires_payment`, still a dead end in this
+  app (`PaymentsService.subscribe()`'s own pre-existing "throwaway Customer every
+  call" limitation, out of scope here same as it was for Decision 239).
+- Full account, including why `checkout.session.completed` was deliberately not
+  extended: `docs/decisions/POST-SPEC-55-DECISION-LOG.md`, Decision 243.
+
+### What this does NOT resolve
+
+Same gaps Decision 239 already flagged for `payWithSavedCard`, unchanged here:
+`subscribe()`'s throwaway-Customer limitation (blocks a Stripe-reuse path for
+SUBSCRIPTION plans, hosted-Checkout or saved-card alike), and Guardian-driven
+saved-card reuse. Also unchanged: `AcademyMembershipPlanDto` still has no
+`requiresOnlinePayment` signal (Slice 4a's own flagged follow-up) — "Purchase" on a
+Stripe-backed plan still creates a real Transaction + Checkout Session before the
+client could ever pre-filter, same cost `requires_payment` already had.
 
 ## Slice 5 — Notifications — DONE, with a scope change from the original plan below
 
@@ -1013,7 +1069,7 @@ each item's own section above for the current, accurate status.
 
 ## Recommendation
 
-**Shipped**: Slices 1, 2, 3, 4a, 5, 6a; the Guardian consent candidate (My Minors +
+**Shipped**: Slices 1, 2, 3, 4a, 4b, 5, 6a; the Guardian consent candidate (My Minors +
 consent grant/withdraw); the shared `PaginatedListScreen` extraction; light read-only
 offline caching (Phase 7); the Membership authorization-check fix; Guardian "Kid
 Mode" booking delegation (Decision 123).
@@ -1044,9 +1100,10 @@ launch a real Expo Go client, device, or camera permission prompt, so the
 actual camera capture itself is unexercised here, same honestly-disclosed gap
 every native-module slice in this doc already states.
 
-**Blocked on your decision, not further research**: Slice 4b (Stripe/PaymentSheet) —
-the API shape and library choice are both settled; the open question is only whether
-to take on the native dev-client workflow change right now.
+**Slice 4b — DONE (12 Oct 2026, Decision 243).** Resolved not by taking on the
+native dev-client workflow, but by extending Decision 238's hosted-Checkout pattern
+(already built for saving a card) from `mode: 'setup'` to `mode: 'payment'` — see
+Slice 4b's own section above for the full account.
 
 **Genuinely blocked** (see the section above): per-School white-label branding.
 

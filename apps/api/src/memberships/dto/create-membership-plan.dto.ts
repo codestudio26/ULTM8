@@ -41,13 +41,13 @@ export class CreateMembershipPlanDto {
   @Min(0)
   price!: number;
 
-  @ApiPropertyOptional({ description: "One of the 6 supported currencies (School's own choice, no conversion applied)." })
+  @ApiPropertyOptional({ description: "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241)." })
   @IsOptional()
   @IsString()
   @MaxLength(10)
   currency?: string;
 
-  @ApiPropertyOptional({ description: 'Computes each purchased Membership\'s expiry date at creation time. Not used by WEEKLY_PASS.' })
+  @ApiPropertyOptional({ description: 'Computes each purchased Membership\'s expiry date at creation time — used by every plan type, including WEEKLY_PASS (Decision 249; a prior version of this description incorrectly said otherwise).' })
   @IsOptional()
   @IsInt()
   @Min(1)

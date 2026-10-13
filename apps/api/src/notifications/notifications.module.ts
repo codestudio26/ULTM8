@@ -13,7 +13,13 @@ import { NotificationDeliveryService } from './notification-delivery.service';
  * `NotificationDeliveryService` is exported (not just a local provider) —
  * `JobsModule` needs it too, for `NotificationFanoutProcessor`. No
  * `TenantsModule` import needed — every operation here is self-only, no
- * School-Owner-gated write anywhere in this module.
+ * School-Owner-gated write anywhere in this module. v1.2 backend backlog's
+ * Snooze (approved by the product owner) stays self-only too (`PATCH
+ * /notifications/:id/snooze`, below) — the School-Owner-gated Broadcast/
+ * compose endpoint this phase also adds lives in the separate
+ * `NotificationBroadcastModule` instead, precisely because it ISN'T
+ * self-only and needs `TenantsModule` — see that module's own header
+ * comment for why importing it here would be circular.
  *
  * Deliberately NOT built this phase, flagged for a fast-follow rather than
  * silently assumed complete: push dispatch (the actual FCM/APNs send — this

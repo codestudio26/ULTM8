@@ -7,12 +7,14 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import {
   fetchInviteCandidate,
   fetchUserRoleGrants,
+  useCreateStaffManually,
   useInviteStaff,
   useRevokeRoleGrant,
   type InviteCandidateResponse,
   type RoleGrantResponse,
 } from './roleGrantQueries';
 import { CoachInvitesSection } from './CoachInvitesSection';
+import { AddStaffManuallyModal } from './AddStaffManuallyModal';
 
 /**
  * Invite / revoke Instructor or Branch Staff — the one confirmed RoleGrant authority
@@ -31,12 +33,20 @@ import { CoachInvitesSection } from './CoachInvitesSection';
  * exactly what GET /users/{userId}/role-grants actually supports. That response now
  * resolves the target's name (userFirstName/userSurname, Decision 114) so the lookup
  * results are attributable, not just a table of raw grant rows.
+ *
+ * Decision 251 — "Add staff manually" closes the exact gap the "Find" step above
+ * used to dead-end on: no fallback existed when no ULTM8 account was found for the
+ * searched email/phone. Mirrors AddInstructorManuallyModal/InstructorsPage's own
+ * flow exactly (real User + RoleGrant created immediately, temp passcode emailed,
+ * forced change on first login) — minus a third profile-row concern, since "Staff"
+ * is just a RoleGrant row (role: BRANCH_STAFF), not a separate profile table.
  */
 export function StaffPage() {
   const schoolId = useOwnedSchoolId();
   const { data: branchData } = useBranches(schoolId);
   const inviteStaff = useInviteStaff();
   const revokeGrant = useRevokeRoleGrant();
+  const createStaffManually = useCreateStaffManually(schoolId ?? '');
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
@@ -50,6 +60,11 @@ export function StaffPage() {
   // CoachInvitePage already give it) for the "you've been granted this role"
   // notification RoleGrantsService.create() now sends.
   const [inviteNotice, setInviteNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
+
+  const [addingManually, setAddingManually] = useState(false);
+  // Same non-blocking emailSent treatment as inviteNotice above, for Decision
+  // 246's own temp-passcode email.
+  const [addManuallyNotice, setAddManuallyNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
   const [lookupUserId, setLookupUserId] = useState('');
   const [lookupResult, setLookupResult] = useState<RoleGrantResponse[] | null>(null);
@@ -148,12 +163,26 @@ export function StaffPage() {
 
   return (
     <>
-      <PageHeader title="Staff" subtitle="Invite Instructors and Branch Staff to your School." />
+      <PageHeader
+        title="Staff"
+        subtitle="Invite Instructors and Branch Staff to your School."
+        actions={
+          <Button variant="secondary" onClick={() => setAddingManually(true)}>
+            Add staff manually
+          </Button>
+        }
+      />
+
+      {addManuallyNotice?.kind === 'ok' ? <SuccessBanner message={addManuallyNotice.text} /> : null}
+      {addManuallyNotice?.kind === 'warn' ? <ErrorBanner message={addManuallyNotice.text} /> : null}
 
       <Card className="ultm8-field">
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
           Invite staff
         </h2>
+        <p className="ultm8-field">
+          Invites an existing ULTM8 account to a role. No account found? Use "Add staff manually" above instead.
+        </p>
         {inviteNotice?.kind === 'ok' ? <SuccessBanner message={inviteNotice.text} /> : null}
         {inviteNotice?.kind === 'warn' ? <ErrorBanner message={inviteNotice.text} /> : null}
         {!candidate ? (
@@ -263,6 +292,26 @@ export function StaffPage() {
           )
         ) : null}
       </Card>
+
+      {addingManually ? (
+        <AddStaffManuallyModal
+          branches={branches}
+          submitting={createStaffManually.isPending}
+          onSubmit={async (values) => {
+            const created = await createStaffManually.mutateAsync(values);
+            setAddManuallyNotice(
+              created.emailSent
+                ? { kind: 'ok', text: `${created.userFirstName} ${created.userSurname} was added — a temporary passcode was emailed to ${created.email}.` }
+                : {
+                    kind: 'warn',
+                    text: `${created.userFirstName} ${created.userSurname} was added, but the email couldn't be sent. They'll need the temporary passcode another way.`,
+                  },
+            );
+            setAddingManually(false);
+          }}
+          onClose={() => setAddingManually(false)}
+        />
+      ) : null}
     </>
   );
 }

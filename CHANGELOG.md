@@ -15,6 +15,207 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Student Measurements — Weight Category, Kimono Size, Belt Size — built as
+  real fields** (Decision 220/246): Student Detail's Measurements fields,
+  previously flagged Fully Proposed in `docs/v1.2-backend-backlog.md` (no
+  such field existed anywhere on `User` or `StudentRank`), approved by the
+  product owner for build, overriding the Developer recommendation to drop
+  them for lack of grounding. **api:** three new nullable `String?` columns
+  on `User` — `weightCategory`, `kimonoSize`, `beltSize` — placed on `User`
+  (person-level, not per-Discipline, so not `StudentRank`); free text, no
+  enum/unit/canonical code list confirmed anywhere, same convention as this
+  model's existing `gender`/`nationality`/`language`/`currency` columns
+  (a developer-level presentation choice, not an invented business rule —
+  same category as Decision 222's Snooze shape). `UpdateUserDto`/
+  `UserResponseDto` gain all three (`@IsOptional() @IsString()
+  @MaxLength(50)`); since `UpdateStudentProfileDto` already `extends
+  UpdateUserDto` and both `PATCH /users/me` (self-service) and `PATCH
+  /schools/:id/students/:studentId/profile` (Staff-on-behalf-of) already
+  share `UsersService.updateProfileFor`, this wires BOTH edit surfaces at
+  once — no separate DTO/service path needed. **school-portal:**
+  `StudentUpdatePage.tsx` gains the three fields. **student:**
+  `ProfileScreen.tsx` (the Student's own self-service profile editor) gains
+  the three fields too, since a Student editing their own kimono/belt size
+  on their own profile is the natural home for it. `packages/api-client`
+  regenerated. New e2e coverage in `users.e2e-spec.ts` and
+  `student-profile-update.e2e-spec.ts`: set -> read back -> cleared with an
+  explicit `null`, plus a cross-tenant-isolation check (plain `User`
+  columns, no new cross-tenant surface).
+- **Staff "Add Manually"** (Decision 251) — closes the exact gap Decision
+  237's own "What this does NOT resolve" section flagged for Staff's
+  identical from-zero-invite problem: the Staff page's "Invite staff"
+  find-by-email/phone step used to just say "No ULTM8 account found," full
+  stop, with no fallback. Mirrors Decision 237's Instructor "Add Manually"
+  exactly — a real `User` + `RoleGrant` (role: `BRANCH_STAFF`) created
+  immediately from just a name, email, and Branch, no invite/acceptance
+  step; a server-generated temp passcode emailed; forced passcode change on
+  first login (reuses the existing `mustChangePasscode`/
+  `POST /auth/passcode-change/first-login` infrastructure Decision 237
+  already built — untouched here). Since "Staff" is `BRANCH_STAFF` in the
+  `Role` enum, not a separate profile table the way `Instructor` is its own
+  table, this creates only `User` + `RoleGrant` — no third profile row.
+  **api:** new `RoleGrantsService.createStaffManually()` (added to
+  `RoleGrantsService`, which already owns all Staff CRUD, rather than a new
+  module) behind `POST /schools/:schoolId/role-grants/add-manually`,
+  School-Owner-gated, same 20/hour throttle tier as
+  `InstructorsController`'s own add-manually route. New
+  `CreateStaffManuallyDto` — `branchId` is **required outright** here, not
+  conditional on whether the School has branches the way Instructor's own
+  flow is (Branch Staff always needs a Branch). New
+  `CreateStaffManuallyResponseDto` (extends `RoleGrantResponseDto` — the
+  RoleGrant row this creates IS the Staff record — plus `email`/
+  `emailSent`). **school-portal:** new
+  `apps/school-portal/src/roleGrants/AddStaffManuallyModal.tsx`, a second
+  "Add staff manually" entry point on `StaffPage.tsx` beside the existing
+  invite-by-email/phone form, with the same non-blocking `emailSent` banner
+  pattern `InstructorsPage.tsx` already uses. `packages/api-client`
+  regenerated.
+- **Membership Plans — two stale-comment fixes, no behavior change** (Decisions
+  241/249). `CreateMembershipPlanDto`/`UpdateMembershipPlanDto`'s `currency`
+  field still described "one of the 6 supported currencies," missed by the
+  currency-expansion PR (Decision 241) since it only touched
+  School/Franchise/User DTOs — corrected to point at the real
+  `GET /settings/currencies` list. `CreateMembershipPlanDto.expiryDurationDays`'s
+  "Not used by WEEKLY_PASS" description was simply wrong (Decision 249,
+  verified directly against `MembershipsService.createMembershipAndReturn()`,
+  which already applies it uniformly across every plan type) — corrected to
+  match; `MembershipPlanFormPage.tsx`'s own code comment updated to match,
+  the field was already shown for WEEKLY_PASS as the safe default.
+- **Membership purchase with a fresh card, via hosted Stripe Checkout**
+  (Decision 243, Track B Slice 4b) — `apps/student`'s "Purchase" button on a
+  Stripe-backed membership plan now completes end-to-end instead of showing
+  "online payment isn't available in the app yet": it opens a hosted Stripe
+  Checkout page in the device's own browser, the same `mode: 'setup'` pattern
+  Decision 238 (saved payment methods) already built for saving a card,
+  extended to `mode: 'payment'` for an actual one-time charge — no native
+  Stripe SDK, no custom dev client. **api:** `PaymentsService.
+  createPurchaseCheckoutSession()`; `PurchaseMembershipDto` gains
+  `useHostedCheckout` (scoped like `payWithSavedCard` — CLASS_PACK/
+  WEEKLY_PASS/TRIAL_MEMBERSHIP, a Stripe-configured School — but not blocked
+  for a Guardian-driven purchase); `PurchaseMembershipResponseDto` gains the
+  `requires_checkout` outcome (`checkoutUrl`). Settlement reuses the existing
+  `payment_intent.succeeded` webhook handler verbatim — no change to
+  `stripe-webhook-processing.processor.ts`. `packages/api-client`
+  regenerated. The app's screen (`MembershipPlanRow.tsx`) is Track B
+  (`docs/TRACK-B-ROADMAP.md`).
+- **Membership Plans — Archive lifecycle state, and a Subscription
+  price-change migrate-vs-grandfather prompt** (`docs/v1.2-backend-backlog.md`):
+  two previously-flagged backlog items, both approved by the product owner
+  and built together.
+  - **Archive.** `MembershipPlan.archivedAt` (nullable timestamp — same
+    lifecycle-flag shape `Franchise`/`School` already established for their
+    own `archivedAt`) is a real, permanent-retirement state distinct from
+    `visible` (temporarily unlisted, reversible with no special gate).
+    `POST /membership-plans/:id/archive` and `.../unarchive`
+    (`MembershipsService.archivePlan`/`unarchivePlan`), School-Owner-gated,
+    same convention as every other MembershipPlan mutation. An archived plan
+    never appears in the Student-facing purchase list
+    (`AcademiesService.findOne`'s own `where` clause, and the
+    `membership_plan_discovery_read` RLS policy, both updated) but existing
+    `Membership` rows that reference it keep working unchanged — no
+    cascade-delete, no FK change. `MembershipsService.purchase()` also
+    rejects a direct purchase-by-id against an archived plan (a disclosed
+    judgment call — archiving is reasoned as stronger than `visible=false`,
+    which does not block a direct purchase today).
+    `MembershipPlansPage.tsx`'s Total/Visible/Hidden stats ribbon gains a 4th
+    **Archived** tile (Visible/Hidden now scope to non-archived plans only,
+    so an archived-but-visible-flagged plan isn't double-counted); the row's
+    own action menu (`RowActionsMenu`, same component `ClassesPage.tsx`
+    already uses) gains Archive/Unarchive alongside Duplicate.
+  - **Price-change migrate-vs-grandfather prompt.** Editing a live
+    SUBSCRIPTION plan's price now requires an explicit choice whenever that
+    plan already has at least one active, Stripe-backed subscriber:
+    **Migrate** (every existing subscriber's Stripe Subscription moves to the
+    new Stripe Price, `proration_behavior: 'none'` — no immediate charge/
+    credit, the new price applies starting their next billing cycle — a
+    disclosed, reasonable implementation choice among Stripe's own documented
+    options, not a re-litigation of the migrate/grandfather product
+    decision) or **Grandfather** (existing subscribers keep billing at their
+    original price indefinitely; a new persisted Stripe Price is created and
+    referenced by `MembershipPlan.stripePriceId`/`stripeProductId` for new
+    signups only). `UpdateMembershipPlanDto.priceChangeStrategy`
+    (`MIGRATE`/`GRANDFATHER`) is required (400 if missing) exactly when a
+    SUBSCRIPTION plan's price is actually changing and it has active
+    subscribers; rejected if sent when not applicable. Migrate runs as a new
+    background job (`membership-plan-price-migration.processor.ts`,
+    event-triggered, same shape as `chargeback-pattern-restriction`) rather
+    than blocking the edit's own HTTP request, matching
+    `franchise-fee-usage-reporting.processor.ts`'s own established per-row
+    bulk-Stripe-operation pattern. Every decision is recorded, auditable, in
+    a new `MembershipPlanPriceChange` table
+    (`GET /membership-plans/:id/price-changes`, School-Owner-gated).
+    `PaymentsService.subscribe()`'s pre-existing throwaway-Product/inline-
+    `price_data` purchase flow (Phase 9) is untouched for any plan that never
+    reaches a price-change decision — only a plan that has gained a
+    persisted `stripePriceId` reuses it for new purchases.
+    `MembershipPlanFormPage.tsx`'s Pricing & Access step shows the required
+    Migrate/Grandfather choice inline (fetched proactively via
+    `GET /membership-plans/:id/active-count`, not only surfaced after a 400)
+    and blocks Save until one is picked.
+- **Notifications page — Broadcast/compose, Snooze, and the Read-within-24h
+  metric** (`docs/v1.2-backend-backlog.md`, three product-owner-approved
+  features): the real API surface here was previously the narrowest of any
+  page redesigned this session (`GET /notifications/me`, `PATCH
+  /notifications/:id/read`, `GET /notifications/me/counts` — see the backlog
+  doc's own "Notifications page" section, now marked DONE for all three).
+  - **Broadcast/compose** — the single biggest gap the backlog entry flagged:
+    there was no endpoint for a School Owner/Staff member to author and send a
+    Notification; every real row was written only by the internal
+    `notification-fanout` job, itself only triggered by three system events.
+    New `POST /schools/:schoolId/notifications/broadcast`
+    (`NotificationBroadcastController`/`NotificationBroadcastService`, its own
+    module to avoid a circular import with `NotificationsModule` ↔
+    `TenantsModule`), School-Owner-gated the same way Waiver/MembershipPlan
+    CRUD already are. Three audience scopes: **All Students** (every active
+    `STUDENT` RoleGrant at the School — the same query
+    `SchoolsService.findAllStudentsForSchool`'s ACTIVE branch already uses),
+    **one Branch** (via the real `StudentHomeBranch` model, Decisions 139/148,
+    intersected with an active enrollment), and **one Class's real roster**
+    (the exact `where: { classId }` shape `BookingsService.findAllForClass`
+    already uses — every Booking status, not re-derived). Enqueues through the
+    existing `notification-fanout` queue, reusing
+    `WaiverSignatureRequestsProcessor`'s own per-recipient job-dedup pattern —
+    no second delivery path. `NotificationsPage.tsx` gets a School-Owner-only
+    "Broadcast to Students" header action opening a new
+    `BroadcastNotificationModal.tsx` (title/body + the three audience
+    options), matching this app's established form-modal house style.
+  - **Snooze** — previously shown disabled-styled in the backlog's referenced
+    concept mockup, with no `snoozedUntil`-shaped column anywhere in the
+    schema. New `Notification.snoozedUntil DateTime?` column; new `PATCH
+    /notifications/:id/snooze` (an explicit `until` timestamp or a `minutes`
+    duration from now — a Developer-level presentation choice per the
+    kickoff brief, not a business rule); a new scheduled
+    `notification-unsnooze-sweep` job (same registration/retry shape as
+    `booking-no-show-processing`) clears an elapsed `snoozedUntil`, returning
+    the Notification to the unread list. `GET /notifications/me/counts`'s
+    `unread` total now live-excludes a currently-snoozed Notification (the
+    same "don't wait on a sweep job for correctness" convention
+    `Membership.status`'s own live-computed expiry already established).
+    `NotificationsPage.tsx`'s row action menu (now a real `RowActionsMenu`,
+    replacing the old plain "Mark read" `Button`) gets a working "Snooze"
+    item opening `SnoozeNotificationModal.tsx` (preset durations), plus a new
+    "Snoozed" status badge.
+  - **Read within 24h** — `Notification.read` was a live boolean with no
+    timestamped read event. New `Notification.readAt DateTime?` column, set
+    the first time `PATCH /notifications/:id/read` fires and never
+    overwritten after (`NotificationsService.markRead`). `GET
+    /notifications/me/counts` gains `readWithin24hPercent` (null until the
+    caller has read at least one Notification — an unread Notification is
+    excluded from both the numerator and denominator, not counted as a
+    miss), `readWithin24hCount`, and `readTotalCount`. `NotificationsPage.tsx`
+    wires `readWithin24hPercent` into a third `StatTile` alongside the
+    existing Total/Unread tiles.
+  - One migration for both new columns (`snoozedUntil`, `readAt`). New e2e
+    coverage: `notification-broadcast.e2e-spec.ts` (audience-targeting
+    correctness for all three scopes, the School-Owner-only gate, and
+    cross-School isolation on both the School path param and a
+    Branch/Class id from a different School) and extended
+    `notifications.e2e-spec.ts` (Snooze hides from the unread count and the
+    scheduled sweep un-snoozes correctly via direct processor invocation;
+    `readAt` set once and never overwritten; the Read-within-24h percentage
+    computed correctly). New Playwright coverage on
+    `notifications.spec.ts` for the Broadcast modal, Snooze action, and the
+    new stat tile. `packages/api-client` regenerated.
 - **Currency support expanded from the old hardcoded 6 to every currency
   Stripe supports** (Decision 241) — the canonical `CURRENCIES` list
   (`apps/api/src/settings/constants/currencies.ts`, served by

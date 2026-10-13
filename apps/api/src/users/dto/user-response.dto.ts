@@ -53,6 +53,15 @@ export class UserResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   profilePhotoUrl!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Free text — no confirmed enum/unit (Decision 220/246).' })
+  weightCategory!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Free text — no confirmed enum/unit (Decision 220/246).' })
+  kimonoSize!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Free text — no confirmed enum/unit (Decision 220/246).' })
+  beltSize!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

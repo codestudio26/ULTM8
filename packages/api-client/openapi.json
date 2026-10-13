@@ -1138,6 +1138,51 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/role-grants/add-manually": {
+      "post": {
+        "operationId": "RoleGrantsController_createStaffManually",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffManuallyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateStaffManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises": {
       "post": {
         "operationId": "FranchisesController_create",
@@ -2110,6 +2155,51 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{id}/snooze": {
+      "patch": {
+        "operationId": "NotificationsController_snooze",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnoozeNotificationDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -4498,6 +4588,111 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MembershipPlanActiveCountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/archive": {
+      "post": {
+        "operationId": "MembershipsController_archivePlan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/unarchive": {
+      "post": {
+        "operationId": "MembershipsController_unarchivePlan",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/price-changes": {
+      "get": {
+        "operationId": "MembershipsController_findPriceChanges",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanPriceChangeListResponseDto"
                 }
               }
             }
@@ -8059,6 +8254,51 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/notifications/broadcast": {
+      "post": {
+        "operationId": "NotificationBroadcastController_broadcast",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{id}/fee-charges": {
       "get": {
         "operationId": "FranchiseFeesController_findAllForFranchise",
@@ -9586,6 +9826,18 @@
           },
           "profilePhotoUrl": {
             "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           }
         }
       },
@@ -9642,6 +9894,21 @@
           "profilePhotoUrl": {
             "type": "string",
             "nullable": true
+          },
+          "weightCategory": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           },
           "createdAt": {
             "type": "string"
@@ -10167,6 +10434,106 @@
         },
         "required": [
           "found"
+        ]
+      },
+      "CreateStaffManuallyDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required — Branch Staff always belongs to a specific Branch (unlike Instructor, which only needs one when the School itself has branches)."
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "email",
+          "branchId"
+        ]
+      },
+      "CreateStaffManuallyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STUDENT",
+              "SCHOOL_OWNER_MANAGER",
+              "BRANCH_STAFF",
+              "INSTRUCTOR",
+              "FRANCHISE_OWNER",
+              "GUARDIAN"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userFirstName": {
+            "type": "string"
+          },
+          "userSurname": {
+            "type": "string"
+          },
+          "franchiseId": {
+            "type": "string",
+            "nullable": true
+          },
+          "schoolId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "grantedAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "emailSent": {
+            "type": "boolean",
+            "description": "False if the temp-passcode email could not be sent — the Staff account was still created."
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "userId",
+          "userFirstName",
+          "userSurname",
+          "grantedAt",
+          "createdAt",
+          "updatedAt",
+          "email",
+          "emailSent"
         ]
       },
       "CreateFranchiseDto": {
@@ -11012,6 +11379,16 @@
           },
           "createdAt": {
             "type": "string"
+          },
+          "snoozedUntil": {
+            "type": "string",
+            "nullable": true,
+            "description": "Snoozed until this timestamp, or null if not snoozed. Developer-level addition — see the Prisma model comment."
+          },
+          "readAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment."
           }
         },
         "required": [
@@ -11051,13 +11428,42 @@
           },
           "unread": {
             "type": "number",
-            "description": "The caller's unread Notification count, across every page."
+            "description": "The caller's unread Notification count, across every page. Excludes a Notification that is currently snoozed (snoozedUntil in the future) — see NotificationsService.getCountsForCaller's own header comment."
+          },
+          "readWithin24hPercent": {
+            "type": "number",
+            "nullable": true,
+            "description": "Percentage (0–100) of the caller's own READ Notifications whose readAt fell within 24h of createdAt. Null when the caller has never read a Notification (nothing to compute a rate over)."
+          },
+          "readWithin24hCount": {
+            "type": "number",
+            "description": "How many of the caller's READ Notifications were read within 24h of createdAt."
+          },
+          "readTotalCount": {
+            "type": "number",
+            "description": "How many of the caller's Notifications have ever been read (readAt is set) — the denominator readWithin24hPercent is computed over."
           }
         },
         "required": [
           "total",
-          "unread"
+          "unread",
+          "readWithin24hPercent",
+          "readWithin24hCount",
+          "readTotalCount"
         ]
+      },
+      "SnoozeNotificationDto": {
+        "type": "object",
+        "properties": {
+          "until": {
+            "type": "string",
+            "description": "Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both."
+          },
+          "minutes": {
+            "type": "number",
+            "description": "Snooze for this many minutes from now (1 to 10080 / 7 days — a Developer-chosen upper bound, not a confirmed business rule). Provide this OR `until`, not both."
+          }
+        }
       },
       "RegisterDeviceTokenDto": {
         "type": "object",
@@ -11149,6 +11555,18 @@
           },
           "profilePhotoUrl": {
             "type": "string"
+          },
+          "weightCategory": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           }
         }
       },
@@ -12904,11 +13322,11 @@
           },
           "currency": {
             "type": "string",
-            "description": "One of the 6 supported currencies (School's own choice, no conversion applied)."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241)."
           },
           "expiryDurationDays": {
             "type": "number",
-            "description": "Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS."
+            "description": "Computes each purchased Membership's expiry date at creation time — used by every plan type, including WEEKLY_PASS (Decision 249; a prior version of this description incorrectly said otherwise)."
           },
           "classesIncluded": {
             "type": "number",
@@ -12988,6 +13406,11 @@
           },
           "visible": {
             "type": "boolean"
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "v1.2 backend backlog — set when this plan has been archived (permanent-retirement state, distinct from visible). Null when not archived."
           },
           "refundFeeDate": {
             "type": "string",
@@ -13095,7 +13518,7 @@
           },
           "currency": {
             "type": "string",
-            "description": "One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear.",
+            "description": "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear.",
             "nullable": true
           },
           "expiryDurationDays": {
@@ -13117,6 +13540,14 @@
             "type": "string",
             "nullable": true,
             "description": "ISO 8601 date-time. Pass null to clear."
+          },
+          "priceChangeStrategy": {
+            "type": "string",
+            "enum": [
+              "MIGRATE",
+              "GRANDFATHER"
+            ],
+            "description": "Required only when editing a SUBSCRIPTION plan whose price is actually changing AND it already has at least one active Stripe-backed subscriber. MIGRATE moves every existing subscriber to the new price (no proration, applied at their next billing cycle); GRANDFATHER leaves existing subscribers on their original price and applies the new price to new signups only. Rejected (400) if required and omitted."
           }
         }
       },
@@ -13131,6 +13562,97 @@
           "activeCount"
         ]
       },
+      "MembershipPlanPriceChangeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "MIGRATE",
+              "GRANDFATHER"
+            ]
+          },
+          "oldPrice": {
+            "type": "number"
+          },
+          "newPrice": {
+            "type": "number"
+          },
+          "oldCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "newCurrency": {
+            "type": "string",
+            "nullable": true
+          },
+          "decidedById": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "affectedMembershipCount": {
+            "type": "number"
+          },
+          "migratedCount": {
+            "type": "number"
+          },
+          "failedCount": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "membershipPlanId",
+          "schoolId",
+          "decision",
+          "oldPrice",
+          "newPrice",
+          "decidedById",
+          "status",
+          "affectedMembershipCount",
+          "migratedCount",
+          "failedCount",
+          "createdAt"
+        ]
+      },
+      "MembershipPlanPriceChangeListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipPlanPriceChangeResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "PurchaseMembershipDto": {
         "type": "object",
         "properties": {
@@ -13141,6 +13663,10 @@
           "payWithSavedCard": {
             "type": "boolean",
             "description": "Self-purchase only: charge the saved payment method (Decision 238) instead of collecting a fresh card. Requires the X-Step-Up-Token header (Decision 236)."
+          },
+          "useHostedCheckout": {
+            "type": "boolean",
+            "description": "Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard."
           }
         }
       },
@@ -13210,6 +13736,7 @@
             "type": "string",
             "enum": [
               "requires_payment",
+              "requires_checkout",
               "pending_confirmation",
               "active"
             ]
@@ -13217,6 +13744,10 @@
           "clientSecret": {
             "type": "string",
             "description": "Stripe PaymentIntent client secret — present only when outcome is requires_payment."
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "description": "Hosted Stripe Checkout Session URL (Decision 243, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment."
           },
           "membership": {
             "description": "Present only when outcome is active.",
@@ -13228,7 +13759,7 @@
           },
           "transactionId": {
             "type": "string",
-            "description": "The created Transaction id — present for requires_payment, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236)."
+            "description": "The created Transaction id — present for requires_payment, requires_checkout, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236)."
           }
         },
         "required": [
@@ -16744,6 +17275,67 @@
           "items"
         ]
       },
+      "BroadcastNotificationDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Notification title."
+          },
+          "body": {
+            "type": "string",
+            "description": "Notification body."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "BRANCH",
+              "CLASS"
+            ],
+            "description": "Who receives this broadcast."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Required when audience is BRANCH — must be a Branch of this School."
+          },
+          "classId": {
+            "type": "string",
+            "description": "Required when audience is CLASS — must be a Class of this School."
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "audience"
+        ]
+      },
+      "BroadcastResponseDto": {
+        "type": "object",
+        "properties": {
+          "broadcastId": {
+            "type": "string",
+            "description": "Correlates every Notification this call fanned out — used as the shared prefix of each one's notificationId/jobId."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "BRANCH",
+              "CLASS"
+            ]
+          },
+          "recipientCount": {
+            "type": "number",
+            "description": "How many distinct Students this broadcast was enqueued for."
+          }
+        },
+        "required": [
+          "broadcastId",
+          "audience",
+          "recipientCount"
+        ]
+      },
       "FranchiseFeeChargeResponseDto": {
         "type": "object",
         "properties": {
@@ -17259,7 +17851,7 @@
           },
           "franchiseId": {
             "type": "string",
-            "description": "Required for entityType FRANCHISE."
+            "description": "For entityType FRANCHISE editing an EXISTING Franchise, this is required and must equal entityId. Omit both when creating a brand-new Franchise (mirrors POST /franchises itself, which needs no prior RoleGrant either)."
           },
           "entityId": {
             "type": "string",

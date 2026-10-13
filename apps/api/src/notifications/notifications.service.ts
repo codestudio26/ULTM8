@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { resolveLimit } from '../common/pagination/cursor-paginate';
 import { RegisterDeviceTokenDto } from './dto/device-token.dto';
+import { SnoozeNotificationDto } from './dto/snooze-notification.dto';
 
 /**
  * Phase 15 scope only: the read-side of a caller's own notifications (list,
@@ -72,14 +73,50 @@ export class NotificationsService {
    * RLS on `Notification`), plus the explicit `userId: callerId` filter —
    * belt-and-suspenders with RLS, matching `findAllForCaller`'s own
    * convention rather than relying on RLS alone.
+   *
+   * `unread` (v1.2 backend backlog — Snooze, approved by the product owner):
+   * EXCLUDES a Notification currently snoozed (`snoozedUntil` in the future)
+   * — live-computed here, the same "don't wait on a sweep job for
+   * correctness" convention Membership.status's own live-computed expiry
+   * already established in this codebase, rather than trusting
+   * notification-unsnooze-sweep to have already cleared the column by the
+   * time this runs. `snoozedUntil` in the PAST counts as unread even before
+   * that sweep next runs — the live computation IS the source of truth here,
+   * the sweep job only exists to return a snoozed Notification to the
+   * ordinary unread list in storage (see that job's own header comment for
+   * why it still needs to run regardless).
+   *
+   * `readWithin24hPercent`/`readWithin24hCount`/`readTotalCount` (v1.2
+   * backend backlog — Read within 24h metric, approved by the product
+   * owner): computed only over Notifications the caller has actually read
+   * (`readAt` set) — see the response DTO's own header comment for why an
+   * unread Notification is excluded from both the numerator and denominator
+   * rather than counted as a miss.
    */
   async getCountsForCaller(callerId: string) {
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const [total, unread] = await Promise.all([
+      const now = new Date();
+      const [total, unread, readRows] = await Promise.all([
         tx.notification.count({ where: { userId: callerId } }),
-        tx.notification.count({ where: { userId: callerId, read: false } }),
+        tx.notification.count({
+          where: { userId: callerId, read: false, OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }] },
+        }),
+        // Only the two timestamps are needed to compute the metric — not a
+        // full row fetch of every read Notification the caller has ever had.
+        tx.notification.findMany({
+          where: { userId: callerId, readAt: { not: null } },
+          select: { createdAt: true, readAt: true },
+        }),
       ]);
-      return { total, unread };
+
+      const readTotalCount = readRows.length;
+      const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+      const readWithin24hCount = readRows.filter(
+        (n) => n.readAt !== null && n.readAt.getTime() - n.createdAt.getTime() <= ONE_DAY_MS,
+      ).length;
+      const readWithin24hPercent = readTotalCount > 0 ? Math.round((readWithin24hCount / readTotalCount) * 100) : null;
+
+      return { total, unread, readWithin24hPercent, readWithin24hCount, readTotalCount };
     });
   }
 
@@ -90,7 +127,13 @@ export class NotificationsService {
    * uses for genuinely conflicting transitions. Unconditional (no `if
    * (existing.read) return existing` short-circuit) — found on review to be a
    * pure optimization with no behavioral difference worth the extra branch
-   * and the comment needed to justify it. */
+   * and the comment needed to justify it.
+   *
+   * `readAt` (v1.2 backend backlog — Read within 24h metric): set ONLY the
+   * first time this fires for a given row — `existing.readAt ?? new Date()`
+   * — never overwritten on a later call, so this stays genuinely "time to
+   * first read" even though the rest of this method is already idempotent on
+   * `read` itself. */
   async markRead(callerId: string, notificationId: string) {
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const existing = await tx.notification.findUnique({ where: { id: notificationId } });
@@ -100,7 +143,43 @@ export class NotificationsService {
       if (!existing) {
         throw new NotFoundException('Notification not found');
       }
-      return tx.notification.update({ where: { id: notificationId }, data: { read: true } });
+      return tx.notification.update({
+        where: { id: notificationId },
+        data: { read: true, readAt: existing.readAt ?? new Date() },
+      });
+    });
+  }
+
+  /**
+   * PATCH /notifications/:id/snooze (v1.2 backend backlog — Snooze, approved
+   * by the product owner). Exactly one of `dto.until`/`dto.minutes` must be
+   * given — see SnoozeNotificationDto's own header comment for why that's
+   * enforced here rather than at the DTO-decorator level. The resulting
+   * `snoozedUntil` must be strictly in the future — snoozing "until now or
+   * the past" would be a no-op that silently claims success, same reasoning
+   * this codebase's other input-sanity checks (e.g. GradingActionDto's own)
+   * apply elsewhere.
+   *
+   * Does not touch `read` — a snoozed Notification can be read or unread
+   * independently; the only effect is on getCountsForCaller's own unread
+   * total (see that method's own header comment) until
+   * notification-unsnooze-sweep clears this column.
+   */
+  async snooze(callerId: string, notificationId: string, dto: SnoozeNotificationDto) {
+    if (!dto.until && dto.minutes === undefined) {
+      throw new BadRequestException('Provide either `until` or `minutes`.');
+    }
+    const snoozedUntil = dto.until ? new Date(dto.until) : new Date(Date.now() + dto.minutes! * 60_000);
+    if (snoozedUntil.getTime() <= Date.now()) {
+      throw new BadRequestException('`until`/`minutes` must resolve to a future time.');
+    }
+
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const existing = await tx.notification.findUnique({ where: { id: notificationId } });
+      if (!existing) {
+        throw new NotFoundException('Notification not found');
+      }
+      return tx.notification.update({ where: { id: notificationId }, data: { snoozedUntil } });
     });
   }
 

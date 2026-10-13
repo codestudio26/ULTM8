@@ -203,6 +203,23 @@ describeIfDb('stripe-webhook-processing job', () => {
   // Phase 9 — first real per-event-type handlers.
   // ---------------------------------------------------------------------------
 
+  // Decision 243 (Track B Slice 4b) — MembershipsService.purchaseViaHostedCheckout()
+  // (a hosted Stripe Checkout Session, `mode: 'payment'`) creates its Transaction
+  // with EXACTLY this same shape (PENDING/STRIPE/stripePaymentIntentId, no
+  // stripeSubscriptionId) as seedPendingTransaction() below already fixtures —
+  // verified directly against PaymentsService.createPurchaseCheckoutSession()'s
+  // own header comment before relying on this: a `mode: 'payment'` Checkout
+  // Session's underlying PaymentIntent exists synchronously at Session-creation
+  // time, so the Transaction it produces is settled by this SAME
+  // payment_intent.succeeded handler, with no new webhook branching needed.
+  // Every test below (success, redelivery, the two-simultaneous-Active-Membership
+  // collision further down, and payment_intent.payment_failed) therefore already
+  // covers the hosted-Checkout purchase path end-to-end too, not only the
+  // pre-existing fresh-card `charge()` one — see
+  // PaymentsService.createPurchaseCheckoutSession()/MembershipsService.
+  // purchaseViaHostedCheckout()'s own header comments for the full reasoning, and
+  // memberships.service.spec.ts's own Decision 243 block for the
+  // Transaction-creation half this file can't reach without a live Stripe call.
   it('payment_intent.succeeded flips the Transaction to SUCCESSFUL and creates the Membership Active (Decision 6)', async () => {
     const { transaction, plan, student, stripePaymentIntentId } = await seedPendingTransaction();
     const stripeEventId = `evt_fixture_${randomUUID()}`;
@@ -235,6 +252,46 @@ describeIfDb('stripe-webhook-processing job', () => {
     if (finalTransaction.membershipId) membershipIds.push(finalTransaction.membershipId);
     const membershipCount = await superuser.membership.count({ where: { studentId: transaction.studentId } });
     expect(membershipCount).toBe(1);
+  });
+
+  // Previously uncovered by any e2e test (checked directly — no existing spec
+  // exercised this event type at all) — closed here, not only for Decision
+  // 241's own "a failed/expired Checkout Session doesn't create anything"
+  // requirement, but as a real, previously-unflagged gap in this handler's own
+  // coverage. A card declined on a hosted Checkout page (or a plain Stripe
+  // Elements fresh-card attempt) fires payment_intent.payment_failed for the
+  // SAME PaymentIntent id either way — handlePaymentIntentFailed's own header
+  // comment confirms no Membership was ever created for a PENDING Transaction,
+  // so there is nothing to undo beyond the status flip itself.
+  it('payment_intent.payment_failed flips the Transaction to FAILED and creates no Membership (Decision 243 — a declined/expired Checkout attempt)', async () => {
+    const { transaction, stripePaymentIntentId } = await seedPendingTransaction();
+    const stripeEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(stripeEventId);
+
+    await processor.process(fakeJob({ stripeEventId, eventType: 'payment_intent.payment_failed', objectId: stripePaymentIntentId }));
+
+    const updatedTransaction = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updatedTransaction.status).toBe('FAILED');
+    expect(updatedTransaction.membershipId).toBeNull();
+    const membershipCount = await superuser.membership.count({ where: { studentId: transaction.studentId } });
+    expect(membershipCount).toBe(0);
+  });
+
+  it('a redelivered payment_intent.payment_failed is a no-op — already-FAILED Transaction untouched, no Membership', async () => {
+    const { transaction, stripePaymentIntentId } = await seedPendingTransaction();
+    const firstEventId = `evt_fixture_${randomUUID()}`;
+    const secondEventId = `evt_fixture_${randomUUID()}`;
+    eventIds.push(firstEventId, secondEventId);
+
+    await processor.process(fakeJob({ stripeEventId: firstEventId, eventType: 'payment_intent.payment_failed', objectId: stripePaymentIntentId }));
+    await expect(
+      processor.process(fakeJob({ stripeEventId: secondEventId, eventType: 'payment_intent.payment_failed', objectId: stripePaymentIntentId })),
+    ).resolves.not.toThrow();
+
+    const updatedTransaction = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updatedTransaction.status).toBe('FAILED');
+    const membershipCount = await superuser.membership.count({ where: { studentId: transaction.studentId } });
+    expect(membershipCount).toBe(0);
   });
 
   it('customer.subscription.deleted Expires the matching Active Membership, cancels its future Bookings (Decision 122), and notifies the waitlist for each freed seat', async () => {

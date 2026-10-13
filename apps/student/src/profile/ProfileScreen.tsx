@@ -19,6 +19,9 @@ type Form = {
   address: string;
   language: string;
   currency: string;
+  weightCategory: string;
+  kimonoSize: string;
+  beltSize: string;
 };
 
 function formFrom(profile: UserProfile): Form {
@@ -32,6 +35,9 @@ function formFrom(profile: UserProfile): Form {
     address: profile.address ?? '',
     language: profile.language ?? '',
     currency: profile.currency ?? '',
+    weightCategory: profile.weightCategory ?? '',
+    kimonoSize: profile.kimonoSize ?? '',
+    beltSize: profile.beltSize ?? '',
   };
 }
 
@@ -83,6 +89,9 @@ export function ProfileScreen() {
         address: form.address.trim() || undefined,
         language: form.language || undefined,
         currency: form.currency || undefined,
+        weightCategory: form.weightCategory.trim() || undefined,
+        kimonoSize: form.kimonoSize.trim() || undefined,
+        beltSize: form.beltSize.trim() || undefined,
       },
       { onSuccess: () => setSaved(true) },
     );
@@ -130,6 +139,16 @@ export function ProfileScreen() {
       </Field>
       <Field label="Address">
         <TextField value={form.address} onChangeText={(v) => set('address', v)} multiline />
+      </Field>
+
+      <Field label="Weight category" hint="Free text — no confirmed unit/scale (Decision 220/246)">
+        <TextField value={form.weightCategory} onChangeText={(v) => set('weightCategory', v)} />
+      </Field>
+      <Field label="Kimono size" hint="Free text — no confirmed size chart (Decision 220/246)">
+        <TextField value={form.kimonoSize} onChangeText={(v) => set('kimonoSize', v)} />
+      </Field>
+      <Field label="Belt size" hint="Free text — no confirmed size chart (Decision 220/246)">
+        <TextField value={form.beltSize} onChangeText={(v) => set('beltSize', v)} />
       </Field>
 
       <Field label="Language">

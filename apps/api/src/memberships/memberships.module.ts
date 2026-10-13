@@ -4,6 +4,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { GuardiansModule } from '../guardians/guardians.module';
 import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
 import { AuthModule } from '../auth/auth.module';
+import { QueueModule } from '../jobs/queue.module';
 import { MembershipsController } from './memberships.controller';
 import { MembershipsService } from './memberships.service';
 
@@ -37,9 +38,15 @@ import { MembershipsService } from './memberships.service';
  * "second named consumer" GuardiansModule's own header comment already
  * described for this exact follow-up. GuardiansModule (imported above) does
  * NOT re-export AuthModule's providers, so this needs its own direct import.
+ *
+ * Imports QueueModule (v1.2 backend backlog) for
+ * @InjectQueue(MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE) — updatePlan() enqueues
+ * the bulk Stripe-migration job the instant a MIGRATE decision is recorded,
+ * same direct QueueModule-import pattern PaymentsModule's own header comment
+ * already established for its own STRIPE_WEBHOOK_PROCESSING_QUEUE injection.
  */
 @Module({
-  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule],
+  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule],
   controllers: [MembershipsController],
   providers: [MembershipsService],
 })

@@ -128,7 +128,12 @@ export class AcademiesService {
       select: {
         ...SCHOOL_SUMMARY_SELECT,
         membershipPlans: {
-          where: { visible: true },
+          // v1.2 backend backlog "Archive action" — an archived plan must
+          // never appear in the Student-facing purchase list, same
+          // discipline `visible: true` already enforces here. Belt-and-
+          // suspenders with the row-level policy (membership_plan_discovery_read,
+          // widened in this same PR) — see that migration's own comment.
+          where: { visible: true, archivedAt: null },
           // Ordered by id, NOT createdAt — createdAt is deliberately excluded from
           // both this select and the migration's own column-level GRANT (an
           // internal/audit field, not discovery-appropriate), and Postgres requires

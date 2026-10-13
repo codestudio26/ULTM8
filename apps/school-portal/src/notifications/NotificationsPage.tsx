@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useMarkNotificationRead, useNotificationCounts, useNotifications, type NotificationResponse } from './notificationQueries';
+import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useBranches } from '../branches/branchQueries';
+import { useClasses } from '../classes/classQueries';
+import {
+  useBroadcastNotification,
+  useMarkNotificationRead,
+  useNotificationCounts,
+  useNotifications,
+  useSnoozeNotification,
+  type NotificationResponse,
+} from './notificationQueries';
+import { BroadcastNotificationModal } from './BroadcastNotificationModal';
+import { SnoozeNotificationModal } from './SnoozeNotificationModal';
 
 /** Small, page-local summary tile — same shape/style as TransactionsPage's and
  * MembershipPlansPage's own `StatTile` (not promoted to @ultm8/ui yet, per
@@ -32,12 +44,30 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+/** A Notification is "snoozed" exactly when `snoozedUntil` is set AND still
+ * in the future — once it elapses, notification-unsnooze-sweep clears the
+ * column (and getCountsForCaller's own live computation already treats it as
+ * unread again even before that sweep next runs) — see
+ * NotificationsService.getCountsForCaller's own header comment. Computed
+ * client-side from the same field the list row already carries, not a
+ * separate fetch. */
+function isSnoozed(n: NotificationResponse): boolean {
+  return !!n.snoozedUntil && new Date(n.snoozedUntil).getTime() > Date.now();
+}
+
 /** The logged-in User's own notification inbox — every School Owner/Manager,
  * Branch Staff, or Instructor using this portal has one, same as a Student
- * would in the mobile app (GET /notifications/me is not School-scoped). List
- * + mark-read only — no device-token registration here (see
- * notificationQueries.ts's own header comment on why). */
+ * would in the mobile app (GET /notifications/me is not School-scoped).
+ * Mark-read and Snooze (v1.2 backend backlog, approved by the product owner)
+ * live in each row's action menu; Broadcast/compose (same backlog entry) is
+ * a School-Owner-only PageHeader action, since the backend endpoint it calls
+ * is School-Owner-gated — a Branch Staff/Instructor using this same page
+ * never sees it (useOwnedSchoolId is null for them, same gate
+ * WaiversPage/MembershipPlansPage's own "Add" actions already use). No
+ * device-token registration here (see notificationQueries.ts's own header
+ * comment on why). */
 export function NotificationsPage() {
+  const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useNotifications();
   // v1.2 backend backlog (Decision 204's Concept 5 finding) — a SEPARATE
   // query against the new dedicated counts endpoint, deliberately NOT
@@ -48,7 +78,19 @@ export function NotificationsPage() {
   // on one page — the exact gap this endpoint exists to close.
   const counts = useNotificationCounts();
   const markRead = useMarkNotificationRead();
-  const [markReadError, setMarkReadError] = useState<string | null>(null);
+  const snooze = useSnoozeNotification();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [snoozing, setSnoozing] = useState<NotificationResponse | null>(null);
+  const [broadcasting, setBroadcasting] = useState(false);
+
+  // Broadcast's audience targeting (v1.2 backend backlog) needs the School's
+  // Branch/Class lists for its own two scoped dropdowns — fetched here
+  // (schoolId-gated, so a non-Owner never issues these requests at all) and
+  // handed down to the modal, same "page owns the data, modal owns the form"
+  // split BranchFormModal/ClassFormModal callers already use elsewhere.
+  const branches = useBranches(schoolId);
+  const classes = useClasses(schoolId);
+  const broadcast = useBroadcastNotification(schoolId ?? '');
 
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Notifications.'} />;
@@ -56,30 +98,61 @@ export function NotificationsPage() {
   const notifications = data?.items ?? [];
 
   async function handleMarkRead(id: string) {
-    setMarkReadError(null);
+    setActionError(null);
     try {
       await markRead.mutateAsync(id);
     } catch (err) {
-      setMarkReadError(err instanceof ApiError ? err.message : 'Could not mark this notification as read — please try again.');
+      setActionError(err instanceof ApiError ? err.message : 'Could not mark this notification as read — please try again.');
     }
+  }
+
+  async function handleSnooze(minutes: number) {
+    if (!snoozing) return;
+    await snooze.mutateAsync({ id: snoozing.id, body: { minutes } });
+    setSnoozing(null);
   }
 
   return (
     <>
-      <PageHeader title="Notifications" subtitle="Updates sent to your own account." />
+      <PageHeader
+        title="Notifications"
+        subtitle="Updates sent to your own account."
+        actions={
+          // v1.2 backend backlog — Broadcast/compose, approved by the product
+          // owner. School-Owner-only: schoolId is null for a Branch Staff/
+          // Instructor viewing their own inbox on this same page.
+          schoolId ? <Button onClick={() => setBroadcasting(true)}>Broadcast to Students</Button> : undefined
+        }
+      />
 
       {/* Stats ribbon (v1.2 backend backlog, Decision 204's Concept 5 finding:
           "Total/Unread are real but page-scoped (no count endpoint exists to
-          total across every page)") — both tiles are real, backed by the new
+          total across every page)") — all three tiles are real, backed by the
           GET /notifications/me/counts endpoint, not the page-local `notifications`
           list below. A failed counts fetch degrades to an em dash rather than
           blocking the whole page — the list is still perfectly usable without it. */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
         <StatTile label="Total" value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.total} />
         <StatTile label="Unread" value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.unread} />
+        {/* v1.2 backend backlog — Read within 24h metric, approved by the
+            product owner. `null` (nothing read yet) renders as an em dash,
+            same convention the other two tiles already use for a failed fetch —
+            here it's a genuinely empty metric, not an error. */}
+        <StatTile
+          label="Read within 24h"
+          value={
+            counts.isLoading ? (
+              <Spinner />
+            ) : counts.error || counts.data!.readWithin24hPercent === null ? (
+              '—'
+            ) : (
+              `${counts.data!.readWithin24hPercent}%`
+            )
+          }
+        />
       </div>
 
-      {markReadError ? <ErrorBanner message={markReadError} /> : null}
+      {actionError ? <ErrorBanner message={actionError} /> : null}
       <Card>
         {notifications.length === 0 ? (
           <EmptyState title="No notifications yet" description="You're all caught up." />
@@ -90,7 +163,14 @@ export function NotificationsPage() {
               {
                 key: 'status',
                 header: '',
-                render: (n) => (n.read ? <Badge>Read</Badge> : <Badge variant="accent">New</Badge>),
+                render: (n) =>
+                  isSnoozed(n) ? (
+                    <Badge>Snoozed</Badge>
+                  ) : n.read ? (
+                    <Badge>Read</Badge>
+                  ) : (
+                    <Badge variant="accent">New</Badge>
+                  ),
               },
               { key: 'title', header: 'Title', render: (n) => n.title },
               { key: 'body', header: 'Message', render: (n) => n.body },
@@ -98,32 +178,46 @@ export function NotificationsPage() {
               {
                 key: 'actions',
                 header: '',
-                render: (n) =>
-                  n.read ? null : (
-                    // FOUND ON REVIEW: this Button used to pass the single
-                    // shared `markRead.isPending`, which put EVERY unread
-                    // row's button into a loading+disabled state whenever
-                    // any one of them was mutating (`markRead.variables`
-                    // — react-query's own record of the last-called
-                    // mutate() argument — scopes it back down to just the
-                    // row actually in flight). Also now goes through
-                    // handleMarkRead so a failed PATCH surfaces an
-                    // ErrorBanner instead of silently doing nothing,
-                    // matching WaiverFormModal's own established
-                    // try/catch-into-ErrorBanner convention.
-                    <Button
-                      variant="secondary"
-                      loading={markRead.isPending && markRead.variables === n.id}
-                      onClick={() => handleMarkRead(n.id)}
-                    >
-                      Mark read
-                    </Button>
-                  ),
+                // v1.2 backend backlog — Snooze, previously shown
+                // disabled-styled in this menu with no endpoint behind it; now
+                // real (PATCH /notifications/:id/snooze). "Mark read" stays
+                // disabled once already read, same as the plain Button it
+                // replaces did by simply not rendering at all — a menu item
+                // reads clearer disabled than it would hidden, since the menu
+                // itself should always offer a consistent set of items per row.
+                render: (n) => (
+                  <RowActionsMenu
+                    label={`Actions for ${n.title}`}
+                    actions={[
+                      { label: 'Mark read', onClick: () => handleMarkRead(n.id), disabled: n.read },
+                      { label: 'Snooze', onClick: () => setSnoozing(n) },
+                    ]}
+                  />
+                ),
               },
             ]}
           />
         )}
       </Card>
+
+      {snoozing ? (
+        <SnoozeNotificationModal
+          title={snoozing.title}
+          submitting={snooze.isPending}
+          onSubmit={handleSnooze}
+          onClose={() => setSnoozing(null)}
+        />
+      ) : null}
+
+      {broadcasting ? (
+        <BroadcastNotificationModal
+          branches={branches.data?.items ?? []}
+          classes={classes.data?.items ?? []}
+          submitting={broadcast.isPending}
+          onSubmit={(input) => broadcast.mutateAsync(input)}
+          onClose={() => setBroadcasting(false)}
+        />
+      ) : null}
     </>
   );
 }

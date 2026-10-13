@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -8,6 +10,8 @@ import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { StepUpService } from '../auth/step-up.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE } from '../jobs/queue.constants';
+import { MembershipPlanPriceMigrationJobData } from '../jobs/membership-plan-price-migration.types';
 import { CreateMembershipPlanDto } from './dto/create-membership-plan.dto';
 import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { PurchaseMembershipDto } from './dto/purchase-membership.dto';
@@ -42,6 +46,7 @@ export class MembershipsService {
     private readonly guardiansService: GuardiansService,
     private readonly subscriptionGate: SubscriptionGateService,
     private readonly stepUpService: StepUpService,
+    @InjectQueue(MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE) private readonly priceMigrationQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -183,7 +188,54 @@ export class MembershipsService {
     // back to 0, even though dto.type itself is undefined on that request).
     const priceOrTypeChanged = dto.price !== undefined || dto.type !== undefined;
     const classesIncludedChanged = dto.classesIncluded !== undefined || dto.scopedClassId !== undefined || dto.type !== undefined;
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+
+    // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+    // prompt. Only SUBSCRIPTION-staying-SUBSCRIPTION edits are in scope — a
+    // type change away from/into SUBSCRIPTION alongside a price change is a
+    // separate, pre-existing gap this feature doesn't attempt to also solve
+    // (flagged, not silently handled). `priceChanged` is the forced/resolved
+    // nextPrice vs. the stored price, not the raw dto.price — same "validate
+    // against the forced value" discipline this method's own FRIEND_PASS
+    // comment above already established.
+    const priceChanged = existing.type === 'SUBSCRIPTION' && nextType === 'SUBSCRIPTION' && priceOrTypeChanged && nextPrice !== existing.price;
+    let stripeProductId: string | undefined;
+    let stripePriceId: string | undefined;
+    let affectedMembershipCount = 0;
+    if (priceChanged) {
+      affectedMembershipCount = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.membership.count({ where: { membershipPlanId: planId, status: 'ACTIVE', stripeSubscriptionId: { not: null } } }),
+      );
+      // A brand-new/never-subscribed plan has nothing to migrate or
+      // grandfather — no choice is required, and no decision row is created;
+      // the price simply changes, same as any other field edit.
+      if (affectedMembershipCount > 0) {
+        if (!dto.priceChangeStrategy) {
+          throw new BadRequestException(
+            `This SUBSCRIPTION plan has ${affectedMembershipCount} active subscriber(s) — choose priceChangeStrategy ("MIGRATE" or "GRANDFATHER") before changing its price.`,
+          );
+        }
+        const nextCurrency = dto.currency !== undefined ? dto.currency : existing.currency;
+        const connectedAccountId = await this.paymentsService.getStripeConnectedAccountId(callerId, existing.schoolId);
+        const created = await this.paymentsService.createPriceForPlan(connectedAccountId, {
+          existingProductId: existing.stripeProductId,
+          productName: dto.title ?? existing.title,
+          amount: nextPrice,
+          currency: nextCurrency ?? 'usd',
+        });
+        stripeProductId = created.productId;
+        stripePriceId = created.priceId;
+      }
+    } else if (dto.priceChangeStrategy) {
+      // FOUND ON REVIEW: a strategy sent when nothing actually requires one
+      // (price unchanged, or this isn't a SUBSCRIPTION-staying-SUBSCRIPTION
+      // edit) is rejected rather than silently ignored — the same "a
+      // caller-supplied value with no effect is a caller mistake worth
+      // surfacing" discipline this codebase already applies elsewhere (e.g.
+      // classesIncluded: null above).
+      throw new BadRequestException('priceChangeStrategy was provided but this edit does not change a SUBSCRIPTION plan\'s price — omit it.');
+    }
+
+    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.membershipPlan.update({
         where: { id: planId },
         data: {
@@ -204,8 +256,95 @@ export class MembershipsService {
           termsWaiverRequired: dto.termsWaiverRequired,
           disciplineIds: dto.disciplineIds,
           includesLessons: dto.includesLessons,
+          stripeProductId,
+          stripePriceId,
         },
       }),
+    );
+
+    if (priceChanged && affectedMembershipCount > 0 && dto.priceChangeStrategy) {
+      await this.recordPriceChangeDecision(callerId, {
+        membershipPlanId: planId,
+        schoolId: existing.schoolId,
+        decision: dto.priceChangeStrategy,
+        oldPrice: existing.price,
+        newPrice: nextPrice,
+        oldCurrency: existing.currency,
+        newCurrency: updated.currency,
+        decidedById: callerId,
+        affectedMembershipCount,
+      });
+    }
+
+    return updated;
+  }
+
+  /**
+   * v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+   * prompt. Records the auditable decision row and, for MIGRATE only,
+   * enqueues the bulk Stripe-migration background job
+   * (membership-plan-price-migration.processor.ts) — GRANDFATHER needs no
+   * further action: MembershipPlan.stripePriceId already points new
+   * purchases at the new Price (set by updatePlan() just above), and every
+   * EXISTING Membership's own Stripe Subscription is deliberately left
+   * untouched, which is already the default outcome of doing nothing further
+   * here.
+   */
+  private async recordPriceChangeDecision(
+    callerId: string,
+    params: {
+      membershipPlanId: string;
+      schoolId: string;
+      decision: 'MIGRATE' | 'GRANDFATHER';
+      oldPrice: number;
+      newPrice: number;
+      oldCurrency: string | null;
+      newCurrency: string | null;
+      decidedById: string;
+      affectedMembershipCount: number;
+    },
+  ): Promise<void> {
+    const isMigrate = params.decision === 'MIGRATE';
+    const id = randomUUID();
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membershipPlanPriceChange.create({
+        data: {
+          id,
+          membershipPlanId: params.membershipPlanId,
+          schoolId: params.schoolId,
+          decision: params.decision,
+          oldPrice: params.oldPrice,
+          newPrice: params.newPrice,
+          oldCurrency: params.oldCurrency,
+          newCurrency: params.newCurrency,
+          decidedById: params.decidedById,
+          affectedMembershipCount: params.affectedMembershipCount,
+          // GRANDFATHER resolves immediately — there is genuinely nothing
+          // further to do (see this method's own header comment) — MIGRATE
+          // starts PENDING and is only ever advanced by the background job.
+          status: isMigrate ? 'PENDING' : 'COMPLETED',
+          completedAt: isMigrate ? undefined : new Date(),
+        },
+      }),
+    );
+    if (isMigrate) {
+      await this.priceMigrationQueue.add(
+        'migrate',
+        { priceChangeId: id } satisfies MembershipPlanPriceMigrationJobData,
+        { jobId: id, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
+    }
+  }
+
+  /** v1.2 backend backlog — audit trail for the price-change decision log,
+   * School Owner/Manager only (same gate as every other MembershipPlan
+   * mutation/read). Newest first — a staff member checking "what did we
+   * decide last time" cares about the most recent decision first. */
+  async findPriceChanges(callerId: string, planId: string) {
+    const plan = await this.findOnePlan(callerId, planId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, plan.schoolId);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membershipPlanPriceChange.findMany({ where: { membershipPlanId: planId }, orderBy: { createdAt: 'desc' } }),
     );
   }
 
@@ -224,6 +363,43 @@ export class MembershipsService {
 
   // No delete method — same reasoning ClassesModule/School/Branch already
   // established (general tenant offboarding is [UNRESOLVED]).
+
+  // ---------------------------------------------------------------------------
+  // v1.2 backend backlog "Archive action" — School Owner/Manager only, same
+  // gate every other MembershipPlan mutation above already uses. Archiving
+  // never deletes the row or touches any Membership that references it —
+  // see MembershipPlan.archivedAt's own schema.prisma comment for the full
+  // "why a timestamp, why not cascade" account.
+  // ---------------------------------------------------------------------------
+
+  async archivePlan(callerId: string, planId: string) {
+    const existing = await this.findOnePlan(callerId, planId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (existing.archivedAt) {
+      return existing; // idempotent — archiving an already-archived plan is a no-op, not an error.
+    }
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membershipPlan.update({ where: { id: planId }, data: { archivedAt: new Date() } }),
+    );
+  }
+
+  /** Un-archiving (this build's own call, per the backlog's "your call whether
+   * to support it") — kept deliberately simple: the same School-Owner gate,
+   * reversing the one flag. No special "was it visible before" restore logic
+   * — `visible` is untouched either way, same as it was untouched by
+   * archivePlan() itself. */
+  async unarchivePlan(callerId: string, planId: string) {
+    const existing = await this.findOnePlan(callerId, planId);
+    await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    if (!existing.archivedAt) {
+      return existing; // idempotent, same reasoning as archivePlan() above.
+    }
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.membershipPlan.update({ where: { id: planId }, data: { archivedAt: null } }),
+    );
+  }
 
   private assertValidPlanShape(
     type: string,
@@ -303,8 +479,24 @@ export class MembershipsService {
     if (dto?.payWithSavedCard && isGuardianAction) {
       throw new BadRequestException('Paying with a saved card is not supported for a Guardian-driven purchase — pay with a new card instead.');
     }
+    // Decision 243 — the two fresh-card-collection mechanisms are mutually
+    // exclusive flags on the same request, same "fail loudly on an
+    // unsupported combination rather than silently prefer one" discipline the
+    // check above already follows.
+    if (dto?.payWithSavedCard && dto?.useHostedCheckout) {
+      throw new BadRequestException('payWithSavedCard and useHostedCheckout are mutually exclusive — choose one.');
+    }
 
     const plan = await this.findOnePlan(studentId, planId);
+    // v1.2 backend backlog "Archive action" — a developer-level judgment call
+    // (not explicitly asked for by the backlog item, which only names the
+    // Discovery-facing list): archiving is reasoned as a stronger, intended-
+    // permanent retirement than `visible=false` (which does NOT block a
+    // direct purchase-by-id today), so a direct purchase attempt against an
+    // archived plan's id is rejected outright rather than left reachable.
+    if (plan.archivedAt) {
+      throw new BadRequestException('This MembershipPlan has been archived and can no longer be purchased.');
+    }
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new
     // payments" is one of the three actions it explicitly names (Phase 54).
     // Checked under `studentId`'s own RLS context, not `callerId`'s — same
@@ -345,6 +537,17 @@ export class MembershipsService {
     }
     if (dto?.payWithSavedCard && paymentAccount.provider !== 'STRIPE') {
       throw new BadRequestException('Paying with a saved card requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.');
+    }
+    // Decision 243 — Track B Slice 4b's hosted-Checkout path, scoped
+    // identically to payWithSavedCard's own two checks immediately above
+    // (CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP, Stripe-configured School only).
+    // Unlike payWithSavedCard, this is NOT rejected for a Guardian-driven
+    // purchase — see PurchaseMembershipDto's own header comment for why.
+    if (dto?.useHostedCheckout && plan.type === 'SUBSCRIPTION') {
+      throw new BadRequestException('Hosted Checkout for a SUBSCRIPTION plan is not supported yet — pay with a new card instead.');
+    }
+    if (dto?.useHostedCheckout && paymentAccount.provider !== 'STRIPE') {
+      throw new BadRequestException('Hosted Checkout requires a Stripe-configured School — this School is configured for Cash/Bank Transfer only.');
     }
 
     // £0-immediate path (Spec 55 §6.1: "any Cash/Bank-eligible plan priced at 0...
@@ -389,6 +592,10 @@ export class MembershipsService {
           plan.price,
           currency,
           plan.title,
+          // v1.2 backend backlog — once a price-change decision has created a
+          // persisted Price for this plan, every new purchase attaches to it
+          // (see PaymentsService.subscribe()'s own header comment).
+          plan.stripePriceId ?? undefined,
         );
         await this.prismaApp.withTenantContext(studentId, (tx) =>
           tx.transaction.create({
@@ -419,6 +626,14 @@ export class MembershipsService {
       // here; CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only.
       if (dto?.payWithSavedCard) {
         return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, stepUpToken);
+      }
+
+      // Decision 243 (Track B Slice 4b) — hosted Stripe Checkout, the fresh-
+      // card path apps/student can actually complete. SUBSCRIPTION already
+      // took its own branch above and never reaches here; CLASS_PACK/
+      // WEEKLY_PASS/TRIAL_MEMBERSHIP only, same scope as payWithSavedCard.
+      if (dto?.useHostedCheckout) {
+        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency);
       }
 
       const { paymentIntentId, clientSecret } = await this.paymentsService.charge(studentId, plan.schoolId, plan.price, currency, plan.title);
@@ -564,6 +779,61 @@ export class MembershipsService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Decision 243 (Track B Slice 4b) — `purchase()`'s `useHostedCheckout`
+   * branch. apps/student has no Stripe SDK dependency (Decision 113/238), so
+   * the bare PaymentIntent `clientSecret` the `charge()` branch above returns
+   * (`requires_payment`) is a dead end there — nothing in that app can render
+   * Stripe Elements/PaymentSheet against it. This instead wraps the identical
+   * one-time charge in a hosted Stripe Checkout Session (Decision 238's own
+   * `mode: 'setup'` card-saving pattern, extended to `mode: 'payment'`),
+   * opened in the device's own browser via `expo-web-browser`.
+   *
+   * The Transaction created below is, deliberately, shaped EXACTLY like the
+   * `charge()` branch's own Transaction — same PENDING/STRIPE/
+   * stripePaymentIntentId — because `PaymentsService.
+   * createPurchaseCheckoutSession()`'s own header comment confirms a
+   * `mode: 'payment'` Checkout Session's underlying PaymentIntent exists
+   * synchronously, at Session-creation time. That's what lets this reuse the
+   * EXISTING `payment_intent.succeeded` webhook handler
+   * (`StripeWebhookProcessingProcessor.handlePaymentIntentSucceeded`)
+   * verbatim for Membership creation and collision handling, instead of a
+   * second, parallel path keyed off `checkout.session.completed` — no
+   * processor change needed for this purchase path at all.
+   */
+  private async purchaseViaHostedCheckout(
+    studentId: string,
+    plan: { id: string; schoolId: string; price: number; title: string },
+    paymentAccountId: string,
+    currency: string,
+  ) {
+    const { checkoutUrl, paymentIntentId } = await this.paymentsService.createPurchaseCheckoutSession(
+      studentId,
+      plan.schoolId,
+      plan.price,
+      currency,
+      plan.title,
+    );
+    const transactionId = randomUUID();
+    await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.transaction.create({
+        data: {
+          id: transactionId,
+          schoolId: plan.schoolId,
+          studentId,
+          paymentAccountId,
+          membershipPlanId: plan.id,
+          amount: plan.price,
+          currency,
+          status: 'PENDING',
+          paymentMethod: 'STRIPE',
+          stripePaymentIntentId: paymentIntentId,
+        },
+      }),
+    );
+    return { outcome: 'requires_checkout' as const, checkoutUrl, transactionId };
   }
 
   /**

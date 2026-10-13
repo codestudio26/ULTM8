@@ -372,6 +372,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/role-grants/add-manually": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RoleGrantsController_createStaffManually"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises": {
         parameters: {
             query?: never;
@@ -738,6 +754,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["NotificationsController_markRead"];
+        trace?: never;
+    };
+    "/v1/notifications/{id}/snooze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["NotificationsController_snooze"];
         trace?: never;
     };
     "/v1/notifications/device-tokens": {
@@ -1532,6 +1564,54 @@ export interface paths {
             cookie?: never;
         };
         get: operations["MembershipsController_getActiveCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_archivePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MembershipsController_unarchivePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/price-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_findPriceChanges"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2644,6 +2724,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/notifications/broadcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationBroadcastController_broadcast"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{id}/fee-charges": {
         parameters: {
             query?: never;
@@ -3102,6 +3198,12 @@ export interface components {
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string;
         };
         UserResponseDto: {
             id: string;
@@ -3119,6 +3221,12 @@ export interface components {
             currency?: string | null;
             address?: string | null;
             profilePhotoUrl?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3255,6 +3363,32 @@ export interface components {
             firstName?: string | null;
             surname?: string | null;
             email?: string | null;
+        };
+        CreateStaffManuallyDto: {
+            firstName: string;
+            surname: string;
+            email: string;
+            /** @description Required — Branch Staff always belongs to a specific Branch (unlike Instructor, which only needs one when the School itself has branches). */
+            branchId: string;
+        };
+        CreateStaffManuallyResponseDto: {
+            id: string;
+            /** @enum {string} */
+            role: "STUDENT" | "SCHOOL_OWNER_MANAGER" | "BRANCH_STAFF" | "INSTRUCTOR" | "FRANCHISE_OWNER" | "GUARDIAN";
+            userId: string;
+            userFirstName: string;
+            userSurname: string;
+            franchiseId?: string | null;
+            schoolId?: string | null;
+            branchId?: string | null;
+            grantedById?: string | null;
+            grantedAt: string;
+            revokedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+            email: string;
+            /** @description False if the temp-passcode email could not be sent — the Staff account was still created. */
+            emailSent: boolean;
         };
         CreateFranchiseDto: {
             name: string;
@@ -3493,6 +3627,10 @@ export interface components {
             /** @description Developer-level discriminator — not spec-confirmed, see the Prisma model comment. */
             type?: string | null;
             createdAt: string;
+            /** @description Snoozed until this timestamp, or null if not snoozed. Developer-level addition — see the Prisma model comment. */
+            snoozedUntil?: string | null;
+            /** @description Set the first time PATCH /notifications/:id/read fires for this row, never overwritten after. Developer-level addition — see the Prisma model comment. */
+            readAt?: string | null;
         };
         NotificationListResponseDto: {
             items: components["schemas"]["NotificationResponseDto"][];
@@ -3502,8 +3640,20 @@ export interface components {
         NotificationCountsResponseDto: {
             /** @description The caller's total Notification count, across every page. */
             total: number;
-            /** @description The caller's unread Notification count, across every page. */
+            /** @description The caller's unread Notification count, across every page. Excludes a Notification that is currently snoozed (snoozedUntil in the future) — see NotificationsService.getCountsForCaller's own header comment. */
             unread: number;
+            /** @description Percentage (0–100) of the caller's own READ Notifications whose readAt fell within 24h of createdAt. Null when the caller has never read a Notification (nothing to compute a rate over). */
+            readWithin24hPercent: number | null;
+            /** @description How many of the caller's READ Notifications were read within 24h of createdAt. */
+            readWithin24hCount: number;
+            /** @description How many of the caller's Notifications have ever been read (readAt is set) — the denominator readWithin24hPercent is computed over. */
+            readTotalCount: number;
+        };
+        SnoozeNotificationDto: {
+            /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both. */
+            until?: string;
+            /** @description Snooze for this many minutes from now (1 to 10080 / 7 days — a Developer-chosen upper bound, not a confirmed business rule). Provide this OR `until`, not both. */
+            minutes?: number;
         };
         RegisterDeviceTokenDto: {
             /** @enum {string} */
@@ -3534,6 +3684,12 @@ export interface components {
             currency?: string;
             address?: string;
             profilePhotoUrl?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */
@@ -4072,9 +4228,9 @@ export interface components {
             title: string;
             /** @description Minor currency unit (e.g. cents). Must be 0 for FRIEND_PASS. */
             price: number;
-            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). */
             currency?: string;
-            /** @description Computes each purchased Membership's expiry date at creation time. Not used by WEEKLY_PASS. */
+            /** @description Computes each purchased Membership's expiry date at creation time — used by every plan type, including WEEKLY_PASS (Decision 249; a prior version of this description incorrectly said otherwise). */
             expiryDurationDays?: number;
             /** @description CLASS_PACK / FRIEND_PASS credit quantity. Capped at 1 when scopedClassId is set. */
             classesIncluded?: number;
@@ -4104,6 +4260,8 @@ export interface components {
             classesIncluded?: number | null;
             scopedClassId?: string | null;
             visible: boolean;
+            /** @description v1.2 backend backlog — set when this plan has been archived (permanent-retirement state, distinct from visible). Null when not archived. */
+            archivedAt?: string | null;
             refundFeeDate?: string | null;
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
@@ -4134,7 +4292,7 @@ export interface components {
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
             includesLessons?: boolean;
-            /** @description One of the 6 supported currencies (School's own choice, no conversion applied). Pass null to clear. */
+            /** @description An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear. */
             currency?: string | null;
             /** @description Computes each purchased Membership's expiry date at creation time. Pass null to clear. */
             expiryDurationDays?: number | null;
@@ -4144,15 +4302,44 @@ export interface components {
             cancellationCharge?: number | null;
             /** @description ISO 8601 date-time. Pass null to clear. */
             refundFeeDate?: string | null;
+            /**
+             * @description Required only when editing a SUBSCRIPTION plan whose price is actually changing AND it already has at least one active Stripe-backed subscriber. MIGRATE moves every existing subscriber to the new price (no proration, applied at their next billing cycle); GRANDFATHER leaves existing subscribers on their original price and applies the new price to new signups only. Rejected (400) if required and omitted.
+             * @enum {string}
+             */
+            priceChangeStrategy?: "MIGRATE" | "GRANDFATHER";
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
+        };
+        MembershipPlanPriceChangeResponseDto: {
+            id: string;
+            membershipPlanId: string;
+            schoolId: string;
+            /** @enum {string} */
+            decision: "MIGRATE" | "GRANDFATHER";
+            oldPrice: number;
+            newPrice: number;
+            oldCurrency?: string | null;
+            newCurrency?: string | null;
+            decidedById: string;
+            /** @enum {string} */
+            status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+            affectedMembershipCount: number;
+            migratedCount: number;
+            failedCount: number;
+            createdAt: string;
+            completedAt?: string | null;
+        };
+        MembershipPlanPriceChangeListResponseDto: {
+            items: components["schemas"]["MembershipPlanPriceChangeResponseDto"][];
         };
         PurchaseMembershipDto: {
             /** @description Guardian-only: purchase this MembershipPlan for this linked minor Student instead of the caller. */
             studentId?: string;
             /** @description Self-purchase only: charge the saved payment method (Decision 238) instead of collecting a fresh card. Requires the X-Step-Up-Token header (Decision 236). */
             payWithSavedCard?: boolean;
+            /** @description Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard. */
+            useHostedCheckout?: boolean;
         };
         MembershipResponseDto: {
             id: string;
@@ -4171,12 +4358,14 @@ export interface components {
         };
         PurchaseMembershipResponseDto: {
             /** @enum {string} */
-            outcome: "requires_payment" | "pending_confirmation" | "active";
+            outcome: "requires_payment" | "requires_checkout" | "pending_confirmation" | "active";
             /** @description Stripe PaymentIntent client secret — present only when outcome is requires_payment. */
             clientSecret?: string;
+            /** @description Hosted Stripe Checkout Session URL (Decision 243, Track B Slice 4b) — present only when outcome is requires_checkout. Open in the device browser (expo-web-browser); confirmation arrives asynchronously via the payment_intent.succeeded webhook, same as requires_payment. */
+            checkoutUrl?: string;
             /** @description Present only when outcome is active. */
             membership?: components["schemas"]["MembershipResponseDto"];
-            /** @description The created Transaction id — present for requires_payment, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236). */
+            /** @description The created Transaction id — present for requires_payment, requires_checkout, pending_confirmation, and an active outcome reached via payWithSavedCard (Decision 236). */
             transactionId?: string;
         };
         MembershipListResponseDto: {
@@ -5206,6 +5395,29 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
+        BroadcastNotificationDto: {
+            /** @description Notification title. */
+            title: string;
+            /** @description Notification body. */
+            body: string;
+            /**
+             * @description Who receives this broadcast.
+             * @enum {string}
+             */
+            audience: "ALL" | "BRANCH" | "CLASS";
+            /** @description Required when audience is BRANCH — must be a Branch of this School. */
+            branchId?: string;
+            /** @description Required when audience is CLASS — must be a Class of this School. */
+            classId?: string;
+        };
+        BroadcastResponseDto: {
+            /** @description Correlates every Notification this call fanned out — used as the shared prefix of each one's notificationId/jobId. */
+            broadcastId: string;
+            /** @enum {string} */
+            audience: "ALL" | "BRANCH" | "CLASS";
+            /** @description How many distinct Students this broadcast was enqueued for. */
+            recipientCount: number;
+        };
         FranchiseFeeChargeResponseDto: {
             id: string;
             franchiseId: string;
@@ -5352,7 +5564,7 @@ export interface components {
             contentType: "image/png" | "image/jpeg" | "image/webp";
             /** @description Required for entityType INSTRUCTOR/BRANCH/CLASS, and for USER when acting on behalf of a Student. */
             schoolId?: string;
-            /** @description Required for entityType FRANCHISE. */
+            /** @description For entityType FRANCHISE editing an EXISTING Franchise, this is required and must equal entityId. Omit both when creating a brand-new Franchise (mirrors POST /franchises itself, which needs no prior RoleGrant either). */
             franchiseId?: string;
             /** @description The existing Instructor/Branch/Class/Franchise row's own id, or the target Student's User id for entityType USER on-behalf-of. Omit when creating a brand-new entity (its id does not exist yet) or editing your own User row. */
             entityId?: string;
@@ -6036,6 +6248,31 @@ export interface operations {
             };
         };
     };
+    RoleGrantsController_createStaffManually: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStaffManuallyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateStaffManuallyResponseDto"];
+                };
+            };
+        };
+    };
     FranchisesController_findAll: {
         parameters: {
             query?: {
@@ -6615,6 +6852,31 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationsController_snooze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnoozeNotificationDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -8015,6 +8277,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipPlanActiveCountResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_archivePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_unarchivePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_findPriceChanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanPriceChangeListResponseDto"];
                 };
             };
         };
@@ -9938,6 +10263,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcademyTimetableListResponseDto"];
+                };
+            };
+        };
+    };
+    NotificationBroadcastController_broadcast: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastNotificationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastResponseDto"];
                 };
             };
         };

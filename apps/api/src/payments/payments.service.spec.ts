@@ -172,6 +172,73 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
 });
 
 /**
+ * Decision 243 (Track B Slice 4b) — `MembershipsService.purchase()`'s
+ * `useHostedCheckout` branch calls this instead of `charge()` above: apps/
+ * student has no Stripe Elements/PaymentSheet SDK, so a bare PaymentIntent
+ * `clientSecret` is unusable there. Same "e2e tests cover everything up to
+ * the first real Stripe call; these unit tests cover the Stripe-calling code
+ * itself" split as the Decision 234 block above.
+ */
+describe('PaymentsService — createPurchaseCheckoutSession (Decision 243)', () => {
+  function makeService(stripe: Record<string, unknown>) {
+    const scopedClient = jest.fn().mockReturnValue(stripe);
+    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never);
+    jest
+      .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
+      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+    return { service, scopedClient };
+  }
+
+  it('creates a mode:payment Checkout Session with inline price_data and returns its hosted URL plus the synchronously-created PaymentIntent id', async () => {
+    const stripe = {
+      checkout: {
+        sessions: {
+          create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_1', payment_intent: { id: 'pi_checkout_1' } }),
+        },
+      },
+    };
+    const { service, scopedClient } = makeService(stripe);
+
+    const result = await service.createPurchaseCheckoutSession('student', 'school', 3000, 'gbp', '5-Class Pack');
+
+    expect(scopedClient).toHaveBeenCalledWith('acct_school');
+    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', paymentIntentId: 'pi_checkout_1' });
+    const params = stripe.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>;
+    expect(params).toMatchObject({
+      mode: 'payment',
+      success_url: 'ultm8-student://membership-purchase/complete',
+      cancel_url: 'ultm8-student://membership-purchase/cancel',
+      expand: ['payment_intent'],
+    });
+    expect(params.line_items).toEqual([
+      { price_data: { currency: 'gbp', unit_amount: 3000, product_data: { name: '5-Class Pack' } }, quantity: 1 },
+    ]);
+  });
+
+  it('accepts a bare string PaymentIntent id too, not only an expanded object (defensive — Stripe SDK typing allows either)', async () => {
+    const stripe = {
+      checkout: { sessions: { create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_2', payment_intent: 'pi_checkout_2' }) } },
+    };
+    const { service } = makeService(stripe);
+
+    const result = await service.createPurchaseCheckoutSession('student', 'school', 1000, 'usd', 'Trial');
+
+    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_2', paymentIntentId: 'pi_checkout_2' });
+  });
+
+  it('throws if Stripe somehow returns no expandable PaymentIntent — refuses to silently create an untracked Transaction', async () => {
+    const stripe = {
+      checkout: { sessions: { create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_3', payment_intent: null }) } },
+    };
+    const { service } = makeService(stripe);
+
+    await expect(service.createPurchaseCheckoutSession('student', 'school', 1000, 'usd', 'Trial')).rejects.toThrow(
+      "did not return an expandable PaymentIntent",
+    );
+  });
+});
+
+/**
  * Decision 236's own follow-up — MembershipsService.purchase()'s
  * payWithSavedCard branch calls this when a saved-card charge already
  * succeeded but the Membership it was paying for then lost the

@@ -679,6 +679,76 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     expect(res.body.error.message).toContain('Stripe-configured School');
   });
 
+  // ---------------------------------------------------------------------------
+  // Decision 243 (Track B Slice 4b) — useHostedCheckout. Same "no live Stripe
+  // credentials in CI" limitation as the payWithSavedCard block above: every
+  // assertion here is reachable BEFORE MembershipsService.purchaseViaHostedCheckout()
+  // ever makes a real Stripe call (PaymentsService.createPurchaseCheckoutSession()
+  // is only reached once every guard below has already passed). The hosted-
+  // Checkout success path itself (an actual stripe.checkout.sessions.create()
+  // call), and the Guardian-driven purchase NOT being rejected the way
+  // payWithSavedCard's own Guardian-only restriction is, are unit-tested
+  // directly instead (memberships.service.spec.ts) — the former needs a real
+  // Stripe call this environment can't make, the latter needs to observe that
+  // PaymentsService.createPurchaseCheckoutSession() was actually reached, which
+  // a 400-or-not HTTP assertion alone can't distinguish from a network error
+  // against the fixture `acct_fixture_...` connected account id below.
+  // ---------------------------------------------------------------------------
+
+  it('useHostedCheckout combined with payWithSavedCard is rejected — 400, before any plan lookup', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Mutually-Exclusive-Flags Pack', price: 1500, currency: 'gbp', classesIncluded: 1 });
+    membershipPlanIds.push(planRes.body.id);
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({ payWithSavedCard: true, useHostedCheckout: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('mutually exclusive');
+  });
+
+  it('useHostedCheckout on a SUBSCRIPTION plan is rejected — 400, before any Stripe call', async () => {
+    const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (hosted-checkout subscription)' } });
+    const stripePaymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+    });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: stripeSchool.id } });
+    const tokenStudentBAtStripeSchool = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
+    const subscriptionPlan = await superuser.membershipPlan.create({
+      data: { id: randomUUID(), schoolId: stripeSchool.id, type: 'SUBSCRIPTION', title: 'Unlimited (hosted checkout)', price: 5000 },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${subscriptionPlan.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentBAtStripeSchool}`)
+      .send({ useHostedCheckout: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('SUBSCRIPTION plan');
+
+    await superuser.membershipPlan.delete({ where: { id: subscriptionPlan.id } });
+    await superuser.roleGrant.deleteMany({ where: { userId: studentB.id, schoolId: stripeSchool.id } });
+    await superuser.paymentAccount.delete({ where: { id: stripePaymentAccount.id } });
+    await superuser.school.delete({ where: { id: stripeSchool.id } });
+  });
+
+  it('useHostedCheckout at a Cash/Bank-provider School is rejected — 400', async () => {
+    const planRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/membership-plans`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ type: 'CLASS_PACK', title: 'Cash-Bank Hosted-Checkout Pack', price: 1500, currency: 'gbp', classesIncluded: 1 });
+    membershipPlanIds.push(planRes.body.id);
+
+    const res = await request(app.getHttpServer())
+      .post(`/v1/membership-plans/${planRes.body.id}/purchase`)
+      .set('Authorization', `Bearer ${tokenStudentA}`)
+      .send({ useHostedCheckout: true });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toContain('Stripe-configured School');
+  });
+
   it('a Student (not School Owner/Manager) cannot confirm a Transaction — 403', async () => {
     const planRes = await request(app.getHttpServer())
       .post(`/v1/schools/${school.id}/membership-plans`)

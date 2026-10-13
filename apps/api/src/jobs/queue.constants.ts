@@ -40,9 +40,25 @@ export const CHARGEBACK_PATTERN_RESTRICTION_QUEUE = 'chargeback-pattern-restrict
 // membership-expiry-sweep.processor.ts's own header comment for the full
 // account (including a real bug this caught before merge).
 export const MEMBERSHIP_EXPIRY_SWEEP_QUEUE = 'membership-expiry-sweep';
+// v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
+// prompt. Event-triggered only (enqueued by MembershipsService.updatePlan()
+// the instant a staff member records a MIGRATE decision), same shape
+// CHARGEBACK_PATTERN_RESTRICTION_QUEUE already establishes for "react to one
+// event, no Scheduler needed" — see that queue's own comment. Runs the bulk
+// per-Membership Stripe Subscription-update work as a background job rather
+// than blocking the edit's own HTTP request, matching
+// franchise-fee-usage-reporting.processor.ts's own established "a
+// potentially-large per-row Stripe loop belongs in a job, not inline in a
+// service method" precedent.
+export const MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE = 'membership-plan-price-migration';
 // Decisions 145, 178 — grading notifications: "ready to grade" to the owner and
 // the coaches who may grade the student (checked after grading actions and in a
 // daily sweep), and "you've been promoted" to the student, or a minor's
 // guardians. Runs as ultm8_jobs: GuardianLink is readable only by the guardian
 // under ultm8_app's RLS.
 export const GRADING_NOTIFICATIONS_QUEUE = 'grading-notifications';
+// v1.2 backend backlog ("Notifications page" — Snooze, approved by the
+// product owner): a scheduled sweep clearing Notification.snoozedUntil once
+// it elapses, returning the Notification to the ordinary unread list — same
+// shape as booking-no-show-processing's own scheduled sweep.
+export const NOTIFICATION_UNSNOOZE_SWEEP_QUEUE = 'notification-unsnooze-sweep';
