@@ -8,6 +8,7 @@ import { decodeJwtPayload } from './decodeJwt';
 import { secureTokenStore } from './secureTokenStore';
 import { setUnauthorizedHandler } from './sessionRefresh';
 import { setCachedAccessToken } from './tokenCache';
+import { isAccessTokenExpiredOrNearExpiry } from './tokenExpiry';
 import type { JwtClaims } from './types';
 
 /** Which School a multi-School coach/Branch Staff member is currently acting as
@@ -56,19 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // other (caught in code review before this ever shipped, same discipline the backend
   // track uses).
   const claims = useMemo(() => (accessToken ? decodeJwtPayload<JwtClaims>(accessToken) : null), [accessToken]);
-
-  useEffect(() => {
-    let cancelled = false;
-    secureTokenStore.get().then((token) => {
-      if (cancelled) return;
-      setCachedAccessToken(token);
-      setAccessTokenState(token);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const applyToken = useCallback(async (token: string) => {
     await secureTokenStore.set(token);
@@ -166,7 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // auth/sessionRefresh.ts) — apps/api mints a 15-minute access token, so this is
   // the ordinary mid-session case, not a rare edge case. MUST resolve, never throw
   // (that option's own contract in packages/api-client) — the catch below is that
-  // guarantee, not just cleanup.
+  // guarantee, not just cleanup. Also the proactive, on-launch path below calls this
+  // directly, not just the reactive 401 path.
   const refreshSession = useCallback(async (): Promise<string | null> => {
     try {
       const refreshToken = await secureTokenStore.getRefreshToken();
@@ -203,6 +192,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
   }, [applyToken, logout]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const token = await secureTokenStore.get();
+      if (cancelled) return;
+      // Track B roadmap's own flagged "Not yet" item, closed here: this used to
+      // apply whatever token was in SecureStore unconditionally, even a dead one
+      // left over from before the app was closed — the first real API call would
+      // then 401 and the existing REACTIVE path (refreshSession via
+      // onUnauthorized) would silently fix it, but only after that failed
+      // request, with a brief flash/delay. Checking `exp` here lets the proactive
+      // path refresh BEFORE ever rendering as logged-in with a token already (or
+      // about to be, within the buffer) past its 15-minute TTL — reusing the same
+      // refreshSession() the reactive path already uses, not a second mechanism.
+      if (token && isAccessTokenExpiredOrNearExpiry(token)) {
+        await refreshSession();
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      setCachedAccessToken(token);
+      setAccessTokenState(token);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshSession]);
 
   useEffect(() => {
     setUnauthorizedHandler(refreshSession);

@@ -3639,3 +3639,24 @@ User, confirming "Option a, per-plan setting — build both" after being shown c
 
 User, via direct AskUserQuestion answers earlier in this same conversation: "Option 1 and 2" (build both strategies, Franchise Owner's choice) and "Allow it, disclosed as full-period re-rate (Recommended)" for the PER_HEADCOUNT/MIGRATE_IMMEDIATE semantics specifically. The exact mechanics (deferred-job vs. Stripe Subscription Schedule for MIGRATE_NEXT_CYCLE/PER_HEADCOUNT, the new-Price-not-mutation approach, the UI's up-front billing-status query) are the Developer's own disclosed implementation choices, consistent with what was approved.
 
+## Decision 263 — Track B (apps/student) proactive token refresh on app launch, built
+
+**Date:** 14 Oct 2026 · **Status:** Confirmed by product owner, built
+**Resolves:** `docs/TRACK-B-ROADMAP.md`'s own flagged "Not yet" item under the session-refresh work: the reactive refresh path (401 → `refreshSession()` → retry) already closed the "session dies mid-use" gap, but `AuthContext`'s on-launch effect still applied whatever token `SecureStore` held unconditionally, even one that had expired while the app was closed — the first real API call would then 401 and the reactive path would silently fix it, but only after that failed request, with a brief flash/delay.
+
+### Built
+
+`apps/student/src/auth/tokenExpiry.ts` (new) — `isAccessTokenExpiredOrNearExpiry()`, decoding the stored token's own `exp` claim with a small 30-second buffer (so a request firing a second or two after the check doesn't itself race the token's real expiry). `AuthContext`'s on-launch effect now checks this before applying the stored token; a token already past it (or within the buffer) is refreshed via the SAME `refreshSession()` the reactive path already uses — before `loading` ever clears — rather than briefly applied as a known-stale token. Not a second refresh mechanism, and no foreground scheduling/timer while the app stays open — still checked only at launch, matching the scope the roadmap doc's own note already described ("closes the actual gap... without the extra complexity of... scheduling ahead of it").
+
+### What this does NOT resolve
+
+A live, in-foreground session still only ever refreshes reactively (on a 401), not on a scheduled timer ahead of the 15-minute TTL — unchanged, same as before. `apps/school-portal`'s own identical on-launch gap doesn't exist in the same shape (a browser tab's `sessionStorage` doesn't survive being closed the way a mobile app's `SecureStore` does across a cold launch) — School Portal's own refresh-token fix (Decision 262) is reactive-only by design, not a remaining gap this entry leaves open.
+
+### Tests
+
+`src/auth/tokenExpiry.test.ts` (6 cases, the pure decision function in isolation). `src/auth/AuthContext.test.tsx` (3 cases, new — a non-expiring token applied as-is with no refresh call; a near-expiry token refreshed before `loading` clears, applying the rotated token; a dead refresh token at launch ending cleanly in `logout()`). Full `apps/student` jest suite re-run (23 suites/121 tests, no regressions).
+
+### Recorded by
+
+User ("Complete it .. let me know what you need from my side"), this item needing no further input — a confirmed, previously-flagged gap with no open design question, closed by extending the already-approved reactive-refresh mechanism (Decision in that same roadmap section) rather than a new one.
+
