@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **School Portal refresh-token logic** (Decision 262) — a session no longer
+  silently dies 15 minutes after login with no recovery. School Portal now
+  stores and uses the refresh token `POST /auth/login` already handed it,
+  transparently refreshing an expired access token the moment any request
+  401s (no visible interruption, no forced re-login) — the same fix
+  `apps/student` already shipped for the identical gap, mirrored here.
+  Logging out now also revokes the refresh token server-side, not just
+  clearing it locally.
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
   at the bottom of every page, as a full-width band below the entire shell
