@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import * as auth from '../auth/AuthContext';
 import * as curriculumQ from './curriculumQueries';
 import * as waiverQ from '../waivers/waiverQueries';
@@ -95,5 +95,35 @@ describe('LessonsScreen', () => {
     mocked(curriculumQ.useLessonsOverviewForStudent).mockReturnValue(ok({ items: [lesson({ locked: true, description: null })] }));
     const { getByText } = await render(<LessonsScreen navigation={nav()} route={{ params: undefined } as never} />);
     expect(getByText('Locked — not included in your current membership.')).toBeTruthy();
+  });
+
+  it('self view: shows "My Playlists" and fetches favorites/watch-history for the real Schools', async () => {
+    mocked(curriculumQ.useLessonsOverviewForStudent).mockReturnValue(ok({ items: [lesson()] }));
+    const { getByText } = await render(<LessonsScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('My Playlists')).toBeTruthy();
+    expect(mocked(curriculumQ.useFavorites)).toHaveBeenCalledWith(['alpha']);
+    expect(mocked(curriculumQ.useWatchHistory)).toHaveBeenCalledWith(['alpha']);
+  });
+
+  it('guardian view: hides "My Playlists" and never fetches the guardian\'s own favorites/watch-history — ' +
+    'Favorite/WatchHistory/Playlist have no guardian-delegation path server-side (Decision 254\'s own disclosed gap), ' +
+    'so showing them here would silently reflect the guardian, not the linked minor', async () => {
+    mocked(curriculumQ.useLessonsOverviewForStudent).mockReturnValue(ok({ items: [lesson()] }));
+    const { queryByText } = await render(
+      <LessonsScreen navigation={nav()} route={{ params: { studentId: 'kid', name: 'Kai' } } as never} />,
+    );
+    expect(queryByText('My Playlists')).toBeNull();
+    expect(mocked(curriculumQ.useFavorites)).toHaveBeenCalledWith([]);
+    expect(mocked(curriculumQ.useWatchHistory)).toHaveBeenCalledWith([]);
+  });
+
+  it('guardian view: opening a Lesson forwards the minor\'s studentId to LessonDetail', async () => {
+    mocked(curriculumQ.useLessonsOverviewForStudent).mockReturnValue(ok({ items: [lesson()] }));
+    const navigate = jest.fn();
+    const { getByText } = await render(
+      <LessonsScreen navigation={{ navigate } as never} route={{ params: { studentId: 'kid', name: 'Kai' } } as never} />,
+    );
+    fireEvent.press(getByText('Escaping Mount'));
+    expect(navigate).toHaveBeenCalledWith('LessonDetail', expect.objectContaining({ studentId: 'kid' }));
   });
 });

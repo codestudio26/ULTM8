@@ -27,8 +27,14 @@ export type AppStackParamList = {
   /** `lesson` rides along with `lessonId` so the detail screen doesn't need its own
    * fetch — there is no student-facing "get one Lesson by id" endpoint (only the
    * list endpoint LessonsScreen already called), so this is the only way to land on
-   * this screen with the full Lesson shape (videoRef/captionStatus/etc.) in hand. */
-  LessonDetail: { lessonId: string; lesson: Lesson };
+   * this screen with the full Lesson shape (videoRef/captionStatus/etc.) in hand.
+   * `studentId` carries LessonsScreen's own guardian-view context through — present
+   * only when a guardian opened this from a linked minor's Lessons, absent for a
+   * Student's own. LessonDetailScreen needs it: Favorite/WatchHistory/Playlist/
+   * Comment have no guardian-delegation path server-side (Decision 254's own
+   * disclosed gap), so those actions run under the caller's own identity — the
+   * guardian's, not the minor's — and must be hidden rather than shown and 403ing. */
+  LessonDetail: { lessonId: string; lesson: Lesson; studentId?: string };
   Playlists: undefined;
   PlaylistDetail: { playlistId: string; name: string };
   MyMinors: undefined;

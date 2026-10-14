@@ -109,11 +109,22 @@ function CommentRow({ comment, deleteComment }: { comment: Comment; deleteCommen
  * comments does too; this is the primary UX, not a bare "let the 403 surface"
  * backstop (per this slice's own task description — the 403 is a defensive
  * backstop only for the one action, Comment delete, that genuinely has no
- * cheap client-side signal to gate on). */
+ * cheap client-side signal to gate on).
+ *
+ * `isGuardianView` (route.params.studentId set, by LessonsScreen) additionally
+ * hides Favorite/Add-to-Playlist/Comments entirely, and skips the watch-progress
+ * pings — all of them run under the CALLER's own identity server-side
+ * (`assertCanWatchLesson(callerId, ...)`, no guardian-delegation path, Decision
+ * 254's own disclosed gap), so for a guardian they'd silently act as the
+ * guardian rather than the minor, and 403 outright on any non-free Lesson even
+ * though `lesson.locked` (computed for the minor) correctly says it's unlocked.
+ * The video itself has no such gate (`playbackUrl` is already on the fetched
+ * Lesson), so it keeps playing normally either way. */
 export function LessonDetailScreen({ route }: Props) {
-  const { lesson } = route.params;
+  const { lesson, studentId } = route.params;
+  const isGuardianView = !!studentId;
 
-  const favorites = useFavorites([lesson.schoolId]);
+  const favorites = useFavorites(isGuardianView ? [] : [lesson.schoolId]);
   const favoriteLesson = useFavoriteLesson(lesson.schoolId, lesson.id);
   const unfavoriteLesson = useUnfavoriteLesson(lesson.schoolId, lesson.id);
   const favorited = favorites.lessonIds.has(lesson.id);
@@ -123,7 +134,8 @@ export function LessonDetailScreen({ route }: Props) {
   // re-render), plus once on completion. `latestTimeRef` is updated on every
   // `timeUpdate` tick regardless of the throttle, so `handleCompleted` always has
   // an accurate last-known position to report even if playback finishes less
-  // than 10 seconds after the last saved tick.
+  // than 10 seconds after the last saved tick. Skipped entirely in guardian view
+  // (see this function's own header comment) — never fires the mutation.
   const upsertProgress = useUpsertWatchProgress(lesson.schoolId, lesson.id);
   const latestTimeRef = useRef(0);
   const lastSavedRef = useRef(0);
@@ -131,13 +143,14 @@ export function LessonDetailScreen({ route }: Props) {
 
   function handleProgress(seconds: number) {
     latestTimeRef.current = seconds;
+    if (isGuardianView) return;
     if (seconds - lastSavedRef.current < 10) return;
     lastSavedRef.current = seconds;
     upsertProgress.mutate({ lastPositionSeconds: Math.round(seconds) });
   }
 
   function handleCompleted() {
-    if (completedSentRef.current) return;
+    if (isGuardianView || completedSentRef.current) return;
     completedSentRef.current = true;
     upsertProgress.mutate({ lastPositionSeconds: Math.round(latestTimeRef.current), completed: true });
   }
@@ -166,7 +179,11 @@ export function LessonDetailScreen({ route }: Props) {
   }
 
   // Comment thread — oldest first (useComments' own comment explains why).
-  const comments = useComments(lesson.schoolId, lesson.id);
+  // Disabled entirely in guardian view (empty lessonId, useComments' own
+  // `enabled: !!lessonId` guard) — even READING the thread 403s under the
+  // guardian's own identity for a non-free Lesson (see this screen's own
+  // header comment), so there is nothing safe to fetch here.
+  const comments = useComments(lesson.schoolId, isGuardianView ? '' : lesson.id);
   const createComment = useCreateComment(lesson.schoolId, lesson.id);
   const deleteComment = useDeleteComment(lesson.schoolId, lesson.id);
   const [commentBody, setCommentBody] = useState('');
@@ -201,7 +218,7 @@ export function LessonDetailScreen({ route }: Props) {
         </>
       )}
 
-      {!lesson.locked ? (
+      {!lesson.locked && !isGuardianView ? (
         <View style={{ marginTop: spacing[3] }}>
           <Button
             title={favorited ? '★ Favorited' : '☆ Favorite'}
@@ -215,61 +232,69 @@ export function LessonDetailScreen({ route }: Props) {
         </View>
       ) : null}
 
-      <View style={{ marginTop: spacing[3] }}>
-        <Button
-          title={playlistPickerOpen ? 'Hide playlists' : 'Add to Playlist'}
-          variant="secondary"
-          onPress={() => setPlaylistPickerOpen((open) => !open)}
-        />
-        {playlistPickerOpen ? (
-          <View style={{ marginTop: spacing[2] }}>
-            {playlists.isLoading ? <ActivityIndicator /> : null}
-            {playlists.isError && !playlists.data ? (
-              <ErrorBanner message={getApiErrorMessage(playlists.error, 'Could not load your playlists.')} />
-            ) : null}
-            {(playlists.data?.items ?? []).map((p) => (
-              <PlaylistOption key={p.id} playlist={p} lessonId={lesson.id} />
-            ))}
+      {!isGuardianView ? (
+        <View style={{ marginTop: spacing[3] }}>
+          <Button
+            title={playlistPickerOpen ? 'Hide playlists' : 'Add to Playlist'}
+            variant="secondary"
+            onPress={() => setPlaylistPickerOpen((open) => !open)}
+          />
+          {playlistPickerOpen ? (
             <View style={{ marginTop: spacing[2] }}>
-              <TextField value={newPlaylistName} onChangeText={setNewPlaylistName} placeholder="New playlist name" />
-              <Button title="Create playlist" variant="secondary" loading={createPlaylist.isPending} disabled={!newPlaylistName.trim()} onPress={handleCreatePlaylist} />
-              {createPlaylist.isError ? <InlineError message={getApiErrorMessage(createPlaylist.error, 'Could not create this playlist.')} /> : null}
+              {playlists.isLoading ? <ActivityIndicator /> : null}
+              {playlists.isError && !playlists.data ? (
+                <ErrorBanner message={getApiErrorMessage(playlists.error, 'Could not load your playlists.')} />
+              ) : null}
+              {(playlists.data?.items ?? []).map((p) => (
+                <PlaylistOption key={p.id} playlist={p} lessonId={lesson.id} />
+              ))}
+              <View style={{ marginTop: spacing[2] }}>
+                <TextField value={newPlaylistName} onChangeText={setNewPlaylistName} placeholder="New playlist name" />
+                <Button title="Create playlist" variant="secondary" loading={createPlaylist.isPending} disabled={!newPlaylistName.trim()} onPress={handleCreatePlaylist} />
+                {createPlaylist.isError ? <InlineError message={getApiErrorMessage(createPlaylist.error, 'Could not create this playlist.')} /> : null}
+              </View>
             </View>
-          </View>
-        ) : null}
-      </View>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={{ marginTop: spacing[6] }}>
         <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, color: theme.textPrimary, marginBottom: spacing[2] }}>
           Comments
         </Text>
 
-        {comments.isLoading ? <ActivityIndicator /> : null}
-        {comments.isError && !comments.data ? (
-          <ErrorBanner message={getApiErrorMessage(comments.error, 'Could not load comments.')} />
-        ) : null}
-        {!comments.isLoading && commentItems.length === 0 ? <Muted>No comments yet.</Muted> : null}
-
-        {commentItems.map((c) => (
-          <CommentRow key={c.id} comment={c} deleteComment={deleteComment} />
-        ))}
-        {deleteComment.isError ? <InlineError message={getApiErrorMessage(deleteComment.error, 'Could not delete this comment.')} /> : null}
-
-        {lesson.locked ? (
-          <Muted>Comments are unavailable for a locked Lesson.</Muted>
+        {isGuardianView ? (
+          <Muted>Favorites, Playlists, and Comments aren't available yet while viewing on behalf of a linked Student.</Muted>
         ) : (
-          <View style={{ marginTop: spacing[2] }}>
-            <TextField
-              value={commentBody}
-              onChangeText={setCommentBody}
-              placeholder="Add a comment…"
-              multiline
-              numberOfLines={3}
-              maxLength={2000}
-            />
-            <Button title="Post" loading={createComment.isPending} disabled={!commentBody.trim()} onPress={handlePostComment} />
-            {createComment.isError ? <InlineError message={getApiErrorMessage(createComment.error, 'Could not post this comment.')} /> : null}
-          </View>
+          <>
+            {comments.isLoading ? <ActivityIndicator /> : null}
+            {comments.isError && !comments.data ? (
+              <ErrorBanner message={getApiErrorMessage(comments.error, 'Could not load comments.')} />
+            ) : null}
+            {!comments.isLoading && commentItems.length === 0 ? <Muted>No comments yet.</Muted> : null}
+
+            {commentItems.map((c) => (
+              <CommentRow key={c.id} comment={c} deleteComment={deleteComment} />
+            ))}
+            {deleteComment.isError ? <InlineError message={getApiErrorMessage(deleteComment.error, 'Could not delete this comment.')} /> : null}
+
+            {lesson.locked ? (
+              <Muted>Comments are unavailable for a locked Lesson.</Muted>
+            ) : (
+              <View style={{ marginTop: spacing[2] }}>
+                <TextField
+                  value={commentBody}
+                  onChangeText={setCommentBody}
+                  placeholder="Add a comment…"
+                  multiline
+                  numberOfLines={3}
+                  maxLength={2000}
+                />
+                <Button title="Post" loading={createComment.isPending} disabled={!commentBody.trim()} onPress={handlePostComment} />
+                {createComment.isError ? <InlineError message={getApiErrorMessage(createComment.error, 'Could not post this comment.')} /> : null}
+              </View>
+            )}
+          </>
         )}
       </View>
     </ScrollView>

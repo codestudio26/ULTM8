@@ -47,12 +47,21 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
  * nav is a plain stack reached via buttons on other screens, not a tab bar —
  * AppNavigator.tsx's own existing shape), and a favorited-lessonIds lookup
  * fetched ONCE for the whole screen and passed down to every LessonRow (no
- * N+1 favorites fetch per row). Both of these — like the School grouping
- * itself — work the same whether this screen is showing the signed-in
- * Student's own Lessons or a Guardian's linked minor's. */
+ * N+1 favorites fetch per row).
+ *
+ * All three are deliberately SELF-scoped only (`isGuardianView` below) —
+ * Favorite/WatchHistory/Playlist have no guardian-delegation path server-side
+ * (Decision 254's own disclosed gap: "Guardian-viewing-a-linked-minor's ...
+ * Favorites/WatchHistory/Playlists is explicitly not built"). Showing them
+ * while a guardian views a linked minor's Lessons would silently reflect the
+ * GUARDIAN's own (almost always empty) favorites/progress, not the minor's —
+ * found while wiring the Guardian-Lessons fix itself, fixed here by simply not
+ * fetching/rendering them rather than showing something misleading. */
 export function LessonsScreen({ route, navigation }: Props) {
   const { claims } = useAuth();
-  const studentId = route.params?.studentId ?? claims?.sub ?? null;
+  const viewingStudentId = route.params?.studentId;
+  const isGuardianView = !!viewingStudentId;
+  const studentId = viewingStudentId ?? claims?.sub ?? null;
   const lessons = useLessonsOverviewForStudent(studentId);
   const items = lessons.data?.items ?? [];
 
@@ -66,8 +75,8 @@ export function LessonsScreen({ route, navigation }: Props) {
   }
   const schoolNames = useEnrolledSchoolNames(schoolIds);
   const categoryOrder = useLessonCategoryOrder(schoolIds);
-  const favorites = useFavorites(schoolIds);
-  const watchHistory = useWatchHistory(schoolIds);
+  const favorites = useFavorites(isGuardianView ? [] : schoolIds);
+  const watchHistory = useWatchHistory(isGuardianView ? [] : schoolIds);
 
   if (lessons.isLoading) {
     return <ActivityIndicator style={{ marginTop: spacing[6] }} />;
@@ -95,12 +104,12 @@ export function LessonsScreen({ route, navigation }: Props) {
     .slice(0, 10);
 
   function openLesson(lesson: Lesson) {
-    navigation.navigate('LessonDetail', { lessonId: lesson.id, lesson });
+    navigation.navigate('LessonDetail', { lessonId: lesson.id, lesson, studentId: viewingStudentId });
   }
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
-      <Button title="My Playlists" variant="secondary" onPress={() => navigation.navigate('Playlists')} />
+      {!isGuardianView ? <Button title="My Playlists" variant="secondary" onPress={() => navigation.navigate('Playlists')} /> : null}
 
       {continueWatching.length > 0 ? (
         <View style={{ marginTop: spacing[4], marginBottom: spacing[6] }}>
