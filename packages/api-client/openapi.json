@@ -10788,6 +10788,32 @@
           "bannerUrl": {
             "type": "string"
           },
+          "footerAboutUs": {
+            "type": "string",
+            "description": "Shown as a plain line in the footer's \"Company\" column — not a link."
+          },
+          "footerContactEmail": {
+            "type": "string"
+          },
+          "footerContactPhone": {
+            "type": "string"
+          },
+          "footerFacebookUrl": {
+            "type": "string"
+          },
+          "footerInstagramUrl": {
+            "type": "string"
+          },
+          "footerTiktokUrl": {
+            "type": "string"
+          },
+          "footerYoutubeUrl": {
+            "type": "string"
+          },
+          "footerTwitterUrl": {
+            "type": "string",
+            "description": "X (formerly Twitter)."
+          },
           "classCancellationPolicy": {
             "type": "string",
             "enum": [
@@ -10868,6 +10894,38 @@
             "nullable": true
           },
           "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerAboutUs": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerContactEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerFacebookUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerInstagramUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerTiktokUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerYoutubeUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerTwitterUrl": {
             "type": "string",
             "nullable": true
           },
@@ -11016,6 +11074,40 @@
           "bannerUrl": {
             "type": "string",
             "nullable": true
+          },
+          "footerAboutUs": {
+            "type": "string",
+            "nullable": true,
+            "description": "Shown as a plain line in the footer's \"Company\" column — not a link."
+          },
+          "footerContactEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerFacebookUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerInstagramUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerTiktokUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerYoutubeUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "footerTwitterUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "X (formerly Twitter)."
           }
         }
       },

@@ -3521,6 +3521,16 @@ export interface components {
             description?: string;
             logoUrl?: string;
             bannerUrl?: string;
+            /** @description Shown as a plain line in the footer's "Company" column — not a link. */
+            footerAboutUs?: string;
+            footerContactEmail?: string;
+            footerContactPhone?: string;
+            footerFacebookUrl?: string;
+            footerInstagramUrl?: string;
+            footerTiktokUrl?: string;
+            footerYoutubeUrl?: string;
+            /** @description X (formerly Twitter). */
+            footerTwitterUrl?: string;
             /**
              * @description Defaults to MANUAL when omitted.
              * @enum {string}
@@ -3546,6 +3556,14 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            footerAboutUs?: string | null;
+            footerContactEmail?: string | null;
+            footerContactPhone?: string | null;
+            footerFacebookUrl?: string | null;
+            footerInstagramUrl?: string | null;
+            footerTiktokUrl?: string | null;
+            footerYoutubeUrl?: string | null;
+            footerTwitterUrl?: string | null;
             /** @enum {string} */
             classCancellationPolicy: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             waitlistClaimWindowMinutes: number;
@@ -3587,6 +3605,16 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description Shown as a plain line in the footer's "Company" column — not a link. */
+            footerAboutUs?: string | null;
+            footerContactEmail?: string | null;
+            footerContactPhone?: string | null;
+            footerFacebookUrl?: string | null;
+            footerInstagramUrl?: string | null;
+            footerTiktokUrl?: string | null;
+            footerYoutubeUrl?: string | null;
+            /** @description X (formerly Twitter). */
+            footerTwitterUrl?: string | null;
         };
         /** @enum {string} */
         StudentStatus: "ACTIVE" | "INACTIVE";

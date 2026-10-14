@@ -732,6 +732,25 @@ model School {
   logoUrl         String?
   bannerUrl       String?
 
+  /// Decision 257 — the per-School content shown on apps/school-portal's own
+  /// footer (the richer, per-School shape; apps/platform-admin and
+  /// apps/student keep the simpler platform-wide LegalFooter from Decision
+  /// 256, unaffected by these fields). Every field here is optional and
+  /// independently nullable — an unset field hides its own line/icon on the
+  /// footer entirely rather than showing an empty or placeholder state (the
+  /// product owner's own explicit instruction), unlike Terms of Service /
+  /// Privacy Policy, which stay the fixed platform-wide placeholder links
+  /// from Decision 256 (a School isn't a separate legal entity publishing
+  /// its own ToS for this software).
+  footerAboutUs        String?
+  footerContactEmail   String?
+  footerContactPhone   String?
+  footerFacebookUrl    String?
+  footerInstagramUrl   String?
+  footerTiktokUrl      String?
+  footerYoutubeUrl     String?
+  footerTwitterUrl     String?
+
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
   waitlistClaimWindowMinutes     Int                             @default(120)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?

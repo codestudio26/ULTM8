@@ -1,8 +1,26 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUrl, MaxLength } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsUrl, MaxLength } from 'class-validator';
 import { CreateSchoolDto } from './create-school.dto';
 
-const NULLABLE_ON_UPDATE = ['mobileNumber', 'address', 'businessType', 'defaultLanguage', 'defaultCurrency', 'timezone', 'description', 'logoUrl', 'bannerUrl'] as const;
+const NULLABLE_ON_UPDATE = [
+  'mobileNumber',
+  'address',
+  'businessType',
+  'defaultLanguage',
+  'defaultCurrency',
+  'timezone',
+  'description',
+  'logoUrl',
+  'bannerUrl',
+  'footerAboutUs',
+  'footerContactEmail',
+  'footerContactPhone',
+  'footerFacebookUrl',
+  'footerInstagramUrl',
+  'footerTiktokUrl',
+  'footerYoutubeUrl',
+  'footerTwitterUrl',
+] as const;
 
 /**
  * FOUND PROACTIVELY (Phase 18, mirroring the identical fix applied to
@@ -80,4 +98,60 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @MaxLength(2048)
   @IsUrl()
   bannerUrl?: string | null;
+
+  // Decision 257 — per-School footer content; see CreateSchoolDto's own
+  // comment on these fields. `null` clears the field — hides its own
+  // line/icon on the footer, same as every other nullable field here.
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Shown as a plain line in the footer\'s "Company" column — not a link.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  footerAboutUs?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  footerContactEmail?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  footerContactPhone?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerFacebookUrl?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerInstagramUrl?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerTiktokUrl?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerYoutubeUrl?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'X (formerly Twitter).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerTwitterUrl?: string | null;
 }

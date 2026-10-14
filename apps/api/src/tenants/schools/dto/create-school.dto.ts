@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsEmail,
   IsEnum,
   IsInt,
   IsOptional,
@@ -126,6 +127,62 @@ export class CreateSchoolDto {
   @MaxLength(2048)
   @IsUrl()
   bannerUrl?: string;
+
+  // Decision 257 — per-School footer content (apps/school-portal's own
+  // richer footer). Every field independently optional; the footer hides its
+  // own line/icon when a field is unset, rather than showing a placeholder.
+  @ApiPropertyOptional({ description: 'Shown as a plain line in the footer\'s "Company" column — not a link.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  footerAboutUs?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  footerContactEmail?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  footerContactPhone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerFacebookUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerInstagramUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerTiktokUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerYoutubeUrl?: string;
+
+  @ApiPropertyOptional({ description: 'X (formerly Twitter).' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  @IsUrl()
+  footerTwitterUrl?: string;
 
   // No `default:` in the Swagger metadata on purpose: openapi-typescript would
   // then type this as required in packages/api-client and break existing
