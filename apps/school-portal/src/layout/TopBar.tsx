@@ -6,6 +6,7 @@ import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries
 import { useNotifications } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
 import { Avatar } from '../lib/Avatar';
+import { SchoolSwitcher } from '../coach/SchoolSwitcher';
 import type { RoleGrantClaim } from '../auth/types';
 
 function roleLabel(grants: RoleGrantClaim[] | undefined): string {
@@ -97,6 +98,8 @@ export function TopBar() {
             />
           ) : null}
         </Link>
+
+        <SchoolSwitcher />
 
         {me ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -37,3 +37,23 @@ export async function cursorPaginate<T extends { id: string }>(
   const items = hasMore ? rows.slice(0, take) : rows;
   return { items, nextCursor: hasMore ? items[items.length - 1].id : null };
 }
+
+/**
+ * Opaque cursor for keyset pagination ordered `(sortValue, id) DESC` — e.g. a
+ * notification inbox or a "continue watching" list, where chronological order
+ * matters and a bare id (random UUID) carries no useful ordering of its own
+ * (NotificationsService.findAllForCaller's own "FOUND ON REVIEW" comment
+ * explains why the plain `cursorPaginate` above is wrong for this shape).
+ * Extracted here once a second caller needed the identical encode/decode
+ * shape (Favorite/WatchHistory/Playlist/Comment, Decision 227/254) — each
+ * caller still builds its own `where`/`orderBy` against its own Prisma
+ * delegate, since that part genuinely differs per model.
+ */
+export function encodeDescCursor(sortValue: Date, id: string): string {
+  return Buffer.from(JSON.stringify({ sortValue: sortValue.toISOString(), id })).toString('base64url');
+}
+
+export function decodeDescCursor(cursor: string): { sortValue: Date; id: string } {
+  const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { sortValue: string; id: string };
+  return { sortValue: new Date(parsed.sortValue), id: parsed.id };
+}

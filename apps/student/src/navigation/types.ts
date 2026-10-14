@@ -1,3 +1,5 @@
+import type { Lesson } from '../curriculum/curriculumQueries';
+
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
@@ -22,6 +24,13 @@ export type AppStackParamList = {
   PaymentMethods: undefined;
   /** No params: the signed-in student's own Lessons; a guardian passes the minor's id. */
   Lessons: { studentId: string; name: string } | undefined;
+  /** `lesson` rides along with `lessonId` so the detail screen doesn't need its own
+   * fetch — there is no student-facing "get one Lesson by id" endpoint (only the
+   * list endpoint LessonsScreen already called), so this is the only way to land on
+   * this screen with the full Lesson shape (videoRef/captionStatus/etc.) in hand. */
+  LessonDetail: { lessonId: string; lesson: Lesson };
+  Playlists: undefined;
+  PlaylistDetail: { playlistId: string; name: string };
   MyMinors: undefined;
   MinorConsent: { studentId: string; name: string };
   KidModePin: undefined;

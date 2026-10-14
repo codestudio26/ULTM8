@@ -1,12 +1,19 @@
 import React from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ErrorBanner } from '../components/ui';
+import { Button, ErrorBanner } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight } from '../theme/tokens';
 import { useAuth } from '../auth/AuthContext';
 import { useEnrolledSchoolNames } from '../waivers/waiverQueries';
-import { useLessonCategoryOrder, useLessonsOverviewForStudent, type Lesson } from './curriculumQueries';
+import {
+  useFavorites,
+  useLessonCategoryOrder,
+  useLessonsOverviewForStudent,
+  useWatchHistory,
+  type Lesson,
+  type WatchHistoryEntry,
+} from './curriculumQueries';
 import { LessonRow } from './LessonRow';
 import type { AppStackParamList } from '../navigation/types';
 
@@ -31,8 +38,19 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
  * School's own authored order (`category`/`order`, set by Staff on
  * CurriculumPage) — matching how Staff actually built the catalogue, not an
  * arbitrary flat list. Lessons with no category sort last, under "Other",
- * mirroring CurriculumPage's own "No category" bucket. */
-export function LessonsScreen({ route }: Props) {
+ * mirroring CurriculumPage's own "No category" bucket.
+ *
+ * Curriculum learner-facing redesign (Decision 227/254): adds a "Continue
+ * watching" section above the School grouping (only shown when there's
+ * genuinely something in progress — no empty-state clutter for a Student who
+ * hasn't started watching anything), a "My Playlists" entry point (this app's
+ * nav is a plain stack reached via buttons on other screens, not a tab bar —
+ * AppNavigator.tsx's own existing shape), and a favorited-lessonIds lookup
+ * fetched ONCE for the whole screen and passed down to every LessonRow (no
+ * N+1 favorites fetch per row). Both of these — like the School grouping
+ * itself — work the same whether this screen is showing the signed-in
+ * Student's own Lessons or a Guardian's linked minor's. */
+export function LessonsScreen({ route, navigation }: Props) {
   const { claims } = useAuth();
   const studentId = route.params?.studentId ?? claims?.sub ?? null;
   const lessons = useLessonsOverviewForStudent(studentId);
@@ -48,6 +66,8 @@ export function LessonsScreen({ route }: Props) {
   }
   const schoolNames = useEnrolledSchoolNames(schoolIds);
   const categoryOrder = useLessonCategoryOrder(schoolIds);
+  const favorites = useFavorites(schoolIds);
+  const watchHistory = useWatchHistory(schoolIds);
 
   if (lessons.isLoading) {
     return <ActivityIndicator style={{ marginTop: spacing[6] }} />;
@@ -61,31 +81,83 @@ export function LessonsScreen({ route }: Props) {
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.surface0, padding: spacing[4] + spacing[1] }}>
-        <Muted>No lessons yet.</Muted>
-      </View>
-    );
+  // "Continue watching" = genuinely in-progress only: not yet completed, and the
+  // Lesson it points at is still in the already-fetched catalogue (skips a stale
+  // entry for a Lesson that's been removed/archived since). WatchHistoryResponseDto
+  // doesn't carry a title, hence the cross-reference against `items`. Each School's
+  // own list already comes back most-recently-updated-first, but merging several
+  // Schools' lists loses that global order, so re-sort after merging.
+  const lessonById = new Map(items.map((l) => [l.id, l] as const));
+  const continueWatching: { entry: WatchHistoryEntry; lesson: Lesson }[] = watchHistory.items
+    .filter((entry) => !entry.completedAt && lessonById.has(entry.lessonId))
+    .map((entry) => ({ entry, lesson: lessonById.get(entry.lessonId)! }))
+    .sort((a, b) => new Date(b.entry.updatedAt).getTime() - new Date(a.entry.updatedAt).getTime())
+    .slice(0, 10);
+
+  function openLesson(lesson: Lesson) {
+    navigation.navigate('LessonDetail', { lessonId: lesson.id, lesson });
   }
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
-      {schoolIds.map((schoolId) => (
-        <View key={schoolId} style={{ marginBottom: spacing[6] }}>
-          {schoolIds.length > 1 ? (
-            <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, color: theme.textPrimary, marginBottom: spacing[2] }}>
-              {schoolNames.get(schoolId) ?? schoolId}
-            </Text>
-          ) : null}
-          <SchoolLessons lessons={bySchool.get(schoolId)!} categoryOrder={categoryOrder} />
+      <Button title="My Playlists" variant="secondary" onPress={() => navigation.navigate('Playlists')} />
+
+      {continueWatching.length > 0 ? (
+        <View style={{ marginTop: spacing[4], marginBottom: spacing[6] }}>
+          <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, color: theme.textPrimary, marginBottom: spacing[2] }}>
+            Continue watching
+          </Text>
+          {continueWatching.map(({ entry, lesson }) => (
+            <Pressable
+              key={entry.id}
+              onPress={() => openLesson(lesson)}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                { paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: theme.border },
+                pressed ? { opacity: 0.7 } : null,
+              ]}
+            >
+              <Text style={{ fontWeight: fontWeight.heading, fontSize: fontSize.body, color: theme.textPrimary }}>{lesson.title}</Text>
+              <Muted>Continue watching</Muted>
+            </Pressable>
+          ))}
         </View>
-      ))}
+      ) : null}
+
+      {items.length === 0 ? (
+        <Muted>No lessons yet.</Muted>
+      ) : (
+        schoolIds.map((schoolId) => (
+          <View key={schoolId} style={{ marginBottom: spacing[6] }}>
+            {schoolIds.length > 1 ? (
+              <Text style={{ fontSize: fontSize.headingSm, fontWeight: fontWeight.heading, color: theme.textPrimary, marginBottom: spacing[2] }}>
+                {schoolNames.get(schoolId) ?? schoolId}
+              </Text>
+            ) : null}
+            <SchoolLessons
+              lessons={bySchool.get(schoolId)!}
+              categoryOrder={categoryOrder}
+              favoritedIds={favorites.lessonIds}
+              onPressLesson={openLesson}
+            />
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }
 
-function SchoolLessons({ lessons, categoryOrder }: { lessons: Lesson[]; categoryOrder: Map<string, number> }) {
+function SchoolLessons({
+  lessons,
+  categoryOrder,
+  favoritedIds,
+  onPressLesson,
+}: {
+  lessons: Lesson[];
+  categoryOrder: Map<string, number>;
+  favoritedIds: Set<string>;
+  onPressLesson: (lesson: Lesson) => void;
+}) {
   const byCategory = new Map<string, Lesson[]>();
   const uncategorised: Lesson[] = [];
   for (const lesson of lessons) {
@@ -119,7 +191,12 @@ function SchoolLessons({ lessons, categoryOrder }: { lessons: Lesson[]; category
             {c.name}
           </Text>
           {c.items.map((lesson) => (
-            <LessonRow key={lesson.id} lesson={lesson} />
+            <LessonRow
+              key={lesson.id}
+              lesson={lesson}
+              favorited={favoritedIds.has(lesson.id)}
+              onPress={() => onPressLesson(lesson)}
+            />
           ))}
         </View>
       ))}
@@ -134,7 +211,12 @@ function SchoolLessons({ lessons, categoryOrder }: { lessons: Lesson[]; category
             .slice()
             .sort((a, b) => a.order - b.order)
             .map((lesson) => (
-              <LessonRow key={lesson.id} lesson={lesson} />
+              <LessonRow
+                key={lesson.id}
+                lesson={lesson}
+                favorited={favoritedIds.has(lesson.id)}
+                onPress={() => onPressLesson(lesson)}
+              />
             ))}
         </View>
       ) : null}

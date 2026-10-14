@@ -3385,3 +3385,70 @@ This closes item 7 of the punch list as "no further build needed," not as "fully
 
 User, choosing "Treat like Waiver — never delete" over building a new soft-archive mechanism or a narrower list-filter-only option, 13 Oct 2026.
 
+---
+
+## Decision 254 — Curriculum learner-facing redesign + video/caption integration, built (Decisions 101, 225, 227)
+
+**Date:** 13 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** Decision 227's own scoping approval ("design not yet written, not built") — now actually built; and Decision 225's folding-in of Decision 101's long-unbuilt video/caption vendor integration (Cloudflare Stream + AWS Transcribe) into this same effort, rather than as a standalone item.
+
+### Scope answers (direct AskUserQuestion with the product owner, this session)
+
+1. **Membership gating:** a Student may favorite/comment/track-watch-progress-on/add-to-playlist a Lesson it may *watch* — reuses the exact `LessonAccess`/`isLocked` rule `shapeLessonResponse` already applies (Decisions 154, 190, 195: free Lessons to everyone at the School, non-free Lessons gated by the caller's own live Memberships whose plan includes that Lesson's Discipline). No new gating concept introduced.
+2. **Video/caption integration:** build the real Cloudflare Stream + AWS Transcribe code now, same as every other not-yet-provisioned vendor in this codebase (Twilio Verify, Cognito, SES, R2) — warn-on-missing-config, fail-on-first-actual-use, genuinely unverified against a live account until real credentials exist.
+
+### What was built
+
+**api:** migration `20261113000000_curriculum_favorites_playlists_watch_comments` — five new tables (`Favorite`, `WatchHistory`, `Playlist`, `PlaylistItem`, `Comment`), each with its own RLS policies (Comment needed three explicit `FOR SELECT`/`FOR INSERT`/`FOR DELETE` policies, not one bare `USING`, to avoid a real privilege-escalation bug caught on review before the migration was ever applied — see that migration's own header). `CloudflareStreamService` (`createDirectUploadUrl`, `isVideoReady`, `getPublicPlaybackUrl`) and `TranscribeService` (`startTranscriptionJob`, `getCompletedSubtitleUrl`), both following the established "warn on missing env, throw on first use" constructor-guard convention. `CurriculumService` gains `assertCanWatchLesson` (the shared gate for every new action below — 404 on a Lesson that doesn't exist, is archived, or doesn't belong to the caller's own `:schoolId` route param; 403 if locked) plus the full set of Favorite/WatchHistory/Playlist/PlaylistItem/Comment methods and a `requestVideoUploadUrl` (staff-only). `VideoProcessingPollScheduler`/`Processor` (new `video-processing-poll` queue, 5-minute cron) polls Cloudflare Stream readiness and drives AWS Transcribe's job lifecycle, flipping `Lesson.captionStatus` (PENDING → PROCESSING → READY/FAILED) — the same 4-state enum Decision 101 already defined, now actually driving a real state machine rather than sitting unused. `LessonResponseDto` gains `playbackUrl` (computed server-side via `CloudflareStreamService.getPublicPlaybackUrl`, null unless `captionStatus` is READY and the Lesson is unlocked) — added during this build's own review pass once the apps/student video player surfaced that no client previously had any way to get an actual playback URL at all. A real, previously-undiscovered routing bug was also found and fixed here: `addFavorite`/`removeFavorite`/`upsertWatchProgress`/`createComment`/`findComments` were initially routed under `schools/:schoolId/...` without ever binding or verifying `:schoolId` in the controller — fixed to thread it through and 404 on a cross-tenant mismatch, matching the "cross-tenant mismatch is a 404" convention Decision 252 already established and the real precedent (`WaiversController.findSignatures`) that does this correctly. `packages/api-client` regenerated (twice — once after the initial build, once after the schoolId fix).
+
+**school-portal:** `VideoUploadModal.tsx` (raw browser PUT straight to Cloudflare Stream, not through this app's own backend) wired into `CurriculumPage.tsx` with a `captionStatusBadge()` helper and an "Upload video" row action shown only while `captionStatus` is PENDING or FAILED.
+
+**student:** `LessonVideoPlayer.tsx` (`expo-video`, not `expo-av` — confirmed directly against this Expo SDK's own bundled-module manifest that `expo-av` has been dropped entirely; caption tracks deliberately not wired into the player this slice, see "What this does NOT resolve" below), `LessonDetailScreen.tsx` (description, video, Favorite toggle, Add-to-Playlist picker, comment thread — all gated on `lesson.locked`), `PlaylistsScreen.tsx`/`PlaylistDetailScreen.tsx` (create/rename/delete, add/remove items, up/down reorder — adjacent-swap, matching the school-portal's own established reorder-UI convention), a "Continue watching" section and a favorited-star indicator on `LessonsScreen.tsx`/`LessonRow.tsx`.
+
+**Tests:** `curriculum-learner-redesign.e2e-spec.ts` (24 tests — Favorite/WatchHistory/Playlist/Comment/video-upload-url, including explicit REGRESSION cases locking in the cross-tenant schoolId fix). `apps/student`'s own pre-existing 86-test jest suite re-verified green against this build (no new tests added there, per this slice's own scope decision — see below).
+
+### Judgment calls, disclosed
+
+1. **`playbackUrl` is null for anything short of fully READY**, even though the underlying Cloudflare asset may already be playable before AWS Transcribe finishes — consistent with `LessonVideoPlayer`'s own existing captionStatus-gated UI, not a new restriction invented for this field.
+2. **Caption tracks (`captionTrackRef`) are not wired into the `expo-video` player.** `expo-video` surfaces subtitle tracks it finds embedded in the HLS manifest itself, not via a separate track-URL prop — confirming this actually works requires first confirming `CloudflareStreamService`/the transcription pipeline actually muxes AWS Transcribe's output into the manifest's own subtitle group, a real backend investigation outside this slice's scope. The native player's own caption UI still applies to whatever tracks the manifest happens to expose on its own.
+3. **No tests were added for the new `apps/student` UI**, per this slice's own explicit scope decision (verification leaned on `tsc --noEmit` plus re-running the app's full pre-existing suite) — unlike the `apps/api` e2e coverage, which was written and verified as part of this same build.
+4. **Guardian-viewing-a-linked-minor's Lessons/Favorites/WatchHistory/Playlists is explicitly not built** — `useLessonsForEnrolledSchools`'s own header comment flags this as a real, pre-existing gap (nothing client-visible resolves which School(s) a linked minor is enrolled at), not something newly introduced or newly closed by this effort.
+5. **Playlist items don't link into `LessonDetailScreen`** — `PlaylistItemResponseDto` doesn't carry the full `Lesson` shape that screen needs via route params, and there is no student-facing "get one Lesson by id" endpoint to refetch it from. Disclosed, not fixed, in this slice.
+6. **Per-playlist item counts are omitted from `PlaylistsScreen`** — would cost one extra request per playlist to show a number; left as a deliberate simplicity call.
+
+### What this does NOT resolve
+
+- **The entire Cloudflare Stream / AWS Transcribe integration remains genuinely unverified against a real vendor account** — same posture as every other not-yet-provisioned vendor in this codebase (Twilio Verify, Cognito, SES, R2). `getPublicPlaybackUrl`'s own header comment separately flags that Cloudflare's "customer code" subdomain value is assumed, not confirmed, to equal the account id used for API auth.
+- **A failed video PUT (network blip, bad/expired upload URL, no real credentials) leaves the Lesson stuck in PROCESSING with no rollback** — `VideoUploadModal.tsx`'s own header comment discloses this as a known, unfixed workflow gap; `requestVideoUploadUrl` writes `videoRef`/flips to PROCESSING before the PUT itself even starts.
+- **Nothing retrofits the "may this caller watch this Lesson" gate into any pre-existing endpoint** — only the five new learner-facing actions (favorite, watch-progress, comment, playlist-add, video-upload-url) use `assertCanWatchLesson`; the pre-existing Lesson read endpoints keep their own, separately-established locking behavior unchanged.
+
+### Recorded by
+
+User, via direct AskUserQuestion answers on Membership gating and the video/caption build-now decision, 13 Oct 2026; every item under "Judgment calls" and "What this does NOT resolve" above is the Developer's own disclosed reasoning, cross-checked by independently re-running `tsc`/the full e2e and jest suites rather than trusting either delegated build's self-report.
+
+---
+
+## Decision 255 — Multi-School coach/Branch Staff switcher built; `useOwnedSchoolId`'s identical gap found but deliberately left for its own decision
+
+**Date:** 13 Oct 2026 · **Status:** Built
+**Resolves:** Decision 184 item 4's own named follow-up — "a coach at several Schools sees the first one for now (no School switcher yet)" — on both `apps/school-portal` and `apps/student`'s Coach dashboard.
+
+1. **No backend change** — the JWT already carries every active grant (`RoleGrant`, not a role column, is the source of truth for multi-School membership — `ultm8-domain-rules` §3/§6.1/§8.3, `[CONFIRMED]`), and every coach/grading endpoint is already School-scoped by its own `schoolId` request param. This was purely a client-side "which School is currently being read" gap: `useCoachSchoolId()` took whichever grant happened to sort first, with no way to see or act on a second one.
+2. **Built on both platforms, same mechanism:** an explicit, persisted "active School" selection (sessionStorage on the School Portal, matching `sessionStorageTokenStore`'s own tab-scoped reasoning; AsyncStorage on `apps/student`, since a School id isn't a secret the way the access/refresh token is) that `useCoachSchoolId()` now prefers when it names a School the caller still actually holds a grant at, falling back to the first (stable-sorted) School otherwise — every existing caller (`useGradingSchoolId`, `CoachDashboardPage`/`CoachDashboardScreen`, `GradingBoardPage`, etc.) picks this up with no call-site changes. A new `SchoolSwitcher` (School Portal: `TopBar`; `apps/student`: the Coach dashboard screen, the one screen that needs it since every other coach screen receives `schoolId` as a navigation param from there) renders only when the caller actually holds 2+ distinct Schools' worth of INSTRUCTOR/BRANCH_STAFF grants — invisible for the common single-School case.
+3. **Found, not fixed: `useOwnedSchoolId` (School Portal) has the identical first-match bug** — nothing in the schema stops a `User` holding `SCHOOL_OWNER_MANAGER` at more than one School (no `@@unique([userId, role])` on `RoleGrant`), and that hook's own existing code comment ("a display hint only... the API re-checks") never mentioned the ordering gap the way Decision 184 item 4 did for coaches. Deliberately NOT folded into this build — it's a different, not-yet-approved piece of scope (an Owner's "which School" switch plausibly wants different placement/affordances than a coach's), flagged here for its own future decision rather than guessed at silently.
+
+### What this does NOT resolve
+
+The `useOwnedSchoolId` gap above, and extending either switcher to `apps/platform-admin` or any other realm — neither was in scope.
+
+### Built
+
+**School Portal:** `AuthContext.tsx` (`useCoachSchoolId`/new `useCoachSchoolIds`, sessionStorage-backed active selection, cleared on logout), `schools/schoolQueries.ts` (new `useSchoolNames`, one query per School via `useQueries` — the same fan-out `useSchoolSkillGroups` already established), new `coach/SchoolSwitcher.tsx`, wired into `layout/TopBar.tsx`.
+**apps/student:** `auth/AuthContext.tsx` (same shape, AsyncStorage-backed), `coach/coachQueries.ts` (new `useSchoolNames`, same fan-out pattern), new `SchoolSwitcher` in `coach/CoachDashboardScreen.tsx` using the existing `SearchablePickerField`.
+
+**Tests:** School Portal — Playwright `e2e/coach-school-switcher.spec.ts` (4 new: single-School sees nothing, two-School switch sticks across navigation, option labels, a School Owner with a second coached School never sees it); `fixtures.ts`'s `addPerson` grant-role union widened to include `SCHOOL_OWNER_MANAGER` for that last test. `apps/student` — 2 new cases in `coach/coachScreens.test.tsx` (no switcher at one School; switching at two calls `setActiveCoachSchoolId`).
+
+### Recorded by
+
+Developer, building Decision 184 item 4's own already-approved follow-up; the `useOwnedSchoolId` finding is disclosed reasoning, not a further product-owner decision, 13 Oct 2026.
+

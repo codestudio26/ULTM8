@@ -96,6 +96,36 @@ export class StripeClientService {
     return this.client!.webhooks.constructEvent(payload, signature, webhookSecret);
   }
 
+  /**
+   * Spec 55 §7's own confirmed `GET /transactions/{id}/invoice (download)` shape
+   * (deferred out of this module's original Phase 9 scope — see
+   * TransactionsService's own header comment) — closed with ZERO new PDF-rendering
+   * infra: Stripe already hosts a receipt page per Charge
+   * (`Charge.receipt_url` — "stylized as an Invoice receipt" for a Charge billed via
+   * an Invoice, per the installed SDK's own type comment, confirmed directly against
+   * `node_modules/stripe/cjs/resources/Charges.d.ts`, not assumed), so this just
+   * surfaces that URL rather than generating a document ourselves.
+   *
+   * `latest_charge` is typed `string | Charge | null` — a plain id UNLESS expanded,
+   * confirmed against `node_modules/stripe/cjs/resources/PaymentIntents.d.ts` — so
+   * this always passes `expand: ['latest_charge']` and narrows away the `string`
+   * branch (an un-expanded id would mean this fetched the wrong account's own
+   * PaymentIntent, which `scopedClient` already prevents; the narrowing here is
+   * just satisfying the SDK's own static type, not a real runtime branch this code
+   * expects to hit). Returns `null` — not a throw — when there's genuinely no
+   * receipt yet (a PaymentIntent that never confirmed, or Stripe simply not having
+   * generated one): a real, normal state, not an error.
+   */
+  async getReceiptUrl(connectedAccountId: string, paymentIntentId: string): Promise<string | null> {
+    const stripe = this.scopedClient(connectedAccountId);
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ['latest_charge'] });
+    const charge = paymentIntent.latest_charge;
+    if (!charge || typeof charge === 'string') {
+      return null;
+    }
+    return charge.receipt_url;
+  }
+
   private assertConfigured() {
     if (!this.client) {
       throw new Error('StripeClientService is not configured — set STRIPE_SECRET_KEY');

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap, type components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -12,6 +12,21 @@ export type DowngradeInput = components['schemas']['DowngradeActionDto'];
 export type RankResponse = components['schemas']['RankResponseDto'];
 export type SkillResponse = components['schemas']['SkillResponseDto'];
 export type DisciplineResponse = components['schemas']['DisciplineResponseDto'];
+
+/** One query per School via `useQueries` (same dynamic-length fan-out
+ * `useLessonsForEnrolledSchools` already established in
+ * curriculumQueries.ts), for `SchoolSwitcher`'s option labels. A name still
+ * loading or that failed to load returns `null`, rather than blocking the
+ * whole switcher. */
+export function useSchoolNames(schoolIds: string[]): Array<{ id: string; name: string | null }> {
+  const results = useQueries({
+    queries: schoolIds.map((id) => ({
+      queryKey: ['school', id],
+      queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}', { params: { path: { id } } })),
+    })),
+  });
+  return schoolIds.map((id, i) => ({ id, name: results[i]?.data?.name ?? null }));
+}
 
 export type GradingToggle =
   | 'canPromote'

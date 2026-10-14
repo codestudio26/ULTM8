@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, InlineError } from '../components/ui';
-import { useAuth, useCoachSchoolId } from '../auth/AuthContext';
+import { Button, InlineError, SearchablePickerField } from '../components/ui';
+import { useAuth, useCoachSchoolId, useCoachSchoolIds } from '../auth/AuthContext';
 import { useDisciplines } from '../ranks/rankQueries';
 import { useNotifications } from '../notifications/notificationQueries';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
@@ -12,6 +12,7 @@ import {
   useGradingBoard,
   useMyGrading,
   useSchoolClasses,
+  useSchoolNames,
   useSchoolTimetable,
   useStudentEligibility,
   useStyleRanks,
@@ -51,12 +52,40 @@ export function CoachDashboardScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
+      <SchoolSwitcher />
       <GradingSection schoolId={schoolId} onOpenStyle={(style) => navigation.navigate('GradingBoard', { schoolId, disciplineId: style.id, name: style.name })} />
       <ClassesSection schoolId={schoolId} me={me} />
       <NotificationsSection onSeeAll={() => navigation.navigate('Notifications')} />
       {isStudentHere ? <MyTrainingSection schoolId={schoolId} me={me} /> : null}
       <Button title="Student home" variant="secondary" onPress={() => navigation.navigate('Home')} />
     </ScrollView>
+  );
+}
+
+/** Decision 184 item 4's own named follow-up, resolved: a coach/Branch Staff
+ * member with an active grant at more than one School can now pick which one
+ * they're acting as. Renders nothing for the common case (one School, or
+ * none) — the only screen that needs this, since every other coach screen
+ * (GradingBoardScreen, CoachStudentScreen) already receives `schoolId` as a
+ * navigation param from here, not from `useCoachSchoolId()` directly. */
+function SchoolSwitcher() {
+  const { setActiveCoachSchoolId } = useAuth();
+  const schoolIds = useCoachSchoolIds();
+  const activeSchoolId = useCoachSchoolId();
+  const names = useSchoolNames(schoolIds);
+
+  if (schoolIds.length < 2) return null;
+
+  return (
+    <View style={{ marginBottom: spacing[3] }}>
+      <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>School</Text>
+      <SearchablePickerField
+        options={names.map((s) => ({ code: s.id, name: s.name ?? 'Loading…' }))}
+        value={activeSchoolId ?? ''}
+        onSelect={setActiveCoachSchoolId}
+        triggerAccessibilityLabel="Switch School"
+      />
+    </View>
   );
 }
 

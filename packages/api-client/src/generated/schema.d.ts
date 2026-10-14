@@ -1828,6 +1828,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/transactions/{id}/invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TransactionsController_getReceiptUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/disciplines": {
         parameters: {
             query?: never;
@@ -3156,6 +3172,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CurriculumController_addFavorite"];
+        delete: operations["CurriculumController_removeFavorite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findFavorites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/watch-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CurriculumController_upsertWatchProgress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/watch-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findWatchHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findPlaylists"];
+        put?: never;
+        post: operations["CurriculumController_createPlaylist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/playlists/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CurriculumController_deletePlaylist"];
+        options?: never;
+        head?: never;
+        patch: operations["CurriculumController_renamePlaylist"];
+        trace?: never;
+    };
+    "/v1/curriculum/playlists/{id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findPlaylistItems"];
+        put?: never;
+        post: operations["CurriculumController_addPlaylistItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/playlists/{id}/items/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CurriculumController_removePlaylistItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/curriculum/playlists/{id}/items/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CurriculumController_reorderPlaylistItems"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CurriculumController_findComments"];
+        put?: never;
+        post: operations["CurriculumController_createComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/comments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CurriculumController_deleteComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/video-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CurriculumController_requestVideoUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/translations": {
         parameters: {
             query?: never;
@@ -3410,24 +3618,27 @@ export interface components {
         UpdateStudentProfileDto: {
             firstName?: string;
             surname?: string;
-            /** @description Mobile-only per confirmed field list */
-            username?: string;
+            /** @description Mobile-only per confirmed field list. Null clears it. */
+            username?: string | null;
             /** @description ISO 8601 date, no time component */
             dateOfBirth?: string;
-            gender?: string;
-            nationality?: string;
-            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
-            language?: string;
-            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
-            currency?: string;
-            address?: string;
+            /** @description Null clears it. */
+            gender?: string | null;
+            /** @description Null clears it. */
+            nationality?: string | null;
+            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it. */
+            language?: string | null;
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it. */
+            currency?: string | null;
+            /** @description Null clears it. */
+            address?: string | null;
             profilePhotoUrl?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            weightCategory?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            kimonoSize?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            beltSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            beltSize?: string | null;
         };
         UserResponseDto: {
             id: string;
@@ -3902,24 +4113,27 @@ export interface components {
         UpdateUserDto: {
             firstName?: string;
             surname?: string;
-            /** @description Mobile-only per confirmed field list */
-            username?: string;
+            /** @description Mobile-only per confirmed field list. Null clears it. */
+            username?: string | null;
             /** @description ISO 8601 date, no time component */
             dateOfBirth?: string;
-            gender?: string;
-            nationality?: string;
-            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). */
-            language?: string;
-            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. */
-            currency?: string;
-            address?: string;
+            /** @description Null clears it. */
+            gender?: string | null;
+            /** @description Null clears it. */
+            nationality?: string | null;
+            /** @description One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it. */
+            language?: string | null;
+            /** @description An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it. */
+            currency?: string | null;
+            /** @description Null clears it. */
+            address?: string | null;
             profilePhotoUrl?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            weightCategory?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            kimonoSize?: string;
-            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
-            beltSize?: string;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
+            beltSize?: string | null;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */
@@ -4653,6 +4867,10 @@ export interface components {
         TransactionListResponseDto: {
             items: components["schemas"]["TransactionResponseDto"][];
             nextCursor?: string | null;
+        };
+        TransactionReceiptUrlResponseDto: {
+            /** @description Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet. */
+            receiptUrl?: string | null;
         };
         CreateDisciplineDto: {
             name: string;
@@ -5752,6 +5970,8 @@ export interface components {
             /** @enum {string} */
             captionStatus: "PENDING" | "PROCESSING" | "READY" | "FAILED";
             captionTrackRef?: string | null;
+            /** @description The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment). */
+            playbackUrl?: string | null;
             skillIds: string[];
             /** @description Decision 226 — set when this Lesson has been archived. Null when active. Coexists with Decision 198's own DELETE /lessons/{id} (always allowed) as a reversible alternative. */
             archivedAt?: string | null;
@@ -5795,6 +6015,96 @@ export interface components {
         };
         OrderCategoryLessonsDto: {
             lessonIds: string[];
+        };
+        FavoriteResponseDto: {
+            id: string;
+            studentId: string;
+            lessonId: string;
+            schoolId: string;
+            createdAt: string;
+        };
+        FavoriteListResponseDto: {
+            items: components["schemas"]["FavoriteResponseDto"][];
+            /** @description Opaque cursor for the next page, ordered (createdAt, id) DESC; null when there is no more. */
+            nextCursor?: string | null;
+        };
+        UpsertWatchProgressDto: {
+            lastPositionSeconds: number;
+            /** @description Set true once playback reaches the end. Never used to clear a prior completion. */
+            completed?: boolean;
+        };
+        WatchHistoryResponseDto: {
+            id: string;
+            studentId: string;
+            lessonId: string;
+            schoolId: string;
+            lastPositionSeconds: number;
+            completedAt?: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        WatchHistoryListResponseDto: {
+            items: components["schemas"]["WatchHistoryResponseDto"][];
+            /** @description Opaque cursor for the next page, ordered (updatedAt, id) DESC; null when there is no more. */
+            nextCursor?: string | null;
+        };
+        CreatePlaylistDto: {
+            name: string;
+        };
+        PlaylistResponseDto: {
+            id: string;
+            studentId: string;
+            name: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+        PlaylistListResponseDto: {
+            items: components["schemas"]["PlaylistResponseDto"][];
+            /** @description Opaque cursor for the next page, ordered (createdAt, id) DESC; null when there is no more. */
+            nextCursor?: string | null;
+        };
+        RenamePlaylistDto: {
+            name: string;
+        };
+        PlaylistItemResponseDto: {
+            id: string;
+            playlistId: string;
+            lessonId: string;
+            order: number;
+            createdAt: string;
+            lessonTitle: string;
+            /** @description The caller may not watch this Lesson (Decisions 154, 190, 195). */
+            locked: boolean;
+        };
+        PlaylistItemListResponseDto: {
+            items: components["schemas"]["PlaylistItemResponseDto"][];
+        };
+        AddPlaylistItemDto: {
+            lessonId: string;
+        };
+        ReorderPlaylistItemsDto: {
+            itemIds: string[];
+        };
+        CreateCommentDto: {
+            body: string;
+        };
+        CommentResponseDto: {
+            id: string;
+            lessonId: string;
+            authorId: string;
+            authorName: string;
+            schoolId: string;
+            body: string;
+            createdAt: string;
+        };
+        CommentListResponseDto: {
+            items: components["schemas"]["CommentResponseDto"][];
+            /** @description Opaque cursor for the next page, ordered (createdAt, id) ASC (oldest first); null when there is no more. */
+            nextCursor?: string | null;
+        };
+        VideoUploadUrlResponseDto: {
+            uploadUrl: string;
+            videoRef: string;
         };
         TranslationResponseDto: {
             id: string;
@@ -8914,6 +9224,27 @@ export interface operations {
             };
         };
     };
+    TransactionsController_getReceiptUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionReceiptUrlResponseDto"];
+                };
+            };
+        };
+    };
     RanksController_findAllDisciplines: {
         parameters: {
             query?: never;
@@ -11251,6 +11582,402 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LessonListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_addFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_removeFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Idempotent — a no-op if it wasn't favorited. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurriculumController_findFavorites: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_upsertWatchProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertWatchProgressDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchHistoryResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findWatchHistory: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchHistoryListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findPlaylists: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_createPlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlaylistDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_deletePlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted; its PlaylistItems cascade away with it. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurriculumController_renamePlaylist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenamePlaylistDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findPlaylistItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistItemListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_addPlaylistItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPlaylistItemDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistItemListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_removePlaylistItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Idempotent — a no-op if the item is already gone. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurriculumController_reorderPlaylistItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderPlaylistItemsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistItemListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_findComments: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentListResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_createComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCommentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentResponseDto"];
+                };
+            };
+        };
+    };
+    CurriculumController_deleteComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted — by its own author or School staff (Comment's own schema.prisma comment). */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CurriculumController_requestVideoUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoUploadUrlResponseDto"];
                 };
             };
         };

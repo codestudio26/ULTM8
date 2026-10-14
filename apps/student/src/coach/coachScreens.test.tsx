@@ -10,13 +10,14 @@ import { CoachStudentScreen } from './CoachStudentScreen';
 import { GradingBoardScreen } from './GradingBoardScreen';
 import { countingClassTypes, flattenLadder } from './ladder';
 
-jest.mock('../auth/AuthContext', () => ({ useAuth: jest.fn(), useCoachSchoolId: jest.fn() }));
+jest.mock('../auth/AuthContext', () => ({ useAuth: jest.fn(), useCoachSchoolId: jest.fn(), useCoachSchoolIds: jest.fn() }));
 jest.mock('../ranks/rankQueries', () => ({ useDisciplines: jest.fn() }));
 jest.mock('../notifications/notificationQueries', () => ({ useNotifications: jest.fn() }));
 jest.mock('./coachQueries', () => ({
   useMyGrading: jest.fn(),
   useGradingBoard: jest.fn(),
   useSchoolClasses: jest.fn(),
+  useSchoolNames: jest.fn(),
   useSchoolTimetable: jest.fn(),
   useStudentEligibility: jest.fn(),
   useStyleRanks: jest.fn(),
@@ -72,10 +73,12 @@ const mutation = () => ({ mutateAsync: jest.fn(async () => ({})), mutate: jest.f
 beforeEach(() => {
   jest.clearAllMocks();
   mocked(auth.useCoachSchoolId).mockReturnValue(SCHOOL);
-  mocked(auth.useAuth).mockReturnValue({ claims: { sub: ME, grants: [{ role: 'INSTRUCTOR', schoolId: SCHOOL }] } });
+  mocked(auth.useCoachSchoolIds).mockReturnValue([SCHOOL]);
+  mocked(auth.useAuth).mockReturnValue({ claims: { sub: ME, grants: [{ role: 'INSTRUCTOR', schoolId: SCHOOL }] }, setActiveCoachSchoolId: jest.fn() });
   mocked(rankQueries.useDisciplines).mockReturnValue(ok({ items: [BJJ, JUDO] }));
   mocked(notificationQueries.useNotifications).mockReturnValue(ok({ pages: [{ items: [{ id: 'n1', title: 'Ana is ready to grade', body: 'BJJ', read: false }] }] }));
   mocked(q.useSchoolClasses).mockReturnValue(ok({ items: [] }));
+  mocked(q.useSchoolNames).mockReturnValue([]);
   mocked(q.useSchoolTimetable).mockReturnValue(
     ok({
       items: [
@@ -126,8 +129,32 @@ describe('CoachDashboardScreen', () => {
 
   it('says so when they coach nowhere', async () => {
     mocked(auth.useCoachSchoolId).mockReturnValue(null);
+    mocked(auth.useCoachSchoolIds).mockReturnValue([]);
     const { getByText } = await render(<CoachDashboardScreen navigation={nav()} route={{} as never} />);
     expect(getByText("You're not a coach at a School yet")).toBeTruthy();
+  });
+
+  it('shows no School switcher for a coach at only one School', async () => {
+    grading({}, ['bjj']);
+    mocked(q.useGradingBoard).mockReturnValue(ok({ items: [] }));
+    const { queryByLabelText } = await render(<CoachDashboardScreen navigation={nav()} route={{} as never} />);
+    expect(queryByLabelText('Switch School')).toBeNull();
+  });
+
+  it('a coach at two Schools can switch which one they act as (Decision 184 item 4)', async () => {
+    grading({}, ['bjj']);
+    mocked(q.useGradingBoard).mockReturnValue(ok({ items: [] }));
+    const setActiveCoachSchoolId = jest.fn();
+    mocked(auth.useCoachSchoolIds).mockReturnValue([SCHOOL, 'school-2']);
+    mocked(auth.useAuth).mockReturnValue({
+      claims: { sub: ME, grants: [{ role: 'INSTRUCTOR', schoolId: SCHOOL }, { role: 'INSTRUCTOR', schoolId: 'school-2' }] },
+      setActiveCoachSchoolId,
+    });
+    mocked(q.useSchoolNames).mockReturnValue([{ id: SCHOOL, name: 'Downtown Dojo' }, { id: 'school-2', name: 'Uptown Dojo' }]);
+    const { getByLabelText, getByText } = await render(<CoachDashboardScreen navigation={nav()} route={{} as never} />);
+    await fireEvent.press(getByLabelText('Switch School'));
+    await fireEvent.press(getByText('Uptown Dojo'));
+    expect(setActiveCoachSchoolId).toHaveBeenCalledWith('school-2');
   });
 });
 

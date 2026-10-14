@@ -7,7 +7,12 @@ import * as waiverQ from '../waivers/waiverQueries';
 import { LessonsScreen } from './LessonsScreen';
 
 jest.mock('../auth/AuthContext', () => ({ useAuth: jest.fn() }));
-jest.mock('./curriculumQueries', () => ({ useLessonsOverviewForStudent: jest.fn(), useLessonCategoryOrder: jest.fn() }));
+jest.mock('./curriculumQueries', () => ({
+  useLessonsOverviewForStudent: jest.fn(),
+  useLessonCategoryOrder: jest.fn(),
+  useFavorites: jest.fn(),
+  useWatchHistory: jest.fn(),
+}));
 jest.mock('../waivers/waiverQueries', () => ({ useEnrolledSchoolNames: jest.fn() }));
 
 const ok = (data: unknown) => ({ data, isLoading: false, isError: false, error: null }) as never;
@@ -43,6 +48,8 @@ beforeEach(() => {
   mocked(auth.useAuth).mockReturnValue({ claims: { sub: 'me', grants: [] } });
   mocked(waiverQ.useEnrolledSchoolNames).mockReturnValue(new Map([['alpha', 'Alpha Dojo'], ['beta', 'Beta Dojo']]));
   mocked(curriculumQ.useLessonCategoryOrder).mockReturnValue(new Map([['cat1', 0]]));
+  mocked(curriculumQ.useFavorites).mockReturnValue({ lessonIds: new Set(), isLoading: false, isError: false, error: null });
+  mocked(curriculumQ.useWatchHistory).mockReturnValue({ items: [], isLoading: false, isError: false, error: null });
 });
 
 function nav() {

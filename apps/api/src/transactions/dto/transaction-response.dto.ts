@@ -86,3 +86,11 @@ export class TransactionListResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   nextCursor!: string | null;
 }
+
+/** GET /transactions/{id}/invoice — see TransactionsService's own header
+ * comment. `null` is a real, normal state (CASH/BANK_TRANSFER payment, or a
+ * Stripe PaymentIntent with no receipt yet), not an error. */
+export class TransactionReceiptUrlResponseDto {
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Stripe\'s own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet.' })
+  receiptUrl!: string | null;
+}

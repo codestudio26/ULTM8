@@ -933,7 +933,7 @@ generated type's own comment) — deliberately not used for any icon/categorizat
 Decision 184 asks for the coach dashboard "on both the mobile app and the web portal"; the web portal's came first (`apps/school-portal/src/coach/`). This is the mobile one, on the same API calls, for Instructors and Branch Staff (Decision 186).
 
 ### What was built
-- **Landing:** a person with an Instructor or Branch Staff grant lands on **Coach** (`src/coach/CoachDashboardScreen.tsx`) instead of the student home (Decision 184 item 4); **Student home** is one tap away, and the student home has a **Coach dashboard** button. A coach at several Schools sees one (sorted; no School switcher yet).
+- **Landing:** a person with an Instructor or Branch Staff grant lands on **Coach** (`src/coach/CoachDashboardScreen.tsx`) instead of the student home (Decision 184 item 4); **Student home** is one tap away, and the student home has a **Coach dashboard** button. A coach at several Schools can now pick which one they're acting as (Decision 184 item 4's own named follow-up, resolved — see "Multi-School coach/Branch Staff switcher" below); it defaults to the first (sorted) School until they pick.
 - **Dashboard:** Grading (the styles they grade, from `GET /schools/{id}/grading-permissions/me`, with ready / getting there / total counts from the board), My classes (their weekly slots and the next 10 classes, matched on `instructorId`), Notifications (latest 5, "See all" opens the existing screen), and My training when they also hold a Student grant there.
 - **Grading Board** (`GradingBoardScreen.tsx`): one style, the three columns as sections, highest progress first, search, the active-only switch and the "N inactive hidden" count. Students are the coach's own branches' (the API decides, Decision 168).
 - **Student panel** (`CoachStudentScreen.tsx`): stripe, date, progress (classes, or per class type; days; skills), the skills for the next grade (tap to cycle when the coach may sign off), the history, and only the actions the coach's toggles allow (Decision 181): award the next stripe or grade to the next belt (the skills acknowledgement when skills are missing and the style allows it, refused when it requires them), move down one stripe with a reason, log a class, verify a declared belt. Every grade sends the stripe the coach saw (`expectedCurrentRungId`, Decision 185), so a grade someone else made first is refused.
@@ -943,6 +943,18 @@ Skipping stripes, back-dating, starting classes, bulk promote, dragging between 
 
 ### Verified
 `tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (10): the dashboard shows only the coach's styles and classes, the board filters and groups, each action appears only with its toggle and sends the right body.
+
+## Multi-School coach/Branch Staff switcher (Decision 184 item 4's own follow-up) — DONE
+
+Both `useOwnedSchoolId` (School Portal) and `useCoachSchoolId` (School Portal + this app) resolved to whichever grant happened to sort first, with no way to see or act on a second School — named explicitly as deferred in Decision 184 item 4. Closed on the School Portal and this app's own Coach dashboard; `useOwnedSchoolId` turned out to carry the identical gap (a School Owner holding `SCHOOL_OWNER_MANAGER` at more than one School — the schema has no constraint against it), found while building this, but left as its own, not-yet-approved follow-up rather than silently expanded into here.
+
+### What was built
+- **Backend:** none — the JWT already carries every active grant, and every coach/grading endpoint is already School-scoped by its own `schoolId` param; this was purely a "which School is the client currently reading" gap.
+- **School Portal:** `AuthContext.tsx`'s `useCoachSchoolId()` now resolves an explicit, sessionStorage-persisted pick (cleared on logout) when the caller holds INSTRUCTOR/BRANCH_STAFF grants at 2+ Schools, falling back to the first (stable-sorted) School otherwise — every existing call site (`useGradingSchoolId`, `CoachDashboardPage`, `GradingBoardPage`, etc.) picks this up for free, no call-site changes needed. New `coach/SchoolSwitcher.tsx` in `TopBar`, rendered only when there's a real choice to make.
+- **This app:** the same mechanism, AsyncStorage-backed instead of sessionStorage (a School id isn't a secret the way the access token is), in `AuthContext.tsx`. New `SchoolSwitcher` in `CoachDashboardScreen.tsx` (a `SearchablePickerField`, the same picker `PhoneField`'s country selector already established) — the one screen that needs it, since every other coach screen receives `schoolId` as a navigation param from here.
+
+### Verified
+School Portal: `tsc --noEmit`; Playwright `coach-school-switcher.spec.ts` (4, new) plus the full coach/grading regression suite (`coach-dashboard`, `coach-invites`, `grading-board`, `grading-permissions`, `student-grading`, `verify-belts-notice`, `branch-staff`, `instructor-belts` — 43 total). This app: `tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (12, 2 new) plus the full suite (88 total, 16 files).
 
 ## My grading, read-only (Decisions 132, 142, 155, 161) — DONE
 
@@ -995,14 +1007,15 @@ No screen anywhere in this app had ever read this endpoint before, despite it be
 ### What was built
 - **My Profile** (`src/profile/ProfileScreen.tsx`), off Home. Shows email/phone read-only (with verified status) and edits everything `UpdateUserDto` allows: first name, surname, username, date of birth, gender, nationality, address, language, currency. Language/currency pick from the real confirmed lists (`GET /settings/languages`/`/settings/currencies`) via plain chip buttons rather than free text — no Picker dependency exists anywhere in this app, and these two fields don't justify adding one.
 - **API:** nothing new — `GET`/`PATCH /users/me` and `GET /settings/languages`/`/settings/currencies` all already existed.
+- **Profile photo self-upload** (added later, closing the "Not yet" gap below): a new `useUploadMyProfilePhoto` mutation (`profileQueries.ts`) composes `POST /uploads/public-photo-url` (`entityType: USER`, no `entityId`/`schoolId` — the shared app-wide photo-upload endpoint's own self-service branch, `UploadsService.authorizeAndResolveScope`, needed no backend change at all) + a PUT of the picked image + `PATCH /users/me` with the resulting public URL, same 3-step composition `useSignWaiver`'s own drawn-signature upload already established. New `expo-image-picker` dependency (bundled for this Expo SDK; `expo-av`'s own sibling `expo-camera` already set the "stay Expo Go-compatible" precedent this follows) drives "Take Photo"/"Choose Photo" buttons, both normalized through one `handlePickedAsset` check (same 5MB / PNG+JPEG+WebP limits `PhotoUploadField`, the web equivalent, already established — no new convention invented). New RN `Avatar` component (`src/components/Avatar.tsx`) — the real photo once set, otherwise an initials monogram, mirroring `apps/school-portal/src/lib/Avatar.tsx`'s own behavior; this app had no avatar component of its own until now.
+- **Clearing a profile field back to empty** (added later, closing the "Not yet" gap below): `UpdateUserDto`'s username/gender/nationality/language/currency/address/weightCategory/kimonoSize/beltSize are now typed `string | null`, not just `string | undefined` — each was already nullable on `User` and already cleared correctly by `users.service.ts`'s plain pass-through on an explicit `null` (confirmed for weightCategory/kimonoSize/beltSize by `users.e2e-spec.ts`'s own pre-existing round-trip test), but the DTO's own type never admitted `null`, so no generated client could construct a type-safe call to send one. `ProfileScreen` now sends `null`, not `undefined`, when its username/gender/nationality/address/weightCategory/kimonoSize/beltSize plain-text fields are cleared to empty — safe here specifically because every field on this screen is always pre-filled from the real current profile, so blank unambiguously means "the Student emptied this," unlike `StudentUpdatePage.tsx` on the Staff-on-behalf-of side (deliberately left untouched — see that file's own header comment on why blank has to keep meaning "leave alone" there until a real single-Student profile-read endpoint exists). `language`/`currency` deliberately NOT included in this fix — neither picker in this screen offers a "none" selection, so there is still no way to blank either from this screen; disclosed, not silently expanded scope.
 
 ### Not yet
-- **Profile photo.** `UpdateUserDto.profilePhotoUrl` takes a plain URL string, not an upload flow — unlike Waiver signatures, nothing resolves "pick a photo" to a URL for this field. Needs either a dedicated presigned-upload endpoint (the same shape as Waivers') or a confirmed decision to reuse that one for profile photos too.
-- **Clearing an optional field back to empty.** `UpdateUserDto`'s optional fields are typed `string | undefined`, never `| null`, and `users.service.ts`'s `updateMe` relies on Prisma's "`undefined` = leave alone" semantics — there is no type-safe call this client can make to blank out a gender/nationality/address/username/language/currency once set. A real contract gap, not a client shortcut; see `profileQueries.ts`'s own comment.
+- **Clearing `language`/`currency` specifically.** Both pickers in this screen only ever offer a real value, never a "none" — closing this needs a product/UX decision on what an unset language/currency even looks like in the picker UI, not just the DTO-type fix above (which these two DO already have, for whenever that UI exists).
 - **Email/phone changes.** Deliberately excluded by `UpdateUserDto` itself (both are login/OTP identifiers needing re-verification, not a bare profile edit) — not this screen's gap to close.
 
 ### Verified
-`tsc --noEmit`.
+`tsc --noEmit`; jest `src/profile/profilePhoto.test.tsx` (6) and `src/profile/profileEdit.test.tsx` (4) plus the app's full pre-existing suite (no regressions); API e2e `users.e2e-spec.ts` (2 new tests: clearing username/gender/nationality/language/currency/address with an explicit null, and confirming omitting a field still leaves it alone).
 
 ## Student-scoped transaction history (receipt viewing) — DONE (2026-10-12)
 
@@ -1039,25 +1052,56 @@ Pure plumbing — the `Transaction` model already had everything needed
   Bookings/My Memberships — no new list pattern. New query hook
   `src/transactions/transactionQueries.ts` (`useMyTransactions`), matching
   `useMyMemberships`'/`useMyBookings`' `usePaginatedQuery` convention.
+- **PDF/invoice generation (added later, closing the "Not yet" gap below with
+  ZERO new PDF-rendering infra):** Spec 55 §7 itself already confirmed the shape
+  — `GET /transactions/{id}/invoice (download)` — this just hadn't been built.
+  Stripe already hosts a receipt page per Charge (`Charge.receipt_url`, verified
+  directly against the installed `stripe` SDK's own types, not assumed), so this
+  surfaces THAT rather than generating a document: new
+  `StripeClientService.getReceiptUrl(connectedAccountId, paymentIntentId)`
+  (`apps/api/src/payments/stripe-client.service.ts`), new
+  `TransactionsService.getReceiptUrl`/`GET transactions/{id}/invoice`
+  (`TransactionReceiptUrlResponseDto`, `{ receiptUrl: string | null }` —
+  `null` for a CASH/BANK_TRANSFER Transaction, a real/normal state, not an
+  error). Student app: a "View receipt" row action on
+  `TransactionHistoryScreen.tsx`, handed off to the device browser via
+  `expo-web-browser`'s `openBrowserAsync` — the same "hand off to the browser
+  for a Stripe-hosted page" pattern `PaymentMethodsScreen.tsx` already
+  established for Checkout. School-portal: a "Receipt" column on
+  `TransactionsPage.tsx`'s table, opening in a new tab. **Judgment call,
+  disclosed:** the actual Stripe-API round-trip is unverified against a live
+  account (this environment's own `STRIPE_SECRET_KEY` is a placeholder, same
+  posture every other real-vendor-dependent flow in this codebase takes) — only
+  the authorization gate and the non-Stripe `null` path are proven over real
+  HTTP.
 
 ### Not yet
-- **PDF/invoice generation.** No PDF infra exists anywhere in this codebase
-  (confirmed — searched for any such dependency/service before starting). "Receipt
-  viewing" here means this real, readable list of each Transaction, not a
-  downloadable document; a future PDF-export feature would be new infra, not an
-  extension of this.
+- **A generated PDF document, specifically.** This closes the Spec §7 gap with
+  Stripe's own hosted receipt page, not a document this codebase renders
+  itself — if a real product need for an actually-downloadable, self-hosted PDF
+  ever surfaces (vs. "a link to a receipt page is fine," which nothing has ever
+  said it isn't), that's new infra, same as this entry used to say about the
+  whole feature.
 
 ### Verified
 `apps/api`: `tsc --noEmit`; `nest build`; unit suite (482 tests, all passing); new
 `test/transactions.e2e-spec.ts` (unauthenticated rejected, self-read only ever
 returns the caller's own rows and never another Student's, pagination via
-cursor/limit) — written against the same `describeIfDb`-gated, real-Postgres
-convention every other e2e spec in this repo uses; the sandbox this was built in had
-no way to stand up a live Postgres itself, so this file's own run depends on CI's
+cursor/limit, plus 5 new tests for `GET /transactions/{id}/invoice`: auth gate,
+School-Owner access, cross-Student 404 via RLS, nonexistent-id 404, and the
+BANK_TRANSFER "`receiptUrl: null`, no Stripe call needed" path) — written
+against the same `describeIfDb`-gated, real-Postgres convention every other
+e2e spec in this repo uses; the sandbox this was built in had no way to stand
+up a live Postgres itself, so this file's own run depends on CI's
 Postgres-backed cross-tenant-isolation job going green, same as any other e2e spec
 added there — check that job's result for this file specifically before merging.
-`apps/student`: `tsc --noEmit`; full `npm run test` (64 tests across 12 suites,
-including the new `src/transactions/transactionHistory.test.tsx`, all passing).
+`apps/student`: `tsc --noEmit`; full `npm run test` (92 tests across 17 suites,
+including the extended `src/transactions/transactionHistory.test.tsx`, all
+passing). `apps/school-portal`: `tsc --noEmit` only — no existing unit-test
+runner or prior Playwright spec for `TransactionsPage.tsx` to extend; a new
+Playwright suite from scratch for this one small drill-down column was judged
+disproportionate given the backend path it calls is already fully e2e-proven
+above — disclosed, not silently skipped.
 
 ## Session refresh — access tokens no longer expire mid-session (`POST /auth/refresh`, `/auth/logout`) — DONE
 

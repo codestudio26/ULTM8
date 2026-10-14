@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { authClient } from '../api';
@@ -8,6 +9,17 @@ import { secureTokenStore } from './secureTokenStore';
 import { setUnauthorizedHandler } from './sessionRefresh';
 import { setCachedAccessToken } from './tokenCache';
 import type { JwtClaims } from './types';
+
+/** Which School a multi-School coach/Branch Staff member is currently acting as
+ * (Decision 184 item 4's own named follow-up: "no School switcher yet"). Plain
+ * AsyncStorage, not SecureStore — same reasoning secureTokenStore's own header
+ * comment gives for why AsyncStorage is wrong for the access/refresh token
+ * (unencrypted) doesn't apply here: a School id isn't a secret, it's a UI
+ * preference, the same class of thing asyncStoragePersister already persists
+ * via this exact storage. A display/filter preference only, like every other
+ * claim read in this file: `useCoachSchoolId()` below still only ever returns
+ * a School the caller actually holds a current grant at. */
+const ACTIVE_COACH_SCHOOL_KEY = 'ultm8.activeCoachSchoolId';
 
 interface AuthContextValue {
   /** True while the stored token is still being read from SecureStore at app launch —
@@ -24,6 +36,11 @@ interface AuthContextValue {
   /** Swap in a fresh access token the API handed back, e.g. after joining a
    * School, whose new STUDENT grant only exists in a newly minted token. */
   applyAccessToken: (token: string) => Promise<void>;
+  /** See `useCoachSchoolId`/`SchoolSwitcher` — the School a multi-School coach
+   * has explicitly picked, if any. Most callers want `useCoachSchoolId()`
+   * instead of reading this directly. */
+  activeCoachSchoolId: string | null;
+  setActiveCoachSchoolId: (schoolId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -32,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
+  const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState<string | null>(null);
 
   // Derived, not its own state — claims are 100% a function of accessToken, so keeping
   // it in a separate useState risked a future call site updating one and forgetting the
@@ -56,6 +74,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await secureTokenStore.set(token);
     setCachedAccessToken(token);
     setAccessTokenState(token);
+  }, []);
+
+  // Not gated behind `loading` above — unlike the access token, nothing in this
+  // app's startup flow (login vs. home screen) depends on this value, so there's
+  // no "don't know yet" state worth blocking on; it just catches up once read.
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(ACTIVE_COACH_SCHOOL_KEY)
+      .then((stored) => {
+        if (!cancelled && stored) setActiveCoachSchoolIdState(stored);
+      })
+      .catch(() => {
+        /* noop — same degrade-to-first-School fallback as a failed read elsewhere */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const setActiveCoachSchoolId = useCallback((schoolId: string) => {
+    setActiveCoachSchoolIdState(schoolId);
+    AsyncStorage.setItem(ACTIVE_COACH_SCHOOL_KEY, schoolId).catch(() => {
+      /* noop — a failed write just means this pick won't survive a restart */
+    });
   }, []);
 
   const login = useCallback(
@@ -97,6 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await secureTokenStore.clear();
     setCachedAccessToken(null);
     setAccessTokenState(null);
+    setActiveCoachSchoolIdState(null);
+    void AsyncStorage.removeItem(ACTIVE_COACH_SCHOOL_KEY).catch(() => {});
     // The device may be shared (e.g. a Guardian's phone used by more than one Student
     // login) — without this, react-query's cache would show the previous account's
     // cached My Bookings/Academies data for a moment after the next login, since no
@@ -166,8 +210,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const value = useMemo(
-    () => ({ loading, accessToken, claims, login, logout, applyAccessToken: applyToken }),
-    [loading, accessToken, claims, login, logout, applyToken],
+    () => ({ loading, accessToken, claims, login, logout, applyAccessToken: applyToken, activeCoachSchoolId, setActiveCoachSchoolId }),
+    [loading, accessToken, claims, login, logout, applyToken, activeCoachSchoolId, setActiveCoachSchoolId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -204,16 +248,30 @@ export function useIsGuardian(): boolean {
   return claims?.grants.some((g) => g.role === 'GUARDIAN') ?? false;
 }
 
-/** The School where this person coaches (Decisions 184, 186): an Instructor or
- * Branch Staff grant. A coach at several Schools sees one of them for now (no
- * School switcher yet, Decision 184 item 4); sorted, because the token's grants
- * have no guaranteed order (see useEnrolledSchoolIds). */
-export function useCoachSchoolId(): string | null {
+/** Every distinct School where this person coaches (Decisions 184, 186): an
+ * Instructor or Branch Staff grant. Sorted, because the token's grants have no
+ * guaranteed order (see useEnrolledSchoolIds). `SchoolSwitcher` is the one real
+ * consumer of the full list; everywhere else wants `useCoachSchoolId()`. */
+export function useCoachSchoolIds(): string[] {
   const { claims } = useAuth();
-  if (!claims) return null;
-  const ids = claims.grants
-    .filter((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId)
-    .map((g) => g.schoolId as string)
-    .sort();
-  return ids[0] ?? null;
+  if (!claims) return [];
+  const ids = new Set(
+    claims.grants.filter((g) => (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF') && g.schoolId).map((g) => g.schoolId as string),
+  );
+  return [...ids].sort();
+}
+
+/** The School where this person is currently coaching (Decisions 184, 186). A
+ * coach at several Schools can now pick which one (Decision 184 item 4,
+ * resolved — see `SchoolSwitcher.tsx`); defaults to the first (stable sort
+ * order, see useCoachSchoolIds) when nothing's been explicitly picked, or when
+ * a previously-picked School is no longer in the caller's current grant set
+ * (e.g. revoked) — never trusts the stored selection blindly against the live
+ * claims. */
+export function useCoachSchoolId(): string | null {
+  const { activeCoachSchoolId } = useAuth();
+  const schoolIds = useCoachSchoolIds();
+  if (schoolIds.length === 0) return null;
+  if (activeCoachSchoolId && schoolIds.includes(activeCoachSchoolId)) return activeCoachSchoolId;
+  return schoolIds[0];
 }

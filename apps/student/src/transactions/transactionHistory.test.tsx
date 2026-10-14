@@ -1,15 +1,20 @@
 import React from 'react';
-import { describe, expect, it, jest } from '@jest/globals';
-import { render } from '@testing-library/react-native';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { fireEvent, render } from '@testing-library/react-native';
 import { ApiError } from '@ultm8/api-client';
+import * as WebBrowser from 'expo-web-browser';
 import * as transactionQueries from './transactionQueries';
 import { TransactionHistoryScreen } from './TransactionHistoryScreen';
 
 jest.mock('./transactionQueries', () => ({
   useMyTransactions: jest.fn(),
+  useTransactionReceiptUrl: jest.fn(),
 }));
+jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
 
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
+
+const idleMutation = () => ({ mutateAsync: jest.fn<() => Promise<{ receiptUrl: string | null }>>(), isPending: false });
 
 interface FakePage {
   data: { pages: { items: unknown[] }[] } | undefined;
@@ -38,6 +43,11 @@ function pagedQuery(items: unknown[], overrides: Partial<FakePage> = {}): FakePa
  * query module entirely, inline fixtures, render + RTL getByText, no real
  * react-query/network runtime. */
 describe('TransactionHistoryScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mocked(transactionQueries.useTransactionReceiptUrl).mockReturnValue(idleMutation());
+  });
+
   it('shows a spinner while loading', async () => {
     mocked(transactionQueries.useMyTransactions).mockReturnValue(pagedQuery([], { isLoading: true, data: undefined }));
 
@@ -121,5 +131,50 @@ describe('TransactionHistoryScreen', () => {
     const { getByText, queryByText } = await render(<TransactionHistoryScreen />);
     expect(getByText('Unlimited Monthly')).toBeTruthy();
     expect(queryByText('boom')).toBeNull();
+  });
+
+  describe('View receipt', () => {
+    const TX = {
+      id: 'tx1',
+      schoolId: 's1',
+      studentId: 'me',
+      paymentAccountId: 'pa1',
+      membershipPlanId: 'mp1',
+      membershipPlanTitle: '5-Class Pack',
+      membershipId: 'm1',
+      billingDate: '2026-10-01T12:00:00.000Z',
+      amount: 5000,
+      currency: 'gbp',
+      status: 'SUCCESSFUL',
+      paymentMethod: 'STRIPE',
+      disputedAmount: null,
+      refundedAmount: null,
+      createdAt: '2026-10-01T12:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+    };
+
+    it('opens the receipt URL in the device browser when one is returned', async () => {
+      const mutateAsync = jest.fn<() => Promise<{ receiptUrl: string | null }>>().mockResolvedValue({ receiptUrl: 'https://pay.stripe.com/receipts/abc' });
+      mocked(transactionQueries.useTransactionReceiptUrl).mockReturnValue({ mutateAsync, isPending: false });
+      mocked(transactionQueries.useMyTransactions).mockReturnValue(pagedQuery([TX]));
+
+      const { getByText } = await render(<TransactionHistoryScreen />);
+      await fireEvent.press(getByText('View receipt'));
+
+      expect(mutateAsync).toHaveBeenCalledWith('tx1');
+      expect(WebBrowser.openBrowserAsync).toHaveBeenCalledWith('https://pay.stripe.com/receipts/abc');
+    });
+
+    it('shows "No receipt is available" instead of opening a browser when receiptUrl is null (CASH/BANK_TRANSFER)', async () => {
+      const mutateAsync = jest.fn<() => Promise<{ receiptUrl: string | null }>>().mockResolvedValue({ receiptUrl: null });
+      mocked(transactionQueries.useTransactionReceiptUrl).mockReturnValue({ mutateAsync, isPending: false });
+      mocked(transactionQueries.useMyTransactions).mockReturnValue(pagedQuery([{ ...TX, paymentMethod: 'BANK_TRANSFER' }]));
+
+      const { getByText } = await render(<TransactionHistoryScreen />);
+      await fireEvent.press(getByText('View receipt'));
+
+      expect(getByText('No receipt is available for this payment.')).toBeTruthy();
+      expect(WebBrowser.openBrowserAsync).not.toHaveBeenCalled();
+    });
   });
 });

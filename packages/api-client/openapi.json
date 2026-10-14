@@ -5274,6 +5274,41 @@
         ]
       }
     },
+    "/v1/transactions/{id}/invoice": {
+      "get": {
+        "operationId": "TransactionsController_getReceiptUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionReceiptUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "transactions"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/disciplines": {
       "post": {
         "operationId": "RanksController_createDiscipline",
@@ -9524,6 +9559,742 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/favorite": {
+      "post": {
+        "operationId": "CurriculumController_addFavorite",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_removeFavorite",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Idempotent — a no-op if it wasn't favorited."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/favorites": {
+      "get": {
+        "operationId": "CurriculumController_findFavorites",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/watch-progress": {
+      "post": {
+        "operationId": "CurriculumController_upsertWatchProgress",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertWatchProgressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchHistoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/watch-history": {
+      "get": {
+        "operationId": "CurriculumController_findWatchHistory",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchHistoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/playlists": {
+      "post": {
+        "operationId": "CurriculumController_createPlaylist",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlaylistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CurriculumController_findPlaylists",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/playlists/{id}": {
+      "patch": {
+        "operationId": "CurriculumController_renamePlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenamePlaylistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CurriculumController_deletePlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted; its PlaylistItems cascade away with it."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/playlists/{id}/items": {
+      "get": {
+        "operationId": "CurriculumController_findPlaylistItems",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistItemListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CurriculumController_addPlaylistItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPlaylistItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistItemListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/playlists/{id}/items/{itemId}": {
+      "delete": {
+        "operationId": "CurriculumController_removePlaylistItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Idempotent — a no-op if the item is already gone."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/curriculum/playlists/{id}/items/order": {
+      "put": {
+        "operationId": "CurriculumController_reorderPlaylistItems",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPlaylistItemsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistItemListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/comments": {
+      "post": {
+        "operationId": "CurriculumController_createComment",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CurriculumController_findComments",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/comments/{id}": {
+      "delete": {
+        "operationId": "CurriculumController_deleteComment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted — by its own author or School staff (Comment's own schema.prisma comment)."
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/curriculum/lessons/{id}/video-upload-url": {
+      "post": {
+        "operationId": "CurriculumController_requestVideoUploadUrl",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "curriculum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/translations": {
       "get": {
         "operationId": "TranslationsController_findAll",
@@ -10363,43 +11134,55 @@
           },
           "username": {
             "type": "string",
-            "description": "Mobile-only per confirmed field list"
+            "description": "Mobile-only per confirmed field list. Null clears it.",
+            "nullable": true
           },
           "dateOfBirth": {
             "type": "string",
             "description": "ISO 8601 date, no time component"
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "nationality": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "language": {
             "type": "string",
-            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1)."
+            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it.",
+            "nullable": true
           },
           "currency": {
             "type": "string",
-            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it.",
+            "nullable": true
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "profilePhotoUrl": {
             "type": "string"
           },
           "weightCategory": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "kimonoSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "beltSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           }
         }
       },
@@ -12107,43 +12890,55 @@
           },
           "username": {
             "type": "string",
-            "description": "Mobile-only per confirmed field list"
+            "description": "Mobile-only per confirmed field list. Null clears it.",
+            "nullable": true
           },
           "dateOfBirth": {
             "type": "string",
             "description": "ISO 8601 date, no time component"
           },
           "gender": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "nationality": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "language": {
             "type": "string",
-            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1)."
+            "description": "One of the 4 confirmed languages — free text, no canonical code list confirmed anywhere yet (domain-rules §1). Null clears it.",
+            "nullable": true
           },
           "currency": {
             "type": "string",
-            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language."
+            "description": "An ISO 4217 code from the Stripe-supported currency list (GET /settings/currencies, ~135 currencies) — same free-text caveat as language. Null clears it.",
+            "nullable": true
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "Null clears it.",
+            "nullable": true
           },
           "profilePhotoUrl": {
             "type": "string"
           },
           "weightCategory": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "kimonoSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           },
           "beltSize": {
             "type": "string",
-            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+            "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
           }
         }
       },
@@ -14533,6 +15328,16 @@
         "required": [
           "items"
         ]
+      },
+      "TransactionReceiptUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "receiptUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet."
+          }
+        }
       },
       "CreateDisciplineDto": {
         "type": "object",
@@ -18233,6 +19038,11 @@
             "type": "string",
             "nullable": true
           },
+          "playbackUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "The public HLS manifest URL (Decision 227/254), computed server-side via CloudflareStreamService.getPublicPlaybackUrl — null unless captionStatus is READY and the Lesson is unlocked. Not yet verified against a real Cloudflare Stream account (see that method's own header comment)."
+          },
           "skillIds": {
             "type": "array",
             "items": {
@@ -18403,6 +19213,349 @@
         },
         "required": [
           "lessonIds"
+        ]
+      },
+      "FavoriteResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "lessonId",
+          "schoolId",
+          "createdAt"
+        ]
+      },
+      "FavoriteListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opaque cursor for the next page, ordered (createdAt, id) DESC; null when there is no more."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpsertWatchProgressDto": {
+        "type": "object",
+        "properties": {
+          "lastPositionSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "Set true once playback reaches the end. Never used to clear a prior completion."
+          }
+        },
+        "required": [
+          "lastPositionSeconds"
+        ]
+      },
+      "WatchHistoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "lastPositionSeconds": {
+            "type": "number"
+          },
+          "completedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "lessonId",
+          "schoolId",
+          "lastPositionSeconds",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WatchHistoryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WatchHistoryResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opaque cursor for the next page, ordered (updatedAt, id) DESC; null when there is no more."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreatePlaylistDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "PlaylistResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "name",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PlaylistListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaylistResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opaque cursor for the next page, ordered (createdAt, id) DESC; null when there is no more."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RenamePlaylistDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "PlaylistItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "playlistId": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "lessonTitle": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "The caller may not watch this Lesson (Decisions 154, 190, 195)."
+          }
+        },
+        "required": [
+          "id",
+          "playlistId",
+          "lessonId",
+          "order",
+          "createdAt",
+          "lessonTitle",
+          "locked"
+        ]
+      },
+      "PlaylistItemListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaylistItemResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AddPlaylistItemDto": {
+        "type": "object",
+        "properties": {
+          "lessonId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "lessonId"
+        ]
+      },
+      "ReorderPlaylistItemsDto": {
+        "type": "object",
+        "properties": {
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "itemIds"
+        ]
+      },
+      "CreateCommentDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "CommentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "lessonId",
+          "authorId",
+          "authorName",
+          "schoolId",
+          "body",
+          "createdAt"
+        ]
+      },
+      "CommentListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Opaque cursor for the next page, ordered (createdAt, id) ASC (oldest first); null when there is no more."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "VideoUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string"
+          },
+          "videoRef": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "videoRef"
         ]
       },
       "TranslationResponseDto": {

@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse,
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CurriculumService } from './curriculum.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -14,6 +15,19 @@ import {
   OrderCategoryLessonsDto,
   OrderLessonCategoriesDto,
 } from './dto/lesson-category.dto';
+import { FavoriteListResponseDto, FavoriteResponseDto } from './dto/favorite-response.dto';
+import { UpsertWatchProgressDto, WatchHistoryListResponseDto, WatchHistoryResponseDto } from './dto/watch-history.dto';
+import {
+  AddPlaylistItemDto,
+  CreatePlaylistDto,
+  PlaylistItemListResponseDto,
+  PlaylistListResponseDto,
+  PlaylistResponseDto,
+  RenamePlaylistDto,
+  ReorderPlaylistItemsDto,
+} from './dto/playlist.dto';
+import { CommentListResponseDto, CommentResponseDto, CreateCommentDto } from './dto/comment.dto';
+import { VideoUploadUrlResponseDto } from './dto/video-upload-response.dto';
 
 /**
  * `/schools/:schoolId/curriculum/lessons` for create+list is a Developer-level
@@ -131,5 +145,148 @@ export class CurriculumController {
   @Get('students/:id/lessons')
   async findLessonsForStudent(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query('schoolId') schoolId?: string) {
     return { items: await this.curriculumService.findLessonsForStudent(user.sub, id, schoolId) };
+  }
+
+  // Curriculum learner-facing redesign (Decision 227/254): Favorite,
+  // WatchHistory, Playlist/PlaylistItem, Comment, video upload.
+
+  @ApiCreatedResponse({ type: FavoriteResponseDto })
+  @Post('schools/:schoolId/curriculum/lessons/:id/favorite')
+  addFavorite(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.curriculumService.addFavorite(user.sub, schoolId, id);
+  }
+
+  @ApiNoContentResponse({ description: 'Idempotent — a no-op if it wasn\'t favorited.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('schools/:schoolId/curriculum/lessons/:id/favorite')
+  async removeFavorite(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.curriculumService.removeFavorite(user.sub, schoolId, id);
+  }
+
+  @ApiOkResponse({ type: FavoriteListResponseDto })
+  @Get('schools/:schoolId/curriculum/favorites')
+  findFavorites(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Query() query: PaginationQueryDto) {
+    return this.curriculumService.findFavorites(user.sub, schoolId, query.cursor, query.limit);
+  }
+
+  @ApiCreatedResponse({ type: WatchHistoryResponseDto })
+  @Post('schools/:schoolId/curriculum/lessons/:id/watch-progress')
+  upsertWatchProgress(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpsertWatchProgressDto,
+  ) {
+    return this.curriculumService.upsertWatchProgress(user.sub, schoolId, id, dto);
+  }
+
+  @ApiOkResponse({ type: WatchHistoryListResponseDto })
+  @Get('schools/:schoolId/curriculum/watch-history')
+  findWatchHistory(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Query() query: PaginationQueryDto) {
+    return this.curriculumService.findWatchHistory(user.sub, schoolId, query.cursor, query.limit);
+  }
+
+  @ApiCreatedResponse({ type: PlaylistResponseDto })
+  @Post('curriculum/playlists')
+  createPlaylist(@CurrentUser() user: JwtPayload, @Body() dto: CreatePlaylistDto) {
+    return this.curriculumService.createPlaylist(user.sub, dto);
+  }
+
+  @ApiOkResponse({ type: PlaylistListResponseDto })
+  @Get('curriculum/playlists')
+  findPlaylists(@CurrentUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
+    return this.curriculumService.findPlaylists(user.sub, query.cursor, query.limit);
+  }
+
+  @ApiOkResponse({ type: PlaylistResponseDto })
+  @Patch('curriculum/playlists/:id')
+  renamePlaylist(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RenamePlaylistDto) {
+    return this.curriculumService.renamePlaylist(user.sub, id, dto);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted; its PlaylistItems cascade away with it.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('curriculum/playlists/:id')
+  async deletePlaylist(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.curriculumService.deletePlaylist(user.sub, id);
+  }
+
+  @ApiOkResponse({ type: PlaylistItemListResponseDto })
+  @Get('curriculum/playlists/:id/items')
+  findPlaylistItems(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
+    return this.curriculumService.findPlaylistItems(user.sub, id);
+  }
+
+  @ApiCreatedResponse({ type: PlaylistItemListResponseDto })
+  @Post('curriculum/playlists/:id/items')
+  addPlaylistItem(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AddPlaylistItemDto) {
+    return this.curriculumService.addPlaylistItem(user.sub, id, dto);
+  }
+
+  @ApiNoContentResponse({ description: 'Idempotent — a no-op if the item is already gone.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('curriculum/playlists/:id/items/:itemId')
+  async removePlaylistItem(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+  ): Promise<void> {
+    await this.curriculumService.removePlaylistItem(user.sub, id, itemId);
+  }
+
+  @ApiOkResponse({ type: PlaylistItemListResponseDto })
+  @Put('curriculum/playlists/:id/items/order')
+  reorderPlaylistItems(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReorderPlaylistItemsDto) {
+    return this.curriculumService.reorderPlaylistItems(user.sub, id, dto);
+  }
+
+  @ApiCreatedResponse({ type: CommentResponseDto })
+  @Post('schools/:schoolId/curriculum/lessons/:id/comments')
+  createComment(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateCommentDto,
+  ) {
+    return this.curriculumService.createComment(user.sub, schoolId, id, dto);
+  }
+
+  @ApiOkResponse({ type: CommentListResponseDto })
+  @Get('schools/:schoolId/curriculum/lessons/:id/comments')
+  findComments(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.curriculumService.findComments(user.sub, schoolId, id, query.cursor, query.limit);
+  }
+
+  @ApiNoContentResponse({ description: 'Deleted — by its own author or School staff (Comment\'s own schema.prisma comment).' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('comments/:id')
+  async deleteComment(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    await this.curriculumService.deleteComment(user.sub, id);
+  }
+
+  /** Staff-gated — the service method does the actual check (requestVideoUploadUrl's
+   * own assertStaffAtSchool/assertSchoolNotArchived), same convention as every
+   * other write endpoint in this controller. */
+  @ApiCreatedResponse({ type: VideoUploadUrlResponseDto })
+  @Post('schools/:schoolId/curriculum/lessons/:id/video-upload-url')
+  requestVideoUploadUrl(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.curriculumService.requestVideoUploadUrl(user.sub, schoolId, id);
   }
 }

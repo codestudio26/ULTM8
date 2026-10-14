@@ -1,11 +1,46 @@
-import React from 'react';
-import { Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import React, { useState } from 'react';
+import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useMembershipPlans } from '../membershipPlans/membershipPlanQueries';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
-import { useTransactions, type TransactionResponse } from './transactionQueries';
+import { useTransactionReceiptUrl, useTransactions, type TransactionResponse } from './transactionQueries';
+
+/** One "Receipt" cell — a drill-down from the table, not a bulk action, so it's
+ * its own small component (one `useTransactionReceiptUrl()` call per row)
+ * rather than a single mutation shared across the whole table. `null`
+ * (CASH/BANK_TRANSFER, or Stripe simply has no receipt yet) shows an inline
+ * message instead of silently doing nothing — a real, normal state, not an
+ * error. Opens in a new tab (`window.open`) rather than navigating away from
+ * the Transactions table. */
+function ReceiptCell({ transactionId }: { transactionId: string }) {
+  const getReceiptUrl = useTransactionReceiptUrl();
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClick() {
+    setError(null);
+    try {
+      const { receiptUrl } = await getReceiptUrl.mutateAsync(transactionId);
+      if (!receiptUrl) {
+        setError('No receipt available');
+        return;
+      }
+      window.open(receiptUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not load the receipt.');
+    }
+  }
+
+  return (
+    <div>
+      <Button variant="secondary" loading={getReceiptUrl.isPending} onClick={handleClick}>
+        Receipt
+      </Button>
+      {error ? <div style={{ color: 'var(--text-danger)', fontSize: 12 }}>{error}</div> : null}
+    </div>
+  );
+}
 
 /** Small, page-local summary tile — see MembershipPlansPage's own StatTile for why
  * this isn't promoted to @ultm8/ui yet (only two occurrences, and this one needs no
@@ -33,8 +68,9 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/** Read-only — see transactionQueries.ts's own header comment on why (no
- * refund/credit-restore/invoice-download endpoints exist yet this phase). */
+/** Read-only except for the "Receipt" drill-down column (`ReceiptCell` above) —
+ * no refund/credit-restore endpoint exists yet this phase; see
+ * transactionQueries.ts's own header comment for invoice-download, now built. */
 export function TransactionsPage() {
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useTransactions(schoolId);
@@ -106,6 +142,7 @@ export function TransactionsPage() {
               { key: 'paymentMethod', header: 'Method', render: (t) => t.paymentMethod },
               { key: 'refunded', header: 'Refunded', render: (t) => (t.refundedAmount ? formatMoney(t.refundedAmount, t.currency) : '—') },
               { key: 'disputed', header: 'Disputed', render: (t) => (t.disputedAmount ? formatMoney(t.disputedAmount, t.currency) : '—') },
+              { key: 'receipt', header: 'Receipt', render: (t) => <ReceiptCell transactionId={t.id} /> },
             ]}
           />
         )}
