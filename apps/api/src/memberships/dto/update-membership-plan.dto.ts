@@ -1,8 +1,10 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min, MaxLength } from 'class-validator';
 import { CreateMembershipPlanDto } from './create-membership-plan.dto';
 
-const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate'] as const;
+// billingCycleAnchorDay is nullable on update (switching back to FRESH_CYCLE
+// clears it) — same list, same reasoning as every other field here.
+const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate', 'billingCycleAnchorDay'] as const;
 
 /** v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
  * prompt. MembershipsService.updatePlan() requires exactly one of these
@@ -70,6 +72,18 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @IsOptional()
   @IsDateString()
   refundFeeDate?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Day of month (1-28) every new Membership on this plan is aligned to (Decision 259) — required when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE, rejected otherwise. Pass null to clear (e.g. when switching back to FRESH_CYCLE).',
+    type: Number,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(28)
+  billingCycleAnchorDay?: number | null;
 
   @ApiPropertyOptional({
     enum: MembershipPlanPriceChangeStrategyDto,

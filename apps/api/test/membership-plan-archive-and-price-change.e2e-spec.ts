@@ -452,4 +452,124 @@ describeIfDb('MembershipPlan archive + Subscription price-change migrate-vs-gran
       }
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Feature 3 — Decision 259's new-member billing strategy
+  // (newMemberBillingStrategy / billingCycleAnchorDay)
+  // ---------------------------------------------------------------------------
+  describe('New-member billing strategy (Decision 259)', () => {
+    it('defaults to FRESH_CYCLE with no billingCycleAnchorDay when omitted', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'SUBSCRIPTION', title: 'Default Strategy', price: 5000, currency: 'gbp' });
+      expect(createRes.status).toBe(201);
+      planIds.push(createRes.body.id);
+      expect(createRes.body.newMemberBillingStrategy).toBe('FRESH_CYCLE');
+      expect(createRes.body.billingCycleAnchorDay).toBeNull();
+    });
+
+    it('creates a PRORATED_TO_SHARED_CYCLE plan with a valid billingCycleAnchorDay', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'SUBSCRIPTION', title: 'Shared Cycle', price: 5000, currency: 'gbp', newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE', billingCycleAnchorDay: 15 });
+      expect(createRes.status).toBe(201);
+      planIds.push(createRes.body.id);
+      expect(createRes.body.newMemberBillingStrategy).toBe('PRORATED_TO_SHARED_CYCLE');
+      expect(createRes.body.billingCycleAnchorDay).toBe(15);
+    });
+
+    it('rejects PRORATED_TO_SHARED_CYCLE with no billingCycleAnchorDay — 400', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'SUBSCRIPTION', title: 'Missing Anchor', price: 5000, currency: 'gbp', newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE' });
+      expect(createRes.status).toBe(400);
+    });
+
+    it('rejects billingCycleAnchorDay on a non-SUBSCRIPTION plan — 400', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'CLASS_PACK', title: 'Not A Subscription', price: 5000, currency: 'gbp', classesIncluded: 10, billingCycleAnchorDay: 15 });
+      expect(createRes.status).toBe(400);
+    });
+
+    it('rejects billingCycleAnchorDay outside 1-28 — 400', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'SUBSCRIPTION', title: 'Out Of Range', price: 5000, currency: 'gbp', newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE', billingCycleAnchorDay: 29 });
+      expect(createRes.status).toBe(400);
+    });
+
+    it('PATCH: switching FRESH_CYCLE to PRORATED_TO_SHARED_CYCLE requires billingCycleAnchorDay in the same request', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'SUBSCRIPTION', title: 'Switching Strategy', price: 5000, currency: 'gbp' });
+      expect(createRes.status).toBe(201);
+      const planId = createRes.body.id;
+      planIds.push(planId);
+
+      const missingAnchor = await request(app.getHttpServer())
+        .patch(`/v1/membership-plans/${planId}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE' });
+      expect(missingAnchor.status).toBe(400);
+
+      const withAnchor = await request(app.getHttpServer())
+        .patch(`/v1/membership-plans/${planId}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE', billingCycleAnchorDay: 10 });
+      expect(withAnchor.status).toBe(200);
+      expect(withAnchor.body.newMemberBillingStrategy).toBe('PRORATED_TO_SHARED_CYCLE');
+      expect(withAnchor.body.billingCycleAnchorDay).toBe(10);
+    });
+
+    it('PATCH: switching back to FRESH_CYCLE with billingCycleAnchorDay: null clears it', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'SUBSCRIPTION', title: 'Switching Back', price: 5000, currency: 'gbp', newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE', billingCycleAnchorDay: 5 });
+      expect(createRes.status).toBe(201);
+      const planId = createRes.body.id;
+      planIds.push(planId);
+
+      const switchBack = await request(app.getHttpServer())
+        .patch(`/v1/membership-plans/${planId}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ newMemberBillingStrategy: 'FRESH_CYCLE', billingCycleAnchorDay: null });
+      expect(switchBack.status).toBe(200);
+      expect(switchBack.body.newMemberBillingStrategy).toBe('FRESH_CYCLE');
+      expect(switchBack.body.billingCycleAnchorDay).toBeNull();
+    });
+
+    it('PATCH: leaving the strategy untouched while a PRORATED plan already has its own anchor needs no re-send', async () => {
+      const { school, tokenOwner } = await seedSchoolWithOwnerAndStripe();
+      const createRes = await request(app.getHttpServer())
+        .post(`/v1/schools/${school.id}/membership-plans`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ type: 'SUBSCRIPTION', title: 'Untouched Strategy', price: 5000, currency: 'gbp', newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE', billingCycleAnchorDay: 20 });
+      expect(createRes.status).toBe(201);
+      const planId = createRes.body.id;
+      planIds.push(planId);
+
+      const renameOnly = await request(app.getHttpServer())
+        .patch(`/v1/membership-plans/${planId}`)
+        .set('Authorization', `Bearer ${tokenOwner}`)
+        .send({ title: 'Renamed, same strategy' });
+      expect(renameOnly.status).toBe(200);
+      expect(renameOnly.body.newMemberBillingStrategy).toBe('PRORATED_TO_SHARED_CYCLE');
+      expect(renameOnly.body.billingCycleAnchorDay).toBe(20);
+    });
+  });
 });
