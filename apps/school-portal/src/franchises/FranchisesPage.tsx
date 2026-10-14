@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useCreateFranchise, useFranchises, useUpdateFranchise, type FeeModel, type FranchiseResponse } from './franchiseQueries';
+import { useCreateFranchise, useFranchiseBillingStatus, useFranchises, useUpdateFranchise, type FeeModel, type FranchiseResponse } from './franchiseQueries';
 import { FranchiseFormModal } from './FranchiseFormModal';
 
 /** Top-level, always-visible nav entry (same convention as every other
@@ -180,10 +180,12 @@ export function FranchisesPage() {
 
 function EditFranchiseModal({ franchise, onClose }: { franchise: FranchiseResponse; onClose: () => void }) {
   const updateFranchise = useUpdateFranchise(franchise.id);
+  const { data: billingStatus } = useFranchiseBillingStatus(franchise.id);
   return (
     <FranchiseFormModal
       title="Edit franchise"
       initial={franchise}
+      schoolsAlreadyBillingCount={billingStatus?.schoolsAlreadyBillingCount ?? 0}
       submitting={updateFranchise.isPending}
       onSubmit={async (values) => {
         // Passed straight through, nulls included — UpdateFranchiseDto accepts

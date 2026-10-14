@@ -8,6 +8,8 @@ import type { FranchiseResponse } from './franchiseQueries';
 
 const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
 
+const FEE_RATE_CHANGE_STRATEGIES = ['MIGRATE_NEXT_CYCLE', 'MIGRATE_IMMEDIATE'] as const;
+
 export interface FranchiseFormValues {
   name: string;
   /** `null` means "cleared" — UpdateFranchiseDto accepts `null` on these
@@ -31,25 +33,36 @@ export interface FranchiseFormValues {
    * (omitted from the request), not "clear it". */
   flatFeeAmount?: number;
   perHeadcountRate?: number;
+  /** Decision 99's own follow-up — omitted unless feeRateChangeDecisionRequired. */
+  feeRateChangeStrategy?: (typeof FEE_RATE_CHANGE_STRATEGIES)[number];
 }
 
 /** Fields match CreateFranchiseDto/UpdateFranchiseDto exactly —
  * apps/api/src/tenants/franchises/dto/create-franchise.dto.ts, re-verified
- * before writing this. Cross-field rate-change rules
- * (FranchisesService.update()'s own schoolsAlreadyBilling guard, which
- * rejects a rate change once any member School has started billing) are
- * enforced server-side, not duplicated here — same convention every other
- * form modal in this codebase already follows for its own service-side
- * cross-field checks (e.g. MembershipPlanFormPage). */
+ * before writing this. Decision 99's own follow-up: a rate change once any
+ * member School has started billing now requires `feeRateChangeStrategy`
+ * (FranchisesService.update()'s own schoolsAlreadyBilling guard) — mirrored
+ * client-side via `schoolsAlreadyBillingCount` (fetched up front by the page,
+ * not guessed) so the prompt shows before the identical 400 would, same
+ * "query, don't guess" shape MembershipPlanFormPage's own price-change prompt
+ * already establishes. */
 export function FranchiseFormModal({
   title,
   initial,
+  schoolsAlreadyBillingCount = 0,
   submitting,
   onSubmit,
   onClose,
 }: {
   title: string;
   initial?: Partial<FranchiseResponse>;
+  /** Decision 99's own follow-up — how many member Schools already have a
+   * standing franchise-fee Stripe Subscription, fetched up front
+   * (useFranchiseBillingStatus) so this prompt can show before the identical
+   * 400 would, same "query, don't guess" shape MembershipPlanFormPage's own
+   * activeSubscriberCount prop already establishes. 0 for the create path —
+   * there's nothing to migrate yet. */
+  schoolsAlreadyBillingCount?: number;
   submitting: boolean;
   onSubmit: (values: FranchiseFormValues) => Promise<void>;
   onClose: () => void;
@@ -73,11 +86,28 @@ export function FranchiseFormModal({
     flatFeeAmount: initial?.flatFeeAmount?.toString() ?? '',
     perHeadcountRate: initial?.perHeadcountRate?.toString() ?? '',
   });
+  const [feeRateChangeStrategy, setFeeRateChangeStrategy] = useState<(typeof FEE_RATE_CHANGE_STRATEGIES)[number] | ''>('');
   const [error, setError] = useState<string | null>(null);
+
+  // Decision 99's own follow-up — mirrors FranchisesService.update()'s own
+  // `changingRate` check exactly (both rate fields, not just the one the
+  // currently-selected feeModel uses — the server checks both too, since a
+  // Franchise can hold a configured rate for a feeModel it isn't currently
+  // active under). Required only while editing (a brand-new Franchise has no
+  // Schools to migrate) and only once at least one School is already billing.
+  const flatChanged = initial && form.flatFeeAmount !== '' && Number(form.flatFeeAmount) !== (initial.flatFeeAmount ?? null);
+  const perHeadcountChanged = initial && form.perHeadcountRate !== '' && Number(form.perHeadcountRate) !== (initial.perHeadcountRate ?? null);
+  const feeRateChangeDecisionRequired = !!initial && (flatChanged || perHeadcountChanged) && schoolsAlreadyBillingCount > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (feeRateChangeDecisionRequired && !feeRateChangeStrategy) {
+      setError(
+        `This Franchise has ${schoolsAlreadyBillingCount} School${schoolsAlreadyBillingCount === 1 ? '' : 's'} already billing at the current rate — choose how this change applies before saving.`,
+      );
+      return;
+    }
     try {
       await onSubmit({
         name: form.name,
@@ -94,6 +124,7 @@ export function FranchiseFormModal({
         feeModel: form.feeModel,
         flatFeeAmount: form.flatFeeAmount ? Number(form.flatFeeAmount) : undefined,
         perHeadcountRate: form.perHeadcountRate ? Number(form.perHeadcountRate) : undefined,
+        feeRateChangeStrategy: feeRateChangeDecisionRequired && feeRateChangeStrategy ? feeRateChangeStrategy : undefined,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
@@ -187,7 +218,7 @@ export function FranchiseFormModal({
           htmlFor="franchise-flatFee"
           hint={
             initial
-              ? "Minor currency unit (e.g. cents). Only meaningful when Fee model is Flat. Can't be changed once any member School has started billing."
+              ? "Minor currency unit (e.g. cents). Only meaningful when Fee model is Flat. Changing it once billing has started requires choosing how the change applies, below."
               : 'Minor currency unit (e.g. cents). Only meaningful when Fee model is Flat.'
           }
         >
@@ -203,7 +234,7 @@ export function FranchiseFormModal({
           htmlFor="franchise-perHeadcount"
           hint={
             initial
-              ? "Minor currency unit (e.g. cents) per active Student per month. Only meaningful when Fee model is Per-headcount. Can't be changed once any member School has started billing."
+              ? "Minor currency unit (e.g. cents) per active Student per month. Only meaningful when Fee model is Per-headcount. Changing it once billing has started requires choosing how the change applies, below."
               : 'Minor currency unit (e.g. cents) per active Student per month. Only meaningful when Fee model is Per-headcount.'
           }
         >
@@ -214,6 +245,47 @@ export function FranchiseFormModal({
             onChange={(e) => setForm((f) => ({ ...f, perHeadcountRate: e.target.value }))}
           />
         </Field>
+        {feeRateChangeDecisionRequired ? (
+          // Decision 99's own follow-up — shown only when it's actually
+          // relevant (see feeRateChangeDecisionRequired's own comment above)
+          // — a required choice, not a dismissible hint, so Save stays
+          // blocked (handleSubmit's own check) until one is picked. Same
+          // two-button-choice shape MembershipPlanFormPage's own price-change
+          // prompt already establishes.
+          <Field label="This rate change affects already-billing Schools" htmlFor="franchise-fee-rate-change-strategy">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+                {schoolsAlreadyBillingCount} School{schoolsAlreadyBillingCount === 1 ? '' : 's'} currently billing at the old rate.
+                Choose how this change applies before saving.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Button
+                  type="button"
+                  variant={feeRateChangeStrategy === 'MIGRATE_NEXT_CYCLE' ? 'primary' : 'secondary'}
+                  onClick={() => setFeeRateChangeStrategy('MIGRATE_NEXT_CYCLE')}
+                >
+                  Apply from next billing cycle
+                </Button>
+                <Button
+                  type="button"
+                  variant={feeRateChangeStrategy === 'MIGRATE_IMMEDIATE' ? 'primary' : 'secondary'}
+                  onClick={() => setFeeRateChangeStrategy('MIGRATE_IMMEDIATE')}
+                >
+                  Apply immediately
+                </Button>
+              </div>
+              <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+                {feeRateChangeStrategy === 'MIGRATE_NEXT_CYCLE'
+                  ? 'Every already-billing School keeps paying the old rate for its current billing period — the new rate starts at their next renewal.'
+                  : feeRateChangeStrategy === 'MIGRATE_IMMEDIATE'
+                    ? form.feeModel === 'PER_HEADCOUNT'
+                      ? "Takes effect right away. Because Per-headcount billing can't split a period between two rates, this re-rates each School's ENTIRE current billing period at the new rate, not just the days remaining."
+                      : 'Takes effect right away — Schools are charged a prorated difference for the remaining days of their current billing period.'
+                    : 'Pick one to continue.'}
+              </p>
+            </div>
+          </Field>
+        ) : null}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             Save

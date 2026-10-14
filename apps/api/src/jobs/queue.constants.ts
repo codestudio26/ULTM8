@@ -78,3 +78,12 @@ export const ENTITY_OFFBOARDING_PURGE_QUEUE = 'entity-offboarding-purge';
 // state-machine account (a genuinely new, un-precedented async-external-API-
 // poll shape in this codebase, not an established convention).
 export const VIDEO_PROCESSING_POLL_QUEUE = 'video-processing-poll';
+// Decision 99's own follow-up — the real rate-migration mechanism FranchisesService.
+// update() used to reject outright once franchise-fee billing had started for at
+// least one School. Event-triggered only (enqueued the instant a Franchise Owner
+// records a feeRateChangeStrategy decision), same shape
+// MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE already establishes for "react to one
+// event, no Scheduler needed" — see franchise-fee-rate-migration.processor.ts's own
+// header comment for why, unlike that queue's GRANDFATHER case, BOTH strategies
+// here always enqueue real work.
+export const FRANCHISE_FEE_RATE_MIGRATION_QUEUE = 'franchise-fee-rate-migration';

@@ -3608,3 +3608,34 @@ The same underlying gap for one-time (non-SUBSCRIPTION) plan types doesn't exist
 
 User, confirming "Option a, per-plan setting — build both" after being shown current behavior and two concrete design options for the shared-cycle anchor; the Franchise fee-rate migration this same conversation also approved is tracked as its own, separate piece of work (Decision 99's own follow-up), not folded into this entry.
 
+## Decision 260 — Franchise fee-rate migration, built: MIGRATE_NEXT_CYCLE and MIGRATE_IMMEDIATE, replacing the outright rejection once franchise-fee billing has started
+
+**Date:** 14 Oct 2026 · **Status:** Confirmed by product owner, built
+**Resolves:** Decision 99's own "what this does NOT resolve" — changing a Franchise's `flatFeeAmount`/`perHeadcountRate` once at least one member School already has a standing franchise-fee Stripe Subscription. `FranchisesService.update()` previously rejected this outright with a 409 (Stripe Prices are immutable once created, so a naive change would silently diverge from what Stripe actually charges) — deferred, not decided against, per that decision's own text.
+
+1. **Two named strategies, Franchise Owner's choice** — mirroring MembershipPlan's existing Migrate/Grandfather precedent in shape, not content (there is no "Grandfather" equivalent here — both options always do real Stripe work):
+   - **MIGRATE_NEXT_CYCLE** — the new rate takes effect starting each affected School's own next billing period; the already-committed current period keeps billing at the OLD rate.
+   - **MIGRATE_IMMEDIATE** — the new rate takes effect right now.
+2. **FLAT and PER_HEADCOUNT are NOT mechanically symmetric** — verified directly against the installed Stripe SDK's own types before building, not assumed:
+   - FLAT: a flat recurring Price's billing impact is always forward-looking. MIGRATE_NEXT_CYCLE swaps the Subscription Item's Price now with `proration_behavior: 'none'` — nothing about already-elapsed days changes, only the next invoice. MIGRATE_IMMEDIATE uses `proration_behavior: 'always_invoice'` — a real, immediate prorated charge for the remaining days of the current period.
+   - PER_HEADCOUNT (metered): Stripe always bills a metered item's WHOLE period at whichever Price is attached when that period's invoice is generated — it has no concept of splitting one period's usage by date across two Prices. MIGRATE_IMMEDIATE swaps the Price right now, disclosed to the Franchise Owner (and confirmed with the product owner before building, via direct AskUserQuestion) as re-rating the Franchise's ENTIRE current period's already-accrued usage at the new rate, not just the days remaining — a genuine Stripe billing constraint, not a choice made by this code. MIGRATE_NEXT_CYCLE instead defers the swap via a delayed background job, past that Subscription Item's own `current_period_end`, so the already-committed period still bills at the OLD rate.
+3. **A new Price is always created, never an existing one mutated** (Stripe Prices are immutable) — FLAT gets one new Price per School (each FLAT School already has its own ad-hoc Product, `ensureSubscription`'s own established shape); PER_HEADCOUNT gets exactly ONE new Price shared across every affected School, pointing at the Franchise's EXISTING Stripe Billing Meter (Meters aren't re-created) — persisted onto `Franchise.stripeUsagePriceId` so a School joining afterward also gets the new rate automatically.
+4. **A rate change with zero Schools already billing needs no strategy and no decision row** — same "nothing to migrate" shape `MembershipsService.updatePlan()` already established for a price edit with zero active subscribers; the rate simply changes.
+5. **School Portal UI**: `FranchiseFormModal` gained the same required two-button prompt shape `MembershipPlanFormPage`'s own price-change prompt already established, fed by a new `GET /franchises/{id}/billing-status` endpoint (queried up front, same "query, don't guess" precedent as `GET /membership-plans/{id}/active-count`) rather than guessing client-side whether a strategy will be required.
+
+### What this does NOT resolve
+
+`status: COMPLETED` on a MIGRATE_NEXT_CYCLE/PER_HEADCOUNT row means every affected School's deferred swap was successfully SCHEDULED, not that it has executed yet — the deferred job's own eventual success/failure is logged, not reflected back onto that row (would need either a child-row model or a wider status enum). The deferred job fires a disclosed 15-minute buffer past `current_period_end`, not an exact guarantee against Stripe's own invoice-generation timing. Whether a School should be notified when its Franchise's rate changes remains unresolved, same as Decision 99 already left it.
+
+### Built
+
+**api:** Migration `20261114000002_franchise_fee_rate_change` — new `FranchiseFeeRateChange` model (enums `FranchiseFeeRateChangeStrategy`/`FranchiseFeeRateChangeStatus`), RLS mirroring `MembershipPlanPriceChange`'s own Franchise-Owner-only + `ultm8_jobs`-all-commands shape. `FranchisesService.update()`'s former `ConflictException` replaced with a `feeRateChangeStrategy`-required `BadRequestException`, disclosing the PER_HEADCOUNT/MIGRATE_IMMEDIATE re-rate risk directly in the error message. New `FranchiseFeeRateMigrationProcessor` (`franchise-fee-rate-migration` queue, two job names: `migrate` and the PER_HEADCOUNT/MIGRATE_NEXT_CYCLE-only `deferred-swap`), new `FranchiseFeeBillingService` methods (`createReplacementMeteredPrice`, `createReplacementFlatPrice`, `swapSubscriptionPrice`). New `GET /franchises/{id}/billing-status`.
+
+**school-portal:** `FranchiseFormModal.tsx` — the required strategy prompt, shown only when `schoolsAlreadyBillingCount > 0` AND a rate field actually changed; `useFranchiseBillingStatus` query hook.
+
+**Tests:** `apps/api/test/franchise-fee-rate-migration.e2e-spec.ts` (6 new, real BullMQ/Redis + real Postgres, Stripe mocked — every strategy/feeModel combination, plus the no-PaymentAccount failure path and the deferred job's own scheduling verified directly against the real queue without waiting out its buffer). `apps/api/test/tenants.e2e-spec.ts` (1 updated — the old 409 test now asserts the new 400). `apps/school-portal/e2e/franchise-fee-rate-change-prompt.spec.ts` (2 new).
+
+### Recorded by
+
+User, via direct AskUserQuestion answers earlier in this same conversation: "Option 1 and 2" (build both strategies, Franchise Owner's choice) and "Allow it, disclosed as full-period re-rate (Recommended)" for the PER_HEADCOUNT/MIGRATE_IMMEDIATE semantics specifically. The exact mechanics (deferred-job vs. Stripe Subscription Schedule for MIGRATE_NEXT_CYCLE/PER_HEADCOUNT, the new-Price-not-mutation approach, the UI's up-front billing-status query) are the Developer's own disclosed implementation choices, consistent with what was approved.
+
