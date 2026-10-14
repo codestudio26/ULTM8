@@ -33,6 +33,7 @@ import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { WaiverSignatureRequestsProcessor } from '../src/jobs/waiver-signature-requests.processor';
 import { NotificationFanoutProcessor } from '../src/jobs/notification-fanout.processor';
 import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
+import { PushNotificationService } from '../src/notifications/push-notification.service';
 import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
 import { NotificationFanoutJobData } from '../src/jobs/notification-fanout.types';
 
@@ -525,6 +526,14 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
     // with a config error today and silently change behavior the moment
     // someone sets those env vars locally).
     const fakeDelivery = { sendEmail: jest.fn().mockResolvedValue(undefined) };
+    // Same reasoning as fakeDelivery above, for push (Decision 223/264) — this
+    // suite's scope is the Notification-row write/idempotency and the
+    // email/push wiring itself, not live FCM delivery (no real credentials in
+    // this test environment either). Defaults to "no device tokens, nothing
+    // to send" via an empty staleTokens/sent response; individual tests below
+    // override this mock to exercise the stale-token cleanup and the
+    // push-failure-doesn't-block-email paths.
+    const fakePush = { send: jest.fn().mockResolvedValue({ sent: 0, staleTokens: [] }) };
 
     beforeAll(async () => {
       const moduleRef = await Test.createTestingModule({
@@ -534,10 +543,15 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
           PrismaJobsService,
           { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: fakeNotificationFanoutQueue },
           { provide: NotificationDeliveryService, useValue: fakeDelivery },
+          { provide: PushNotificationService, useValue: fakePush },
         ],
       }).compile();
       waiverProcessor = moduleRef.get(WaiverSignatureRequestsProcessor);
       fanoutProcessor = moduleRef.get(NotificationFanoutProcessor);
+    });
+
+    beforeEach(() => {
+      fakePush.send.mockReset().mockResolvedValue({ sent: 0, staleTokens: [] });
     });
 
     it("fans out to every active Student at the Waiver's own School only — not a revoked grant, not a different School", async () => {
@@ -580,6 +594,64 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
       await fanoutProcessor.process({ id: 'test-fanout-1-retry', data: studentAJob.data } as never);
       const countAfterRetry = await superuser.notification.count({ where: { id: studentAJob.data.notificationId } });
       expect(countAfterRetry).toBe(1);
+    });
+
+    it("push (Decision 223/264): dispatches to every DeviceToken row for the target User, deletes any FCM reports as stale, and never blocks email/the Notification row when push fails or is unconfigured", async () => {
+      const notificationId = `push-test-${randomUUID()}`;
+      const jobData: NotificationFanoutJobData = { notificationId, userId: studentA.id, title: 'Push test', body: 'push body' };
+
+      // No DeviceToken rows registered yet — push.send must not even be called
+      // (nothing to send to), and the rest of the pipeline is unaffected.
+      await fanoutProcessor.process({ id: 'push-test-1', data: jobData } as never);
+      expect(fakePush.send).not.toHaveBeenCalled();
+      const createdNoTokens = await superuser.notification.findUnique({ where: { id: notificationId } });
+      expect(createdNoTokens).not.toBeNull();
+      notificationIds.push(notificationId);
+
+      // Register two DeviceToken rows for the same target, one of which FCM
+      // will report back as stale.
+      const goodToken = await superuser.deviceToken.create({
+        data: { id: randomUUID(), userId: studentA.id, platform: 'IOS', token: `good-${randomUUID()}` },
+      });
+      const staleToken = await superuser.deviceToken.create({
+        data: { id: randomUUID(), userId: studentA.id, platform: 'ANDROID', token: `stale-${randomUUID()}` },
+      });
+      fakePush.send.mockResolvedValueOnce({ sent: 1, staleTokens: [staleToken.token] });
+
+      const notificationId2 = `push-test-2-${randomUUID()}`;
+      await fanoutProcessor.process(
+        { id: 'push-test-2', data: { notificationId: notificationId2, userId: studentA.id, title: 'Push test 2', body: 'push body 2' } } as never,
+      );
+      notificationIds.push(notificationId2);
+
+      expect(fakePush.send).toHaveBeenCalledWith(
+        expect.arrayContaining([goodToken.token, staleToken.token]),
+        'Push test 2',
+        'push body 2',
+      );
+      // The stale token is deleted — FCM's own documented signal that the app
+      // was uninstalled or the token rotated (see PushNotificationService's
+      // own header comment); the still-good token is left alone.
+      expect(await superuser.deviceToken.findUnique({ where: { id: staleToken.id } })).toBeNull();
+      expect(await superuser.deviceToken.findUnique({ where: { id: goodToken.id } })).not.toBeNull();
+
+      // Push genuinely unavailable (e.g. unconfigured FCM credentials, the
+      // real posture in every environment today per Decision 223/250) must
+      // not fail the job or block email — see NotificationFanoutProcessor's
+      // own header comment for why this asymmetry with email is deliberate.
+      fakePush.send.mockRejectedValueOnce(new Error('PushNotificationService is not configured'));
+      const notificationId3 = `push-test-3-${randomUUID()}`;
+      await expect(
+        fanoutProcessor.process(
+          { id: 'push-test-3', data: { notificationId: notificationId3, userId: studentA.id, title: 'Push test 3', body: 'push body 3' } } as never,
+        ),
+      ).resolves.toBeUndefined();
+      notificationIds.push(notificationId3);
+      const createdDespitePushFailure = await superuser.notification.findUnique({ where: { id: notificationId3 } });
+      expect(createdDespitePushFailure).not.toBeNull();
+      expect(fakeDelivery.sendEmail).toHaveBeenCalledWith(studentA.email, 'Push test 3', 'push body 3');
+
+      await superuser.deviceToken.delete({ where: { id: goodToken.id } });
     });
   });
 });

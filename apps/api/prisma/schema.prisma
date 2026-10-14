@@ -3632,22 +3632,26 @@ model Notification {
 /// there is no other app variant to distinguish yet. Add the field (and its
 /// FK) when MobileAppPublishingModule ships, not preemptively.
 ///
-/// Actual push SEND (FCM/APNs dispatch) is also deliberately NOT built this
-/// phase — see NotificationsModule's own header comment for the full scoping
-/// reasoning (email delivery via Postmark/SES is the one real, working channel
-/// this phase; push gets its data model built and ready, not its dispatch).
+/// Actual push SEND (FCM/APNs dispatch) was deliberately NOT built the phase
+/// this model was created — it IS now (Decision 223/264): see
+/// PushNotificationService's own header comment for the dispatch mechanics
+/// and NotificationFanoutProcessor's for how it's wired into fan-out
+/// alongside email. Still non-functional without real FCM credentials
+/// (Decision 223/250's "Still blocked" note) — the registration data model
+/// and dispatch code are both real; only the vendor account is missing.
 /// `platform` is scoped to the two confirmed vendors (§11.4: "FCM (Android)/APNs
 /// (iOS)") — no WEB value, since browser push was never itself confirmed
-/// anywhere in Spec 55.
+/// anywhere in Spec 55. Both platforms route through one FCM integration point
+/// (Decision 250), so `platform` itself is informational only — it plays no
+/// role in how PushNotificationService.send() dispatches.
 ///
 /// Self-only RLS, ALL commands, TO ultm8_app — registration always happens
 /// under the owning caller's own context (unlike Notification, nothing else
-/// ever needs to write a DeviceToken row on another User's behalf), so no
-/// `ultm8_jobs` bypass is needed yet. Add SELECT for `ultm8_jobs` only once a
-/// future phase actually implements push dispatch and needs to look up a
-/// target's tokens — not preemptively (PrismaJobsService's own header comment:
-/// "add the specific grant a new job actually needs... don't broaden a call
-/// site here into a general-purpose cross-tenant read").
+/// ever needs to write a DeviceToken row on another User's behalf). SELECT +
+/// DELETE for `ultm8_jobs` added by Decision 223/264's migration
+/// (20261114000003_push_notification_send) — exactly the "add it once a
+/// future phase actually implements push dispatch" trigger this comment used
+/// to flag, now that phase.
 ///
 /// FOUND ON REVIEW — a real judgment call, not an oversight: is registering
 /// DeviceToken rows with zero server-side consumer (push dispatch) the same

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { authClient } from '../api';
 import { asyncStoragePersister } from '../lib/queryPersister';
+import { registerForPushNotificationsAsync } from '../notifications/pushRegistration';
 import { decodeJwtPayload } from './decodeJwt';
 import { secureTokenStore } from './secureTokenStore';
 import { setUnauthorizedHandler } from './sessionRefresh';
@@ -107,6 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // anything could possibly need it.
       await secureTokenStore.setRefreshToken(result.refreshToken);
       await applyToken(result.accessToken);
+      // Fire-and-forget — see pushRegistration.ts's own header comment.
+      void registerForPushNotificationsAsync();
     },
     [applyToken],
   );
@@ -208,13 +211,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // about to be, within the buffer) past its 15-minute TTL — reusing the same
       // refreshSession() the reactive path already uses, not a second mechanism.
       if (token && isAccessTokenExpiredOrNearExpiry(token)) {
-        await refreshSession();
+        const refreshed = await refreshSession();
         if (!cancelled) setLoading(false);
+        // Fire-and-forget, not awaited — see pushRegistration.ts's own header
+        // comment. Re-registers (idempotent, lastSeenAt bump) on every launch
+        // with an already-valid session, not just a fresh login below — this
+        // branch still produces one if the refresh succeeded.
+        if (refreshed) void registerForPushNotificationsAsync();
         return;
       }
       setCachedAccessToken(token);
       setAccessTokenState(token);
       setLoading(false);
+      // Fire-and-forget — see comment above.
+      if (token) void registerForPushNotificationsAsync();
     })();
     return () => {
       cancelled = true;
