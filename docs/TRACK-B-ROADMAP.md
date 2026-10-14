@@ -1118,12 +1118,27 @@ A real, flagged-but-never-closed gap: `secureTokenStore.ts`'s own header comment
 - **A second, deliberately plain client** (`authClient`, no `onUnauthorized`) for the three direct auth calls (login/refresh/logout) — login can genuinely 401 on a wrong passcode, and refresh can genuinely 401 on a dead refresh token; running either through the retry-enabled client would read that as "go refresh and retry," calling straight back into the same request and hanging forever. Found and fixed before this ever shipped, not after.
 - **Verified with a real test**, not just review, given the severe failure mode a dedup bug here has: `src/auth/apiClientRefresh.test.ts` (6 cases) exercises `createApiClient` against a mocked `fetch` directly — single-flight dedup under two concurrent 401s, body preservation on a retried PATCH, clean give-up when refresh fails, no second retry on a retry that also 401s, and zero behavior change when `onUnauthorized` isn't passed.
 
-### Not yet
-- **Proactive refresh** (e.g. on app launch, before the access token has actually expired) — this only refreshes reactively, after a request 401s. Closes the actual gap (no more getting stuck) without the extra complexity of decoding the JWT's `exp` claim and scheduling ahead of it; worth revisiting if a snappier cold-launch matters more than it does today.
-- **apps/school-portal has the identical gap** (verified: zero references to `refreshToken`/`auth/refresh`/`auth/logout` anywhere in its source) — out of scope here since it's Track A, but the shared `onUnauthorized` option in `packages/api-client` is ready for it to opt into the same way.
+### Proactive refresh on app launch — also DONE (14 Oct 2026)
+The one item this section used to flag as "Not yet": `AuthContext`'s on-launch
+effect previously applied whatever token `SecureStore` held unconditionally,
+even one that had expired while the app was closed — the first real API call
+then 401'd and the existing reactive path fixed it, but only after that
+failed request, with a brief flash/delay. `src/auth/tokenExpiry.ts` (new) —
+`isAccessTokenExpiredOrNearExpiry()`, decoding the stored token's own `exp`
+claim with a small 30-second buffer — is checked on launch; a token already
+past it (or within the buffer) is refreshed via the SAME `refreshSession()`
+the reactive path already uses, before `loading` ever clears, instead of
+applied as-is. Not a second mechanism, no scheduling/timer while the app
+stays open in the foreground — still only checked at launch. Verified with
+`src/auth/tokenExpiry.test.ts` (6 cases, the pure decision function) and
+`src/auth/AuthContext.test.tsx` (3 cases: a non-expiring token applied as-is
+with no refresh call; a near-expiry token refreshed before `loading` clears;
+a dead refresh token at launch ending cleanly in `logout()`).
+
+- **`apps/school-portal` had the identical gap** (verified: zero references to `refreshToken`/`auth/refresh`/`auth/logout` anywhere in its source at the time this was written) — resolved separately, Decision 262, mirroring this same fix (reactive only, no proactive on-launch check — School Portal's own session doesn't survive a closed tab the way a mobile app's does, so there's no equivalent "stale token from before launch" case to check for).
 
 ### Verified
-`tsc --noEmit` for `packages/api-client`, `apps/student`, and `apps/school-portal` (confirming zero behavior change there); `jest` `src/auth/apiClientRefresh.test.ts` (6); full `apps/student` jest suite re-run for regressions.
+`tsc --noEmit` for `packages/api-client`, `apps/student`, and `apps/school-portal` (confirming zero behavior change there); `jest` `src/auth/apiClientRefresh.test.ts` (6), `src/auth/tokenExpiry.test.ts` (6), `src/auth/AuthContext.test.tsx` (3); full `apps/student` jest suite re-run for regressions (23 suites/121 tests).
 
 ## Explicitly blocked — do not scope a slice for these yet
 
