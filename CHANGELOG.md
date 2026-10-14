@@ -15,6 +15,26 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **MembershipPlan new-member billing strategy** (Decision 259) — a School
+  Owner can now set, per SUBSCRIPTION plan, how a brand-new Student's first
+  charge and renewal date are anchored: **Fresh cycle** (default, unchanged —
+  full price charged immediately, renews monthly from the signup date) or
+  **Prorate to a shared renewal day** (every new Student is prorated from
+  signup through a fixed day-of-month 1-28, then renews on that same day
+  every month after, using Stripe's own `billing_cycle_anchor_config` to do
+  the proration math rather than computing it by hand). New
+  `MembershipPlan.newMemberBillingStrategy`/`billingCycleAnchorDay` fields,
+  a new "New member billing" control in `MembershipPlanFormPage`'s Pricing &
+  Access step (SUBSCRIPTION only). Only affects new signups going forward —
+  no migration path for already-active subscribers. The Franchise fee-rate
+  change migration this same decision's conversation also approved is
+  tracked separately (Decision 99's own follow-up, not yet built).
+- **`useOwnedSchoolId` multi-School ordering bug fixed** (Decision 258) — a
+  School Owner/Manager holding `SCHOOL_OWNER_MANAGER` at more than one School
+  no longer silently lands on whichever School happened to sort first;
+  `SchoolSwitcher` now generalizes to cover Owner mode the same way it
+  already covered the Decision 255 coach/Branch-Staff case, with an
+  active-selection-with-fallback-to-first-sorted pattern in `AuthContext`.
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
   at the bottom of every page, as a full-width band below the entire shell

@@ -90,6 +90,66 @@ test('add a Subscription plan across steps (classesIncluded/scopedClass stay hid
   await expect(page.getByRole('cell', { name: 'Monthly Unlimited (Updated)', exact: true })).toBeVisible();
 });
 
+/**
+ * Decision 259 — new-member billing strategy. Fresh cycle (default, every
+ * pre-existing plan) vs. Prorate to a shared renewal day, a School-Owner-
+ * set-once-per-plan choice, SUBSCRIPTION only.
+ */
+test('a SUBSCRIPTION plan can switch to Prorate to a shared renewal day and back, with the renewal-day field required only while it is selected', async ({ page }) => {
+  await page.goto('/membership-plans');
+  await page.getByRole('button', { name: 'Add plan' }).click();
+  await page.getByLabel('Title').fill('Shared Cycle Plan');
+  await page.getByRole('button', { name: '2. Pricing & Access' }).click();
+  await page.getByLabel('Price').fill('5000');
+
+  // Fresh cycle is the default — no renewal-day field yet.
+  await expect(page.getByRole('button', { name: 'Fresh cycle from signup day' })).toBeVisible();
+  await expect(page.getByLabel('Renewal day of month')).toHaveCount(0);
+
+  // Selecting Prorate without a day blocks Save with a clear error.
+  await page.getByRole('button', { name: 'Prorate to a shared renewal day' }).click();
+  await expect(page.getByLabel('Renewal day of month')).toBeVisible();
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText(/Set a renewal day of month/)).toBeVisible();
+
+  // Filling it in lets the save go through.
+  await page.getByRole('button', { name: '2. Pricing & Access' }).click();
+  await page.getByLabel('Renewal day of month').fill('15');
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+
+  await expect(page).toHaveURL(/\/membership-plans$/);
+  const created = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Shared Cycle Plan' } });
+  planIds.push(created.id);
+  expect(created.newMemberBillingStrategy).toBe('PRORATED_TO_SHARED_CYCLE');
+  expect(created.billingCycleAnchorDay).toBe(15);
+
+  // Switching back to Fresh cycle on Edit clears the anchor day.
+  await page.getByRole('row', { name: /Shared Cycle Plan/ }).getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('button', { name: '2. Pricing & Access' }).click();
+  await expect(page.getByLabel('Renewal day of month')).toHaveValue('15');
+  await page.getByRole('button', { name: 'Fresh cycle from signup day' }).click();
+  await expect(page.getByLabel('Renewal day of month')).toHaveCount(0);
+  await page.getByRole('button', { name: '5. Visibility' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+
+  await expect(page).toHaveURL(/\/membership-plans$/);
+  const updated = await db.membershipPlan.findUniqueOrThrow({ where: { id: created.id } });
+  expect(updated.newMemberBillingStrategy).toBe('FRESH_CYCLE');
+  expect(updated.billingCycleAnchorDay).toBeNull();
+});
+
+test('the new-member billing control is hidden for non-SUBSCRIPTION plan types', async ({ page }) => {
+  await page.goto('/membership-plans');
+  await page.getByRole('button', { name: 'Add plan' }).click();
+  await page.getByRole('button', { name: '1. Basics' }).click();
+  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await page.getByRole('button', { name: '2. Pricing & Access' }).click();
+  await expect(page.getByText('New member billing')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Fresh cycle from signup day' })).toHaveCount(0);
+});
+
 test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) => {
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
