@@ -533,11 +533,27 @@ master), and so is Decision 68's own `chargeback-pattern-restriction` job (Decis
 - Non-camera check-in alternative for consent-withdrawn/accessibility-need Students —
   flagged as a product opportunity, not designed.
 - Multi-Guardian consent interaction (Decision 92) not formally settled.
-- Franchise lifecycle edges: reaffiliation/billing-continuity on leaving a Franchise
-  (Decision 97, deliberately deferred to project completion by direct product-owner
-  instruction), leave/switch-Franchise path and Franchise-side approval (Decision 98),
-  fee-rate-change migration mechanics (Decision 99) — all explicitly open, not
-  accidentally missed.
+- ~~Franchise lifecycle edges: reaffiliation/billing-continuity on leaving a Franchise
+  (Decision 97)~~ — **resolved and built (Decision 232, 14 Oct 2026).** The policy
+  question Decision 97 deferred to project completion was answered directly with the
+  product owner: `PaymentAccount`/`MembershipPlan` carry over unchanged (neither has a
+  Franchise linkage to sever), `FranchiseFeeCharge` history is retained immutably, and
+  the one real reconciliation point — the live Stripe franchise-fee subscription — is
+  cancelled on leaving and recreated lazily against the new Franchise (or left null if
+  the School goes independent). The leave/switch feature itself (`POST
+  /schools/:id/leave-franchise`, re-join via the existing `join-franchise` endpoint) is
+  genuinely merged to `master` (PR #196), full-stack including the School Portal's
+  Franchise Affiliation card. This line previously said "deferred to project
+  completion" and "explicitly open" — stale as of this session; confirmed directly
+  against `master`, not just the decision log. Franchise-side approval (an open half of
+  Decision 98) is still genuinely unresolved — joining/leaving stays fully self-service,
+  no Franchise-side consent step exists.
+- Fee-rate-change migration mechanics (Decision 99's own remaining gap: changing a
+  Franchise's rate after franchise-fee billing has already started for at least one
+  member School) — **built** (`FranchiseFeeRateMigrationProcessor`, `MIGRATE_NEXT_CYCLE`/
+  `MIGRATE_IMMEDIATE` strategies, Decision 260), but sitting on an unmerged branch
+  (`feature/franchise-fee-rate-migration`, PR #250) — genuinely open until that PR
+  merges, not accidentally missed.
 - `ultm8-tenant-isolation` SKILL.md hasn't been updated to reflect Decisions 89/92/93/94
   — an Architect documentation task flagged by Decision 94 itself.
 
