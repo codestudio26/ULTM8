@@ -1610,7 +1610,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(400);
   });
 
-  it('rejects changing a Franchise fee-rate once billing has started for a member School — 409, not silent Stripe/ledger divergence', async () => {
+  it('requires a feeRateChangeStrategy to change a Franchise fee-rate once billing has started for a member School — 400, not silent Stripe/ledger divergence (Decision 99 follow-up: the real migration mechanism itself is covered by franchise-fee-rate-migration.e2e-spec.ts)', async () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
@@ -1632,7 +1632,8 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       .patch(`/v1/franchises/${franchiseId}`)
       .set('Authorization', `Bearer ${tokenOwnerA}`)
       .send({ flatFeeAmount: 9999 });
-    expect(blockedRes.status).toBe(409);
+    expect(blockedRes.status).toBe(400);
+    expect(blockedRes.body.error.message).toContain('feeRateChangeStrategy');
     const unchanged = await superuser.franchise.findUniqueOrThrow({ where: { id: franchiseId } });
     expect(unchanged.flatFeeAmount).toBe(5000);
 

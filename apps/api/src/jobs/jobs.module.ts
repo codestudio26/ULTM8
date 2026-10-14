@@ -22,6 +22,7 @@ import { EntityOffboardingPurgeProcessor, EntityOffboardingPurgeScheduler } from
 import { VideoProcessingPollProcessor, VideoProcessingPollScheduler } from './video-processing-poll.processor';
 import { CloudflareStreamService } from '../common/video/cloudflare-stream.service';
 import { TranscribeService } from '../common/video/transcribe.service';
+import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migration.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -148,6 +149,16 @@ import { TranscribeService } from '../common/video/transcribe.service';
  * CloudflareStreamService for its own requestVideoUploadUrl() — Nest allows
  * the same provider class to be instantiated per-module this way, and the
  * two have no shared state to desync.
+ *
+ * Decision 99's own follow-up adds FranchiseFeeRateMigrationProcessor —
+ * event-triggered only, no Scheduler (same shape MembershipPlanPriceMigrationProcessor
+ * already established). Needs FranchiseFeeBillingService directly (its own
+ * createReplacementMeteredPrice/createReplacementFlatPrice/swapSubscriptionPrice) —
+ * already available via the FranchiseFeesModule import above, same as
+ * FranchiseFeeUsageReportingProcessor; no new module import needed. Also injects
+ * its own queue directly (@InjectQueue(FRANCHISE_FEE_RATE_MIGRATION_QUEUE)) to
+ * enqueue its own deferred `deferred-swap` follow-up job — already registered in
+ * QueueModule, imported above.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule],
@@ -180,6 +191,7 @@ import { TranscribeService } from '../common/video/transcribe.service';
     VideoProcessingPollScheduler,
     CloudflareStreamService,
     TranscribeService,
+    FranchiseFeeRateMigrationProcessor,
   ],
 })
 export class JobsModule {}
