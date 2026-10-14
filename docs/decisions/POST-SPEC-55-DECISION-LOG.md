@@ -3560,6 +3560,28 @@ Same scope limit Decision 253 already stated for Membership: this closes "no fur
 
 User, choosing "Treat both like Membership — never deletable" over building a new deactivate-only mechanism for PaymentAccount, 14 Oct 2026.
 
+## Decision 262 — School Portal refresh-token logic built, closing the identical gap `apps/student` already fixed
+
+**Date:** 14 Oct 2026 · **Status:** Confirmed by product owner, built
+**Resolves:** a real, previously-flagged gap — `packages/auth`'s own header comment had documented since Phase 3 that apps/api's login returned no refresh token, forcing a full re-login every 15 minutes. That underlying backend gap was closed separately (AuthModule now issues and rotates a real refresh token, `POST /auth/refresh`/`POST /auth/logout` both work, and `apps/student` already wired into it) — but `apps/school-portal` never adopted any of it: `sessionStorageTokenStore` had no refresh-token storage at all, and `apps/school-portal/src/api.ts` never passed `onUnauthorized` to `createApiClient`, so a School Portal session still silently died at the 15-minute mark with zero recovery.
+
+### Built
+
+Mirrors `apps/student`'s own working implementation exactly, adapted for `sessionStorage` instead of `expo-secure-store`:
+
+- `packages/auth` — `sessionStorageTokenStore` (tenant realm only, not `platformAdminSessionStorageTokenStore` — Platform Admin's own login never issues a refresh token) gains `getRefreshToken()`/`setRefreshToken()`, with `clear()` now removing both keys together.
+- `apps/school-portal/src/auth/sessionRefresh.ts` (new) — the same `setUnauthorizedHandler`/`handleUnauthorized` bridge module apps/student's own file already established, needed because `api.ts`'s client is a module-level singleton created before `AuthProvider` mounts.
+- `apps/school-portal/src/api.ts` — `apiClient` now passes `onUnauthorized`; a second, deliberately plain `authClient` (no retry middleware) is used for the three direct credential-exchange calls (login/refresh/logout) to avoid a self-recursive retry loop on their own genuine 401s.
+- `apps/school-portal/src/auth/AuthContext.tsx` — `login()` now persists the refresh token it was already being handed; `logout()` best-effort revokes it server-side before clearing both tokens; new `refreshSession()` registered as the `onUnauthorized` handler on mount.
+
+### What this does NOT resolve
+
+Reactive only, same as `apps/student`'s own still-open item — refreshes after a request 401s, not proactively ahead of the 15-minute expiry. No change to the underlying JWT-storage tradeoff `packages/auth`'s own header comment already reasons through (sessionStorage, XSS-readable by design, not addressed here).
+
+### Recorded by
+
+User ("Complete it .. let me know what you need from my side"), this item needing no further input — a confirmed, previously-flagged gap with an already-working pattern (`apps/student`) to mirror, not a new design decision.
+
 ## Decision 258 — `useOwnedSchoolId`'s multi-School ordering bug (flagged by Decision 255) closed the same way
 
 **Date:** 14 Oct 2026 · **Status:** Built
