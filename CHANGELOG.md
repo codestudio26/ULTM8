@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **School Owner multi-School switcher** (Decision 257, closing Decision 255's
+  own named follow-up) — a School Owner holding `SCHOOL_OWNER_MANAGER` at more
+  than one School (nothing in the schema prevented it) can now pick which one
+  they're acting as, same mechanism and the same `SchoolSwitcher` component the
+  coach switcher below already added, kept as independent state since the same
+  person could own one School and coach at a different one. No backend change.
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
   at the bottom of every page's main content column, on all three apps

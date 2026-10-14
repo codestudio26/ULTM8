@@ -36,6 +36,15 @@ interface AuthContextValue {
    * instead of reading this directly. */
   activeCoachSchoolId: string | null;
   setActiveCoachSchoolId: (schoolId: string) => void;
+  /** See `useOwnedSchoolId`/`SchoolSwitcher` — the School a multi-School Owner
+   * has explicitly picked, if any. Most callers want `useOwnedSchoolId()`
+   * instead of reading this directly. A separate key/state from the coach one
+   * above — Decision 255 deliberately left this as its own piece of scope, not
+   * folded into the coach switcher, since the same person could in principle
+   * be both (own one School, coach at another), and each needs to resolve
+   * independently. */
+  activeOwnedSchoolId: string | null;
+  setActiveOwnedSchoolId: (schoolId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -49,19 +58,23 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
  * returns a School the caller actually holds a current grant at, and every API
  * call it feeds into is re-checked server-side regardless. */
 const ACTIVE_COACH_SCHOOL_KEY = 'ultm8.activeCoachSchoolId';
+/** Same shape as the coach key above, for a multi-School Owner — see
+ * `useOwnedSchoolId`'s own header comment for why this is a separate key
+ * rather than reusing the coach one. */
+const ACTIVE_OWNED_SCHOOL_KEY = 'ultm8.activeOwnedSchoolId';
 
-function readActiveCoachSchoolId(): string | null {
+function readActiveSchoolId(key: string): string | null {
   try {
-    return sessionStorage.getItem(ACTIVE_COACH_SCHOOL_KEY);
+    return sessionStorage.getItem(key);
   } catch {
     return null;
   }
 }
 
-function writeActiveCoachSchoolId(schoolId: string | null) {
+function writeActiveSchoolId(key: string, schoolId: string | null) {
   try {
-    if (schoolId) sessionStorage.setItem(ACTIVE_COACH_SCHOOL_KEY, schoolId);
-    else sessionStorage.removeItem(ACTIVE_COACH_SCHOOL_KEY);
+    if (schoolId) sessionStorage.setItem(key, schoolId);
+    else sessionStorage.removeItem(key);
   } catch {
     /* noop — same degrade-to-first-School fallback as a failed read */
   }
@@ -76,12 +89,18 @@ function readClaims(): { accessToken: string | null; claims: JwtClaims | null } 
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [{ accessToken, claims }, setState] = useState(readClaims);
-  const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState(readActiveCoachSchoolId);
+  const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState(() => readActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY));
+  const [activeOwnedSchoolId, setActiveOwnedSchoolIdState] = useState(() => readActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY));
   const queryClient = useQueryClient();
 
   const setActiveCoachSchoolId = useCallback((schoolId: string) => {
-    writeActiveCoachSchoolId(schoolId);
+    writeActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY, schoolId);
     setActiveCoachSchoolIdState(schoolId);
+  }, []);
+
+  const setActiveOwnedSchoolId = useCallback((schoolId: string) => {
+    writeActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY, schoolId);
+    setActiveOwnedSchoolIdState(schoolId);
   }, []);
 
   const applyToken = useCallback((token: string) => {
@@ -103,9 +122,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     sessionStorageTokenStore.clear();
-    writeActiveCoachSchoolId(null);
+    writeActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY, null);
+    writeActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY, null);
     setState({ accessToken: null, claims: null });
     setActiveCoachSchoolIdState(null);
+    setActiveOwnedSchoolIdState(null);
     // FOUND ON REVIEW (Phase 24, surfaced by the new Notifications inbox —
     // the first query in this codebase keyed with no per-caller scoping
     // identifier at all, e.g. `['notifications']` vs. every other query's
@@ -120,8 +141,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   const value = useMemo(
-    () => ({ accessToken, claims, login, logout, setAccessToken: applyToken, activeCoachSchoolId, setActiveCoachSchoolId }),
-    [accessToken, claims, login, logout, applyToken, activeCoachSchoolId, setActiveCoachSchoolId],
+    () => ({
+      accessToken,
+      claims,
+      login,
+      logout,
+      setAccessToken: applyToken,
+      activeCoachSchoolId,
+      setActiveCoachSchoolId,
+      activeOwnedSchoolId,
+      setActiveOwnedSchoolId,
+    }),
+    [accessToken, claims, login, logout, applyToken, activeCoachSchoolId, setActiveCoachSchoolId, activeOwnedSchoolId, setActiveOwnedSchoolId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -133,16 +164,40 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-/** The caller's own SCHOOL_OWNER_MANAGER grant, if any — used to decide whether to
- * show onboarding (Phase 3 item 3) or the School dashboard (item 4). This is a display
- * hint only, decoded client-side, never trusted for authorization — apps/api re-checks
- * every grant server-side on every request regardless (see
- * TenantAuthorizationService's header comment on the backend). */
-export function useOwnedSchoolId(): string | null {
+/** Every distinct School the caller owns (`SCHOOL_OWNER_MANAGER`) — sorted for a
+ * stable, deterministic order, same reasoning as `useCoachSchoolIds` (the JWT's
+ * `grants` array carries no ordering guarantee). Nothing in the schema stops a
+ * `User` holding `SCHOOL_OWNER_MANAGER` at more than one School (no
+ * `@@unique([userId, role])` on `RoleGrant`) — found while building Decision 255's
+ * coach switcher, deliberately left as its own follow-up at the time, now closed
+ * here. `SchoolSwitcher` is the one real consumer of the full list; everywhere
+ * else wants `useOwnedSchoolId()`. */
+export function useOwnedSchoolIds(): string[] {
   const { claims } = useAuth();
-  if (!claims) return null;
-  const grant = claims.grants.find((g) => g.role === 'SCHOOL_OWNER_MANAGER' && g.schoolId);
-  return grant?.schoolId ?? null;
+  if (!claims) return [];
+  const ids = new Set(claims.grants.filter((g) => g.role === 'SCHOOL_OWNER_MANAGER' && g.schoolId).map((g) => g.schoolId as string));
+  return [...ids].sort();
+}
+
+/** The School the caller is currently acting as Owner of — used to decide whether
+ * to show onboarding (Phase 3 item 3) or the School dashboard (item 4). This is a
+ * display hint only, decoded client-side, never trusted for authorization —
+ * apps/api re-checks every grant server-side on every request regardless (see
+ * TenantAuthorizationService's header comment on the backend).
+ *
+ * Defaults to the first School (stable sort order, see useOwnedSchoolIds) when
+ * nothing has been explicitly picked yet, or when a previously-picked School is
+ * no longer in the caller's current grant set — never trusts the stored
+ * selection blindly against the live claims. Same shape as `useCoachSchoolId`
+ * (Decision 255); kept as a separate active-selection state since an Owner could
+ * in principle also coach at a different School, and each needs to resolve
+ * independently. */
+export function useOwnedSchoolId(): string | null {
+  const { activeOwnedSchoolId } = useAuth();
+  const schoolIds = useOwnedSchoolIds();
+  if (schoolIds.length === 0) return null;
+  if (activeOwnedSchoolId && schoolIds.includes(activeOwnedSchoolId)) return activeOwnedSchoolId;
+  return schoolIds[0];
 }
 
 /** Every distinct School a coach or Branch Staff member works at (Decision 184;
