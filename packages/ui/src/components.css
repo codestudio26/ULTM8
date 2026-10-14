@@ -557,9 +557,14 @@
 }
 
 /* App shell */
+.ultm8-shell-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 .ultm8-shell {
   display: flex;
-  min-height: 100vh;
+  flex: 1;
 }
 .ultm8-shell__sidebar {
   width: 240px;
@@ -620,10 +625,13 @@
   margin-bottom: var(--space-8);
   border-bottom: 1px solid var(--border);
 }
+/* A full-width band below the ENTIRE shell (sidebar included), not confined
+   to the main content column — a separate row in .ultm8-shell-wrapper's own
+   flex column, below .ultm8-shell's sidebar+main row. */
 .ultm8-shell__legal-footer {
-  margin-top: var(--space-12);
-  padding-top: var(--space-4);
+  background: var(--surface-0);
   border-top: 1px solid var(--border);
+  padding: var(--space-8) var(--space-12);
 }
 .ultm8-shell__legal-footer-text {
   display: flex;
@@ -647,6 +655,117 @@
 }
 .ultm8-shell__legal-footer-link--disabled:hover {
   text-decoration: none;
+}
+
+/* School Portal's own richer per-School footer (Decision 257) — rendered
+   INSTEAD of the plain LegalFooter inside the same .ultm8-shell__legal-footer
+   slot, so that wrapper's own top border/spacing still applies unchanged. */
+.ultm8-school-footer__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+  margin-bottom: var(--space-6);
+}
+.ultm8-school-footer__brand-col {
+  min-width: 200px;
+  flex: 0 0 auto;
+}
+.ultm8-school-footer__brand {
+  font-size: var(--font-size-heading-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-4);
+}
+.ultm8-school-footer__search-label {
+  display: block;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+.ultm8-school-footer__columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+.ultm8-school-footer__col {
+  min-width: 140px;
+}
+.ultm8-school-footer__col-title {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3);
+}
+.ultm8-school-footer__col-item {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-footnote);
+}
+.ultm8-school-footer__col-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.ultm8-school-footer__col-link:hover {
+  text-decoration: underline;
+}
+.ultm8-school-footer__qr-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.ultm8-school-footer__qr-box {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+}
+.ultm8-school-footer__qr-caption {
+  font-size: var(--font-size-caption);
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+.ultm8-school-footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+.ultm8-school-footer__social {
+  display: flex;
+  gap: var(--space-2);
+}
+.ultm8-school-footer__social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+.ultm8-school-footer__social-icon:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}
+.ultm8-school-footer__col-about {
+  margin-top: var(--space-3);
+  color: var(--text-secondary);
 }
 
 /* Auth screens (centered card layout) */

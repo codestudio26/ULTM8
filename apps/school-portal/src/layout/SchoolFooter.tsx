@@ -1,0 +1,177 @@
+import React from 'react';
+import { LEGAL_FOOTER_LINKS } from '@ultm8/ui';
+import { useGradingSchoolId } from '../auth/AuthContext';
+import { useSchool } from '../schools/schoolQueries';
+import { useDisciplines } from '../disciplines/disciplineQueries';
+
+const SOCIAL_LINKS = [
+  { key: 'footerFacebookUrl', label: 'Facebook', abbr: 'f' },
+  { key: 'footerInstagramUrl', label: 'Instagram', abbr: 'IG' },
+  { key: 'footerTiktokUrl', label: 'TikTok', abbr: 'TT' },
+  { key: 'footerYoutubeUrl', label: 'YouTube', abbr: 'YT' },
+  { key: 'footerTwitterUrl', label: 'X', abbr: 'X' },
+] as const;
+
+/**
+ * Decision 257 — the School Portal's own richer, per-School footer (columns,
+ * a decorative zip search, "Get the app" QR placeholders, social links),
+ * replacing the plain platform-wide `LegalFooter` (Decision 256) ONLY here —
+ * `apps/platform-admin` and `apps/student` keep the simple one, since neither
+ * has a single "current School" context the way this app does (Platform
+ * Admin spans every School; `apps/student`'s own Student/Guardian may be
+ * enrolled at several). Rendered inside AppShell's existing `legalFooter`
+ * slot (`Shell.tsx`), so that slot's own top border/spacing still applies.
+ *
+ * Every per-School field (`footerAboutUs`/`footerContactEmail`/
+ * `footerContactPhone`/each social URL) is independently optional — per the
+ * product owner's own explicit instruction, an unset field hides its own
+ * line/icon entirely rather than showing an empty or placeholder state. Only
+ * Terms of Service / Privacy Policy stay the fixed, always-shown (but still
+ * disabled-for-now) platform-wide links from Decision 256 — a School isn't a
+ * separate legal entity publishing its own ToS for this software, so those
+ * two are filtered OUT of `LEGAL_FOOTER_LINKS` here just for "Support" (this
+ * footer's Support column shows the School's own real Contact info instead).
+ *
+ * The zip search and the two "Get the app" QR tiles are deliberately
+ * decorative only, same posture as `TopBar.tsx`'s own disabled Global Search
+ * input: no cross-School "find a school" search exists anywhere in this
+ * codebase (Global Search is still its own separate, unscoped item — see
+ * `docs/decisions/DRAFT-global-search-and-footer-scoping.md` §A), and
+ * `apps/student` isn't published to an app store yet (Decision 256's own
+ * disclosed gap) — plain placeholder boxes, not real/scannable QR codes
+ * pointing nowhere, so nothing here claims to work that doesn't.
+ */
+export function SchoolFooter() {
+  const schoolId = useGradingSchoolId();
+  const { data: school } = useSchool(schoolId);
+  const { data: disciplines } = useDisciplines(schoolId);
+  const year = new Date().getFullYear();
+
+  if (!schoolId || !school) return null;
+
+  const programs = disciplines?.items ?? [];
+  const legalLinks = LEGAL_FOOTER_LINKS.filter((l) => l.label !== 'Support');
+  const activeSocial = SOCIAL_LINKS.filter((s) => !!school[s.key]);
+
+  return (
+    <div>
+      <div className="ultm8-school-footer__top">
+        <div className="ultm8-school-footer__brand-col">
+          <p className="ultm8-school-footer__brand">{school.name}</p>
+          <label className="ultm8-school-footer__search-label" htmlFor="school-footer-zip">
+            Find a school near you
+          </label>
+          <input
+            id="school-footer-zip"
+            className="ultm8-input"
+            disabled
+            placeholder="Enter your zip code"
+            aria-label="Find a school near you — not available yet"
+            style={{ width: 200 }}
+          />
+        </div>
+
+        <div className="ultm8-school-footer__columns">
+          {programs.length > 0 ? (
+            <div className="ultm8-school-footer__col">
+              <p className="ultm8-school-footer__col-title">Programs</p>
+              {programs.map((d) => (
+                <p key={d.id} className="ultm8-school-footer__col-item">
+                  {d.name}
+                </p>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="ultm8-school-footer__col">
+            <p className="ultm8-school-footer__col-title">Company</p>
+            <p className="ultm8-school-footer__col-item">
+              <a className="ultm8-school-footer__col-link" href="/instructors">
+                Instructors
+              </a>
+            </p>
+            <p className="ultm8-school-footer__col-item">
+              <a className="ultm8-school-footer__col-link" href="/branches">
+                Locations
+              </a>
+            </p>
+            {school.footerAboutUs ? (
+              <p className="ultm8-school-footer__col-item ultm8-school-footer__col-about">{school.footerAboutUs}</p>
+            ) : null}
+          </div>
+
+          <div className="ultm8-school-footer__col">
+            <p className="ultm8-school-footer__col-title">Support</p>
+            {school.footerContactEmail ? (
+              <p className="ultm8-school-footer__col-item">
+                <a className="ultm8-school-footer__col-link" href={`mailto:${school.footerContactEmail}`}>
+                  {school.footerContactEmail}
+                </a>
+              </p>
+            ) : null}
+            {school.footerContactPhone ? (
+              <p className="ultm8-school-footer__col-item">
+                <a className="ultm8-school-footer__col-link" href={`tel:${school.footerContactPhone}`}>
+                  {school.footerContactPhone}
+                </a>
+              </p>
+            ) : null}
+            {legalLinks.map((link) =>
+              link.enabled ? (
+                <p key={link.label} className="ultm8-school-footer__col-item">
+                  <a className="ultm8-school-footer__col-link" href={link.href}>
+                    {link.label}
+                  </a>
+                </p>
+              ) : (
+                <p key={link.label} className="ultm8-school-footer__col-item" style={{ opacity: 0.6 }} aria-label={`${link.label} — not available yet`}>
+                  {`${link.label} (coming soon)`}
+                </p>
+              ),
+            )}
+          </div>
+
+          <div className="ultm8-school-footer__col">
+            <p className="ultm8-school-footer__col-title">Get the app</p>
+            <div className="ultm8-school-footer__qr-tile">
+              <div className="ultm8-school-footer__qr-box">QR</div>
+              <span className="ultm8-school-footer__qr-caption">
+                Coming soon for
+                <br />
+                iOS
+              </span>
+            </div>
+            <div className="ultm8-school-footer__qr-tile">
+              <div className="ultm8-school-footer__qr-box">QR</div>
+              <span className="ultm8-school-footer__qr-caption">
+                Coming soon for
+                <br />
+                Android
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="ultm8-school-footer__bottom">
+        <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-caption)' }}>{`© ${year} ULTM8. All rights reserved.`}</span>
+        {activeSocial.length > 0 ? (
+          <div className="ultm8-school-footer__social">
+            {activeSocial.map((s) => (
+              <a
+                key={s.key}
+                className="ultm8-school-footer__social-icon"
+                href={school[s.key] as string}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={s.label}
+              >
+                {s.abbr}
+              </a>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}

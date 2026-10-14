@@ -17,12 +17,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
-  at the bottom of every page's main content column, on all three apps
-  (`apps/school-portal`, `apps/platform-admin` via `packages/ui`'s new
+  at the bottom of every page, as a full-width band below the entire shell
+  (sidebar included, not confined to the main content column), on all three
+  apps (`apps/school-portal`, `apps/platform-admin` via `packages/ui`'s new
   `AppShell` `legalFooter` prop; `apps/student`, Track B, via its own
   equivalent `LegalFooter` component). The three links ship visible but
   disabled ("(coming soon)") — no real Terms/Privacy/Support pages exist
   yet, same convention as the existing disabled Global Search input.
+- **School Portal's footer upgraded to a richer, per-School shape** (Decision
+  257, same day) — Programs (this School's own Disciplines), Company
+  (Instructors/Locations links + a new "About us" field), Support (this
+  School's own Contact email/phone, Terms/Privacy still platform-wide), a
+  decorative "find a school" search and "Get the app" QR placeholders, and up
+  to five social links (Facebook/Instagram/TikTok/YouTube/X) — all new,
+  independently-optional `School` fields, editable on a new Footer settings
+  card on the School page. Every unset field hides its own line/icon
+  entirely, never a placeholder. `apps/platform-admin`/`apps/student` keep
+  Decision 256's simpler shape unchanged — neither has a single "current
+  School" context the way School Portal does.
 - **Multi-School coach/Branch Staff switcher** (Decision 184 item 4's own
   named follow-up, resolved) — a coach or Branch Staff member holding an
   active grant at more than one School can now pick which one they're

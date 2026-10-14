@@ -317,6 +317,59 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     }
   });
 
+  it('Decision 257 — per-School footer fields: set, kept when omitted, cleared with null, rejected when malformed', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/schools')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Footer Settings School' });
+    expect(createRes.status).toBe(201);
+    const footerSchoolId = createRes.body.id as string;
+    const token = createRes.body.accessToken as string;
+    try {
+      const patch = (body: object) =>
+        request(app.getHttpServer()).patch(`/v1/schools/${footerSchoolId}`).set('Authorization', `Bearer ${token}`).send(body);
+
+      const set = await patch({
+        footerAboutUs: 'Family-owned since 2010.',
+        footerContactEmail: 'front-desk@example.com',
+        footerContactPhone: '+1 555 0100',
+        footerFacebookUrl: 'https://facebook.com/example',
+        footerInstagramUrl: 'https://instagram.com/example',
+        footerTiktokUrl: 'https://tiktok.com/@example',
+        footerYoutubeUrl: 'https://youtube.com/@example',
+        footerTwitterUrl: 'https://x.com/example',
+      });
+      expect(set.status).toBe(200);
+      expect(set.body.footerAboutUs).toBe('Family-owned since 2010.');
+      expect(set.body.footerContactEmail).toBe('front-desk@example.com');
+      expect(set.body.footerFacebookUrl).toBe('https://facebook.com/example');
+
+      const kept = await patch({ description: 'no footer fields sent' });
+      expect(kept.body.footerAboutUs).toBe('Family-owned since 2010.');
+      expect(kept.body.footerContactEmail).toBe('front-desk@example.com');
+
+      const cleared = await patch({ footerAboutUs: null, footerContactEmail: null, footerFacebookUrl: null });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.footerAboutUs).toBeNull();
+      expect(cleared.body.footerContactEmail).toBeNull();
+      expect(cleared.body.footerFacebookUrl).toBeNull();
+      // Fields not touched by this patch stay set — a clear is per-field, not all-or-nothing.
+      expect(cleared.body.footerInstagramUrl).toBe('https://instagram.com/example');
+
+      const badEmail = await patch({ footerContactEmail: 'not-an-email' });
+      expect(badEmail.status).toBe(400);
+      const badUrl = await patch({ footerYoutubeUrl: 'not-a-url' });
+      expect(badUrl.status).toBe(400);
+
+      const read = await request(app.getHttpServer()).get(`/v1/schools/${footerSchoolId}`).set('Authorization', `Bearer ${token}`);
+      expect(read.body.footerAboutUs).toBeNull();
+      expect(read.body.footerInstagramUrl).toBe('https://instagram.com/example');
+    } finally {
+      await superuser.roleGrant.deleteMany({ where: { schoolId: footerSchoolId } });
+      await superuser.school.delete({ where: { id: footerSchoolId } });
+    }
+  });
+
   it('CAN create, grant, and revoke within its own School', async () => {
     const branchRes = await request(app.getHttpServer())
       .post(`/v1/schools/${schoolA.id}/branches`)

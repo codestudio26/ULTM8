@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, TextArea, TextField, TimezoneField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
-import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool } from './schoolQueries';
+import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool, type SchoolResponse } from './schoolQueries';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
  * their own School"). Field list matches UpdateSchoolDto exactly, same as
@@ -173,8 +173,106 @@ export function SchoolPage() {
           </div>
         </form>
       </Card>
+      {schoolId && school ? <FooterSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FranchiseAffiliationCard schoolId={schoolId} franchiseId={school.franchiseId ?? null} /> : null}
     </>
+  );
+}
+
+/**
+ * Decision 257 — the content behind the School Portal's own richer footer
+ * (`layout/SchoolFooter.tsx`): About us, Contact, and social links. A
+ * separate Card/form from the main one above, same pattern as
+ * FranchiseAffiliationCard below — its own local state, own save action, not
+ * folded into the single giant form/save button. Every field is optional and
+ * independently clearable; blank means "hide this line/icon on the footer
+ * entirely," not "show nothing" or a placeholder (the product owner's own
+ * explicit instruction) — `|| null` on submit, same convention the main form
+ * above already uses for its own optional fields.
+ */
+function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
+  const updateFooter = useUpdateSchool(schoolId);
+  const [form, setForm] = useState({
+    footerAboutUs: school.footerAboutUs ?? '',
+    footerContactEmail: school.footerContactEmail ?? '',
+    footerContactPhone: school.footerContactPhone ?? '',
+    footerFacebookUrl: school.footerFacebookUrl ?? '',
+    footerInstagramUrl: school.footerInstagramUrl ?? '',
+    footerTiktokUrl: school.footerTiktokUrl ?? '',
+    footerYoutubeUrl: school.footerYoutubeUrl ?? '',
+    footerTwitterUrl: school.footerTwitterUrl ?? '',
+  });
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  function set<K extends keyof typeof form>(key: K, value: string) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaveError(null);
+    setSaved(false);
+    try {
+      await updateFooter.mutateAsync({
+        footerAboutUs: form.footerAboutUs || null,
+        footerContactEmail: form.footerContactEmail || null,
+        footerContactPhone: form.footerContactPhone || null,
+        footerFacebookUrl: form.footerFacebookUrl || null,
+        footerInstagramUrl: form.footerInstagramUrl || null,
+        footerTiktokUrl: form.footerTiktokUrl || null,
+        footerYoutubeUrl: form.footerYoutubeUrl || null,
+        footerTwitterUrl: form.footerTwitterUrl || null,
+      });
+      setSaved(true);
+    } catch (err) {
+      setSaveError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+    }
+  }
+
+  return (
+    <Card>
+      <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
+        Footer
+      </h2>
+      <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13, marginBottom: 12 }}>
+        Shown at the bottom of every page in this portal. Leave a field blank to hide it — About us, Contact, and each
+        social icon only appear once you've filled them in.
+      </p>
+      <form onSubmit={handleSubmit}>
+        {saveError ? <ErrorBanner message={saveError} /> : null}
+        {saved ? <SuccessBanner message="Saved." /> : null}
+        <Field label="About us" htmlFor="footer-about">
+          <TextArea id="footer-about" rows={3} value={form.footerAboutUs} onChange={(e) => set('footerAboutUs', e.target.value)} />
+        </Field>
+        <Field label="Contact email" htmlFor="footer-email">
+          <TextField id="footer-email" type="email" value={form.footerContactEmail} onChange={(e) => set('footerContactEmail', e.target.value)} />
+        </Field>
+        <Field label="Contact phone" htmlFor="footer-phone">
+          <PhoneField value={form.footerContactPhone} onChange={(v) => set('footerContactPhone', v)} defaultCountry={guessDefaultCountry()} />
+        </Field>
+        <Field label="Facebook URL" htmlFor="footer-fb">
+          <TextField id="footer-fb" value={form.footerFacebookUrl} onChange={(e) => set('footerFacebookUrl', e.target.value)} placeholder="https://facebook.com/..." />
+        </Field>
+        <Field label="Instagram URL" htmlFor="footer-ig">
+          <TextField id="footer-ig" value={form.footerInstagramUrl} onChange={(e) => set('footerInstagramUrl', e.target.value)} placeholder="https://instagram.com/..." />
+        </Field>
+        <Field label="TikTok URL" htmlFor="footer-tt">
+          <TextField id="footer-tt" value={form.footerTiktokUrl} onChange={(e) => set('footerTiktokUrl', e.target.value)} placeholder="https://tiktok.com/@..." />
+        </Field>
+        <Field label="YouTube URL" htmlFor="footer-yt">
+          <TextField id="footer-yt" value={form.footerYoutubeUrl} onChange={(e) => set('footerYoutubeUrl', e.target.value)} placeholder="https://youtube.com/@..." />
+        </Field>
+        <Field label="X (Twitter) URL" htmlFor="footer-x">
+          <TextField id="footer-x" value={form.footerTwitterUrl} onChange={(e) => set('footerTwitterUrl', e.target.value)} placeholder="https://x.com/..." />
+        </Field>
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={updateFooter.isPending}>
+            Save changes
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }
 

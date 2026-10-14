@@ -3493,3 +3493,44 @@ Developer, building Decision 184 item 4's own already-approved follow-up; the `u
 
 User, via direct AskUserQuestion answers on footer scope, app coverage, and link content, 14 Oct 2026.
 
+---
+
+## Decision 257 — School Portal's footer upgraded to the richer, per-School shape (option c), with real per-School settings; platform-admin/apps/student keep Decision 256's simpler one
+
+**Date:** 14 Oct 2026 · **Status:** Confirmed by product owner, built
+**Resolves:** a follow-up to Decision 256, same day — the product owner shared a reference design (a fuller marketing-style footer: Programs/Company/Support/"Get the app" columns, a zip search, social icons) and asked for the School Portal's footer to match it, but populated with the signed-in School's own real information rather than static ULTM8 marketing copy.
+
+### Scope answers (direct AskUserQuestion with the product owner, this session)
+
+1. **Richness:** full layout matching the reference (not just a visual-style pass on Decision 256's simpler footer) — School Portal only. `apps/platform-admin` and `apps/student` keep Decision 256's shape unchanged (neither has a single "current School" context: Platform Admin spans every School, and a Student/Guardian may be enrolled at several).
+2. **Content model:** real, per-School settings — "we need to create a footer back end and settings so we can feed the correct information to each school footer." Not static.
+3. **Programs column:** this School's own Disciplines (already-existing data, `GET /schools/:id/disciplines` — no new field).
+4. **Company column:** real links to this School's already-built Instructors/Branches pages, plus a new free-text "About us" field (not a link — nothing to link to).
+5. **Support column:** Contact = this School's own email/phone (new fields). Terms of Service/Privacy Policy stay the fixed, platform-wide placeholder links from Decision 256 — a School isn't a separate legal entity publishing its own Terms of Service for this software.
+6. **Social links:** Facebook, Instagram, TikTok, YouTube, X (Twitter) — five platforms, each independently optional.
+7. **Brand label:** the footer's own "ULTM8" brand text becomes the signed-in School's own name (`School.name`, already exists). The copyright line stays "© {year} ULTM8" — a judgment call, disclosed below, not asked directly: a software copyright notice names the platform operator, not each tenant, consistent with Terms/Privacy staying platform-wide for the same reason.
+8. **Empty-field behavior**, clarified mid-build: every per-School field (`footerAboutUs`, Contact, each social URL) hides its own line/icon ENTIRELY when unset — never an empty state or placeholder. Terms of Service/Privacy Policy are the one exception (always shown, disabled-for-now, per Decision 256).
+
+### What was built
+
+**api:** Migration `20261114000000_school_footer_settings` — 8 new nullable `String` columns directly on `School` (`footerAboutUs`, `footerContactEmail`, `footerContactPhone`, `footerFacebookUrl`, `footerInstagramUrl`, `footerTiktokUrl`, `footerYoutubeUrl`, `footerTwitterUrl`), following the exact convention Decision 231 (Branch field-level settings) established for this codebase: typed columns directly on the tenant entity, not a separate settings table or JSON blob — confirmed via research before building, since no generic/reusable tenant-settings pattern exists anywhere in this schema. Pure additive `ALTER TABLE`, no new RLS policy (the existing `school_tenant_isolation` policy already covers every column on `School`). `CreateSchoolDto`/`UpdateSchoolDto`/`SchoolResponseDto` extended field-for-field, reusing the existing `PATCH /schools/:id` endpoint (`assertSchoolOwner`) rather than a new one — same "`null` clears, omitted leaves unchanged" convention every other optional `School` field already uses.
+
+**school-portal:** `AppShell` (`packages/ui/src/components.tsx`) restructured — `legalFooter` now renders as a full-width band below the ENTIRE shell (sidebar included) rather than confined inside the main content column (a bug found and fixed mid-build, flagged directly by the product owner against a screenshot: the first version ran the footer only under the main column, indented past the sidebar). New `SchoolFooter.tsx` (school-portal-local, not exported from `packages/ui` — it's School-specific, unlike the generic `LegalFooter`) reads the current School via the existing `useGradingSchoolId()` (owner's, else coach's — the same resolution `VerifyBeltsNotice` already uses) + `useSchool`/`useDisciplines`, replacing `<LegalFooter />` in `Shell.tsx`. New `FooterSettingsCard` on `SchoolPage.tsx` (own local form + save action, same pattern as the existing `FranchiseAffiliationCard` below it) using `@ultm8/ui`'s existing `Field`/`TextField`/`TextArea`/`PhoneField`.
+
+**Tests:** `apps/api/test/tenants.e2e-spec.ts` gained one new case (set/kept-when-omitted/cleared-with-null/rejected-when-malformed for all 8 fields, mirroring the file's own existing identical-shape test for `timezone`) — 53/53 passing. `apps/school-portal/e2e/legal-footer.spec.ts` rewritten for the new footer (real School data renders, every unset field hides entirely, the settings form round-trips into what the Dashboard footer shows, and the full-width-band layout itself) — 3/3 passing, confirmed against an actual rendered screenshot both before and after the full-width layout fix, not just assertions.
+
+### Judgment calls, disclosed
+
+1. **Copyright line stays "© {year} ULTM8," not the School's own name** — only the top brand label changes. Reasoning in scope answer 7 above; flagged here explicitly since it wasn't asked as its own direct question.
+2. **Social icons are plain circular badges with 1–2 letter abbreviations** (f / IG / TT / YT / X), not pixel-accurate brand logo SVGs — this codebase has no icon library dependency anywhere, and hand-rolling five accurate trademarked logos was judged disproportionate to this slice; each links out to the real URL once set regardless.
+3. **QR tiles are plain dashed-border placeholder boxes, not real/generated QR codes** — `apps/student` still isn't published to an app store (Decision 256's own disclosed gap), so a real, scannable-looking QR code would point nowhere; this makes that explicit rather than implying something that works.
+4. **The zip search stays purely decorative** — no cross-School "find a school" search exists anywhere in this codebase (that's Global Search, §A of the still-open `DRAFT-global-search-and-footer-scoping.md`, unrelated and unscoped).
+
+### Verified
+
+`packages/ui`, `apps/school-portal`, `apps/platform-admin`: `tsc --noEmit`, all clean (student untouched by this slice — no `@ultm8/ui` dependency). Both web apps' production `vite build` succeeded. `apps/api`: `tsc --noEmit`, full unit suite (490/490), `tenants.e2e-spec.ts` (53/53, including the new footer-fields case). `apps/school-portal`: full Playwright regression suite on chromium-desktop (115/116 — the one failure, `branch-photo-upload.spec.ts`, is a pre-existing, unrelated R2-upload gap in this sandbox, confirmed failing identically before this slice's changes).
+
+### Recorded by
+
+User, via direct AskUserQuestion answers on footer richness, per-field content mapping, and social platforms (plus one follow-up message specifying TikTok/YouTube/X); the full-width layout bug was flagged directly by the product owner against a screenshot of the first build. Judgment calls above are the Developer's own disclosed reasoning.
+

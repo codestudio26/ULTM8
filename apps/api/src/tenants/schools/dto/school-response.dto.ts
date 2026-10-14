@@ -60,6 +60,32 @@ export class SchoolResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   bannerUrl!: string | null;
 
+  // Decision 257 — per-School footer content; see CreateSchoolDto's own
+  // comment on these fields.
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerAboutUs!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerContactEmail!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerContactPhone!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerFacebookUrl!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerInstagramUrl!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerTiktokUrl!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerYoutubeUrl!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  footerTwitterUrl!: string | null;
+
   @ApiProperty({ enum: ClassCancellationPolicyDto })
   classCancellationPolicy!: ClassCancellationPolicyDto;
 

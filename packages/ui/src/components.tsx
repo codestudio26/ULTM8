@@ -1470,36 +1470,39 @@ export function AppShell({
    * pass it (e.g. platform-admin's Shell today) renders exactly as before. */
   header?: ReactNode;
   /** Optional marketing-style footer (copyright + Terms/Privacy/Support),
-   * rendered once at the BOTTOM of the main content column — a different slot
-   * from `footer` above, which renders inside the sidebar (currently just the
-   * Log out button). Same "once per AppShell, not per-page" scope as `header`.
-   * See `LegalFooter`'s own comment for what it renders and how to update it
-   * once real Terms/Privacy/Support pages exist. */
+   * rendered once as a FULL-WIDTH band below the entire shell — sidebar
+   * included, not confined to the main content column (a different slot from
+   * `footer` above, which renders inside the sidebar itself, currently just
+   * the Log out button). Same "once per AppShell, not per-page" scope as
+   * `header`. See `LegalFooter`'s own comment for what it renders and how to
+   * update it once real Terms/Privacy/Support pages exist. */
   legalFooter?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="ultm8-shell">
-      <aside className="ultm8-shell__sidebar">
-        <p className="ultm8-shell__brand">{brand}</p>
-        <nav>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => 'ultm8-shell__nav-link' + (isActive ? ' ultm8-shell__nav-link--active' : '')}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        {footer ? <div className="ultm8-shell__footer-action">{footer}</div> : null}
-      </aside>
-      <main className="ultm8-shell__main">
-        {header ? <div className="ultm8-shell__topbar">{header}</div> : null}
-        {children}
-        {legalFooter ? <div className="ultm8-shell__legal-footer">{legalFooter}</div> : null}
-      </main>
+    <div className="ultm8-shell-wrapper">
+      <div className="ultm8-shell">
+        <aside className="ultm8-shell__sidebar">
+          <p className="ultm8-shell__brand">{brand}</p>
+          <nav>
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => 'ultm8-shell__nav-link' + (isActive ? ' ultm8-shell__nav-link--active' : '')}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          {footer ? <div className="ultm8-shell__footer-action">{footer}</div> : null}
+        </aside>
+        <main className="ultm8-shell__main">
+          {header ? <div className="ultm8-shell__topbar">{header}</div> : null}
+          {children}
+        </main>
+      </div>
+      {legalFooter ? <div className="ultm8-shell__legal-footer">{legalFooter}</div> : null}
     </div>
   );
 }

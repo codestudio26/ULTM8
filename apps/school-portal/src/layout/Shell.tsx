@@ -1,8 +1,9 @@
 import React from 'react';
-import { AppShell, Button, LegalFooter } from '@ultm8/ui';
+import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 import { TopBar } from './TopBar';
+import { SchoolFooter } from './SchoolFooter';
 import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
 
 /** A coach or Branch Staff member who doesn't own the School sees their own
@@ -54,7 +55,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           Log out
         </Button>
       }
-      legalFooter={<LegalFooter />}
+      legalFooter={<SchoolFooter />}
     >
       <VerifyBeltsNotice />
       {children}
