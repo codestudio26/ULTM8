@@ -893,7 +893,8 @@ infrastructure to its own phase" discipline this track has used since Slice 1.
 Registering a placeholder/fake token instead (to exercise the API without the real
 native work) was considered and rejected — that would be building something that
 *looks* functional but can never actually receive anything, which is its own kind of
-dishonesty about what's built. **Revisit once server-side push dispatch is real.**
+dishonesty about what's built. **Revisit once server-side push dispatch is real** —
+done below (Decision 223/264).
 
 **No unread-count badge was built either**, for a related but distinct reason: no
 `GET /notifications/unread-count`-style endpoint exists, so a Home-screen badge would
@@ -925,6 +926,28 @@ generated type's own comment) — deliberately not used for any icon/categorizat
   convention."
 - **Missing accessibility labels** on the unread indicator (a bare colored `View`
   with no way for a screen reader to convey read/unread state) — added.
+
+### Device-token registration — also DONE (14 Oct 2026, Decision 223/264)
+
+Server-side push SEND is real now (`PushNotificationService`, Decision 223/264), so
+the client half flagged above as deliberately not built is closed: `pushRegistration.ts`
+requests OS notification permission, then calls `expo-notifications`'
+`getDevicePushTokenAsync()` directly — a real native FCM/APNs device push token, not
+Expo's own push token/push service (Decision 250 commits the backend to one FCM
+integration point for both platforms) — and registers it via the already-built `POST
+/notifications/device-tokens`. This environment still has no real Firebase project, so
+the native call itself is expected to reject here (caught, logged, never thrown — the
+same "real code, inert without real vendor config" shape as every other unprovisioned
+vendor in this codebase); it starts actually registering a usable token the moment a
+real Firebase project's `google-services.json`/`GoogleService-Info.plist` are added to
+this app's native build, with zero further code changes needed. Wired into
+`AuthContext.tsx` at login and at an already-valid session on launch — not on every
+15-minute reactive token refresh, to avoid redundant calls for an idempotent
+registration. `expo-notifications` added as a dependency; `app.json` gained its
+plugin entry. Known, deliberately unresolved edge case: a second person logging into
+the same device (shared family phone) hits the existing 409 on re-registering the same
+token under a different user — swallowed like any other registration failure, not
+actively resolved by deregistering the previous user's token on logout.
 
 ---
 

@@ -49,6 +49,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   New background job (`franchise-fee-rate-migration`), a new
   `GET /franchises/{id}/billing-status` endpoint, and a `FranchiseFormModal`
   prompt mirroring Membership Plans' own price-change prompt.
+- **Push notification SEND built** (Decision 223/264) — `PushNotificationService`
+  (`apps/api`, Firebase Admin SDK, FCM for both platforms per Decision 250)
+  wired into the existing `notification-fanout` pipeline as a second,
+  best-effort channel alongside email; a token FCM reports unregistered is
+  deleted automatically. Plus the Track B client half (`apps/student`,
+  `docs/TRACK-B-ROADMAP.md`) `NotificationsScreen.tsx` had flagged as
+  deliberately not built (Decision 95): `pushRegistration.ts` requests OS
+  permission and registers a real device token via the already-existing
+  `POST /notifications/device-tokens`. Still genuinely non-functional without
+  a real Firebase project's credentials — same standing gap as every other
+  not-yet-provisioned vendor here (R2, Cloudflare Stream, Cognito) — the real
+  code is in place and tested, inert until the vendor account exists.
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
   at the bottom of every page, as a full-width band below the entire shell
