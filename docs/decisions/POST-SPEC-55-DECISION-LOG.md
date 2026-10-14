@@ -3534,6 +3534,32 @@ User, via direct AskUserQuestion answers on footer scope, app coverage, and link
 
 User, via direct AskUserQuestion answers on footer richness, per-field content mapping, and social platforms (plus one follow-up message specifying TikTok/YouTube/X); the full-width layout bug was flagged directly by the product owner against a screenshot of the first build. Judgment calls above are the Developer's own disclosed reasoning.
 
+---
+
+## Decision 261 — Transaction and PaymentAccount confirmed never-deletable, same treatment as Membership/Waiver
+
+**Date:** 14 Oct 2026 · **Status:** Confirmed by product owner
+**Resolves:** a second planning-doc miscount this session, caught before any code was written against it — same pattern Decision 253 already corrected once. An audit this session produced a "8 remaining entities with no archive/delete mechanism" list naming Transaction, PaymentAccount, Booking, and RoleGrant (+4 others). Verified directly against real code before building anything: that list was wrong on two of its four named entities.
+
+### What was actually verified, file by file
+
+- **RoleGrant already has a real revoke mechanism** — `DELETE /users/:userId/role-grants/:roleGrantId` (`role-grants.controller.ts`), setting `revokedAt`. Not a gap.
+- **Booking already has a real cancel mechanism** — `PATCH /bookings/:id/cancel` (`bookings.controller.ts`), setting `status: CANCELLED`. Not a gap.
+- **Transaction** (`schema.prisma`) — no `archivedAt`, no delete/archive endpoint anywhere. A genuine code-level gap, but never previously decided one way or the other — not named anywhere in Decision 110's own original text or any `[UNRESOLVED]`-marked comment.
+- **PaymentAccount** (`schema.prisma`) — same: no `archivedAt`, no delete/deactivate endpoint, despite a `PaymentAccountStatus.DE_ACTIVE` enum value existing that nothing in the codebase ever sets. Also never previously decided.
+
+### Decision
+
+**Both `Transaction` and `PaymentAccount` are never deletable or archivable via a new mechanism — the same treatment Decision 253 already gave `Membership`.** `Transaction` is an immutable financial ledger row (Stripe payment/refund/dispute history) — deleting or purging one destroys audit trail the same way purging a `Membership` or signed `Waiver` would. `PaymentAccount`'s own natural lifecycle is "a School/Franchise replaces it by connecting a new one," not deleting the old record — the connected-account correlator itself has no meaning to erase without also erasing the Transaction/FranchiseFeeCharge history that references it via foreign key.
+
+### What this does NOT resolve
+
+Same scope limit Decision 253 already stated for Membership: this closes "no further build needed" for now, not "fully audited forever." A real data-retention policy for either table, if one is ever needed, deserves its own decision with real legal input — not a silent extension of this entry. `PaymentAccountStatus.DE_ACTIVE` remains unused; whether it should ever be wired up (e.g. to reflect a disconnected Stripe account without deleting the row) is a separate, smaller question this entry doesn't decide either way.
+
+### Recorded by
+
+User, choosing "Treat both like Membership — never deletable" over building a new deactivate-only mechanism for PaymentAccount, 14 Oct 2026.
+
 ## Decision 264 — Push notification SEND built (Decision 223/250's own prerequisite), still non-functional without real FCM credentials
 
 **Date:** 14 Oct 2026 · **Status:** Built; genuinely blocked on real FCM credentials, same as Decision 223/250 already flagged
