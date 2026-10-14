@@ -88,6 +88,12 @@ export function MyMinorsScreen({ navigation }: Props) {
             variant="secondary"
             onPress={() => navigation.navigate('MyGrading', { studentId: minor.studentId, name: minor.firstName })}
           />
+          {/* The Lessons their enrolled School(s) have published (Decisions 154, 190, 195). */}
+          <Button
+            title="Lessons"
+            variant="secondary"
+            onPress={() => navigation.navigate('Lessons', { studentId: minor.studentId, name: minor.firstName })}
+          />
         </Pressable>
       ))}
 

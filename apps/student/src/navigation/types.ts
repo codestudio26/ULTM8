@@ -20,9 +20,8 @@ export type AppStackParamList = {
   TransactionHistory: undefined;
   Waivers: undefined;
   PaymentMethods: undefined;
-  /** No params — self-view only (see curriculumQueries.ts's header comment for why
-   * a Guardian viewing a linked minor's Lessons isn't built yet). */
-  Lessons: undefined;
+  /** No params: the signed-in student's own Lessons; a guardian passes the minor's id. */
+  Lessons: { studentId: string; name: string } | undefined;
   MyMinors: undefined;
   MinorConsent: { studentId: string; name: string };
   KidModePin: undefined;

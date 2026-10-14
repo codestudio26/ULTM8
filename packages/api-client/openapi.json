@@ -9494,8 +9494,9 @@
           },
           {
             "name": "schoolId",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Omit to get every School the Student is enrolled at.",
             "schema": {
               "type": "string"
             }

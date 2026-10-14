@@ -49,7 +49,11 @@ export function AppNavigator() {
       <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} options={{ title: 'Payment History' }} />
       <Stack.Screen name="Waivers" component={WaiversScreen} options={{ title: 'Waivers' }} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Payment Methods' }} />
-      <Stack.Screen name="Lessons" component={LessonsScreen} options={{ title: 'Lessons' }} />
+      <Stack.Screen
+        name="Lessons"
+        component={LessonsScreen}
+        options={({ route }) => ({ title: route.params?.name ? `${route.params.name}'s lessons` : 'Lessons' })}
+      />
       <Stack.Screen name="MyMinors" component={MyMinorsScreen} options={{ title: 'My Minors' }} />
       <Stack.Screen name="MinorConsent" component={MinorConsentScreen} options={({ route }) => ({ title: route.params.name })} />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: 'Kid Mode' }} />

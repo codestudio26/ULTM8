@@ -136,21 +136,54 @@ export class CurriculumService {
   /** The lessons a student may watch, for the student or their guardian
    * (Decisions 154, 190, 195): every lesson of the School, the ones they may
    * not watch marked locked. Read under the student's context, since a
-   * guardian holds no role at the School. */
-  async findLessonsForStudent(callerId: string, studentId: string, schoolId: string) {
-    if (!schoolId) throw new BadRequestException('schoolId query parameter is required');
-    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId)) {
-      throw new BadRequestException('id and schoolId must be valid UUIDs');
-    }
+   * guardian holds no role at the School.
+   *
+   * `schoolId` is optional — omit it to get every School the student is
+   * enrolled at in one call, same "resolve every active STUDENT RoleGrant
+   * ourselves" shape GradingService.findGradingOverview already established
+   * for the identical problem: a Guardian's own JWT carries no claims about
+   * a linked minor's enrollment, and `MinorResponseDto` carries no schoolId
+   * field, so a Guardian viewing a minor's Lessons had no way to supply one
+   * (flagged in docs/TRACK-B-ROADMAP.md as a real, unscoped gap — closed
+   * here). Each returned Lesson already carries its own `schoolId`
+   * (LessonResponseDto), so no response-shape change was needed to support
+   * this — the client resolves School names the same way
+   * `useEnrolledSchoolNames` already does for the Student-self case (public
+   * Academy discovery), not a new field here. */
+  async findLessonsForStudent(callerId: string, studentId: string, schoolId?: string) {
+    if (!UUID_PATTERN.test(studentId)) throw new BadRequestException('id must be a valid UUID');
+    if (schoolId !== undefined && !UUID_PATTERN.test(schoolId)) throw new BadRequestException('schoolId must be a valid UUID');
     if (callerId !== studentId) await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
-    const enrolled = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+
+    if (schoolId) {
+      const enrolled = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } }),
+      );
+      if (!enrolled) throw new NotFoundException('This person isn\'t a student at this School.');
+      return this.lessonsForOneSchool(studentId, schoolId);
+    }
+
+    const grants = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId: studentId, role: 'STUDENT', revokedAt: null },
+        select: { schoolId: true },
+        distinct: ['schoolId'],
+      }),
     );
-    if (!enrolled) throw new NotFoundException('This person isn\'t a student at this School.');
+    const items: Awaited<ReturnType<typeof this.lessonsForOneSchool>> = [];
+    for (const grant of grants) {
+      items.push(...(await this.lessonsForOneSchool(studentId, grant.schoolId!)));
+    }
+    return items;
+  }
+
+  /** Decision 226 — a Student/Guardian never sees an archived Lesson,
+   * unconditionally (no includeArchived escape hatch here, unlike the
+   * Staff-facing findLessonsForSchool above). Shared by
+   * findLessonsForStudent's single-School and every-enrolled-School paths —
+   * same access/shape either way, just how many Schools get queried. */
+  private async lessonsForOneSchool(studentId: string, schoolId: string) {
     const access = await this.studentStyles(studentId, schoolId);
-    // Decision 226 — a Student/Guardian never sees an archived Lesson,
-    // unconditionally (no includeArchived escape hatch here, unlike the
-    // Staff-facing findLessonsForSchool above).
     const lessons = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.lesson.findMany({ where: { schoolId, archivedAt: null }, orderBy: LESSON_ORDER, include: LESSON_INCLUDE }),
     );

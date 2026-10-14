@@ -122,10 +122,14 @@ export class CurriculumController {
   }
 
   /** The lessons a student may watch, for the student or their guardian
-   * (Decisions 154, 190, 195); the others come back locked. */
+   * (Decisions 154, 190, 195); the others come back locked. `schoolId` is
+   * optional — omit it to get every enrolled School's Lessons in one call
+   * (see findLessonsForStudent's own header comment for why a Guardian
+   * needs this). */
   @ApiOkResponse({ type: LessonListResponseDto })
+  @ApiQuery({ name: 'schoolId', required: false, description: 'Omit to get every School the Student is enrolled at.' })
   @Get('students/:id/lessons')
-  async findLessonsForStudent(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query('schoolId') schoolId: string) {
+  async findLessonsForStudent(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query('schoolId') schoolId?: string) {
     return { items: await this.curriculumService.findLessonsForStudent(user.sub, id, schoolId) };
   }
 }

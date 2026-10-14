@@ -11233,8 +11233,9 @@ export interface operations {
     };
     CurriculumController_findLessonsForStudent: {
         parameters: {
-            query: {
-                schoolId: string;
+            query?: {
+                /** @description Omit to get every School the Student is enrolled at. */
+                schoolId?: string;
             };
             header?: never;
             path: {
