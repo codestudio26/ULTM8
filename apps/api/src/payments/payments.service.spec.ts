@@ -47,6 +47,21 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
     const params = stripe.subscriptions.create.mock.calls[0][0];
     for (const key of PLATFORM_CUT) expect(params).not.toHaveProperty(key);
   });
+
+  // Decision 259 — PRORATED_TO_SHARED_CYCLE plans. Verified directly against
+  // the installed SDK's own type definitions
+  // (SubscriptionCreateParams.BillingCycleAnchorConfig) before writing this.
+  it('omits billing_cycle_anchor_config when no billingCycleAnchorDay is passed (FRESH_CYCLE, every pre-existing plan)', async () => {
+    await service.subscribe('student', 'school', 'student@example.test', 5000, 'gbp', 'Unlimited');
+    const params = stripe.subscriptions.create.mock.calls[0][0];
+    expect(params).not.toHaveProperty('billing_cycle_anchor_config');
+  });
+
+  it('passes billing_cycle_anchor_config when billingCycleAnchorDay is passed (PRORATED_TO_SHARED_CYCLE)', async () => {
+    await service.subscribe('student', 'school', 'student@example.test', 5000, 'gbp', 'Unlimited', undefined, 15);
+    const params = stripe.subscriptions.create.mock.calls[0][0];
+    expect(params.billing_cycle_anchor_config).toEqual({ day_of_month: 15 });
+  });
 });
 
 /**

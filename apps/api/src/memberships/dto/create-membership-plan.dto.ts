@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Min, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min, MaxLength } from 'class-validator';
 
 export enum MembershipPlanTypeDto {
   SUBSCRIPTION = 'SUBSCRIPTION',
@@ -7,6 +7,12 @@ export enum MembershipPlanTypeDto {
   WEEKLY_PASS = 'WEEKLY_PASS',
   FRIEND_PASS = 'FRIEND_PASS',
   TRIAL_MEMBERSHIP = 'TRIAL_MEMBERSHIP',
+}
+
+/** Decision 259 — see MembershipPlan.newMemberBillingStrategy's own schema comment. */
+export enum NewMemberBillingStrategyDto {
+  FRESH_CYCLE = 'FRESH_CYCLE',
+  PRORATED_TO_SHARED_CYCLE = 'PRORATED_TO_SHARED_CYCLE',
 }
 
 /**
@@ -101,4 +107,23 @@ export class CreateMembershipPlanDto {
   @IsOptional()
   @IsBoolean()
   includesLessons?: boolean;
+
+  @ApiPropertyOptional({
+    enum: NewMemberBillingStrategyDto,
+    description:
+      'SUBSCRIPTION only (Decision 259). Defaults to FRESH_CYCLE when omitted: a new Student is charged the full price immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: a new Student\'s first charge is prorated to the next occurrence of billingCycleAnchorDay, then renews on that fixed day every month after — requires billingCycleAnchorDay.',
+  })
+  @IsOptional()
+  @IsEnum(NewMemberBillingStrategyDto)
+  newMemberBillingStrategy?: NewMemberBillingStrategyDto;
+
+  @ApiPropertyOptional({
+    description:
+      'Day of month (1-28) every new Membership on this plan is aligned to — required when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE, rejected otherwise. Capped at 28 to sidestep every month\'s own day-count/Feb-29 edge cases entirely.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(28)
+  billingCycleAnchorDay?: number;
 }

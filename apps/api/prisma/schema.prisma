@@ -245,6 +245,12 @@ enum MembershipPlanType {
   TRIAL_MEMBERSHIP
 }
 
+/// Decision 259 — see MembershipPlan.newMemberBillingStrategy's own comment.
+enum NewMemberBillingStrategy {
+  FRESH_CYCLE
+  PRORATED_TO_SHARED_CYCLE
+}
+
 /// Membership.status — Phase 9. Confirmed field (Decision 6,
 /// docs/decisions/POST-SPEC-55-DECISION-LOG.md-style entry in Spec 55 itself, 26 Aug
 /// 2026 Pass 5): "Membership.Status is Active/Expired only — Pending is removed
@@ -1571,6 +1577,29 @@ model MembershipPlan {
   currency String?
 
   expiryDurationDays Int? // see header comment — inferred, needs a Decision entry
+
+  /// Decision 259 — SUBSCRIPTION only. FRESH_CYCLE (default, pre-existing
+  /// behavior, byte-for-byte unchanged): PaymentsService.subscribe() sets no
+  /// billing_cycle_anchor — a new Student is charged the plan's full price
+  /// immediately on signup and renews monthly from that same day, with no
+  /// shared renewal date across Students on this plan.
+  /// PRORATED_TO_SHARED_CYCLE: every new Student's first charge is prorated
+  /// from their signup day through the next occurrence of
+  /// `billingCycleAnchorDay`, then renews on that fixed day every month after
+  /// — Stripe's own `billing_cycle_anchor_config` handles the proration math,
+  /// confirmed directly against the installed SDK's own type definitions
+  /// (SubscriptionCreateParams.BillingCycleAnchorConfig) before building this
+  /// rather than computed by hand. A School-Owner-set-once-per-plan choice
+  /// (not a per-signup prompt) — see MembershipPlanFormPage's own form.
+  newMemberBillingStrategy NewMemberBillingStrategy @default(FRESH_CYCLE)
+
+  /// Required (1-28, capped below 29 to sidestep every month's own
+  /// day-count/Feb-29 edge cases entirely rather than handle them) when
+  /// newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE; must be null
+  /// otherwise — enforced in MembershipsService, not expressible as a bare
+  /// column constraint. Null for every pre-existing plan (FRESH_CYCLE is the
+  /// default, so this invariant holds from the moment the column is added).
+  billingCycleAnchorDay Int?
 
   // Class Pack / Friend Pass only. Capped at 1 when scopedClassId is set (a one-off
   // Class has only one occurrence — additional credits could never be spent,

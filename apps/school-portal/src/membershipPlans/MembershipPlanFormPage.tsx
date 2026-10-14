@@ -131,6 +131,9 @@ interface MembershipPlanFormValues {
   // least one active subscriber — see requiresPriceChangeDecision below.
   // Omitted (undefined) on every other submit, including every Create.
   priceChangeStrategy?: 'MIGRATE' | 'GRANDFATHER';
+  // Decision 259 — SUBSCRIPTION only. Omitted on every other type.
+  newMemberBillingStrategy?: 'FRESH_CYCLE' | 'PRORATED_TO_SHARED_CYCLE';
+  billingCycleAnchorDay?: number | null;
 }
 
 /** Fields match CreateMembershipPlanDto/UpdateMembershipPlanDto exactly —
@@ -193,6 +196,9 @@ function MembershipPlanForm({
     cancellationCharge: initial?.cancellationCharge?.toString() ?? '',
     termsWaiverRequired: initial?.termsWaiverRequired ?? false,
     disciplineIds: initial?.disciplineIds ?? [],
+    // Decision 259 — SUBSCRIPTION only.
+    newMemberBillingStrategy: (initial?.newMemberBillingStrategy as 'FRESH_CYCLE' | 'PRORATED_TO_SHARED_CYCLE') ?? 'FRESH_CYCLE',
+    billingCycleAnchorDay: initial?.billingCycleAnchorDay?.toString() ?? '',
   });
   // Decision 195: "Includes lessons" follows the price (on when priced, off
   // when free) until the owner sets it.
@@ -248,6 +254,12 @@ function MembershipPlanForm({
         next.scopedClassId = '';
       }
       if (nextType === 'SUBSCRIPTION') next.expiryDurationDays = '';
+      // Decision 259 — only SUBSCRIPTION uses this; reset to the default
+      // when switching away so a stale choice doesn't linger unseen.
+      if (nextType !== 'SUBSCRIPTION') {
+        next.newMemberBillingStrategy = 'FRESH_CYCLE';
+        next.billingCycleAnchorDay = '';
+      }
       return next;
     });
   }
@@ -282,6 +294,13 @@ function MembershipPlanForm({
       setError('This plan has active subscribers — choose Migrate or Grandfather before saving a price change.');
       return;
     }
+    // Decision 259 — same "block client-side before the identical 400"
+    // pattern as the price-change prompt above.
+    if (form.type === 'SUBSCRIPTION' && form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' && !form.billingCycleAnchorDay) {
+      setStepIndex(1);
+      setError('Set a renewal day of month (1-28) for Prorate to shared cycle, or switch back to Fresh cycle.');
+      return;
+    }
     try {
       await onSubmit({
         type: form.type,
@@ -293,6 +312,14 @@ function MembershipPlanForm({
         // rather than clear when the selected type doesn't use it.
         classesIncluded: showClassesIncluded && form.classesIncluded ? Number(form.classesIncluded) : undefined,
         scopedClassId: form.scopedClassId || null,
+        // Decision 259 — SUBSCRIPTION only; omitted (not cleared) on every
+        // other type, same reasoning showExpiryDuration's own comment gives
+        // for expiryDurationDays above.
+        newMemberBillingStrategy: form.type === 'SUBSCRIPTION' ? form.newMemberBillingStrategy : undefined,
+        billingCycleAnchorDay:
+          form.type === 'SUBSCRIPTION' && form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' && form.billingCycleAnchorDay
+            ? Number(form.billingCycleAnchorDay)
+            : null,
         visible: form.visible,
         refundFeeDate: form.refundFeeDate ? (localInputToIso(form.refundFeeDate) ?? null) : null,
         cancellationCharge: form.cancellationCharge ? Number(form.cancellationCharge) : null,
@@ -412,6 +439,48 @@ function MembershipPlanForm({
               placeholder="Not set"
             />
           </Field>
+          {form.type === 'SUBSCRIPTION' ? (
+            // Decision 259 — a School-Owner-set-once-per-plan choice, not a
+            // per-signup prompt: every new Student on this plan gets whichever
+            // of the two the Owner picked here.
+            <Field label="New member billing" htmlFor="plan-new-member-billing-strategy">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Button
+                    type="button"
+                    variant={form.newMemberBillingStrategy === 'FRESH_CYCLE' ? 'primary' : 'secondary'}
+                    onClick={() => setForm((f) => ({ ...f, newMemberBillingStrategy: 'FRESH_CYCLE', billingCycleAnchorDay: '' }))}
+                  >
+                    Fresh cycle from signup day
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? 'primary' : 'secondary'}
+                    onClick={() => setForm((f) => ({ ...f, newMemberBillingStrategy: 'PRORATED_TO_SHARED_CYCLE' }))}
+                  >
+                    Prorate to a shared renewal day
+                  </Button>
+                </div>
+                <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
+                  {form.newMemberBillingStrategy === 'FRESH_CYCLE'
+                    ? 'Each new Student is charged in full immediately and renews monthly from their own signup date.'
+                    : 'Each new Student is charged a prorated partial amount now, then renews on the fixed day below every month after.'}
+                </p>
+                {form.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? (
+                  <Field label="Renewal day of month" htmlFor="plan-billing-cycle-anchor-day" hint="1-28.">
+                    <TextField
+                      type="number"
+                      min={1}
+                      max={28}
+                      required
+                      value={form.billingCycleAnchorDay}
+                      onChange={(e) => setForm((f) => ({ ...f, billingCycleAnchorDay: e.target.value }))}
+                    />
+                  </Field>
+                ) : null}
+              </div>
+            </Field>
+          ) : null}
           {showClassesIncluded ? (
             <Field
               label="Classes included"

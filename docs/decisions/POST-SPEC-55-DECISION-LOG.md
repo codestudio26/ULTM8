@@ -3582,6 +3582,32 @@ Reactive only, same as `apps/student`'s own still-open item — refreshes after 
 
 User ("Complete it .. let me know what you need from my side"), this item needing no further input — a confirmed, previously-flagged gap with an already-working pattern (`apps/student`) to mirror, not a new design decision.
 
+## Decision 259 — MembershipPlan new-member billing strategy: Fresh cycle (default) vs. Prorate to a shared renewal day, School-Owner-set per plan
+
+**Date:** 14 Oct 2026 · **Status:** Confirmed by product owner, built
+**Resolves:** a direct question to the product owner — today, every new Student's Membership billing is anchored to their own signup date (verified directly against `PaymentsService.subscribe()`: no `billing_cycle_anchor`/`proration_behavior` is ever set, so Stripe charges the full price immediately and renews monthly from that same day, with no shared renewal date across Students on a plan). The product owner asked for a choice here, mirroring the Migrate/Grandfather pattern membership-plan price changes already use.
+
+1. **A per-plan setting, not a per-signup prompt** — the School Owner picks once, in `MembershipPlanFormPage`, which of two strategies new signups on this SUBSCRIPTION plan use: **FRESH_CYCLE** (default, the pre-existing behavior, byte-for-byte unchanged) or **PRORATED_TO_SHARED_CYCLE** (every new Student is prorated from their signup day through the next occurrence of a fixed `billingCycleAnchorDay`, then renews on that day every month after).
+2. **Stripe's own `billing_cycle_anchor_config` does the proration math** — confirmed directly against the installed SDK's own type definitions (`SubscriptionCreateParams.BillingCycleAnchorConfig`) before building, rather than computing the stub-period amount by hand: passing `{ day_of_month: N }` at Subscription-creation time makes Stripe bill a prorated stub invoice immediately for the gap between now and the next occurrence of day `N`, then recur on that fixed day every month after.
+3. **`billingCycleAnchorDay` capped at 1-28**, not Stripe's own allowed 1-31 — sidesteps every month's own day-count/Feb-29 edge cases entirely rather than handling them, since nothing in the product ask required a specific day beyond 28.
+4. **No backend migration path for an existing plan's EXISTING subscribers** — this only affects NEW signups going forward, same scope as the question asked. Switching a plan's strategy (or its anchor day) never touches any already-active Membership's own Stripe Subscription.
+
+### What this does NOT resolve
+
+The same underlying gap for one-time (non-SUBSCRIPTION) plan types doesn't exist — WEEKLY_PASS/CLASS_PACK/FRIEND_PASS/TRIAL_MEMBERSHIP have no recurring billing cycle to anchor at all, confirmed via `assertValidNewMemberBillingStrategy`'s own SUBSCRIPTION-only gate.
+
+### Built
+
+**api:** Migration `20261114000001_membership_plan_new_member_billing_strategy` — `MembershipPlan.newMemberBillingStrategy` (new enum, default `FRESH_CYCLE`) + `billingCycleAnchorDay` (nullable `Int`). `MembershipsService.assertValidNewMemberBillingStrategy()` (new) — validated against the already-resolved NEXT combination in both `createPlan`/`updatePlan`, same discipline `assertValidPlanShape` already established. `PaymentsService.subscribe()` gains an optional `billingCycleAnchorDay` param, passed through from `MembershipsService.purchase()` only when the plan's strategy is `PRORATED_TO_SHARED_CYCLE`. `MembershipPlanResponseDto` extended field-for-field. `packages/api-client` regenerated.
+
+**school-portal:** `MembershipPlanFormPage.tsx` — a new "New member billing" control in the Pricing & Access step (SUBSCRIPTION only), same two-button-choice shape the existing Migrate/Grandfather prompt already established, with a "Renewal day of month" field shown only while Prorate is selected; blocks Save client-side (same pattern as the price-change prompt) when Prorate is selected with no day set.
+
+**Tests:** `payments.service.spec.ts` (2 new — `billing_cycle_anchor_config` omitted/passed correctly). `membership-plan-archive-and-price-change.e2e-spec.ts` (8 new — default, valid creation, SUBSCRIPTION-only gate, 1-28 range, PATCH switching both directions, PATCH-leaves-untouched). `apps/school-portal/e2e/membership-plans.spec.ts` (2 new — full create/switch/clear round-trip, hidden for non-SUBSCRIPTION types).
+
+### Recorded by
+
+User, confirming "Option a, per-plan setting — build both" after being shown current behavior and two concrete design options for the shared-cycle anchor; the Franchise fee-rate migration this same conversation also approved is tracked as its own, separate piece of work (Decision 99's own follow-up), not folded into this entry.
+
 ## Decision 260 — Franchise fee-rate migration, built: MIGRATE_NEXT_CYCLE and MIGRATE_IMMEDIATE, replacing the outright rejection once franchise-fee billing has started
 
 **Date:** 14 Oct 2026 · **Status:** Confirmed by product owner, built

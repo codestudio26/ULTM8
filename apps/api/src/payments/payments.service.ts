@@ -448,6 +448,13 @@ export class PaymentsService {
     // never had a price-change decision) leaves this method's original
     // Phase 9 behavior byte-for-byte unchanged below.
     existingPriceId?: string,
+    // Decision 259 — MembershipsService passes the plan's own
+    // billingCycleAnchorDay here only when newMemberBillingStrategy is
+    // PRORATED_TO_SHARED_CYCLE. `undefined` (FRESH_CYCLE, every plan this
+    // feature didn't touch) leaves this method's original Phase 9 behavior
+    // byte-for-byte unchanged below — same "undefined preserves old
+    // behavior" convention existingPriceId's own header comment establishes.
+    billingCycleAnchorDay?: number,
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
@@ -468,6 +475,13 @@ export class PaymentsService {
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
       expand: ['latest_invoice.payment_intent'],
+      // Decision 259 — Stripe's own `billing_cycle_anchor_config` prorates the
+      // stub period from now through the next occurrence of `day_of_month` and
+      // bills it on the first invoice immediately, then recurs on that fixed
+      // day every month after (confirmed directly against the installed SDK's
+      // own type definitions, SubscriptionCreateParams.BillingCycleAnchorConfig,
+      // before using this rather than computing the anchor date by hand).
+      ...(billingCycleAnchorDay ? { billing_cycle_anchor_config: { day_of_month: billingCycleAnchorDay } } : {}),
     });
     const invoice = subscription.latest_invoice as { payment_intent?: { id: string; client_secret: string } };
     const paymentIntent = invoice?.payment_intent;
