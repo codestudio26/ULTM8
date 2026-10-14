@@ -1,39 +1,47 @@
 import React from 'react';
 import { SelectField } from '@ultm8/ui';
-import { useAuth, useCoachSchoolId, useCoachSchoolIds, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useCoachSchoolIds, useOwnedSchoolId, useOwnedSchoolIds } from '../auth/AuthContext';
 import { useSchoolNames } from '../schools/schoolQueries';
 
 /**
  * Decision 184 item 4's own named follow-up, resolved: a coach or Branch Staff
  * member who holds an active INSTRUCTOR/BRANCH_STAFF grant at more than one
  * School can now pick which one they're currently acting as, instead of
- * silently landing on whichever School happened to sort first.
+ * silently landing on whichever School happened to sort first. Decision 255
+ * found the identical gap on the Owner side (`SCHOOL_OWNER_MANAGER` at more
+ * than one School) and deliberately left it for its own follow-up — this is
+ * that follow-up, closed the same way.
  *
- * Renders nothing for the common case (one School, or none) — same "don't
- * clutter the header for the normal case" judgment `TopBar`'s own disabled
- * search box doesn't apply, but the language picker's `languages?.length`
- * guard does. Owners aren't shown this control: `useOwnedSchoolId` doesn't
- * route through the same active-selection mechanism (see that hook's own
- * comment in AuthContext.tsx — a School Owner holding SCHOOL_OWNER_MANAGER at
- * more than one School has the identical underlying gap, found while
- * building this, but it's a separate, not-yet-approved piece of work, not
- * silently folded into this one).
+ * A caller who owns at least one School always gets the Owner nav, never the
+ * Coach one (`Shell.tsx`'s own `isCoachOnly = !useOwnedSchoolId() && ...`), so
+ * the two switcher modes below are mutually exclusive in practice — this
+ * component picks whichever one applies rather than rendering two controls.
+ * Renders nothing for the common case (one School, or none, on whichever side
+ * applies) — same "don't clutter the header for the normal case" judgment
+ * `TopBar`'s own disabled search box doesn't apply, but the language picker's
+ * `languages?.length` guard does.
  */
 export function SchoolSwitcher() {
-  const { setActiveCoachSchoolId } = useAuth();
-  const ownedSchoolId = useOwnedSchoolId();
-  const schoolIds = useCoachSchoolIds();
-  const activeSchoolId = useCoachSchoolId();
+  const { setActiveCoachSchoolId, setActiveOwnedSchoolId } = useAuth();
+  const ownedSchoolIds = useOwnedSchoolIds();
+  const activeOwnedSchoolId = useOwnedSchoolId();
+  const coachSchoolIds = useCoachSchoolIds();
+  const activeCoachSchoolId = useCoachSchoolId();
+
+  const isOwner = ownedSchoolIds.length > 0;
+  const schoolIds = isOwner ? ownedSchoolIds : coachSchoolIds;
+  const activeSchoolId = isOwner ? activeOwnedSchoolId : activeCoachSchoolId;
+  const setActiveSchoolId = isOwner ? setActiveOwnedSchoolId : setActiveCoachSchoolId;
   const names = useSchoolNames(schoolIds);
 
-  if (ownedSchoolId || schoolIds.length < 2) return null;
+  if (schoolIds.length < 2) return null;
 
   return (
     <SelectField
       aria-label="Switch School"
       value={activeSchoolId ?? ''}
       onChange={(e) => {
-        if (e.target.value) setActiveCoachSchoolId(e.target.value);
+        if (e.target.value) setActiveSchoolId(e.target.value);
       }}
       options={names.map((s) => ({ value: s.id, label: s.name ?? 'Loading…' }))}
       style={{ width: 'auto', minHeight: 36, padding: '4px 8px' }}

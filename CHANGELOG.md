@@ -61,6 +61,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   a real Firebase project's credentials — same standing gap as every other
   not-yet-provisioned vendor here (R2, Cloudflare Stream, Cognito) — the real
   code is in place and tested, inert until the vendor account exists.
+- **School Owner multi-School switcher** (Decision 258, closing Decision 255's
+  own named follow-up) — a School Owner holding `SCHOOL_OWNER_MANAGER` at more
+  than one School (nothing in the schema prevented it) can now pick which one
+  they're acting as, same mechanism and the same `SchoolSwitcher` component the
+  coach switcher below already added, kept as independent state since the same
+  person could own one School and coach at a different one. No backend change.
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
   at the bottom of every page, as a full-width band below the entire shell

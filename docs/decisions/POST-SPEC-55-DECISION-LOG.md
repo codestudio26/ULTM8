@@ -3686,3 +3686,26 @@ Build everything buildable without live FCM credentials, following this codebase
 
 Developer, per the product owner's own delegation ("tell me what's the best solution") on push notifications, as the fourth and final item of the four-part "Complete it" request this session (alongside Decisions 261/263 and PR #252).
 
+## Decision 258 — `useOwnedSchoolId`'s multi-School ordering bug (flagged by Decision 255) closed the same way
+
+**Date:** 14 Oct 2026 · **Status:** Built
+**Resolves:** Decision 255's own "What this does NOT resolve" item — a School Owner holding `SCHOOL_OWNER_MANAGER` at more than one School got whichever grant happened to sort first, with no way to see or switch to the other, the identical shape of gap Decision 255 already fixed for coaches/Branch Staff.
+
+1. **Same mechanism as Decision 255, deliberately a separate active-selection state** — `useOwnedSchoolIds()` (new) + a `sessionStorage`-backed `activeOwnedSchoolId` in `AuthContext.tsx`, under its own key (`ultm8.activeOwnedSchoolId`), not sharing the coach key. Decision 255's own text flagged this as "a different, not-yet-approved piece of scope," reasoning a multi-School Owner's switch might want different placement/affordances than a coach's — in practice the two turned out to need the exact same mechanism and the exact same `SchoolSwitcher` component, so they're unified there, but kept as independent state because the same person could in principle both own one School and coach at a different one, and each side has to resolve on its own.
+2. **`SchoolSwitcher.tsx` now covers both roles, picking whichever applies** rather than rendering two controls — `Shell.tsx`'s own existing `isCoachOnly = !useOwnedSchoolId() && ...` already means a caller who owns at least one School always gets the Owner nav, never the Coach one, so the two modes are mutually exclusive in practice. No change needed to `Shell.tsx`, `TopBar.tsx`, or any of the ~30 pages that call `useOwnedSchoolId()` directly — same "fix the hook once, every caller picks it up" shape as Decision 255.
+3. **No backend change** — same reasoning as Decision 255: every Owner-gated endpoint is already School-scoped by its own `schoolId` param, and `TenantAuthorizationService` re-checks server-side regardless of what the client claims.
+
+### What this does NOT resolve
+
+Nothing further — this was the one remaining piece Decision 255 itself flagged as deliberately out of scope, closed the same way it predicted it would be.
+
+### Built
+
+`apps/school-portal/src/auth/AuthContext.tsx` (new `useOwnedSchoolIds`, rewritten `useOwnedSchoolId`, new `activeOwnedSchoolId`/`setActiveOwnedSchoolId`), `apps/school-portal/src/coach/SchoolSwitcher.tsx` (generalized to resolve Owner-vs-coach mode and render whichever applies).
+
+**Tests:** new `apps/school-portal/e2e/owner-school-switcher.spec.ts` (4 tests — single-School Owner sees nothing, two-School switch sticks across navigation, option labels, an Owner of one School who also coaches at a second never sees the coach switcher instead), plus the full coach-switcher regression (`coach-school-switcher.spec.ts`) and a broad Owner-page Playwright regression pass (dashboard, branches, instructors, students, classes, timetable, membership plans, waivers, franchises, notifications, staff-add-manually, coach-dashboard, grading-board, branch-staff — all green; two `franchises-filter.spec.ts` failures traced to test-isolation noise from running many spec files in one worker, confirmed unrelated by re-running that file alone, clean).
+
+### Recorded by
+
+Developer, closing Decision 255's own named follow-up; no new product-owner decision was needed since the approach (same mechanism, same component, separate state) was already implied by that decision's own reasoning, 14 Oct 2026.
+
