@@ -60,6 +60,7 @@ export class MembershipsService {
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     this.assertValidPlanShape(dto.type, dto.price, dto.classesIncluded, dto.scopedClassId);
+    this.assertValidNewMemberBillingStrategy(dto.type, dto.newMemberBillingStrategy ?? 'FRESH_CYCLE', dto.billingCycleAnchorDay);
 
     if (dto.scopedClassId) {
       const scopedClass = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -93,6 +94,8 @@ export class MembershipsService {
           disciplineIds: dto.disciplineIds ?? [],
           // Decision 195: on by default for a priced plan, off for a free one.
           includesLessons: dto.includesLessons ?? price > 0,
+          newMemberBillingStrategy: dto.newMemberBillingStrategy ?? 'FRESH_CYCLE',
+          billingCycleAnchorDay: dto.billingCycleAnchorDay,
         },
       }),
     );
@@ -162,6 +165,14 @@ export class MembershipsService {
       nextScopedClassId ?? undefined,
     );
     this.assertValidPlanShape(nextType, nextPrice, nextClassesIncluded, nextScopedClassId ?? undefined);
+    // Decision 259 — validated against the resolved NEXT combination, same
+    // discipline as nextType/nextPrice above: a PATCH that only changes type
+    // away from SUBSCRIPTION while an existing PRORATED_TO_SHARED_CYCLE/
+    // billingCycleAnchorDay combination carries forward unchanged must still
+    // be caught, not just a request that touches these two fields directly.
+    const nextNewMemberBillingStrategy = dto.newMemberBillingStrategy ?? existing.newMemberBillingStrategy;
+    const nextBillingCycleAnchorDay = dto.billingCycleAnchorDay !== undefined ? dto.billingCycleAnchorDay : existing.billingCycleAnchorDay;
+    this.assertValidNewMemberBillingStrategy(nextType, nextNewMemberBillingStrategy, nextBillingCycleAnchorDay);
 
     // FOUND ON REVIEW (Phase 18): `dto.scopedClassId` narrowed via `if
     // (dto.scopedClassId)` doesn't stay narrowed inside the async closure
@@ -256,6 +267,8 @@ export class MembershipsService {
           termsWaiverRequired: dto.termsWaiverRequired,
           disciplineIds: dto.disciplineIds,
           includesLessons: dto.includesLessons,
+          newMemberBillingStrategy: dto.newMemberBillingStrategy,
+          billingCycleAnchorDay: dto.billingCycleAnchorDay,
           stripeProductId,
           stripePriceId,
         },
@@ -441,6 +454,25 @@ export class MembershipsService {
     return classesIncluded;
   }
 
+  /** Decision 259 — see MembershipPlan.newMemberBillingStrategy's own schema
+   * comment. Validated against the already-resolved NEXT values (same
+   * discipline assertValidPlanShape above and updatePlan()'s own FRIEND_PASS
+   * comment already established), not the raw dto, so a partial PATCH that
+   * only touches one of the two fields is still checked against a
+   * consistent combination. */
+  private assertValidNewMemberBillingStrategy(type: string, strategy: string, anchorDay: number | null | undefined) {
+    if (strategy === 'PRORATED_TO_SHARED_CYCLE') {
+      if (type !== 'SUBSCRIPTION') {
+        throw new BadRequestException('newMemberBillingStrategy is only meaningful for SUBSCRIPTION plans.');
+      }
+      if (anchorDay == null) {
+        throw new BadRequestException('billingCycleAnchorDay (1-28) is required when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE.');
+      }
+    } else if (anchorDay != null) {
+      throw new BadRequestException('billingCycleAnchorDay is only used when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE — omit it otherwise.');
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Purchase (Spec 55 §7/§6.1's Decision-6 creation-timing state machine — see the
   // Phase 9 kickoff prompt §2.1 for the full citation trail).
@@ -600,6 +632,8 @@ export class MembershipsService {
           // persisted Price for this plan, every new purchase attaches to it
           // (see PaymentsService.subscribe()'s own header comment).
           plan.stripePriceId ?? undefined,
+          // Decision 259 — see PaymentsService.subscribe()'s own header comment.
+          plan.newMemberBillingStrategy === 'PRORATED_TO_SHARED_CYCLE' ? plan.billingCycleAnchorDay ?? undefined : undefined,
         );
         await this.prismaApp.withTenantContext(studentId, (tx) =>
           tx.transaction.create({

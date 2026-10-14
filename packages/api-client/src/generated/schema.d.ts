@@ -4744,6 +4744,13 @@ export interface components {
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
             includesLessons?: boolean;
+            /**
+             * @description SUBSCRIPTION only (Decision 259). Defaults to FRESH_CYCLE when omitted: a new Student is charged the full price immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: a new Student's first charge is prorated to the next occurrence of billingCycleAnchorDay, then renews on that fixed day every month after — requires billingCycleAnchorDay.
+             * @enum {string}
+             */
+            newMemberBillingStrategy?: "FRESH_CYCLE" | "PRORATED_TO_SHARED_CYCLE";
+            /** @description Day of month (1-28) every new Membership on this plan is aligned to — required when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE, rejected otherwise. Capped at 28 to sidestep every month's own day-count/Feb-29 edge cases entirely. */
+            billingCycleAnchorDay?: number;
         };
         MembershipPlanResponseDto: {
             id: string;
@@ -4765,6 +4772,10 @@ export interface components {
             disciplineIds: string[];
             /** @description Whether a live membership on this plan can watch its styles' lessons (Decision 195). */
             includesLessons: boolean;
+            /** @description SUBSCRIPTION only (Decision 259). FRESH_CYCLE: each new Student is charged in full immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: each new Student is prorated to billingCycleAnchorDay, then renews on that fixed day. */
+            newMemberBillingStrategy: string;
+            /** @description Day of month (1-28) — set only when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE. */
+            billingCycleAnchorDay?: number | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -4788,6 +4799,11 @@ export interface components {
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
             includesLessons?: boolean;
+            /**
+             * @description SUBSCRIPTION only (Decision 259). Defaults to FRESH_CYCLE when omitted: a new Student is charged the full price immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: a new Student's first charge is prorated to the next occurrence of billingCycleAnchorDay, then renews on that fixed day every month after — requires billingCycleAnchorDay.
+             * @enum {string}
+             */
+            newMemberBillingStrategy?: "FRESH_CYCLE" | "PRORATED_TO_SHARED_CYCLE";
             /** @description An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear. */
             currency?: string | null;
             /** @description Computes each purchased Membership's expiry date at creation time. Pass null to clear. */
@@ -4798,6 +4814,8 @@ export interface components {
             cancellationCharge?: number | null;
             /** @description ISO 8601 date-time. Pass null to clear. */
             refundFeeDate?: string | null;
+            /** @description Day of month (1-28) every new Membership on this plan is aligned to (Decision 259) — required when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE, rejected otherwise. Pass null to clear (e.g. when switching back to FRESH_CYCLE). */
+            billingCycleAnchorDay?: number | null;
             /**
              * @description Required only when editing a SUBSCRIPTION plan whose price is actually changing AND it already has at least one active Stripe-backed subscriber. MIGRATE moves every existing subscriber to the new price (no proration, applied at their next billing cycle); GRANDFATHER leaves existing subscribers on their original price and applies the new price to new signups only. Rejected (400) if required and omitted.
              * @enum {string}
