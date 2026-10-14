@@ -51,6 +51,12 @@ export class MembershipPlanResponseDto {
   @ApiProperty({ description: 'Whether a live membership on this plan can watch its styles\' lessons (Decision 195).' })
   includesLessons!: boolean;
 
+  @ApiProperty({ description: 'SUBSCRIPTION only (Decision 259). FRESH_CYCLE: each new Student is charged in full immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: each new Student is prorated to billingCycleAnchorDay, then renews on that fixed day.' })
+  newMemberBillingStrategy!: string;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Day of month (1-28) — set only when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE.' })
+  billingCycleAnchorDay!: number | null;
+
   @ApiProperty()
   createdAt!: string;
 

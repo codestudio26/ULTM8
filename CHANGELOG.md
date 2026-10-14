@@ -23,6 +23,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `apps/student` already shipped for the identical gap, mirrored here.
   Logging out now also revokes the refresh token server-side, not just
   clearing it locally.
+- **MembershipPlan new-member billing strategy** (Decision 259) — a School
+  Owner can now set, per SUBSCRIPTION plan, how a brand-new Student's first
+  charge and renewal date are anchored: **Fresh cycle** (default, unchanged —
+  full price charged immediately, renews monthly from the signup date) or
+  **Prorate to a shared renewal day** (every new Student is prorated from
+  signup through a fixed day-of-month 1-28, then renews on that same day
+  every month after, using Stripe's own `billing_cycle_anchor_config` to do
+  the proration math rather than computing it by hand). New
+  `MembershipPlan.newMemberBillingStrategy`/`billingCycleAnchorDay` fields,
+  a new "New member billing" control in `MembershipPlanFormPage`'s Pricing &
+  Access step (SUBSCRIPTION only). Only affects new signups going forward —
+  no migration path for already-active subscribers. The Franchise fee-rate
+  change migration this same decision's conversation also approved is
+  tracked separately (Decision 99's own follow-up, not yet built).
 - **School Owner multi-School switcher** (Decision 258, closing Decision 255's
   own named follow-up) — a School Owner holding `SCHOOL_OWNER_MANAGER` at more
   than one School (nothing in the schema prevented it) can now pick which one
