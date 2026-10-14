@@ -15,6 +15,18 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Franchise fee-rate migration** (Decision 260, Decision 99's own follow-up) —
+  a Franchise Owner can now actually change `flatFeeAmount`/`perHeadcountRate`
+  once franchise-fee billing has started for a member School, instead of
+  being blocked outright. Two strategies, the Owner's choice:
+  **MIGRATE_NEXT_CYCLE** (the new rate starts at each School's own next
+  billing period — no immediate charge or credit) or **MIGRATE_IMMEDIATE**
+  (takes effect right away — a real prorated charge for FLAT, or, for
+  PER_HEADCOUNT, a disclosed re-rate of the Franchise's ENTIRE current
+  billing period, a genuine Stripe metered-billing constraint, not a choice).
+  New background job (`franchise-fee-rate-migration`), a new
+  `GET /franchises/{id}/billing-status` endpoint, and a `FranchiseFormModal`
+  prompt mirroring Membership Plans' own price-change prompt.
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
   at the bottom of every page, as a full-width band below the entire shell

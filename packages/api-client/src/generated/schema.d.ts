@@ -452,6 +452,22 @@ export interface paths {
         patch: operations["FranchisesController_update"];
         trace?: never;
     };
+    "/v1/franchises/{id}/billing-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_getBillingStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{id}/schools": {
         parameters: {
             query?: never;
@@ -3935,6 +3951,14 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /**
+             * @description Required only when flatFeeAmount/perHeadcountRate is being changed AND at least one School under this Franchise already has a standing franchise-fee Stripe Subscription — omit otherwise (FranchisesService.update() 400s if it's missing when needed, or sent when not).
+             * @enum {string}
+             */
+            feeRateChangeStrategy?: "MIGRATE_NEXT_CYCLE" | "MIGRATE_IMMEDIATE";
+        };
+        FranchiseBillingStatusResponseDto: {
+            schoolsAlreadyBillingCount: number;
         };
         CreateCoachInviteDto: {
             email: string;
@@ -7018,6 +7042,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_getBillingStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseBillingStatusResponseDto"];
                 };
             };
         };

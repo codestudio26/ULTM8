@@ -1,8 +1,33 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUrl, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsUrl, IsEnum, MaxLength } from 'class-validator';
 import { CreateFranchiseDto } from './create-franchise.dto';
 
 const NULLABLE_ON_UPDATE = ['mobileNumber', 'address', 'type', 'defaultLanguage', 'defaultCurrency', 'description', 'logoUrl', 'bannerUrl'] as const;
+
+/**
+ * Decision 99's own follow-up, resolved directly with the product owner: a real
+ * rate-migration mechanism, replacing FranchisesService.update()'s former outright
+ * rejection once franchise-fee billing has started for at least one School. Mirrors
+ * `MembershipPlanPriceChangeStrategyDto`'s identical "two named strategies, required
+ * only when a real decision is needed" shape (update-membership-plan.dto.ts) — the
+ * caller picks which Stripe-mechanics tradeoff applies.
+ *
+ * MIGRATE_NEXT_CYCLE: the new rate takes effect starting each affected School's own
+ * next billing period; the already-committed current period keeps billing at the
+ * OLD rate. MIGRATE_IMMEDIATE: the new rate takes effect right now — for FLAT this
+ * means a real prorated invoice for the remaining days of the current period
+ * (`proration_behavior: 'always_invoice'`); for PER_HEADCOUNT it re-rates the ENTIRE
+ * current period's already-accrued usage, not just the days remaining, since Stripe
+ * always bills a metered item's whole period at whichever Price is attached when the
+ * invoice generates — a genuine Stripe constraint, not a choice. See
+ * franchise-fee-rate-migration.processor.ts's own header comment for the full
+ * Stripe-mechanics account (verified directly against the installed SDK before
+ * building, not assumed).
+ */
+export enum FranchiseFeeRateChangeStrategyDto {
+  MIGRATE_NEXT_CYCLE = 'MIGRATE_NEXT_CYCLE',
+  MIGRATE_IMMEDIATE = 'MIGRATE_IMMEDIATE',
+}
 
 /**
  * FOUND PROACTIVELY (Phase 23, mirroring the identical fix already applied to
@@ -40,6 +65,11 @@ const NULLABLE_ON_UPDATE = ['mobileNumber', 'address', 'type', 'defaultLanguage'
  * configured rate. FranchisesService.update() now explicitly rejects an
  * explicit `null` on either field with a BadRequestException — see that
  * method's own comment — closing the gap this DTO's typing alone could not.
+ *
+ * UPDATED (Decision 99's own follow-up, resolved): "no confirmed design for
+ * that case" above refers only to CLEARING a configured rate back to null —
+ * unchanged, still out of scope. CHANGING an already-configured rate once
+ * billing has started is now resolved: `feeRateChangeStrategy` below.
  */
 export class UpdateFranchiseDto extends PartialType(OmitType(CreateFranchiseDto, NULLABLE_ON_UPDATE)) {
   @ApiPropertyOptional({ type: String, nullable: true })
@@ -91,4 +121,13 @@ export class UpdateFranchiseDto extends PartialType(OmitType(CreateFranchiseDto,
   @MaxLength(2048)
   @IsUrl()
   bannerUrl?: string | null;
+
+  @ApiPropertyOptional({
+    enum: FranchiseFeeRateChangeStrategyDto,
+    description:
+      'Required only when flatFeeAmount/perHeadcountRate is being changed AND at least one School under this Franchise already has a standing franchise-fee Stripe Subscription — omit otherwise (FranchisesService.update() 400s if it\'s missing when needed, or sent when not).',
+  })
+  @IsOptional()
+  @IsEnum(FranchiseFeeRateChangeStrategyDto)
+  feeRateChangeStrategy?: FranchiseFeeRateChangeStrategyDto;
 }

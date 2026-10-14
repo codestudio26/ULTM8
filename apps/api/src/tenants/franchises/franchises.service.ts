@@ -1,12 +1,16 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { School } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { FeeModel, School } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
 import { CreateFranchiseDto, FeeModelDto } from './dto/create-franchise.dto';
-import { UpdateFranchiseDto } from './dto/update-franchise.dto';
+import { FranchiseFeeRateChangeStrategyDto, UpdateFranchiseDto } from './dto/update-franchise.dto';
+import { FRANCHISE_FEE_RATE_MIGRATION_QUEUE } from '../../jobs/queue.constants';
+import { FranchiseFeeRateMigrationJobData } from '../../jobs/franchise-fee-rate-migration.types';
 
 /**
  * FOUND ON REVIEW, before this ever shipped: `FranchiseResponseDto`'s own header
@@ -62,6 +66,7 @@ export class FranchisesService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
+    @InjectQueue(FRANCHISE_FEE_RATE_MIGRATION_QUEUE) private readonly rateMigrationQueue: Queue,
   ) {}
 
   /**
@@ -189,12 +194,17 @@ export class FranchisesService {
    * Stripe actually charges, while `franchise-fee-usage-reporting`'s own
    * `usageReportPass()` keeps computing each new PENDING row's `amount` from the
    * CURRENT (now-wrong) rate — the local ledger and Stripe's real invoices would
-   * permanently and silently disagree, with nothing ever reconciling them. Rather
-   * than build a full rate-migration mechanism (recreate the Price, walk every
-   * affected Subscription's line item onto it) with no confirmed design for it
-   * (Decision 99's own "what this does NOT resolve"), this blocks the change
-   * outright once billing has started for at least one School — a safe rejection,
-   * not a guessed fix.
+   * permanently and silently disagree, with nothing ever reconciling them. That
+   * first draft blocked the change outright once billing had started for at least
+   * one School — a safe rejection, not a guessed fix, but deferred rather than
+   * decided against (Decision 99's own "what this does NOT resolve").
+   *
+   * RESOLVED (Decision 99's own follow-up): `feeRateChangeStrategy` below replaces
+   * that outright rejection with a real migration — see
+   * franchise-fee-rate-migration.processor.ts's own header comment for the full
+   * Stripe-mechanics account (FLAT vs. PER_HEADCOUNT are NOT symmetric; disclosed
+   * to the Franchise Owner via the BadRequestException below, confirmed with the
+   * product owner before building, not silently picked).
    */
   async update(callerId: string, franchiseId: string, dto: UpdateFranchiseDto) {
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
@@ -219,25 +229,62 @@ export class FranchisesService {
       throw new BadRequestException('flatFeeAmount/perHeadcountRate cannot be null — omit the field to leave it unchanged.');
     }
 
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      if (dto.flatFeeAmount !== undefined || dto.perHeadcountRate !== undefined) {
-        const current = await tx.franchise.findUniqueOrThrow({
+    let rateChangeContext:
+      | {
+          feeModel: FeeModel;
+          oldFlatFeeAmount: number | null;
+          newFlatFeeAmount: number | null;
+          oldPerHeadcountRate: number | null;
+          newPerHeadcountRate: number | null;
+          strategy: FranchiseFeeRateChangeStrategyDto;
+          affectedSchoolCount: number;
+        }
+      | undefined;
+
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const rateFieldsTouched = dto.flatFeeAmount !== undefined || dto.perHeadcountRate !== undefined;
+      let changingRate = false;
+      let current: { feeModel: FeeModel; flatFeeAmount: number | null; perHeadcountRate: number | null } | undefined;
+      if (rateFieldsTouched) {
+        current = await tx.franchise.findUniqueOrThrow({
           where: { id: franchiseId },
-          select: { flatFeeAmount: true, perHeadcountRate: true },
+          select: { feeModel: true, flatFeeAmount: true, perHeadcountRate: true },
         });
-        const changingRate =
+        changingRate =
           (dto.flatFeeAmount !== undefined && dto.flatFeeAmount !== current.flatFeeAmount) ||
           (dto.perHeadcountRate !== undefined && dto.perHeadcountRate !== current.perHeadcountRate);
-        if (changingRate) {
-          const schoolsAlreadyBilling = await tx.school.count({
-            where: { franchiseId, stripeFranchiseFeeSubscriptionId: { not: null } },
-          });
-          if (schoolsAlreadyBilling > 0) {
-            throw new ConflictException(
-              "This Franchise's fee rate cannot be changed once franchise-fee billing has started for at least one School — Stripe Prices are immutable once created, and changing the rate now would silently diverge from what Stripe actually charges. Not yet supported.",
+      }
+
+      if (changingRate) {
+        const schoolsAlreadyBilling = await tx.school.count({
+          where: { franchiseId, stripeFranchiseFeeSubscriptionId: { not: null } },
+        });
+        // A brand-new/never-billed Franchise has nothing to migrate — no
+        // decision is required, and no FranchiseFeeRateChange row is created;
+        // the rate simply changes, same as any other field edit. Same
+        // "nothing to migrate" shape MembershipsService.updatePlan() already
+        // establishes for a plan with zero active subscribers.
+        if (schoolsAlreadyBilling > 0) {
+          if (!dto.feeRateChangeStrategy) {
+            throw new BadRequestException(
+              `This Franchise has ${schoolsAlreadyBilling} School(s) already being billed at the current rate — choose feeRateChangeStrategy ("MIGRATE_NEXT_CYCLE" or "MIGRATE_IMMEDIATE") before changing it. MIGRATE_IMMEDIATE on a PER_HEADCOUNT Franchise re-rates the ENTIRE current billing period's already-accrued usage at the new rate, not just the days remaining — a real Stripe metered-billing constraint, not a choice; disclosed here rather than hidden.`,
             );
           }
+          rateChangeContext = {
+            feeModel: current!.feeModel,
+            oldFlatFeeAmount: current!.flatFeeAmount,
+            newFlatFeeAmount: dto.flatFeeAmount ?? current!.flatFeeAmount,
+            oldPerHeadcountRate: current!.perHeadcountRate,
+            newPerHeadcountRate: dto.perHeadcountRate ?? current!.perHeadcountRate,
+            strategy: dto.feeRateChangeStrategy,
+            affectedSchoolCount: schoolsAlreadyBilling,
+          };
         }
+      } else if (dto.feeRateChangeStrategy) {
+        // Same "a caller-supplied value with no effect is a caller mistake
+        // worth surfacing" discipline MembershipsService.updatePlan() already
+        // applies to its own analogous priceChangeStrategy field.
+        throw new BadRequestException("feeRateChangeStrategy was provided but this edit does not change flatFeeAmount/perHeadcountRate — omit it.");
       }
 
       return tx.franchise.update({
@@ -261,6 +308,75 @@ export class FranchisesService {
         select: FRANCHISE_PUBLIC_SELECT,
       });
     });
+
+    if (rateChangeContext) {
+      await this.recordFeeRateChangeDecision(callerId, franchiseId, rateChangeContext);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Decision 99's own follow-up — records the auditable decision row and always
+   * enqueues the background migration job (franchise-fee-rate-migration.processor.ts).
+   * Unlike MembershipsService's analogous recordPriceChangeDecision() (where
+   * GRANDFATHER resolves synchronously, nothing further to do), BOTH strategies
+   * here need real Stripe work — even MIGRATE_NEXT_CYCLE requires creating a
+   * replacement Price and, for PER_HEADCOUNT, a deferred swap — so there is no
+   * synchronous-complete shortcut.
+   */
+  private async recordFeeRateChangeDecision(
+    callerId: string,
+    franchiseId: string,
+    ctx: {
+      feeModel: FeeModel;
+      oldFlatFeeAmount: number | null;
+      newFlatFeeAmount: number | null;
+      oldPerHeadcountRate: number | null;
+      newPerHeadcountRate: number | null;
+      strategy: FranchiseFeeRateChangeStrategyDto;
+      affectedSchoolCount: number;
+    },
+  ): Promise<void> {
+    const id = randomUUID();
+    await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchiseFeeRateChange.create({
+        data: {
+          id,
+          franchiseId,
+          feeModel: ctx.feeModel,
+          oldFlatFeeAmount: ctx.oldFlatFeeAmount,
+          newFlatFeeAmount: ctx.newFlatFeeAmount,
+          oldPerHeadcountRate: ctx.oldPerHeadcountRate,
+          newPerHeadcountRate: ctx.newPerHeadcountRate,
+          strategy: ctx.strategy,
+          decidedById: callerId,
+          affectedSchoolCount: ctx.affectedSchoolCount,
+          status: 'PENDING',
+        },
+      }),
+    );
+    await this.rateMigrationQueue.add(
+      'migrate',
+      { rateChangeId: id } satisfies FranchiseFeeRateMigrationJobData,
+      { jobId: id, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
+  }
+
+  /**
+   * GET /franchises/{id}/billing-status (Decision 99's own follow-up) —
+   * FranchiseFormModal queries this BEFORE submitting a rate change, to know
+   * whether `feeRateChangeStrategy` will be required, same "query, don't
+   * guess" precedent `MembershipsService.getActiveMemberCount`'s own
+   * GET /membership-plans/{id}/active-count already establishes. Mirrors the
+   * exact `schoolsAlreadyBilling` count `update()` computes itself.
+   */
+  async getBillingStatus(callerId: string, franchiseId: string): Promise<{ schoolsAlreadyBillingCount: number }> {
+    await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
+    const schoolsAlreadyBillingCount = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.count({ where: { franchiseId, stripeFranchiseFeeSubscriptionId: { not: null } } }),
+    );
+    return { schoolsAlreadyBillingCount };
   }
 
   /**
