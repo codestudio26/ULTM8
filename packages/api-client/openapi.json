@@ -14886,6 +14886,18 @@
           "includesLessons": {
             "type": "boolean",
             "description": "A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one."
+          },
+          "newMemberBillingStrategy": {
+            "type": "string",
+            "enum": [
+              "FRESH_CYCLE",
+              "PRORATED_TO_SHARED_CYCLE"
+            ],
+            "description": "SUBSCRIPTION only (Decision 259). Defaults to FRESH_CYCLE when omitted: a new Student is charged the full price immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: a new Student's first charge is prorated to the next occurrence of billingCycleAnchorDay, then renews on that fixed day every month after — requires billingCycleAnchorDay."
+          },
+          "billingCycleAnchorDay": {
+            "type": "number",
+            "description": "Day of month (1-28) every new Membership on this plan is aligned to — required when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE, rejected otherwise. Capped at 28 to sidestep every month's own day-count/Feb-29 edge cases entirely."
           }
         },
         "required": [
@@ -14958,6 +14970,15 @@
             "type": "boolean",
             "description": "Whether a live membership on this plan can watch its styles' lessons (Decision 195)."
           },
+          "newMemberBillingStrategy": {
+            "type": "string",
+            "description": "SUBSCRIPTION only (Decision 259). FRESH_CYCLE: each new Student is charged in full immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: each new Student is prorated to billingCycleAnchorDay, then renews on that fixed day."
+          },
+          "billingCycleAnchorDay": {
+            "type": "number",
+            "nullable": true,
+            "description": "Day of month (1-28) — set only when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -14975,6 +14996,7 @@
           "termsWaiverRequired",
           "disciplineIds",
           "includesLessons",
+          "newMemberBillingStrategy",
           "createdAt",
           "updatedAt"
         ]
@@ -15040,6 +15062,14 @@
             "type": "boolean",
             "description": "A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one."
           },
+          "newMemberBillingStrategy": {
+            "type": "string",
+            "enum": [
+              "FRESH_CYCLE",
+              "PRORATED_TO_SHARED_CYCLE"
+            ],
+            "description": "SUBSCRIPTION only (Decision 259). Defaults to FRESH_CYCLE when omitted: a new Student is charged the full price immediately and renews monthly from their own signup date. PRORATED_TO_SHARED_CYCLE: a new Student's first charge is prorated to the next occurrence of billingCycleAnchorDay, then renews on that fixed day every month after — requires billingCycleAnchorDay."
+          },
           "currency": {
             "type": "string",
             "description": "An ISO 4217 code from the Stripe-supported currency list (School's own choice, no conversion applied) — see GET /settings/currencies (Decision 241). Pass null to clear.",
@@ -15064,6 +15094,11 @@
             "type": "string",
             "nullable": true,
             "description": "ISO 8601 date-time. Pass null to clear."
+          },
+          "billingCycleAnchorDay": {
+            "type": "number",
+            "description": "Day of month (1-28) every new Membership on this plan is aligned to (Decision 259) — required when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE, rejected otherwise. Pass null to clear (e.g. when switching back to FRESH_CYCLE).",
+            "nullable": true
           },
           "priceChangeStrategy": {
             "type": "string",
