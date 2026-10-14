@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { authClient } from '../api';
 import { asyncStoragePersister } from '../lib/queryPersister';
+import { registerForPushNotificationsAsync } from '../notifications/pushRegistration';
 import { decodeJwtPayload } from './decodeJwt';
 import { secureTokenStore } from './secureTokenStore';
 import { setUnauthorizedHandler } from './sessionRefresh';
@@ -64,6 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCachedAccessToken(token);
       setAccessTokenState(token);
       setLoading(false);
+      // Fire-and-forget, not awaited — see pushRegistration.ts's own header
+      // comment. Re-registers (idempotent, lastSeenAt bump) on every launch
+      // with an already-valid session, not just a fresh login below.
+      if (token) void registerForPushNotificationsAsync();
     });
     return () => {
       cancelled = true;
@@ -119,6 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // anything could possibly need it.
       await secureTokenStore.setRefreshToken(result.refreshToken);
       await applyToken(result.accessToken);
+      // Fire-and-forget — see pushRegistration.ts's own header comment.
+      void registerForPushNotificationsAsync();
     },
     [applyToken],
   );

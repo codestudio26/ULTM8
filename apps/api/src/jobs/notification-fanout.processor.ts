@@ -3,6 +3,7 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
+import { PushNotificationService } from '../notifications/push-notification.service';
 import { NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 
@@ -38,6 +39,18 @@ import { NotificationFanoutJobData } from './notification-fanout.types';
  * matches. The in-app Notification row is durably written on the FIRST
  * attempt regardless of how the email delivery ultimately resolves — a
  * permanently-failed email doesn't undo it.
+ *
+ * Push (Decision 223/264) is a SEPARATE, best-effort channel, not given the
+ * same propagate-and-retry treatment as email above — a deliberate asymmetry,
+ * not an oversight. Email is this codebase's one spec-confirmed, eventually-
+ * configured delivery channel (§11.4); push is still blocked on real FCM
+ * credentials in every environment today (Decision 223/250's own "Still
+ * blocked" note), so letting a push failure fail/retry the whole job would
+ * make EVERY notification retry forever — and once FCM is configured, a
+ * transient push failure still shouldn't block or retry an email that already
+ * succeeded. Push errors (including "not configured") are caught and logged
+ * here instead; the in-app Notification row and email delivery are both
+ * unaffected by push's outcome either way.
  */
 @Processor(NOTIFICATION_FANOUT_QUEUE)
 export class NotificationFanoutProcessor extends WorkerHost {
@@ -46,6 +59,7 @@ export class NotificationFanoutProcessor extends WorkerHost {
   constructor(
     private readonly prismaJobs: PrismaJobsService,
     private readonly delivery: NotificationDeliveryService,
+    private readonly push: PushNotificationService,
   ) {
     super();
   }
@@ -75,6 +89,24 @@ export class NotificationFanoutProcessor extends WorkerHost {
     }
 
     await this.delivery.sendEmail(user.email, title, body);
+
+    // See this class's own header comment for why push is caught here rather
+    // than allowed to propagate like the email send above.
+    try {
+      const deviceTokens = await this.prismaJobs.deviceToken.findMany({ where: { userId }, select: { token: true } });
+      if (deviceTokens.length > 0) {
+        const { staleTokens } = await this.push.send(deviceTokens.map((d) => d.token), title, body);
+        if (staleTokens.length > 0) {
+          await this.prismaJobs.deviceToken.deleteMany({ where: { token: { in: staleTokens } } });
+        }
+      }
+    } catch (err) {
+      this.logger.warn(
+        `notification-fanout: push delivery unavailable for Notification ${notificationId} (User ${userId}) — email channel unaffected. ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
 
   @OnWorkerEvent('failed')

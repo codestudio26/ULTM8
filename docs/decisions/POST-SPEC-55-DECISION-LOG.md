@@ -3534,3 +3534,29 @@ User, via direct AskUserQuestion answers on footer scope, app coverage, and link
 
 User, via direct AskUserQuestion answers on footer richness, per-field content mapping, and social platforms (plus one follow-up message specifying TikTok/YouTube/X); the full-width layout bug was flagged directly by the product owner against a screenshot of the first build. Judgment calls above are the Developer's own disclosed reasoning.
 
+## Decision 264 — Push notification SEND built (Decision 223/250's own prerequisite), still non-functional without real FCM credentials
+
+**Date:** 14 Oct 2026 · **Status:** Built; genuinely blocked on real FCM credentials, same as Decision 223/250 already flagged
+**Resolves:** the last of four items the product owner asked to be completed together this session ("Complete it .. let me know what you need from my side" — Transaction/PaymentAccount: Decision 261; school-portal refresh-token logic: PR #252; Track B proactive refresh: Decision 263; this is the fourth, push SEND). The product owner delegated the specific build approach directly ("tell me what's the best solution") rather than picking between the three options offered — this decision records that choice and what was actually built.
+
+### The choice made (Developer's recommendation, delegated to by the product owner)
+
+Build everything buildable without live FCM credentials, following this codebase's own established "warn on missing config, don't throw at construction, fail on first actual use" convention (R2ClientService/CloudflareStreamService/NotificationDeliveryService) — rather than waiting on credentials to build anything, or building a placeholder that can't be verified later. Stub only the one thing that genuinely cannot exist without a real Firebase project: the live outbound FCM call itself.
+
+### What was built
+
+**api:** `PushNotificationService` (`src/notifications/push-notification.service.ts`) — Firebase Admin SDK (not a hand-rolled OAuth2/JWT client; FCM's HTTP v1 API requires a signed Google OAuth2 token per call, exactly what `firebase-admin` exists to handle, the same "use the vendor's own SDK rather than reinvent its request-signing" reasoning `R2ClientService` already applies to `@aws-sdk/client-s3`). Both platforms route through one FCM integration point (Decision 250 — FCM bridges to APNs under the hood for iOS). `send()` reports any token FCM marks unregistered/invalid as stale, so the caller can delete it rather than retry it forever. Wired into `NotificationFanoutProcessor` (`src/jobs/notification-fanout.processor.ts`) as a SECOND, deliberately best-effort channel alongside the existing email send — unlike email, a push failure (including "not configured," the real state in every environment today) is caught and logged, never allowed to fail/retry the whole job, since that would otherwise make every single notification retry forever while credentials remain unprovisioned. Migration `20261114000003_push_notification_send` grants `ultm8_jobs` SELECT + DELETE on `DeviceToken` — exactly the trigger that model's own RLS comment had been flagging since Decision 95 ("add it once a future phase actually implements push dispatch"). New env vars `FCM_PROJECT_ID`/`FCM_CLIENT_EMAIL`/`FCM_PRIVATE_KEY` (a service account's credentials, not an API key).
+
+**apps/student (Track B):** `pushRegistration.ts` — the client half `NotificationsScreen.tsx`'s own header comment had flagged as deliberately not built (Decision 95), now closed. Requests OS notification permission, then calls `expo-notifications`' `getDevicePushTokenAsync()` directly (NOT Expo's own push token/push service) — Decision 250 commits the backend to one FCM integration point, reached only once this app's native build carries a real Firebase project's config files (`google-services.json`/`GoogleService-Info.plist`), which don't exist in this environment. Registers the resulting token via the already-built, already-tested `POST /notifications/device-tokens`. Wired into `AuthContext.tsx` at both places a session is established (login, and an already-valid session on launch) — not on every reactive 15-minute token refresh, to avoid redundant calls. `expo-notifications` added as a dependency; `app.json` gained its plugin entry.
+
+### What this does NOT resolve
+
+- **Still blocked on real credentials** — Decision 223/250's own "Still blocked" note stands exactly as before. Nothing here changes that; it only moves everything that CAN be built without them from "not built" to "built and tested, inert until the vendor account exists" — the same posture `R2ClientService`/`CloudflareStreamService` are already in for their own vendors.
+- **Delivery-rate and read-within-24h push metrics** (Decision 223's own named follow-up, "follow once SEND is real") — still deliberately deferred; this decision resolves SEND only, as Decision 223 itself scoped.
+- **Multi-user-same-device re-registration** (e.g. a shared family phone, a Guardian and a Student both signing in) — hits the device-token endpoint's existing 409 on a second user registering the same token; `pushRegistration.ts` swallows it like any other failure rather than actively deregistering the previous user's token on logout. Flagged in that file's own header comment, not built this phase.
+- **`platform` on `DeviceToken` stays informational only** — both platforms dispatch through the one FCM call regardless of its value (Decision 250).
+
+### Recorded by
+
+Developer, per the product owner's own delegation ("tell me what's the best solution") on push notifications, as the fourth and final item of the four-part "Complete it" request this session (alongside Decisions 261/263 and PR #252).
+
