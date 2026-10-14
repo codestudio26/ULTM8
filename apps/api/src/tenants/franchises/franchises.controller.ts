@@ -9,6 +9,7 @@ import { UpdateFranchiseDto } from './dto/update-franchise.dto';
 import { FranchiseListResponseDto, FranchiseResponseDto } from './dto/franchise-response.dto';
 import { FranchisesQueryDto } from './dto/franchises-query.dto';
 import { SchoolListResponseDto } from '../schools/dto/school-response.dto';
+import { FranchiseBillingStatusResponseDto } from './dto/franchise-billing-status-response.dto';
 
 // Create / read / update only — no delete endpoint, same reasoning as SchoolsController
 // (general tenant offboarding is [UNRESOLVED], ultm8-app-publishing §4).
@@ -41,6 +42,12 @@ export class FranchisesController {
   @Patch(':id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateFranchiseDto) {
     return this.franchisesService.update(user.sub, id, dto);
+  }
+
+  @ApiOkResponse({ type: FranchiseBillingStatusResponseDto })
+  @Get(':id/billing-status')
+  getBillingStatus(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.franchisesService.getBillingStatus(user.sub, id);
   }
 
   /**

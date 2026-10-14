@@ -37,6 +37,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   no migration path for already-active subscribers. The Franchise fee-rate
   change migration this same decision's conversation also approved is
   tracked separately (Decision 99's own follow-up, not yet built).
+- **Franchise fee-rate migration** (Decision 260, Decision 99's own follow-up) —
+  a Franchise Owner can now actually change `flatFeeAmount`/`perHeadcountRate`
+  once franchise-fee billing has started for a member School, instead of
+  being blocked outright. Two strategies, the Owner's choice:
+  **MIGRATE_NEXT_CYCLE** (the new rate starts at each School's own next
+  billing period — no immediate charge or credit) or **MIGRATE_IMMEDIATE**
+  (takes effect right away — a real prorated charge for FLAT, or, for
+  PER_HEADCOUNT, a disclosed re-rate of the Franchise's ENTIRE current
+  billing period, a genuine Stripe metered-billing constraint, not a choice).
+  New background job (`franchise-fee-rate-migration`), a new
+  `GET /franchises/{id}/billing-status` endpoint, and a `FranchiseFormModal`
+  prompt mirroring Membership Plans' own price-change prompt.
 - **School Owner multi-School switcher** (Decision 258, closing Decision 255's
   own named follow-up) — a School Owner holding `SCHOOL_OWNER_MANAGER` at more
   than one School (nothing in the schema prevented it) can now pick which one

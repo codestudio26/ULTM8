@@ -1443,6 +1443,41 @@
         ]
       }
     },
+    "/v1/franchises/{id}/billing-status": {
+      "get": {
+        "operationId": "FranchisesController_getBillingStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseBillingStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{id}/schools": {
       "get": {
         "operationId": "FranchisesController_findSchools",
@@ -12239,8 +12274,27 @@
           "bannerUrl": {
             "type": "string",
             "nullable": true
+          },
+          "feeRateChangeStrategy": {
+            "type": "string",
+            "enum": [
+              "MIGRATE_NEXT_CYCLE",
+              "MIGRATE_IMMEDIATE"
+            ],
+            "description": "Required only when flatFeeAmount/perHeadcountRate is being changed AND at least one School under this Franchise already has a standing franchise-fee Stripe Subscription — omit otherwise (FranchisesService.update() 400s if it's missing when needed, or sent when not)."
           }
         }
+      },
+      "FranchiseBillingStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolsAlreadyBillingCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "schoolsAlreadyBillingCount"
+        ]
       },
       "CreateCoachInviteDto": {
         "type": "object",

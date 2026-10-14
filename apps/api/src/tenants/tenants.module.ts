@@ -16,6 +16,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { UsersModule } from '../users/users.module';
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
+import { QueueModule } from '../jobs/queue.module';
 
 /**
  * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
@@ -77,9 +78,16 @@ import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
  * stateless/config-only registration rather than add a cross-module
  * dependency edge" convention this file's own StripeClientService paragraph
  * above already established.
+ *
+ * Imports QueueModule (Decision 99's own follow-up) for
+ * @InjectQueue(FRANCHISE_FEE_RATE_MIGRATION_QUEUE) — FranchisesService.update()
+ * enqueues the bulk Stripe-migration job the instant a feeRateChangeStrategy
+ * decision is recorded, same direct QueueModule-import pattern
+ * MembershipsModule's own header comment already established for its own
+ * MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE injection.
  */
 @Module({
-  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule],
+  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
   providers: [SchoolsService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService],
