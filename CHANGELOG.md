@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
+  (copyright + Terms of Service / Privacy Policy / Support) now renders once
+  at the bottom of every page's main content column, on all three apps
+  (`apps/school-portal`, `apps/platform-admin` via `packages/ui`'s new
+  `AppShell` `legalFooter` prop; `apps/student`, Track B, via its own
+  equivalent `LegalFooter` component). The three links ship visible but
+  disabled ("(coming soon)") — no real Terms/Privacy/Support pages exist
+  yet, same convention as the existing disabled Global Search input.
 - **Multi-School coach/Branch Staff switcher** (Decision 184 item 4's own
   named follow-up, resolved) — a coach or Branch Staff member holding an
   active grant at more than one School can now pick which one they're

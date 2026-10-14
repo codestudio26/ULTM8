@@ -1,5 +1,10 @@
 # DRAFT — Global Search and marketing footer: scoping proposal (NOT part of the decision log)
 
+**§B (Marketing footer) is RESOLVED — see Decision 256** (`POST-SPEC-55-DECISION-LOG.md`,
+14 Oct 2026): standard B2B shape, all three apps, placeholder Terms/Privacy/
+Support links. Left here for its own historical context (options considered,
+tradeoffs) rather than deleted. §A (Global Search) is still open.
+
 **This file is a draft for the product owner to react to. It is not appended to
 `docs/decisions/POST-SPEC-55-DECISION-LOG.md` and carries no decision numbers
 of its own.** If the product owner picks a direction on either item, that

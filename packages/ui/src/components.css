@@ -620,6 +620,34 @@
   margin-bottom: var(--space-8);
   border-bottom: 1px solid var(--border);
 }
+.ultm8-shell__legal-footer {
+  margin-top: var(--space-12);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+.ultm8-shell__legal-footer-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+}
+.ultm8-shell__legal-footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.ultm8-shell__legal-footer-link:hover {
+  text-decoration: underline;
+}
+.ultm8-shell__legal-footer-link--disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.ultm8-shell__legal-footer-link--disabled:hover {
+  text-decoration: none;
+}
 
 /* Auth screens (centered card layout) */
 .ultm8-auth-page {

@@ -1459,6 +1459,7 @@ export function AppShell({
   navItems,
   footer,
   header,
+  legalFooter,
   children,
 }: {
   brand: string;
@@ -1468,6 +1469,13 @@ export function AppShell({
    * column (above every page's own content) — opt-in so an app that doesn't
    * pass it (e.g. platform-admin's Shell today) renders exactly as before. */
   header?: ReactNode;
+  /** Optional marketing-style footer (copyright + Terms/Privacy/Support),
+   * rendered once at the BOTTOM of the main content column — a different slot
+   * from `footer` above, which renders inside the sidebar (currently just the
+   * Log out button). Same "once per AppShell, not per-page" scope as `header`.
+   * See `LegalFooter`'s own comment for what it renders and how to update it
+   * once real Terms/Privacy/Support pages exist. */
+  legalFooter?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -1490,8 +1498,51 @@ export function AppShell({
       <main className="ultm8-shell__main">
         {header ? <div className="ultm8-shell__topbar">{header}</div> : null}
         {children}
+        {legalFooter ? <div className="ultm8-shell__legal-footer">{legalFooter}</div> : null}
       </main>
     </div>
+  );
+}
+
+/**
+ * Standard B2B SaaS footer (Decision 256) — copyright line + Terms of
+ * Service / Privacy Policy / Support links, rendered once per AppShell via
+ * its `legalFooter` prop. `LEGAL_FOOTER_LINKS` is the ONE place to edit once
+ * real pages exist for any of these: flip that entry's `enabled` to `true`
+ * and set its real `href` — nothing else in this component needs to change.
+ * Until then each renders disabled, same "visible but not live yet, not
+ * broken" convention `TopBar.tsx`'s Global Search input already established
+ * (not a dead/fake link pointing nowhere).
+ *
+ * `apps/student` has no AppShell/persistent-footer concept (a plain
+ * navigation stack, not a shell) — it carries its own near-identical
+ * `LegalFooter` under its Home screen instead; keep the two in sync by hand,
+ * there's no shared non-UI package both apps already depend on that would
+ * justify a third location for three small constants.
+ */
+export const LEGAL_FOOTER_LINKS: { label: string; href: string; enabled: boolean }[] = [
+  { label: 'Terms of Service', href: '#', enabled: false },
+  { label: 'Privacy Policy', href: '#', enabled: false },
+  { label: 'Support', href: '#', enabled: false },
+];
+
+export function LegalFooter() {
+  const year = new Date().getFullYear();
+  return (
+    <p className="ultm8-shell__legal-footer-text">
+      {`© ${year} ULTM8`}
+      {LEGAL_FOOTER_LINKS.map((link) =>
+        link.enabled ? (
+          <a key={link.label} href={link.href} className="ultm8-shell__legal-footer-link">
+            {link.label}
+          </a>
+        ) : (
+          <span key={link.label} className="ultm8-shell__legal-footer-link ultm8-shell__legal-footer-link--disabled" aria-label={`${link.label} — not available yet`}>
+            {`${link.label} (coming soon)`}
+          </span>
+        ),
+      )}
+    </p>
   );
 }
 

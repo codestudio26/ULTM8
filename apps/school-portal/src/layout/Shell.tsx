@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppShell, Button } from '@ultm8/ui';
+import { AppShell, Button, LegalFooter } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffPermission } from '../roleGrants/coachInviteQueries';
 import { TopBar } from './TopBar';
@@ -54,6 +54,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           Log out
         </Button>
       }
+      legalFooter={<LegalFooter />}
     >
       <VerifyBeltsNotice />
       {children}

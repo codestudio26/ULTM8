@@ -3452,3 +3452,44 @@ The `useOwnedSchoolId` gap above, and extending either switcher to `apps/platfor
 
 Developer, building Decision 184 item 4's own already-approved follow-up; the `useOwnedSchoolId` finding is disclosed reasoning, not a further product-owner decision, 13 Oct 2026.
 
+---
+
+## Decision 256 — Shared marketing footer: scope resolved (standard B2B shape, all three apps, placeholder links), built
+
+**Date:** 14 Oct 2026 · **Status:** Confirmed by product owner, built
+**Resolves:** `docs/v1.2-backend-backlog.md`'s "Shared marketing footer" entry and `docs/decisions/DRAFT-global-search-and-footer-scoping.md` §B — both flagged this as needing a v1.1 scoping conversation before any build; that draft's own "next available number" note (246) is now stale, since 246 was since used for Student Measurements.
+
+### Scope answers (direct AskUserQuestion with the product owner, this session)
+
+1. **Does an authenticated staff portal get a marketing-style footer at all?** Yes — option (b) from the draft, "standard B2B SaaS footer" (copyright + Terms/Privacy/Support), not (a) minimal or (c) fuller-marketing.
+2. **Which app(s)?** All three — `apps/school-portal` (the original ask), plus `apps/platform-admin` and `apps/student`, both out of the draft's original scope.
+3. **Terms/Privacy/Support content:** none of these pages exist yet (confirmed — not found anywhere in this repo), and the product owner hasn't supplied real URLs or a company legal name. Ships with all three links visible but disabled ("Terms of Service (coming soon)", etc.) — the same "visible but not live, reads as not-built rather than broken" convention `TopBar.tsx`'s Global Search input already established, not a dead link pointing nowhere. Copyright line uses "ULTM8" (the brand name already used everywhere else in this codebase — `AppShell`'s own `brand` prop on every Shell — not an invented new legal name) and a dynamically-computed year, not a hardcoded one.
+
+### What was built
+
+**`packages/ui`:** `AppShell` gained a new `legalFooter?: ReactNode` prop — a separate slot from the pre-existing `footer` prop (which renders inside the sidebar, currently just Log Out); `legalFooter` renders once at the bottom of the main content column, same "once per AppShell" scope as `header`. New exported `LegalFooter` component + `LEGAL_FOOTER_LINKS` constant (`components.tsx`) — the ONE place to edit once a real Terms/Privacy/Support page exists: flip that entry's `enabled` to `true` and set its real `href`, nothing else in the component changes. New `.ultm8-shell__legal-footer*` CSS classes (`components.css`).
+
+**`apps/school-portal`, `apps/platform-admin`:** both `Shell.tsx` now pass `legalFooter={<LegalFooter />}`.
+
+**`apps/student`:** has no `AppShell`/persistent-footer concept (a plain navigation stack) — gained its own near-identical `LegalFooter.tsx` (same copyright/disabled-links shape, plain `Text`/`View` instead of DOM) rendered below the "Log out" button on `HomeScreen.tsx`, the closest equivalent to "once per app shell." Kept in sync with `packages/ui`'s copy by hand — there's no shared non-UI package both already depend on that would justify a third location for three small constants (`apps/student` doesn't depend on `@ultm8/ui`, which is DOM-only).
+
+### Judgment calls, disclosed
+
+1. **Copyright year is computed (`new Date().getFullYear()`), not hardcoded** — avoids yearly staleness; this is an engineering default, not invented legal content.
+2. **The two footer implementations (web vs. `apps/student`) are hand-duplicated, not shared** — three small constants don't justify a new cross-platform package; each file's own header comment cross-references the other so a future content change isn't made in only one place by accident.
+3. **Links render as disabled `<span>`/`Text`, never a real `<a>`/touchable**, even once `enabled` flips true for one entry but not the others — intentional per-link granularity (a real Support mailto could go live before Terms/Privacy pages exist, for example).
+
+### What this does NOT resolve
+
+- **No real Terms of Service, Privacy Policy, or Support page/URL exists yet** — this only stops the app from looking unfinished in the meantime; the actual pages and their copy (company legal name, required jurisdiction-specific language) still need to come from the product owner directly, especially since Decision 245 shows GDPR/LGPD compliance work is already in motion.
+- **The per-School/Franchise white-label "customizable footer" angle** the original mockups' own comments gestured at is still out of scope — deliberately deferred to the white-label initiative (Decision 247), not designed here.
+- **The two "Get the app" QR tiles** the mockups showed are not part of this build — `apps/student` still isn't published to an app store.
+
+### Verified
+
+`packages/ui`, `apps/school-portal`, `apps/platform-admin`, `apps/student`: `tsc --noEmit`, all clean. Both web apps' production `vite build` succeeded. New Playwright spec `apps/school-portal/e2e/legal-footer.spec.ts` (1 test, signed-in Dashboard render, confirmed via an actual screenshot before removing the ad-hoc capture call) and new `apps/student/src/components/LegalFooter.test.tsx` (1 test); apps/student's full suite re-verified green (21 suites, 112 tests).
+
+### Recorded by
+
+User, via direct AskUserQuestion answers on footer scope, app coverage, and link content, 14 Oct 2026.
+

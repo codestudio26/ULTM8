@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppShell, Button } from '@ultm8/ui';
+import { AppShell, Button, LegalFooter } from '@ultm8/ui';
 import { useAuth } from '../auth/AuthContext';
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -20,6 +20,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           Log out
         </Button>
       }
+      legalFooter={<LegalFooter />}
     >
       {children}
     </AppShell>

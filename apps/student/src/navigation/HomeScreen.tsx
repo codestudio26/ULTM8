@@ -2,6 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Screen } from '../components/ui';
+import { LegalFooter } from '../components/LegalFooter';
 import { useAuth, useCoachSchoolId, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import type { AppStackParamList } from './types';
 
@@ -42,6 +43,7 @@ export function HomeScreen({ navigation }: Props) {
         <Button title="Needs your review" variant="secondary" onPress={() => navigation.navigate('PendingReview')} />
       ) : null}
       <Button title="Log out" variant="secondary" onPress={() => logout()} />
+      <LegalFooter />
     </Screen>
   );
 }
