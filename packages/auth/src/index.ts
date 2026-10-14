@@ -56,20 +56,45 @@
  *     (smaller footprint, doesn't outlive the tab), not a change in what a successful
  *     XSS can do while the tab is open.
  *
- * SEPARATELY FLAGGED, not fixed here: apps/api's login() returns no refresh token, so
- * every session in this build ends at the 15-minute access-token TTL with a forced
- * re-login — no silent renewal exists yet. That's a backend gap (Spec §8.3's own
- * refresh-token design was never implemented in Phase 1), not a frontend one; noted
- * here because it's the direct reason sessionStorage was chosen over pure in-memory
- * storage, not because this package can fix it.
+ * UPDATED: the "no refresh token" gap flagged above is closed. apps/api's AuthModule
+ * now issues a refresh token alongside the access token on login (AuthService's own
+ * issueRefreshToken(), a 30-day, rotated-on-use token backed by the `RefreshToken`
+ * table), and `POST /auth/refresh`/`POST /auth/logout` both exist and work — but
+ * nothing in `apps/school-portal` ever stored or used the refresh token it was
+ * already being handed, so a session still silently died at the 15-minute mark with
+ * no recovery (the same gap this header comment used to describe, just one layer up
+ * the stack from where it was first written). `sessionStorageTokenStore` below now
+ * carries the refresh token too, mirroring the shape `apps/student`'s own
+ * `secureTokenStore.ts` already established for the identical gap on that app (RN's
+ * `expo-secure-store` instead of `sessionStorage`, same get/set/clear-together
+ * contract) — see `apps/school-portal/src/auth/AuthContext.tsx`'s `refreshSession()`
+ * for the client-side wiring, and `createApiClient`'s `onUnauthorized` option
+ * (packages/api-client) for how a 401 triggers it transparently mid-session.
+ *
+ * `platformAdminSessionStorageTokenStore` below deliberately does NOT get a refresh
+ * token — Platform Admin's own login flow (`platform-admin-auth.service.ts`) never
+ * issues one, a separate identity realm with its own, shorter-lived session design;
+ * extending refresh support to it would be inventing behavior apps/api doesn't have.
  */
 
 const STORAGE_KEY = 'ultm8.accessToken';
+const REFRESH_STORAGE_KEY = 'ultm8.refreshToken';
 
 export interface TokenStore {
   get(): string | null;
   set(token: string): void;
   clear(): void;
+}
+
+/** The tenant realm's own store additionally carries a refresh token — see this
+ * file's own header comment. `clear()` always removes both together: there is no
+ * confirmed scenario where this app should hold one without the other (a bare
+ * access token with its refresh token gone can never renew itself; a bare refresh
+ * token with no access token is just dead weight), same reasoning
+ * `secureTokenStore.clear()`'s own comment gives in apps/student. */
+export interface TenantTokenStore extends TokenStore {
+  getRefreshToken(): string | null;
+  setRefreshToken(token: string): void;
 }
 
 /**
@@ -106,8 +131,45 @@ function createSessionStorageTokenStore(storageKey: string): TokenStore {
   };
 }
 
-/** The tenant realm's own store (apps/school-portal, apps/student). */
-export const sessionStorageTokenStore: TokenStore = createSessionStorageTokenStore(STORAGE_KEY);
+/** Layers refresh-token get/set onto a plain TokenStore, and makes clear() remove
+ * both keys — see TenantTokenStore's own doc comment for why they're always
+ * cleared together. */
+function withRefreshToken(base: TokenStore, refreshStorageKey: string): TenantTokenStore {
+  return {
+    ...base,
+    clear() {
+      base.clear();
+      try {
+        sessionStorage.removeItem(refreshStorageKey);
+      } catch {
+        /* noop — nothing to clear if storage isn't available */
+      }
+    },
+    getRefreshToken() {
+      try {
+        return sessionStorage.getItem(refreshStorageKey);
+      } catch {
+        return null;
+      }
+    },
+    setRefreshToken(token: string) {
+      try {
+        sessionStorage.setItem(refreshStorageKey, token);
+      } catch {
+        // Same rationale as set() above — a failed write just means the session
+        // won't renew past this tab; it shouldn't crash login.
+      }
+    },
+  };
+}
+
+/** The tenant realm's own store (apps/school-portal; apps/student has its own
+ * equivalent, `secureTokenStore.ts`, since `sessionStorage` isn't available in
+ * React Native). */
+export const sessionStorageTokenStore: TenantTokenStore = withRefreshToken(
+  createSessionStorageTokenStore(STORAGE_KEY),
+  REFRESH_STORAGE_KEY,
+);
 
 /**
  * Platform Admin's own store — a DIFFERENT storage key, not a different instance of
