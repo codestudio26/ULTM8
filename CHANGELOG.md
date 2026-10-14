@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **School Portal refresh-token logic** (Decision 262) — a session no longer
+  silently dies 15 minutes after login with no recovery. School Portal now
+  stores and uses the refresh token `POST /auth/login` already handed it,
+  transparently refreshing an expired access token the moment any request
+  401s (no visible interruption, no forced re-login) — the same fix
+  `apps/student` already shipped for the identical gap, mirrored here.
+  Logging out now also revokes the refresh token server-side, not just
+  clearing it locally.
 - **Push notification SEND built** (Decision 223/264) — `PushNotificationService`
   (`apps/api`, Firebase Admin SDK, FCM for both platforms per Decision 250)
   wired into the existing `notification-fanout` pipeline as a second,
