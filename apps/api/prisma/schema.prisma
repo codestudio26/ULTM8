@@ -76,6 +76,35 @@ enum FranchiseFeeSubscriptionStatus {
   CANCELED
 }
 
+/// Decision 99's own follow-up — FranchiseFeeRateChange.strategy. MIGRATE_NEXT_CYCLE:
+/// the new rate takes effect starting each affected School's own NEXT billing period
+/// (no proration now); the already-committed current period bills at the OLD rate.
+/// MIGRATE_IMMEDIATE: the new rate takes effect right now. For FLAT this means a real
+/// immediate prorated invoice for the remaining days of the current period (Stripe's
+/// own `proration_behavior: 'always_invoice'`); for PER_HEADCOUNT — a genuine Stripe
+/// metered-billing constraint, not a choice (see FranchiseFeeRateMigrationProcessor's
+/// own header comment) — it re-rates the ENTIRE current period's already-accrued
+/// usage at the new rate, not just the days remaining, since Stripe always bills a
+/// metered item's whole period at whichever Price is attached when the invoice is
+/// generated. Disclosed explicitly to the Franchise Owner (FranchisesService.update's
+/// own BadRequestException) rather than silently accepted.
+enum FranchiseFeeRateChangeStrategy {
+  MIGRATE_NEXT_CYCLE
+  MIGRATE_IMMEDIATE
+}
+
+/// Same four-state shape as MembershipPlanPriceChangeStatus (that model's own
+/// comment) — PENDING until the background job picks it up, PROCESSING while it
+/// runs, then COMPLETED/FAILED. For a MIGRATE_NEXT_CYCLE/PER_HEADCOUNT row,
+/// COMPLETED means every affected School's deferred swap was successfully
+/// SCHEDULED, not that it has executed yet — see the processor's own comment.
+enum FranchiseFeeRateChangeStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 /// Franchise.platformSubscriptionStatus / School.platformSubscriptionStatus (Phase 54,
 /// domain-rules §2/§15) — synced from the platform SubscriptionPlan's own Stripe
 /// Subscription, the same three-value shape FranchiseFeeSubscriptionStatus already
@@ -367,6 +396,7 @@ model User {
   memberships                       Membership[]                @relation("MembershipStudent")
   membershipsGifted                 Membership[]                @relation("MembershipGiftedBy")
   membershipPlanPriceChangesDecided MembershipPlanPriceChange[] @relation("MembershipPlanPriceChangeDecidedBy")
+  franchiseFeeRateChangesDecided    FranchiseFeeRateChange[]    @relation("FranchiseFeeRateChangeDecidedBy")
   transactionsPaid                  Transaction[]               @relation("TransactionPayer")
   studentRanks                      StudentRank[]
   promotionEventsPerformed          PromotionEvent[]            @relation("PromotionEventPerformedBy")
@@ -706,10 +736,64 @@ model Franchise {
   paymentAccount      PaymentAccount?
   franchiseFeeCharges FranchiseFeeCharge[]
   platformCharges     PlatformCharge[]
+  feeRateChanges      FranchiseFeeRateChange[]
 
   @@index([name])
   @@index([subscriptionPlanId])
   @@index([purgeAt])
+}
+
+/// Decision 99's own follow-up — the real rate-migration mechanism that decision's
+/// "What this does NOT resolve" section deferred: closing the gap
+/// FranchisesService.update()'s own header comment documents (Stripe Prices are
+/// immutable, so a rate change after billing has started needs a real migration, not
+/// a silent accept). One auditable row per staff-made rate-change decision on a
+/// Franchise that already has at least one School with a standing franchise-fee
+/// Subscription (`update()` only ever creates a row here when that's true — a rate
+/// change with zero Schools billing yet has nothing to migrate and needs no decision
+/// or row, same "nothing to migrate" shape MembershipPlanPriceChange's own header
+/// comment already establishes). `feeModel`/`oldFlatFeeAmount`/`oldPerHeadcountRate`
+/// are a snapshot of the Franchise's state at decision time — this row is a decision
+/// LOG, not a mutable setting, same discipline as MembershipPlanPriceChange's own
+/// `decision` field. See franchise-fee-rate-migration.processor.ts for the
+/// background job that owns `status`/`migratedCount`/`failedCount`/`completedAt`
+/// from PENDING onward — both strategies always enqueue it (unlike
+/// MembershipPlanPriceChange's GRANDFATHER, which resolves synchronously): even
+/// MIGRATE_NEXT_CYCLE needs real, possibly-deferred Stripe work for a PER_HEADCOUNT
+/// Franchise (see that processor's own comment).
+model FranchiseFeeRateChange {
+  id String @id @default(uuid())
+
+  franchiseId String
+  franchise   Franchise @relation(fields: [franchiseId], references: [id])
+
+  feeModel FeeModel
+
+  oldFlatFeeAmount Int?
+  newFlatFeeAmount Int?
+
+  oldPerHeadcountRate Int?
+  newPerHeadcountRate Int?
+
+  strategy FranchiseFeeRateChangeStrategy
+
+  decidedById String
+  decidedBy   User   @relation("FranchiseFeeRateChangeDecidedBy", fields: [decidedById], references: [id])
+
+  status FranchiseFeeRateChangeStatus @default(PENDING)
+
+  // Snapshot at decision time of how many Schools under this Franchise already had
+  // a standing franchise-fee Stripe Subscription — informational only (the job
+  // re-reads live data at run time, this is just "what the Franchise Owner was told
+  // when they decided").
+  affectedSchoolCount Int @default(0)
+  migratedCount       Int @default(0)
+  failedCount         Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([franchiseId])
 }
 
 /// School (domain-rules §2, Spec §6.1). franchiseId is nullable — an independent,

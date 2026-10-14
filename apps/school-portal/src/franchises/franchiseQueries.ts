@@ -45,6 +45,19 @@ export function useFranchise(franchiseId: string | null) {
   });
 }
 
+/** Decision 99's own follow-up — lets FranchiseFormModal know, BEFORE
+ * submitting a rate change, whether feeRateChangeStrategy will be required
+ * (same "query, don't guess" shape useMembershipPlanActiveCount already
+ * establishes for its own price-change prompt). Only enabled while editing an
+ * existing Franchise — a brand-new one has no Schools yet. */
+export function useFranchiseBillingStatus(franchiseId: string | null) {
+  return useQuery({
+    queryKey: ['franchise-billing-status', franchiseId],
+    queryFn: () => unwrap(apiClient.GET('/v1/franchises/{id}/billing-status', { params: { path: { id: franchiseId! } } })),
+    enabled: !!franchiseId,
+  });
+}
+
 export function useCreateFranchise() {
   const queryClient = useQueryClient();
   return useMutation({

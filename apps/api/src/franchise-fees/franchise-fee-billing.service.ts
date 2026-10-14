@@ -220,4 +220,80 @@ export class FranchiseFeeBillingService {
   private meterEventName(franchiseId: string): string {
     return `franchise_active_students_${franchiseId}`;
   }
+
+  /**
+   * Decision 99's own follow-up (franchise-fee-rate-migration.processor.ts) —
+   * creates a brand-new, persisted metered Price for a PER_HEADCOUNT rate change,
+   * pointing at the Franchise's EXISTING Stripe Billing Meter (Meters aren't
+   * re-created — only a Price is, same "Stripe Prices are immutable, create a
+   * replacement" mechanism `migrateSubscriptionToNewPrice` already established for
+   * Membership plans, applied here to a Meter-backed Price instead of a flat one).
+   * Persists the new id onto `Franchise.stripeUsagePriceId` so every School that
+   * joins (or has `ensureSubscription` run for it) AFTER this point automatically
+   * gets the new rate too, not just the Schools this rate change's own job walks.
+   *
+   * Throws if `stripeMeterId` is unset — this method is only ever called once
+   * franchise-fee billing has already started for at least one School (the same
+   * precondition FranchisesService.update()'s own schoolsAlreadyBilling guard
+   * checks before enqueueing this job at all), which means `ensureMeterAndPrice`
+   * must have already run and set it; a missing Meter at this point is a real,
+   * unexpected inconsistency worth failing loudly on rather than silently creating
+   * an orphaned second Meter.
+   */
+  async createReplacementMeteredPrice(franchise: Franchise, stripe: Stripe, newPerHeadcountRate: number): Promise<string> {
+    if (!franchise.stripeMeterId) {
+      throw new Error(`Franchise ${franchise.id} has no stripeMeterId — cannot create a replacement metered Price before PER_HEADCOUNT billing has ever started.`);
+    }
+    const product = await stripe.products.create({ name: `Franchise fee (Per-Headcount) — ${franchise.name} [rate change]` });
+    const price = await stripe.prices.create({
+      currency: 'usd',
+      unit_amount: newPerHeadcountRate,
+      recurring: { interval: 'month', usage_type: 'metered', meter: franchise.stripeMeterId },
+      product: product.id,
+    });
+    await this.prismaJobs.franchise.update({ where: { id: franchise.id }, data: { stripeUsagePriceId: price.id } });
+    return price.id;
+  }
+
+  /**
+   * Decision 99's own follow-up — a new Price for a FLAT rate change, on the SAME
+   * Product the target School's existing Subscription Item already uses.
+   * Deliberately NOT inline `price_data` on the Subscription update itself (the
+   * SDK's own `SubscriptionUpdateParams.Item.price_data` would work too, verified
+   * directly against `Subscriptions.d.ts`) — a real, persisted Price is created
+   * instead so this method's own return value is independently inspectable/
+   * reusable the same way `migrateSubscriptionToNewPrice`'s own newPriceId already
+   * is, rather than an anonymous object Stripe generates and this code never sees
+   * again. Each FLAT School has its own ad-hoc Product (`ensureSubscription`'s own
+   * comment) — unlike Per-Headcount, there is no single shared Price to reuse
+   * across Schools here, one new Price per School's own migration.
+   */
+  async createReplacementFlatPrice(stripe: Stripe, existingProductId: string, newFlatFeeAmount: number): Promise<string> {
+    const price = await stripe.prices.create({
+      currency: 'usd',
+      unit_amount: newFlatFeeAmount,
+      recurring: { interval: 'month' },
+      product: existingProductId,
+    });
+    return price.id;
+  }
+
+  /**
+   * Swaps a standing franchise-fee Subscription's sole item onto a new Price —
+   * the Franchise-fee-side mirror of `PaymentsService.migrateSubscriptionToNewPrice()`'s
+   * exact shape (Decision 99's own follow-up; see that method's own header comment
+   * for the `proration_behavior` precedent this reuses for the FLAT/MIGRATE_NEXT_CYCLE
+   * case specifically).
+   */
+  async swapSubscriptionPrice(stripe: Stripe, subscriptionId: string, newPriceId: string, prorationBehavior: Stripe.SubscriptionUpdateParams.ProrationBehavior): Promise<void> {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const item = subscription.items.data[0];
+    if (!item) {
+      throw new Error(`Stripe Subscription ${subscriptionId} has no Subscription Item to migrate.`);
+    }
+    await stripe.subscriptions.update(subscriptionId, {
+      items: [{ id: item.id, price: newPriceId }],
+      proration_behavior: prorationBehavior,
+    });
+  }
 }
