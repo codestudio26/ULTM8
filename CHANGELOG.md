@@ -15,6 +15,14 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **School Portal refresh-token logic** (Decision 262) — a session no longer
+  silently dies 15 minutes after login with no recovery. School Portal now
+  stores and uses the refresh token `POST /auth/login` already handed it,
+  transparently refreshing an expired access token the moment any request
+  401s (no visible interruption, no forced re-login) — the same fix
+  `apps/student` already shipped for the identical gap, mirrored here.
+  Logging out now also revokes the refresh token server-side, not just
+  clearing it locally.
 - **MembershipPlan new-member billing strategy** (Decision 259) — a School
   Owner can now set, per SUBSCRIPTION plan, how a brand-new Student's first
   charge and renewal date are anchored: **Fresh cycle** (default, unchanged —
@@ -29,12 +37,6 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   no migration path for already-active subscribers. The Franchise fee-rate
   change migration this same decision's conversation also approved is
   tracked separately (Decision 99's own follow-up, not yet built).
-- **`useOwnedSchoolId` multi-School ordering bug fixed** (Decision 258) — a
-  School Owner/Manager holding `SCHOOL_OWNER_MANAGER` at more than one School
-  no longer silently lands on whichever School happened to sort first;
-  `SchoolSwitcher` now generalizes to cover Owner mode the same way it
-  already covered the Decision 255 coach/Branch-Staff case, with an
-  active-selection-with-fallback-to-first-sorted pattern in `AuthContext`.
 - **Shared marketing footer** (Decision 256) — a standard B2B SaaS footer
   (copyright + Terms of Service / Privacy Policy / Support) now renders once
   at the bottom of every page, as a full-width band below the entire shell

@@ -1,9 +1,10 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sessionStorageTokenStore, decodeJwtPayload } from '@ultm8/auth';
 import { unwrap } from '@ultm8/api-client';
-import { apiClient } from '../api';
+import { authClient } from '../api';
 import { markVerifyNoticeDue } from './verifyNoticeFlag';
+import { setUnauthorizedHandler } from './sessionRefresh';
 import type { JwtClaims } from './types';
 
 interface AuthContextValue {
@@ -20,7 +21,7 @@ interface AuthContextValue {
    * navigates to the first-login passcode-change flow with that token.
    */
   login: (email: string, passcode: string) => Promise<{ mustChangePasscode: true; passcodeChangeToken: string } | void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   /**
    * Swaps in an already-obtained token without hitting /auth/login — for the one
    * narrow, approved case (ultm8-nestjs-module §7): SchoolsService.create() re-mints
@@ -91,17 +92,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, passcode: string) => {
-      const result = await unwrap(apiClient.POST('/v1/auth/login', { body: { email, passcode } }));
+      const result = await unwrap(authClient.POST('/v1/auth/login', { body: { email, passcode } }));
       if (result.mustChangePasscode) {
         return { mustChangePasscode: true as const, passcodeChangeToken: result.passcodeChangeToken! };
       }
+      // Refresh token first, then the access token — applyToken is what flips
+      // `accessToken` state, so ordering it last means the refresh token is
+      // already persisted by the time anything could possibly need it. Same
+      // ordering apps/student's own login() already established.
+      sessionStorageTokenStore.setRefreshToken(result.refreshToken!);
       applyToken(result.accessToken!);
       markVerifyNoticeDue();
     },
     [applyToken],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Best-effort server-side revoke before the local clear below — without this, a
+    // "logged out" refresh token was still live and redeemable (apps/api's
+    // /auth/logout exists exactly to revoke it; nothing here ever called it until
+    // now). Silently succeeds for an unknown/already-revoked token
+    // (AuthService.logout()'s own doc comment), so this is safe to call even on a
+    // token that's about to be cleared regardless. A failed revoke (offline,
+    // server error) must never block actually signing the person out of THIS tab —
+    // that's the one thing they asked for — so it's swallowed, not surfaced or
+    // retried. Same shape apps/student's own logout() already established.
+    const refreshToken = sessionStorageTokenStore.getRefreshToken();
+    if (refreshToken) {
+      await unwrap(authClient.POST('/v1/auth/logout', { body: { refreshToken } })).catch(() => {});
+    }
     sessionStorageTokenStore.clear();
     writeActiveCoachSchoolId(null);
     setState({ accessToken: null, claims: null });
@@ -118,6 +137,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // instance of it.
     queryClient.clear();
   }, [queryClient]);
+
+  // The one answer to `createApiClient`'s `onUnauthorized` (api.ts and
+  // auth/sessionRefresh.ts) — apps/api mints a 15-minute access token, so this is
+  // the ordinary mid-session case, not a rare edge case. MUST resolve, never throw
+  // (that option's own contract in packages/api-client) — the catch below is that
+  // guarantee, not just cleanup. Same shape, same reasoning, as apps/student's own
+  // refreshSession().
+  const refreshSession = useCallback(async (): Promise<string | null> => {
+    try {
+      const refreshToken = sessionStorageTokenStore.getRefreshToken();
+      if (!refreshToken) return null;
+      const result = await unwrap(authClient.POST('/v1/auth/refresh', { body: { refreshToken } }));
+      if (!result.accessToken || !result.refreshToken) {
+        throw new Error('POST /auth/refresh returned no token pair');
+      }
+      // Rotated (AuthService.refresh()'s own doc comment: the presented token is
+      // revoked in the same step a successor is issued) — the OLD refresh token is
+      // now dead, so the new one must be persisted before anything else can use it.
+      sessionStorageTokenStore.setRefreshToken(result.refreshToken);
+      applyToken(result.accessToken);
+      return result.accessToken;
+    } catch {
+      // The refresh token itself is no good any more — expired (30-day TTL),
+      // explicitly revoked, or (AuthService.refresh()'s reuse-detection) already
+      // redeemed by someone replaying it. Either way the session is genuinely over,
+      // not a transient failure worth leaving the person stranded on a screen that
+      // will just 401 forever: end it the same way the explicit "Log out" button
+      // does. logout() re-reads the refresh token and tries to revoke it too;
+      // that's a harmless no-op here (it's already no good), not worth a
+      // special-cased skip.
+      await logout();
+      return null;
+    }
+  }, [applyToken, logout]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(refreshSession);
+    return () => setUnauthorizedHandler(null);
+  }, [refreshSession]);
 
   const value = useMemo(
     () => ({ accessToken, claims, login, logout, setAccessToken: applyToken, activeCoachSchoolId, setActiveCoachSchoolId }),
