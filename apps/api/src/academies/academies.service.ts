@@ -118,6 +118,67 @@ export class AcademiesService {
     );
   }
 
+  /**
+   * Decision 266 — the pre-auth School-pick screen's "search by name" mode
+   * (apps/student, no `/public/schools/*` route requires JwtAuthGuard — see
+   * PublicAcademiesController's own header comment for why this is a
+   * separate controller rather than relaxing the guard on the one above).
+   * Same `ultm8_discovery`/SCHOOL_SUMMARY_SELECT mechanism as findAll(), just
+   * with a name filter — no new DB grant needed (`name` was already
+   * column-level granted, Phase 14).
+   */
+  async search(query: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    return cursorPaginate(
+      (args) =>
+        this.prismaDiscovery.school.findMany({
+          ...args,
+          where: { name: { contains: query, mode: 'insensitive' } },
+          select: SCHOOL_SUMMARY_SELECT,
+        }),
+      cursor,
+      limit,
+    );
+  }
+
+  /**
+   * Decision 266 — the pre-auth School-pick screen's "enter a join code"
+   * mode. Same detail shape as findOne() (branches, for picking a home
+   * branch before joining, Decision 209) — deliberately looked up by
+   * `joinCode`, never by exposing `id` as a guessable path, which is the
+   * whole reason a join code exists instead of just telling people to type
+   * in a School's UUID.
+   */
+  async findByJoinCode(joinCode: string) {
+    const school = await this.prismaDiscovery.school.findUnique({
+      where: { joinCode },
+      select: {
+        ...SCHOOL_SUMMARY_SELECT,
+        membershipPlans: {
+          where: { visible: true, archivedAt: null },
+          orderBy: { id: 'asc' },
+          take: MEMBERSHIP_PLANS_LIMIT,
+          select: MEMBERSHIP_PLAN_DISCOVERY_SELECT,
+        },
+        branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } },
+        classes: {
+          where: { startDate: { gte: new Date() } },
+          orderBy: { startDate: 'asc' },
+          take: UPCOMING_CLASSES_LIMIT,
+          select: CLASS_DISCOVERY_SELECT,
+        },
+      },
+    });
+    if (!school) {
+      // Deliberately the same generic message as findOne()'s id-not-found —
+      // this endpoint has no auth boundary to protect by distinguishing
+      // "wrong code" from "right code, something else failed", but a
+      // code-specific message would help someone fishing for valid codes.
+      throw new NotFoundException('Academy not found');
+    }
+    const { classes: upcomingClasses, ...summary } = school;
+    return { ...summary, upcomingClasses };
+  }
+
   /** One nested query, not three sequential ones — membershipPlans/classes are fetched
    * as relations on the same School read rather than as separate round trips (an
    * earlier draft did three; caught on code review as unnecessary latency for what's

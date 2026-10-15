@@ -1570,6 +1570,43 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // School.joinCode (Decision 266) — Apple 4.2.6/4.3 compliance's pre-auth
+  // School-pick screen. create() always returns one (DB-function default,
+  // migration 20261115000001); this covers the Owner-only regeneration.
+  // ---------------------------------------------------------------------------
+
+  it('POST /schools always returns a join code, and the Owner can regenerate it to a new, different one', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/schools')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Join-Code Test School' });
+    expect(createRes.status).toBe(201);
+    const schoolId = createRes.body.id;
+    const originalCode: string = createRes.body.joinCode;
+    expect(originalCode).toMatch(/^[A-Z2-9]{8}$/);
+
+    const regenerateRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolId}/join-code/regenerate`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(regenerateRes.status).toBe(201);
+    expect(regenerateRes.body.joinCode).toMatch(/^[A-Z2-9]{8}$/);
+    expect(regenerateRes.body.joinCode).not.toBe(originalCode);
+
+    const persisted = await superuser.school.findUniqueOrThrow({ where: { id: schoolId } });
+    expect(persisted.joinCode).toBe(regenerateRes.body.joinCode);
+
+    await superuser.school.delete({ where: { id: schoolId } });
+  });
+
+  it('only that School\'s own Owner/Manager may regenerate its join code', async () => {
+    // ownerB holds no grant at all on schoolA.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join-code/regenerate`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
   // Franchise fee-rate fields (Phase 16b-ii, Decision 99) — self-service,
   // Franchise-Owner-set, round-tripped through the existing create/update
   // endpoints (no dedicated endpoint — see create-franchise.dto.ts's own

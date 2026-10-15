@@ -822,6 +822,29 @@ model School {
   logoUrl         String?
   bannerUrl       String?
 
+  /// Decision 266 — Apple 4.2.6/4.3 compliance (Decision 247's "one shared
+  /// app, School picked after install"). An 8-character, human-enterable code
+  /// (unambiguous alphabet — no 0/O/1/I) a prospective Student types into
+  /// apps/student's pre-auth School-pick screen to find their School directly,
+  /// as an alternative to searching by name. Regenerable by the Owner
+  /// (SchoolsService.regenerateJoinCode()) — never client-settable, so it's on
+  /// SchoolResponseDto but deliberately absent from CreateSchoolDto/
+  /// UpdateSchoolDto. The DB-function default (migration's own
+  /// generate_school_join_code(), not a constant) is deliberate, not just a
+  /// backfill convenience — it keeps `joinCode` OPTIONAL on Prisma's
+  /// generated SchoolCreateInput, so the e2e suite's many test fixtures that
+  /// create a School directly via a raw superuser PrismaClient (bypassing
+  /// SchoolsService) keep compiling without each one needing to invent a
+  /// value for a field their own test doesn't care about.
+  joinCode String @unique @default(dbgenerated("generate_school_join_code()"))
+
+  /// Decision 266 — the School-side half of "light theming post-login": a
+  /// single hex accent color apps/student pulls in once a session is scoped
+  /// to a School (new SchoolThemeProvider). Deliberately NOT mirrored onto
+  /// Branch the way logoUrl/bannerUrl are (Decision 76) — nothing in this
+  /// item's scope asked for per-Branch theming.
+  accentColor String?
+
   /// Decision 257 — the per-School content shown on apps/school-portal's own
   /// footer (the richer, per-School shape; apps/platform-admin and
   /// apps/student keep the simpler platform-wide LegalFooter from Decision

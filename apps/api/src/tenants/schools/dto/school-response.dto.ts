@@ -60,6 +60,15 @@ export class SchoolResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   bannerUrl!: string | null;
 
+  /** Decision 266 — server-generated at creation, regenerable by the Owner
+   * (`POST /schools/:id/join-code/regenerate`). Never client-settable — see
+   * CreateSchoolDto/UpdateSchoolDto's own comments on why it's absent there. */
+  @ApiProperty({ description: "8-character code for apps/student's pre-auth School-pick screen." })
+  joinCode!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: '6-digit hex color, e.g. #1A73E8.' })
+  accentColor!: string | null;
+
   // Decision 257 — per-School footer content; see CreateSchoolDto's own
   // comment on these fields.
   @ApiPropertyOptional({ type: String, nullable: true })

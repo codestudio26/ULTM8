@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/join-code/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SchoolsController_regenerateJoinCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/branches": {
         parameters: {
             query?: never;
@@ -2948,6 +2964,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/public/schools/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicAcademiesController_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/schools/by-code/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicAcademiesController_findByJoinCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/notifications/broadcast": {
         parameters: {
             query?: never;
@@ -3537,6 +3585,8 @@ export interface components {
             description?: string;
             logoUrl?: string;
             bannerUrl?: string;
+            /** @description 6-digit hex color, e.g. #1A73E8. */
+            accentColor?: string;
             /** @description Shown as a plain line in the footer's "Company" column — not a link. */
             footerAboutUs?: string;
             footerContactEmail?: string;
@@ -3572,6 +3622,10 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description 8-character code for apps/student's pre-auth School-pick screen. */
+            joinCode: string;
+            /** @description 6-digit hex color, e.g. #1A73E8. */
+            accentColor?: string | null;
             footerAboutUs?: string | null;
             footerContactEmail?: string | null;
             footerContactPhone?: string | null;
@@ -3621,6 +3675,8 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description 6-digit hex color, e.g. #1A73E8. */
+            accentColor?: string | null;
             /** @description Shown as a plain line in the footer's "Company" column — not a link. */
             footerAboutUs?: string | null;
             footerContactEmail?: string | null;
@@ -6685,6 +6741,27 @@ export interface operations {
         };
     };
     SchoolsController_leaveFranchise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_regenerateJoinCode: {
         parameters: {
             query?: never;
             header?: never;
@@ -11229,6 +11306,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcademyTimetableListResponseDto"];
+                };
+            };
+        };
+    };
+    PublicAcademiesController_search: {
+        parameters: {
+            query: {
+                /** @description Opaque cursor from a previous page's nextCursor. */
+                cursor?: string;
+                limit?: number;
+                /** @description School name, partial match, case-insensitive. */
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademyListResponseDto"];
+                };
+            };
+        };
+    };
+    PublicAcademiesController_findByJoinCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademyDetailDto"];
                 };
             };
         };

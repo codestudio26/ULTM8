@@ -760,6 +760,41 @@
         ]
       }
     },
+    "/v1/schools/{id}/join-code/regenerate": {
+      "post": {
+        "operationId": "SchoolsController_regenerateJoinCode",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/branches": {
       "post": {
         "operationId": "BranchesController_create",
@@ -8806,6 +8841,87 @@
         ]
       }
     },
+    "/v1/public/schools/search": {
+      "get": {
+        "operationId": "PublicAcademiesController_search",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "description": "School name, partial match, case-insensitive.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademyListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public-schools"
+        ]
+      }
+    },
+    "/v1/public/schools/by-code/{code}": {
+      "get": {
+        "operationId": "PublicAcademiesController_findByJoinCode",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademyDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public-schools"
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/notifications/broadcast": {
       "post": {
         "operationId": "NotificationBroadcastController_broadcast",
@@ -10823,6 +10939,10 @@
           "bannerUrl": {
             "type": "string"
           },
+          "accentColor": {
+            "type": "string",
+            "description": "6-digit hex color, e.g. #1A73E8."
+          },
           "footerAboutUs": {
             "type": "string",
             "description": "Shown as a plain line in the footer's \"Company\" column — not a link."
@@ -10932,6 +11052,15 @@
             "type": "string",
             "nullable": true
           },
+          "joinCode": {
+            "type": "string",
+            "description": "8-character code for apps/student's pre-auth School-pick screen."
+          },
+          "accentColor": {
+            "type": "string",
+            "nullable": true,
+            "description": "6-digit hex color, e.g. #1A73E8."
+          },
           "footerAboutUs": {
             "type": "string",
             "nullable": true
@@ -11012,6 +11141,7 @@
           "activities",
           "facilities",
           "ranksToggle",
+          "joinCode",
           "classCancellationPolicy",
           "waitlistClaimWindowMinutes",
           "createdAt",
@@ -11109,6 +11239,11 @@
           "bannerUrl": {
             "type": "string",
             "nullable": true
+          },
+          "accentColor": {
+            "type": "string",
+            "nullable": true,
+            "description": "6-digit hex color, e.g. #1A73E8."
           },
           "footerAboutUs": {
             "type": "string",
