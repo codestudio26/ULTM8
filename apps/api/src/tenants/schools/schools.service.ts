@@ -545,6 +545,23 @@ export class SchoolsService {
   }
 
   /**
+   * FOUND ON REVIEW — Decision 266's apps/student SchoolThemeProvider only
+   * needs accentColor/logoUrl; a narrow `select` here (same RLS visibility
+   * as findOne() above — any RoleGrant holder, a Student's STUDENT grant
+   * included) instead of making it call the full findOne(). See
+   * SchoolThemeResponseDto's own comment for why this exists at all.
+   */
+  async findTheme(callerId: string, schoolId: string) {
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { id: true, accentColor: true, logoUrl: true } }),
+    );
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    return school;
+  }
+
+  /**
    * The Student roster — Users holding an active STUDENT RoleGrant at this School.
    * Staff-gated broadly (School Owner/Manager, Branch Staff, or Instructor — the
    * same set Bookings/Waitlist's own roster reads already use via

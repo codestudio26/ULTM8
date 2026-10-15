@@ -110,9 +110,13 @@ const MEMBERSHIP_PLANS_LIMIT = 50;
 export class AcademiesService {
   constructor(private readonly prismaDiscovery: PrismaDiscoveryService) {}
 
+  /** FOUND ON REVIEW (Decision 266 — see search()'s own comment below): a
+   * closed School stays in this browse listing for up to 90 days pending
+   * purge without this filter. Same fix applied to search()/findOne()/
+   * findByJoinCode() below. */
   async findAll(cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     return cursorPaginate(
-      (args) => this.prismaDiscovery.school.findMany({ ...args, select: SCHOOL_SUMMARY_SELECT }),
+      (args) => this.prismaDiscovery.school.findMany({ ...args, where: { archivedAt: null }, select: SCHOOL_SUMMARY_SELECT }),
       cursor,
       limit,
     );
@@ -126,13 +130,21 @@ export class AcademiesService {
    * Same `ultm8_discovery`/SCHOOL_SUMMARY_SELECT mechanism as findAll(), just
    * with a name filter — no new DB grant needed (`name` was already
    * column-level granted, Phase 14).
+   *
+   * FOUND ON REVIEW: `archivedAt: null` is required here, not optional — a
+   * School that's been closed (Decision 110's close-account flow) still
+   * exists for up to 90 days pending purge, and without this filter a
+   * brand-new, pre-auth installer could find and then actually join (via the
+   * existing JoinSchoolScreen → `POST /schools/:id/join`) a School the
+   * business already shut down. `findOne`/`findByJoinCode` below get the
+   * same filter for the same reason.
    */
   async search(query: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     return cursorPaginate(
       (args) =>
         this.prismaDiscovery.school.findMany({
           ...args,
-          where: { name: { contains: query, mode: 'insensitive' } },
+          where: { name: { contains: query, mode: 'insensitive' }, archivedAt: null },
           select: SCHOOL_SUMMARY_SELECT,
         }),
       cursor,
@@ -149,8 +161,8 @@ export class AcademiesService {
    * in a School's UUID.
    */
   async findByJoinCode(joinCode: string) {
-    const school = await this.prismaDiscovery.school.findUnique({
-      where: { joinCode },
+    const school = await this.prismaDiscovery.school.findFirst({
+      where: { joinCode, archivedAt: null },
       select: {
         ...SCHOOL_SUMMARY_SELECT,
         membershipPlans: {
@@ -182,10 +194,17 @@ export class AcademiesService {
   /** One nested query, not three sequential ones — membershipPlans/classes are fetched
    * as relations on the same School read rather than as separate round trips (an
    * earlier draft did three; caught on code review as unnecessary latency for what's
-   * conceptually one "detail" read). */
+   * conceptually one "detail" read).
+   *
+   * FOUND ON REVIEW (Decision 266 — see search()'s own comment for the full
+   * account): `archivedAt: null` added here too — this method predates
+   * Decision 266 but had the identical gap, just reachable only by an
+   * already-authenticated caller rather than a pre-auth one. `findUnique`
+   * can't take an extra filter alongside a unique field in the same `where`,
+   * hence `findFirst` (id is still effectively unique). */
   async findOne(schoolId: string) {
-    const school = await this.prismaDiscovery.school.findUnique({
-      where: { id: schoolId },
+    const school = await this.prismaDiscovery.school.findFirst({
+      where: { id: schoolId, archivedAt: null },
       select: {
         ...SCHOOL_SUMMARY_SELECT,
         membershipPlans: {

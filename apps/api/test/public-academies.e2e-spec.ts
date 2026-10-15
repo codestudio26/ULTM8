@@ -11,7 +11,12 @@
  *   default, not something this test has to construct),
  * - AND that none of this crosses into the ordinary authenticated
  *   `/academies`/`/schools` routes needing a guard change — PublicAcademiesController
- *   is additive, not a relaxation of AcademiesController's own guard.
+ *   is additive, not a relaxation of AcademiesController's own guard,
+ * - FOUND ON REVIEW: a closed (archivedAt set) School must be invisible to
+ *   both search and by-code lookup — without this, Decision 110's own
+ *   close-account flow left a shut-down School fully discoverable AND
+ *   actually joinable (via JoinSchoolScreen -> POST /schools/:id/join) for
+ *   its whole 90-day pending-purge window, now reachable with zero auth.
  *
  * Requires DATABASE_URL.
  */
@@ -38,6 +43,7 @@ describeIfDb('PublicAcademiesController — pre-auth School search and join-code
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
 
   let school: School;
+  let archivedSchool: School;
   const schoolIds: string[] = [];
 
   beforeAll(async () => {
@@ -58,6 +64,16 @@ describeIfDb('PublicAcademiesController — pre-auth School search and join-code
     });
     schoolIds.push(school.id);
     await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Main Branch' } });
+
+    archivedSchool = await superuser.school.create({
+      data: {
+        id: randomUUID(),
+        name: `Closed Dojo ${randomUUID().slice(0, 8)}`,
+        archivedAt: new Date(),
+        purgeAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      },
+    });
+    schoolIds.push(archivedSchool.id);
   });
 
   afterAll(async () => {
@@ -107,6 +123,18 @@ describeIfDb('PublicAcademiesController — pre-auth School search and join-code
 
   it('an unknown join code 404s, not 500s or leaks whether SOME code is close', async () => {
     const res = await request(app.getHttpServer()).get('/v1/public/schools/by-code/ZZZZZZZZ');
+    expect(res.status).toBe(404);
+  });
+
+  it('a closed School never appears in search results', async () => {
+    const namePart = archivedSchool.name.slice(0, 10);
+    const res = await request(app.getHttpServer()).get('/v1/public/schools/search').query({ q: namePart });
+    expect(res.status).toBe(200);
+    expect(res.body.items.find((item: { id: string }) => item.id === archivedSchool.id)).toBeUndefined();
+  });
+
+  it("a closed School's own join code 404s, same as an unknown one", async () => {
+    const res = await request(app.getHttpServer()).get(`/v1/public/schools/by-code/${archivedSchool.joinCode}`);
     expect(res.status).toBe(404);
   });
 });

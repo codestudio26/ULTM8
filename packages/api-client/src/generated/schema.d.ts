@@ -196,6 +196,22 @@ export interface paths {
         patch: operations["SchoolsController_update"];
         trace?: never;
     };
+    "/v1/schools/{id}/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_findTheme"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/students": {
         parameters: {
             query?: never;
@@ -3651,6 +3667,12 @@ export interface components {
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
         };
+        SchoolThemeResponseDto: {
+            id: string;
+            logoUrl?: string | null;
+            /** @description 6-digit hex color, e.g. #1A73E8. */
+            accentColor?: string | null;
+        };
         UpdateSchoolDto: {
             name?: string;
             activities?: string[];
@@ -6610,6 +6632,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_findTheme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolThemeResponseDto"];
                 };
             };
         };

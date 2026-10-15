@@ -53,4 +53,11 @@ ALTER TABLE "School" ADD COLUMN "accentColor" TEXT;
 -- DELETE does). accentColor is deliberately NOT granted here — it's only
 -- read post-login, via the already-unrestricted ultm8_app/RLS path, never
 -- through the pre-auth discovery role.
-GRANT SELECT ("joinCode") ON "School" TO ultm8_discovery;
+--
+-- archivedAt is granted for the identical reason, FOUND ON REVIEW: every
+-- discovery method in AcademiesService (findAll/findOne/search/
+-- findByJoinCode) now filters `archivedAt: null` — without it, a School
+-- closed via Decision 110's close-account flow stayed fully discoverable
+-- and joinable (via the existing JoinSchoolScreen -> POST /schools/:id/join)
+-- for its whole 90-day pending-purge window, pre-auth or not.
+GRANT SELECT ("joinCode", "archivedAt") ON "School" TO ultm8_discovery;

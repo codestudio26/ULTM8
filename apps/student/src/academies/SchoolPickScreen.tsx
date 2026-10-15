@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { ApiError, type components } from '@ultm8/api-client';
 import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
@@ -85,9 +85,24 @@ function SchoolRow({ school, onPress }: { school: { id: string; name: string; ad
   );
 }
 
+/** 350ms is comfortably under a typical inter-keystroke gap while typing a
+ * School name, so it reads as instant, but keeps a 20+ character name from
+ * firing a request per keystroke — FOUND ON REVIEW: without this, ordinary
+ * typing could itself trip SCHOOL_SEARCH_THROTTLE (30/60s per IP,
+ * public-academies.controller.ts), the throttle this PR added specifically
+ * to protect this same endpoint, turning it into a self-inflicted 429. */
+const SEARCH_DEBOUNCE_MS = 350;
+
 function SearchMode({ onPick }: { onPick: (school: { id: string; name: string }) => void }) {
   const [query, setQuery] = useState('');
-  const { data, isLoading, isFetching, error } = useSchoolSearch(query);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const { data, isLoading, isFetching, error } = useSchoolSearch(debouncedQuery);
 
   return (
     <View>
@@ -95,10 +110,10 @@ function SearchMode({ onPick }: { onPick: (school: { id: string; name: string })
         <TextField value={query} onChangeText={setQuery} placeholder="e.g. Downtown Jiu-Jitsu" autoCapitalize="words" />
       </Field>
 
-      {query.trim() && isLoading ? <ActivityIndicator style={{ marginTop: spacing[3] }} /> : null}
+      {query.trim() && (query !== debouncedQuery || isLoading) ? <ActivityIndicator style={{ marginTop: spacing[3] }} /> : null}
       {error ? <ErrorBanner message={getApiErrorMessage(error, 'Could not search — please try again.')} /> : null}
-      {!isLoading && query.trim() && data?.items.length === 0 ? (
-        <Text style={{ color: theme.textSecondary, marginTop: spacing[3] }}>No School matched “{query.trim()}”.</Text>
+      {!isLoading && query === debouncedQuery && debouncedQuery.trim() && data?.items.length === 0 ? (
+        <Text style={{ color: theme.textSecondary, marginTop: spacing[3] }}>No School matched “{debouncedQuery.trim()}”.</Text>
       ) : null}
 
       <View style={{ marginTop: spacing[2], opacity: isFetching && !isLoading ? 0.6 : 1 }}>

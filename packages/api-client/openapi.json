@@ -480,6 +480,41 @@
         ]
       }
     },
+    "/v1/schools/{id}/theme": {
+      "get": {
+        "operationId": "SchoolsController_findTheme",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolThemeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students": {
       "get": {
         "operationId": "SchoolsController_findStudents",
@@ -11165,6 +11200,26 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "SchoolThemeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "accentColor": {
+            "type": "string",
+            "nullable": true,
+            "description": "6-digit hex color, e.g. #1A73E8."
+          }
+        },
+        "required": [
+          "id"
         ]
       },
       "UpdateSchoolDto": {
