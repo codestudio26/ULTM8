@@ -10,6 +10,7 @@ import { GradingPermissionsController } from './grading-permissions.controller';
 import { GradingPermissionsService } from './grading-permissions.service';
 import { InstructorBeltsController } from './instructor-belts.controller';
 import { InstructorBeltsService } from './instructor-belts.service';
+import { GradingErasureService } from './grading-erasure.service';
 
 /**
  * Phase 10b scope only: Discipline/Rank/Skill catalog CRUD + single-Student
@@ -31,6 +32,10 @@ import { InstructorBeltsService } from './instructor-belts.service';
   // read access to a linked minor's grading (Decision 132).
   imports: [TenantsModule, GuardiansModule, QueueModule],
   controllers: [RanksController, GradingController, GradingPermissionsController, InstructorBeltsController],
-  providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService],
+  // GradingErasureService: not called by anything yet (Decision 134 groundwork
+  // only, no account-deletion endpoint exists) — exported so a future
+  // account-deletion job can inject it once it's built.
+  providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService, GradingErasureService],
+  exports: [GradingErasureService],
 })
 export class RanksModule {}

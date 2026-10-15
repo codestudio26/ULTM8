@@ -84,14 +84,16 @@ Each now has a test, except 164. No test found a bug; nothing in the code change
 
 Gus asked on 12 Oct 2026 to keep this list and bring it back when the phase ends. Each item is held back by a decision, not forgotten.
 
-| Item | Why it waits |
-|---|---|
-| Grading events with pass/fail (a grading day as its own module) | Version 2 (Decisions 128.14, 158) |
-| Franchise-wide ladders and the franchise owner's switch | After v1.1 (Decisions 151, 160) |
-| Lessons in the student app | Wait for video hosting (Decisions 101, 155) |
-| Coach invites by text message | "Email now, text later" (Decision 183.2); needs a Twilio Messaging integration |
-| Deleting an account with its grading data | Waits on account deletion itself (Decisions 134, 141) |
-| Video pricing for lessons | Decided later (Decision 154.2) |
-| More languages for grading names | Later (Decision 179.2) |
-| Push notifications for grading notices | Approved (Decision 223), waiting for the Firebase and Apple push credentials; until then grading notices go in the app and by email |
+**Revisited 15 Oct 2026** — 2 of the 8 turned out to already be resolved by later work this same table predates; "why it waits" is left as originally written below for history, with a status note added where it's since changed.
+
+| Item | Why it waits | Status (15 Oct 2026) |
+|---|---|---|
+| Grading events with pass/fail (a grading day as its own module) | Version 2 (Decisions 128.14, 158) | Still waiting — confirmed still deferred to Version 2 |
+| Franchise-wide ladders and the franchise owner's switch | After v1.1 (Decisions 151, 160) | Still waiting — v1.1 not yet declared |
+| Lessons in the student app | Wait for video hosting (Decisions 101, 155) | **Built** — video hosting shipped (Decision 254), `apps/student`'s `LessonVideoPlayer.tsx` plays real video via Cloudflare Stream |
+| Coach invites by text message | "Email now, text later" (Decision 183.2); needs a Twilio Messaging integration | Still waiting — confirmed still email-only |
+| Deleting an account with its grading data | Waits on account deletion itself (Decisions 134, 141) | **Groundwork built** (Decision 265) — the grading-specific erasure logic is built and tested, with no endpoint; still waiting on a real account-deletion job (none exists) and legal review of the full erasure picture (Decision 245) |
+| Video pricing for lessons | Decided later (Decision 154.2) | **Resolved** — Decisions 190/195 gave the School Owner a per-plan `includesLessons` switch; the price difference between a plan with it on vs off is the "charge for video," with ULTM8 taking no cut either way |
+| More languages for grading names | Later (Decision 179.2) | Still waiting — confirmed still English/as-typed only |
+| Push notifications for grading notices | Approved (Decision 223), waiting for the Firebase and Apple push credentials; until then grading notices go in the app and by email | **Built** (Decision 264) — `PushNotificationService` is wired into the same `notification-fanout` pipeline grading's "ready to grade" notifier already uses; still non-functional only because real FCM credentials aren't provisioned, same posture as every other not-yet-provisioned vendor |
 
