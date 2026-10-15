@@ -1,7 +1,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from './AuthContext';
 import { ACCESS_TOKEN_EXPIRY_BUFFER_MS } from './tokenExpiry';
 
@@ -42,6 +42,12 @@ const { secureTokenStore } = require('./secureTokenStore') as {
 };
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { authClient } = require('../api') as { authClient: { POST: ReturnType<typeof jest.fn> } };
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const AsyncStorage = require('@react-native-async-storage/async-storage') as {
+  getItem: ReturnType<typeof jest.fn>;
+  setItem: ReturnType<typeof jest.fn>;
+  removeItem: ReturnType<typeof jest.fn>;
+};
 
 function base64Url(input: string): string {
   return Buffer.from(input).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -123,5 +129,73 @@ describe('AuthProvider — on-launch proactive refresh', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.accessToken).toBeNull();
+  });
+});
+
+describe('AuthProvider — pendingSchoolPick (Decision 266)', () => {
+  beforeEach(() => {
+    secureTokenStore.get.mockReset().mockResolvedValue(null);
+    secureTokenStore.getRefreshToken.mockReset().mockResolvedValue(null);
+    authClient.POST.mockReset();
+    AsyncStorage.getItem.mockReset().mockResolvedValue(null);
+    AsyncStorage.setItem.mockReset().mockResolvedValue(undefined);
+    AsyncStorage.removeItem.mockReset().mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    activeQueryClient?.clear();
+    activeQueryClient = undefined;
+  });
+
+  it('a previously persisted pick is loaded on launch, without blocking on `loading`', async () => {
+    AsyncStorage.getItem.mockImplementation((key: string) =>
+      Promise.resolve(key === 'ultm8.pendingSchoolPick' ? JSON.stringify({ id: 'dojo-1', name: 'Alpha Dojo' }) : null),
+    );
+
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.pendingSchoolPick).toEqual({ id: 'dojo-1', name: 'Alpha Dojo' }));
+  });
+
+  it('setPendingSchoolPick updates state immediately and persists to AsyncStorage under its own key', async () => {
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      result.current.setPendingSchoolPick({ id: 'dojo-2', name: 'Beta Dojo' });
+    });
+
+    expect(result.current.pendingSchoolPick).toEqual({ id: 'dojo-2', name: 'Beta Dojo' });
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith('ultm8.pendingSchoolPick', JSON.stringify({ id: 'dojo-2', name: 'Beta Dojo' }));
+  });
+
+  it('clearPendingSchoolPick clears state and removes the stored value', async () => {
+    AsyncStorage.getItem.mockImplementation((key: string) =>
+      Promise.resolve(key === 'ultm8.pendingSchoolPick' ? JSON.stringify({ id: 'dojo-1', name: 'Alpha Dojo' }) : null),
+    );
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.pendingSchoolPick).not.toBeNull());
+
+    await act(async () => {
+      result.current.clearPendingSchoolPick();
+    });
+
+    expect(result.current.pendingSchoolPick).toBeNull();
+    expect(AsyncStorage.removeItem).toHaveBeenCalledWith('ultm8.pendingSchoolPick');
+  });
+
+  it('logout does NOT clear a pending School pick — it is intent, not a session artifact', async () => {
+    AsyncStorage.getItem.mockImplementation((key: string) =>
+      Promise.resolve(key === 'ultm8.pendingSchoolPick' ? JSON.stringify({ id: 'dojo-1', name: 'Alpha Dojo' }) : null),
+    );
+    authClient.POST.mockImplementation(() => okResponse({}));
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.pendingSchoolPick).not.toBeNull());
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(result.current.pendingSchoolPick).toEqual({ id: 'dojo-1', name: 'Alpha Dojo' });
+    expect(AsyncStorage.removeItem).not.toHaveBeenCalledWith('ultm8.pendingSchoolPick');
   });
 });

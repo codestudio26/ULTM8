@@ -23,6 +23,21 @@ import type { JwtClaims } from './types';
  * a School the caller actually holds a current grant at. */
 const ACTIVE_COACH_SCHOOL_KEY = 'ultm8.activeCoachSchoolId';
 
+/** Decision 266 — Apple 4.2.6/4.3 compliance. The School a brand-new installer
+ * picked on SchoolPickScreen, BEFORE they have an account — plain AsyncStorage,
+ * same reasoning as ACTIVE_COACH_SCHOOL_KEY above (a display/routing
+ * preference, not a secret). Cleared once they actually join that School
+ * (JoinSchoolScreen's own success path) — this is intent, not membership;
+ * useEnrolledSchoolIds() is the source of truth for the latter. Deliberately
+ * NOT cleared by logout() — if someone logs out mid-flow before finishing
+ * the join, the original pick should still be waiting for them next time. */
+const PENDING_SCHOOL_PICK_KEY = 'ultm8.pendingSchoolPick';
+
+interface PendingSchoolPick {
+  id: string;
+  name: string;
+}
+
 interface AuthContextValue {
   /** True while the stored token is still being read from SecureStore at app launch —
    * SecureStore is async, unlike school-portal's sessionStorage, so there's a real
@@ -43,6 +58,10 @@ interface AuthContextValue {
    * instead of reading this directly. */
   activeCoachSchoolId: string | null;
   setActiveCoachSchoolId: (schoolId: string) => void;
+  /** See SchoolPickScreen/PENDING_SCHOOL_PICK_KEY above. */
+  pendingSchoolPick: PendingSchoolPick | null;
+  setPendingSchoolPick: (school: PendingSchoolPick) => void;
+  clearPendingSchoolPick: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -52,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState<string | null>(null);
+  const [pendingSchoolPick, setPendingSchoolPickState] = useState<PendingSchoolPick | null>(null);
 
   // Derived, not its own state — claims are 100% a function of accessToken, so keeping
   // it in a separate useState risked a future call site updating one and forgetting the
@@ -86,6 +106,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setActiveCoachSchoolIdState(schoolId);
     AsyncStorage.setItem(ACTIVE_COACH_SCHOOL_KEY, schoolId).catch(() => {
       /* noop — a failed write just means this pick won't survive a restart */
+    });
+  }, []);
+
+  // Same "not gated behind `loading`" reasoning as the effect above — RootNavigator's
+  // three-way branch only needs this once it's actually known, and until then it falls
+  // back to treating the app as having no pending pick (SchoolPickScreen shows again,
+  // which is the right fallback: re-picking is cheap, losing a real pick silently isn't).
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(PENDING_SCHOOL_PICK_KEY)
+      .then((stored) => {
+        if (cancelled || !stored) return;
+        try {
+          setPendingSchoolPickState(JSON.parse(stored) as PendingSchoolPick);
+        } catch {
+          /* noop — a corrupted stored value is treated the same as none */
+        }
+      })
+      .catch(() => {
+        /* noop */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const setPendingSchoolPick = useCallback((school: PendingSchoolPick) => {
+    setPendingSchoolPickState(school);
+    AsyncStorage.setItem(PENDING_SCHOOL_PICK_KEY, JSON.stringify(school)).catch(() => {
+      /* noop — a failed write just means this pick won't survive a restart */
+    });
+  }, []);
+
+  const clearPendingSchoolPick = useCallback(() => {
+    setPendingSchoolPickState(null);
+    AsyncStorage.removeItem(PENDING_SCHOOL_PICK_KEY).catch(() => {
+      /* noop */
     });
   }, []);
 
@@ -237,8 +294,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const value = useMemo(
-    () => ({ loading, accessToken, claims, login, logout, applyAccessToken: applyToken, activeCoachSchoolId, setActiveCoachSchoolId }),
-    [loading, accessToken, claims, login, logout, applyToken, activeCoachSchoolId, setActiveCoachSchoolId],
+    () => ({
+      loading,
+      accessToken,
+      claims,
+      login,
+      logout,
+      applyAccessToken: applyToken,
+      activeCoachSchoolId,
+      setActiveCoachSchoolId,
+      pendingSchoolPick,
+      setPendingSchoolPick,
+      clearPendingSchoolPick,
+    }),
+    [
+      loading,
+      accessToken,
+      claims,
+      login,
+      logout,
+      applyToken,
+      activeCoachSchoolId,
+      setActiveCoachSchoolId,
+      pendingSchoolPick,
+      setPendingSchoolPick,
+      clearPendingSchoolPick,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
