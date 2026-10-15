@@ -16,6 +16,7 @@ services:
       DATABASE_URL_AUTH: "postgresql://ultm8_auth:changeme@db:5432/ultm8?schema=public"
       DATABASE_URL_JOBS: "postgresql://ultm8_jobs:changeme@db:5432/ultm8?schema=public"
       DATABASE_URL_DISCOVERY: "postgresql://ultm8_discovery:changeme@db:5432/ultm8?schema=public"
+      DATABASE_URL_GRADING_ERASURE: "postgresql://ultm8_grading_erasure:changeme@db:5432/ultm8?schema=public"
       DATABASE_URL_PLATFORM_ADMIN: "postgresql://ultm8_platform_admin:changeme@db:5432/ultm8?schema=public"
 
       # --- Redis / BullMQ ---

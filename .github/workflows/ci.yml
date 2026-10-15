@@ -48,6 +48,10 @@ jobs:
       # and Decision 94 for why this is a separate role, not a reuse of ultm8_app/
       # ultm8_jobs above).
       DATABASE_URL_DISCOVERY: postgresql://ultm8_discovery:changeme@localhost:5432/ultm8?schema=public
+      # GradingErasureService's own dedicated role (20261115000000_grading_erasure_jobs_grant)
+      # — see that migration's own header comment for why this is a separate
+      # role, not a reuse of ultm8_jobs.
+      DATABASE_URL_GRADING_ERASURE: postgresql://ultm8_grading_erasure:changeme@localhost:5432/ultm8?schema=public
       # Phase 26 — PlatformAdminModule's own dedicated role for cross-tenant reads +
       # AuditLogEntry writes (see the Phase 26 migration and its own header comment
       # for why this is a separate role, not a reuse of ultm8_app/ultm8_discovery).
@@ -217,6 +221,7 @@ jobs:
       DATABASE_URL_APP: postgresql://ultm8_app:changeme@localhost:5432/ultm8?schema=public
       DATABASE_URL_JOBS: postgresql://ultm8_jobs:changeme@localhost:5432/ultm8?schema=public
       DATABASE_URL_DISCOVERY: postgresql://ultm8_discovery:changeme@localhost:5432/ultm8?schema=public
+      DATABASE_URL_GRADING_ERASURE: postgresql://ultm8_grading_erasure:changeme@localhost:5432/ultm8?schema=public
       DATABASE_URL_PLATFORM_ADMIN: postgresql://ultm8_platform_admin:changeme@localhost:5432/ultm8?schema=public
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-test-secret-not-for-production-use-only-32-chars-min
