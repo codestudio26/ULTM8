@@ -1607,6 +1607,36 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // GET /schools/:id/theme (Decision 266, found-on-review follow-up) — a
+  // narrow accentColor/logoUrl-only read for apps/student's SchoolThemeProvider,
+  // same RLS visibility as the full findOne() (any RoleGrant holder) but
+  // without handing over the whole School row for just two fields.
+  // ---------------------------------------------------------------------------
+
+  it('GET /schools/:id/theme returns only id/accentColor/logoUrl, nothing else about the School', async () => {
+    await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ accentColor: '#1A73E8' })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/theme`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ id: schoolA.id, accentColor: '#1A73E8', logoUrl: null });
+    expect(res.body.mobileNumber).toBeUndefined();
+    expect(res.body.joinCode).toBeUndefined();
+  });
+
+  it('GET /schools/:id/theme 404s for a caller with no RoleGrant at that School, same RLS visibility as GET /schools/:id', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/theme`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
   // Franchise fee-rate fields (Phase 16b-ii, Decision 99) — self-service,
   // Franchise-Owner-set, round-tripped through the existing create/update
   // endpoints (no dedicated endpoint — see create-franchise.dto.ts's own

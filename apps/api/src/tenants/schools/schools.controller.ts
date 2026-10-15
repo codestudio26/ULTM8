@@ -7,7 +7,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { SchoolsService } from './schools.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
-import { SchoolListResponseDto, SchoolResponseDto } from './dto/school-response.dto';
+import { SchoolListResponseDto, SchoolResponseDto, SchoolThemeResponseDto } from './dto/school-response.dto';
 import { JoinSchoolResponseDto } from './dto/join-school-response.dto';
 import { JoinSchoolDto } from './dto/join-school.dto';
 import { JoinFranchiseDto } from './dto/join-franchise.dto';
@@ -44,6 +44,13 @@ export class SchoolsController {
   @Get(':id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.schoolsService.findOne(user.sub, id);
+  }
+
+  /** FOUND ON REVIEW — see SchoolsService.findTheme's own header comment. */
+  @ApiOkResponse({ type: SchoolThemeResponseDto })
+  @Get(':id/theme')
+  findTheme(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.findTheme(user.sub, id);
   }
 
   @ApiOkResponse({ type: SchoolResponseDto })

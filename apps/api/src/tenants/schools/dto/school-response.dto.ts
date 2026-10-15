@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { ClassCancellationPolicyDto } from './create-school.dto';
 
 /**
@@ -136,6 +136,20 @@ export class SchoolResponseDto {
   @ApiPropertyOptional({ type: String })
   accessToken?: string;
 }
+
+/**
+ * FOUND ON REVIEW — Decision 266's SchoolThemeProvider (apps/student) only
+ * ever needs `accentColor`/`logoUrl`; its first draft called the full
+ * `GET /schools/:id` (SchoolResponseDto above) to get them, which — since
+ * this codebase has no ClassSerializerInterceptor anywhere (confirmed:
+ * every response DTO here is a manually-matched shape, not an enforced
+ * serialization boundary) — handed every operational/internal School field
+ * (mobileNumber, businessType, classCancellationPolicy, joinCode, etc.) to
+ * every enrolled Student on every app launch, not just the small set of
+ * fields the theme actually needs. `GET /schools/:id/theme`
+ * (SchoolsService.findTheme) exists purely to narrow that.
+ */
+export class SchoolThemeResponseDto extends PickType(SchoolResponseDto, ['id', 'accentColor', 'logoUrl'] as const) {}
 
 export class SchoolListResponseDto {
   @ApiProperty({ type: [SchoolResponseDto] })

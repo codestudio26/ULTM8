@@ -28,12 +28,18 @@ const SchoolThemeContext = createContext<SchoolThemeValue>(DEFAULT_VALUE);
  * back to `theme.fillAccent`/no logo, same as before this feature existed).
  * Revisit if a real per-Student "active School" concept is ever added.
  *
- * Reads the full `GET /schools/{id}` (not `/academies/{id}` — that's the
- * curated discovery shape AcademySummaryDto deliberately excludes
- * accentColor from, see academies.service.ts's own comment) — RLS already
+ * Reads `GET /schools/{id}/theme` — NOT the full `GET /schools/{id}`
+ * (FOUND ON REVIEW: an earlier draft called that, which — since this
+ * codebase has no ClassSerializerInterceptor anywhere, so every response
+ * DTO is a manually-matched shape, not an enforced boundary — handed every
+ * operational/internal School field to every enrolled Student on every
+ * launch, just to read two of them). Not `/academies/{id}` either — that's
+ * the curated discovery shape AcademySummaryDto deliberately excludes
+ * accentColor from (see academies.service.ts's own comment). RLS already
  * allows any RoleGrant holder at a School to read it (confirmed directly
- * against SchoolsService.findOne's own implementation), a STUDENT grant
- * included, so no new backend access was needed for this.
+ * against SchoolsService.findOne's own implementation, which findTheme
+ * shares), a STUDENT grant included, so no new backend ACCESS was needed —
+ * only a narrower SELECT.
  */
 export function SchoolThemeProvider({ children }: { children: React.ReactNode }) {
   const schoolIds = useEnrolledSchoolIds();
@@ -41,7 +47,7 @@ export function SchoolThemeProvider({ children }: { children: React.ReactNode })
 
   const { data } = useQuery({
     queryKey: ['school-theme', schoolId],
-    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}', { params: { path: { id: schoolId! } } })),
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}/theme', { params: { path: { id: schoolId! } } })),
     enabled: !!schoolId,
     staleTime: 5 * 60 * 1000,
   });
