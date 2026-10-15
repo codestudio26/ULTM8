@@ -5,6 +5,7 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
+import { PrismaDiscoveryService } from '../../common/prisma/prisma-discovery.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
@@ -27,6 +28,7 @@ export class SchoolsService {
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
+    private readonly prismaDiscovery: PrismaDiscoveryService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
@@ -34,6 +36,41 @@ export class SchoolsService {
     private readonly usersService: UsersService,
     private readonly waiverAssignment: WaiverAssignmentService,
   ) {}
+
+  /**
+   * Decision 266 — used by regenerateJoinCode() only; School.create() relies
+   * on the column's own DB-function default instead (schema.prisma's own
+   * comment on `joinCode` explains why). Same 8-character, 32-character
+   * unambiguous-alphabet shape as that DB function (no 0/O/1/I, so a Student
+   * reading it off a front-desk sign can't confuse characters) — kept as a
+   * parallel JS implementation, not a shared one, because there's no clean
+   * way to ask Postgres for "a fresh value from your own column default"
+   * outside an INSERT. 32^8 ≈ 1.1e12 combinations; the retry loop exists
+   * purely as belt-and-suspenders — a real collision would be astronomically
+   * unlikely. Checked via `prismaDiscovery`, not `prismaApp`: existence of a
+   * School's join code is cross-tenant information by definition (the whole
+   * point is a code identifying a School nobody has joined yet), and
+   * `ultm8_discovery` already has SELECT on this column (this migration's
+   * own GRANT) — no new mechanism needed.
+   */
+  private readonly JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  private async generateUniqueJoinCode(): Promise<string> {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      let candidate = '';
+      for (let i = 0; i < 8; i++) {
+        candidate += this.JOIN_CODE_ALPHABET[Math.floor(Math.random() * this.JOIN_CODE_ALPHABET.length)];
+      }
+      const existing = await this.prismaDiscovery.school.findUnique({ where: { joinCode: candidate }, select: { id: true } });
+      if (!existing) {
+        return candidate;
+      }
+    }
+    // Reaching this would mean 20 consecutive collisions out of 1.1e12
+    // possibilities — treated as an environment/generator fault, not a
+    // normal error path a caller should retry past.
+    throw new Error('Could not generate a unique School join code after 20 attempts');
+  }
 
   /**
    * Self-service School creation (explicitly confirmed with the product owner for
@@ -53,6 +90,12 @@ export class SchoolsService {
     const roleGrantId = randomUUID();
 
     const school = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // joinCode is NOT set here — the column's own DB-function default
+      // (migration 20261115000001) generates it; the created row below
+      // already carries the real value Postgres assigned, same as any
+      // other DB-defaulted column (id aside, which this codebase always
+      // mints client-side for the RoleGrant-in-the-same-transaction reason
+      // explained elsewhere, not relevant to joinCode).
       const created = await tx.school.create({
         data: {
           id: schoolId,
@@ -69,6 +112,7 @@ export class SchoolsService {
           description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
+          accentColor: dto.accentColor,
           footerAboutUs: dto.footerAboutUs,
           footerContactEmail: dto.footerContactEmail,
           footerContactPhone: dto.footerContactPhone,
@@ -627,6 +671,7 @@ export class SchoolsService {
           description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
+          accentColor: dto.accentColor,
           footerAboutUs: dto.footerAboutUs,
           footerContactEmail: dto.footerContactEmail,
           footerContactPhone: dto.footerContactPhone,
@@ -641,6 +686,22 @@ export class SchoolsService {
       }),
     );
     return updated;
+  }
+
+  /**
+   * Decision 266 — an Owner-initiated reset of the School's join code (e.g.
+   * it leaked on a public sign, or they just want a fresh one). Same
+   * generation path as create(), same not-archived gate as update() — a
+   * closed School accepts no further writes, joining it is one.
+   */
+  async regenerateJoinCode(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const joinCode = await this.generateUniqueJoinCode();
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.update({ where: { id: schoolId }, data: { joinCode } }),
+    );
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]

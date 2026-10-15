@@ -111,4 +111,12 @@ export class SchoolsController {
   leaveFranchise(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.schoolsService.leaveFranchise(user.sub, id);
   }
+
+  /** School Owner/Manager only — see SchoolsService.regenerateJoinCode's own
+   * header comment (Decision 266). */
+  @ApiOkResponse({ type: SchoolResponseDto })
+  @Post(':id/join-code/regenerate')
+  regenerateJoinCode(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.schoolsService.regenerateJoinCode(user.sub, id);
+  }
 }
