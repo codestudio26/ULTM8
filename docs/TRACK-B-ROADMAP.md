@@ -1171,6 +1171,11 @@ section — kept here only for what's still genuinely blocked as of 2026-09-22.)
 - **Per-School white-label branding** — `packages/build-pipeline` is still an unbuilt
   placeholder; nothing to build against yet, and it's a standalone business decision
   (one app with dynamic theming vs. per-School app-store listings) beyond scope here.
+  **Update, 15 Oct 2026:** that business decision has since been made — one app with
+  dynamic theming (Decision 247), and the actual theming + School-selection UX it
+  implies are now built (Decision 266: light post-login accent-color theming, a
+  pre-auth School-pick screen). `packages/build-pipeline` itself remains the one
+  genuinely unbuilt piece.
 
 Everything else previously listed here (Attendance QR check-in, Guardian-facing
 screens, Offline caching, Invoice/receipt viewing + Student-scoped transaction

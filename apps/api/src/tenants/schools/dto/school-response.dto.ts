@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { ClassCancellationPolicyDto } from './create-school.dto';
 
 /**
@@ -59,6 +59,15 @@ export class SchoolResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   bannerUrl!: string | null;
+
+  /** Decision 266 — server-generated at creation, regenerable by the Owner
+   * (`POST /schools/:id/join-code/regenerate`). Never client-settable — see
+   * CreateSchoolDto/UpdateSchoolDto's own comments on why it's absent there. */
+  @ApiProperty({ description: "8-character code for apps/student's pre-auth School-pick screen." })
+  joinCode!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: '6-digit hex color, e.g. #1A73E8.' })
+  accentColor!: string | null;
 
   // Decision 257 — per-School footer content; see CreateSchoolDto's own
   // comment on these fields.
@@ -127,6 +136,20 @@ export class SchoolResponseDto {
   @ApiPropertyOptional({ type: String })
   accessToken?: string;
 }
+
+/**
+ * FOUND ON REVIEW — Decision 266's SchoolThemeProvider (apps/student) only
+ * ever needs `accentColor`/`logoUrl`; its first draft called the full
+ * `GET /schools/:id` (SchoolResponseDto above) to get them, which — since
+ * this codebase has no ClassSerializerInterceptor anywhere (confirmed:
+ * every response DTO here is a manually-matched shape, not an enforced
+ * serialization boundary) — handed every operational/internal School field
+ * (mobileNumber, businessType, classCancellationPolicy, joinCode, etc.) to
+ * every enrolled Student on every app launch, not just the small set of
+ * fields the theme actually needs. `GET /schools/:id/theme`
+ * (SchoolsService.findTheme) exists purely to narrow that.
+ */
+export class SchoolThemeResponseDto extends PickType(SchoolResponseDto, ['id', 'accentColor', 'logoUrl'] as const) {}
 
 export class SchoolListResponseDto {
   @ApiProperty({ type: [SchoolResponseDto] })

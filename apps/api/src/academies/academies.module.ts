@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AcademiesController } from './academies.controller';
+import { PublicAcademiesController } from './public-academies.controller';
 import { AcademiesService } from './academies.service';
 
 /**
@@ -13,7 +14,7 @@ import { AcademiesService } from './academies.service';
  * module, this one's row visibility isn't RoleGrant-scoped by design).
  */
 @Module({
-  controllers: [AcademiesController],
+  controllers: [AcademiesController, PublicAcademiesController],
   providers: [AcademiesService],
 })
 export class AcademiesModule {}

@@ -1570,6 +1570,73 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // School.joinCode (Decision 266) — Apple 4.2.6/4.3 compliance's pre-auth
+  // School-pick screen. create() always returns one (DB-function default,
+  // migration 20261115000001); this covers the Owner-only regeneration.
+  // ---------------------------------------------------------------------------
+
+  it('POST /schools always returns a join code, and the Owner can regenerate it to a new, different one', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/v1/schools')
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ name: 'Join-Code Test School' });
+    expect(createRes.status).toBe(201);
+    const schoolId = createRes.body.id;
+    const originalCode: string = createRes.body.joinCode;
+    expect(originalCode).toMatch(/^[A-Z2-9]{8}$/);
+
+    const regenerateRes = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolId}/join-code/regenerate`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(regenerateRes.status).toBe(201);
+    expect(regenerateRes.body.joinCode).toMatch(/^[A-Z2-9]{8}$/);
+    expect(regenerateRes.body.joinCode).not.toBe(originalCode);
+
+    const persisted = await superuser.school.findUniqueOrThrow({ where: { id: schoolId } });
+    expect(persisted.joinCode).toBe(regenerateRes.body.joinCode);
+
+    await superuser.school.delete({ where: { id: schoolId } });
+  });
+
+  it('only that School\'s own Owner/Manager may regenerate its join code', async () => {
+    // ownerB holds no grant at all on schoolA.
+    const res = await request(app.getHttpServer())
+      .post(`/v1/schools/${schoolA.id}/join-code/regenerate`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(403);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /schools/:id/theme (Decision 266, found-on-review follow-up) — a
+  // narrow accentColor/logoUrl-only read for apps/student's SchoolThemeProvider,
+  // same RLS visibility as the full findOne() (any RoleGrant holder) but
+  // without handing over the whole School row for just two fields.
+  // ---------------------------------------------------------------------------
+
+  it('GET /schools/:id/theme returns only id/accentColor/logoUrl, nothing else about the School', async () => {
+    await request(app.getHttpServer())
+      .patch(`/v1/schools/${schoolA.id}`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`)
+      .send({ accentColor: '#1A73E8' })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/theme`)
+      .set('Authorization', `Bearer ${tokenOwnerA}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ id: schoolA.id, accentColor: '#1A73E8', logoUrl: null });
+    expect(res.body.mobileNumber).toBeUndefined();
+    expect(res.body.joinCode).toBeUndefined();
+  });
+
+  it('GET /schools/:id/theme 404s for a caller with no RoleGrant at that School, same RLS visibility as GET /schools/:id', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/schools/${schoolA.id}/theme`)
+      .set('Authorization', `Bearer ${tokenOwnerB}`);
+    expect(res.status).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
   // Franchise fee-rate fields (Phase 16b-ii, Decision 99) — self-service,
   // Franchise-Owner-set, round-tripped through the existing create/update
   // endpoints (no dedicated endpoint — see create-franchise.dto.ts's own

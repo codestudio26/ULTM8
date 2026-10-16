@@ -16,6 +16,7 @@
  * element: minimum 44×44px, regardless of visual size").
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useSchoolTheme } from '../theme/SchoolThemeContext';
 import {
   ActivityIndicator,
   FlatList,
@@ -418,6 +419,16 @@ export function Button({
   variant?: 'primary' | 'secondary' | 'destructive';
   disabled?: boolean;
 }) {
+  // Decision 266 — "light theming post-login": the primary button is the
+  // single most-repeated accent-colored surface in this app, so it's the one
+  // place this feature's narrow scope actually applies the School's color.
+  // Resolves to `null` outside AppNavigator (SchoolThemeProvider isn't
+  // mounted there) or for a multi-School Student (SchoolThemeContext's own
+  // comment) — React context already falls back to the default value with
+  // no Provider above it, so this needs no conditional rendering here.
+  const { accentColor } = useSchoolTheme();
+  const accentOverride = variant === 'primary' && accentColor ? { backgroundColor: accentColor } : null;
+
   return (
     <Pressable
       onPress={onPress}
@@ -426,6 +437,7 @@ export function Button({
         styles.button,
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'destructive' && styles.buttonDestructive,
+        accentOverride,
         (disabled || loading) && styles.buttonDisabled,
         pressed && styles.buttonPressed,
       ]}

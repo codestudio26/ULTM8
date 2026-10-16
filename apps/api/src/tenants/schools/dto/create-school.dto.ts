@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -127,6 +128,16 @@ export class CreateSchoolDto {
   @MaxLength(2048)
   @IsUrl()
   bannerUrl?: string;
+
+  // Decision 266 — the School-side half of "light theming post-login"
+  // (apps/student's new SchoolThemeProvider). `joinCode` is NOT a field
+  // here — it's server-generated at creation (SchoolsService.create()) and
+  // never client-settable; see SchoolResponseDto's own comment on it.
+  @ApiPropertyOptional({ description: '6-digit hex color, e.g. #1A73E8.' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'accentColor must be a 6-digit hex color, e.g. #1A73E8' })
+  accentColor?: string;
 
   // Decision 257 — per-School footer content (apps/school-portal's own
   // richer footer). Every field independently optional; the footer hides its

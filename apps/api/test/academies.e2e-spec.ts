@@ -47,6 +47,7 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
 
   let homeSchool: School;
   let otherSchool: School;
+  let archivedSchool: School;
   let student: { id: string; email: string };
   let token: string;
 
@@ -124,6 +125,14 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
       data: { id: randomUUID(), role: 'STUDENT', userId: student.id, schoolId: homeSchool.id },
     });
     token = signAccessToken(student, [{ role: 'STUDENT', franchiseId: null, schoolId: homeSchool.id, branchId: null }]);
+
+    // FOUND ON REVIEW (Decision 266) — a closed School must disappear from
+    // both findAll and findOne, not just the new pre-auth endpoints
+    // (public-academies.e2e-spec.ts) that share this same service.
+    archivedSchool = await superuser.school.create({
+      data: { id: randomUUID(), name: `Archived Dojo ${randomUUID().slice(0, 8)}`, archivedAt: new Date() },
+    });
+    schoolIds.push(archivedSchool.id);
   });
 
   afterAll(async () => {
@@ -259,6 +268,15 @@ describeIfDb('AcademiesModule — HTTP-level cross-School discovery', () => {
   it('GET /academies/:id 404s for a School that genuinely does not exist', async () => {
     const res = await request(app.getHttpServer()).get(`/v1/academies/${randomUUID()}`).set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(404);
+  });
+
+  it('GET /academies never lists a closed School, and GET /academies/:id 404s for one, same as a nonexistent one', async () => {
+    const listRes = await request(app.getHttpServer()).get('/v1/academies').set('Authorization', `Bearer ${token}`).query({ limit: 100 });
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.items.find((item: { id: string }) => item.id === archivedSchool.id)).toBeUndefined();
+
+    const detailRes = await request(app.getHttpServer()).get(`/v1/academies/${archivedSchool.id}`).set('Authorization', `Bearer ${token}`);
+    expect(detailRes.status).toBe(404);
   });
 
   it("REGRESSION GUARD — AcademiesModule's own discovery reads have zero effect on every other module's tenant isolation for the same caller/School pair", async () => {

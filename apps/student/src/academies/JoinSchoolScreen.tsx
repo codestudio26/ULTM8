@@ -52,7 +52,7 @@ function Heading({ children }: { children: React.ReactNode }) {
  * who joined earlier and hasn't added a belt yet. */
 export function JoinSchoolScreen({ route, navigation }: Props) {
   const { academyId, name, beltsFor } = route.params;
-  const { claims, applyAccessToken } = useAuth();
+  const { claims, applyAccessToken, pendingSchoolPick, clearPendingSchoolPick } = useAuth();
   const alreadyMine = useEnrolledSchoolIds().includes(academyId);
   const isGuardian = useIsGuardian();
   const minors = useMyMinors(isGuardian);
@@ -102,13 +102,26 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
       }
       setNote(null);
       setJoinedAs(who);
+      clearPendingPickIfThisSchool();
     } catch (err) {
       // Already a student here: they can still add a belt they haven't yet.
       if (err instanceof ApiError && err.status === 409) {
         setNote(`${isMe ? 'You are' : `${who.name} is`} already a student here.`);
         setJoinedAs(who);
+        clearPendingPickIfThisSchool();
       }
     }
+  }
+
+  // Decision 266 — AppNavigator's own initial-route redirect only fires while
+  // pendingSchoolPick is still set AND still unjoined (useEnrolledSchoolIds's
+  // own check); clearing it here, the moment that stops being true, is what
+  // stops this screen from reappearing on every later launch. Scoped to
+  // THIS School specifically — joining a DIFFERENT School (e.g. from the
+  // ordinary Academies list) must never clear a still-pending pick for the
+  // one the person originally picked before signing up.
+  function clearPendingPickIfThisSchool() {
+    if (pendingSchoolPick?.id === academyId) clearPendingSchoolPick();
   }
 
   return (
