@@ -3734,3 +3734,110 @@ Nothing about Decision 245's broader GDPR/LGPD erasure picture (data residency, 
 
 User, choosing Option B (grading logic only, no endpoint) over building the full `DELETE /users/me` with Decision 245's anonymize-in-place recommendation, after being shown that no account-deletion mechanism exists at all today and that Decision 245 itself says its design isn't authorized to build yet, 15 Oct 2026.
 
+---
+
+## Decision 267 — GDPR/LGPD erasure scope: both jurisdictions, not just one
+
+**Date:** 16 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the market-scope question Decision 245 itself left open ("which specific markets/customers actually require either of these... that's a sales/legal question, not an engineering one").
+
+### Decision
+
+The per-user erasure mechanism (Decision 245's anonymize-in-place design) will be built to satisfy **both GDPR (Art. 17) and LGPD (Art. 18)** from the start, not scoped to a single market first. The two laws share the same practical shape (verifiable, revocable erasure with a carve-out for legal/financial retention obligations), and Decision 245's own design already satisfies both simultaneously — restricting to one market now and generalizing later would redo the same engineering work twice for no savings.
+
+### What this does NOT resolve
+
+This is a scope decision only — it does not authorize building the erasure endpoint itself. Decision 245's own "doesn't authorize building it yet, pending legal review" status is unchanged; this decision just settles which jurisdictions that future build should cover once it is authorized.
+
+### Recorded by
+
+User, approving the Developer's recommendation (build GDPR+LGPD-compatible from the start) after being shown both laws share the same mechanism, 16 Oct 2026.
+
+---
+
+## Decision 268 — Waiver/Transaction retention periods: 7 years for Transactions, age-of-majority+6 for minors' Waivers
+
+**Date:** 16 Oct 2026 · **Status:** Approved by product owner, pending real legal sign-off
+**Resolves:** Decision 110's own still-open "Waiver's own retention period is explicitly left open pending real legal input" item, and the parallel Transaction-retention question Decision 245 named but left unanswered.
+
+### Decision
+
+- **Transaction records**: retained 7 years from the transaction date — matches typical payment-processor/tax-authority retention norms.
+- **Waiver signatures**: retained 7 years after the signing Student's last activity at the School (departure/archive) for an **adult** signer; for a **minor** (Guardian-signed), retained until the minor's 18th birthday **plus 6 years** — because in most relevant jurisdictions, an injury-claim statute of limitations for a minor doesn't start running until they reach the age of majority, so a flat post-departure window isn't defensible for a minor's own waiver.
+
+**Explicitly not legal advice.** These are directional, market-norm placeholders chosen because something concrete unblocks `EntityOffboardingPurgeProcessor`'s standing Waiver-purge skip (Decision 110 part 4) — a real lawyer should confirm or correct both numbers before they're treated as final, especially the minors figure.
+
+### What this does NOT resolve
+
+Does not itself change `EntityOffboardingPurgeProcessor` — that processor still finds-and-logs-but-never-deletes `Waiver` rows past `purgeAt` (Decision 110 part 4's explicit, named skip). Wiring the processor to actually purge once past this new retention window is a separate follow-up engineering task, not done as part of recording this number. Also does not resolve Decision 245's broader GDPR/LGPD erasure build itself (see Decision 267 above) — this is the retention-period input that build will eventually need, not the build itself.
+
+### Recorded by
+
+User, approving the Developer's recommended figures (7yr Transactions; age-18+6yr for minors' Waivers) after being shown the minors statute-of-limitations issue a flat retention window doesn't account for, 16 Oct 2026.
+
+---
+
+## Decision 269 — RoleGrant authority matrix: Owner/Manager may grant another Owner/Manager; Franchise Owner and direct Student/Guardian grants remain rejected
+
+**Date:** 16 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** one edge of the RoleGrant authority matrix Decision 80 left fully open ("every other role/grantor combination... is still genuinely unconfirmed and is rejected (403) rather than built from a guess").
+
+### Decision
+
+Of the three unconfirmed combinations put to the product owner, only one is approved to build:
+
+1. **Approved — a School Owner/Manager may grant another Owner/Manager role within their own School.** A real, common need (co-ownership, succession) scoped to resources the grantor already fully owns — low risk.
+2. **Rejected (stays 403) — a Franchise Owner granting roles at its Schools.** A Franchise Owner acting on a School it doesn't directly operate day-to-day is a bigger authority question than this decision was scoped to settle — Decision 80's own standing note ("Franchise Owner granting/approving anything beyond its own resources is genuinely unconfirmed") stands, deliberately not resolved here.
+3. **Rejected (stays unbuilt) — a direct RoleGrant-based path to grant Student or Guardian roles.** Students/Guardians already have a working self-service path (join code + registration, Decision 96/266); a second, Owner-initiated path to grant the same role would be redundant complexity with no identified need behind it.
+
+### What this does NOT resolve
+
+The full matrix is still not fully confirmed — only this one additional edge. #2 and #3 above remain explicitly open, not silently decided by omission; a future decision would be needed to revisit either.
+
+### Built
+
+Not yet — this decision authorizes building #1 (`RoleGrantsService.create()`'s grantor/role check needs a new allowed combination added); the actual code change is a follow-up task, not done as part of recording this decision.
+
+### Recorded by
+
+User, approving the Developer's recommendation (approve only the Owner→Owner/Manager case) after being shown the scope risk in the other two, 16 Oct 2026.
+
+---
+
+## Decision 270 — NFR targets: no customer-facing SLA yet; internal engineering bar only (99.5% uptime, p95 < 500ms), revisit once real traffic exists
+
+**Date:** 16 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** `docs/ops/NFR-TARGETS.md`'s own named gap — no uptime/SLA, latency, or scale number had ever been set anywhere in this repository.
+
+### Decision
+
+No formal, customer-facing SLA is adopted at this stage — consistent with ordinary pre-launch B2B SaaS practice (a real SLA commitment typically follows real paying customers, not precedes them). Instead, an **internal-only** engineering sanity bar is adopted: **~99.5% uptime, p95 API latency under 500ms** — not published anywhere, not contractual, and explicitly to be revisited with real numbers once there is real production traffic to size against (per `NFR-TARGETS.md`'s own stated reasoning: nothing is deployed yet to validate a number against).
+
+### What this does NOT resolve
+
+Does not set a concurrent-user/throughput budget, an RPO/RTO figure, or a job-queue-latency target — `NFR-TARGETS.md`'s other named gaps stand unchanged. Does not change any `infra/terraform/` default sizing; those remain the "smallest sensible defaults" they already were.
+
+### Recorded by
+
+User, approving the Developer's recommendation (no SLA yet, internal target only) after being shown that nothing is deployed to validate a harder commitment against, 16 Oct 2026.
+
+---
+
+## Decision 271 — Domain-rules terminology: drop the stale "User" CMS label; unify activities/discipline into one controlled list
+
+**Date:** 16 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** both terminology gaps `skills/ultm8-domain-rules/SKILL.md` had flagged `[UNRESOLVED]`/`[UNRESOLVED, TERMINOLOGY]`.
+
+### Decision
+
+1. **The "User" grouping label in the translations CMS is dropped.** It never mapped to any real role (Student/School/Admin do) and nothing in the product needs it — an unused label only invites confusion later.
+2. **`School.activities`, `Instructor.specializations`, `Class.activities`, and the `Style`/`Discipline` entity should draw from one shared controlled list**, not remain independent free-text-ish fields. Today a School could record "Judo" while a Class spells it "judo" or "Jiu-Jitsu" — this already quietly degrades the search/filter and public-discovery features this session built (Decision 266/Apple-compliance's own search endpoint among them).
+
+### What this does NOT resolve
+
+Item 2 is a scope/direction decision, not a completed migration — reconciling four separate fields/entities into one controlled list is a real schema and data-migration effort (which entity becomes the canonical source, how existing free-text values map onto it, what happens to values that don't cleanly match) that needs its own dedicated design pass before being built, not implied by approving the direction here. Item 1 (dropping the CMS label) is small enough to build directly as a follow-up task.
+
+### Recorded by
+
+User, approving both of the Developer's recommendations (delete the stale label; unify the controlled list) 16 Oct 2026.
+
