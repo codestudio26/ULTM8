@@ -26,17 +26,31 @@ import { GradingBoardScreen } from '../coach/GradingBoardScreen';
 import { CoachStudentScreen } from '../coach/CoachStudentScreen';
 import { MyGradingScreen } from '../grading/MyGradingScreen';
 import { GradingHistoryScreen } from '../grading/GradingHistoryScreen';
-import { useCoachSchoolId } from '../auth/AuthContext';
+import { useCoachSchoolId, useAuth, useEnrolledSchoolIds } from '../auth/AuthContext';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 /** Coaches (Instructors and Branch Staff) land on their dashboard; everyone
- * else on the student home (Decision 184 item 4). */
+ * else on the student home (Decision 184 item 4) — UNLESS Decision 266's
+ * pre-auth School-pick screen has a pending pick this now-signed-in Student
+ * hasn't actually joined yet (a brand-new installer who just registered),
+ * in which case JoinSchoolScreen wins over both: finishing the pick they
+ * started takes priority over landing on either dashboard. Checked against
+ * useEnrolledSchoolIds(), not just "pendingSchoolPick is set" — the pick
+ * only needs finishing once; after JoinSchoolScreen's own success path
+ * clears it, this falls through to the ordinary coach/student branch on
+ * every later launch, including re-logins. */
 export function AppNavigator() {
   const coachSchoolId = useCoachSchoolId();
+  const { pendingSchoolPick } = useAuth();
+  const enrolledSchoolIds = useEnrolledSchoolIds();
+  const needsToJoinPickedSchool = !!pendingSchoolPick && !enrolledSchoolIds.includes(pendingSchoolPick.id);
+
+  const initialRouteName = needsToJoinPickedSchool ? 'JoinSchool' : coachSchoolId ? 'CoachDashboard' : 'Home';
+
   return (
-    <Stack.Navigator initialRouteName={coachSchoolId ? 'CoachDashboard' : 'Home'}>
+    <Stack.Navigator initialRouteName={initialRouteName}>
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'ULTM8 Student' }} />
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'My Profile' }} />
       <Stack.Screen name="Academies" component={AcademiesListScreen} options={{ title: 'Academies' }} />
@@ -45,7 +59,12 @@ export function AppNavigator() {
         component={AcademyDetailScreen}
         options={({ route }) => ({ title: route.params.name })}
       />
-      <Stack.Screen name="JoinSchool" component={JoinSchoolScreen} options={({ route }) => ({ title: route.params.beltsFor ? 'Add a belt' : `Join ${route.params.name}` })} />
+      <Stack.Screen
+        name="JoinSchool"
+        component={JoinSchoolScreen}
+        initialParams={needsToJoinPickedSchool ? { academyId: pendingSchoolPick!.id, name: pendingSchoolPick!.name } : undefined}
+        options={({ route }) => ({ title: route.params.beltsFor ? 'Add a belt' : `Join ${route.params.name}` })}
+      />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} options={{ title: 'My Memberships' }} />

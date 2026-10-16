@@ -1,5 +1,13 @@
 import type { Lesson } from '../curriculum/curriculumQueries';
 
+/** Decision 266 — Apple 4.2.6/4.3 compliance (Decision 247's "one shared app,
+ * School picked after install"). A single screen, not a multi-step stack —
+ * search and join-code entry are two modes of the ONE SchoolPickScreen, not
+ * separate navigation destinations. */
+export type SchoolPickStackParamList = {
+  SchoolPick: undefined;
+};
+
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;

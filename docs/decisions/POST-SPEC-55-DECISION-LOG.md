@@ -3736,6 +3736,46 @@ User, choosing Option B (grading logic only, no endpoint) over building the full
 
 ---
 
+## Decision 266 — School-selection UX for Apple 4.2.6/4.3 compliance (Decision 247), built
+
+**Date:** 15 Oct 2026 · **Status:** Approved by product owner, built
+**Resolves:** the gap Decision 247 itself explicitly left open — that decision settled the *architecture* (one shared app, no per-tenant App Store listing, a School picked after install) but named the actual School-selection UX, and whether a School gets any visual distinction, as undesigned. `docs/ULTM8-MASTER-ROADMAP.md`'s own synthesis table named this "Product (School-selection UX), then Developer" as the next step.
+
+Three product questions were put to the product owner and answered directly, not inferred:
+
+1. **How does someone find their School?** Both a join-code entry AND a name search — not one or the other.
+2. **Does a School get any visual distinction inside the single shared app?** Light theming post-login — a single accent color (and logo) pulled in once a session is scoped to a School, not a full per-School app shell.
+3. **Does picking a School gate signup, or come after it?** Pick the School first, then sign up — matches how a join code is handed out at the physical School, and avoids a signed-up-but-schoolless intermediate state.
+
+### What was built
+
+**Backend** (`apps/api`): `School.joinCode` (new, 8-character, unambiguous-alphabet unique code) and `School.accentColor` (new, nullable hex). `joinCode` uses a Postgres-function `@default` (not a constant) specifically so Prisma keeps it OPTIONAL on `SchoolCreateInput` — the alternative (a required field) would have broken every one of the dozens of e2e fixtures across the suite that create a `School` row directly via a raw superuser PrismaClient, bypassing `SchoolsService`. A new, genuinely public (unauthenticated) `PublicAcademiesController` — `GET /public/schools/search?q=` and `GET /public/schools/by-code/:code` — reuses the existing `ultm8_discovery` mechanism (Decision 94) that already powers the authenticated `/academies` discovery routes, rather than a new DB role; that migration's own column-level GRANT on `School` is widened to include `joinCode` (confirmed, not assumed, that a `WHERE` lookup needs SELECT on the column it filters by — same lesson Decision 265's own migration already documented). IP-throttled tighter than the app-wide default, since this is the first genuinely unauthenticated surface in the API. A new Owner-gated `POST /schools/:id/join-code/regenerate` lets a School reset a leaked/shared code.
+
+**Frontend** (`apps/student`): a new `SchoolPickScreen` (search + join-code toggle, one screen, not two destinations) sits ahead of the existing `AuthNavigator` in `RootNavigator`'s now three-way branch, gated on a new persisted `pendingSchoolPick` (AsyncStorage, survives a restart, deliberately NOT cleared by `logout()` — it's intent, not a session artifact). Picking a School only records that intent; `AppNavigator`'s own initial-route logic routes a freshly-signed-in Student with a still-unfinished pick straight to the *existing* `JoinSchoolScreen` (home branch, current belt — Decisions 139/168/209/137/147), which clears the pending pick on success. No new join mechanism was built on the frontend — SchoolPickScreen chooses WHICH School; JoinSchoolScreen (already shipped) does the actual joining.
+
+A new `SchoolThemeProvider`, mounted only inside the authenticated `AppNavigator`, feeds the signed-in Student's School `accentColor` into the shared `Button` component (the single most-repeated accent-colored surface) — deliberately scoped to a Student enrolled at EXACTLY ONE School (Students have no single "active School" concept the way coaches have `activeCoachSchoolId`, per `useEnrolledSchoolIds`'s own long-standing header comment; this item's approved scope didn't ask for one either, so a multi-School Student simply sees the plain default theme rather than an invented "current School").
+
+### What this does NOT resolve
+
+- **`MobileAppPublishingModule`/`packages/build-pipeline` remain fully unbuilt** — this decision is the School-selection UX Decision 247 itself deferred; it does not touch the actual App Store submission pipeline or `skills/ultm8-app-publishing/SKILL.md`'s own flagged "reconciliation pass" against the old per-tenant-app entitlement model.
+- **No per-Branch theming** — `accentColor` is School-only, deliberately not mirrored onto `Branch` the way `logoUrl`/`bannerUrl` are (Decision 76's usual mirroring precedent) — nothing in this item's scope asked for it.
+- **No "active School" concept for multi-School Students** — a Student enrolled at more than one School sees the plain default theme, not a guessed or forced one. Revisit only if a real need for that concept shows up.
+- **Theming is applied to one component (`Button`), not retrofitted across the app** — "light theming post-login" was read as a narrow, bounded touch, not a systemic rewrite of every `theme.fillAccent` call site across the ~28 files that reference the static token file.
+
+### Built
+
+**Backend:** `apps/api/prisma/schema.prisma` (`School.joinCode`, `School.accentColor`), migration `20261115000001_school_join_code_and_accent_color`, `apps/api/src/academies/public-academies.controller.ts` (new), `apps/api/src/academies/dto/school-search-query.dto.ts` (new), `apps/api/src/academies/academies.service.ts` (`search()`, `findByJoinCode()`), `apps/api/src/academies/academies.module.ts`, `apps/api/src/tenants/schools/{create,update,school-response}.dto.ts`, `schools.service.ts` (join-code generation + `regenerateJoinCode()`), `schools.controller.ts`. `packages/api-client` regenerated.
+
+**Frontend:** `apps/student/src/academies/SchoolPickScreen.tsx` (new), `publicSchoolQueries.ts` (new), `apps/student/src/navigation/SchoolPickNavigator.tsx` (new), `RootNavigator.tsx` (three-way branch), `AppNavigator.tsx` (initial-route redirect), `types.ts` (`SchoolPickStackParamList`), `apps/student/src/auth/AuthContext.tsx` (`pendingSchoolPick`), `apps/student/src/academies/JoinSchoolScreen.tsx` (clears the pending pick), `apps/student/src/theme/SchoolThemeContext.tsx` (new), `apps/student/src/components/ui.tsx` (`Button` consumes it). A new global `apps/student/jest.setup.js` AsyncStorage mock was needed — `Button` now transitively imports `AuthContext`, which broke a dozen previously unrelated test suites that had never needed that mocked before.
+
+**Tests:** new `apps/api/test/public-academies.e2e-spec.ts` (6 tests, real Postgres, every request sends no Authorization header); `tenants.e2e-spec.ts` extended (join-code round-trip + regeneration, Owner-only gate). Full `apps/api` e2e suite re-run (80 suites/896 tests, zero regressions). `apps/student`: new `schoolPick.test.tsx` (5 tests), `AuthContext.test.tsx` extended (4 tests covering `pendingSchoolPick` persistence/clear/logout-survival). Full `apps/student` suite re-run (25 suites/135 tests, zero regressions) and `tsc --noEmit` clean on both apps.
+
+### Recorded by
+
+User, answering the three scoping questions directly (join-code AND search; light theming post-login; pick School before signup) after being shown Decision 247's own explicit "undesigned" gap and the concrete engineering tradeoffs (no existing join-code mechanism, no theming infrastructure, no public discovery endpoint) found by direct code research before any of this was built, 15 Oct 2026.
+
+---
+
 ## Decision 267 — GDPR/LGPD erasure scope: both jurisdictions, not just one
 
 **Date:** 16 Oct 2026 · **Status:** Approved by product owner

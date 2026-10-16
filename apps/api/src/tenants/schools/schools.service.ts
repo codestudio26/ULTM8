@@ -36,6 +36,54 @@ export class SchoolsService {
   ) {}
 
   /**
+   * Decision 266 — used by regenerateJoinCode() only; School.create() relies
+   * on the column's own DB-function default instead (schema.prisma's own
+   * comment on `joinCode` explains why). Same 8-character, 32-character
+   * unambiguous-alphabet shape as that DB function (no 0/O/1/I, so a Student
+   * reading it off a front-desk sign can't confuse characters) — kept as a
+   * parallel JS implementation, not a shared one, because there's no clean
+   * way to ask Postgres for "a fresh value from your own column default"
+   * outside an INSERT. 32^8 ≈ 1.1e12 combinations; the retry loop exists
+   * purely as belt-and-suspenders — a real collision would be astronomically
+   * unlikely.
+   *
+   * FOUND ON REVIEW: an earlier draft checked collisions via
+   * `prismaDiscovery` (AcademiesModule's dedicated connection) — a genuine
+   * violation of that service's own documented "ONLY AcademiesService may
+   * inject this" contract. Fixed the same way `school_exists()`
+   * (20260919000000_student_self_enrollment) already solved the identical
+   * problem for `join()`: a narrow `SECURITY DEFINER` SQL function
+   * (`join_code_exists`, this PR's own migration) called from inside the
+   * caller's own `prismaApp` tenant-context transaction — existence of a
+   * join code is cross-tenant information by definition (the whole point is
+   * a code identifying a School nobody has joined yet), so the function
+   * needs to bypass RLS, but that's now scoped to exactly this one
+   * boolean check, not a connection to another module's role.
+   */
+  private readonly JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  private async generateUniqueJoinCode(callerId: string): Promise<string> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      for (let attempt = 0; attempt < 20; attempt++) {
+        let candidate = '';
+        for (let i = 0; i < 8; i++) {
+          candidate += this.JOIN_CODE_ALPHABET[Math.floor(Math.random() * this.JOIN_CODE_ALPHABET.length)];
+        }
+        const [{ join_code_exists: exists }] = await tx.$queryRaw<[{ join_code_exists: boolean }]>`
+          SELECT join_code_exists(${candidate})
+        `;
+        if (!exists) {
+          return candidate;
+        }
+      }
+      // Reaching this would mean 20 consecutive collisions out of 1.1e12
+      // possibilities — treated as an environment/generator fault, not a
+      // normal error path a caller should retry past.
+      throw new Error('Could not generate a unique School join code after 20 attempts');
+    });
+  }
+
+  /**
    * Self-service School creation (explicitly confirmed with the product owner for
    * Phase 2 — not stated anywhere in Spec 55/domain-rules/the decision log; the only
    * prior evidence was the `createSchoolProfile` Figma screen, [OBSERVED IN DESIGNS]
@@ -53,6 +101,12 @@ export class SchoolsService {
     const roleGrantId = randomUUID();
 
     const school = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // joinCode is NOT set here — the column's own DB-function default
+      // (migration 20261115000001) generates it; the created row below
+      // already carries the real value Postgres assigned, same as any
+      // other DB-defaulted column (id aside, which this codebase always
+      // mints client-side for the RoleGrant-in-the-same-transaction reason
+      // explained elsewhere, not relevant to joinCode).
       const created = await tx.school.create({
         data: {
           id: schoolId,
@@ -69,6 +123,7 @@ export class SchoolsService {
           description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
+          accentColor: dto.accentColor,
           footerAboutUs: dto.footerAboutUs,
           footerContactEmail: dto.footerContactEmail,
           footerContactPhone: dto.footerContactPhone,
@@ -501,6 +556,23 @@ export class SchoolsService {
   }
 
   /**
+   * FOUND ON REVIEW — Decision 266's apps/student SchoolThemeProvider only
+   * needs accentColor/logoUrl; a narrow `select` here (same RLS visibility
+   * as findOne() above — any RoleGrant holder, a Student's STUDENT grant
+   * included) instead of making it call the full findOne(). See
+   * SchoolThemeResponseDto's own comment for why this exists at all.
+   */
+  async findTheme(callerId: string, schoolId: string) {
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { id: true, accentColor: true, logoUrl: true } }),
+    );
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    return school;
+  }
+
+  /**
    * The Student roster — Users holding an active STUDENT RoleGrant at this School.
    * Staff-gated broadly (School Owner/Manager, Branch Staff, or Instructor — the
    * same set Bookings/Waitlist's own roster reads already use via
@@ -627,6 +699,7 @@ export class SchoolsService {
           description: dto.description,
           logoUrl: dto.logoUrl,
           bannerUrl: dto.bannerUrl,
+          accentColor: dto.accentColor,
           footerAboutUs: dto.footerAboutUs,
           footerContactEmail: dto.footerContactEmail,
           footerContactPhone: dto.footerContactPhone,
@@ -641,6 +714,22 @@ export class SchoolsService {
       }),
     );
     return updated;
+  }
+
+  /**
+   * Decision 266 — an Owner-initiated reset of the School's join code (e.g.
+   * it leaked on a public sign, or they just want a fresh one). Same
+   * generation path as create(), same not-archived gate as update() — a
+   * closed School accepts no further writes, joining it is one.
+   */
+  async regenerateJoinCode(callerId: string, schoolId: string) {
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+
+    const joinCode = await this.generateUniqueJoinCode(callerId);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.update({ where: { id: schoolId }, data: { joinCode } }),
+    );
   }
 
   // No delete method — general tenant offboarding is [UNRESOLVED]

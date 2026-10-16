@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsEmail, IsString, IsOptional, IsUrl, MaxLength } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsUrl, Matches, MaxLength } from 'class-validator';
 import { CreateSchoolDto } from './create-school.dto';
 
 const NULLABLE_ON_UPDATE = [
@@ -12,6 +12,7 @@ const NULLABLE_ON_UPDATE = [
   'description',
   'logoUrl',
   'bannerUrl',
+  'accentColor',
   'footerAboutUs',
   'footerContactEmail',
   'footerContactPhone',
@@ -98,6 +99,12 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @MaxLength(2048)
   @IsUrl()
   bannerUrl?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: '6-digit hex color, e.g. #1A73E8.' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'accentColor must be a 6-digit hex color, e.g. #1A73E8' })
+  accentColor?: string | null;
 
   // Decision 257 — per-School footer content; see CreateSchoolDto's own
   // comment on these fields. `null` clears the field — hides its own

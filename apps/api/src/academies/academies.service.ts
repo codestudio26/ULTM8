@@ -110,21 +110,101 @@ const MEMBERSHIP_PLANS_LIMIT = 50;
 export class AcademiesService {
   constructor(private readonly prismaDiscovery: PrismaDiscoveryService) {}
 
+  /** FOUND ON REVIEW (Decision 266 — see search()'s own comment below): a
+   * closed School stays in this browse listing for up to 90 days pending
+   * purge without this filter. Same fix applied to search()/findOne()/
+   * findByJoinCode() below. */
   async findAll(cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     return cursorPaginate(
-      (args) => this.prismaDiscovery.school.findMany({ ...args, select: SCHOOL_SUMMARY_SELECT }),
+      (args) => this.prismaDiscovery.school.findMany({ ...args, where: { archivedAt: null }, select: SCHOOL_SUMMARY_SELECT }),
       cursor,
       limit,
     );
   }
 
+  /**
+   * Decision 266 — the pre-auth School-pick screen's "search by name" mode
+   * (apps/student, no `/public/schools/*` route requires JwtAuthGuard — see
+   * PublicAcademiesController's own header comment for why this is a
+   * separate controller rather than relaxing the guard on the one above).
+   * Same `ultm8_discovery`/SCHOOL_SUMMARY_SELECT mechanism as findAll(), just
+   * with a name filter — no new DB grant needed (`name` was already
+   * column-level granted, Phase 14).
+   *
+   * FOUND ON REVIEW: `archivedAt: null` is required here, not optional — a
+   * School that's been closed (Decision 110's close-account flow) still
+   * exists for up to 90 days pending purge, and without this filter a
+   * brand-new, pre-auth installer could find and then actually join (via the
+   * existing JoinSchoolScreen → `POST /schools/:id/join`) a School the
+   * business already shut down. `findOne`/`findByJoinCode` below get the
+   * same filter for the same reason.
+   */
+  async search(query: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    return cursorPaginate(
+      (args) =>
+        this.prismaDiscovery.school.findMany({
+          ...args,
+          where: { name: { contains: query, mode: 'insensitive' }, archivedAt: null },
+          select: SCHOOL_SUMMARY_SELECT,
+        }),
+      cursor,
+      limit,
+    );
+  }
+
+  /**
+   * Decision 266 — the pre-auth School-pick screen's "enter a join code"
+   * mode. Same detail shape as findOne() (branches, for picking a home
+   * branch before joining, Decision 209) — deliberately looked up by
+   * `joinCode`, never by exposing `id` as a guessable path, which is the
+   * whole reason a join code exists instead of just telling people to type
+   * in a School's UUID.
+   */
+  async findByJoinCode(joinCode: string) {
+    const school = await this.prismaDiscovery.school.findFirst({
+      where: { joinCode, archivedAt: null },
+      select: {
+        ...SCHOOL_SUMMARY_SELECT,
+        membershipPlans: {
+          where: { visible: true, archivedAt: null },
+          orderBy: { id: 'asc' },
+          take: MEMBERSHIP_PLANS_LIMIT,
+          select: MEMBERSHIP_PLAN_DISCOVERY_SELECT,
+        },
+        branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } },
+        classes: {
+          where: { startDate: { gte: new Date() } },
+          orderBy: { startDate: 'asc' },
+          take: UPCOMING_CLASSES_LIMIT,
+          select: CLASS_DISCOVERY_SELECT,
+        },
+      },
+    });
+    if (!school) {
+      // Deliberately the same generic message as findOne()'s id-not-found —
+      // this endpoint has no auth boundary to protect by distinguishing
+      // "wrong code" from "right code, something else failed", but a
+      // code-specific message would help someone fishing for valid codes.
+      throw new NotFoundException('Academy not found');
+    }
+    const { classes: upcomingClasses, ...summary } = school;
+    return { ...summary, upcomingClasses };
+  }
+
   /** One nested query, not three sequential ones — membershipPlans/classes are fetched
    * as relations on the same School read rather than as separate round trips (an
    * earlier draft did three; caught on code review as unnecessary latency for what's
-   * conceptually one "detail" read). */
+   * conceptually one "detail" read).
+   *
+   * FOUND ON REVIEW (Decision 266 — see search()'s own comment for the full
+   * account): `archivedAt: null` added here too — this method predates
+   * Decision 266 but had the identical gap, just reachable only by an
+   * already-authenticated caller rather than a pre-auth one. `findUnique`
+   * can't take an extra filter alongside a unique field in the same `where`,
+   * hence `findFirst` (id is still effectively unique). */
   async findOne(schoolId: string) {
-    const school = await this.prismaDiscovery.school.findUnique({
-      where: { id: schoolId },
+    const school = await this.prismaDiscovery.school.findFirst({
+      where: { id: schoolId, archivedAt: null },
       select: {
         ...SCHOOL_SUMMARY_SELECT,
         membershipPlans: {
