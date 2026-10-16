@@ -33,7 +33,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 /** The roles this endpoint is authorized to GRANT — see CreateRoleGrantDto.
- * SCHOOL_OWNER_MANAGER added by Decision 269. */
+ * SCHOOL_OWNER_MANAGER added by Decision 270. */
 const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'SCHOOL_OWNER_MANAGER'] as const;
 
 /**
@@ -84,7 +84,7 @@ export class RoleGrantsService {
 
   /**
    * School Owner/Manager granting Instructor or Branch Staff within their own School
-   * (Spec §8.2), or — as of Decision 269 — another SCHOOL_OWNER_MANAGER at that same
+   * (Spec §8.2), or — as of Decision 270 — another SCHOOL_OWNER_MANAGER at that same
    * School (co-ownership/succession). See CreateRoleGrantDto's header comment for why
    * every other role/grantor combination remains out of scope.
    */

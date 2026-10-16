@@ -231,13 +231,13 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     }
   });
 
-  // Decision 269 — the one RoleGrant authority-matrix edge approved beyond the
+  // Decision 270 — the one RoleGrant authority-matrix edge approved beyond the
   // original Instructor/Branch Staff case: a School Owner/Manager may grant another
   // SCHOOL_OWNER_MANAGER at their own School. Franchise Owner granting roles at its
   // Schools, and a direct Student/Guardian grant path, were both explicitly
   // considered and rejected by that same decision — the tests below confirm both
   // stay rejected, not just that the new case works.
-  it('School Owner/Manager CAN grant another SCHOOL_OWNER_MANAGER at their own School (Decision 269)', async () => {
+  it('School Owner/Manager CAN grant another SCHOOL_OWNER_MANAGER at their own School (Decision 270)', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/users/${verifiedInvitee.id}/role-grants`)
       .set('Authorization', `Bearer ${tokenOwnerA}`)
@@ -253,7 +253,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     await superuser.roleGrant.deleteMany({ where: { userId: verifiedInvitee.id, schoolId: schoolA.id, role: 'SCHOOL_OWNER_MANAGER' } });
   });
 
-  it('a branchId is rejected for a SCHOOL_OWNER_MANAGER grant — this role is School-wide, never Branch-scoped (Decision 269)', async () => {
+  it('a branchId is rejected for a SCHOOL_OWNER_MANAGER grant — this role is School-wide, never Branch-scoped (Decision 270)', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/users/${verifiedInvitee.id}/role-grants`)
       .set('Authorization', `Bearer ${tokenOwnerA}`)
@@ -262,7 +262,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(await superuser.roleGrant.count({ where: { userId: verifiedInvitee.id, schoolId: schoolA.id, role: 'SCHOOL_OWNER_MANAGER' } })).toBe(0);
   });
 
-  it('granting FRANCHISE_OWNER remains rejected — Decision 269 explicitly did not extend the matrix that far', async () => {
+  it('granting FRANCHISE_OWNER remains rejected — Decision 270 explicitly did not extend the matrix that far', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/users/${verifiedInvitee.id}/role-grants`)
       .set('Authorization', `Bearer ${tokenOwnerA}`)
@@ -270,7 +270,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     expect(res.status).toBe(400); // rejected by ValidationPipe — not a value GrantableRoleDto accepts
   });
 
-  it('granting STUDENT directly through this endpoint remains rejected — Decision 269 found the existing self-service join path sufficient', async () => {
+  it('granting STUDENT directly through this endpoint remains rejected — Decision 270 found the existing self-service join path sufficient', async () => {
     const res = await request(app.getHttpServer())
       .post(`/v1/users/${verifiedInvitee.id}/role-grants`)
       .set('Authorization', `Bearer ${tokenOwnerA}`)

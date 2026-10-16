@@ -83,7 +83,7 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  * will ever risk deleting out from under a signature race).
  *
  * WAIVERSIGNATURE (THE PER-STUDENT SIGNED RECORD) IS A SEPARATE, NEWER
- * SWEEP — Decision 268 (16 Oct 2026) set the first real retention numbers for
+ * SWEEP — Decision 269 (16 Oct 2026) set the first real retention numbers for
  * this exact row, closing the "pending real legal input" gap the Waiver
  * comment above still otherwise describes. Computed DYNAMICALLY at sweep
  * time (20261116000000_waiver_signature_retention_purge), not from a
@@ -101,13 +101,13 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  *     unrevoked STUDENT grant exists) or with no RoleGrant history at all
  *     is never eligible — there is no departure to measure from.
  * UNSIGNED/PENDING rows (no real signature ever captured) are excluded
- * entirely — Decision 268 is about retaining what was actually signed, not
+ * entirely — Decision 269 is about retaining what was actually signed, not
  * assignment-tracking placeholders.
  *
  * TRANSACTION IS DELIBERATELY NOT TOUCHED ANYWHERE IN THIS FILE: Decision
  * 261 (14 Oct 2026, predates 268) already confirmed Transaction is never
  * deletable, the same permanent-retention treatment as Membership —
- * Decision 268's "7 years" framing for Transaction is a compliance
+ * Decision 269's "7 years" framing for Transaction is a compliance
  * retention FLOOR, not a purge trigger, and does not override 261.
  *
  * RANK NEEDS MORE THAN A PLAIN DELETE-AND-CATCH-P2003: unlike every other
@@ -144,11 +144,11 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  * triggers every child's CASCADE, even with zero grants on the child
  * tables themselves.
  */
-/** Minors' retention threshold (Decision 268): age of majority, plus this
+/** Minors' retention threshold (Decision 269): age of majority, plus this
  * many further years before a Guardian-signed WaiverSignature is eligible. */
 const MINOR_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_MAJORITY = 6;
 const AGE_OF_MAJORITY_YEARS = 18;
-/** Adult retention threshold (Decision 268): years after departure (the
+/** Adult retention threshold (Decision 269): years after departure (the
  * Student's most recent revoked STUDENT RoleGrant at that School) before a
  * self-signed WaiverSignature is eligible. */
 const ADULT_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_DEPARTURE = 7;
@@ -283,7 +283,7 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     return due.length;
   }
 
-  /** WaiverSignature's own sweep (Decision 268) — see this file's own header
+  /** WaiverSignature's own sweep (Decision 269) — see this file's own header
    * comment for the full retention rules. Only actually-signed rows are
    * considered (UNSIGNED/PENDING assignment placeholders have no signature
    * to retain and are left alone). */

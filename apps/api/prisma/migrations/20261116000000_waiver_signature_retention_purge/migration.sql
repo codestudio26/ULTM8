@@ -1,4 +1,4 @@
--- Decision 268 — retention-aware purge for WaiverSignature, the per-Student
+-- Decision 269 — retention-aware purge for WaiverSignature, the per-Student
 -- signed legal record Decision 110/226's "Waiver is never purged" exception
 -- actually protects. That exception was always scoped to the Waiver TEMPLATE
 -- row (title/body) — WaiverSignature (the per-Student signature itself) has
@@ -13,9 +13,9 @@
 -- purgeAt going stale against a later-changed retention policy.
 --
 -- Transaction is deliberately NOT touched by this migration or the processor
--- change that follows it — Decision 261 (14 Oct 2026, predates Decision 268)
+-- change that follows it — Decision 261 (14 Oct 2026, predates Decision 269)
 -- already confirmed Transaction is never deletable, same permanent-retention
--- treatment as Membership. Decision 268's "7 years" framing for Transaction
+-- treatment as Membership. Decision 269's "7 years" framing for Transaction
 -- is a retention FLOOR for compliance purposes, not a purge trigger — it does
 -- not override Decision 261's standing "never deletable" policy, and nothing
 -- here builds a Transaction purge path.

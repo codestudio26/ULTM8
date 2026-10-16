@@ -313,7 +313,7 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
   });
 
   // ===========================================================================
-  // WaiverSignature — Decision 268's retention numbers, dynamically computed.
+  // WaiverSignature — Decision 269's retention numbers, dynamically computed.
   // A fresh Waiver template + School-scoped STUDENT RoleGrant history per
   // test, so each test's own revokedAt/dateOfBirth fixture is the only
   // variable that determines the outcome.
@@ -362,7 +362,7 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
     return signature;
   }
 
-  it('an adult (self-signed) WaiverSignature is purged 7 years after the Student departs (Decision 268)', async () => {
+  it('an adult (self-signed) WaiverSignature is purged 7 years after the Student departs (Decision 269)', async () => {
     const student = await mkSigner('AdultDeparted', new Date('1990-01-01'));
     const signature = await mkWaiverAndSignature({ signedById: student.id, studentId: student.id });
     await superuser.roleGrant.create({
