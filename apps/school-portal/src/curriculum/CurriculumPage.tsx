@@ -142,7 +142,11 @@ export function CurriculumPage() {
     {
       key: 'instructor',
       header: 'Instructor',
-      render: (l: LessonResponse) => (l.instructorId ? instructors.find((i) => i.userId === l.instructorId)?.userId ?? l.instructorId : '—'),
+      render: (l: LessonResponse) => {
+        if (!l.instructorId) return '—';
+        const instructor = instructors.find((i) => i.userId === l.instructorId);
+        return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : l.instructorId;
+      },
     },
     { key: 'skills', header: 'Skills', render: (l: LessonResponse) => l.skillIds.length },
     {
