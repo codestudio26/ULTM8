@@ -24,15 +24,17 @@ import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 const BCRYPT_ROUNDS = 12;
 
 /** Display label per GrantableRoleDto value, for the "you've been granted..."
- * notification email's subject/body — this endpoint only ever creates these two
+ * notification email's subject/body — this endpoint only ever creates these three
  * (see GRANTABLE_ROLES below), so no other role needs an entry here. */
 const ROLE_LABELS: Record<string, string> = {
   INSTRUCTOR: 'Instructor',
   BRANCH_STAFF: 'Branch Staff',
+  SCHOOL_OWNER_MANAGER: 'Owner/Manager',
 };
 
-/** The only two roles this endpoint is authorized to GRANT — see CreateRoleGrantDto. */
-const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF'] as const;
+/** The roles this endpoint is authorized to GRANT — see CreateRoleGrantDto.
+ * SCHOOL_OWNER_MANAGER added by Decision 270. */
+const GRANTABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'SCHOOL_OWNER_MANAGER'] as const;
 
 /**
  * The roles this endpoint is authorized to REVOKE (v1.2 backend backlog —
@@ -82,8 +84,9 @@ export class RoleGrantsService {
 
   /**
    * School Owner/Manager granting Instructor or Branch Staff within their own School
-   * (Spec §8.2) — the one confirmed case; see CreateRoleGrantDto's header comment for
-   * why every other role/grantor combination is out of scope this phase.
+   * (Spec §8.2), or — as of Decision 270 — another SCHOOL_OWNER_MANAGER at that same
+   * School (co-ownership/succession). See CreateRoleGrantDto's header comment for why
+   * every other role/grantor combination remains out of scope.
    */
   async create(callerId: string, targetUserId: string, dto: CreateRoleGrantDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, dto.schoolId);
@@ -107,6 +110,14 @@ export class RoleGrantsService {
 
     if (dto.role === 'BRANCH_STAFF' && !dto.branchId) {
       throw new BadRequestException('branchId is required when role is BRANCH_STAFF');
+    }
+
+    // SCHOOL_OWNER_MANAGER has no Branch concept (assertSchoolOwner's own query is
+    // School-scoped only, no branchId column) — reject a branchId outright rather than
+    // silently ignore it, so a caller never thinks they scoped an Owner/Manager grant
+    // to one Branch when the grant is actually School-wide.
+    if (dto.role === 'SCHOOL_OWNER_MANAGER' && dto.branchId) {
+      throw new BadRequestException('branchId must not be provided when role is SCHOOL_OWNER_MANAGER — this role is School-wide.');
     }
 
     // Target user must exist — no verification precondition on the target as of
