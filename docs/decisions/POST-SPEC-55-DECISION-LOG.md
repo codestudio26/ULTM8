@@ -3734,6 +3734,8 @@ Nothing about Decision 245's broader GDPR/LGPD erasure picture (data residency, 
 
 User, choosing Option B (grading logic only, no endpoint) over building the full `DELETE /users/me` with Decision 245's anonymize-in-place recommendation, after being shown that no account-deletion mechanism exists at all today and that Decision 245 itself says its design isn't authorized to build yet, 15 Oct 2026.
 
+---
+
 ## Decision 266 — School-selection UX for Apple 4.2.6/4.3 compliance (Decision 247), built
 
 **Date:** 15 Oct 2026 · **Status:** Approved by product owner, built
@@ -3772,3 +3774,27 @@ A new `SchoolThemeProvider`, mounted only inside the authenticated `AppNavigator
 
 User, answering the three scoping questions directly (join-code AND search; light theming post-login; pick School before signup) after being shown Decision 247's own explicit "undesigned" gap and the concrete engineering tradeoffs (no existing join-code mechanism, no theming infrastructure, no public discovery endpoint) found by direct code research before any of this was built, 15 Oct 2026.
 
+---
+
+## Decision 267 — Three vendor-credential-gated features deliberately deferred to v1.3: push notification delivery, Curriculum video, geocoding/IP-geo
+
+**Date:** 16 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** scopes three items this log and `CLAUDE.md` had been tracking as "built but non-functional pending real credentials" — they are not being built further or chased for provisioning in the current version; they're explicitly pushed to the next version.
+
+### Decision
+
+None of these are abandoned — each is fully built on the engineering side and only needs real third-party credentials/provisioning to go live. The product owner chose to defer that provisioning (and any further work gated on it) to v1.3 rather than treat it as current-version blocking work:
+
+1. **Push notification delivery (FCM/APNs)** — `PushNotificationService` and `apps/student`'s device-token registration are built end to end (Decision 223/264); it warns and no-ops without real Firebase/APNs credentials. No further action until v1.3.
+2. **Curriculum video (Cloudflare Stream + AWS Transcribe)** — `CloudflareStreamService`/`TranscribeService`, the upload endpoint, `VideoProcessingPollScheduler`, and the full `apps/school-portal`/`apps/student` UI are built (Decision 227/254); unverified only against a live Cloudflare/AWS account. No further action until v1.3.
+3. **Geocoding/IP-geo** — the provider is already decided (Google Places, Decision 212; IP-geo itself was separately decided to be skipped entirely, Decision 221) — this was NOT actually an open vendor decision, contrary to how it had been tracked. All that remains is provisioning a Google Cloud API key and then building the Google Places integration itself (never started — no reference to it exists anywhere in `apps/school-portal`/`apps/api` yet). Both the provisioning and the integration work are deferred to v1.3.
+
+### Effect
+
+- `docs/v1.2-backend-backlog.md`, `docs/TRACK-B-ROADMAP.md`, and `CLAUDE.md`'s "Current phase" section should describe these three as "deferred to v1.3," not as open/blocking gaps in the current version.
+- "v1.3" here is an informal milestone label the product owner used, the same way `docs/v1.2-backend-backlog.md`'s own filename is informal (`CLAUDE.md`'s Versioning section: version numbers/tags are only ever assigned by the user, and this decision does not create or imply a `v1.3` git tag).
+- Does not touch any of this log's other still-open items (#42–44, #47–48 in the session's own task tracking) — those remain separately open, not implicitly deferred by this decision.
+
+### Recorded by
+
+User, choosing to defer all three vendor-credential-gated items to v1.3 rather than continue tracking them as current-version gaps, 16 Oct 2026.
