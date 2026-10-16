@@ -137,4 +137,18 @@ describeIfDb('PublicAcademiesController — pre-auth School search and join-code
     const res = await request(app.getHttpServer()).get(`/v1/public/schools/by-code/${archivedSchool.joinCode}`);
     expect(res.status).toBe(404);
   });
+
+  // FOUND ON REVIEW — the by-code route previously took `code` as a bare,
+  // unvalidated string, unlike `search`'s own @MaxLength on `q`.
+  it('an oversized join code is rejected with 400, never reaches the database', async () => {
+    const res = await request(app.getHttpServer()).get(`/v1/public/schools/by-code/${'A'.repeat(5000)}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('a join code of the right length but wrong character set is rejected with 400', async () => {
+    // "!" is outside the generator's own alphabet (no symbols) — a real code
+    // could never contain it, so this is never a legitimate 404 case.
+    const res = await request(app.getHttpServer()).get('/v1/public/schools/by-code/AAAAAAA!');
+    expect(res.status).toBe(400);
+  });
 });

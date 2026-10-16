@@ -145,10 +145,20 @@ function JoinCodeMode({ onPick }: { onPick: (school: { id: string; name: string 
       </Field>
       <Button title="Find my School" onPress={() => setSubmittedCode(code.trim())} disabled={code.trim().length === 0} loading={isLoading} />
 
-      {notFound ? <ErrorBanner message="No School has that join code — check with your School and try again." /> : null}
-      {error && !notFound ? <ErrorBanner message={getApiErrorMessage(error, 'Could not look that up — please try again.')} /> : null}
+      {/* FOUND ON REVIEW: gated on `code === submittedCode`, not just
+          `data`/`error` truthiness — without this, editing the field after a
+          successful (or failed) lookup left the PREVIOUS result/error still
+          rendered and tappable, so a tap could silently pick a School that
+          no longer matches what's actually typed. The moment the field
+          changes, the stale result disappears until re-submitted. */}
+      {code === submittedCode && notFound ? (
+        <ErrorBanner message="No School has that join code — check with your School and try again." />
+      ) : null}
+      {code === submittedCode && error && !notFound ? (
+        <ErrorBanner message={getApiErrorMessage(error, 'Could not look that up — please try again.')} />
+      ) : null}
 
-      {data ? (
+      {code === submittedCode && data ? (
         <View style={{ marginTop: spacing[4] }}>
           <SchoolRow school={data} onPress={() => onPick({ id: data.id, name: data.name })} />
           <Text style={{ color: theme.textSecondary, marginTop: spacing[2] }}>Tap above to continue with this School.</Text>

@@ -39,10 +39,12 @@ interface PendingSchoolPick {
 }
 
 interface AuthContextValue {
-  /** True while the stored token is still being read from SecureStore at app launch —
-   * SecureStore is async, unlike school-portal's sessionStorage, so there's a real
-   * "don't know yet" state before the first screen decision (login vs. home) can be
-   * made. */
+  /** True while EITHER the stored token (SecureStore) or the pending
+   * School-pick intent (AsyncStorage, Decision 266) is still being read at
+   * app launch — both are async, unlike school-portal's sessionStorage, so
+   * there's a real "don't know yet" state before RootNavigator's three-way
+   * branch (SchoolPick vs. Auth vs. App) can be decided without a flash of
+   * the wrong screen. */
   loading: boolean;
   accessToken: string | null;
   claims: JwtClaims | null;
@@ -68,7 +70,10 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(true);
+  const [tokenLoading, setLoading] = useState(true);
+  // FOUND ON REVIEW — see the pendingSchoolPick-loading effect's own updated
+  // comment below for the full account of why this exists.
+  const [pendingSchoolPickLoaded, setPendingSchoolPickLoaded] = useState(false);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState<string | null>(null);
   const [pendingSchoolPick, setPendingSchoolPickState] = useState<PendingSchoolPick | null>(null);
@@ -109,23 +114,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Same "not gated behind `loading`" reasoning as the effect above — RootNavigator's
-  // three-way branch only needs this once it's actually known, and until then it falls
-  // back to treating the app as having no pending pick (SchoolPickScreen shows again,
-  // which is the right fallback: re-picking is cheap, losing a real pick silently isn't).
+  // FOUND ON REVIEW: this used to NOT gate `loading`, on the reasoning that
+  // RootNavigator falls back to "no pending pick" until this resolves — but
+  // that's exactly backwards for RootNavigator's own three-way branch
+  // (`!accessToken && !pendingSchoolPick`): a signed-out user who already
+  // picked a School could see SchoolPickScreen flash again for the brief
+  // window between the (separate, token-only) `loading` flag clearing and
+  // this read actually finishing, since "no pending pick yet known" and
+  // "genuinely no pending pick" were indistinguishable. `pendingSchoolPickLoaded`
+  // below closes that window — `loading`'s exported value (end of this
+  // function) now waits on both reads, not just the token one.
   useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem(PENDING_SCHOOL_PICK_KEY)
       .then((stored) => {
-        if (cancelled || !stored) return;
-        try {
-          setPendingSchoolPickState(JSON.parse(stored) as PendingSchoolPick);
-        } catch {
-          /* noop — a corrupted stored value is treated the same as none */
+        if (cancelled) return;
+        if (stored) {
+          try {
+            setPendingSchoolPickState(JSON.parse(stored) as PendingSchoolPick);
+          } catch {
+            /* noop — a corrupted stored value is treated the same as none */
+          }
         }
       })
       .catch(() => {
         /* noop */
+      })
+      .finally(() => {
+        if (!cancelled) setPendingSchoolPickLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -292,6 +308,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUnauthorizedHandler(refreshSession);
     return () => setUnauthorizedHandler(null);
   }, [refreshSession]);
+
+  // FOUND ON REVIEW — see the pendingSchoolPick-loading effect's own comment:
+  // `loading` must cover BOTH the token read and the pendingSchoolPick read,
+  // so RootNavigator's three-way branch never makes its School-pick-vs-not
+  // decision on a pendingSchoolPick value that just hasn't loaded yet.
+  const loading = tokenLoading || !pendingSchoolPickLoaded;
 
   const value = useMemo(
     () => ({

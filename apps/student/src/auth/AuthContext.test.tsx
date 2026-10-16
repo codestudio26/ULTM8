@@ -147,13 +147,39 @@ describe('AuthProvider — pendingSchoolPick (Decision 266)', () => {
     activeQueryClient = undefined;
   });
 
-  it('a previously persisted pick is loaded on launch, without blocking on `loading`', async () => {
+  it('a previously persisted pick is loaded on launch, and `loading` only clears once it has (FOUND ON REVIEW)', async () => {
     AsyncStorage.getItem.mockImplementation((key: string) =>
       Promise.resolve(key === 'ultm8.pendingSchoolPick' ? JSON.stringify({ id: 'dojo-1', name: 'Alpha Dojo' }) : null),
     );
 
     const { result } = await renderAuth();
     await waitFor(() => expect(result.current.pendingSchoolPick).toEqual({ id: 'dojo-1', name: 'Alpha Dojo' }));
+    // `loading` must have cleared no earlier than the pick itself resolved —
+    // otherwise RootNavigator's three-way branch could decide "no pending
+    // pick" on a read that just hadn't finished yet.
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('`loading` stays true until the pendingSchoolPick read finishes, even after the token read has already resolved (FOUND ON REVIEW)', async () => {
+    let resolvePendingPickRead: (value: string | null) => void;
+    const pendingPickRead = new Promise<string | null>((resolve) => {
+      resolvePendingPickRead = resolve;
+    });
+    AsyncStorage.getItem.mockImplementation((key: string) =>
+      key === 'ultm8.pendingSchoolPick' ? pendingPickRead : Promise.resolve(null),
+    );
+
+    const { result } = await renderAuth();
+    // The token read (secureTokenStore.get, mocked to resolve null in
+    // beforeEach) has already settled by now — `loading` must NOT have
+    // cleared off the back of that alone.
+    expect(result.current.loading).toBe(true);
+
+    await act(async () => {
+      resolvePendingPickRead(null);
+      await pendingPickRead;
+    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
   it('setPendingSchoolPick updates state immediately and persists to AsyncStorage under its own key', async () => {

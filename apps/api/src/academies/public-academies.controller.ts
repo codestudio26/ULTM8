@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AcademiesService } from './academies.service';
 import { AcademyDetailDto, AcademyListResponseDto } from './dto/academy-response.dto';
+import { JoinCodeParamDto } from './dto/join-code-param.dto';
 import { SchoolSearchQueryDto } from './dto/school-search-query.dto';
 
 // Decision 266 (Apple 4.2.6/4.3 compliance, Decision 247) — the one deliberately
@@ -40,7 +41,7 @@ export class PublicAcademiesController {
   @Throttle(SCHOOL_JOIN_CODE_THROTTLE)
   @ApiOkResponse({ type: AcademyDetailDto })
   @Get('by-code/:code')
-  findByJoinCode(@Param('code') code: string) {
-    return this.academiesService.findByJoinCode(code.toUpperCase());
+  findByJoinCode(@Param() params: JoinCodeParamDto) {
+    return this.academiesService.findByJoinCode(params.code.toUpperCase());
   }
 }

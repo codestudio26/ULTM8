@@ -5,7 +5,6 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
-import { PrismaDiscoveryService } from '../../common/prisma/prisma-discovery.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
 import { AuthService } from '../../auth/auth.service';
@@ -28,7 +27,6 @@ export class SchoolsService {
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
-    private readonly prismaDiscovery: PrismaDiscoveryService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly guardiansService: GuardiansService,
@@ -47,29 +45,42 @@ export class SchoolsService {
    * way to ask Postgres for "a fresh value from your own column default"
    * outside an INSERT. 32^8 ≈ 1.1e12 combinations; the retry loop exists
    * purely as belt-and-suspenders — a real collision would be astronomically
-   * unlikely. Checked via `prismaDiscovery`, not `prismaApp`: existence of a
-   * School's join code is cross-tenant information by definition (the whole
-   * point is a code identifying a School nobody has joined yet), and
-   * `ultm8_discovery` already has SELECT on this column (this migration's
-   * own GRANT) — no new mechanism needed.
+   * unlikely.
+   *
+   * FOUND ON REVIEW: an earlier draft checked collisions via
+   * `prismaDiscovery` (AcademiesModule's dedicated connection) — a genuine
+   * violation of that service's own documented "ONLY AcademiesService may
+   * inject this" contract. Fixed the same way `school_exists()`
+   * (20260919000000_student_self_enrollment) already solved the identical
+   * problem for `join()`: a narrow `SECURITY DEFINER` SQL function
+   * (`join_code_exists`, this PR's own migration) called from inside the
+   * caller's own `prismaApp` tenant-context transaction — existence of a
+   * join code is cross-tenant information by definition (the whole point is
+   * a code identifying a School nobody has joined yet), so the function
+   * needs to bypass RLS, but that's now scoped to exactly this one
+   * boolean check, not a connection to another module's role.
    */
   private readonly JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-  private async generateUniqueJoinCode(): Promise<string> {
-    for (let attempt = 0; attempt < 20; attempt++) {
-      let candidate = '';
-      for (let i = 0; i < 8; i++) {
-        candidate += this.JOIN_CODE_ALPHABET[Math.floor(Math.random() * this.JOIN_CODE_ALPHABET.length)];
+  private async generateUniqueJoinCode(callerId: string): Promise<string> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      for (let attempt = 0; attempt < 20; attempt++) {
+        let candidate = '';
+        for (let i = 0; i < 8; i++) {
+          candidate += this.JOIN_CODE_ALPHABET[Math.floor(Math.random() * this.JOIN_CODE_ALPHABET.length)];
+        }
+        const [{ join_code_exists: exists }] = await tx.$queryRaw<[{ join_code_exists: boolean }]>`
+          SELECT join_code_exists(${candidate})
+        `;
+        if (!exists) {
+          return candidate;
+        }
       }
-      const existing = await this.prismaDiscovery.school.findUnique({ where: { joinCode: candidate }, select: { id: true } });
-      if (!existing) {
-        return candidate;
-      }
-    }
-    // Reaching this would mean 20 consecutive collisions out of 1.1e12
-    // possibilities — treated as an environment/generator fault, not a
-    // normal error path a caller should retry past.
-    throw new Error('Could not generate a unique School join code after 20 attempts');
+      // Reaching this would mean 20 consecutive collisions out of 1.1e12
+      // possibilities — treated as an environment/generator fault, not a
+      // normal error path a caller should retry past.
+      throw new Error('Could not generate a unique School join code after 20 attempts');
+    });
   }
 
   /**
@@ -715,7 +726,7 @@ export class SchoolsService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
-    const joinCode = await this.generateUniqueJoinCode();
+    const joinCode = await this.generateUniqueJoinCode(callerId);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({ where: { id: schoolId }, data: { joinCode } }),
     );
