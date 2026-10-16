@@ -10,5 +10,23 @@
       "Bash(git push *)",
       "Bash(git commit -m 'Update Claude Code permissions allowlist *)"
     ]
+  },
+  "enabledPlugins": {
+    "privacy-legal@claude-for-legal": true,
+    "legal@knowledge-work-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-for-legal": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-for-legal"
+      }
+    },
+    "knowledge-work-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/knowledge-work-plugins"
+      }
+    }
   }
 }
