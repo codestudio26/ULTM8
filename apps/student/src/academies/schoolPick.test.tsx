@@ -65,7 +65,7 @@ describe('SchoolPickScreen', () => {
 
     const screen = await render(<SchoolPickScreen />);
     await fireEvent.press(screen.getByText('Join code'));
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. DDZ8KFAA'), 'ddz8kfaa');
+    await fireEvent.changeText(screen.getByPlaceholderText('e.g. DDZ8KFAA'), 'ddz8kfaa');
     await fireEvent.press(screen.getByText('Find my School'));
     fireEvent.press(await screen.findByText('Uptown Judo'));
 
@@ -77,7 +77,7 @@ describe('SchoolPickScreen', () => {
 
     const screen = await render(<SchoolPickScreen />);
     await fireEvent.press(screen.getByText('Join code'));
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. DDZ8KFAA'), 'ZZZZZZZZ');
+    await fireEvent.changeText(screen.getByPlaceholderText('e.g. DDZ8KFAA'), 'ZZZZZZZZ');
     await fireEvent.press(screen.getByText('Find my School'));
 
     expect(await screen.findByText('No School has that join code — check with your School and try again.')).toBeTruthy();
@@ -94,6 +94,22 @@ describe('SchoolPickScreen', () => {
     act(() => jest.advanceTimersByTime(200));
     jest.useRealTimers();
     expect(mocked(q.useSchoolSearch)).toHaveBeenLastCalledWith('');
+  });
+
+  it('editing the code after a successful lookup hides the previous result until re-submitted, so a stale School can never be picked', async () => {
+    mocked(q.useSchoolByJoinCode).mockReturnValue(ok({ id: 'dojo-2', name: 'Uptown Judo', address: null }));
+
+    const screen = await render(<SchoolPickScreen />);
+    await fireEvent.press(screen.getByText('Join code'));
+    await fireEvent.changeText(screen.getByPlaceholderText('e.g. DDZ8KFAA'), 'AAAAAAAA');
+    await fireEvent.press(screen.getByText('Find my School'));
+    expect(await screen.findByText('Uptown Judo')).toBeTruthy();
+
+    // Edit the field WITHOUT re-submitting — the hook mock still "returns"
+    // Uptown Judo (nothing re-fetched in this test), but the result must
+    // disappear anyway: it no longer matches what's actually typed.
+    await fireEvent.changeText(screen.getByPlaceholderText('e.g. DDZ8KFAA'), 'BBBBBBBB');
+    await waitFor(() => expect(screen.queryByText('Uptown Judo')).toBeNull());
   });
 
   it('typed lowercase join-code input is uppercased before it is ever submitted', async () => {

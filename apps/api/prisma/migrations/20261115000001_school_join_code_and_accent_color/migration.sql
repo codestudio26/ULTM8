@@ -61,3 +61,29 @@ ALTER TABLE "School" ADD COLUMN "accentColor" TEXT;
 -- and joinable (via the existing JoinSchoolScreen -> POST /schools/:id/join)
 -- for its whole 90-day pending-purge window, pre-auth or not.
 GRANT SELECT ("joinCode", "archivedAt") ON "School" TO ultm8_discovery;
+
+-- FOUND ON REVIEW: SchoolsService.generateUniqueJoinCode() (used by
+-- regenerateJoinCode(), School.create() relies on the DB default above
+-- instead) originally queried `PrismaDiscoveryService` directly to check a
+-- candidate code for collisions — a genuine violation of that service's own
+-- documented contract ("ONLY AcademiesService may inject this... rather
+-- than reusing this connection for an unrelated purpose",
+-- common/prisma/prisma-discovery.service.ts), and the exact same mistake
+-- `school_exists()` above (20260919000000_student_self_enrollment) was
+-- itself created to avoid for the parallel case of join() needing to see a
+-- School before the caller holds any RoleGrant there. Same fix, same
+-- shape: a narrow SECURITY DEFINER function, callable from inside the
+-- caller's own ultm8_app tenant-context transaction, needing no connection
+-- to another module's dedicated role at all.
+CREATE FUNCTION "join_code_exists"(p_join_code text)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = ''
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public."School" WHERE "joinCode" = p_join_code);
+$$;
+
+ALTER FUNCTION "join_code_exists"(text) OWNER TO ultm8_rls_helper;
+GRANT EXECUTE ON FUNCTION "join_code_exists"(text) TO ultm8_app;
