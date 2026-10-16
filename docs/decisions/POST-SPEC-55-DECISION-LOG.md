@@ -3776,7 +3776,32 @@ User, answering the three scoping questions directly (join-code AND search; ligh
 
 ---
 
-## Decision 267 — GDPR/LGPD erasure scope: both jurisdictions, not just one
+## Decision 267 — Three vendor-credential-gated features deliberately deferred to v1.3: push notification delivery, Curriculum video, geocoding/IP-geo
+
+**Date:** 16 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** scopes three items this log and `CLAUDE.md` had been tracking as "built but non-functional pending real credentials" — they are not being built further or chased for provisioning in the current version; they're explicitly pushed to the next version.
+
+### Decision
+
+None of these are abandoned — each is fully built on the engineering side and only needs real third-party credentials/provisioning to go live. The product owner chose to defer that provisioning (and any further work gated on it) to v1.3 rather than treat it as current-version blocking work:
+
+1. **Push notification delivery (FCM/APNs)** — `PushNotificationService` and `apps/student`'s device-token registration are built end to end (Decision 223/264); it warns and no-ops without real Firebase/APNs credentials. No further action until v1.3.
+2. **Curriculum video (Cloudflare Stream + AWS Transcribe)** — `CloudflareStreamService`/`TranscribeService`, the upload endpoint, `VideoProcessingPollScheduler`, and the full `apps/school-portal`/`apps/student` UI are built (Decision 227/254); unverified only against a live Cloudflare/AWS account. No further action until v1.3.
+3. **Geocoding/IP-geo** — the provider is already decided (Google Places, Decision 212; IP-geo itself was separately decided to be skipped entirely, Decision 221) — this was NOT actually an open vendor decision, contrary to how it had been tracked. All that remains is provisioning a Google Cloud API key and then building the Google Places integration itself (never started — no reference to it exists anywhere in `apps/school-portal`/`apps/api` yet). Both the provisioning and the integration work are deferred to v1.3.
+
+### Effect
+
+- `docs/v1.2-backend-backlog.md`, `docs/TRACK-B-ROADMAP.md`, and `CLAUDE.md`'s "Current phase" section should describe these three as "deferred to v1.3," not as open/blocking gaps in the current version.
+- "v1.3" here is an informal milestone label the product owner used, the same way `docs/v1.2-backend-backlog.md`'s own filename is informal (`CLAUDE.md`'s Versioning section: version numbers/tags are only ever assigned by the user, and this decision does not create or imply a `v1.3` git tag).
+- Does not touch any of this log's other still-open items (#42–44, #47–48 in the session's own task tracking) — those remain separately open, not implicitly deferred by this decision.
+
+### Recorded by
+
+User, choosing to defer all three vendor-credential-gated items to v1.3 rather than continue tracking them as current-version gaps, 16 Oct 2026.
+
+---
+
+## Decision 268 — GDPR/LGPD erasure scope: both jurisdictions, not just one
 
 **Date:** 16 Oct 2026 · **Status:** Approved by product owner
 **Resolves:** the market-scope question Decision 245 itself left open ("which specific markets/customers actually require either of these... that's a sales/legal question, not an engineering one").
@@ -3795,7 +3820,7 @@ User, approving the Developer's recommendation (build GDPR+LGPD-compatible from 
 
 ---
 
-## Decision 268 — Waiver/Transaction retention periods: 7 years for Transactions, age-of-majority+6 for minors' Waivers
+## Decision 269 — Waiver/Transaction retention periods: 7 years for Transactions, age-of-majority+6 for minors' Waivers
 
 **Date:** 16 Oct 2026 · **Status:** Approved by product owner, pending real legal sign-off
 **Resolves:** Decision 110's own still-open "Waiver's own retention period is explicitly left open pending real legal input" item, and the parallel Transaction-retention question Decision 245 named but left unanswered.
@@ -3809,7 +3834,7 @@ User, approving the Developer's recommendation (build GDPR+LGPD-compatible from 
 
 ### What this does NOT resolve
 
-Does not itself change `EntityOffboardingPurgeProcessor` — that processor still finds-and-logs-but-never-deletes `Waiver` rows past `purgeAt` (Decision 110 part 4's explicit, named skip). Wiring the processor to actually purge once past this new retention window is a separate follow-up engineering task, not done as part of recording this number. Also does not resolve Decision 245's broader GDPR/LGPD erasure build itself (see Decision 267 above) — this is the retention-period input that build will eventually need, not the build itself.
+Does not itself change `EntityOffboardingPurgeProcessor` — that processor still finds-and-logs-but-never-deletes `Waiver` rows past `purgeAt` (Decision 110 part 4's explicit, named skip). Wiring the processor to actually purge once past this new retention window is a separate follow-up engineering task, not done as part of recording this number. Also does not resolve Decision 245's broader GDPR/LGPD erasure build itself (see Decision 268 above) — this is the retention-period input that build will eventually need, not the build itself.
 
 ### Recorded by
 
@@ -3817,7 +3842,7 @@ User, approving the Developer's recommended figures (7yr Transactions; age-18+6y
 
 ---
 
-## Decision 269 — RoleGrant authority matrix: Owner/Manager may grant another Owner/Manager; Franchise Owner and direct Student/Guardian grants remain rejected
+## Decision 270 — RoleGrant authority matrix: Owner/Manager may grant another Owner/Manager; Franchise Owner and direct Student/Guardian grants remain rejected
 
 **Date:** 16 Oct 2026 · **Status:** Approved by product owner
 **Resolves:** one edge of the RoleGrant authority matrix Decision 80 left fully open ("every other role/grantor combination... is still genuinely unconfirmed and is rejected (403) rather than built from a guess").
@@ -3844,7 +3869,7 @@ User, approving the Developer's recommendation (approve only the Owner→Owner/M
 
 ---
 
-## Decision 270 — NFR targets: no customer-facing SLA yet; internal engineering bar only (99.5% uptime, p95 < 500ms), revisit once real traffic exists
+## Decision 271 — NFR targets: no customer-facing SLA yet; internal engineering bar only (99.5% uptime, p95 < 500ms), revisit once real traffic exists
 
 **Date:** 16 Oct 2026 · **Status:** Approved by product owner
 **Resolves:** `docs/ops/NFR-TARGETS.md`'s own named gap — no uptime/SLA, latency, or scale number had ever been set anywhere in this repository.
@@ -3863,7 +3888,7 @@ User, approving the Developer's recommendation (no SLA yet, internal target only
 
 ---
 
-## Decision 271 — Domain-rules terminology: drop the stale "User" CMS label; unify activities/discipline into one controlled list
+## Decision 272 — Domain-rules terminology: drop the stale "User" CMS label; unify activities/discipline into one controlled list
 
 **Date:** 16 Oct 2026 · **Status:** Approved by product owner
 **Resolves:** both terminology gaps `skills/ultm8-domain-rules/SKILL.md` had flagged `[UNRESOLVED]`/`[UNRESOLVED, TERMINOLOGY]`.
@@ -3880,4 +3905,3 @@ Item 2 is a scope/direction decision, not a completed migration — reconciling 
 ### Recorded by
 
 User, approving both of the Developer's recommendations (delete the stale label; unify the controlled list) 16 Oct 2026.
-
