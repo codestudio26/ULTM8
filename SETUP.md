@@ -93,6 +93,20 @@ need to start them again, same as section 3.
 
 ## Troubleshooting
 
+**Saving a form fails with "each value in … must be a UUID" on dummy data.**
+Older seed scripts gave demo records ids like
+`40000000-0000-0000-0000-000000000001`, which the API's UUID validation
+rejects (the version digit must be 1–8). The seeds now use valid ids such
+as `40000000-0000-4000-8000-000000000001`. Re-running the seeds over an
+old database only adds a second copy of the demo data next to the old one,
+so wipe the dev database and reseed instead. This deletes everything in
+it, including anything you created by hand:
+```bash
+cd apps/api
+npx prisma migrate reset --force
+node prisma/seed-dummy-data.js
+```
+
 **`Error: Cannot find module '.../dist/main'` right after a clean compile.**
 Not a timing fluke — `apps/api/tsconfig.build.tsbuildinfo` is TypeScript's
 incremental build cache. It used to live outside `dist/`, so deleting
