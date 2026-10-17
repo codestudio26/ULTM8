@@ -1,7 +1,14 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "src"
+    "rootDir": "src",
+    // Keep the incremental build cache inside outDir, not at the project root.
+    // nest-cli.json's deleteOutDir wipes dist/ on every build — if the cache
+    // lived outside it (the old default), a stale cache could survive a
+    // deleted dist/ and convince tsc everything was already emitted, so it
+    // silently emitted nothing (0 errors, 0 files). Keeping the two together
+    // means the cache can never outlive the output it describes.
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
   },
   "exclude": ["node_modules", "test", "dist", "scripts", "**/*spec.ts"]
 }
