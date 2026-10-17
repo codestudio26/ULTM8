@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fix: self-service registration no longer fails silently-but-not-really
+  when the SMS verification code can't be sent.** `POST /auth/register`
+  creates the `User` row, then sends the OTP as a second step — if that
+  second step failed (misconfigured or momentarily unavailable OTP
+  provider), the whole request previously came back as a bare 500 even
+  though the account had already been created; the person was told
+  registration failed with no way to recover (registering again just hit
+  "account already exists"). Register and the "Resend code" action on
+  `/verify-otp` now both report success with an `otpSendFailed` flag
+  instead, so the School Portal can tell the person their account exists
+  and point them at "Resend code" rather than a dead end.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

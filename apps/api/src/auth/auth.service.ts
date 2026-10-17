@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -62,6 +63,8 @@ const DECOY_PASSCODE_HASH = '$2a$12$KC.JM0GG3LUNutCFB3SKbu1poEdSC6djHNvDgq3kxcU7
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
@@ -117,7 +120,22 @@ export class AuthService {
       }),
     );
 
-    await this.twilioVerify.sendOtp(dto.phone);
+    // The User row above is already committed — a failure here (misconfigured
+    // or transiently unavailable OTP provider) must never surface as a bare
+    // request failure, since the account exists either way and a caller that
+    // thinks registration itself failed has no way to recover (retrying
+    // register() now just hits the "already exists" conflict above). Report
+    // it as a successful registration with otpSendFailed set instead, so the
+    // caller can offer "resend code" rather than a dead end.
+    try {
+      await this.twilioVerify.sendOtp(dto.phone);
+    } catch (err) {
+      this.logger.error(`Registered ${id} but failed to send its OTP: ${err instanceof Error ? err.message : err}`);
+      return {
+        message: 'Registered, but we could not send your verification code. Use "Resend code" on the next screen.',
+        otpSendFailed: true as const,
+      };
+    }
 
     return {
       message: 'Registered — verification code sent. Call POST /auth/otp/verify to complete registration.',
@@ -126,7 +144,12 @@ export class AuthService {
 
   /** Re-sends an OTP — used for registration or passcode-reset retries alike. */
   async sendOtp(dto: SendOtpDto) {
-    await this.twilioVerify.sendOtp(dto.phone);
+    try {
+      await this.twilioVerify.sendOtp(dto.phone);
+    } catch (err) {
+      this.logger.error(`Failed to resend OTP to ${dto.phone}: ${err instanceof Error ? err.message : err}`);
+      return { message: 'Could not send a verification code — try again shortly.', otpSendFailed: true as const };
+    }
     return { message: 'Verification code sent' };
   }
 

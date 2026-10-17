@@ -31,6 +31,7 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState(false);
+  const [otpSendFailed, setOtpSendFailed] = useState(false);
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -47,7 +48,7 @@ export function RegisterPage() {
 
     setSubmitting(true);
     try {
-      await unwrap(
+      const result = await unwrap(
         apiClient.POST('/v1/auth/register', {
           body: {
             email: form.email,
@@ -67,6 +68,10 @@ export function RegisterPage() {
         }),
       );
       // Registration sends the OTP itself (AuthService.register()) — no separate send call needed.
+      // The account exists either way even if the OTP itself couldn't be sent
+      // (result.otpSendFailed) — tell them to use "Resend code" rather than
+      // claim a code is already on its way.
+      setOtpSendFailed(result.otpSendFailed === true);
       setCreated(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
@@ -79,7 +84,11 @@ export function RegisterPage() {
     return (
       <AuthSuccessCard
         title="Account created"
-        subtitle="Thanks for joining — next, verify your phone number."
+        subtitle={
+          otpSendFailed
+            ? "Thanks for joining — we couldn't send your verification code just now. Use \"Resend code\" on the next screen to try again."
+            : 'Thanks for joining — next, verify your phone number.'
+        }
         onContinue={() => navigate('/verify-otp', { state: { phone: form.phone } })}
       />
     );

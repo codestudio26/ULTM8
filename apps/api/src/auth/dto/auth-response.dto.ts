@@ -14,6 +14,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class AuthMessageResponseDto {
   @ApiProperty()
   message!: string;
+
+  @ApiPropertyOptional({ description: 'True when the request itself succeeded but the SMS verification code could not be sent (e.g. the OTP provider is unavailable or misconfigured) — the caller should offer a retry rather than treat this as failure.' })
+  otpSendFailed?: true;
 }
 
 /**

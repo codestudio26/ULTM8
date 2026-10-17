@@ -32,8 +32,12 @@ export function VerifyOtpPage() {
     setError(null);
     setResent(false);
     try {
-      await unwrap(apiClient.POST('/v1/auth/otp/send', { body: { phone } }));
-      setResent(true);
+      const result = await unwrap(apiClient.POST('/v1/auth/otp/send', { body: { phone } }));
+      if (result.otpSendFailed) {
+        setError(result.message);
+      } else {
+        setResent(true);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not resend the code.');
     }

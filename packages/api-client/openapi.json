@@ -8935,6 +8935,7 @@
             "name": "code",
             "required": true,
             "in": "path",
+            "description": "8-character School join code.",
             "schema": {
               "type": "string"
             }
@@ -10769,6 +10770,10 @@
         "properties": {
           "message": {
             "type": "string"
+          },
+          "otpSendFailed": {
+            "type": "boolean",
+            "description": "True when the request itself succeeded but the SMS verification code could not be sent (e.g. the OTP provider is unavailable or misconfigured) — the caller should offer a retry rather than treat this as failure."
           }
         },
         "required": [
@@ -11913,7 +11918,8 @@
             "type": "string",
             "enum": [
               "INSTRUCTOR",
-              "BRANCH_STAFF"
+              "BRANCH_STAFF",
+              "SCHOOL_OWNER_MANAGER"
             ]
           },
           "schoolId": {

@@ -66,6 +66,22 @@ describe('AuthService', () => {
       expect(twilio.sendOtp).toHaveBeenCalledWith(dto.phone);
       expect(result.message).toMatch(/verification code sent/i);
     });
+
+    it('still succeeds, flagged, when the OTP provider fails (the User row is already committed)', async () => {
+      prismaAuth.user.findFirst.mockResolvedValue(null);
+      twilio.sendOtp.mockRejectedValue(new Error('TwilioVerifyService is not configured'));
+      const result = await service.register(dto);
+      expect(result.otpSendFailed).toBe(true);
+      expect(result.message).toMatch(/could not send/i);
+    });
+  });
+
+  describe('sendOtp', () => {
+    it('reports otpSendFailed instead of throwing when the OTP provider fails', async () => {
+      twilio.sendOtp.mockRejectedValue(new Error('TwilioVerifyService is not configured'));
+      const result = await service.sendOtp({ phone: '+15551234567' } as any);
+      expect(result.otpSendFailed).toBe(true);
+    });
   });
 
   describe('login', () => {
