@@ -24,7 +24,7 @@ const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 const BCRYPT_ROUNDS = 12; // matches apps/api/src/auth/auth.service.ts
-const SCHOOL_ID = '00000000-0000-0000-0000-000000000001'; // Dev Test School, from seed-dev-user.js
+const SCHOOL_ID = '00000000-0000-4000-8000-000000000001'; // Dev Test School, from seed-dev-user.js
 
 async function main() {
   const devPasscode = await bcrypt.hash('123456', BCRYPT_ROUNDS);
@@ -47,16 +47,16 @@ async function main() {
     create: { id: SCHOOL_ID, name: 'Dev Test School' },
   });
   await prisma.roleGrant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000002' },
+    where: { id: '00000000-0000-4000-8000-000000000002' },
     update: {},
-    create: { id: '00000000-0000-0000-0000-000000000002', role: 'SCHOOL_OWNER_MANAGER', userId: devUser.id, schoolId: SCHOOL_ID },
+    create: { id: '00000000-0000-4000-8000-000000000002', role: 'SCHOOL_OWNER_MANAGER', userId: devUser.id, schoolId: SCHOOL_ID },
   });
 
   // --- Give the dev user a Student grant too (owner who also trains) ---
   await prisma.roleGrant.upsert({
-    where: { id: '10000000-0000-0000-0000-000000000001' },
+    where: { id: '10000000-0000-4000-8000-000000000001' },
     update: {},
-    create: { id: '10000000-0000-0000-0000-000000000001', role: 'STUDENT', userId: devUser.id, schoolId: SCHOOL_ID },
+    create: { id: '10000000-0000-4000-8000-000000000001', role: 'STUDENT', userId: devUser.id, schoolId: SCHOOL_ID },
   });
 
   // --- A second user: Instructor ---
@@ -75,9 +75,9 @@ async function main() {
     },
   });
   await prisma.roleGrant.upsert({
-    where: { id: '10000000-0000-0000-0000-000000000002' },
+    where: { id: '10000000-0000-4000-8000-000000000002' },
     update: {},
-    create: { id: '10000000-0000-0000-0000-000000000002', role: 'INSTRUCTOR', userId: instructorUser.id, schoolId: SCHOOL_ID },
+    create: { id: '10000000-0000-4000-8000-000000000002', role: 'INSTRUCTOR', userId: instructorUser.id, schoolId: SCHOOL_ID },
   });
 
   // --- A third user: a plain Student (roster needs more than just the owner) ---
@@ -96,17 +96,17 @@ async function main() {
     },
   });
   await prisma.roleGrant.upsert({
-    where: { id: '10000000-0000-0000-0000-000000000003' },
+    where: { id: '10000000-0000-4000-8000-000000000003' },
     update: {},
-    create: { id: '10000000-0000-0000-0000-000000000003', role: 'STUDENT', userId: studentUser.id, schoolId: SCHOOL_ID },
+    create: { id: '10000000-0000-4000-8000-000000000003', role: 'STUDENT', userId: studentUser.id, schoolId: SCHOOL_ID },
   });
 
   // --- Branches ---
   const mainBranch = await prisma.branch.upsert({
-    where: { id: '20000000-0000-0000-0000-000000000001' },
+    where: { id: '20000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '20000000-0000-0000-0000-000000000001',
+      id: '20000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       name: 'Downtown',
       address: '221 Main St, Springfield',
@@ -115,10 +115,10 @@ async function main() {
     },
   });
   await prisma.branch.upsert({
-    where: { id: '20000000-0000-0000-0000-000000000002' },
+    where: { id: '20000000-0000-4000-8000-000000000002' },
     update: {},
     create: {
-      id: '20000000-0000-0000-0000-000000000002',
+      id: '20000000-0000-4000-8000-000000000002',
       schoolId: SCHOOL_ID,
       name: 'Westside',
       address: '48 Harbor Ave, Springfield',
@@ -128,10 +128,10 @@ async function main() {
 
   // --- Instructor profile ---
   await prisma.instructor.upsert({
-    where: { id: '30000000-0000-0000-0000-000000000001' },
+    where: { id: '30000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '30000000-0000-0000-0000-000000000001',
+      id: '30000000-0000-4000-8000-000000000001',
       userId: instructorUser.id,
       schoolId: SCHOOL_ID,
       branchId: mainBranch.id,
@@ -142,34 +142,34 @@ async function main() {
 
   // --- Discipline + Ranks ---
   const discipline = await prisma.discipline.upsert({
-    where: { id: '40000000-0000-0000-0000-000000000001' },
+    where: { id: '40000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '40000000-0000-0000-0000-000000000001',
+      id: '40000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       name: 'Brazilian Jiu-Jitsu',
       classTypesOffered: ['Gi', 'No-Gi'],
     },
   });
   await prisma.rank.upsert({
-    where: { id: '41000000-0000-0000-0000-000000000001' },
+    where: { id: '41000000-0000-4000-8000-000000000001' },
     update: {},
-    create: { id: '41000000-0000-0000-0000-000000000001', disciplineId: discipline.id, schoolId: SCHOOL_ID, name: 'White Belt', order: 0, primaryColour: '#FFFFFF' },
+    create: { id: '41000000-0000-4000-8000-000000000001', disciplineId: discipline.id, schoolId: SCHOOL_ID, name: 'White Belt', order: 0, primaryColour: '#FFFFFF' },
   });
   await prisma.rank.upsert({
-    where: { id: '41000000-0000-0000-0000-000000000002' },
+    where: { id: '41000000-0000-4000-8000-000000000002' },
     update: {},
-    create: { id: '41000000-0000-0000-0000-000000000002', disciplineId: discipline.id, schoolId: SCHOOL_ID, name: 'Blue Belt', order: 1, primaryColour: '#1E3A8A' },
+    create: { id: '41000000-0000-4000-8000-000000000002', disciplineId: discipline.id, schoolId: SCHOOL_ID, name: 'Blue Belt', order: 1, primaryColour: '#1E3A8A' },
   });
 
   // --- Classes (one-off, taught by the Instructor) ---
   const now = new Date();
   const inDays = (d, h) => { const dt = new Date(now); dt.setDate(dt.getDate() + d); dt.setHours(h, 0, 0, 0); return dt; };
   const class1 = await prisma.class.upsert({
-    where: { id: '50000000-0000-0000-0000-000000000001' },
+    where: { id: '50000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '50000000-0000-0000-0000-000000000001',
+      id: '50000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       branchId: mainBranch.id,
       instructorId: instructorUser.id,
@@ -181,10 +181,10 @@ async function main() {
     },
   });
   await prisma.class.upsert({
-    where: { id: '50000000-0000-0000-0000-000000000002' },
+    where: { id: '50000000-0000-4000-8000-000000000002' },
     update: {},
     create: {
-      id: '50000000-0000-0000-0000-000000000002',
+      id: '50000000-0000-4000-8000-000000000002',
       schoolId: SCHOOL_ID,
       branchId: mainBranch.id,
       instructorId: instructorUser.id,
@@ -199,10 +199,10 @@ async function main() {
   // --- Timetable slot (recurring template) ---
   const t = (h) => { const dt = new Date('1970-01-01T00:00:00Z'); dt.setUTCHours(h, 0, 0, 0); return dt; };
   await prisma.timetableSlot.upsert({
-    where: { id: '60000000-0000-0000-0000-000000000001' },
+    where: { id: '60000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '60000000-0000-0000-0000-000000000001',
+      id: '60000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       branchId: mainBranch.id,
       instructorId: instructorUser.id,
@@ -217,15 +217,15 @@ async function main() {
 
   // --- Curriculum: category + lesson ---
   const category = await prisma.lessonCategory.upsert({
-    where: { id: '70000000-0000-0000-0000-000000000001' },
+    where: { id: '70000000-0000-4000-8000-000000000001' },
     update: {},
-    create: { id: '70000000-0000-0000-0000-000000000001', schoolId: SCHOOL_ID, name: 'Escapes', order: 0 },
+    create: { id: '70000000-0000-4000-8000-000000000001', schoolId: SCHOOL_ID, name: 'Escapes', order: 0 },
   });
   await prisma.lesson.upsert({
-    where: { id: '71000000-0000-0000-0000-000000000001' },
+    where: { id: '71000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '71000000-0000-0000-0000-000000000001',
+      id: '71000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       instructorId: instructorUser.id,
       title: 'Escaping Mount — the Elbow-Knee Escape',
@@ -251,10 +251,10 @@ async function main() {
 
   // --- Membership Plans ---
   const monthlyPlan = await prisma.membershipPlan.upsert({
-    where: { id: '80000000-0000-0000-0000-000000000001' },
+    where: { id: '80000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '80000000-0000-0000-0000-000000000001',
+      id: '80000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       type: 'SUBSCRIPTION',
       title: 'Monthly Unlimited',
@@ -265,10 +265,10 @@ async function main() {
     },
   });
   const classPackPlan = await prisma.membershipPlan.upsert({
-    where: { id: '80000000-0000-0000-0000-000000000002' },
+    where: { id: '80000000-0000-4000-8000-000000000002' },
     update: {},
     create: {
-      id: '80000000-0000-0000-0000-000000000002',
+      id: '80000000-0000-4000-8000-000000000002',
       schoolId: SCHOOL_ID,
       type: 'CLASS_PACK',
       title: '10-Class Pack',
@@ -278,10 +278,10 @@ async function main() {
     },
   });
   await prisma.membershipPlan.upsert({
-    where: { id: '80000000-0000-0000-0000-000000000003' },
+    where: { id: '80000000-0000-4000-8000-000000000003' },
     update: {},
     create: {
-      id: '80000000-0000-0000-0000-000000000003',
+      id: '80000000-0000-4000-8000-000000000003',
       schoolId: SCHOOL_ID,
       type: 'TRIAL_MEMBERSHIP',
       title: '1-Week Free Trial',
@@ -292,10 +292,10 @@ async function main() {
 
   // --- Memberships: dev user on Monthly Unlimited, Jamie on Class Pack ---
   const devMembership = await prisma.membership.upsert({
-    where: { id: '90000000-0000-0000-0000-000000000001' },
+    where: { id: '90000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '90000000-0000-0000-0000-000000000001',
+      id: '90000000-0000-4000-8000-000000000001',
       studentId: devUser.id,
       membershipPlanId: monthlyPlan.id,
       schoolId: SCHOOL_ID,
@@ -305,10 +305,10 @@ async function main() {
     },
   });
   await prisma.membership.upsert({
-    where: { id: '90000000-0000-0000-0000-000000000002' },
+    where: { id: '90000000-0000-4000-8000-000000000002' },
     update: {},
     create: {
-      id: '90000000-0000-0000-0000-000000000002',
+      id: '90000000-0000-4000-8000-000000000002',
       studentId: studentUser.id,
       membershipPlanId: classPackPlan.id,
       schoolId: SCHOOL_ID,
@@ -320,10 +320,10 @@ async function main() {
 
   // --- Transactions ---
   await prisma.transaction.upsert({
-    where: { id: 'a0000000-0000-0000-0000-000000000001' },
+    where: { id: 'a0000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: 'a0000000-0000-0000-0000-000000000001',
+      id: 'a0000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       studentId: devUser.id,
       paymentAccountId: paymentAccount.id,
@@ -337,10 +337,10 @@ async function main() {
     },
   });
   await prisma.transaction.upsert({
-    where: { id: 'a0000000-0000-0000-0000-000000000002' },
+    where: { id: 'a0000000-0000-4000-8000-000000000002' },
     update: {},
     create: {
-      id: 'a0000000-0000-0000-0000-000000000002',
+      id: 'a0000000-0000-4000-8000-000000000002',
       schoolId: SCHOOL_ID,
       studentId: studentUser.id,
       paymentAccountId: paymentAccount.id,
@@ -353,10 +353,10 @@ async function main() {
     },
   });
   await prisma.transaction.upsert({
-    where: { id: 'a0000000-0000-0000-0000-000000000003' },
+    where: { id: 'a0000000-0000-4000-8000-000000000003' },
     update: {},
     create: {
-      id: 'a0000000-0000-0000-0000-000000000003',
+      id: 'a0000000-0000-4000-8000-000000000003',
       schoolId: SCHOOL_ID,
       studentId: devUser.id,
       paymentAccountId: paymentAccount.id,
@@ -371,20 +371,20 @@ async function main() {
 
   // --- Waiver + signature (dev user signed; Jamie's is still unsigned) ---
   const waiver = await prisma.waiver.upsert({
-    where: { id: 'b0000000-0000-0000-0000-000000000001' },
+    where: { id: 'b0000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: 'b0000000-0000-0000-0000-000000000001',
+      id: 'b0000000-0000-4000-8000-000000000001',
       schoolId: SCHOOL_ID,
       title: 'Liability Waiver',
       body: 'I acknowledge the risks of physical training and release Dev Test School from liability for ordinary injury.',
     },
   });
   await prisma.waiverSignature.upsert({
-    where: { id: 'b1000000-0000-0000-0000-000000000001' },
+    where: { id: 'b1000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: 'b1000000-0000-0000-0000-000000000001',
+      id: 'b1000000-0000-4000-8000-000000000001',
       waiverId: waiver.id,
       studentId: devUser.id,
       signedById: devUser.id,
@@ -396,10 +396,10 @@ async function main() {
     },
   });
   await prisma.waiverSignature.upsert({
-    where: { id: 'b1000000-0000-0000-0000-000000000002' },
+    where: { id: 'b1000000-0000-4000-8000-000000000002' },
     update: {},
     create: {
-      id: 'b1000000-0000-0000-0000-000000000002',
+      id: 'b1000000-0000-4000-8000-000000000002',
       waiverId: waiver.id,
       studentId: studentUser.id,
       schoolId: SCHOOL_ID,
@@ -409,10 +409,10 @@ async function main() {
 
   // --- Booking: dev user books Class 1 against their Membership ---
   await prisma.booking.upsert({
-    where: { id: 'c0000000-0000-0000-0000-000000000001' },
+    where: { id: 'c0000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: 'c0000000-0000-0000-0000-000000000001',
+      id: 'c0000000-0000-4000-8000-000000000001',
       studentId: devUser.id,
       classId: class1.id,
       schoolId: SCHOOL_ID,

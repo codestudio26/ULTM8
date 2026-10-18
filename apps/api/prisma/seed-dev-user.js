@@ -34,19 +34,19 @@ async function main() {
   });
 
   const school = await prisma.school.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000001' },
+    where: { id: '00000000-0000-4000-8000-000000000001' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000001',
+      id: '00000000-0000-4000-8000-000000000001',
       name: 'Dev Test School',
     },
   });
 
   await prisma.roleGrant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000002' },
+    where: { id: '00000000-0000-4000-8000-000000000002' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000002',
+      id: '00000000-0000-4000-8000-000000000002',
       role: 'SCHOOL_OWNER_MANAGER',
       userId: user.id,
       schoolId: school.id,

@@ -46,10 +46,10 @@ async function main() {
   // truth — domain-rules §3). Not school-scoped: GuardianLink/ConsentRecord
   // are platform-scoped, not School-scoped (SKILL.md §14).
   await prisma.roleGrant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000101' },
+    where: { id: '00000000-0000-4000-8000-000000000101' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000101',
+      id: '00000000-0000-4000-8000-000000000101',
       role: 'GUARDIAN',
       userId: guardian.id,
     },
