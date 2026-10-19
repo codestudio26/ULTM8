@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { Logger } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
+import IORedis from 'ioredis';
 import {
   OTP_DELIVERY_QUEUE,
   CLASS_OCCURRENCE_GENERATION_QUEUE,
@@ -40,13 +41,20 @@ const logger = new Logger('QueueModule');
  * underlying ioredis client specifically — without it, ioredis attempts to connect
  * immediately on construction regardless of whether anything has enqueued a job yet.
  */
-function redisConnection() {
+function redisConnection(): IORedis {
   const url = process.env.REDIS_URL;
   if (!url) {
     logger.warn('REDIS_URL is not set — job enqueue/processing will fail until it is.');
   }
   const parsed = new URL(url ?? 'redis://localhost:6379');
-  return {
+  // ONE shared ioredis client for every Queue and Worker, instead of BullMQ's
+  // default of a fresh connection per Queue plus two per Worker. With 17 queues
+  // and 17 workers that default came to 52 connections from a single API
+  // process, over the 50 a free Render Key Value allows — the staging API
+  // crashed with "Connection is closed" on every redeploy. Sharing leaves only
+  // each Worker's own blocking connection (BullMQ duplicates the client for
+  // that), so the API now uses about 18.
+  const client = new IORedis({
     host: parsed.hostname,
     port: Number(parsed.port || 6379),
     password: parsed.password || undefined,
@@ -56,7 +64,11 @@ function redisConnection() {
     // indefinitely, which is the actually-correct behavior for something meant to keep
     // trying to reconnect rather than give up.
     maxRetriesPerRequest: null,
-  };
+  });
+  // Without a listener, ioredis reports connection errors as unhandled 'error'
+  // events; log them instead (ioredis keeps reconnecting on its own).
+  client.on('error', (err) => logger.warn(`Redis connection error: ${err.message}`));
+  return client;
 }
 
 export {
