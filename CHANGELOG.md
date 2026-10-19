@@ -15,6 +15,37 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Staging deploy readiness (Render + Supabase + Vercel):**
+  - **api — the API refuses to start when misconfigured.** With
+    `NODE_ENV=production` (every deployed environment), it won't start unless
+    all of these hold:
+    - Every scoped `DATABASE_URL_*` is set, is not the superuser, and doesn't
+      use the dev password `changeme`. Before, an unset one silently fell back
+      to the superuser and bypassed RLS.
+    - `REDIS_URL`, `CORS_ALLOWED_ORIGINS` and `PORTAL_BASE_URL` are set.
+    - The four signing secrets are each 32+ characters and all different.
+
+    Missing vendor keys are only logged. Local dev and CI are unchanged.
+  - **api — new `GET /v1/health`:** public and unthrottled. It reports the
+    database (as `ultm8_app`) and Redis as ok/down, with a 503 if either is
+    down.
+  - **api — dev seed scripts refuse non-local databases.** They create logins
+    with passcode `123456`. To seed a throwaway staging database on purpose,
+    set `ULTM8_ALLOW_DEV_SEED_HOST=<host>`. They always refuse under
+    `NODE_ENV=production`.
+  - **api — `scripts/rotate-role-passwords.js`** sets all six scoped role
+    passwords from their connection strings. It runs on each Render build,
+    after `prisma migrate deploy`.
+  - **`render.yaml` rewritten for the current API:**
+    - Adds migrations and role-password rotation to the build, the health
+      check, and the two newer DB roles.
+    - Adds the QR and refresh/step-up settings, `PORTAL_BASE_URL`, and every
+      vendor key as `sync: false`.
+    - Removes the dummy Stripe keys.
+  - **school-portal, platform-admin: `vercel.json`** for monorepo builds, SPA
+    routing and basic security headers.
+  - **New guide `docs/deploy/STAGING-RUNBOOK.md`.**
+
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

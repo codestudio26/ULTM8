@@ -1,32 +1,24 @@
-# Render Blueprint — provisions the apps/api staging backend (Postgres + Key
-# Value/Redis + the NestJS API) in one deploy, on Render's free tier (no card
-# required). Deploy via Render's dashboard: New + -> Blueprint -> select this
-# repo/branch -> Render reads this file and provisions everything below.
+# Render Blueprint — the apps/api STAGING backend: the NestJS API plus a Key
+# Value (Redis) instance. Postgres is on Supabase; both portals are on Vercel
+# (see each app's vercel.json). Step-by-step setup: docs/deploy/STAGING-RUNBOOK.md.
+# Deploy via Render's dashboard: New + -> Blueprint -> this repo/branch.
 #
-# No commands here run from apps/api's own directory (no `rootDir`) —
-# deliberately anchored at the repo root instead, since this is an npm
-# workspaces monorepo and `npm install` needs the root package.json/lockfile
-# to resolve correctly, even though apps/api itself has no @ultm8/* workspace
-# dependency of its own (checked: apps/api/package.json).
+# Commands run from the repo root (no `rootDir`): this is an npm-workspaces
+# monorepo, and `npm install` needs the root package.json/lockfile.
 #
-# Four env vars below are `sync: false` (DATABASE_URL_APP/_AUTH/_JOBS/
-# _DISCOVERY) rather than generated or hardcoded here — they need real
-# passwords for the scoped Postgres roles the app's own init migration
-# creates (ultm8_app/ultm8_auth/ultm8_jobs/ultm8_discovery), which are NOT
-# derivable from a superuser connection string alone. Committing real
-# passwords into this file would defeat the point of using strong ones —
-# Render prompts for `sync: false` values during Blueprint creation instead,
-# so they're entered once, in Render's own UI, never in git.
+# Every `sync: false` value is entered once in Render's own UI, never in git:
+# Render prompts for them when the Blueprint is created.
 #
-# Postgres is hosted on Supabase, not Render — Render's own free Postgres
-# has a hard 30-day-from-creation expiry regardless of usage, while
-# Supabase's free tier only pauses after 7 days of NO activity (reversible,
-# and never triggers as long as this stays in active use). `DATABASE_URL`
-# is `sync: false` below rather than `fromDatabase` for this reason — it
-# points at Supabase's connection string, entered directly in Render's UI.
-# The `databases:` block that would provision Render's own Postgres has
-# been removed deliberately (not just left unused) — no unused resource
-# left sitting on the account.
+# Postgres lives on Supabase, not Render: Render's free Postgres expires 30
+# days after creation, while Supabase's free tier only pauses after 7 days of
+# no activity. So `DATABASE_URL` is `sync: false` (Supabase's connection
+# string), and there is no `databases:` block.
+#
+# NODE_ENV=production turns on apps/api's boot-time env check
+# (src/common/config/validate-env.ts). The API refuses to start without every
+# scoped DATABASE_URL_* (an unset one would silently fall back to the
+# superuser and bypass RLS), REDIS_URL, CORS_ALLOWED_ORIGINS, PORTAL_BASE_URL,
+# and four distinct 32+ character signing secrets.
 
 databases: []
 
@@ -34,56 +26,57 @@ services:
   - name: ultm8-redis
     type: keyvalue
     plan: free
-    # FOUND ON REVIEW: `ipAllowList` is mandatory on a Key Value service (Render
-    # rejects the Blueprint without it), but an empty list is a valid value —
-    # verified against Render's own docs — and is the recommended setting for
-    # exactly this case ("No external access (internal only)"). The previous
-    # `0.0.0.0/0` entry wasn't a required workaround for the mandatory-field
-    # rule, it was the widest possible public exposure: it let anyone on the
-    # internet attempt a connection using the leaked connection string, not
-    # just Render's own private network. `ultm8-api` still reaches this over
-    # the private network regardless, via REDIS_URL/fromService below — that
-    # part of the original comment was correct, it just drew the wrong
-    # conclusion from it.
+    # `ipAllowList` is mandatory on a Key Value service. Empty means "internal
+    # only": ultm8-api still reaches it over Render's private network via
+    # REDIS_URL/fromService below, and nothing on the internet can.
     ipAllowList: []
 
   - name: ultm8-api
     type: web
     runtime: node
     plan: free
-    # FIXED: a plain `npm install` at repo root pulls in EVERY workspace's
-    # deps — including apps/student's Expo/React Native toolchain and
-    # apps/school-portal's Vite frontend, neither of which apps/api needs
-    # (confirmed: apps/api/package.json has zero @ultm8/* workspace
-    # dependencies). That full install hung for 3+ hours on Render's free
-    # build machine on the first real attempt. Scoped to just this workspace
-    # (+ root tooling) instead — still anchored at repo root, not `rootDir`,
-    # to avoid any ambiguity about npm's workspace-root detection when
-    # invoked from within a subdirectory.
-    buildCommand: npm install --workspace=apps/api --include-workspace-root=true && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx turbo run build --filter=@ultm8/api
+    healthCheckPath: /v1/health
+    # Build steps, in order:
+    # - Install only apps/api's workspace plus root tooling. A full install
+    #   pulls in Expo/Vite and once hung for 3+ hours on Render's free builder.
+    #   `--include=dev` is required because NODE_ENV=production (below) would
+    #   otherwise skip the devDependencies the build needs (nest CLI, prisma
+    #   CLI, turbo).
+    # - `prisma migrate deploy`, as the superuser (DATABASE_URL). Idempotent:
+    #   it applies only pending migrations.
+    # - rotate-role-passwords.js sets each scoped role's password to the one
+    #   in its DATABASE_URL_* (the migrations create them with 'changeme').
+    buildCommand: >-
+      npm install --workspace=apps/api --include-workspace-root=true --include=dev &&
+      npx prisma generate --schema=apps/api/prisma/schema.prisma &&
+      npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma &&
+      node apps/api/scripts/rotate-role-passwords.js &&
+      npx turbo run build --filter=@ultm8/api
     startCommand: node apps/api/dist/main.js
     envVars:
-      # Superuser connection — Supabase's connection string, entered directly
-      # (see this file's header comment for why Postgres lives on Supabase,
-      # not Render). Used for `prisma migrate deploy` (run manually after
-      # first deploy) and by PrismaJobsService's own cross-role writes.
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+
+      # Superuser connection: Supabase's "Session pooler" connection string
+      # (port 5432, IPv4-compatible; the direct db.<ref>.supabase.co host is
+      # IPv6-only). Used for migrations, role-password rotation and the dev
+      # seeds. The running API never queries as this user.
       - key: DATABASE_URL
         sync: false
-      # FIXED: Render's own Blueprint validator rejected `fromDatabase` here
-      # ("depends on non-existent DB: ultm8-redis") — `fromDatabase` only
-      # resolves against the top-level `databases:` list (Postgres). A
-      # `type: keyvalue` entry lives under `services:` instead, so it's
-      # referenced with `fromService`.
       - key: REDIS_URL
         fromService:
           name: ultm8-redis
           type: keyvalue
           property: connectionString
 
-      # RLS-subject app roles — see this file's own header comment for why
-      # these can't be auto-derived. Fill in with the actual Postgres host
-      # Render shows you, plus the rotated passwords already generated for
-      # this deploy (not "changeme" — the migration's own dev-only default).
+      # Scoped, RLS-subject roles: one connection string each, same Supabase
+      # session-pooler host as DATABASE_URL, with the user swapped (pooler
+      # usernames are "<role>.<project-ref>") and a strong password YOU choose.
+      # rotate-role-passwords.js applies that password to the role on every
+      # deploy. Append `&connection_limit=2` (or `?connection_limit=2`): six
+      # pools share Supabase free tier's small pooler limit.
       - key: DATABASE_URL_APP
         sync: false
       - key: DATABASE_URL_AUTH
@@ -92,33 +85,90 @@ services:
         sync: false
       - key: DATABASE_URL_DISCOVERY
         sync: false
+      - key: DATABASE_URL_PLATFORM_ADMIN
+        sync: false
+      - key: DATABASE_URL_GRADING_ERASURE
+        sync: false
 
-      # Auth secrets — generated fresh per deploy, never reused across
-      # environments (matches this repo's own devcontainer convention of
-      # dev-only dummy values, just real ones here instead).
+      # Signing secrets: generated fresh by Render, distinct, never reused
+      # across environments.
       - key: JWT_ACCESS_SECRET
         generateValue: true
-      - key: JWT_ACCESS_TTL
-        value: 15m
       - key: PLATFORM_ADMIN_JWT_SECRET
         generateValue: true
+      - key: QR_CLASS_TOKEN_SECRET
+        generateValue: true
+      - key: QR_STUDENT_TOKEN_SECRET
+        generateValue: true
+      # Spec §8.3's 15-minute access token. The refresh-token endpoint exists
+      # now, so there's no need for the old track-b "2h" debug value.
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: REFRESH_TOKEN_TTL_DAYS
+        value: "30"
       - key: PLATFORM_ADMIN_JWT_TTL
         value: 5m
+      - key: PLATFORM_ADMIN_IMPERSONATION_TTL_SECONDS
+        value: "600"
+      - key: QR_ATTENDANCE_TOKEN_TTL_SECONDS
+        value: "20"
+      - key: KID_MODE_TOKEN_TTL_SECONDS
+        value: "300"
+      - key: STEP_UP_TOKEN_TTL_SECONDS
+        value: "300"
 
-      # Stripe — dummy values, matching CI's own convention (Stripe/Slice 4b
-      # is deferred past V1; nothing here actually calls Stripe yet).
-      - key: STRIPE_SECRET_KEY
-        value: sk_test_ci_dummy_not_a_real_stripe_key
-      - key: STRIPE_WEBHOOK_SECRET
-        value: ci-test-webhook-secret-not-a-real-stripe-secret
-      - key: STRIPE_CONNECT_RETURN_URL
-        value: https://example.com/payments/connect/return
-      - key: STRIPE_CONNECT_REFRESH_URL
-        value: https://example.com/payments/connect/refresh
-
-      - key: PORT
-        value: "3000"
-      # Update once the Student app's actual dev/staging origin is known —
-      # left as `sync: false` rather than a guessed value.
+      # Browser origins: the two Vercel portals (plus the student web app if
+      # used), comma-separated, exact scheme+host, no trailing slash.
       - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # The School Portal's public URL, for links in emails (coach invites).
+      - key: PORTAL_BASE_URL
+        sync: false
+
+      # Vendors: optional for staging. The API boots without them, and each
+      # feature fails until its keys are set (the API logs which are missing).
+      # Stripe: TEST-mode keys only on staging.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CONNECT_RETURN_URL
+        sync: false
+      - key: STRIPE_CONNECT_REFRESH_URL
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_VERIFY_SERVICE_SID
+        sync: false
+      - key: POSTMARK_SERVER_TOKEN
+        sync: false
+      - key: NOTIFICATIONS_FROM_EMAIL
+        sync: false
+      - key: COGNITO_USER_POOL_ID
+        sync: false
+      - key: COGNITO_CLIENT_ID
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_BASE_URL
+        sync: false
+      - key: FCM_PROJECT_ID
+        sync: false
+      - key: FCM_CLIENT_EMAIL
+        sync: false
+      - key: FCM_PRIVATE_KEY
+        sync: false
+      - key: CLOUDFLARE_STREAM_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_STREAM_API_TOKEN
         sync: false

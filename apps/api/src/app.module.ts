@@ -29,6 +29,8 @@ import { CurriculumModule } from './curriculum/curriculum.module';
 import { TranslationsModule } from './translations/translations.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { HealthModule } from './health/health.module';
+import { validateEnv } from './common/config/validate-env';
 
 /** Requests per minute per IP on every route (THROTTLE_IP_LIMIT_PER_MINUTE,
  * default 60). Only the browser tests raise it: they drive the whole portal
@@ -40,7 +42,9 @@ function ipLimitPerMinute(): number {
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    // A deployed (NODE_ENV=production) API refuses to start without its scoped
+    // DB roles and signing secrets — see validate-env.ts.
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     ThrottlerModule.forRoot({
       throttlers: [
         { ttl: 60_000, limit: ipLimitPerMinute() }, // generous IP-keyed default; auth endpoints override tighter
@@ -77,6 +81,7 @@ function ipLimitPerMinute(): number {
     TranslationsModule,
     SubscriptionPlansModule,
     UploadsModule,
+    HealthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
