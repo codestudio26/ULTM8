@@ -47,6 +47,7 @@ into the decision log under the next free numbers.**
 | Settings → Billing settings, Payment processor | ✅ recording | §6 |
 | Members → Check-in, Attendance, Rosters | ✅ 10–12 | §7 |
 | Members → Documents, Content, Growth, member list | ✅ chat-only screenshots (not saved: images arrived inline, and the list shows a real member's phone/DOB) | §7 |
+| Member profile page (all tabs) | ✅ recordings 20.08, 20.10 | §8 |
 | Members → Settings tab; Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
 | Gym → Bookings, Managers & Staff, Payroll, Programs | ❌ not yet | — |
 | Billing, Marketing, Website, Sales, Competitions, Front Desk | ❌ not yet | — |
@@ -233,7 +234,58 @@ inside the band.
 
 **Questions:** L3: who may export member data (data-protection: minors' details)? Which columns?
 
-## 8. Code checks
+## 8. Member profile page (recordings 20.08 + 20.10, 19 Oct 2026)
+
+Not saved as images: every frame shows a real person's address, phone and date of birth.
+
+**Layout.** A **dark left panel (about 330px)** holds: "‹ Back to members list", round photo,
+name, "Member since", Edit pill, **check-in code in large type**, four round quick-action
+buttons (Send Access, Call, Message, Card), Tags, Personal Details (birthday + age,
+gender, phone, email, address), current rank with belt graphic, balance, and a "Manage
+family account" button. **The right side** has text tabs (Profile · Messaging · Attendance ·
+Documents · Ranks · Competitions). Each tab's content sits in cards with a **dark-blue title
+bar plus an action pill on the right** ("ADD NOTE", "CREATE RECURRING PAYMENT", "CREATE A CHARGE",
+"ADD RANK"). The Edit pill reopens the Add Member section-card form with "Save changes".
+After creating a member, a green "Member added successfully!" banner shows on the profile.
+
+**Add Member flow extras:** an **Edit Photo** modal with drag-to-reposition, Zoom and
+Rotate sliders, "Delete photo" and "Apply". The browser autofills address and password.
+
+ULTM8 today: `/students/:id` is `StudentGradingPage` (grading-focused: ranks, skills for
+next rank, history), plus `/students/:id/edit` (`StudentUpdatePage`).
+
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| PR1 | Left profile panel + tabbed right side | 🟡 | Frontend layout. Data mostly exists |
+| PR2 | Check-in code shown on profile | ❌ | Depends on M7 |
+| PR3 | Quick actions: Call, Message (email) | 🟡 | Frontend `tel:`/`mailto:` links are trivial. **In-app messaging** ❌ |
+| PR4 | Quick action: Send Access (re-send invite) | 🟡 | Invite flow exists; resend to verify |
+| PR5 | Quick action: Card (store a payment card) | 🟡 | Saved cards exist via hosted Checkout (Decisions 238/243). Staff adding a card on a member's behalf ❌ |
+| PR6 | **Tags** | ❌ | |
+| PR7 | Balance | ❌ | No per-member ledger/balance |
+| PR8 | **Family account** management | 🟡 | Guardian↔minor links exist; Gymdesk-style family grouping and billing ❌ (ties to P2/P12) |
+| PR9 | Profile tab: attendance chart | ❌ | Ties to A3 |
+| PR10 | **Notes** (staff notes about a member) | ❌ | No general member-notes entity (promotion-event notes only) |
+| PR11 | Recurring payments list + **create recurring payment** for a member | 🟡 | Memberships are bought via Checkout. Staff-created ad-hoc recurring charge ❌ |
+| PR12 | Payments list + **create a one-off charge** | 🟡 | Transactions exist. Staff-initiated ad-hoc charge ❌ |
+| PR13 | **Messaging** tab: email + SMS thread with the member (SMS needs a texting number) | ❌ | Notifications/Broadcast exist, but not a per-member conversation |
+| PR14 | Attendance tab: totals + **Log Attendance** modal (date, choose session, add note, Single/Bulk) | 🟡 | Roll-call check-in exists. Back-dated manual attendance with a note ❌ |
+| PR15 | Documents tab: add document / use template / **upload file** | 🟡 | Waiver signatures ✅; arbitrary file upload per member ❌ |
+| PR16 | Ranks tab: add rank (belt dropdown with stripes), date, time, "add promotion fee" | ✅/🟡 | Grading/promotion ✅ (`StudentGradingPage`). **Promotion fee** ❌ |
+| PR17 | Competitions tab (third-party: Smoothcomp integration) | ❌ | |
+| PR18 | Photo crop: zoom, rotate, reposition | 🟡 | Upload exists; crop UI is frontend-only |
+
+**Questions:**
+- **PR6:** Tags: free text or a per-School list? Visible to the member?
+- **PR7/PR11/PR12:** May staff create ad-hoc charges and recurring payments outside a Membership Plan? This is a big payments-model change (Spec 55 payments flow), so it needs its own decision.
+- **PR10:** Who sees notes (all staff, or Owner only)? Is the member ever shown them? Retention (GDPR)?
+- **PR13:** Email only, or SMS too (vendor + cost)? For minors, does messaging go to the Guardian?
+- **PR14:** May staff back-date attendance? How far? Does it consume Class Pack credits?
+- **PR15:** File types and size limits, and who can see uploaded files.
+- **PR16:** Promotion fee: charged automatically on promotion? Grading rules follow Gus's prototype (Decision 124+), so check the grading log first.
+- **PR17:** Smoothcomp is the competition platform Gymdesk integrates with. Integrate with it too, or build our own? Note the open Chrome tab "Smoothcomp + Gymdesk" in the recordings.
+
+## 9. Code checks
 
 All ❓ items from the first pass were checked against `schema.prisma` on 19 Oct 2026
 and resolved above. Field-level only: a 🟡 may still need its service/endpoint checked
