@@ -30,6 +30,11 @@ services:
     type: keyvalue
     plan: free
     region: oregon
+    # BullMQ needs Redis to never drop keys: under an evicting policy (Render's
+    # default is allkeys-lru) a full instance would silently delete queued jobs.
+    # The API logs "Eviction policy is allkeys-lru. It should be noeviction"
+    # on boot until this is set.
+    maxmemoryPolicy: noeviction
     # `ipAllowList` is mandatory on a Key Value service. Empty means "internal
     # only": ultm8-staging-api still reaches it over Render's private network via
     # REDIS_URL/fromService below, and nothing on the internet can.
