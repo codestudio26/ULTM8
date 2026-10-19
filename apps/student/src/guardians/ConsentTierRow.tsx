@@ -11,12 +11,10 @@ type ConsentTier = 'BASELINE' | 'CAMERA';
 
 /** CANDIDATE UI, pending your approval per docs/TRACK-B-ROADMAP.md's "path
  * forward" — the underlying API (GuardiansController/Service) is real and
- * confirmed; what's undesigned is this exact screen/copy, which is why this
- * isn't committed yet. `CURRENT_POLICY_VERSION` is a placeholder standing in for
- * whatever real, approved privacy-notice text/version the product/legal side
- * would actually supply — not invented legal content, just a value to make the
- * confirmed `policyVersion` field wire up for this prototype. */
-const CURRENT_POLICY_VERSION = '1.0-placeholder';
+ * confirmed; what's undesigned is this exact screen/copy. The policy version is
+ * the published privacy notice's (Decision 171), passed in by
+ * MinorConsentScreen; null while none is published or the link is unconfirmed,
+ * and then `blockedReason` says why consent can't be given yet. */
 
 /** Copy quotes SKILL.md §14's own confirmed description of what each tier
  * covers and what withdrawing each one actually does (GuardiansService.
@@ -28,7 +26,7 @@ const TIER_COPY: Record<ConsentTier, { title: string; description: string; withd
     title: 'Baseline consent',
     description: "Covers your minor's general account, attendance, and grading data — required for their account to stay active.",
     withdrawWarning:
-      "Withdrawing baseline consent deactivates your minor's entire account — every role and enrollment they hold is revoked, the same effect as closing their account. This cannot be undone from this screen.",
+      "Withdrawing baseline consent permanently erases your child's account data — grading, bookings and attendance — and ends their enrolments. Payment records and signed waivers are kept, as the law requires. If another guardian still consents, only your own consent and link are removed and your child's data is kept. This cannot be undone.",
   },
   CAMERA: {
     title: 'Camera & photo consent',
@@ -42,16 +40,23 @@ export function ConsentTierRow({
   studentId,
   tier,
   record,
+  policyVersion,
+  blockedReason,
 }: {
   studentId: string;
   tier: ConsentTier;
   record: ConsentRecord | undefined;
+  policyVersion: string | null;
+  blockedReason: string | null;
 }) {
   const grant = useGrantConsent();
   const withdraw = useWithdrawConsent();
   const copy = TIER_COPY[tier];
   const [confirming, setConfirming] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  // Decision 172 — the Guardian declares parental responsibility before every
+  // grant; the server stores it with the consent history.
+  const [declared, setDeclared] = useState(false);
 
   // Same "derive from the mutation's own result, don't wait on a round-tripped
   // prop" discipline as WaiverRow's `effectiveSignature` (found on that slice's
@@ -72,9 +77,9 @@ export function ConsentTierRow({
   const granted = withdraw.isSuccess ? undefined : (record ?? grant.data);
 
   function handleGrant() {
-    if (grant.isPending) return;
+    if (grant.isPending || !policyVersion || !declared) return;
     withdraw.reset();
-    grant.mutate({ studentId, tier, policyVersion: CURRENT_POLICY_VERSION });
+    grant.mutate({ studentId, tier, policyVersion });
   }
 
   // FOUND ON REVIEW: `Alert.alert` is a documented no-op on React Native Web —
@@ -163,10 +168,39 @@ export function ConsentTierRow({
       ) : granted ? (
         <>
           <Text style={{ color: theme.textSuccess, fontSize: fontSize.caption, marginTop: spacing[1] }}>Active ✓</Text>
+          {granted.isCurrentPolicyVersion === false ? (
+            // Decision 171 — the privacy notice changed since this consent was given.
+            <Text style={{ color: theme.textDanger, fontSize: fontSize.caption, marginTop: spacing[1] }}>
+              The privacy notice has changed since you gave this consent. Please read it and consent again.
+            </Text>
+          ) : null}
           <Button title="Withdraw" variant="secondary" onPress={openConfirm} loading={withdraw.isPending} />
         </>
+      ) : blockedReason ? (
+        <Text style={{ color: theme.textSecondary, fontSize: fontSize.caption, marginTop: spacing[2] }}>{blockedReason}</Text>
       ) : (
-        <Button title="Grant consent" onPress={handleGrant} loading={grant.isPending} />
+        <>
+          <Pressable
+            onPress={() => setDeclared((d) => !d)}
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing[2] }}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: declared }}
+          >
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 4,
+                borderWidth: 1,
+                borderColor: theme.textSecondary,
+                backgroundColor: declared ? theme.textSecondary : 'transparent',
+                marginRight: spacing[2],
+              }}
+            />
+            <Text style={{ fontSize: fontSize.caption, flex: 1 }}>I am this child's parent or legal guardian, and I have read the privacy notice</Text>
+          </Pressable>
+          <Button title="Grant consent" onPress={handleGrant} loading={grant.isPending} disabled={!declared} />
+        </>
       )}
     </View>
   );

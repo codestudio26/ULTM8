@@ -87,6 +87,10 @@ export function MyMinorsScreen({ navigation }: Props) {
           <Text style={{ color: theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>
             Born {formatDateOnly(minor.dateOfBirth)}
           </Text>
+          {/* Decision 172 — consent waits until a School confirms the Guardian. */}
+          <Text style={{ color: minor.confirmedAt ? theme.textSuccess : theme.textSecondary, marginTop: spacing[1], fontSize: fontSize.caption }}>
+            {minor.confirmedAt ? 'Confirmed by school ✓' : 'Waiting for school to confirm you'}
+          </Text>
         </Pressable>
       ))}
 
