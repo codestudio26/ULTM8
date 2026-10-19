@@ -45,6 +45,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - **school-portal, platform-admin: `vercel.json`** for monorepo builds, SPA
     routing and basic security headers.
   - **New guide `docs/deploy/STAGING-RUNBOOK.md`.**
+  - **api — migration `20260904000000_fix_rolegrant_rls_recursion` now runs on
+    Supabase.**
+    - It restores the two GRANTs that had been fixed only on the old Track B
+      staging branch: `GRANT ultm8_rls_helper TO CURRENT_USER` and
+      `GRANT CREATE ON SCHEMA public TO ultm8_rls_helper`.
+    - Without them, a fresh database whose deploy role isn't a true superuser
+      (Supabase's `postgres`) stopped at "permission denied for schema public".
+    - The file is now byte-identical to the version already applied on the
+      live staging database. On CI's superuser both GRANTs change nothing.
 
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
