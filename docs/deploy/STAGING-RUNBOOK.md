@@ -40,8 +40,8 @@ never paste one into a chat.
 
 ## 2. Render (API + Redis)
 1. Render → **New + → Blueprint** → this repo → branch `master` (or the branch
-   under test). Render reads `render.yaml` and creates `ultm8-redis` and
-   `ultm8-api`.
+   under test). Render reads `render.yaml` and creates `ultm8-staging-redis` and
+   `ultm8-staging-api`.
 2. Render prompts for every `sync: false` value:
    - **Required:** `DATABASE_URL`, the six `DATABASE_URL_*` values,
      `CORS_ALLOWED_ORIGINS`, and `PORTAL_BASE_URL`. For the last two, put a
@@ -77,7 +77,7 @@ settings come from each app's `vercel.json`: install from the repo root, turbo
 build, `dist`, and SPA rewrites. `VITE_*` values are baked in at build time, so
 **redeploy** after changing them.
 
-Then go back to Render → `ultm8-api` → Environment and set:
+Then go back to Render → `ultm8-staging-api` → Environment and set:
 - `CORS_ALLOWED_ORIGINS=https://<portal>.vercel.app,https://<admin>.vercel.app`
   (exact origins, no trailing slash)
 - `PORTAL_BASE_URL=https://<portal>.vercel.app`

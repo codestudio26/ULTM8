@@ -20,21 +20,26 @@
 # superuser and bypass RLS), REDIS_URL, CORS_ALLOWED_ORIGINS, PORTAL_BASE_URL,
 # and four distinct 32+ character signing secrets.
 
+# Service names carry "staging" so they never collide with the older hand-made
+# ultm8-api/ultm8-redis services in the same Render workspace.
+
 databases: []
 
 services:
-  - name: ultm8-redis
+  - name: ultm8-staging-redis
     type: keyvalue
     plan: free
+    region: oregon
     # `ipAllowList` is mandatory on a Key Value service. Empty means "internal
-    # only": ultm8-api still reaches it over Render's private network via
+    # only": ultm8-staging-api still reaches it over Render's private network via
     # REDIS_URL/fromService below, and nothing on the internet can.
     ipAllowList: []
 
-  - name: ultm8-api
+  - name: ultm8-staging-api
     type: web
     runtime: node
     plan: free
+    region: oregon
     healthCheckPath: /v1/health
     # Build steps, in order:
     # - Install only apps/api's workspace plus root tooling. A full install
@@ -67,7 +72,7 @@ services:
         sync: false
       - key: REDIS_URL
         fromService:
-          name: ultm8-redis
+          name: ultm8-staging-redis
           type: keyvalue
           property: connectionString
 
