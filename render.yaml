@@ -45,7 +45,10 @@ services:
     runtime: node
     plan: free
     region: oregon
-    healthCheckPath: /v1/health
+    # TEMPORARY (one deploy): /v1/docs needs no Redis, so the fixed API can take
+    # over from the old instance that holds all 50 free Redis connections.
+    # Revert to /v1/health right after.
+    healthCheckPath: /v1/docs
     # Build steps, in order:
     # - Install only apps/api's workspace plus root tooling. A full install
     #   pulls in Expo/Vite and once hung for 3+ hours on Render's free builder.
