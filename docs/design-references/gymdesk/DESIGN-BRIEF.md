@@ -1,6 +1,6 @@
 # Gymdesk dashboard + left nav — design brief for the school-portal shell
 
-**Status:** draft, 19 Oct 2026. Reference only. Nothing here is a business rule.
+**Status:** draft, updated 19 Oct 2026. Reference only. Nothing here is a business rule.
 Screenshots in this folder were taken by the product owner from Gymdesk's
 manager dashboard as a *feel* reference.
 
@@ -69,8 +69,9 @@ with the utilities moved off `TopBar` (Q3), (c) dashboard layout.
 ## 4. Product-owner answers (19 Oct 2026)
 
 - **Q1 Nav grouping: APPROVED** as proposed below (9 rail items).
-- **Q2 Sub-nav style: PENDING.** The product owner will send a Gymdesk example of how a
-  section's sub-pages appear once a rail item is clicked.
+- **Q2 Sub-nav style: TABS** (from the product owner's Gymdesk recordings, 19 Oct 2026).
+  Clicking a rail item opens the section's first page; its other pages are text tabs
+  under the page title (see §6). No flyout menus.
 - **Q3 Top bar: move utilities onto the hero band and the rail**, as in the reference. The
   bell, School switcher and language go on the hero's top right; the profile goes to the rail bottom.
   The "TopBar as a thin bar" option is dropped.
@@ -110,3 +111,52 @@ built as part of this redesign unless they get their own decision:
 - **In-app chat/support bubble.**
 - Gymdesk's Marketing, Website, Sales, Competitions and Front Desk sections. ULTM8 has no
   equivalent modules.
+
+## 6. Patterns from the second round of screenshots/recordings (19 Oct 2026)
+
+Files: `05`–`09`, `recordings-keyframes/`.
+
+### Section pages + tabs (`06`, `recordings-keyframes/nav-tabs-and-settings-panel.jpg`)
+- Clicking a rail item goes straight to that section. There is no flyout.
+- Header: large icon + section title, the School name below it, then a row of plain-text tabs
+  with an accent underline on the active one. Plain white header. **The gradient hero band is
+  used on the Dashboard only.**
+- Page body: one white card centred on the pale grey page.
+- ULTM8 mapping: tabs for Team, Schedule, Grading, Billing and Organisation. Dashboard,
+  Students, Waivers and Notifications are single pages.
+
+### Settings layout
+- A second dark panel (about 250px) beside the rail lists categories, each with a ›.
+- The content is a list of rows (title + one-line description + ›). A row opens a detail page
+  with a "‹ Back" title.
+- Possible fit for School/Branch settings later. Not yet decided.
+
+### Long form: section cards (`07`–`09`, Add Member)
+- Full page, not a pop-up. "Back to list" button at the top right.
+- Each section is its own white card in two columns: the title on the left with a green tick
+  icon (plus an optional hint), and fields on the right in a 2–3 column grid.
+- Small uppercase labels above fields; a red `*` for required fields.
+- Optional extras are inline links ("ADD SECONDARY PHONE +", "+ ADDITIONAL CONTACT").
+- Photo: round placeholder + two pill buttons (camera / upload).
+- One primary button at the bottom right.
+- ULTM8 fit: Add/Update Student, Add Instructor Manually, School/Branch settings.
+
+### Long form: collapsible cards (recording, Add Membership Option)
+- A stack of cards, each with an icon, title, one-line description and chevron.
+- **A closed card shows its current value as a chip** ("FREE", "Ongoing", "Unlimited").
+- Type choice uses large tile pickers (e.g. Recurring / One-time / Per-session / Trial). The
+  selected tile is highlighted, and the fields below change to match.
+- Grey sub-panels group related fields inside a card.
+- One centred primary button at the bottom.
+- ULTM8 fit: Membership Plans, Classes.
+
+### Empty states
+- Action-led, not blank. E.g. "How To Add Members" shows 4 option cards; Memberships
+  shows "Add a new membership" + example templates.
+
+### Fields
+Per the product owner (19 Oct 2026), screens include Gymdesk's fields even where ULTM8 has no
+backend yet. Those show as disabled "coming soon", and each is listed in
+`GYMDESK-PARITY-BACKLOG.md` with the business-rule questions to answer before building.
+This replaces the "Deliberately NOT carried over" list in §5: those items are now backlog
+entries D3–D7 there.
