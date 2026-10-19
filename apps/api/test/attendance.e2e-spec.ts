@@ -81,6 +81,17 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     return membership;
   }
 
+  // Decision 171: consent needs a published privacy notice. Publishes a test one
+  // only if none is published yet, and afterAll puts the row back as it was.
+  let privacyNoticeBefore: { content: string | null; currentVersion: number | null } | undefined;
+  async function ensurePrivacyNoticePublished(): Promise<string> {
+    const doc = await superuser.legalDocument.findUniqueOrThrow({ where: { slug: 'privacy-statement' } });
+    if (doc.currentVersion !== null && doc.content?.trim()) return `privacy-statement@${doc.currentVersion}`;
+    privacyNoticeBefore ??= { content: doc.content, currentVersion: doc.currentVersion };
+    await superuser.legalDocument.update({ where: { slug: 'privacy-statement' }, data: { content: 'Test privacy notice.', currentVersion: 1 } });
+    return 'privacy-statement@1';
+  }
+
   async function mkBooking(studentId: string, classId: string, membershipId: string) {
     const booking = await superuser.booking.create({
       data: { id: randomUUID(), studentId, classId, schoolId: school.id, sourceMembershipId: membershipId, status: 'UPCOMING' },
@@ -159,8 +170,12 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
     await superuser.rank.deleteMany({ where: { schoolId: school.id } });
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
+    await superuser.consentEvent.deleteMany({ where: { studentId: { in: userIds } } });
     await superuser.consentRecord.deleteMany({ where: { studentId: { in: userIds } } });
     await superuser.guardianLink.deleteMany({ where: { studentId: { in: userIds } } });
+    if (privacyNoticeBefore) {
+      await superuser.legalDocument.update({ where: { slug: 'privacy-statement' }, data: privacyNoticeBefore });
+    }
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { OR: [{ id: { in: userIds } }, { email: { contains: 'guardian-managed.ultm8.internal' } }] } });
     await superuser.school.delete({ where: { id: school.id } });
@@ -280,10 +295,15 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: minorId, schoolId: school.id } });
       const tokenMinor = signAccessToken({ id: minorId, email: 'minor@example.test' }, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
 
+      // Decisions 171/172: consent needs a School-confirmed link and the current
+      // published privacy notice version (guardians.e2e-spec covers both paths).
+      await superuser.guardianLink.updateMany({ where: { studentId: minorId }, data: { confirmedAt: new Date(), confirmedSchoolId: school.id } });
+      const policyVersion = await ensurePrivacyNoticePublished();
+
       const grantRes = await request(app.getHttpServer())
         .post(`/v1/guardians/me/minors/${minorId}/consent`)
         .set('Authorization', `Bearer ${tokenStudentA}`)
-        .send({ tier: 'CAMERA', policyVersion: '2026-09-v1' });
+        .send({ tier: 'CAMERA', policyVersion, parentalResponsibilityDeclared: true });
       expect(grantRes.status).toBe(201);
       const withdrawRes = await request(app.getHttpServer())
         .patch(`/v1/guardians/me/consent/${grantRes.body.id}/withdraw`)

@@ -8,6 +8,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { AGE_OF_MAJORITY, calendarAge } from '../common/calendar-age';
 import { WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../jobs/queue.constants';
 import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
@@ -281,14 +282,7 @@ export class WaiversService {
     const student = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
     );
-    const today = new Date();
-    let age = today.getUTCFullYear() - student.dateOfBirth.getUTCFullYear();
-    const hasHadBirthdayThisYear =
-      today.getUTCMonth() > student.dateOfBirth.getUTCMonth() ||
-      (today.getUTCMonth() === student.dateOfBirth.getUTCMonth() && today.getUTCDate() >= student.dateOfBirth.getUTCDate());
-    if (!hasHadBirthdayThisYear) age -= 1;
-
-    if (age < 18) {
+    if (calendarAge(student.dateOfBirth) < AGE_OF_MAJORITY) {
       throw new ForbiddenException(
         'Signing a waiver requires a self-attested-adult Student (18+) or a Guardian-linked account. Guardian-linked enrollment is not yet available on this platform — see skills/ultm8-domain-rules/SKILL.md §14.',
       );

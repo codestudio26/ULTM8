@@ -13,6 +13,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         { label: 'Franchises', to: '/franchises' },
         { label: 'Impersonation', to: '/impersonation' },
         { label: 'Translations', to: '/translations' },
+        { label: 'Legal Documents', to: '/legal-documents' },
         { label: 'Subscription Plans', to: '/subscription-plans' },
       ]}
       footer={

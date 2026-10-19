@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { GuardiansController } from './guardians.controller';
 import { GuardiansService } from './guardians.service';
+import { MinorErasureService } from './minor-erasure.service';
 
 /**
  * Phase 12 scope: Guardian linking a minor Student + two-tier ConsentRecord
@@ -43,7 +44,7 @@ import { GuardiansService } from './guardians.service';
     }),
   ],
   controllers: [GuardiansController],
-  providers: [GuardiansService],
+  providers: [GuardiansService, MinorErasureService],
   exports: [GuardiansService],
 })
 export class GuardiansModule {}

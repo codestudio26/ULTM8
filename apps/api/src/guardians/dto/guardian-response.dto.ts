@@ -18,6 +18,13 @@ export class MinorResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   gender!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'When a School confirmed this link (Decision 172). Consent can be granted only once this is set.',
+  })
+  confirmedAt!: string | null;
 }
 
 export class MinorListResponseDto {
@@ -49,11 +56,52 @@ export class ConsentRecordResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   withdrawnAt!: string | null;
+
+  @ApiProperty({
+    description:
+      'Whether policyVersion is the privacy notice version currently published (Decision 171). False means the Guardian should be asked to consent again.',
+  })
+  isCurrentPolicyVersion!: boolean;
 }
 
 export class ConsentRecordListResponseDto {
   @ApiProperty({ type: [ConsentRecordResponseDto] })
   items!: ConsentRecordResponseDto[];
+}
+
+/** Decision 170 — one entry in a Guardian's append-only consent history. */
+export class ConsentEventResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  consentRecordId!: string;
+
+  @ApiProperty()
+  studentId!: string;
+
+  @ApiProperty({ enum: ['BASELINE', 'CAMERA'] })
+  tier!: string;
+
+  @ApiProperty({ enum: ['GRANTED', 'WITHDRAWN'] })
+  type!: string;
+
+  @ApiProperty()
+  policyVersion!: string;
+
+  @ApiProperty()
+  parentalResponsibilityDeclared!: boolean;
+
+  @ApiProperty({ description: 'Reconstructed from a consent that existed before history was kept (Decision 170).' })
+  backfilled!: boolean;
+
+  @ApiProperty()
+  occurredAt!: string;
+}
+
+export class ConsentEventListResponseDto {
+  @ApiProperty({ type: [ConsentEventResponseDto] })
+  items!: ConsentEventResponseDto[];
 }
 
 /** Decision 123 — Guardian Kid Mode. */

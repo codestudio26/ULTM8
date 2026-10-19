@@ -40,6 +40,9 @@ export const AuditAction = {
   REACTIVATE_SCHOOL_ACCOUNT: 'REACTIVATE_SCHOOL_ACCOUNT',
   CLOSE_FRANCHISE_ACCOUNT: 'CLOSE_FRANCHISE_ACCOUNT',
   REACTIVATE_FRANCHISE_ACCOUNT: 'REACTIVATE_FRANCHISE_ACCOUNT',
+  // Decision 171 — a new version of a legal document (e.g. the privacy notice a
+  // Guardian's consent refers to). Non-tenant content, like CREATE_TRANSLATION.
+  PUBLISH_LEGAL_DOCUMENT_VERSION: 'PUBLISH_LEGAL_DOCUMENT_VERSION',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

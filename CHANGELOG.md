@@ -15,6 +15,44 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **api — Guardian consent compliance fixes** (Decisions 170–173, from the
+  Guardian consent legal review of 16 Oct 2026):
+  - **Consent history** (Decision 170): every consent grant and withdrawal is
+    kept in an append-only history the database won't let anyone change.
+    Guardians read theirs with `GET /guardians/me/consent-events`.
+  - **Privacy notice versions** (Decision 171): a Full Platform Admin
+    publishes legal document text with `POST
+    /platform-admin/legal-documents/{slug}/versions` (audit-logged, every
+    version kept). `GET /legal/{doc}` returns `currentVersion`. **Consent now
+    requires the current privacy notice version (`privacy-statement@<n>`), so
+    Guardians can't give consent until counsel's notice is published.**
+  - **Checking who a Guardian is** (Decision 172): a Guardian must be 18+, a
+    linked minor must be under 18, and consent requires
+    `parentalResponsibilityDeclared: true`. A School must confirm the
+    Guardian–minor link before consent can be given: the owner, or staff the
+    owner allows, use `GET /schools/{id}/guardian-links` and `POST
+    /schools/{id}/guardian-links/{linkId}/confirm`. The owner manages who may
+    confirm with `GET`/`PUT`/`DELETE
+    /schools/{id}/guardian-link-confirmers/{userId}`. Staff given that right
+    confirm only minors whose home branch is one of their branches (like
+    grading, Decision 168). The owner of the confirming school can undo it
+    with `POST /schools/{id}/guardian-links/{linkId}/unconfirm`; every
+    confirmation and un-confirmation is kept in a history. Existing links
+    start unconfirmed.
+  - **Erasure** (Decision 173): withdrawing the last Guardian's baseline
+    consent now really erases the minor's data (grading, bookings,
+    attendance, home branches and more) and anonymises the account, keeping
+    payment records, signed waivers and consent records. While another
+    Guardian still consents, only the withdrawing Guardian's link is revoked.
+    Withdrawals for the same child run one at a time, so two Guardians
+    withdrawing at once still end in erasure.
+  - **school-portal:** a new **Guardians** page for the owner: confirm or
+    un-confirm Guardians of enrolled minors, and choose which staff may also
+    confirm.
+  - **platform-admin:** a new **Legal Documents** page to publish a new
+    version of the privacy notice or terms.
+  - `packages/api-client` regenerated. The student app screens are on a
+    separate Track B branch (`feature/guardian-consent-app`).
 - **api — grading foundation, PR 4: grading permission per style, and
   branches** (Decisions 138, 139, 148, 168):
   - **Who can grade:** the School owner always can. Anyone else (Instructor

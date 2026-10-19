@@ -26,6 +26,7 @@ import { WaiversPage } from './waivers/WaiversPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
 import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
+import { GuardiansPage } from './guardians/GuardiansPage';
 import { Shell } from './layout/Shell';
 
 function HomeRedirect() {
@@ -117,6 +118,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <StudentsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/guardians"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GuardiansPage />
             </Shell>
           </RequireAuth>
         }

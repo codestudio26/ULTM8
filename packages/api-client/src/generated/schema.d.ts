@@ -372,6 +372,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/guardians/me/consent-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardiansController_findMyConsentEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/guardians/me/consent/{id}/withdraw": {
         parameters: {
             query?: never;
@@ -2004,6 +2020,102 @@ export interface paths {
         patch: operations["PlatformAdminTranslationsController_update"];
         trace?: never;
     };
+    "/v1/platform-admin/legal-documents/{slug}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminLegalDocumentsController_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/guardian-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardianLinkConfirmationsController_findLinks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/guardian-links/{linkId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuardianLinkConfirmationsController_confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/guardian-links/{linkId}/unconfirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GuardianLinkConfirmationsController_unconfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/guardian-link-confirmers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GuardianLinkConfirmationsController_findConfirmers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/guardian-link-confirmers/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GuardianLinkConfirmationsController_addConfirmer"];
+        post?: never;
+        delete: operations["GuardianLinkConfirmationsController_removeConfirmer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2355,6 +2467,8 @@ export interface components {
             surname: string;
             dateOfBirth: string;
             gender?: string | null;
+            /** @description When a School confirmed this link (Decision 172). Consent can be granted only once this is set. */
+            confirmedAt?: string | null;
         };
         MinorListResponseDto: {
             items: components["schemas"]["MinorResponseDto"][];
@@ -2362,8 +2476,10 @@ export interface components {
         GrantConsentDto: {
             /** @enum {string} */
             tier: "BASELINE" | "CAMERA";
-            /** @description The specific privacy-notice/data-practice description version being consented to. */
+            /** @description The privacy notice version the Guardian was shown, as `privacy-statement@<n>` from GET /legal/privacy-statement. Must be the current version (Decision 171). */
             policyVersion: string;
+            /** @description The Guardian declares they hold parental responsibility for this minor. Must be true (Decision 172). */
+            parentalResponsibilityDeclared: boolean;
         };
         ConsentRecordResponseDto: {
             id: string;
@@ -2374,9 +2490,28 @@ export interface components {
             status: string;
             consentedAt: string;
             withdrawnAt?: string | null;
+            /** @description Whether policyVersion is the privacy notice version currently published (Decision 171). False means the Guardian should be asked to consent again. */
+            isCurrentPolicyVersion: boolean;
         };
         ConsentRecordListResponseDto: {
             items: components["schemas"]["ConsentRecordResponseDto"][];
+        };
+        ConsentEventResponseDto: {
+            id: string;
+            consentRecordId: string;
+            studentId: string;
+            /** @enum {string} */
+            tier: "BASELINE" | "CAMERA";
+            /** @enum {string} */
+            type: "GRANTED" | "WITHDRAWN";
+            policyVersion: string;
+            parentalResponsibilityDeclared: boolean;
+            /** @description Reconstructed from a consent that existed before history was kept (Decision 170). */
+            backfilled: boolean;
+            occurredAt: string;
+        };
+        ConsentEventListResponseDto: {
+            items: components["schemas"]["ConsentEventResponseDto"][];
         };
         BookingDelegationResponseDto: {
             id: string;
@@ -2872,6 +3007,8 @@ export interface components {
             title: string;
             /** @description Null until real legal/product content is populated. */
             content?: string | null;
+            /** @description Version number of the current text (Decision 171). A consent sends it as `<slug>@<currentVersion>`. Null until first published. */
+            currentVersion?: number | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3610,6 +3747,72 @@ export interface components {
             /** @description The translated text for this screen/labelKey/locale. */
             content?: string;
         };
+        PublishLegalDocumentDto: {
+            /** @description New title. Keeps the document's current title when left out. */
+            title?: string;
+            /** @description The full text of this version. */
+            content: string;
+        };
+        LegalDocumentVersionResponseDto: {
+            id: string;
+            slug: string;
+            version: number;
+            /** @description What a consent records as its policyVersion, e.g. privacy-statement@3. */
+            policyVersion: string;
+            title: string;
+            content: string;
+            publishedByAdminId: string;
+            publishedAt: string;
+        };
+        SchoolGuardianLinkResponseDto: {
+            linkId: string;
+            studentId: string;
+            studentFirstName: string;
+            studentSurname: string;
+            studentDateOfBirth: string;
+            guardianId: string;
+            guardianFirstName: string;
+            guardianSurname: string;
+            /** @description The Guardian's verified phone, so staff can contact them. */
+            guardianPhone: string;
+            linkedAt: string;
+            confirmedAt?: string | null;
+            confirmedById?: string | null;
+            /** @description The School that confirmed it (may be another School the minor attends). */
+            confirmedSchoolId?: string | null;
+        };
+        SchoolGuardianLinkListResponseDto: {
+            items: components["schemas"]["SchoolGuardianLinkResponseDto"][];
+        };
+        GuardianLinkResponseDto: {
+            id: string;
+            guardianId: string;
+            studentId: string;
+            createdAt: string;
+            revokedAt?: string | null;
+            confirmedAt?: string | null;
+            confirmedById?: string | null;
+            confirmedSchoolId?: string | null;
+        };
+        GuardianLinkConfirmerListItemDto: {
+            id: string;
+            schoolId: string;
+            userId: string;
+            grantedById?: string | null;
+            createdAt: string;
+            userFirstName?: string | null;
+            userSurname?: string | null;
+        };
+        GuardianLinkConfirmerListResponseDto: {
+            items: components["schemas"]["GuardianLinkConfirmerListItemDto"][];
+        };
+        GuardianLinkConfirmerResponseDto: {
+            id: string;
+            schoolId: string;
+            userId: string;
+            grantedById?: string | null;
+            createdAt: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -4334,6 +4537,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsentRecordListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardiansController_findMyConsentEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentEventListResponseDto"];
                 };
             };
         };
@@ -7179,6 +7401,162 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TranslationResponseDto"];
                 };
+            };
+        };
+    };
+    PlatformAdminLegalDocumentsController_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishLegalDocumentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentVersionResponseDto"];
+                };
+            };
+        };
+    };
+    GuardianLinkConfirmationsController_findLinks: {
+        parameters: {
+            query?: {
+                /** @description Leave out for both. */
+                status?: "pending" | "confirmed";
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolGuardianLinkListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardianLinkConfirmationsController_confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuardianLinkResponseDto"];
+                };
+            };
+        };
+    };
+    GuardianLinkConfirmationsController_unconfirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuardianLinkResponseDto"];
+                };
+            };
+        };
+    };
+    GuardianLinkConfirmationsController_findConfirmers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuardianLinkConfirmerListResponseDto"];
+                };
+            };
+        };
+    };
+    GuardianLinkConfirmationsController_addConfirmer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuardianLinkConfirmerResponseDto"];
+                };
+            };
+        };
+    };
+    GuardianLinkConfirmationsController_removeConfirmer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

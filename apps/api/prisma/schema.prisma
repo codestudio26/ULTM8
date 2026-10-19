@@ -306,42 +306,53 @@ model User {
   address         String?
   profilePhotoUrl String?
 
+  /// Decision 173 — set when a Guardian-linked minor's data is erased after the
+  /// last active baseline consent is withdrawn. The row itself is kept, anonymised,
+  /// because the payment and waiver records Decision 173 keeps still point to it.
+  erasedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleGrants               RoleGrant[]       @relation("RoleGrantUser")
-  grantsIssued             RoleGrant[]       @relation("RoleGrantGrantedBy")
-  classesTaught            Class[]           @relation("ClassInstructor")
-  timetableSlotsTaught     TimetableSlot[]   @relation("TimetableSlotInstructor")
-  instructorProfiles       Instructor[]
-  lessonsAuthored          Lesson[]          @relation("LessonInstructor")
-  memberships              Membership[]      @relation("MembershipStudent")
-  membershipsGifted        Membership[]      @relation("MembershipGiftedBy")
-  transactionsPaid         Transaction[]     @relation("TransactionPayer")
-  studentRanks             StudentRank[]
-  promotionEventsPerformed PromotionEvent[]  @relation("PromotionEventPerformedBy")
-  promotionEventsVoided    PromotionEvent[]  @relation("PromotionEventVoidedBy")
-  skillSignOffChanges      SkillSignOffLog[] @relation("SkillSignOffLogChangedBy")
-  homeBranches             StudentHomeBranch[] @relation("StudentHomeBranchStudent")
-  homeBranchesAssigned     StudentHomeBranch[] @relation("StudentHomeBranchAssignedBy")
-  gradingPermissions       GradingPermission[] @relation("GradingPermissionUser")
-  gradingPermissionsGiven  GradingPermission[] @relation("GradingPermissionGrantedBy")
-  waiverSignatures         WaiverSignature[] @relation("WaiverSignatureStudent")
-  waiverSignaturesSigned   WaiverSignature[] @relation("WaiverSignatureSignedBy")
-  bookings                 Booking[]         @relation("BookingStudent")
-  bookingsOverridden       Booking[]         @relation("BookingOverriddenBy")
-  bookingsResolved         Booking[]         @relation("BookingResolvedBy")
-  bookingsCheckedIn        Booking[]         @relation("BookingCheckedInBy")
-  bookingAttendeesResolved BookingAttendee[] @relation("BookingAttendeeResolvedBy")
-  waitlistEntries          WaitlistEntry[]   @relation("WaitlistEntryStudent")
-  guardianLinksAsGuardian  GuardianLink[]    @relation("GuardianLinkGuardian")
-  guardianLinksAsStudent   GuardianLink[]    @relation("GuardianLinkStudent")
-  consentRecordsAsGuardian ConsentRecord[]   @relation("ConsentRecordGuardian")
-  consentRecordsAsStudent  ConsentRecord[]   @relation("ConsentRecordStudent")
-  bookingDelegationsAsGuardian BookingDelegation[] @relation("BookingDelegationGuardian")
-  bookingDelegationsAsStudent  BookingDelegation[] @relation("BookingDelegationStudent")
-  notifications            Notification[]
-  deviceTokens             DeviceToken[]
+  roleGrants                   RoleGrant[]             @relation("RoleGrantUser")
+  grantsIssued                 RoleGrant[]             @relation("RoleGrantGrantedBy")
+  classesTaught                Class[]                 @relation("ClassInstructor")
+  timetableSlotsTaught         TimetableSlot[]         @relation("TimetableSlotInstructor")
+  instructorProfiles           Instructor[]
+  lessonsAuthored              Lesson[]                @relation("LessonInstructor")
+  memberships                  Membership[]            @relation("MembershipStudent")
+  membershipsGifted            Membership[]            @relation("MembershipGiftedBy")
+  transactionsPaid             Transaction[]           @relation("TransactionPayer")
+  studentRanks                 StudentRank[]
+  promotionEventsPerformed     PromotionEvent[]        @relation("PromotionEventPerformedBy")
+  promotionEventsVoided        PromotionEvent[]        @relation("PromotionEventVoidedBy")
+  skillSignOffChanges          SkillSignOffLog[]       @relation("SkillSignOffLogChangedBy")
+  homeBranches                 StudentHomeBranch[]     @relation("StudentHomeBranchStudent")
+  homeBranchesAssigned         StudentHomeBranch[]     @relation("StudentHomeBranchAssignedBy")
+  gradingPermissions           GradingPermission[]     @relation("GradingPermissionUser")
+  gradingPermissionsGiven      GradingPermission[]     @relation("GradingPermissionGrantedBy")
+  waiverSignatures             WaiverSignature[]       @relation("WaiverSignatureStudent")
+  waiverSignaturesSigned       WaiverSignature[]       @relation("WaiverSignatureSignedBy")
+  bookings                     Booking[]               @relation("BookingStudent")
+  bookingsOverridden           Booking[]               @relation("BookingOverriddenBy")
+  bookingsResolved             Booking[]               @relation("BookingResolvedBy")
+  bookingsCheckedIn            Booking[]               @relation("BookingCheckedInBy")
+  bookingAttendeesResolved     BookingAttendee[]       @relation("BookingAttendeeResolvedBy")
+  waitlistEntries              WaitlistEntry[]         @relation("WaitlistEntryStudent")
+  guardianLinksAsGuardian      GuardianLink[]          @relation("GuardianLinkGuardian")
+  guardianLinksAsStudent       GuardianLink[]          @relation("GuardianLinkStudent")
+  consentRecordsAsGuardian     ConsentRecord[]         @relation("ConsentRecordGuardian")
+  consentRecordsAsStudent      ConsentRecord[]         @relation("ConsentRecordStudent")
+  bookingDelegationsAsGuardian BookingDelegation[]     @relation("BookingDelegationGuardian")
+  bookingDelegationsAsStudent  BookingDelegation[]     @relation("BookingDelegationStudent")
+  guardianLinksConfirmed       GuardianLink[]          @relation("GuardianLinkConfirmedBy")
+  guardianLinkConfirmerRights  GuardianLinkConfirmer[] @relation("GuardianLinkConfirmerUser")
+  guardianLinkConfirmersGiven  GuardianLinkConfirmer[] @relation("GuardianLinkConfirmerGrantedBy")
+  guardianLinkConfirmationEvents GuardianLinkConfirmationEvent[] @relation("GuardianLinkConfirmationEventActor")
+  consentEventsAsGuardian      ConsentEvent[]          @relation("ConsentEventGuardian")
+  consentEventsAsStudent       ConsentEvent[]          @relation("ConsentEventStudent")
+  notifications                Notification[]
+  deviceTokens                 DeviceToken[]
 
   @@index([email])
   @@index([phone])
@@ -364,7 +375,8 @@ model AdminUser {
   updatedAt DateTime  @updatedAt
   revokedAt DateTime? // access revoked immediately on offboarding (§4.4)
 
-  auditLogEntries AuditLogEntry[]
+  auditLogEntries                AuditLogEntry[]
+  legalDocumentVersionsPublished LegalDocumentVersion[]
 }
 
 /// Every Platform Admin action that touches tenant data (ultm8-tenant-isolation
@@ -644,21 +656,24 @@ model School {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branches            Branch[]
-  roleGrants          RoleGrant[]
-  classes             Class[]
-  timetableSlots      TimetableSlot[]
-  instructors         Instructor[]
-  paymentAccount      PaymentAccount?
-  membershipPlans     MembershipPlan[]
-  transactions        Transaction[]
-  disciplines         Discipline[]
-  waivers             Waiver[]
-  franchiseFeeCharges FranchiseFeeCharge[]
-  lessons             Lesson[]
-  platformCharges     PlatformCharge[]
-  studentHomeBranches StudentHomeBranch[]
-  gradingPermissions  GradingPermission[]
+  branches               Branch[]
+  roleGrants             RoleGrant[]
+  classes                Class[]
+  timetableSlots         TimetableSlot[]
+  instructors            Instructor[]
+  paymentAccount         PaymentAccount?
+  membershipPlans        MembershipPlan[]
+  transactions           Transaction[]
+  disciplines            Discipline[]
+  waivers                Waiver[]
+  franchiseFeeCharges    FranchiseFeeCharge[]
+  lessons                Lesson[]
+  platformCharges        PlatformCharge[]
+  studentHomeBranches    StudentHomeBranch[]
+  gradingPermissions     GradingPermission[]
+  guardianLinksConfirmed GuardianLink[]
+  guardianLinkConfirmers GuardianLinkConfirmer[]
+  guardianLinkConfirmationEvents GuardianLinkConfirmationEvent[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -993,8 +1008,37 @@ model LegalDocument {
   title   String
   content String?
 
+  /// Decision 171 — the number of the LegalDocumentVersion whose text `content`
+  /// currently holds. Null until a Platform Admin first publishes the document.
+  currentVersion Int?
+
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+
+  versions LegalDocumentVersion[]
+}
+
+/// Decision 171 — every published text of a LegalDocument, kept forever so a
+/// consent's `policyVersion` (`<slug>@<version>`) always points at the exact text
+/// the Guardian was shown. Written only by LegalDocumentsService.publish(), FULL_ADMIN
+/// only, audit-logged. No RLS, same as LegalDocument: global, platform-level content.
+model LegalDocumentVersion {
+  id String @id @default(uuid())
+
+  slug     String
+  document LegalDocument @relation(fields: [slug], references: [slug])
+
+  version Int
+  title   String
+  content String
+
+  /// Platform-level content, so it may reference AdminUser directly, the same way
+  /// AuditLogEntry.adminUserId does. Never a tenant-side User.
+  publishedByAdminId String
+  publishedByAdmin   AdminUser @relation(fields: [publishedByAdminId], references: [id])
+  publishedAt        DateTime  @default(now())
+
+  @@unique([slug, version])
 }
 
 /// Translation (Phase 49, ultm8-nestjs-module §5) — the CMS-backed i18n content this
@@ -2516,8 +2560,70 @@ model GuardianLink {
   createdAt DateTime  @default(now())
   revokedAt DateTime?
 
+  /// Decision 172 — set when a School confirms this Guardian really is the minor's
+  /// Guardian. Consent can be granted only once this is set. Links that existed
+  /// before Decision 172 start unconfirmed. Written only through
+  /// GuardianLinkConfirmationsService (ultm8_jobs, after its own authorization).
+  confirmedAt       DateTime?
+  confirmedById     String?
+  confirmedBy       User?     @relation("GuardianLinkConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  confirmedSchoolId String?
+  confirmedSchool   School?   @relation(fields: [confirmedSchoolId], references: [id], onDelete: SetNull)
+
+  confirmationEvents GuardianLinkConfirmationEvent[]
+
   @@unique([guardianId, studentId])
   @@index([studentId])
+}
+
+enum GuardianLinkConfirmationEventType {
+  CONFIRMED
+  UNCONFIRMED
+}
+
+/// Decision 172 — append-only history of School confirmations of a GuardianLink,
+/// so un-confirming (owner only) never erases the record of who confirmed it and
+/// when. Written only by GuardianLinkConfirmationsService through ultm8_jobs, which
+/// may SELECT and INSERT but never UPDATE or DELETE it.
+model GuardianLinkConfirmationEvent {
+  id String @id @default(uuid())
+
+  guardianLinkId String
+  guardianLink   GuardianLink @relation(fields: [guardianLinkId], references: [id])
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+
+  actorId String
+  actor   User   @relation("GuardianLinkConfirmationEventActor", fields: [actorId], references: [id])
+
+  type       GuardianLinkConfirmationEventType
+  occurredAt DateTime                          @default(now())
+
+  @@index([guardianLinkId, occurredAt])
+  @@index([schoolId])
+}
+
+/// Decision 172 — a staff member the School owner has given the right to confirm
+/// Guardian links at that School. The owner always has it and needs no row. Same
+/// shape and owner-only management as GradingPermission (Decision 138), without
+/// the discipline dimension.
+model GuardianLinkConfirmer {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("GuardianLinkConfirmerUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  grantedById String?
+  grantedBy   User?   @relation("GuardianLinkConfirmerGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([schoolId, userId])
+  @@index([userId])
 }
 
 /// ConsentRecord.tier — SKILL.md §14 (quoted): "carries two tiers, not one: a
@@ -2582,8 +2688,51 @@ model ConsentRecord {
   consentedAt DateTime  @default(now())
   withdrawnAt DateTime?
 
+  events ConsentEvent[]
+
   @@unique([guardianId, studentId, tier])
   @@index([studentId, tier])
+}
+
+enum ConsentEventType {
+  GRANTED
+  WITHDRAWN
+}
+
+/// ConsentEvent (Decision 170) — the append-only history behind ConsentRecord: one
+/// row per grant and per withdrawal. Never updated or deleted — the migration grants
+/// SELECT and INSERT only, so the database enforces it, the same way AuditLogEntry
+/// is protected. Same self-only RLS as ConsentRecord (Decision 92).
+model ConsentEvent {
+  id String @id @default(uuid())
+
+  consentRecordId String
+  consentRecord   ConsentRecord @relation(fields: [consentRecordId], references: [id])
+
+  guardianId String
+  guardian   User   @relation("ConsentEventGuardian", fields: [guardianId], references: [id])
+
+  studentId String
+  student   User   @relation("ConsentEventStudent", fields: [studentId], references: [id])
+
+  tier          ConsentTier
+  type          ConsentEventType
+  policyVersion String
+
+  /// Decision 172 — the Guardian declared they hold parental responsibility. Always
+  /// true on a GRANTED event written since Decision 172; false on WITHDRAWN events
+  /// and on backfilled ones.
+  parentalResponsibilityDeclared Boolean @default(false)
+
+  /// Decision 170 — written by the migration from a ConsentRecord that existed
+  /// before this table did, not recorded at the time it happened.
+  backfilled Boolean @default(false)
+
+  occurredAt DateTime @default(now())
+
+  @@index([consentRecordId, occurredAt])
+  @@index([guardianId, occurredAt])
+  @@index([studentId])
 }
 
 enum BookingDelegationStatus {

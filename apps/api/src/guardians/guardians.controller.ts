@@ -12,6 +12,7 @@ import {
   MinorResponseDto,
   ConsentRecordListResponseDto,
   ConsentRecordResponseDto,
+  ConsentEventListResponseDto,
   BookingDelegationResponseDto,
   BookingDelegationListResponseDto,
   KidModeTokenResponseDto,
@@ -53,6 +54,13 @@ export class GuardiansController {
   @Get('consent')
   findMyConsentRecords(@CurrentUser() user: JwtPayload) {
     return this.guardiansService.findMyConsentRecords(user.sub);
+  }
+
+  // Decision 170 — the Guardian's own append-only consent history.
+  @ApiOkResponse({ type: ConsentEventListResponseDto })
+  @Get('consent-events')
+  findMyConsentEvents(@CurrentUser() user: JwtPayload) {
+    return this.guardiansService.findMyConsentEvents(user.sub);
   }
 
   @ApiOkResponse({ type: ConsentRecordResponseDto })

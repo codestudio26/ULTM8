@@ -20,6 +20,13 @@ export class LegalDocumentResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Null until real legal/product content is populated.' })
   content!: string | null;
 
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'Version number of the current text (Decision 171). A consent sends it as `<slug>@<currentVersion>`. Null until first published.',
+  })
+  currentVersion!: number | null;
+
   @ApiProperty()
   createdAt!: string;
 

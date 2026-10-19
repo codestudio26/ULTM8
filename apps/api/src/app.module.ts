@@ -27,6 +27,8 @@ import { PlatformAdminModule } from './platform-admin/platform-admin.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
 import { TranslationsModule } from './translations/translations.module';
 import { SubscriptionPlansModule } from './subscription-plans/subscription-plans.module';
+import { LegalDocumentsAdminModule } from './settings/legal-documents-admin.module';
+import { GuardianLinkConfirmationsModule } from './guardian-link-confirmations/guardian-link-confirmations.module';
 
 @Module({
   imports: [
@@ -65,6 +67,8 @@ import { SubscriptionPlansModule } from './subscription-plans/subscription-plans
     CurriculumModule,
     TranslationsModule,
     SubscriptionPlansModule,
+    LegalDocumentsAdminModule,
+    GuardianLinkConfirmationsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

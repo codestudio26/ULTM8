@@ -2002,3 +2002,60 @@ When the owner adds an instructor:
 So an instructor is always part of something: a branch, or the School. Branch Staff already required a branch. Gus: *"when we add an instructors is has to be part of branch if the school has more than one place or if is single the branch is the school. Meaning an instructor has to be part of something. Branch or school"*.
 
 Instructors added before this rule, without a branch in a School that has branches, are not changed. The owner reassigns them.
+
+---
+
+## Decision 170 — Consent history is append-only
+
+**Date:** 17 Oct 2026 · **Status:** Decided by Code Studio (codestudio26); product-owner (Gus) confirmation pending · **Resolves:** gap 4 of the Guardian consent legal review (16 Oct 2026): giving consent again overwrote the earlier version and dates, so nobody could prove who consented to what, and when (UK GDPR Art 7(1); LGPD Art 8 §2)
+
+1. Every grant and every withdrawal of a `ConsentRecord` also writes a `ConsentEvent` row: the Guardian, the minor, the tier, GRANTED or WITHDRAWN, the policy version, whether the parental-responsibility declaration was made (Decision 172), and the time.
+2. `ConsentEvent` rows are never changed or deleted. The database enforces this: the app role may only read and insert them, and no role is granted UPDATE or DELETE.
+3. `ConsentRecord` stays as it is: the current state, one row per Guardian, minor and tier. `ConsentEvent` is the history behind it.
+4. Existing `ConsentRecord` rows get one backfilled GRANTED event each (plus a WITHDRAWN event when withdrawn), marked `backfilled`, because their earlier history was not kept.
+5. A Guardian can read their own consent history: `GET /guardians/me/consent-events`.
+
+---
+
+## Decision 171 — The privacy notice is versioned, published by a Platform Admin, and consent must name the current version
+
+**Date:** 17 Oct 2026 · **Status:** Decided by Code Studio (codestudio26); product-owner (Gus) confirmation pending · **Resolves:** gap 2 of the Guardian consent legal review: the `privacy-statement` text was empty and the app sent a placeholder version, so consent was not informed (UK GDPR Arts 7, 12–13; LGPD Arts 8, 9, 14 §2 and §6)
+
+1. A Full Platform Admin publishes a legal document's text with `POST /platform-admin/legal-documents/{slug}/versions`. Each publish creates a new numbered `LegalDocumentVersion`, kept forever, makes it the document's current text, and is written to the admin audit log.
+2. `GET /legal/{doc}` also returns the current version number.
+3. A consent's `policyVersion` is the current privacy notice version, written as `privacy-statement@<n>`. Granting consent is refused while no privacy notice has been published, and when the version sent is not the current one. **Consent therefore stays blocked until counsel's privacy notice text is published.**
+4. A Guardian's consent list shows whether each consent was given against the current version, so the app can ask for fresh consent. Stopping processing for out-of-date consent is not part of this decision (legal review gap 5).
+5. The notice text itself must come from counsel. Nothing in this decision writes legal text.
+
+---
+
+## Decision 172 — Checking who a Guardian is: age checks, a declaration, and confirmation by the school
+
+**Date:** 17 Oct 2026 · **Status:** Decided by Code Studio (codestudio26); product-owner (Gus) confirmation pending · **Resolves:** gap 3 of the Guardian consent legal review: anyone logged in could create a "minor" and become their Guardian (UK GDPR Art 8(2); LGPD Art 14 §5)
+
+1. **Age checks when linking a minor:** the Guardian must be 18 or over by their own date of birth, and the minor's date of birth must be in the past and under 18 today (calendar-based, the same calculation as the waiver age check).
+2. **Declaration:** granting consent requires the Guardian to declare they hold parental responsibility for the minor (`parentalResponsibilityDeclared: true`). It is stored on the `ConsentEvent` (Decision 170).
+3. **School confirmation:** a `GuardianLink` must be confirmed by a school before consent can be granted. The link records who confirmed it, at which school, and when.
+   - Who may confirm: the School Owner/Manager of a school where the minor is enrolled, or an Instructor or Branch Staff member of that school whom the owner has given the right. The owner gives and removes that right per person.
+   - Which minors a confirmer covers: the owner covers every minor enrolled at the school. Anyone else covers only minors whose home branch is one of their branches, the same coverage as grading (Decision 168). A school with no branches counts as one branch, and a minor with no home branch yet can only be confirmed by the owner.
+   - Undoing a confirmation: only the owner of the school that confirmed a link can un-confirm it. The link becomes unconfirmed again, so no new consent can be given until a school confirms it again; consent already given is not changed.
+   - Every confirmation and un-confirmation is kept in an append-only history (who, which school, when), so un-confirming never erases who confirmed.
+   - Only giving consent waits for confirmation. The Guardian can still create the minor, enrol them, book, buy memberships and sign waivers, so the school can see the minor and confirm the link.
+   - Links that existed before this decision count as unconfirmed. Their existing consent records are not changed.
+4. Branch coverage and un-confirming were decided on 18 Oct 2026, after this entry was first drafted, and are included above.
+
+---
+
+## Decision 173 — Withdrawing baseline consent erases the minor's data, once no Guardian still consents
+
+**Date:** 17 Oct 2026 · **Status:** Decided by Code Studio (codestudio26); product-owner (Gus) confirmation pending · **Resolves:** gap 1 of the Guardian consent legal review: `account-deletion-processing` only logged a line and deleted nothing (UK GDPR Arts 7(3), 17; LGPD Arts 16, 18). **Replaces part of Decision 92:** one Guardian's withdrawal no longer runs the cascade while another Guardian still consents
+
+1. **When:** a Guardian withdraws baseline consent.
+   - If another Guardian still has active baseline consent for the minor, only this Guardian's consent is withdrawn and their link is revoked. The minor's data and school enrolments are kept.
+   - If none is left, the minor's school enrolments are revoked and their data is erased.
+2. **Erased:** grading (ranks, promotions, skill sign-offs), home branches, bookings and attendance, waitlist entries, notifications, device tokens and Kid Mode delegations.
+3. **Kept, because tax, liability or consent law usually requires it:** payment records (`Transaction`) and the memberships they paid for, signed waivers with their signature images, and the consent records, consent history and Guardian links that prove the consent and its withdrawal.
+4. **The minor's account row is kept but anonymised**, because the kept records point to it: name, date of birth, contact details, address, photo and other profile fields are replaced or cleared, and the row is marked `erasedAt`. Deleting the row itself would also delete the payment and waiver records it holds.
+5. Erasure runs in one database transaction, before the consent is marked withdrawn. If it fails, the consent stays active and the withdrawal can be retried.
+6. Baseline withdrawals for the same minor are handled one at a time (a database lock per minor), so two Guardians withdrawing at the same moment cannot each see the other as still consenting: the last withdrawal always erases.
+7. **Open, not decided here:** how long the kept records are retained before they too are removed (needs counsel), and the same erasure for adult Students (`DELETE /users/me` is still deferred).

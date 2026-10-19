@@ -1218,6 +1218,32 @@
         ]
       }
     },
+    "/v1/guardians/me/consent-events": {
+      "get": {
+        "operationId": "GuardiansController_findMyConsentEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentEventListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/guardians/me/consent/{id}/withdraw": {
       "patch": {
         "operationId": "GuardiansController_withdrawConsent",
@@ -6263,6 +6289,297 @@
           }
         ]
       }
+    },
+    "/v1/platform-admin/legal-documents/{slug}/versions": {
+      "post": {
+        "operationId": "PlatformAdminLegalDocumentsController_publish",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishLegalDocumentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentVersionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-legal-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/guardian-links": {
+      "get": {
+        "operationId": "GuardianLinkConfirmationsController_findLinks",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Leave out for both.",
+            "schema": {
+              "enum": [
+                "pending",
+                "confirmed"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolGuardianLinkListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardian-link-confirmations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/guardian-links/{linkId}/confirm": {
+      "post": {
+        "operationId": "GuardianLinkConfirmationsController_confirm",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "linkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardianLinkResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardian-link-confirmations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/guardian-links/{linkId}/unconfirm": {
+      "post": {
+        "operationId": "GuardianLinkConfirmationsController_unconfirm",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "linkId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardianLinkResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardian-link-confirmations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/guardian-link-confirmers": {
+      "get": {
+        "operationId": "GuardianLinkConfirmationsController_findConfirmers",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardianLinkConfirmerListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardian-link-confirmations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/guardian-link-confirmers/{userId}": {
+      "put": {
+        "operationId": "GuardianLinkConfirmationsController_addConfirmer",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardianLinkConfirmerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardian-link-confirmations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "GuardianLinkConfirmationsController_removeConfirmer",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "guardian-link-confirmations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -7455,6 +7772,11 @@
           "gender": {
             "type": "string",
             "nullable": true
+          },
+          "confirmedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When a School confirmed this link (Decision 172). Consent can be granted only once this is set."
           }
         },
         "required": [
@@ -7491,12 +7813,17 @@
           },
           "policyVersion": {
             "type": "string",
-            "description": "The specific privacy-notice/data-practice description version being consented to."
+            "description": "The privacy notice version the Guardian was shown, as `privacy-statement@<n>` from GET /legal/privacy-statement. Must be the current version (Decision 171)."
+          },
+          "parentalResponsibilityDeclared": {
+            "type": "boolean",
+            "description": "The Guardian declares they hold parental responsibility for this minor. Must be true (Decision 172)."
           }
         },
         "required": [
           "tier",
-          "policyVersion"
+          "policyVersion",
+          "parentalResponsibilityDeclared"
         ]
       },
       "ConsentRecordResponseDto": {
@@ -7526,6 +7853,10 @@
           "withdrawnAt": {
             "type": "string",
             "nullable": true
+          },
+          "isCurrentPolicyVersion": {
+            "type": "boolean",
+            "description": "Whether policyVersion is the privacy notice version currently published (Decision 171). False means the Guardian should be asked to consent again."
           }
         },
         "required": [
@@ -7535,7 +7866,8 @@
           "tier",
           "policyVersion",
           "status",
-          "consentedAt"
+          "consentedAt",
+          "isCurrentPolicyVersion"
         ]
       },
       "ConsentRecordListResponseDto": {
@@ -7545,6 +7877,72 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ConsentRecordResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ConsentEventResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "consentRecordId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "BASELINE",
+              "CAMERA"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "GRANTED",
+              "WITHDRAWN"
+            ]
+          },
+          "policyVersion": {
+            "type": "string"
+          },
+          "parentalResponsibilityDeclared": {
+            "type": "boolean"
+          },
+          "backfilled": {
+            "type": "boolean",
+            "description": "Reconstructed from a consent that existed before history was kept (Decision 170)."
+          },
+          "occurredAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "consentRecordId",
+          "studentId",
+          "tier",
+          "type",
+          "policyVersion",
+          "parentalResponsibilityDeclared",
+          "backfilled",
+          "occurredAt"
+        ]
+      },
+      "ConsentEventListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentEventResponseDto"
             }
           }
         },
@@ -9092,6 +9490,11 @@
             "type": "string",
             "nullable": true,
             "description": "Null until real legal/product content is populated."
+          },
+          "currentVersion": {
+            "type": "number",
+            "nullable": true,
+            "description": "Version number of the current text (Decision 171). A consent sends it as `<slug>@<currentVersion>`. Null until first published."
           },
           "createdAt": {
             "type": "string"
@@ -11701,6 +12104,252 @@
             "description": "The translated text for this screen/labelKey/locale."
           }
         }
+      },
+      "PublishLegalDocumentDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "New title. Keeps the document's current title when left out."
+          },
+          "content": {
+            "type": "string",
+            "description": "The full text of this version."
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "LegalDocumentVersionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "policyVersion": {
+            "type": "string",
+            "description": "What a consent records as its policyVersion, e.g. privacy-statement@3."
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "publishedByAdminId": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "version",
+          "policyVersion",
+          "title",
+          "content",
+          "publishedByAdminId",
+          "publishedAt"
+        ]
+      },
+      "SchoolGuardianLinkResponseDto": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentFirstName": {
+            "type": "string"
+          },
+          "studentSurname": {
+            "type": "string"
+          },
+          "studentDateOfBirth": {
+            "type": "string"
+          },
+          "guardianId": {
+            "type": "string"
+          },
+          "guardianFirstName": {
+            "type": "string"
+          },
+          "guardianSurname": {
+            "type": "string"
+          },
+          "guardianPhone": {
+            "type": "string",
+            "description": "The Guardian's verified phone, so staff can contact them."
+          },
+          "linkedAt": {
+            "type": "string"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedSchoolId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School that confirmed it (may be another School the minor attends)."
+          }
+        },
+        "required": [
+          "linkId",
+          "studentId",
+          "studentFirstName",
+          "studentSurname",
+          "studentDateOfBirth",
+          "guardianId",
+          "guardianFirstName",
+          "guardianSurname",
+          "guardianPhone",
+          "linkedAt"
+        ]
+      },
+      "SchoolGuardianLinkListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolGuardianLinkResponseDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GuardianLinkResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "guardianId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedSchoolId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "guardianId",
+          "studentId",
+          "createdAt"
+        ]
+      },
+      "GuardianLinkConfirmerListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "userFirstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userSurname": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "userId",
+          "createdAt"
+        ]
+      },
+      "GuardianLinkConfirmerListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardianLinkConfirmerListItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "GuardianLinkConfirmerResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "grantedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "userId",
+          "createdAt"
+        ]
       }
     }
   }

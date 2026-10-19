@@ -2,11 +2,15 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import type { ConsentRecord } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { AGE_OF_MAJORITY, calendarAge } from '../common/calendar-age';
+import { getCurrentPolicyVersion, PRIVACY_NOTICE_SLUG } from '../settings/legal-policy-version';
 import { CreateMinorDto } from './dto/create-minor.dto';
 import { GrantConsentDto } from './dto/grant-consent.dto';
+import { MinorErasureService } from './minor-erasure.service';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -17,6 +21,11 @@ const BCRYPT_ROUNDS = 12;
 // BookingDelegation re-check (mintKidModeToken()'s own comment) is the real
 // backstop, this is a second, independent one.
 const KID_MODE_TOKEN_TTL_SECONDS = Number(process.env.KID_MODE_TOKEN_TTL_SECONDS ?? 300);
+
+// Second argument to hashtextextended() for the per-Student baseline-consent
+// advisory lock (Decision 173), so these lock keys can't collide with any
+// other advisory lock that hashes a Student id.
+const BASELINE_CONSENT_LOCK_SEED = 173;
 
 /**
  * Phase 12 scope: Guardian linking a minor Student + two-tier ConsentRecord
@@ -54,6 +63,7 @@ export class GuardiansService {
     private readonly prismaApp: PrismaAppService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly jwt: JwtService,
+    private readonly minorErasure: MinorErasureService,
   ) {}
 
   /**
@@ -72,8 +82,28 @@ export class GuardiansService {
    * AuthService.DECOY_PASSCODE_HASH already established for "a hash of a value
    * that will never be typed," generated fresh per minor rather than a shared
    * constant since there's no timing-attack concern to keep it stable for here.
+   *
+   * Decision 172: the Guardian must be an adult, and the minor must really be a
+   * minor, both by the same calendar-based age the waiver check uses.
    */
   async createMinor(guardianId: string, dto: CreateMinorDto) {
+    const dateOfBirth = new Date(dto.dateOfBirth);
+    const today = new Date();
+    if (dateOfBirth.getTime() > today.getTime()) {
+      throw new BadRequestException('dateOfBirth cannot be in the future.');
+    }
+    if (calendarAge(dateOfBirth, today) >= AGE_OF_MAJORITY) {
+      throw new BadRequestException(
+        `A Guardian can only link a minor (under ${AGE_OF_MAJORITY}). An adult registers their own Student account.`,
+      );
+    }
+    const guardian = await this.prismaApp.withTenantContext(guardianId, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: guardianId }, select: { dateOfBirth: true } }),
+    );
+    if (calendarAge(guardian.dateOfBirth, today) < AGE_OF_MAJORITY) {
+      throw new ForbiddenException(`Only an adult (${AGE_OF_MAJORITY} or over) can be a Guardian.`);
+    }
+
     const minorId = randomUUID();
     const email = `minor+${minorId}@guardian-managed.ultm8.internal`;
     // E.164 numbers never start with a 0 after the '+' — this prefix is
@@ -91,7 +121,6 @@ export class GuardiansService {
       .join('')
       .slice(0, 12)}`;
     const passcodeHash = await bcrypt.hash(randomUUID(), BCRYPT_ROUNDS);
-    const dateOfBirth = new Date(dto.dateOfBirth);
 
     // FOUND ON REVIEW: the User insert and the GuardianLink insert were
     // originally two SEPARATE withTenantContext() calls — each opens and
@@ -135,6 +164,7 @@ export class GuardiansService {
       // previously returned different formats for the identical value.
       dateOfBirth: dateOfBirth.toISOString(),
       gender: dto.gender ?? null,
+      confirmedAt: null,
     };
   }
 
@@ -168,6 +198,7 @@ export class GuardiansService {
       surname: minors[i].surname,
       dateOfBirth: minors[i].dateOfBirth,
       gender: minors[i].gender,
+      confirmedAt: link.confirmedAt,
     }));
     return { items };
   }
@@ -202,7 +233,13 @@ export class GuardiansService {
   /** POST /guardians/me/minors/{studentId}/consent. Upserts — re-granting after a
    * withdrawal reactivates the same (guardian, student, tier) row rather than
    * erroring, since @@unique([guardianId, studentId, tier]) would otherwise
-   * reject a second INSERT outright. */
+   * reject a second INSERT outright.
+   *
+   * Refused unless a School has confirmed the link (Decision 172) and
+   * `policyVersion` is the privacy notice version currently published (Decision
+   * 171) — so consent stays blocked until counsel's notice is published. The
+   * parental-responsibility declaration is required by the DTO (Decision 172).
+   * The upsert and its ConsentEvent (Decision 170) commit together. */
   async grantConsent(guardianId: string, studentId: string, dto: GrantConsentDto) {
     const link = await this.prismaApp.withTenantContext(guardianId, (tx) =>
       tx.guardianLink.findUnique({ where: { guardianId_studentId: { guardianId, studentId } } }),
@@ -210,9 +247,24 @@ export class GuardiansService {
     if (!link || link.revokedAt) {
       throw new BadRequestException('This Guardian has no active link to this Student.');
     }
+    if (!link.confirmedAt) {
+      throw new ForbiddenException(
+        "A School has not confirmed you as this Student's Guardian yet. Consent can be given once a School the Student is enrolled at confirms it.",
+      );
+    }
 
-    return this.prismaApp.withTenantContext(guardianId, (tx) =>
-      tx.consentRecord.upsert({
+    const currentPolicyVersion = await getCurrentPolicyVersion(this.prismaApp, PRIVACY_NOTICE_SLUG);
+    if (!currentPolicyVersion) {
+      throw new ConflictException('Consent is not available yet: the privacy notice has not been published.');
+    }
+    if (dto.policyVersion !== currentPolicyVersion) {
+      throw new ConflictException(
+        `policyVersion must be the current privacy notice version (${currentPolicyVersion}). Show the Guardian the current notice and try again.`,
+      );
+    }
+
+    return this.prismaApp.withTenantContext(guardianId, async (tx) => {
+      const record = await tx.consentRecord.upsert({
         where: { guardianId_studentId_tier: { guardianId, studentId, tier: dto.tier } },
         create: {
           id: randomUUID(),
@@ -227,14 +279,40 @@ export class GuardiansService {
           consentedAt: new Date(),
           withdrawnAt: null,
         },
-      }),
-    );
+      });
+      await tx.consentEvent.create({
+        data: {
+          id: randomUUID(),
+          consentRecordId: record.id,
+          guardianId,
+          studentId,
+          tier: record.tier,
+          type: 'GRANTED',
+          policyVersion: record.policyVersion,
+          parentalResponsibilityDeclared: dto.parentalResponsibilityDeclared,
+          occurredAt: record.consentedAt,
+        },
+      });
+      return { ...record, isCurrentPolicyVersion: true };
+    });
   }
 
-  /** GET /guardians/me/consent. */
+  /** GET /guardians/me/consent. Each record also says whether it was given
+   * against the privacy notice version currently published (Decision 171). */
   async findMyConsentRecords(guardianId: string) {
+    const [records, currentPolicyVersion] = await Promise.all([
+      this.prismaApp.withTenantContext(guardianId, (tx) => tx.consentRecord.findMany({ where: { guardianId } })),
+      getCurrentPolicyVersion(this.prismaApp, PRIVACY_NOTICE_SLUG),
+    ]);
+    const items = records.map((r) => ({ ...r, isCurrentPolicyVersion: r.policyVersion === currentPolicyVersion }));
+    return { items };
+  }
+
+  /** GET /guardians/me/consent-events (Decision 170) — the calling Guardian's own
+   * append-only consent history, newest first. */
+  async findMyConsentEvents(guardianId: string) {
     const items = await this.prismaApp.withTenantContext(guardianId, (tx) =>
-      tx.consentRecord.findMany({ where: { guardianId } }),
+      tx.consentEvent.findMany({ where: { guardianId }, orderBy: { occurredAt: 'desc' } }),
     );
     return { items };
   }
@@ -248,11 +326,15 @@ export class GuardiansService {
    * that ConsentRecord Withdrawn... blocks future self-service QR check-in...
    * clears any already-stored profile photo."
    *
-   * Multi-Guardian interaction (a second Guardian's own baseline consent for the
-   * same Student staying Active) isn't addressed anywhere in the confirmed text —
-   * resolved to the literal reading: THIS withdrawal triggers the cascade
-   * regardless of any other Guardian's own consent state (Decision 92), not an
-   * invented "unless someone else still consents" exception.
+   * Multi-Guardian interaction (Decision 173, replacing Decision 92's literal
+   * reading): while another Guardian with an active link still has ACTIVE
+   * baseline consent, a BASELINE withdrawal only withdraws this consent and
+   * revokes this Guardian's own link — the minor's data and enrolments stay.
+   * Once no such consent is left, the full cascade runs: RoleGrant revocation,
+   * then MinorErasureService (`account-deletion-processing`).
+   *
+   * Every withdrawal also appends a WITHDRAWN ConsentEvent (Decision 170), in the
+   * same transaction as the status flip.
    */
   async withdrawConsent(guardianId: string, consentRecordId: string) {
     const existing = await this.prismaApp.withTenantContext(guardianId, (tx) =>
@@ -283,43 +365,111 @@ export class GuardiansService {
       await this.prismaApp.withTenantContext(existing.studentId, (tx) =>
         tx.user.update({ where: { id: existing.studentId }, data: { profilePhotoUrl: null } }),
       );
-    } else {
-      // BASELINE — the full cascade. Runs via PrismaJobsService (ultm8_jobs) —
-      // see this class's own header comment for why RoleGrant's existing narrow
-      // RLS would otherwise block the Guardian from writing to the Student's
-      // own rows.
-      const cascadeResult = await this.prismaJobs.roleGrant.updateMany({
-        where: { userId: existing.studentId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      this.logger.log(
-        `withdrawConsent (BASELINE): revoked ${cascadeResult.count} active RoleGrant(s) for Student ${existing.studentId}.`,
-      );
-
-      // account-deletion-processing — a genuine confirmed job NAME (SKILL.md
-      // §14, quoted), but its own real data-erasure mechanics are explicitly
-      // out of scope this phase (Phase 12 kickoff prompt §2) — log-only stub,
-      // same established precedent as WaiverSignatureRequestsProcessor before
-      // NotificationsModule existed.
-      this.logger.log(
-        `account-deletion-processing: Student ${existing.studentId} — no data-erasure pipeline yet (Phase 12 scope), recorded only.`,
-      );
+      return this.markWithdrawn(guardianId, existing);
     }
 
-    const result = await this.prismaApp.withTenantContext(guardianId, (tx) =>
-      tx.consentRecord.updateMany({
+    // BASELINE. Serialised per Student (Decision 173): without the lock, two
+    // Guardians withdrawing at the same moment could each still see the other's
+    // consent as ACTIVE, so neither would erase. With it, the second one waits
+    // until the first has committed its WITHDRAWN status, then sees it.
+    return this.withStudentBaselineLock(existing.studentId, async () => {
+      if (await this.hasOtherActiveBaselineConsent(guardianId, existing.studentId)) {
+        // Another Guardian still consents: keep the minor's data; this Guardian
+        // steps away. Idempotent like the other side effects here — revoking an
+        // already-revoked link changes nothing.
+        await this.prismaApp.withTenantContext(guardianId, (tx) =>
+          tx.guardianLink.updateMany({
+            where: { guardianId, studentId: existing.studentId, revokedAt: null },
+            data: { revokedAt: new Date() },
+          }),
+        );
+        this.logger.log(
+          `withdrawConsent (BASELINE): another Guardian still consents for Student ${existing.studentId}; revoked only this Guardian's link.`,
+        );
+      } else {
+        // Last consent — the full cascade. Runs via PrismaJobsService
+        // (ultm8_jobs) — see this class's own header comment for why RoleGrant's
+        // existing narrow RLS would otherwise block the Guardian from writing to
+        // the Student's own rows.
+        const cascadeResult = await this.prismaJobs.roleGrant.updateMany({
+          where: { userId: existing.studentId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        this.logger.log(
+          `withdrawConsent (BASELINE): revoked ${cascadeResult.count} active RoleGrant(s) for Student ${existing.studentId}.`,
+        );
+
+        // account-deletion-processing (SKILL.md §14), Decision 173.
+        await this.minorErasure.eraseMinor(existing.studentId);
+      }
+      return this.markWithdrawn(guardianId, existing);
+    });
+  }
+
+  /** Flips the record to WITHDRAWN and appends its ConsentEvent (Decision 170),
+   * in one transaction. Runs only after withdrawConsent()'s side effect has
+   * succeeded — see the ordering comment there. */
+  private async markWithdrawn(guardianId: string, existing: ConsentRecord) {
+    const consentRecordId = existing.id;
+    const withdrawnAt = new Date();
+    return this.prismaApp.withTenantContext(guardianId, async (tx) => {
+      const result = await tx.consentRecord.updateMany({
         where: { id: consentRecordId, status: 'ACTIVE' },
-        data: { status: 'WITHDRAWN', withdrawnAt: new Date() },
-      }),
-    );
-    if (result.count === 0) {
-      // Lost a race against a concurrent withdrawal of the same record — the
-      // side effect above already ran (harmlessly redundant with the other
-      // request's own), so this is a benign race, not a partial-failure state.
-      throw new ConflictException('This consent record is already Withdrawn.');
-    }
+        data: { status: 'WITHDRAWN', withdrawnAt },
+      });
+      if (result.count === 0) {
+        // Lost a race against a concurrent withdrawal of the same record — the
+        // caller's side effect already ran (harmlessly redundant with the other
+        // request's own), so this is a benign race, not a partial-failure state.
+        throw new ConflictException('This consent record is already Withdrawn.');
+      }
+      await tx.consentEvent.create({
+        data: {
+          id: randomUUID(),
+          consentRecordId,
+          guardianId,
+          studentId: existing.studentId,
+          tier: existing.tier,
+          type: 'WITHDRAWN',
+          policyVersion: existing.policyVersion,
+          occurredAt: withdrawnAt,
+        },
+      });
+      return tx.consentRecord.findUniqueOrThrow({ where: { id: consentRecordId } });
+    });
+  }
 
-    return this.prismaApp.withTenantContext(guardianId, (tx) => tx.consentRecord.findUniqueOrThrow({ where: { id: consentRecordId } }));
+  /** Runs `fn` while holding a transaction-scoped Postgres advisory lock for this
+   * Student's baseline consent (Decision 173). The lock lives on a ultm8_jobs
+   * connection and is released when that transaction ends, after `fn` — and so
+   * markWithdrawn()'s own commit — has finished. The transaction itself writes
+   * nothing. Its timeout covers the erasure (bcrypt plus several deletes). */
+  private async withStudentBaselineLock<T>(studentId: string, fn: () => Promise<T>): Promise<T> {
+    return this.prismaJobs.$transaction(
+      async (tx) => {
+        // $executeRaw, not $queryRaw: pg_advisory_xact_lock returns void, which
+        // Prisma cannot deserialize as a query result.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${studentId}, ${BASELINE_CONSENT_LOCK_SEED}))`;
+        return fn();
+      },
+      { maxWait: 10_000, timeout: 60_000 },
+    );
+  }
+
+  /** Decision 173 — does any OTHER Guardian, whose link is still active, hold
+   * ACTIVE baseline consent for this minor? Read via ultm8_jobs: ConsentRecord and
+   * GuardianLink are self-only for the Guardian, so other Guardians' rows are
+   * invisible from this Guardian's own context. */
+  private async hasOtherActiveBaselineConsent(guardianId: string, studentId: string): Promise<boolean> {
+    const others = await this.prismaJobs.consentRecord.findMany({
+      where: { studentId, tier: 'BASELINE', status: 'ACTIVE', guardianId: { not: guardianId } },
+      select: { guardianId: true },
+    });
+    if (others.length === 0) return false;
+    const activeLinks = await this.prismaJobs.guardianLink.count({
+      where: { studentId, guardianId: { in: others.map((o) => o.guardianId) }, revokedAt: null },
+    });
+    return activeLinks > 0;
   }
 
   /** POST /guardians/me/minors/{studentId}/booking-delegation (Decision 123).
