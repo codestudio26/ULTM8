@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
-import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
+import { QueueModule } from '../jobs/queue.module';
 import { HealthController } from './health.controller';
 
+// QueueModule (not a registerQueue of its own) so the health check reuses the
+// existing notification-fanout Queue and its shared Redis connection.
 @Module({
-  imports: [BullModule.registerQueue({ name: NOTIFICATION_FANOUT_QUEUE })],
+  imports: [QueueModule],
   controllers: [HealthController],
 })
 export class HealthModule {}

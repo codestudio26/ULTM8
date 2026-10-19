@@ -29,6 +29,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - **api — new `GET /v1/health`:** public and unthrottled. It reports the
     database (as `ultm8_app`) and Redis as ok/down, with a 503 if either is
     down.
+  - **api — one shared Redis connection for all job queues.**
+    - Every BullMQ Queue and Worker now shares one connection instead of
+      opening its own. Only each Worker's blocking connection is separate.
+    - Measured against Redis 7: one API process went from 52 connections
+      to 18.
+    - 52 was over the 50 a free Render Key Value allows. The staging API
+      crashed with "Connection is closed" on every redeploy, while the old
+      and new instances overlapped.
   - **api — dev seed scripts refuse non-local databases.** They create logins
     with passcode `123456`. To seed a throwaway staging database on purpose,
     set `ULTM8_ALLOW_DEV_SEED_HOST=<host>`. They always refuse under
