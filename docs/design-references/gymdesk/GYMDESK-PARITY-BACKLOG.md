@@ -45,7 +45,9 @@ into the decision log under the next free numbers.**
 | Members → Memberships, Add Membership Option | ✅ 06, recording | §4 |
 | Gym → Schedule | ✅ recording (empty week view only) | §5 |
 | Settings → Billing settings, Payment processor | ✅ recording | §6 |
-| Members → Check-in, Attendance, Rosters, Documents, Content, Growth, Settings tabs | ❌ not yet | — |
+| Members → Check-in, Attendance, Rosters | ✅ 10–12 | §7 |
+| Members → Documents, Content, Growth, member list | ✅ chat-only screenshots (not saved: images arrived inline, and the list shows a real member's phone/DOB) | §7 |
+| Members → Settings tab; Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
 | Gym → Bookings, Managers & Staff, Payroll, Programs | ❌ not yet | — |
 | Billing, Marketing, Website, Sales, Competitions, Front Desk | ❌ not yet | — |
 | Settings → Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations | ❌ not yet | — |
@@ -159,7 +161,79 @@ including a filled-in example where possible. Empty screens hide most fields.
 
 ---
 
-## 7. Code checks
+## 7. Members section: other tabs (screenshots 10–12 + chat, 19 Oct 2026)
+
+Layout note: Check-in, Attendance and Growth use a **dark-blue full-width band** behind
+the content (same family as the Dashboard hero). Attendance adds a **second tab row**
+inside the band.
+
+### Check-in (front-desk kiosk), `10`
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| K1 | Three-column layout: Today's Sessions · check-in pad · Recent Check-ins | 🟡 | Data exists (timetable, check-ins); no combined front-desk screen. Mostly frontend |
+| K2 | Keypad check-in by **personal code** | ❌ | Depends on M7 (personal PIN) |
+| K3 | **Name search** check-in | ✅ | `INSTRUCTOR_MANUAL` check-in (staff confirms by name) |
+| K4 | **Add unscheduled session** (check people in to a session that isn't on the timetable) | ❌ | Check-ins are tied to Bookings/Classes today |
+| K5 | "All check-ins" history list | 🟡 | Per-class roll call exists (`RollCallPage`); School-wide history list ❌ |
+
+**Questions:** K4: what's an unscheduled session: an open mat or private lesson? Does it count against Class Pack credits? Who may create one? K1: a dedicated kiosk mode where a tablet is locked to check-in only, needing its own login/role?
+
+### Attendance overview, `11`
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| A1 | Last-30-days KPIs: members/session, sessions/member, active members | ❌ | No attendance analytics endpoint. Dashboard has weekly booking counts only |
+| A2 | Demographics panel (filterable) | ❌ | Needs D3-style privacy answer (age/gender of minors) |
+| A3 | Attendance chart: check-ins by day/week/month, date range | ❌ | |
+| A4 | Sub-tab: Promotions | 🟡 | Grading/promotion events exist (Grading Board). Linking them to attendance (e.g. "classes since last promotion") to verify |
+| A5 | Sub-tab: Multiple Check-in (bulk) | ✅ | Roll call checks a whole class in |
+
+**Questions:** A1/A3: who sees analytics (Owner only, or Branch Staff for their Branch)? Do counts include Trial/Friend Pass students?
+
+### Rosters, `12`
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| R1 | Roster = named group of members, tied to a programme, max capacity, assigned to a schedule | ❌ | No group entity. Classes + bookings + waitlist cover per-class capacity only |
+
+**Questions:** R1: how does a roster differ from a Class (e.g. a "Kids Competition Team")? Does roster membership grant booking access or restrict it? Is it per Branch?
+
+### Documents (chat screenshot)
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| DOC1 | Document templates list: name, members, signatures, last updated, edit/delete | ✅ | Waivers + Signatures panel |
+| DOC2 | General **contracts** beyond liability waivers | 🟡 | Waiver entity only. Decision 253: waivers are never deleted, so Gymdesk's **delete** icon must be **archive** in ULTM8 |
+
+**Questions:** DOC2: are contracts a Waiver type or a separate entity? Retention period is still an open legal item (CLAUDE.md "Current phase").
+
+### Content (chat screenshot)
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| C1 | Member-portal posts (training materials, videos), with Posts / Add New Post / Settings | ✅ | Curriculum + Lessons, video via Cloudflare Stream (Decision 227/254; live account unverified, v1.3) |
+| C2 | Free-form announcement-style **posts** (not tied to a lesson) | 🟡 | Notifications Broadcast covers announcements; a post feed ❌ |
+
+### Growth (chat screenshot)
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| G1 | Active members count | 🟡 | Derivable from active Memberships; no endpoint |
+| G2 | New members per month chart (12 months) | ❌ | Needs an editable join date (M9) to be accurate |
+| G3 | Visitors / **Frozen** / Canceled counts | ❌ | Visitors depend on M6. **Membership freeze doesn't exist** (`MembershipStatus` is Active/Expired only). Canceled vs expired isn't distinguished |
+| G4 | Filter by **acquisition source** | ❌ | Depends on M12 ("how did you hear") |
+| G5 | Member growth by programme | ❌ | |
+
+**Questions:** G3: should Memberships be freezable (pause billing + access)? For how long, is there a fee, and who can request it (Guardian for a minor)? That would change `MembershipStatus`, which Decision 6 fixed at Active/Expired, so it needs its own decision.
+
+### Member list (chat screenshot)
+| # | Gymdesk element | ULTM8 | Notes |
+|---|---|---|---|
+| L1 | Columns: member (photo + status badge), contact, age + DOB, rank/level (belt graphic + programme), joined, last visit, billing status | 🟡 | Students list exists; rank ✅ (grading), joined ❌ (M9), last visit and billing status to verify |
+| L2 | Search + filter, Add Member, Invite | ✅ | |
+| L3 | **Print** and **Export** | ❌ | No CSV/export anywhere in the codebase |
+| L4 | Bulk **Select** | ❌ | |
+| L5 | Per-row quick actions (edit, check in) | 🟡 | |
+| L6 | "Continue setup: Set up billing" banner | ❌ | Ties to D4 checklist |
+
+**Questions:** L3: who may export member data (data-protection: minors' details)? Which columns?
+
+## 8. Code checks
 
 All ❓ items from the first pass were checked against `schema.prisma` on 19 Oct 2026
 and resolved above. Field-level only: a 🟡 may still need its service/endpoint checked
