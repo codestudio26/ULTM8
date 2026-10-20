@@ -49,6 +49,12 @@
   /* Value text inside a Settings-row <select>/<input> — same size AND colour as
      the label (product owner, 20 Oct 2026) */
   --text-setting-value: var(--text-setting-label);
+  /* Form fields (inputs/selects) — redesign vision, product owner 20 Oct 2026.
+     Typed value = the settings-label grey; hint text one step lighter. NOTE:
+     --text-placeholder (#969ea6) is ~2.6:1 on white, below WCAG's 4.5:1 for
+     text; the product owner accepted it on 20 Oct 2026. */
+  --text-field-value: var(--text-setting-label);
+  --text-placeholder: var(--color-neutral-400);
   --border: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
 
@@ -101,6 +107,9 @@
   --font-size-footnote: 14px;
   --font-size-body: 16px;
   --font-size-input: 16px; /* below 16px triggers iOS auto-zoom on focus — never go smaller */
+  /* Redesign form fields: 15px on desktop, 16px on phones (iOS auto-zoom rule
+     above), product owner 20 Oct 2026. The media query below flips it. */
+  --font-size-field: 15px;
   --font-size-heading-sm: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);
   --font-size-heading-md: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
   --font-size-heading-lg: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
@@ -140,6 +149,13 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Phones: form-field text back to 16px so iOS doesn't auto-zoom on focus. */
+@media (max-width: 767px) {
+  :root {
+    --font-size-field: var(--font-size-input);
+  }
+}
+
 /* Dark mode — derived from the same ramps above, ships at launch (DESIGN.md
    "Color"). System preference by default; an explicit [data-theme] always wins. */
 @media (prefers-color-scheme: dark) {
@@ -151,6 +167,7 @@
     --text-secondary: var(--color-neutral-400);
     --text-muted: var(--color-neutral-500);
     --text-setting-label: var(--color-neutral-400);
+    --text-placeholder: var(--color-neutral-500);
     --border: var(--color-neutral-700);
     --border-strong: var(--color-neutral-600);
 
@@ -172,6 +189,7 @@
   --text-secondary: var(--color-neutral-400);
   --text-muted: var(--color-neutral-500);
   --text-setting-label: var(--color-neutral-400);
+  --text-placeholder: var(--color-neutral-500);
   --border: var(--color-neutral-700);
   --border-strong: var(--color-neutral-600);
 
