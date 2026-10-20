@@ -210,3 +210,4 @@ The vision canvas now holds only the six approved screens and the colour referen
   - The code box and number keys use Slate 600 (#4d5d6b) with white text.
   - The ✓ key is pale green #def2e2 with #50575e text.
   - The same colours apply to the check-in preview on Settings → Check-in rules.
+- **Gender options (product owner, 20 Oct 2026):** wherever the redesign offers gender choices, they are **Female** and **Male** only. Never add "Non-binary" or "Prefer not to say", including in sample data. The live app currently stores gender as free text. Three existing tests use "non-binary" as a sample value: `apps/api/test/users.e2e-spec.ts`, `apps/school-portal/e2e/student-grading.spec.ts` and `apps/student/src/profile/profileEdit.test.tsx`. They were left unchanged pending the product owner's decision.
