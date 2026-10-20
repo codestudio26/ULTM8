@@ -292,6 +292,10 @@ The desktop design is made phone-friendly. The student app (`apps/student`) borr
   - Form pattern F's chapters stack, with the number and title above the fields.
 - **Settings categories** become a row of buttons you swipe sideways.
 - **Wide tables** (Students list) scroll sideways inside their card.
+- **Lists with a details panel** (for example the Students list):
+  - Tapping a row **shrinks the list to that one row**, hiding the headings and footer, and shows the details directly underneath.
+  - A **"Show all students (N)"** button brings the full list back.
+  - On a computer the list never shrinks, because the details sit in the right-hand panel.
 - **Form fields** use 16px text, so iOS doesn't zoom in when a field is tapped.
 - **Page side padding** is 16px.
 
