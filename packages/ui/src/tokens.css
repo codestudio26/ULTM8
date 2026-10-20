@@ -102,6 +102,18 @@
   --fill-action-hover: var(--fill-success-hover);
   --on-action: var(--color-neutral-600);
 
+  /* Redesign navigation (product owner 20 Oct 2026). Three slate shades mark the
+     three navigation areas, darkest to lightest: main rail, detail side panel
+     (e.g. the student profile panel, ~420px wide), and its "Back to…" band.
+     The selected rail item gets a 4px pale-green bar on its left edge. */
+  --nav-rail: var(--color-accent-800);
+  --nav-panel: var(--color-accent-700);
+  --nav-panel-band: var(--color-accent-500);
+  --nav-active-bg: var(--color-accent-500);
+  --nav-active-marker: var(--fill-action);
+  --nav-active-marker-width: 4px;
+  --nav-panel-width: 420px;
+
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
