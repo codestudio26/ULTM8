@@ -343,6 +343,35 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
   - On narrow cards, secondary numbers go under the time: "Done · 18/24 booked".
   - On a computer, the columns in a class row have capped widths, so they sit close together. Spare width goes to the end of the row, never between the class name and the date.
 
+### Grading screens (New Portal vision, 20 Oct 2026)
+
+The grading system as built, shown in the new look. Every label and rule stays as it is in the code; only layout and look change.
+
+- **Where things live.** "Grading" in the menu opens three tabs: **Board**, **Styles & belts** (the ladder and belt editor) and **Permissions**. A student's grading is the **Ranks** tab of their profile.
+- **Belt picture.** Always drawn like `BeltChip`:
+  - The belt colour, split top and bottom for a two-tone belt.
+  - A tag with the stripes: 3px stripes with 2px gaps.
+  - An 8px tip in the belt colour.
+  - Sizes: 72 × 16 px in rows and cards; 168 × 30 px as the large picture in a panel or at the top of a student's style card. The rank name always sits next to it.
+- **Board.**
+  - **Columns:** the three columns (Just Starting / Getting There / Ready to Grade) are soft grey trays. Student cards inside them are white.
+  - **Each card**, top to bottom:
+    - checkbox, 40px circle avatar, name, and the % on the right (green at 100%)
+    - the belt and rank name on their own line
+    - a progress bar
+    - tags, then Move
+  - **Selection:**
+    - A selected card gets a slate ring.
+    - A ticked card turns pale green.
+    - Clicking a card fills the right panel: the large belt, "Toward {next} — %", the ticks and the skills.
+- **Tags:**
+  - Green: Ready.
+  - Amber: needs a look ("Skills not signed off", "n days short").
+  - Red: blocked or unverified ("Skills required", "Not verified").
+  - Grey: Inactive.
+- **Dialogs.** A centred white card over a dimmed page, up to 560px wide (640px for bulk promote). Cancel and the action sit in a grey footer. On phones the dialog fills the screen and the footer buttons share the width.
+- **Phone.** The columns stack in the order Just Starting, Getting There, Ready to Grade. Permission toggles become one list of switches.
+
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
 A selected, active, focused or "on" state must never use the same colour as the surface behind it, or as a control sitting on it. Otherwise the control disappears.
