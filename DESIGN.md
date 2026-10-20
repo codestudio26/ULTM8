@@ -323,9 +323,20 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
 
 - **Every avatar is a circle**: people and classes alike. Two shapes side by side looks unfinished, so square or rounded-square avatars are never used.
 - **People** (students, coaches, staff): their photo, or their initials on a soft grey circle.
-- **Classes**: 40px on a computer, 44px on a phone.
+- **Classes**: same sizes as people (see the size table below).
   - They show the class's own **banner image** (`Class.bannerUrl`, uploaded on the class form), cropped to a circle.
   - With no banner, a soft-coloured circle shows the class initials (for example "AG" for Advanced (Gi)). The colour, not the shape, tells one class from another.
+- **Avatar sizes depend on where the avatar sits, never on what it shows.** A student and a class in the same kind of spot are always the same size:
+
+  | Where | Computer | Phone |
+  |---|---|---|
+  | Inside a line of text (e.g. "booked by Sofia") | 24px | 24px |
+  | Your own account (bottom of the menu / top bar) | 32px | 32px |
+  | Any list row: students, classes, attendance, today's classes, check-in | 40px | 44px (easier to tap) |
+  | Right panel header, and the live preview card on forms | 64px | 64px |
+  | Full profile page, the big picture at the top | 96px | 80px |
+
+  No other avatar sizes. The two big sizes appear only once per screen.
 - Use class avatars wherever a class appears in a list: attendance history, today's classes, bookings and the timetable.
 - **Order in every class row: avatar → class name (with coach/branch underneath) → time or date → the rest.** For example, the booked count or check-in method.
   - On narrow cards, secondary numbers go under the time: "Done · 18/24 booked".
