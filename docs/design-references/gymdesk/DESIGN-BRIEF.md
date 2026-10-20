@@ -160,3 +160,12 @@ backend yet. Those show as disabled "coming soon", and each is listed in
 `GYMDESK-PARITY-BACKLOG.md` with the business-rule questions to answer before building.
 This replaces the "Deliberately NOT carried over" list in §5: those items are now backlog
 entries D3–D7 there.
+
+## 7. Colour decisions from the vision prototype (20 Oct 2026)
+
+Prototype canvas: https://claude.ai/artifact/C5ztydgzpyzjD8bTfwEP4N (private to the product owner; six sample screens + a colour sheet).
+
+- **Left rail and secondary dark panels share one colour:** slate `#2f3941` (`--color-accent-800`), as in Gymdesk's matching rail + settings panel. Rail hover `#3e4b56`, active item `#5d7081`.
+- **Save / primary action buttons and toggles (on): pale green `#def2e2`** (`--fill-success` in `DESIGN.md`) with **dark text `#151719`** and a **1px `#1f7a4d` outline**. Chosen by the product owner from the colour sheet ("number 9").
+  - Accessibility note: `#def2e2` on a white page is about 1.2:1, below the 3:1 WCAG minimum for a control's state. The 1px `#1f7a4d` outline is what keeps an "on" toggle visible. Keep it, or revisit with an accessibility check before building.
+- Navigation buttons (Back to list, All check-ins) stay slate `#5d7081`. Section-heading ticks stay success green `#1f7a4d`.
