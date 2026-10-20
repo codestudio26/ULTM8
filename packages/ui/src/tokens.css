@@ -118,6 +118,32 @@
   --nav-width: 248px;
   --inspector-width: 340px;
 
+  /* Redesign form pattern "F" — numbered chapters + live preview (product owner,
+     20 Oct 2026). The feel and style for every form across the site; component
+     classes are in components.css (.ultm8-chapter, .ultm8-soft-field, …). */
+  --form-field-bg: var(--color-neutral-100);
+  --form-field-bg-focus: #ffffff;
+  --form-field-focus-ring: var(--color-accent-500);
+  --form-field-height: 52px;
+  --form-field-radius: 14px;
+  --form-label-size: var(--font-size-footnote);
+  --form-label-color: var(--color-neutral-600);
+  --form-chapter-label-width: 200px;
+  --form-chapter-padding: 40px;
+  --form-chapter-number-size: 52px;
+  --form-chapter-number-color: var(--color-neutral-300);
+  --form-chapter-number-done: var(--color-success);
+  --form-pill-track: var(--color-neutral-100);
+  --form-pill-on-bg: var(--color-accent-800);
+  --form-pill-on-text: #ffffff;
+  --form-option-border: var(--color-neutral-200);
+  --form-option-selected-border: var(--color-success);
+  --form-option-selected-bg: #f4faf6;
+  --form-preview-bg: var(--color-accent-500);
+  --form-preview-text: #ffffff;
+  --form-preview-muted: var(--color-accent-200);
+  --form-preview-inset: var(--color-accent-600);
+
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
@@ -217,6 +243,18 @@
     --nav-active-text: #ffffff;
     --nav-active-marker: var(--fill-action);
 
+    /* Redesign form pattern "F", dark mode */
+    --form-field-bg: var(--color-neutral-700);
+    --form-field-bg-focus: var(--color-neutral-800);
+    --form-field-focus-ring: var(--color-accent-300);
+    --form-label-color: var(--color-neutral-400);
+    --form-chapter-number-color: var(--color-neutral-600);
+    --form-pill-track: var(--color-neutral-700);
+    --form-pill-on-bg: var(--color-accent-300);
+    --form-pill-on-text: var(--color-neutral-900);
+    --form-option-border: var(--color-neutral-700);
+    --form-option-selected-bg: color-mix(in srgb, var(--color-success) 18%, var(--color-neutral-800));
+
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.45);
@@ -249,6 +287,18 @@
   --nav-active-bg: #2c5446;
   --nav-active-text: #ffffff;
   --nav-active-marker: var(--fill-action);
+
+  /* Redesign form pattern "F", dark mode */
+  --form-field-bg: var(--color-neutral-700);
+  --form-field-bg-focus: var(--color-neutral-800);
+  --form-field-focus-ring: var(--color-accent-300);
+  --form-label-color: var(--color-neutral-400);
+  --form-chapter-number-color: var(--color-neutral-600);
+  --form-pill-track: var(--color-neutral-700);
+  --form-pill-on-bg: var(--color-accent-300);
+  --form-pill-on-text: var(--color-neutral-900);
+  --form-option-border: var(--color-neutral-700);
+  --form-option-selected-bg: color-mix(in srgb, var(--color-success) 18%, var(--color-neutral-800));
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);

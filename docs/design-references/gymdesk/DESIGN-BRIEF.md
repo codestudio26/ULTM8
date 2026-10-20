@@ -211,3 +211,8 @@ The vision canvas now holds only the six approved screens and the colour referen
   - The ✓ key is pale green #def2e2 with #50575e text.
   - The same colours apply to the check-in preview on Settings → Check-in rules.
 - **Gender options (product owner, 20 Oct 2026):** wherever the redesign offers gender choices, they are **Female** and **Male** only. Never add "Non-binary" or "Prefer not to say", including in sample data. The live app currently stores gender as free text. Three existing tests use "non-binary" as a sample value: `apps/api/test/users.e2e-spec.ts`, `apps/school-portal/e2e/student-grading.spec.ts` and `apps/student/src/profile/profileEdit.test.tsx`. They were left unchanged pending the product owner's decision.
+- **Forms (product owner, 20 Oct 2026): pattern "F"** is the feel and style for every form across the site.
+  - It combines form idea D (numbered chapters, soft borderless fields) with idea B (a live preview card plus a "Ready to save" checklist in the right-side inspector).
+  - It was first applied to Add student. A Guardian chapter appears when "under 18" is switched on.
+  - For choices: 5 or fewer short options use pills; longer lists, or lists a School can grow, use a drop-down.
+  - The full spec is in DESIGN.md → Patterns → Form pattern "F". The CSS is the `--form-*` settings in `packages/ui/src/tokens.css` and the `.ultm8-chapter`, `.ultm8-soft-field`, `.ultm8-pills`, `.ultm8-option-card` and `.ultm8-form-preview` classes in `packages/ui/src/components.css`. These are new, additive classes; no existing component uses them yet.

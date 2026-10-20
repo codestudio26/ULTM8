@@ -228,6 +228,40 @@ For a flow that collects a short numeric code (OTP, PIN-style passcode):
 - A live countdown/expiry line below, in `--text-muted` — the actual expiry duration is a backend/business value, never hardcoded in the UI layer
 - Primary action stays disabled until every box is filled
 
+### Form pattern "F": numbered chapters + live preview
+
+The product owner chose this on 20 Oct 2026 as the feel and style for every form across the site. It was first applied to Add student.
+
+**Structure**
+- **Chapters:** the form is a stack of chapters (`.ultm8-chapter`), numbered 01, 02, … in large light figures.
+  - Left side: the number, a title, and a one-line explanation of why the chapter is asked for.
+  - Right side: the fields, two to a row.
+  - A chapter's number turns success-green (`.ultm8-chapter--done`) once its required fields are filled.
+- **Fields** (`.ultm8-soft-field` / `.ultm8-soft-input`):
+  - no border, a soft grey fill (`--form-field-bg`), 52px tall, 14px corner radius
+  - the label sits above the field
+  - on focus, the field turns white with a 2px slate ring
+  - text is `--font-size-field` (15px on desktop, 16px on phones)
+- **Date of birth:** three boxes, DD / MM / YYYY (`.ultm8-soft-date`).
+
+**Choices**
+- **5 or fewer short options:** pills (`.ultm8-pills`), so every option is visible and takes one tap.
+- **More than 5 options, or a list a School can grow:** a drop-down (`<select class="ultm8-soft-input">`).
+- **Choices that need a line of explanation** (waivers, app access): option cards (`.ultm8-option-card`). Selected cards get a success-green border.
+
+**Live preview** (`.ultm8-form-preview`)
+- It sits in the right-side inspector and stays in view while the form scrolls.
+- It holds two things:
+  - a preview card (`.ultm8-preview-card`, Slate 500) showing what is being created, filling in as staff type
+  - a "Ready to save" checklist (`.ultm8-checklist`) of what is done and what is still missing
+- The primary Save/Add button lives under the checklist, so it is always in reach.
+
+**Responsive**
+- Under 1024px, the preview drops below the form.
+- Under 768px, chapters stack (number and title above the fields) and fields go one per row.
+
+**Settings:** `--form-*` in `packages/ui/src/tokens.css`, with light and dark values.
+
 ## Motion
 
 ```css
