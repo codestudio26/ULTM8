@@ -261,16 +261,16 @@ next rank, history), plus `/students/:id/edit` (`StudentUpdatePage`).
 | PR1 | Left profile panel + tabbed right side | 🟡 | Frontend layout. Data mostly exists |
 | PR2 | Check-in code shown on profile | ❌ | Depends on M7 |
 | PR3 | Quick actions: Call, Message (email) | 🟡 | Frontend `tel:`/`mailto:` links are trivial. **In-app messaging** ❌ |
-| PR4 | Quick action: Send Access (re-send invite) | 🟡 | Invite flow exists; resend to verify |
-| PR5 | Quick action: Card (store a payment card) | 🟡 | Saved cards exist via hosted Checkout (Decisions 238/243). Staff adding a card on a member's behalf ❌ |
+| PR4 | Quick action: **Send Access** → "Resend Member Account Access": **resets** the member's access and emails new access details (Continue / Go back) | 🟡 | Invite flow exists. Reset-and-resend ties to Q11 temporary passcode |
+| PR5 | Quick action: **Card** → **printable membership card** (School name, photo, name, barcode, "since" date; print and download-image buttons). *Corrected 20 Oct 2026: earlier read as "store a payment card".* | ❌ No printable card. ULTM8 check-in uses QR in the app; a card would need a barcode/QR the scanner accepts (ties to M7) |
 | PR6 | **Tags** | ❌ | |
 | PR7 | Balance | ❌ | No per-member ledger/balance |
 | PR8 | **Family account** management | 🟡 | Guardian↔minor links exist; Gymdesk-style family grouping and billing ❌ (ties to P2/P12) |
 | PR9 | Profile tab: attendance chart | ❌ | Ties to A3 |
-| PR10 | **Notes** (staff notes about a member) | ❌ | No general member-notes entity (promotion-event notes only) |
-| PR11 | Recurring payments list + **create recurring payment** for a member | 🟡 | Memberships are bought via Checkout. Staff-created ad-hoc recurring charge ❌ |
-| PR12 | Payments list + **create a one-off charge** | 🟡 | Transactions exist. Staff-initiated ad-hoc charge ❌ |
-| PR13 | **Messaging** tab: email + SMS thread with the member (SMS needs a texting number) | ❌ | Notifications/Broadcast exist, but not a per-member conversation |
+| PR10 | **Notes**: Add Note modal with text, **"Display during check-in and in the member portal"**, and **"Add task"** (turns the note into a task with **due date + time**). Saved notes show author + timestamp, edit/delete | ❌ | No general member-notes entity (promotion-event notes only). Tasks ❌ |
+| PR11 | **Create Recurring Payment** modal: amount, **+discount (% or fixed)**, **+add sales tax**, every N month(s), scheduled day (e.g. 1st), description (shown on invoices), first payment **now or a date**, payment method (**Manual payment** or **Payment card**). List row: "Every 1 month R$310.50 – Payment card, 10% discount", start date, next payment, **Modify** | 🟡 | Staff-created recurring charges approved in principle (Q28) |
+| PR12 | **Create Charge** modal: amount, description, +discount, +add sales tax, charge date **now or later**, **"Send email invoice"**, payment method. Payments list: description, method + amount, scheduled date, edit/delete | 🟡 | Approved in principle (Q28). Invoices by email ❌ |
+| PR13 | **Messaging** tab: "Add" menu (Email…), "Add a message / note"; email + SMS thread (SMS "requires texting number setup") | ❌ | Notifications/Broadcast exist, but not a per-member conversation |
 | PR14 | Attendance tab: totals + **Log Attendance** modal (date, choose session, add note, Single/Bulk) | 🟡 | Roll-call check-in exists. Back-dated manual attendance with a note ❌ |
 | PR15 | Documents tab: add document / use template / **upload file** | 🟡 | Waiver signatures ✅; arbitrary file upload per member ❌ |
 | PR16 | Ranks tab: add rank (belt dropdown with stripes), date, time, "add promotion fee" | ✅/🟡 | Grading/promotion ✅ (`StudentGradingPage`). **Promotion fee** ❌ |

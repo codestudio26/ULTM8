@@ -142,6 +142,13 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 47. 🟠 **IE2/IE4/IE5 Import memberships, merge duplicates, export all documents:** all three wanted?
     - Answer:
 
+48. 🟠 **PR10 Note tasks:** Gymdesk can turn a note into a task with a due date. Want staff tasks? Who gets reminded? And may a note be **shown to the member** (portal/check-in)?
+    - Answer:
+49. 🟠 **PR11/PR12 Sales tax and discounts on staff-created charges:** add tax per charge (VAT/sales tax)? Discount as % or fixed? Email an invoice?
+    - Answer:
+50. 🟢 **PR5 Printable membership card:** want printable cards (photo + barcode/QR) for check-in at the desk?
+    - Answer:
+
 ### Already answered (summary)
 - **Q4, Q6, Q11, Q13, Q15, Q26, Q28:** answered 20 Oct 2026, inline above, some with follow-ups.
 - **Competitions (PR17):** deferred. No Smoothcomp integration for now. *20 Oct 2026*
