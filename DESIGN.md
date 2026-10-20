@@ -319,6 +319,14 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
 - **Labels:** 12px uppercase, 0.06em letter spacing, grey. Keep them short.
 - **"Soon" goes under the number,** never inside the label, so the label stays one line.
 
+### Avatars: people vs classes
+
+- **People** (students, coaches, staff) have **round** avatars: their photo, or their initials on a soft grey circle.
+- **Classes** have **rounded-square** avatars: 40px on a computer and 44px on a phone, with 10–12px corners.
+  - They show the class's own **banner image** (`Class.bannerUrl`, uploaded on the class form), cropped to a square.
+  - With no banner, a soft tile shows the class initials (for example "AG" for Advanced (Gi)).
+- **The different shapes tell people and classes apart at a glance.** Use class avatars wherever a class appears in a list: attendance history, today's classes, bookings and the timetable.
+
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
 A selected, active, focused or "on" state must never use the same colour as the surface behind it, or as a control sitting on it. Otherwise the control disappears.
