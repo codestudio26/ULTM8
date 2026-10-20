@@ -118,6 +118,8 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
   --nav-active-marker: var(--color-success); /* 4px bar on the left; dark: #def2e2 */
   --nav-width: 248px;
   --inspector-width: 340px;                  /* right-side white panel on every page */
+  /* Kept alternative, not in use: Slate 500 menu (option A1) — nav-bg #5d7081, text #edf0f2,
+     active #4d5d6b with white text and a #def2e2 bar (product owner, 20 Oct 2026) */
 
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
