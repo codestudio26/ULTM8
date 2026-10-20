@@ -43,6 +43,9 @@
   --text-primary: var(--color-neutral-900);
   --text-secondary: var(--color-neutral-600);
   --text-muted: var(--color-neutral-400);
+  /* Settings-row label (toggle/select rows on Settings pages) — redesign vision,
+     product owner 20 Oct 2026. Gymdesk-style soft grey; 4.6:1 on white. */
+  --text-setting-label: var(--color-neutral-500);
   --border: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
 
@@ -93,6 +96,9 @@
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  /* Settings-row label (see --text-setting-label) — redesign vision, 20 Oct 2026 */
+  --font-size-setting-label: 15px;
+  --font-weight-setting-label: var(--font-weight-regular);
 
   /* ---- Spacing (DESIGN.md "Layout & spacing") ---- */
   --space-1: 0.25rem; /* 4px */
@@ -133,6 +139,7 @@
     --text-primary: var(--color-neutral-100);
     --text-secondary: var(--color-neutral-400);
     --text-muted: var(--color-neutral-500);
+    --text-setting-label: var(--color-neutral-400);
     --border: var(--color-neutral-700);
     --border-strong: var(--color-neutral-600);
 
@@ -153,6 +160,7 @@
   --text-primary: var(--color-neutral-100);
   --text-secondary: var(--color-neutral-400);
   --text-muted: var(--color-neutral-500);
+  --text-setting-label: var(--color-neutral-400);
   --border: var(--color-neutral-700);
   --border-strong: var(--color-neutral-600);
 

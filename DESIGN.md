@@ -17,6 +17,7 @@ Figtree, self-hosted as a single variable font (`@fontsource-variable/figtree`, 
 |---|---|---|
 | `--font-size-caption` | 13px | Metadata, timestamps, helper text |
 | `--font-size-footnote` | 14px | Secondary labels |
+| `--font-size-setting-label` | 15px, regular weight | Label of a toggle/select row on a Settings page (redesign vision, 20 Oct 2026); colour `--text-setting-label` (`--color-neutral-500` light, `--color-neutral-400` dark) |
 | `--font-size-body` | 16px | Default body copy — never go smaller than this for body text |
 | `--font-size-input` | 16px | Any `<input>`/`<select>`/`<textarea>` — below 16px triggers iOS auto-zoom on focus |
 | `--font-size-heading-sm` | `clamp(1.125rem, 1rem + 0.5vw, 1.25rem)` | Card/section titles |
