@@ -275,6 +275,16 @@ The cases found so far, with their fixes:
 
 When a new state colour is added, check it against every surface it can appear on, in light and dark mode.
 
+**Fixes for the current app's styles, held back until the new look goes live.** These are in `packages/ui/src/redesign-fixes.css`. Every rule there is scoped to `[data-look='redesign']`, which the live app never sets, so the live app is unchanged. The product owner asked on 20 Oct 2026 that the live app stay untouched.
+- **Time zone and currency pickers:** the highlighted option used a fixed light colour (dark mode 1.0:1 → 9.1:1).
+- **Dark-mode tinted backgrounds** (`--bg-accent`, `--bg-success`, `--bg-warning`, `--bg-danger`) and their text colours. This changes:
+  - the accent badge (1.7:1 → 5.2:1)
+  - field error text (2.8:1 → 9.3:1)
+  - danger buttons and banners, which also get softer
+- **Old side menu, selected link:** it was white on an almost-white menu. It now uses the new menu's pale green with a 4px bar.
+
+Turning the new look on means setting `data-look="redesign"` on `<html>`. A check renders all 113 existing component classes from `master` and from the redesign branch with the switch off, in light and dark mode, and finds 0 differences.
+
 ## Motion
 
 ```css

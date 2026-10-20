@@ -216,3 +216,4 @@ The vision canvas now holds only the six approved screens and the colour referen
   - It was first applied to Add student. A Guardian chapter appears when "under 18" is switched on.
   - For choices: 5 or fewer short options use pills; longer lists, or lists a School can grow, use a drop-down.
   - The full spec is in DESIGN.md → Patterns → Form pattern "F". The CSS is the `--form-*` settings in `packages/ui/src/tokens.css` and the `.ultm8-chapter`, `.ultm8-soft-field`, `.ultm8-pills`, `.ultm8-option-card` and `.ultm8-form-preview` classes in `packages/ui/src/components.css`. These are new, additive classes; no existing component uses them yet.
+- **Live app stays untouched (product owner, 20 Oct 2026).** Colour problems found in the current app's shared styles are fixed in `packages/ui/src/redesign-fixes.css`. They only apply under `data-look="redesign"`, so they ship with the new look. See DESIGN.md → "Never the same colour twice".

@@ -1,0 +1,46 @@
+/* Fixes that ship WITH the new look (redesign) and never change the live app.
+ *
+ * Every rule here is scoped to [data-look='redesign'], an attribute the live app
+ * never sets; the redesign turns it on (e.g. <html data-look="redesign">) when the
+ * new look goes live. Without it, nothing in this file applies. Product owner,
+ * 20 Oct 2026: "don't change the live app; test and fix it for when we change
+ * the look". See DESIGN.md → "Never the same colour twice".
+ */
+
+/* 1. Time zone / currency pickers: the highlighted option used a fixed light
+ *    colour, so in dark mode it was light text on a light background. */
+[data-look='redesign'] .ultm8-combobox__option:hover,
+[data-look='redesign'] .ultm8-combobox__option--active {
+  background: var(--bg-accent);
+}
+
+/* 2. Tinted backgrounds (badges, highlights) were mixed with white even in dark
+ *    mode, so the accent badge was almost unreadable and the others glowed. */
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --bg-accent: color-mix(in srgb, var(--color-accent-400) 22%, var(--color-neutral-800));
+    --bg-success: color-mix(in srgb, var(--color-success) 28%, var(--color-neutral-800));
+    --bg-warning: color-mix(in srgb, var(--color-warning) 28%, var(--color-neutral-800));
+    --bg-danger: color-mix(in srgb, var(--color-danger) 28%, var(--color-neutral-800));
+    --text-success: #8fd3ad;
+    --text-warning: #f0cf8a;
+    --text-danger: #f2a7a7;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --bg-accent: color-mix(in srgb, var(--color-accent-400) 22%, var(--color-neutral-800));
+  --bg-success: color-mix(in srgb, var(--color-success) 28%, var(--color-neutral-800));
+  --bg-warning: color-mix(in srgb, var(--color-warning) 28%, var(--color-neutral-800));
+  --bg-danger: color-mix(in srgb, var(--color-danger) 28%, var(--color-neutral-800));
+  --text-success: #8fd3ad;
+  --text-warning: #f0cf8a;
+  --text-danger: #f2a7a7;
+}
+
+/* 3. Old side menu: the selected page was white on an almost-white menu.
+ *    Uses the new menu's selected style (pale green + 4px success bar). */
+[data-look='redesign'] .ultm8-shell__nav-link--active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-text);
+  box-shadow: inset var(--nav-active-marker-width) 0 0 var(--nav-active-marker);
+}
