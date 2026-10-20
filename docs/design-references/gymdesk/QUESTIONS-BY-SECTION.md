@@ -81,7 +81,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 25. 🔴 **G3 Freeze memberships:** allow freezing (pause billing and access)? Maximum length? Fee? Who can request it (a Guardian for a child)? (Today a Membership can only be Active or Expired, Decision 6.)
     - Answer:
 26. 🔴 **L3 Print / Export members:** who may export? Which columns? Should children's details be left out?
-    - Answer: (20 Oct 2026) **Export covers all members** (children not excluded). You'll send an image of how Gymdesk does it.
+    - Answer: (20 Oct 2026) **Export covers all members** (children not excluded). Gymdesk's export (screenshot received): Settings → Members → Import/Export/Merge → **Export member data (CSV)**, filter *active and archived / active only / members only / visitors only*.
      - Follow-up: **which staff roles** may export (Owner only, or Branch Staff too)?
 
 ## A6. Member profile page
@@ -128,6 +128,13 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 44. 🔴 **SF6 Medical conditions:** collect medical information at sign-up? It's health data (special category under GDPR/LGPD), so it needs explicit consent, tighter access (who can see it?) and a retention period.
     - Answer:
 
+45. 🔴 **SF9 Custom JavaScript on the sign-up thank-you page:** Gymdesk lets a School paste code that runs on its pages (for ad tracking). On ULTM8 that would be a security hole. OK to offer only ready-made tracking connections (Meta Pixel, Google Analytics) instead?
+    - Answer:
+46. 🟠 **CF1/CF2 Custom fields and statuses:** let each School add its own member fields and statuses? Which field types (text, number, date, dropdown, yes/no)?
+    - Answer:
+47. 🟠 **IE2/IE4/IE5 Import memberships, merge duplicates, export all documents:** all three wanted?
+    - Answer:
+
 ### Already answered (summary)
 - **Q4, Q6, Q11, Q13, Q15, Q26, Q28:** answered 20 Oct 2026, inline above, some with follow-ups.
 - **Competitions (PR17):** deferred. No Smoothcomp integration for now. *20 Oct 2026*
@@ -151,7 +158,8 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 
 ## B2. Members → Settings tab: mostly done (20 Oct 2026)
 - [x] Rows, Member Portal, Notifications, Member list, Membership, Documents, Sign-up Forms
-- [ ] Still needed: **Custom Member Fields, Custom Member Statuses, Manage Tags, Import / Export / Merge**, and the bottom of the sign-up form (Additional forms / post sign-up)
+- [x] Custom Member Fields, Custom Member Statuses, Manage Tags, Import / Export / Merge, sign-up form bottom (received 20 Oct 2026)
+- [ ] Optional: the **⚙ settings** on a custom field and the **field-type** dropdown opened
 - [ ] Member Portal sub-pages: **Manage member portal messaging, Dashboard Quick Actions, Member Content Settings**
 
 ## B3. Gym

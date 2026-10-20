@@ -385,7 +385,24 @@ password · **Selected membership + credit card payment** · Additional forms / 
 | SF5 | Pick documents to sign during sign-up | 🟡 Waiver signing exists; per-form choice ❌ |
 | SF6 | **Medical conditions** | ❌ Health data is special-category personal data (GDPR Art. 9 / LGPD). Needs a decision |
 | SF7 | Pay for a membership inside the form | 🟡 ULTM8 pays via **Stripe hosted Checkout** (Decisions 238/243). Copy the layout, but keep card entry on Stripe's hosted page, not in our own form fields |
-| SF8 | Custom member fields / custom statuses / tags / import-export-merge | ❌ (sub-pages not captured; tags = PR6, export = Q26) |
+| SF8 | Post sign-up: **redirect link**, rich-text **thank-you message** | ❌ Small |
+| SF9 | **JavaScript conversion snippet** run on the thank-you page | ⚠️ Running School-supplied JavaScript on ULTM8's own pages is a **security risk** (script injection that could reach other users' sessions). Recommend: don't copy. Offer named tracking integrations (e.g. Meta Pixel / Google Analytics IDs) instead |
+
+### Custom fields, statuses, tags
+| # | Gymdesk setting | ULTM8 |
+|---|---|---|
+| CF1 | **Custom member fields**: title, field type (text input, …), "use for" (Members, …), per-field settings | ❌ |
+| CF2 | **Custom member statuses** (max 50 characters) | ❌ ULTM8 statuses are fixed |
+| CF3 | **Manage tags** for members and leads | ❌ (PR6) |
+
+### Import / Export / Merge
+| # | Gymdesk tool | ULTM8 |
+|---|---|---|
+| IE1 | Import member data (CSV) | ❌ (M15) |
+| IE2 | Import membership data (CSV: plan structure + who holds what) | ❌ |
+| IE3 | **Export member data (CSV)**, with a filter: *active and archived* / *active only* / *members only* / *visitors only* | ❌ (Q26: export covers all members) |
+| IE4 | **Merge duplicates** (member/lead entries into one profile) | ❌ |
+| IE5 | **Export all members' documents and uploaded files** | ❌ Waiver signatures exist; bulk export ❌ |
 
 ## 10. Code checks
 
