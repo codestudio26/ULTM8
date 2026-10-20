@@ -201,3 +201,8 @@ The vision canvas now holds only the six approved screens and the colour referen
 - **Body:** white cards on #f1f2f3 with light card headers. Primary buttons are pale green (#def2e2) with #50575e text. No bold: 500 is the strongest weight.
 - **Right:** a 340px white inspector on every page. Its first line is a 13px grey uppercase label, and it holds the page's context (the selected record, a summary, a preview or alerts).
 - **Dark surfaces** are only for the menu and for screens the student looks at, such as the check-in kiosk or a preview of the student app.
+- **Check-in screen colour (product owner, 20 Oct 2026): Slate 500** (`--color-accent-500` #5d7081), chosen over Slate 800 (#2f3941), which was too dark. It was compared with Slate 200, Slate 100 and pale green.
+  - Text is white, with the subtitle in #edf0f2.
+  - The code box and number keys use Slate 600 (#4d5d6b) with white text.
+  - The ✓ key is pale green #def2e2 with #50575e text.
+  - The same colours apply to the check-in preview on Settings → Check-in rules.
