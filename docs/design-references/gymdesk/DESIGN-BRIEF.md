@@ -196,7 +196,7 @@ Five nav + info-panel designs were compared in the vision prototype (A = the Gym
 
 The vision canvas now holds only the six approved screens and the colour reference. The exploration boards (5 nav ideas, shells A–E, the colour versions and the letter-spacing comparison) have been removed; earlier versions of the artifact still contain them. Every new page follows these rules:
 
-- **Left:** the labelled 200px menu. The product owner chose its colours on 20 Oct 2026 from 6 colours × plain/coloured icons; plain icons were chosen in both modes:
+- **Left:** the labelled menu, 248px wide (widened from 200px by the product owner, 20 Oct 2026, with roomier 44px rows). The product owner chose its colours on 20 Oct 2026 from 6 colours × plain/coloured icons; plain icons were chosen in both modes:
   - **Light mode: white (F1).** The menu is white with a #e1e3e5 right border and #383d42 text. The selected item has a pale-green (#def2e2) fill and a 4px success-green (#1f7a4d) bar.
   - **Dark mode: Pine (B1).** The menu is #1f3d33 with #cfe3d6 text. The selected item is #2c5446 with white text and a 4px pale-green bar.
   - Both modes are set as the `--nav-*` colour settings in `packages/ui/src/tokens.css` and DESIGN.md. These replace the slate rail and panel settings (`--nav-rail`, `--nav-panel`, `--nav-panel-band`, `--nav-panel-width`), which nothing used.

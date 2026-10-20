@@ -116,7 +116,7 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
   --nav-active-bg: var(--fill-action);       /* #def2e2; dark: #2c5446 */
   --nav-active-text: var(--color-accent-900);/* dark: #ffffff */
   --nav-active-marker: var(--color-success); /* 4px bar on the left; dark: #def2e2 */
-  --nav-width: 200px;
+  --nav-width: 248px;
   --inspector-width: 340px;                  /* right-side white panel on every page */
 
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);

@@ -102,7 +102,7 @@
   --fill-action-hover: var(--fill-success-hover);
   --on-action: var(--color-neutral-600);
 
-  /* Redesign navigation: design D, product owner 20 Oct 2026. A 200px labelled
+  /* Redesign navigation: design D, product owner 20 Oct 2026. A 248px labelled
      side menu plus a 340px white right-side inspector on every page. Light mode
      uses a white menu (option F1); the selected item gets a pale-green fill and
      a 4px success-green bar on its left edge. Dark mode uses Pine (option B1),
@@ -115,7 +115,7 @@
   --nav-active-text: var(--color-accent-900);
   --nav-active-marker: var(--color-success);
   --nav-active-marker-width: 4px;
-  --nav-width: 200px;
+  --nav-width: 248px;
   --inspector-width: 340px;
 
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
