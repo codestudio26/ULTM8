@@ -169,3 +169,18 @@ Prototype canvas: https://claude.ai/artifact/C5ztydgzpyzjD8bTfwEP4N (private to 
 - **Save / primary action buttons and toggles (on): pale green `#def2e2`** (`--fill-success` in `DESIGN.md`) with **dark text `#151719`**, **no outline** (product owner removed the green outline, 20 Oct 2026). Chosen by the product owner from the colour sheet ("number 9").
   - Accessibility note: `#def2e2` on a white page is about 1.2:1, below the 3:1 WCAG minimum for a control's state. Without an outline, an "on" toggle relies on its ON label and knob position. Re-check with an accessibility review before building.
 - Navigation buttons (Back to list, All check-ins) stay slate `#5d7081`. Section-heading ticks stay success green `#1f7a4d`.
+
+## 8. Shell chosen: design D, our colours (20 Oct 2026)
+
+Five nav + info-panel designs were compared in the vision prototype (A = the Gymdesk idea refined, B–E different). The product owner chose **D, in ULTM8's own colours**. This replaces the icon rail + dark 420px side panel described in §6 and §7 for the prototype screens.
+
+- **Left nav:** a labelled 200px sidebar on `--nav-rail` (#2f3941): school logo and name, a search box (⌘K), then Dashboard, Students, Team, Schedule, Grading, Billing, Waivers, Organisation, Notifications. Settings, Help and the signed-in user sit at the bottom. The active item is #5d7081 with white text and a 4px pale-green (#def2e2) marker on the left.
+- **Right-side inspector:** selecting a row in a list opens a white 340px panel on the right instead of a dark panel on the left. The page keeps its full width, and "Open full page ›" leads to the full profile.
+- **Student inspector content** comes from design A (product owner, 20 Oct 2026):
+  - photo, name, an Active badge and "Student since"
+  - the check-in code shown as a dashed "ticket" with a QR icon
+  - Access, Call, Message and Edit as pale-green icon buttons
+  - details grouped under small headings: Contact (phone, email), Training (belt, home branch) and Account (membership, balance, family)
+  - tags, with "+ tag"
+- **Settings:** categories sit in a white card inside the page, with the active category in pale green. A "Preview" inspector on the right shows what the student sees at check-in and updates as the rules change.
+- **Visual only:** this is layout and styling. It changes no business rules, data model or API, and student tags remain a parity-backlog item.
