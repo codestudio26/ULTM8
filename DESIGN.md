@@ -364,6 +364,14 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - A selected card gets a slate ring.
     - A ticked card turns pale green.
     - Clicking a card fills the right panel: the large belt, "Toward {next} — %", the ticks and the skills.
+- **Grid or Rows.** A switch in the board's toolbar shows the same students two ways:
+  - **Grid:** the three columns side by side.
+  - **Rows:** three stacked groups, **Ready to Grade on top**, then Getting There, then Just Starting. Each group has its count, its % range and "Select all".
+    - Each row, laid out like the Instructors' belts list: tick box, 40px avatar and name, the belt with its rank name and "→ next rank" under it, a progress bar with the %, the "needs" tags, and Move.
+    - Highest progress comes first within each group.
+    - A coloured strip on the group's left edge marks it: green for Ready to Grade, slate for Getting There, grey for Just Starting.
+    - On phones each row keeps the tick box, the name (with the belt and tags under it) and the progress.
+  - Ticking, Select all, Promote selected, Move and the right panel work the same in both views.
 - **Tags:**
   - Green: Ready.
   - Amber: needs a look ("Skills not signed off", "n days short").
