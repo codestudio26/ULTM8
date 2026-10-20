@@ -80,6 +80,7 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
   --text-primary: var(--color-neutral-900);
   --text-secondary: var(--color-neutral-600);
   --text-muted: var(--color-neutral-400);
+  --text-strong: var(--color-neutral-700);   /* redesign main text: headings, names, table text — softer than text-primary (product owner, 20 Oct 2026) */
   --border: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
 
