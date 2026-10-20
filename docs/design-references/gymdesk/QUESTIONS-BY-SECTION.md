@@ -91,6 +91,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 25. 🔴 **G3 Freeze memberships:** allow freezing (pause billing and access)? Maximum length? Fee? Who can request it (a Guardian for a child)? (Today a Membership can only be Active or Expired, Decision 6.)
     - Answer:
      - **Answer (20 Oct 2026): YES, freezing is allowed. The maximum freeze length is set by each School.** ⚠️ Changes Decision 6 (Membership is Active/Expired only), so it needs its own decision entry at merge. Still open: fee? who can request (Guardian for a child)? does billing pause?
+     - **Freeze details (20 Oct 2026):** the School **may charge a freeze fee**; **billing stops** during the freeze; for a **child, the Guardian requests** it.
 26. 🔴 **L3 Print / Export members:** who may export? Which columns? Should children's details be left out?
     - Answer: (20 Oct 2026) **Export covers all members** (children not excluded). Gymdesk's export (screenshot received): Settings → Members → Import/Export/Merge → **Export member data (CSV)**, filter *active and archived / active only / members only / visitors only*.
      - Follow-up: **which staff roles** may export (Owner only, or Branch Staff too)?
