@@ -262,6 +262,21 @@ The product owner chose this on 20 Oct 2026 as the feel and style for every form
 
 **Settings:** `--form-*` in `packages/ui/src/tokens.css`, with light and dark values.
 
+### Settings pages (product owner, 20 Oct 2026)
+
+Every Settings page follows the chosen layout, "idea A + information in the right panel". The reference is the vision's **6 · Settings → Check-in rules**.
+
+- **Left: the Settings categories.** They sit in a white card, and each has an icon and a one-line description. The current category is pale green.
+- **Middle: the settings, grouped.** They sit in white cards, each with a small uppercase heading and icon, for example *Who can check in · Access · Check-in screen · Timing*.
+  - **Yes/no settings** use switches with no ON/OFF words. The switch knob always has its outline (`--switch-knob-ring`).
+  - **Choices** use soft drop-downs, or pills when there are 3 or fewer.
+- **Saving:** there is no full-width Save button. A dark bar, "N unsaved changes · Discard · Save changes", appears only when something has changed.
+- **Right: the panel explains whatever is selected.** It has three parts:
+  1. **Preview:** what the student or member sees, updating live as settings change.
+  2. **About this setting:** for whichever setting was clicked, it shows the name, the current state ("On", "Off", "Set to: 30 minutes") and a plain explanation of what it does. The selected setting is highlighted in pale green in the middle column.
+  3. **A picture of the setting, where one helps.** For example, the check-in window is shown as a timeline (opens 17:30 → class 18:00 → closes 18:15) that moves as the times change.
+- **Wording:** explanations only describe what a setting does, as decided. Features that aren't built yet say "coming soon" and point to `docs/v1.3-backend-backlog.md`.
+
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
 A selected, active, focused or "on" state must never use the same colour as the surface behind it, or as a control sitting on it. Otherwise the control disappears.
