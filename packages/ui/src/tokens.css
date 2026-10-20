@@ -46,8 +46,9 @@
   /* Settings-row label (toggle/select rows on Settings pages) — redesign vision,
      product owner 20 Oct 2026. Gymdesk-style soft grey; 4.6:1 on white. */
   --text-setting-label: var(--color-neutral-500);
-  /* Value text inside a Settings-row <select>/<input> — same size as the label */
-  --text-setting-value: var(--color-neutral-600);
+  /* Value text inside a Settings-row <select>/<input> — same size AND colour as
+     the label (product owner, 20 Oct 2026) */
+  --text-setting-value: var(--text-setting-label);
   --border: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
 
@@ -150,7 +151,6 @@
     --text-secondary: var(--color-neutral-400);
     --text-muted: var(--color-neutral-500);
     --text-setting-label: var(--color-neutral-400);
-    --text-setting-value: var(--color-neutral-300);
     --border: var(--color-neutral-700);
     --border-strong: var(--color-neutral-600);
 
@@ -172,7 +172,6 @@
   --text-secondary: var(--color-neutral-400);
   --text-muted: var(--color-neutral-500);
   --text-setting-label: var(--color-neutral-400);
-  --text-setting-value: var(--color-neutral-300);
   --border: var(--color-neutral-700);
   --border-strong: var(--color-neutral-600);
 
