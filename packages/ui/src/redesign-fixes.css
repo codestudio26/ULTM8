@@ -1,4 +1,5 @@
-/* Fixes that ship WITH the new look (redesign) and never change the live app.
+/* Changes that ship WITH the new look (redesign) and never change the live app:
+ * fixes to current components, and the site-wide form look (pattern F).
  *
  * Every rule here is scoped to [data-look='redesign'], an attribute the live app
  * never sets; the redesign turns it on (e.g. <html data-look="redesign">) when the
@@ -43,4 +44,56 @@
   background: var(--nav-active-bg);
   color: var(--nav-active-text);
   box-shadow: inset var(--nav-active-marker-width) 0 0 var(--nav-active-marker);
+}
+
+/* 4. Site-wide form look, pattern "F" (product owner, 20 Oct 2026: "apply F to
+ *    any form across the site"). Every existing form field (Input, Textarea,
+ *    Select, the time zone / currency / phone pickers) takes F's soft field:
+ *    grey fill, no visible border, 52px, 14px corners, white with a slate ring
+ *    on focus. A faint 1px outline is kept because, unlike the Add student form,
+ *    many existing forms sit on the grey page background — without it a grey
+ *    field would disappear into it ("never the same colour twice"). The chapter
+ *    layout and live preview need each form rebuilt, page by page. */
+[data-look='redesign'] .ultm8-field__label {
+  font-size: var(--form-label-size);
+  font-weight: var(--font-weight-regular);
+  color: var(--form-label-color);
+}
+[data-look='redesign'] .ultm8-input,
+[data-look='redesign'] .ultm8-select {
+  min-height: var(--form-field-height);
+  font-size: var(--font-size-field);
+  color: var(--text-field-value);
+  background: var(--form-field-bg);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--border);
+  border-radius: var(--form-field-radius);
+  padding: 0 var(--space-4);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+[data-look='redesign'] textarea.ultm8-input {
+  padding: var(--space-3) var(--space-4);
+}
+[data-look='redesign'] .ultm8-input::placeholder {
+  color: var(--text-placeholder);
+  opacity: 1;
+}
+[data-look='redesign'] .ultm8-input:focus,
+[data-look='redesign'] .ultm8-select:focus {
+  outline: none;
+  background: var(--form-field-bg-focus);
+  box-shadow: 0 0 0 2px var(--form-field-focus-ring);
+}
+[data-look='redesign'] .ultm8-input[aria-invalid='true'],
+[data-look='redesign'] .ultm8-select[aria-invalid='true'] {
+  box-shadow: 0 0 0 2px var(--text-danger);
+}
+@media (max-width: 767px) {
+  /* phones: 16px so iOS doesn't zoom in on focus (--font-size-field flips too) */
+  [data-look='redesign'] .ultm8-input,
+  [data-look='redesign'] .ultm8-select {
+    font-size: var(--font-size-input);
+  }
 }
