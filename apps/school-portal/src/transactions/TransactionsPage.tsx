@@ -6,6 +6,8 @@ import { useMembershipPlans } from '../membershipPlans/membershipPlanQueries';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { useTransactionReceiptUrl, useTransactions, type TransactionResponse } from './transactionQueries';
+import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 /** One "Receipt" cell — a drill-down from the table, not a bulk action, so it's
  * its own small component (one `useTransactionReceiptUrl()` call per row)
@@ -15,6 +17,7 @@ import { useTransactionReceiptUrl, useTransactions, type TransactionResponse } f
  * error. Opens in a new tab (`window.open`) rather than navigating away from
  * the Transactions table. */
 function ReceiptCell({ transactionId }: { transactionId: string }) {
+  const t = useT();
   const getReceiptUrl = useTransactionReceiptUrl();
   const [error, setError] = useState<string | null>(null);
 
@@ -23,19 +26,19 @@ function ReceiptCell({ transactionId }: { transactionId: string }) {
     try {
       const { receiptUrl } = await getReceiptUrl.mutateAsync(transactionId);
       if (!receiptUrl) {
-        setError('No receipt available');
+        setError(t('transactions.noReceipt'));
         return;
       }
       window.open(receiptUrl, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load the receipt.');
+      setError(err instanceof ApiError ? err.message : t('transactions.receiptFailed'));
     }
   }
 
   return (
     <div>
       <Button variant="secondary" loading={getReceiptUrl.isPending} onClick={handleClick}>
-        Receipt
+        {t('transactions.receipt')}
       </Button>
       {error ? <div style={{ color: 'var(--text-danger)', fontSize: 12 }}>{error}</div> : null}
     </div>
@@ -72,6 +75,7 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
  * no refund/credit-restore endpoint exists yet this phase; see
  * transactionQueries.ts's own header comment for invoice-download, now built. */
 export function TransactionsPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useTransactions(schoolId);
   // FOUND ON REVIEW: the table had no way to identify WHICH plan a charge
@@ -82,7 +86,7 @@ export function TransactionsPage() {
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Transactions.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('transactions.loadFailed')} />;
 
   const transactions = data?.items ?? [];
   const plans = planData?.items ?? [];
@@ -103,46 +107,46 @@ export function TransactionsPage() {
 
   return (
     <>
-      <PageHeader title="Transactions" subtitle="Every completed or attempted charge against your School's Membership Plans." />
+      <PageHeader title={t('transactions.title')} subtitle={t('transactions.subtitle')} />
 
       {/* Stats ribbon (Decision — see POST-SPEC-55-DECISION-LOG.md): every tile here is
           real and client-computed from the same `transactions` list rendered below —
           Transaction already carries status and amount, so no new endpoint was needed. */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatTile label="Total transactions" value={transactions.length} />
-        <StatTile label="Successful" value={successfulTx.length} />
-        <StatTile label="Failed / disputed" value={failedOrDisputedCount} />
-        <StatTile label="Total revenue" value={revenueLabel || formatMoney(0, null)} />
+        <StatTile label={t('transactions.statTotal')} value={transactions.length} />
+        <StatTile label={t('transactions.statSuccessful')} value={successfulTx.length} />
+        <StatTile label={t('transactions.statFailedOrDisputed')} value={failedOrDisputedCount} />
+        <StatTile label={t('transactions.statRevenue')} value={revenueLabel || formatMoney(0, null)} />
       </div>
 
       <Card>
         {transactions.length === 0 ? (
-          <EmptyState title="No Transactions yet" description="Transactions appear here once Students start purchasing Membership Plans." />
+          <EmptyState title={t('transactions.emptyTitle')} description={t('transactions.emptyDescription')} />
         ) : (
           <Table<TransactionResponse>
             rows={transactions}
             columns={[
-              { key: 'billingDate', header: 'Date', render: (t) => new Date(t.billingDate).toLocaleString() },
+              { key: 'billingDate', header: t('transactions.columnDate'), render: (t) => new Date(t.billingDate).toLocaleString(formatLocale()) },
               {
                 key: 'plan',
-                header: 'Plan',
+                header: t('transactions.columnPlan'),
                 render: (t) => plans.find((p) => p.id === t.membershipPlanId)?.title ?? t.membershipPlanId,
               },
               {
                 key: 'student',
-                header: 'Student',
+                header: t('transactions.columnStudent'),
                 // studentFirstName/studentSurname are joined server-side
                 // (TransactionsService.findAllForSchool). The identical
                 // "no name resolution" gap still exists in ClassDetailPage,
                 // InstructorFormModal, and StaffPage — not fixed here.
                 render: (t) => (t.studentFirstName || t.studentSurname ? `${t.studentFirstName} ${t.studentSurname}`.trim() : t.studentId.slice(0, 8)),
               },
-              { key: 'amount', header: 'Amount', render: (t) => formatMoney(t.amount, t.currency) },
-              { key: 'status', header: 'Status', render: (t) => paymentStatusBadge(t.status) },
-              { key: 'paymentMethod', header: 'Method', render: (t) => t.paymentMethod },
-              { key: 'refunded', header: 'Refunded', render: (t) => (t.refundedAmount ? formatMoney(t.refundedAmount, t.currency) : '—') },
-              { key: 'disputed', header: 'Disputed', render: (t) => (t.disputedAmount ? formatMoney(t.disputedAmount, t.currency) : '—') },
-              { key: 'receipt', header: 'Receipt', render: (t) => <ReceiptCell transactionId={t.id} /> },
+              { key: 'amount', header: t('transactions.columnAmount'), render: (t) => formatMoney(t.amount, t.currency) },
+              { key: 'status', header: t('transactions.columnStatus'), render: (t) => paymentStatusBadge(t.status) },
+              { key: 'paymentMethod', header: t('transactions.columnMethod'), render: (t) => t.paymentMethod },
+              { key: 'refunded', header: t('transactions.columnRefunded'), render: (t) => (t.refundedAmount ? formatMoney(t.refundedAmount, t.currency) : '—') },
+              { key: 'disputed', header: t('transactions.columnDisputed'), render: (t) => (t.disputedAmount ? formatMoney(t.disputedAmount, t.currency) : '—') },
+              { key: 'receipt', header: t('transactions.columnReceipt'), render: (t) => <ReceiptCell transactionId={t.id} /> },
             ]}
           />
         )}

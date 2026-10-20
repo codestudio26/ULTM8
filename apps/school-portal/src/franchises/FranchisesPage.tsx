@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useCreateFranchise, useFranchiseBillingStatus, useFranchises, useUpdateFranchise, type FeeModel, type FranchiseResponse } from './franchiseQueries';
 import { FranchiseFormModal } from './FranchiseFormModal';
+import { useT } from '../i18n/I18nProvider';
 
 /** Top-level, always-visible nav entry (same convention as every other
  * screen in this Shell — nav items aren't role-gated client-side; the
@@ -15,6 +16,7 @@ import { FranchiseFormModal } from './FranchiseFormModal';
  * cross-tenant view — see franchiseQueries.ts's own comment. */
 export function FranchisesPage() {
   const navigate = useNavigate();
+  const t = useT();
   // Server-side Fee model / Activity filters (GET /franchises?feeModel=&activity=).
   const [feeModelFilter, setFeeModelFilter] = useState<FeeModel | ''>('');
   const [activityFilter, setActivityFilter] = useState('');
@@ -38,51 +40,51 @@ export function FranchisesPage() {
   return (
     <>
       <PageHeader
-        title="Franchises"
-        subtitle="Franchises you own — each may have its own member Schools and its own franchise-fee billing."
-        actions={<Button onClick={() => setCreating(true)}>Add franchise</Button>}
+        title={t('franchises.list.title')}
+        subtitle={t('franchises.list.subtitle')}
+        actions={<Button onClick={() => setCreating(true)}>{t('franchises.list.addButton')}</Button>}
       />
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div style={{ minWidth: 180 }}>
-              <Field label="Fee model" htmlFor="franchises-fee-model-filter">
+              <Field label={t('franchises.list.feeModelLabel')} htmlFor="franchises-fee-model-filter">
                 <SelectField
                   id="franchises-fee-model-filter"
                   value={feeModelFilter}
                   onChange={(e) => setFeeModelFilter(e.target.value as FeeModel | '')}
                   options={[
-                    { value: '', label: 'All' },
-                    { value: 'FLAT', label: 'Flat' },
-                    { value: 'PER_HEADCOUNT', label: 'Per-headcount' },
+                    { value: '', label: t('franchises.list.feeModelAll') },
+                    { value: 'FLAT', label: t('franchises.feeModels.flat') },
+                    { value: 'PER_HEADCOUNT', label: t('franchises.feeModels.perHeadcount') },
                   ]}
                 />
               </Field>
             </div>
             <div style={{ minWidth: 200 }}>
-              <Field label="Activity" htmlFor="franchises-activity-filter" hint="Exact match against one of the Franchise's Activities.">
+              <Field label={t('franchises.list.activityLabel')} htmlFor="franchises-activity-filter" hint={t('franchises.list.activityHint')}>
                 <TextField
                   id="franchises-activity-filter"
-                  placeholder="e.g. Jiu Jitsu"
+                  placeholder={t('franchises.list.activityPlaceholder')}
                   value={activityFilter}
                   onChange={(e) => setActivityFilter(e.target.value)}
                 />
               </Field>
             </div>
           </div>
-          <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Franchises view" />
+          <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('franchises.list.viewAria')} />
         </div>
       </Card>
       {isLoading ? (
         <Spinner />
       ) : error ? (
-        <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Franchises.'} />
+        <ErrorBanner message={error instanceof ApiError ? error.message : t('franchises.list.loadFailed')} />
       ) : (
         <Card>
           {franchises.length === 0 ? (
             <EmptyState
-              title={hasFilter ? 'No Franchises match these filters' : 'No Franchises yet'}
-              description={hasFilter ? 'Try a different fee model or activity, or clear the filters.' : 'Add a Franchise to start inviting Schools to join it.'}
+              title={hasFilter ? t('franchises.list.emptyFilteredTitle') : t('franchises.list.emptyTitle')}
+              description={hasFilter ? t('franchises.list.emptyFilteredDescription') : t('franchises.list.emptyDescription')}
             />
           ) : viewMode === 'grid' ? (
             <CardGrid>
@@ -100,13 +102,13 @@ export function FranchisesPage() {
                       <Badge key={`${a}-${i}`}>{a}</Badge>
                     ))}
                   </div>
-                  <Badge>{f.feeModel === 'FLAT' ? 'Flat' : 'Per-headcount'}</Badge>
+                  <Badge>{f.feeModel === 'FLAT' ? t('franchises.feeModels.flat') : t('franchises.feeModels.perHeadcount')}</Badge>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                     <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
-                      View details
+                      {t('franchises.list.viewDetails')}
                     </Button>
                     <Button variant="secondary" onClick={() => setEditing(f)}>
-                      Edit
+                      {t('franchises.list.edit')}
                     </Button>
                   </div>
                 </Card>
@@ -118,7 +120,7 @@ export function FranchisesPage() {
               columns={[
                 {
                   key: 'name',
-                  header: 'Name',
+                  header: t('franchises.list.columnName'),
                   // The Name/logo cell itself now navigates too — previously only the
                   // row action menu's "View details" button did (v1.2 backend
                   // backlog, "Franchises page", "Rows-table identity column is
@@ -135,20 +137,20 @@ export function FranchisesPage() {
                 },
                 {
                   key: 'activities',
-                  header: 'Activities',
+                  header: t('franchises.list.columnActivities'),
                   render: (f) => f.activities.map((a, i) => <Badge key={`${a}-${i}`}>{a}</Badge>),
                 },
-                { key: 'feeModel', header: 'Fee model', render: (f) => <Badge>{f.feeModel === 'FLAT' ? 'Flat' : 'Per-headcount'}</Badge> },
+                { key: 'feeModel', header: t('franchises.list.columnFeeModel'), render: (f) => <Badge>{f.feeModel === 'FLAT' ? t('franchises.feeModels.flat') : t('franchises.feeModels.perHeadcount')}</Badge> },
                 {
                   key: 'actions',
                   header: '',
                   render: (f) => (
                     <div style={{ display: 'flex', gap: 8 }}>
                       <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
-                        View details
+                        {t('franchises.list.viewDetails')}
                       </Button>
                       <Button variant="secondary" onClick={() => setEditing(f)}>
-                        Edit
+                        {t('franchises.list.edit')}
                       </Button>
                     </div>
                   ),
@@ -161,7 +163,7 @@ export function FranchisesPage() {
 
       {creating ? (
         <FranchiseFormModal
-          title="Add franchise"
+          title={t('franchises.list.addTitle')}
           submitting={createFranchise.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's nulls back to
@@ -179,11 +181,12 @@ export function FranchisesPage() {
 }
 
 function EditFranchiseModal({ franchise, onClose }: { franchise: FranchiseResponse; onClose: () => void }) {
+  const t = useT();
   const updateFranchise = useUpdateFranchise(franchise.id);
   const { data: billingStatus } = useFranchiseBillingStatus(franchise.id);
   return (
     <FranchiseFormModal
-      title="Edit franchise"
+      title={t('franchises.list.editTitle')}
       initial={franchise}
       schoolsAlreadyBillingCount={billingStatus?.schoolsAlreadyBillingCount ?? 0}
       submitting={updateFranchise.isPending}

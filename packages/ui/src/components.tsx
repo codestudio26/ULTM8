@@ -8,6 +8,60 @@ import {
   type CountryCode,
 } from 'libphonenumber-js';
 
+/* ---------------------------------------------------------------------- UI strings */
+
+/** The text this package's own components render. English by default, so an app
+ * that never sets a provider (platform-admin) is unchanged; school-portal passes
+ * its translated catalogue through `UiStringsProvider` (Decision 273). `{name}`
+ * placeholders are filled by `fillUiString`. `locale` (a BCP 47 tag) switches
+ * the phone field's country names to that language via `Intl.DisplayNames`. */
+export const DEFAULT_UI_STRINGS = {
+  loading: 'Loading',
+  dismiss: 'Dismiss',
+  showPasscode: 'Show passcode',
+  hidePasscode: 'Hide passcode',
+  noMatchingTimezone: 'No matching timezone',
+  noMatchingCurrency: 'No matching currency',
+  countryCallingCode: 'Country calling code',
+  country: 'Country',
+  searchCountry: 'Search country or dial code…',
+  noMatches: 'No matches.',
+  invalidPhone: 'Enter a valid phone number.',
+  invalidPhoneFor: 'Enter a valid phone number for {country}.',
+  uploadPhoto: 'Upload photo',
+  changePhoto: 'Change photo',
+  uploading: 'Uploading…',
+  currentPhoto: 'Current photo',
+  photoWrongType: 'Please choose a PNG, JPEG, or WebP image.',
+  photoTooLarge: 'This file is too large — the maximum is {size}MB.',
+  photoUploadFailed: 'The photo could not be uploaded — please try again.',
+  viewLabel: 'View',
+  viewRows: 'Rows',
+  viewGrid: 'Grid',
+  termsOfService: 'Terms of Service',
+  privacyPolicy: 'Privacy Policy',
+  support: 'Support',
+  comingSoon: '{label} (coming soon)',
+  notAvailableYet: '{label} — not available yet',
+};
+
+export type UiStrings = typeof DEFAULT_UI_STRINGS;
+
+const UiStringsContext = React.createContext<{ strings: UiStrings; locale?: string }>({ strings: DEFAULT_UI_STRINGS });
+
+export function UiStringsProvider({ strings, locale, children }: { strings: UiStrings; locale?: string; children: ReactNode }) {
+  const value = useMemo(() => ({ strings, locale }), [strings, locale]);
+  return <UiStringsContext.Provider value={value}>{children}</UiStringsContext.Provider>;
+}
+
+function useUiStrings() {
+  return React.useContext(UiStringsContext);
+}
+
+export function fillUiString(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
+}
+
 /* ---------------------------------------------------------------------- Button */
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -285,6 +339,7 @@ export function TimezoneField({
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: TimezoneFieldProps) {
+  const { strings } = useUiStrings();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -408,7 +463,7 @@ export function TimezoneField({
       {isOpen ? (
         <ul className="ultm8-combobox__listbox" role="listbox" id={listboxId}>
           {results.length === 0 ? (
-            <li className="ultm8-combobox__empty">No matching timezone</li>
+            <li className="ultm8-combobox__empty">{strings.noMatchingTimezone}</li>
           ) : (
             results.map((zone, i) => (
               <li
@@ -487,6 +542,7 @@ export function CurrencyField({
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: CurrencyFieldProps) {
+  const { strings } = useUiStrings();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -595,7 +651,7 @@ export function CurrencyField({
       {isOpen ? (
         <ul className="ultm8-combobox__listbox" role="listbox" id={listboxId}>
           {results.length === 0 ? (
-            <li className="ultm8-combobox__empty">No matching currency</li>
+            <li className="ultm8-combobox__empty">{strings.noMatchingCurrency}</li>
           ) : (
             results.map((opt, i) => (
               <li
@@ -646,6 +702,7 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(
     { value, onChange, defaultCountry, id, required, disabled, placeholder, 'aria-invalid': ariaInvalid, 'aria-describedby': ariaDescribedBy },
     ref,
   ) => {
+    const { strings, locale } = useUiStrings();
     const [country, setCountry] = useState<CountryCode | undefined>(() => {
       if (value) return parsePhoneNumberFromString(value)?.country ?? defaultCountry;
       return defaultCountry;
@@ -737,15 +794,31 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(
     const e164 = composeE164(country, digits);
     const invalid = touched && digits.length > 0 && !isValidPhoneNumber(e164);
 
+    // Country names in the reader's language when a locale is set; the English
+    // name stays searchable too.
+    const countries = useMemo(() => {
+      if (!locale) return PHONE_COUNTRIES.map(([code, name, dial]) => ({ code, name, englishName: name, dial }));
+      let names: Intl.DisplayNames | undefined;
+      try {
+        names = new Intl.DisplayNames([locale], { type: 'region' });
+      } catch {
+        names = undefined;
+      }
+      return PHONE_COUNTRIES.map(([code, name, dial]) => ({ code, name: names?.of(code) ?? name, englishName: name, dial })).sort((a, b) =>
+        a.name.localeCompare(b.name, locale),
+      );
+    }, [locale]);
+
     const filtered = useMemo(() => {
       const q = search.trim().toLowerCase();
-      if (!q) return PHONE_COUNTRIES;
-      return PHONE_COUNTRIES.filter(
-        ([code, name, dial]) => name.toLowerCase().includes(q) || dial.includes(q.replace(/^\+/, '')) || code.toLowerCase() === q,
+      if (!q) return countries;
+      return countries.filter(
+        ({ code, name, englishName, dial }) =>
+          name.toLowerCase().includes(q) || englishName.toLowerCase().includes(q) || dial.includes(q.replace(/^\+/, '')) || code.toLowerCase() === q,
       );
-    }, [search]);
+    }, [search, countries]);
 
-    const selected = country ? PHONE_COUNTRIES.find(([code]) => code === country) : undefined;
+    const selected = country ? countries.find(({ code }) => code === country) : undefined;
 
     return (
       <div className="ultm8-phone-field" ref={rootRef}>
@@ -755,16 +828,16 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-label="Country calling code"
+          aria-label={strings.countryCallingCode}
           onClick={() => setOpen((o) => !o)}
         >
           {selected ? (
             <>
-              <span aria-hidden="true">{flagEmoji(selected[0])}</span>
-              <span>+{selected[2]}</span>
+              <span aria-hidden="true">{flagEmoji(selected.code)}</span>
+              <span>+{selected.dial}</span>
             </>
           ) : (
-            <span className="ultm8-phone-field__placeholder">Country</span>
+            <span className="ultm8-phone-field__placeholder">{strings.country}</span>
           )}
           <span className="ultm8-phone-field__caret" aria-hidden="true">
             ▾
@@ -790,22 +863,22 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(
               ref={searchRef}
               type="text"
               className="ultm8-phone-field__search"
-              placeholder="Search country or dial code…"
+              placeholder={strings.searchCountry}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setOpen(false);
                 else if (e.key === 'Enter' && filtered.length > 0) {
                   e.preventDefault();
-                  selectCountry(filtered[0][0]);
+                  selectCountry(filtered[0].code);
                 }
               }}
             />
-            <ul className="ultm8-phone-field__list" role="listbox" aria-label="Country">
+            <ul className="ultm8-phone-field__list" role="listbox" aria-label={strings.country}>
               {filtered.length === 0 ? (
-                <li className="ultm8-phone-field__empty">No matches.</li>
+                <li className="ultm8-phone-field__empty">{strings.noMatches}</li>
               ) : (
-                filtered.map(([code, name, dial]) => (
+                filtered.map(({ code, name, dial }) => (
                   <li key={code}>
                     <button
                       type="button"
@@ -826,7 +899,7 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(
         ) : null}
         {invalid ? (
           <span className="ultm8-field__error" role="alert">
-            Enter a valid phone number{selected ? ` for ${selected[1]}` : ''}.
+            {selected ? fillUiString(strings.invalidPhoneFor, { country: selected.name }) : strings.invalidPhone}
           </span>
         ) : null}
       </div>
@@ -910,6 +983,7 @@ export function PhotoUploadField({
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: PhotoUploadFieldProps) {
+  const { strings } = useUiStrings();
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -927,11 +1001,11 @@ export function PhotoUploadField({
   async function handleFileSelected(file: File) {
     setError(null);
     if (!accept.split(',').includes(file.type)) {
-      setError('Please choose a PNG, JPEG, or WebP image.');
+      setError(strings.photoWrongType);
       return;
     }
     if (file.size > maxSizeBytes) {
-      setError(`This file is too large — the maximum is ${Math.round(maxSizeBytes / (1024 * 1024))}MB.`);
+      setError(fillUiString(strings.photoTooLarge, { size: Math.round(maxSizeBytes / (1024 * 1024)) }));
       return;
     }
 
@@ -944,11 +1018,11 @@ export function PhotoUploadField({
       const { uploadUrl, publicUrl } = await requestUpload(file);
       const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
       if (!putRes.ok) {
-        throw new Error('The photo could not be uploaded — please try again.');
+        throw new Error(strings.photoUploadFailed);
       }
       onChange(publicUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The photo could not be uploaded — please try again.');
+      setError(err instanceof Error ? err.message : strings.photoUploadFailed);
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = null;
       setLocalPreviewUrl(null);
@@ -963,7 +1037,7 @@ export function PhotoUploadField({
     <div className="ultm8-photo-upload">
       <div className="ultm8-photo-upload__preview-row">
         {previewSrc ? (
-          <img className="ultm8-photo-upload__preview" src={previewSrc} alt="Current photo" />
+          <img className="ultm8-photo-upload__preview" src={previewSrc} alt={strings.currentPhoto} />
         ) : (
           <div className="ultm8-photo-upload__preview ultm8-photo-upload__preview--empty" aria-hidden="true" />
         )}
@@ -975,7 +1049,7 @@ export function PhotoUploadField({
             loading={uploading}
             onClick={() => inputRef.current?.click()}
           >
-            {uploading ? 'Uploading…' : previewSrc ? 'Change photo' : 'Upload photo'}
+            {uploading ? strings.uploading : previewSrc ? strings.changePhoto : strings.uploadPhoto}
           </Button>
           <input
             ref={inputRef}
@@ -1034,6 +1108,7 @@ function EyeOffIcon() {
  * used today. */
 export const PasscodeField = forwardRef<HTMLInputElement, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>>(
   ({ className, ...rest }, ref) => {
+    const { strings } = useUiStrings();
     const [visible, setVisible] = useState(false);
     return (
       <div className="ultm8-passcode-field">
@@ -1047,7 +1122,7 @@ export const PasscodeField = forwardRef<HTMLInputElement, Omit<React.InputHTMLAt
           type="button"
           className="ultm8-passcode-field__toggle"
           onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? 'Hide passcode' : 'Show passcode'}
+          aria-label={visible ? strings.hidePasscode : strings.showPasscode}
         >
           {visible ? <EyeOffIcon /> : <EyeIcon />}
         </button>
@@ -1376,9 +1451,10 @@ export interface ViewToggleProps {
  * involved. No existing icon-button or segmented-control component in this package
  * already fit (`ultm8-btn` is a single standalone button; `ultm8-segmented-code` is
  * OTP-digit boxes, not a mode switch) — this is its own small, reusable class. */
-export function ViewToggle({ value, onChange, 'aria-label': ariaLabel = 'View' }: ViewToggleProps) {
+export function ViewToggle({ value, onChange, 'aria-label': ariaLabel }: ViewToggleProps) {
+  const { strings } = useUiStrings();
   return (
-    <div className="ultm8-view-toggle" role="group" aria-label={ariaLabel}>
+    <div className="ultm8-view-toggle" role="group" aria-label={ariaLabel ?? strings.viewLabel}>
       <button
         type="button"
         className={['ultm8-view-toggle__btn', value === 'rows' ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
@@ -1386,7 +1462,7 @@ export function ViewToggle({ value, onChange, 'aria-label': ariaLabel = 'View' }
         onClick={() => onChange('rows')}
       >
         <RowsViewIcon />
-        Rows
+        {strings.viewRows}
       </button>
       <button
         type="button"
@@ -1395,7 +1471,7 @@ export function ViewToggle({ value, onChange, 'aria-label': ariaLabel = 'View' }
         onClick={() => onChange('grid')}
       >
         <GridViewIcon />
-        Grid
+        {strings.viewGrid}
       </button>
     </div>
   );
@@ -1418,7 +1494,8 @@ export function Badge({ children, variant = 'default' }: { children: ReactNode; 
 }
 
 export function Spinner() {
-  return <span className="ultm8-spinner" role="status" aria-label="Loading" />;
+  const { strings } = useUiStrings();
+  return <span className="ultm8-spinner" role="status" aria-label={strings.loading} />;
 }
 
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
@@ -1523,28 +1600,30 @@ export function AppShell({
  * there's no shared non-UI package both apps already depend on that would
  * justify a third location for three small constants.
  */
-export const LEGAL_FOOTER_LINKS: { label: string; href: string; enabled: boolean }[] = [
-  { label: 'Terms of Service', href: '#', enabled: false },
-  { label: 'Privacy Policy', href: '#', enabled: false },
-  { label: 'Support', href: '#', enabled: false },
+export const LEGAL_FOOTER_LINKS: { label: string; key: 'termsOfService' | 'privacyPolicy' | 'support'; href: string; enabled: boolean }[] = [
+  { label: 'Terms of Service', key: 'termsOfService', href: '#', enabled: false },
+  { label: 'Privacy Policy', key: 'privacyPolicy', href: '#', enabled: false },
+  { label: 'Support', key: 'support', href: '#', enabled: false },
 ];
 
 export function LegalFooter() {
+  const { strings } = useUiStrings();
   const year = new Date().getFullYear();
   return (
     <p className="ultm8-shell__legal-footer-text">
       {`© ${year} ULTM8`}
-      {LEGAL_FOOTER_LINKS.map((link) =>
-        link.enabled ? (
-          <a key={link.label} href={link.href} className="ultm8-shell__legal-footer-link">
-            {link.label}
+      {LEGAL_FOOTER_LINKS.map((link) => {
+        const label = strings[link.key];
+        return link.enabled ? (
+          <a key={link.key} href={link.href} className="ultm8-shell__legal-footer-link">
+            {label}
           </a>
         ) : (
-          <span key={link.label} className="ultm8-shell__legal-footer-link ultm8-shell__legal-footer-link--disabled" aria-label={`${link.label} — not available yet`}>
-            {`${link.label} (coming soon)`}
+          <span key={link.key} className="ultm8-shell__legal-footer-link ultm8-shell__legal-footer-link--disabled" aria-label={fillUiString(strings.notAvailableYet, { label })}>
+            {fillUiString(strings.comingSoon, { label })}
           </span>
-        ),
-      )}
+        );
+      })}
     </p>
   );
 }
@@ -1596,6 +1675,7 @@ export function SuccessPanel({
   onContinue: () => void;
   autoAdvanceMs?: number;
 }) {
+  const { strings } = useUiStrings();
   const onContinueRef = useRef(onContinue);
   onContinueRef.current = onContinue;
 
@@ -1606,7 +1686,7 @@ export function SuccessPanel({
 
   return (
     <div className="ultm8-success-panel">
-      <button type="button" className="ultm8-success-panel__dismiss" aria-label="Dismiss" onClick={onContinue}>
+      <button type="button" className="ultm8-success-panel__dismiss" aria-label={strings.dismiss} onClick={onContinue}>
         &times;
       </button>
       <div className="ultm8-success-panel__check" aria-hidden="true">

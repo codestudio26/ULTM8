@@ -5,6 +5,7 @@ import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useAuth } from './AuthContext';
 import { takeReturnTo } from './returnTo';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Decision 1/230 — a server-generated temp passcode (Instructor "Add
@@ -19,6 +20,7 @@ import { takeReturnTo } from './returnTo';
  * header — see packages/api-client's own authMiddleware.
  */
 export function FirstLoginPasscodeChangePage() {
+  const t = useT();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { passcodeChangeToken?: string } };
   const { setAccessToken } = useAuth();
@@ -38,7 +40,7 @@ export function FirstLoginPasscodeChangePage() {
     e.preventDefault();
     setError(null);
     if (newPasscode !== confirmPasscode) {
-      setError('New passcode and confirmation must match.');
+      setError(t('auth.newPasscodeMismatch'));
       return;
     }
     setSubmitting(true);
@@ -56,17 +58,17 @@ export function FirstLoginPasscodeChangePage() {
       setAccessToken(result.accessToken!);
       navigate(takeReturnTo() ?? '/', { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <AuthCard title="Choose your passcode" subtitle="You were sent a temporary passcode — choose your own 6-digit passcode to finish signing in.">
+    <AuthCard title={t('auth.firstLogin.title')} subtitle={t('auth.firstLogin.subtitle')}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="New passcode" htmlFor="first-login-newPasscode" hint="6 digits">
+        <Field label={t('auth.newPasscodeLabel')} htmlFor="first-login-newPasscode" hint={t('auth.passcodeHint')}>
           <PasscodeField
             inputMode="numeric"
             pattern="\d{6}"
@@ -76,7 +78,7 @@ export function FirstLoginPasscodeChangePage() {
             onChange={(e) => setNewPasscode(e.target.value)}
           />
         </Field>
-        <Field label="Confirm new passcode" htmlFor="first-login-confirmPasscode">
+        <Field label={t('auth.confirmNewPasscodeLabel')} htmlFor="first-login-confirmPasscode">
           <PasscodeField
             inputMode="numeric"
             pattern="\d{6}"
@@ -87,7 +89,7 @@ export function FirstLoginPasscodeChangePage() {
           />
         </Field>
         <Button type="submit" fullWidth loading={submitting}>
-          Set passcode and continue
+          {t('auth.firstLogin.submit')}
         </Button>
       </form>
     </AuthCard>

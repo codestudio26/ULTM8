@@ -7,6 +7,7 @@ import { useCreateDiscipline, useDeleteDiscipline, useDisciplines, useUpdateDisc
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { DisciplineFormModal } from './DisciplineFormModal';
 import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
+import { useT } from '../i18n/I18nProvider';
 
 /** Disciplines are reference data Instructors' specializations and Classes'/
  * TimetableSlots' activities are conceptually drawn from (domain-rules §4 —
@@ -15,6 +16,7 @@ import { DuplicateModal, TemplateModal } from './StyleTemplateModals';
  * since Instructors/Classes/Timetable have nothing to reference otherwise. */
 export function DisciplinesPage() {
   const navigate = useNavigate();
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useDisciplines(schoolId);
   const createDiscipline = useCreateDiscipline(schoolId ?? '');
@@ -27,49 +29,49 @@ export function DisciplinesPage() {
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Disciplines.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('disciplines.list.loadFailed')} />;
 
   const disciplines = data?.items ?? [];
 
   return (
     <>
       <PageHeader
-        title="Disciplines"
-        subtitle="The martial arts / activities your School offers — Instructors and Classes both reference these."
+        title={t('disciplines.list.title')}
+        subtitle={t('disciplines.list.subtitle')}
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
             <Button variant="secondary" onClick={() => setFromTemplate(true)}>
-              Start from template
+              {t('disciplines.list.startFromTemplate')}
             </Button>
-            <Button onClick={() => setCreating(true)}>Add discipline</Button>
+            <Button onClick={() => setCreating(true)}>{t('disciplines.list.addButton')}</Button>
           </div>
         }
       />
       <Card>
         {disciplines.length === 0 ? (
-          <EmptyState title="No Disciplines yet" description="Add your first Discipline to get started." />
+          <EmptyState title={t('disciplines.list.emptyTitle')} description={t('disciplines.list.emptyDescription')} />
         ) : (
           <Table<DisciplineResponse>
             rows={disciplines}
             columns={[
-              { key: 'name', header: 'Name', render: (d) => d.name },
-              { key: 'classTypes', header: 'Class types offered', render: (d) => d.classTypesOffered.join(', ') || '—' },
+              { key: 'name', header: t('disciplines.list.columnName'), render: (d) => d.name },
+              { key: 'classTypes', header: t('disciplines.list.columnClassTypes'), render: (d) => d.classTypesOffered.join(', ') || '—' },
               {
                 key: 'actions',
                 header: '',
                 render: (d) => (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <Button variant="secondary" onClick={() => navigate(`/disciplines/${d.id}`)}>
-                      Manage skills
+                      {t('disciplines.list.manageSkills')}
                     </Button>
                     <Button variant="secondary" onClick={() => setEditing(d)}>
-                      Edit
+                      {t('disciplines.list.edit')}
                     </Button>
                     <Button variant="secondary" onClick={() => setDuplicating(d)}>
-                      Duplicate
+                      {t('disciplines.list.duplicate')}
                     </Button>
-                    <Button variant="secondary" onClick={() => setDeleting(d)} aria-label={`Delete ${d.name}`}>
-                      Delete
+                    <Button variant="secondary" onClick={() => setDeleting(d)} aria-label={t('disciplines.list.deleteAria', { name: d.name })}>
+                      {t('disciplines.list.delete')}
                     </Button>
                   </div>
                 ),
@@ -81,7 +83,7 @@ export function DisciplinesPage() {
 
       {creating ? (
         <DisciplineFormModal
-          title="Add discipline"
+          title={t('disciplines.list.addTitle')}
           submitting={createDiscipline.isPending}
           onSubmit={async (values) => {
             await createDiscipline.mutateAsync(values);
@@ -97,8 +99,8 @@ export function DisciplinesPage() {
 
       {deleting ? (
         <ConfirmDeleteModal
-          title={`Delete ${deleting.name}?`}
-          description="Its belts, skills and coach permissions are deleted with it. A style can only be deleted while nobody has a rank in it and no class or lesson uses it."
+          title={t('disciplines.list.deleteTitle', { name: deleting.name })}
+          description={t('disciplines.list.deleteDescription')}
           onConfirm={() => deleteDiscipline.mutateAsync(deleting.id)}
           onClose={() => setDeleting(null)}
         />
@@ -129,10 +131,11 @@ function EditDisciplineModal({
   discipline: DisciplineResponse;
   onClose: () => void;
 }) {
+  const t = useT();
   const updateDiscipline = useUpdateDiscipline(schoolId, discipline.id);
   return (
     <DisciplineFormModal
-      title="Edit discipline"
+      title={t('disciplines.list.editTitle')}
       initial={discipline}
       submitting={updateDiscipline.isPending}
       onSubmit={async (values) => {

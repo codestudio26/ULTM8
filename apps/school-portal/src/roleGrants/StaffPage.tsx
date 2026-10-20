@@ -15,6 +15,8 @@ import {
 } from './roleGrantQueries';
 import { CoachInvitesSection } from './CoachInvitesSection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
+import { useT } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
 
 /**
  * Invite / revoke Instructor or Branch Staff — the one confirmed RoleGrant authority
@@ -42,6 +44,7 @@ import { AddStaffManuallyModal } from './AddStaffManuallyModal';
  * is just a RoleGrant row (role: BRANCH_STAFF), not a separate profile table.
  */
 export function StaffPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data: branchData } = useBranches(schoolId);
   const inviteStaff = useInviteStaff();
@@ -83,7 +86,7 @@ export function StaffPage() {
     setFindError(null);
     setInviteNotice(null);
     if (!inviteEmail && !invitePhone) {
-      setFindError('Enter an email or phone number to search.');
+      setFindError(t('roleGrants.staff.findRequired'));
       return;
     }
     setFindLoading(true);
@@ -93,13 +96,13 @@ export function StaffPage() {
         phone: invitePhone || undefined,
       });
       if (!result.found) {
-        setFindError('No ULTM8 account found with that email or phone.');
+        setFindError(t('roleGrants.staff.notFound'));
         setCandidate(null);
         return;
       }
       setCandidate(result);
     } catch (err) {
-      setFindError(err instanceof ApiError ? err.message : 'Could not search for this person.');
+      setFindError(err instanceof ApiError ? err.message : t('roleGrants.staff.findFailed'));
       setCandidate(null);
     } finally {
       setFindLoading(false);
@@ -118,7 +121,7 @@ export function StaffPage() {
     setInviteError(null);
     setInviteNotice(null);
     if (needsBranch && !branchId) {
-      setInviteError(role === 'BRANCH_STAFF' ? 'Select a Branch for Branch Staff.' : 'Select the Branch this Instructor belongs to.');
+      setInviteError(role === 'BRANCH_STAFF' ? t('roleGrants.staff.selectBranchForStaff') : t('roleGrants.staff.selectBranchForInstructor'));
       return;
     }
     try {
@@ -128,12 +131,12 @@ export function StaffPage() {
       });
       setInviteNotice(
         granted.emailSent
-          ? { kind: 'ok', text: 'Invited — they were emailed to let them know.' }
-          : { kind: 'warn', text: 'Invited, but the notification email could not be sent.' },
+          ? { kind: 'ok', text: t('roleGrants.staff.invitedEmailed') }
+          : { kind: 'warn', text: t('roleGrants.staff.invitedNoEmail') },
       );
       resetInviteSearch();
     } catch (err) {
-      setInviteError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setInviteError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -145,7 +148,7 @@ export function StaffPage() {
       const result = await fetchUserRoleGrants(lookupUserId);
       setLookupResult(result.items.filter((g) => g.schoolId === schoolId));
     } catch (err) {
-      setLookupError(err instanceof ApiError ? err.message : 'Could not look up this user.');
+      setLookupError(err instanceof ApiError ? err.message : t('roleGrants.staff.lookupFailed'));
       setLookupResult(null);
     } finally {
       setLookupLoading(false);
@@ -157,18 +160,18 @@ export function StaffPage() {
       await revokeGrant.mutateAsync({ targetUserId: grant.userId, roleGrantId: grant.id });
       setLookupResult((rows) => rows?.map((g) => (g.id === grant.id ? { ...g, revokedAt: new Date().toISOString() } : g)) ?? null);
     } catch (err) {
-      setLookupError(err instanceof ApiError ? err.message : 'Could not revoke this grant.');
+      setLookupError(err instanceof ApiError ? err.message : t('roleGrants.staff.revokeFailed'));
     }
   }
 
   return (
     <>
       <PageHeader
-        title="Staff"
-        subtitle="Invite Instructors and Branch Staff to your School."
+        title={t('roleGrants.staff.title')}
+        subtitle={t('roleGrants.staff.subtitle')}
         actions={
           <Button variant="secondary" onClick={() => setAddingManually(true)}>
-            Add staff manually
+            {t('roleGrants.staff.addManuallyButton')}
           </Button>
         }
       />
@@ -178,62 +181,71 @@ export function StaffPage() {
 
       <Card className="ultm8-field">
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-          Invite staff
+          {t('roleGrants.staff.inviteHeading')}
         </h2>
         <p className="ultm8-field">
-          Invites an existing ULTM8 account to a role. No account found? Use "Add staff manually" above instead.
+          {t('roleGrants.staff.inviteIntro')}
         </p>
         {inviteNotice?.kind === 'ok' ? <SuccessBanner message={inviteNotice.text} /> : null}
         {inviteNotice?.kind === 'warn' ? <ErrorBanner message={inviteNotice.text} /> : null}
         {!candidate ? (
           <form onSubmit={handleFind}>
             {findError ? <ErrorBanner message={findError} /> : null}
-            <Field label="Email" htmlFor="invite-email" hint="Exact match only. Provide email or phone (or both).">
+            <Field label={t('roleGrants.staff.emailLabel')} htmlFor="invite-email" hint={t('roleGrants.staff.emailHint')}>
               <TextField type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
             </Field>
-            <Field label="Phone" htmlFor="invite-phone" hint="Exact match only.">
+            <Field label={t('roleGrants.staff.phoneLabel')} htmlFor="invite-phone" hint={t('roleGrants.staff.phoneHint')}>
               <PhoneField value={invitePhone} onChange={setInvitePhone} defaultCountry={guessDefaultCountry()} />
             </Field>
             <Button type="submit" loading={findLoading}>
-              Find
+              {t('roleGrants.staff.find')}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleInvite}>
             {inviteError ? <ErrorBanner message={inviteError} /> : null}
             <p className="ultm8-field">
-              Found <strong>{candidate.firstName} {candidate.surname}</strong>.
+              <Trans
+                k="roleGrants.staff.found"
+                nodes={{
+                  name: (
+                    <strong>
+                      {candidate.firstName} {candidate.surname}
+                    </strong>
+                  ),
+                }}
+              />
             </p>
-            <Field label="Role" htmlFor="invite-role">
+            <Field label={t('roleGrants.staff.roleLabel')} htmlFor="invite-role">
               <SelectField
                 value={role}
                 onChange={(e) => setRole(e.target.value as typeof role)}
                 options={[
-                  { value: 'INSTRUCTOR', label: 'Instructor' },
-                  { value: 'BRANCH_STAFF', label: 'Branch Staff' },
+                  { value: 'INSTRUCTOR', label: t('roleGrants.staff.roleInstructor') },
+                  { value: 'BRANCH_STAFF', label: t('roleGrants.staff.roleBranchStaff') },
                 ]}
               />
             </Field>
             {needsBranch ? (
               <Field
-                label="Branch"
+                label={t('roleGrants.staff.branchLabel')}
                 htmlFor="invite-branch"
-                hint={role === 'INSTRUCTOR' ? 'For an instructor who teaches at several branches, invite them once per branch.' : undefined}
+                hint={role === 'INSTRUCTOR' ? t('roleGrants.staff.branchHint') : undefined}
               >
                 <SelectField
                   required
                   value={branchId}
                   onChange={(e) => setBranchId(e.target.value)}
-                  options={[{ value: '', label: 'Select a Branch…' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                  options={[{ value: '', label: t('roleGrants.staff.selectBranch') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
                 />
               </Field>
             ) : null}
             <div style={{ display: 'flex', gap: 8 }}>
               <Button type="submit" loading={inviteStaff.isPending}>
-                Send invite
+                {t('roleGrants.staff.sendInvite')}
               </Button>
               <Button type="button" variant="secondary" onClick={resetInviteSearch}>
-                Search again
+                {t('roleGrants.staff.searchAgain')}
               </Button>
             </div>
           </form>
@@ -244,37 +256,51 @@ export function StaffPage() {
 
       <Card>
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-          Look up a user's grants
+          {t('roleGrants.staff.lookupHeading')}
         </h2>
         <form onSubmit={handleLookup} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
           <div style={{ flex: 1 }}>
-            <Field label="User ID" htmlFor="lookup-userId">
+            <Field label={t('roleGrants.staff.userIdLabel')} htmlFor="lookup-userId">
               <TextField required value={lookupUserId} onChange={(e) => setLookupUserId(e.target.value)} />
             </Field>
           </div>
           <Button type="submit" variant="secondary" loading={lookupLoading}>
-            Look up
+            {t('roleGrants.staff.lookUp')}
           </Button>
         </form>
         {lookupError ? <ErrorBanner message={lookupError} /> : null}
         {lookupLoading ? <Spinner /> : null}
         {lookupResult ? (
           lookupResult.length === 0 ? (
-            <p>No grants at your School for this user.</p>
+            <p>{t('roleGrants.staff.noGrants')}</p>
           ) : (
             <>
               <p className="ultm8-field">
-                Showing grants for <strong>{lookupResult[0].userFirstName} {lookupResult[0].userSurname}</strong>.
+                <Trans
+                  k="roleGrants.staff.showingGrants"
+                  nodes={{
+                    name: (
+                      <strong>
+                        {lookupResult[0].userFirstName} {lookupResult[0].userSurname}
+                      </strong>
+                    ),
+                  }}
+                />
               </p>
               <Table<RoleGrantResponse>
                 rows={lookupResult}
                 columns={[
-                  { key: 'role', header: 'Role', render: (g) => <Badge variant="accent">{g.role}</Badge> },
-                  { key: 'branch', header: 'Branch', render: (g) => g.branchId ?? '— (whole School)' },
+                  { key: 'role', header: t('roleGrants.staff.columnRole'), render: (g) => <Badge variant="accent">{g.role}</Badge> },
+                  { key: 'branch', header: t('roleGrants.staff.columnBranch'), render: (g) => g.branchId ?? t('roleGrants.staff.wholeSchool') },
                   {
                     key: 'status',
-                    header: 'Status',
-                    render: (g) => (g.revokedAt ? <Badge>Revoked</Badge> : <Badge variant="success">Active</Badge>),
+                    header: t('roleGrants.staff.columnStatus'),
+                    render: (g) =>
+                      g.revokedAt ? (
+                        <Badge>{t('roleGrants.staff.revoked')}</Badge>
+                      ) : (
+                        <Badge variant="success">{t('roleGrants.staff.active')}</Badge>
+                      ),
                   },
                   {
                     key: 'actions',
@@ -282,7 +308,7 @@ export function StaffPage() {
                     render: (g) =>
                       g.revokedAt ? null : (
                         <Button variant="danger" onClick={() => handleRevoke(g)}>
-                          Revoke
+                          {t('roleGrants.staff.revoke')}
                         </Button>
                       ),
                   },
@@ -301,10 +327,13 @@ export function StaffPage() {
             const created = await createStaffManually.mutateAsync(values);
             setAddManuallyNotice(
               created.emailSent
-                ? { kind: 'ok', text: `${created.userFirstName} ${created.userSurname} was added — a temporary passcode was emailed to ${created.email}.` }
+                ? {
+                    kind: 'ok',
+                    text: t('roleGrants.staff.addedEmailed', { name: `${created.userFirstName} ${created.userSurname}`, email: created.email }),
+                  }
                 : {
                     kind: 'warn',
-                    text: `${created.userFirstName} ${created.userSurname} was added, but the email couldn't be sent. They'll need the temporary passcode another way.`,
+                    text: t('roleGrants.staff.addedNoEmail', { name: `${created.userFirstName} ${created.userSurname}` }),
                   },
             );
             setAddingManually(false);

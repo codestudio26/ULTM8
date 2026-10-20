@@ -3921,7 +3921,7 @@ User, approving both of the Developer's recommendations (delete the stale label;
 
 ### What this does NOT resolve
 
-The student app (`apps/student`) and Platform Admin are not translated (both deferred for this testing round). Server-generated messages (API error text, notification bodies) stay English. Currency and date formats are unchanged by this decision.
+The student app (`apps/student`) and Platform Admin are not translated (both deferred for this testing round). Server-generated messages (API error text, notification bodies) stay English. Money formatting is unchanged. Dates follow the picked language, except English (UK), which keeps following the browser's own settings as before.
 
 ### Recorded by
 

@@ -5,6 +5,7 @@ import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
 import { type BulkPromoteResult, type BulkPromoteStudent, type GradingBoardItem, useBulkPromote } from './gradingQueries';
+import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
 const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
@@ -47,6 +48,7 @@ export function BulkPromoteModal({
   onClose: () => void;
 }) {
   const bulk = useBulkPromote(schoolId);
+  const t = useT();
   const [order, setOrder] = useState<string[]>(() => students.map((s) => s.studentId));
   const [date, setDate] = useState('');
   const [note, setNote] = useState('');
@@ -75,7 +77,7 @@ export function BulkPromoteModal({
       .catch((err) => {
         if (!cancelled) {
           setCheck(null);
-          setError(err instanceof ApiError ? err.message : 'Could not check these students — please try again.');
+          setError(err instanceof ApiError ? err.message : t('grading.bulk.checkFailed'));
         }
       })
       .finally(() => {
@@ -136,7 +138,7 @@ export function BulkPromoteModal({
         .map((id) => result.ready.find((r) => r.studentId === id))
         .filter((r): r is BulkPromoteStudent => !!r)
         .map((r) => ({
-          name: fullName(byId(r.studentId) ?? { firstName: 'Student', surname: '' }),
+          name: fullName(byId(r.studentId) ?? { firstName: t('grading.studentFallback'), surname: '' }),
           from: rung(r.fromRungId)?.name ?? '—',
           to: rung(r.toRungId)?.name ?? '—',
         }));
@@ -144,30 +146,28 @@ export function BulkPromoteModal({
         rows,
         // Names now: the board's selection is cleared once the batch is done.
         skipped: [...cannot, ...result.cannotPromote.filter((c) => !cannot.some((x) => x.studentId === c.studentId))].map((c) => ({
-          name: fullName(byId(c.studentId) ?? { firstName: 'Student', surname: '' }),
+          name: fullName(byId(c.studentId) ?? { firstName: t('grading.studentFallback'), surname: '' }),
           reasons: c.reasons,
         })),
         date: effective ?? todayLocal(),
       });
       onDone();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   function openReport() {
     if (!report) return;
-    const html = promotionReportHtml(style.name, note.trim(), report.date, report.rows);
+    const html = promotionReportHtml(t, style.name, note.trim(), report.date, report.rows);
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
     window.open(url, '_blank');
   }
 
   if (report) {
     return (
-      <Modal title="Students promoted" onClose={onClose}>
-        <p>
-          You promoted {report.rows.length} student{report.rows.length === 1 ? '' : 's'}.
-        </p>
+      <Modal title={t('grading.bulk.doneTitle')} onClose={onClose}>
+        <p>{t('grading.bulk.youPromoted', { count: report.rows.length })}</p>
         <ol style={{ paddingLeft: 20 }}>
           {report.rows.map((r, i) => (
             <li key={i}>
@@ -177,15 +177,15 @@ export function BulkPromoteModal({
         </ol>
         {report.skipped.length > 0 ? (
           <ErrorBanner
-            message={`Not promoted: ${report.skipped.map((s) => `${s.name} (${s.reasons.join('; ')})`).join(', ')}.`}
+            message={t('grading.bulk.notPromoted', { list: report.skipped.map((s) => `${s.name} (${s.reasons.join('; ')})`).join(', ') })}
           />
         ) : null}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="button" variant="secondary" onClick={openReport} disabled={report.rows.length === 0}>
-            Open printable report
+            {t('grading.bulk.openReport')}
           </Button>
           <Button type="button" onClick={onClose}>
-            Done
+            {t('common.done')}
           </Button>
         </div>
       </Modal>
@@ -194,28 +194,28 @@ export function BulkPromoteModal({
 
   const needsAck = needsLook.length > 0;
   return (
-    <Modal title="Promote these students" onClose={onClose}>
+    <Modal title={t('grading.bulk.title')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
       <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-        Each student moves up one rank. Set the calling order by dragging a row, or with Up and Down.
+        {t('grading.bulk.intro')}
       </p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 160 }}>
-          <Field label="Grading date" htmlFor="bulk-date" hint="Empty for today. It must suit every student.">
+          <Field label={t('grading.bulk.dateLabel')} htmlFor="bulk-date" hint={t('grading.bulk.dateHint')}>
             <TextField type="date" max={todayLocal()} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <Field label="Note" htmlFor="bulk-note" hint='Optional, e.g. "Spring Grading Day".'>
+          <Field label={t('grading.bulk.noteLabel')} htmlFor="bulk-note" hint={t('grading.bulk.noteHint')}>
             <TextField maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
           </Field>
         </div>
       </div>
 
       {order.length === 0 ? (
-        <p>Nothing selected.</p>
+        <p>{t('grading.bulk.nothingSelected')}</p>
       ) : (
-        <ol aria-label="Calling order" style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 6, maxHeight: '45vh', overflow: 'auto' }}>
+        <ol aria-label={t('grading.bulk.callingOrder')} style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 6, maxHeight: '45vh', overflow: 'auto' }}>
           {order.map((id, i) => {
             const s = byId(id);
             if (!s) return null;
@@ -250,8 +250,8 @@ export function BulkPromoteModal({
                 <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
                 <span style={{ flex: 1, minWidth: 120 }}>
                   <strong>{name}</strong>
-                  {flag ? <div style={{ color: 'var(--text-warning)', fontSize: 12 }}>Needs a look: {flag.reasons.join('; ')}</div> : null}
-                  {skip ? <div style={{ color: 'var(--text-danger)', fontSize: 12 }}>Can't be promoted: {skip.reasons.join('; ')}</div> : null}
+                  {flag ? <div style={{ color: 'var(--text-warning)', fontSize: 12 }}>{t('grading.bulk.needsLook', { reasons: flag.reasons.join('; ') })}</div> : null}
+                  {skip ? <div style={{ color: 'var(--text-danger)', fontSize: 12 }}>{t('grading.bulk.cantPromote', { reasons: skip.reasons.join('; ') })}</div> : null}
                 </span>
                 {from ? <BeltChip rung={from} /> : null}
                 <span aria-hidden="true">→</span>
@@ -260,13 +260,13 @@ export function BulkPromoteModal({
                   {to?.name}
                 </span>
                 <span style={{ display: 'inline-flex', gap: 4, marginLeft: 'auto' }}>
-                  <Button type="button" variant="secondary" onClick={() => moveBy(id, -1)} disabled={i === 0} aria-label={`Move ${name} up`}>
+                  <Button type="button" variant="secondary" onClick={() => moveBy(id, -1)} disabled={i === 0} aria-label={t('grading.bulk.moveUpAria', { name })}>
                     ↑
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => moveBy(id, 1)} disabled={i === order.length - 1} aria-label={`Move ${name} down`}>
+                  <Button type="button" variant="secondary" onClick={() => moveBy(id, 1)} disabled={i === order.length - 1} aria-label={t('grading.bulk.moveDownAria', { name })}>
                     ↓
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => remove(id)} aria-label={`Remove ${name} from this batch`}>
+                  <Button type="button" variant="secondary" onClick={() => remove(id)} aria-label={t('grading.bulk.removeAria', { name })}>
                     ✕
                   </Button>
                 </span>
@@ -279,19 +279,13 @@ export function BulkPromoteModal({
       {checking ? <Spinner /> : null}
       {needsAck ? (
         <Checkbox
-          label={
-            needsLook.length === 1
-              ? 'I acknowledge the student marked "Needs a look". This is recorded on their history.'
-              : `I acknowledge these ${needsLook.length} students marked "Needs a look". This is recorded on their history.`
-          }
+          label={t('grading.bulk.acknowledge', { count: needsLook.length })}
           checked={acknowledged}
           onChange={(e) => setAcknowledged(e.target.checked)}
         />
       ) : null}
       {cannot.length > 0 ? (
-        <p className="ultm8-field__hint">
-          {cannot.length} student{cannot.length === 1 ? '' : 's'} can't be promoted and will be skipped.
-        </p>
+        <p className="ultm8-field__hint">{t('grading.bulk.willBeSkipped', { count: cannot.length })}</p>
       ) : null}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
@@ -301,10 +295,10 @@ export function BulkPromoteModal({
           loading={bulk.isPending && !checking}
           disabled={checking || !check || toPromote.length === 0 || (needsAck && !acknowledged)}
         >
-          Promote {toPromote.length} student{toPromote.length === 1 ? '' : 's'}
+          {t('grading.bulk.promoteCount', { count: toPromote.length })}
         </Button>
         <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </Modal>
@@ -317,21 +311,23 @@ function esc(s: string): string {
 
 /** A self-contained printable page (prototype buildPromotionReportHtml): the
  * style, date, note and the promotions in calling order, with a Print / Save
- * as PDF button that the printout hides. */
-export function promotionReportHtml(styleName: string, note: string, date: string, rows: ReportRow[]): string {
+ * as PDF button that the printout hides. `t` is the caller's translator: the
+ * page is built outside React, so it can't read the language itself. */
+export function promotionReportHtml(t: TranslateFn, styleName: string, note: string, date: string, rows: ReportRow[]): string {
   const body = rows.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.from)}</td><td>${esc(r.to)}</td></tr>`).join('');
   return (
     '<!doctype html><html><head><meta charset="utf-8">' +
-    `<title>Promotion report — ${esc(styleName)}</title>` +
+    `<title>${esc(t('grading.bulk.report.title', { style: styleName }))}</title>` +
     '<style>body{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;color:#151719}' +
     'h1{font-size:20px;margin:0 0 4px}.meta{color:#50575e;font-size:13px;margin:2px 0}table{width:100%;border-collapse:collapse;margin-top:16px}' +
     'th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #e1e3e5;font-size:13px}th{font-size:11px;text-transform:uppercase;color:#50575e}' +
     'button{margin-top:24px;padding:10px 16px;border-radius:8px;border:1px solid #5d7081;background:#5d7081;color:#fff;font-weight:600;cursor:pointer}' +
     '@media print{button{display:none}body{margin:0;max-width:none}}</style></head><body>' +
-    '<h1>Promotion report</h1>' +
-    `<p class="meta">${esc(styleName)} · ${esc(date)} · ${rows.length} student${rows.length === 1 ? '' : 's'} promoted</p>` +
+    `<h1>${esc(t('grading.bulk.report.heading'))}</h1>` +
+    `<p class="meta">${esc(styleName)} · ${esc(date)} · ${esc(t('grading.bulk.report.promotedCount', { count: rows.length }))}</p>` +
     (note ? `<p class="meta">${esc(note)}</p>` : '') +
-    `<table><thead><tr><th>#</th><th>Student</th><th>From</th><th>To</th></tr></thead><tbody>${body}</tbody></table>` +
-    '<button onclick="window.print()">Print / Save as PDF</button></body></html>'
+    `<table><thead><tr><th>${esc(t('grading.bulk.report.columnNumber'))}</th><th>${esc(t('grading.bulk.report.columnStudent'))}</th>` +
+    `<th>${esc(t('grading.bulk.report.columnFrom'))}</th><th>${esc(t('grading.bulk.report.columnTo'))}</th></tr></thead><tbody>${body}</tbody></table>` +
+    `<button onclick="window.print()">${esc(t('grading.bulk.report.print'))}</button></body></html>`
   );
 }

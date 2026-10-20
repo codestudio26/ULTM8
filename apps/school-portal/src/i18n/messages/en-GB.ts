@@ -22,6 +22,7 @@ import { curriculum } from './en/curriculum';
 import { franchises } from './en/franchises';
 import { roleGrants } from './en/roleGrants';
 import { disciplines } from './en/disciplines';
+import { ui } from './en/ui';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -57,6 +58,7 @@ export const messages = {
   franchises,
   roleGrants,
   disciplines,
+  ui,
 };
 
 export type EnglishMessages = typeof messages;

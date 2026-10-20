@@ -1,11 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
+import { DEFAULT_UI_STRINGS, UiStringsProvider, type UiStrings } from '@ultm8/ui';
 import { apiClient } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser } from '../auth/currentUserQueries';
 import { messages as english, type EnglishMessages } from './messages/en-GB';
 import { DEFAULT_LOCALE, LOCALE_LOADERS, directionFor, resolveLocale } from './locales';
+import { setFormatLocale } from './format';
 import type { Message, MessageKey, MessageTree, MessageVars, PartialMessages } from './types';
 
 /**
@@ -90,6 +92,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [storedLocale, setStoredLocale] = useState(readStoredLocale);
   const locale = resolveLocale((claims ? me?.language : null) ?? storedLocale);
   const dir = directionFor(locale);
+  setFormatLocale(locale === DEFAULT_LOCALE ? undefined : locale);
 
   const catalogue = useQuery({
     queryKey: ['i18n', 'catalogue', locale],
@@ -128,7 +131,20 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo(() => ({ locale, dir, t, rememberLocale }), [locale, dir, t, rememberLocale]);
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  // The shared `@ultm8/ui` components read their text from this, so they follow
+  // the picker too. English keeps the package's own country names and order.
+  const uiStrings = useMemo(
+    () =>
+      Object.fromEntries(Object.keys(DEFAULT_UI_STRINGS).map((k) => [k, t(`ui.${k}` as TranslationKey)])) as UiStrings,
+    [t],
+  );
+  return (
+    <I18nContext.Provider value={value}>
+      <UiStringsProvider strings={uiStrings} locale={locale === DEFAULT_LOCALE ? undefined : locale}>
+        {children}
+      </UiStringsProvider>
+    </I18nContext.Provider>
+  );
 }
 
 export function useI18n(): I18nContextValue {

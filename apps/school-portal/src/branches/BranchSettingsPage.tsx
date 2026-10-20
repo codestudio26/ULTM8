@@ -6,6 +6,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useBranch, useUpdateBranch } from './branchQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Decision 231 — a dedicated Branch settings screen, replacing the previous
@@ -18,6 +19,7 @@ import { useBranch, useUpdateBranch } from './branchQueries';
  * four field names/types.
  */
 export function BranchSettingsPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const branchId = id ?? null;
   const navigate = useNavigate();
@@ -69,7 +71,7 @@ export function BranchSettingsPage() {
   if (!branchId) return null;
   if (isLoading) return <Spinner />;
   if (error) {
-    return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load this Branch.'} />;
+    return <ErrorBanner message={error instanceof ApiError ? error.message : t('branches.settingsPage.loadFailed')} />;
   }
   if (!branch) return null;
 
@@ -97,7 +99,7 @@ export function BranchSettingsPage() {
       });
       setSaved(true);
     } catch (err) {
-      setSaveError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setSaveError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -105,63 +107,63 @@ export function BranchSettingsPage() {
     <>
       <PageHeader
         title={branch.name}
-        subtitle="Branch settings"
+        subtitle={t('branches.settingsPage.subtitle')}
         actions={
           <Button variant="secondary" onClick={() => navigate('/branches')}>
-            Back to Branches
+            {t('branches.settingsPage.back')}
           </Button>
         }
       />
-      {saved ? <SuccessBanner message="Branch settings saved." /> : null}
+      {saved ? <SuccessBanner message={t('branches.settingsPage.saved')} /> : null}
       {saveError ? <ErrorBanner message={saveError} /> : null}
       <Card>
         <form onSubmit={handleSubmit}>
-          <Field label="Branch name" htmlFor="branch-settings-name">
+          <Field label={t('branches.form.branchName')} htmlFor="branch-settings-name">
             <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </Field>
-          <Field label="Address" htmlFor="branch-settings-address">
+          <Field label={t('branches.form.address')} htmlFor="branch-settings-address">
             <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
           </Field>
-          <Field label="Contact phone" htmlFor="branch-settings-phone">
+          <Field label={t('branches.form.contactPhone')} htmlFor="branch-settings-phone">
             <PhoneField
               value={form.contactPhone}
               onChange={(v) => setForm((f) => ({ ...f, contactPhone: v }))}
               defaultCountry={guessDefaultCountry()}
             />
           </Field>
-          <Field label="Timezone" htmlFor="branch-settings-timezone">
+          <Field label={t('branches.form.timezone')} htmlFor="branch-settings-timezone">
             <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
           </Field>
-          <Field label="Currency override" htmlFor="branch-settings-currency">
+          <Field label={t('branches.form.currencyOverride')} htmlFor="branch-settings-currency">
             <CurrencyField
               id="branch-settings-currency"
               value={form.currencyOverride}
               onChange={(code) => setForm((f) => ({ ...f, currencyOverride: code }))}
-              options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
-              placeholder="Not set"
+              options={[{ code: '', name: t('branches.form.notSet') }, ...(currencies ?? [])]}
+              placeholder={t('branches.form.notSet')}
             />
           </Field>
-          <Field label="Type" htmlFor="branch-settings-type">
+          <Field label={t('branches.form.type')} htmlFor="branch-settings-type">
             <TextField value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
           </Field>
-          <Field label="Activities" htmlFor="branch-settings-activities" hint="Comma-separated, e.g. BJJ, Judo">
+          <Field label={t('branches.form.activities')} htmlFor="branch-settings-activities" hint={t('branches.form.activitiesHint')}>
             <TextField value={form.activities} onChange={(e) => setForm((f) => ({ ...f, activities: e.target.value }))} />
           </Field>
-          <Field label="Facilities" htmlFor="branch-settings-facilities" hint="Comma-separated">
+          <Field label={t('branches.form.facilities')} htmlFor="branch-settings-facilities" hint={t('branches.form.commaSeparated')}>
             <TextField value={form.facilities} onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))} />
           </Field>
-          <Field label="Default language" htmlFor="branch-settings-language">
+          <Field label={t('branches.form.defaultLanguage')} htmlFor="branch-settings-language">
             <SelectField
               id="branch-settings-language"
               value={form.defaultLanguage}
               onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
-              options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+              options={[{ value: '', label: t('branches.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
             />
           </Field>
-          <Field label="Description" htmlFor="branch-settings-description">
+          <Field label={t('branches.form.description')} htmlFor="branch-settings-description">
             <TextField value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </Field>
-          <Field label="Logo" htmlFor="branch-settings-logo">
+          <Field label={t('branches.form.logo')} htmlFor="branch-settings-logo">
             <PhotoUploadField
               value={form.logoUrl}
               onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
@@ -175,7 +177,7 @@ export function BranchSettingsPage() {
               }
             />
           </Field>
-          <Field label="Banner" htmlFor="branch-settings-banner">
+          <Field label={t('branches.form.banner')} htmlFor="branch-settings-banner">
             <PhotoUploadField
               value={form.bannerUrl}
               onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
@@ -190,7 +192,7 @@ export function BranchSettingsPage() {
             />
           </Field>
           <Button type="submit" loading={updateBranch.isPending}>
-            Save
+            {t('common.save')}
           </Button>
         </form>
       </Card>

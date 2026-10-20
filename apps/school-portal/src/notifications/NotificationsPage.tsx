@@ -15,6 +15,7 @@ import {
 import { BroadcastNotificationModal } from './BroadcastNotificationModal';
 import { SnoozeNotificationModal } from './SnoozeNotificationModal';
 import { useI18n } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 /** Small, page-local summary tile — same shape/style as TransactionsPage's and
  * MembershipPlansPage's own `StatTile` (not promoted to @ultm8/ui yet, per
@@ -69,7 +70,7 @@ function isSnoozed(n: NotificationResponse): boolean {
  * comment on why). */
 export function NotificationsPage() {
   const schoolId = useOwnedSchoolId();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { data, isLoading, error } = useNotifications();
   // v1.2 backend backlog (Decision 204's Concept 5 finding) — a SEPARATE
   // query against the new dedicated counts endpoint, deliberately NOT
@@ -176,7 +177,7 @@ export function NotificationsPage() {
               },
               { key: 'title', header: t('notifications.columnTitle'), render: (n) => n.title },
               { key: 'body', header: t('notifications.columnMessage'), render: (n) => n.body },
-              { key: 'createdAt', header: t('notifications.columnReceived'), render: (n) => new Date(n.createdAt).toLocaleString(locale) },
+              { key: 'createdAt', header: t('notifications.columnReceived'), render: (n) => new Date(n.createdAt).toLocaleString(formatLocale()) },
               {
                 key: 'actions',
                 header: '',

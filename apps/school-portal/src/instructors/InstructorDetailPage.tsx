@@ -7,9 +7,11 @@ import { Avatar } from '../lib/Avatar';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
 import { useInstructor, useInstructorClasses } from './instructorQueries';
+import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 /**
@@ -22,6 +24,7 @@ function formatDate(iso: string): string {
  * confirmation pattern (not a browser confirm()).
  */
 export function InstructorDetailPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const instructorId = id ?? null;
   const schoolId = useOwnedSchoolId();
@@ -35,7 +38,7 @@ export function InstructorDetailPage() {
   if (!instructorId) return null;
   if (isLoading) return <Spinner />;
   if (error) {
-    return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load this Instructor.'} />;
+    return <ErrorBanner message={error instanceof ApiError ? error.message : t('instructors.detail.loadFailed')} />;
   }
   if (!instructor) return null;
 
@@ -47,7 +50,7 @@ export function InstructorDetailPage() {
   return (
     <>
       <p style={{ margin: '0 0 8px' }}>
-        <Link to="/instructors">← Instructors</Link>
+        <Link to="/instructors">{t('instructors.detail.back')}</Link>
       </p>
       <PageHeader
         title={`${instructor.firstName} ${instructor.surname}`.trim()}
@@ -55,7 +58,7 @@ export function InstructorDetailPage() {
         actions={
           activeGrant ? (
             <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
-              Revoke enrollment
+              {t('instructors.detail.revokeEnrollment')}
             </Button>
           ) : undefined
         }
@@ -67,25 +70,25 @@ export function InstructorDetailPage() {
             <Avatar firstName={instructor.firstName} surname={instructor.surname} photoUrl={instructor.photoUrl} size={64} />
             <div style={{ display: 'grid', gap: 6 }}>
               <span>
-                <strong>Email:</strong> {instructor.email}
+                <strong>{t('instructors.detail.email')}</strong> {instructor.email}
               </span>
               <span>
-                <strong>Status:</strong>{' '}
+                <strong>{t('instructors.detail.status')}</strong>{' '}
                 <Badge variant={instructor.status === 'ACTIVE' ? 'success' : undefined}>{instructor.status}</Badge>
               </span>
               {instructor.phone ? (
                 <span>
-                  <strong>Phone:</strong> {instructor.phone}
+                  <strong>{t('instructors.detail.phone')}</strong> {instructor.phone}
                 </span>
               ) : null}
               {instructor.yearsOfExperience != null ? (
                 <span>
-                  <strong>Years of experience:</strong> {instructor.yearsOfExperience}
+                  <strong>{t('instructors.detail.yearsOfExperience')}</strong> {instructor.yearsOfExperience}
                 </span>
               ) : null}
               {instructor.specializations.length > 0 ? (
                 <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong>Specializations:</strong>
+                  <strong>{t('instructors.detail.specializations')}</strong>
                   {instructor.specializations.map((s, i) => (
                     <Badge key={`${s}-${i}`}>{s}</Badge>
                   ))}
@@ -98,15 +101,15 @@ export function InstructorDetailPage() {
 
       <div>
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
-          Classes
+          {t('instructors.detail.classesHeading')}
         </h2>
         <Card>
           {classesLoading ? (
             <Spinner />
           ) : classesError ? (
-            <ErrorBanner message={classesError instanceof ApiError ? classesError.message : 'Could not load Classes.'} />
+            <ErrorBanner message={classesError instanceof ApiError ? classesError.message : t('instructors.detail.classesLoadFailed')} />
           ) : classes.length === 0 ? (
-            <EmptyState title="No Classes yet" description="This Instructor isn't assigned to any Class yet." />
+            <EmptyState title={t('instructors.detail.classesEmptyTitle')} description={t('instructors.detail.classesEmptyDescription')} />
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
               {classes.map((c) => (
@@ -127,7 +130,9 @@ export function InstructorDetailPage() {
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(c.startDate)}</div>
                   </div>
                   <Badge variant="accent">
-                    {c.enrolledCount} {c.capacity != null ? `/ ${c.capacity}` : ''} booked
+                    {c.capacity != null
+                      ? t('instructors.detail.booked', { enrolled: c.enrolledCount, capacity: c.capacity })
+                      : t('instructors.detail.bookedNoCapacity', { enrolled: c.enrolledCount })}
                   </Badge>
                 </li>
               ))}
@@ -138,10 +143,10 @@ export function InstructorDetailPage() {
 
       {confirmingRevoke && activeGrant ? (
         <ConfirmDeleteModal
-          title={`Revoke ${instructor.firstName} ${instructor.surname}'s enrollment?`}
-          description="They lose their Instructor role at this School immediately. This can't be undone from here — they would need to be re-invited."
-          confirmLabel="Revoke"
-          genericErrorMessage="Could not revoke this enrollment. Please try again."
+          title={t('instructors.detail.revokeTitle', { name: `${instructor.firstName} ${instructor.surname}` })}
+          description={t('instructors.detail.revokeDescription')}
+          confirmLabel={t('instructors.detail.revokeConfirm')}
+          genericErrorMessage={t('instructors.detail.revokeFailed')}
           onConfirm={async () => {
             await revokeGrant.mutateAsync({ targetUserId: activeGrant.userId, roleGrantId: activeGrant.id });
             navigate('/instructors');

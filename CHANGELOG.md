@@ -22,9 +22,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Korean, Chinese (Simplified) and Thai, each listed in its own script.
   Arabic switches the layout to right-to-left. Text ships built in, and a
   Platform Admin Translation row for the same screen and key replaces it.
-  Translated so far: the menu, header and Notifications page; the rest of
-  the portal follows page group by page group and shows English until then.
-  Non-English text is a first draft awaiting native-speaker review.
+  Every School Portal page is translated, including sign-in, the footer and
+  the shared form controls (phone field country names, photo upload,
+  Rows/Grid toggle); dates follow the picked language. Not translated: data
+  people enter, server error messages, money formatting, Platform Admin and
+  the student app. Non-English text is a first draft awaiting
+  native-speaker review.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

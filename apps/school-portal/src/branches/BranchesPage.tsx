@@ -6,8 +6,10 @@ import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useArchiveBranch, useBranches, useCreateBranch, useUnarchiveBranch, type BranchResponse } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
+import { useT } from '../i18n/I18nProvider';
 
 export function BranchesPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const navigate = useNavigate();
   // Server-side City filter (GET /schools/:schoolId/branches?city=) — Branch has no
@@ -45,17 +47,17 @@ export function BranchesPage() {
   return (
     <>
       <PageHeader
-        title="Branches"
-        subtitle="Physical locations under your School."
-        actions={<Button onClick={() => setCreating(true)}>Add branch</Button>}
+        title={t('branches.title')}
+        subtitle={t('branches.subtitle')}
+        actions={<Button onClick={() => setCreating(true)}>{t('branches.addBranch')}</Button>}
       />
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ minWidth: 220 }}>
-            <Field label="City" htmlFor="branches-city-filter" hint="Matches anywhere in a Branch's address.">
+            <Field label={t('branches.cityLabel')} htmlFor="branches-city-filter" hint={t('branches.cityHint')}>
               <TextField
                 id="branches-city-filter"
-                placeholder="Filter by city…"
+                placeholder={t('branches.cityPlaceholder')}
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
               />
@@ -63,8 +65,8 @@ export function BranchesPage() {
           </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             {/* Decision 226 — archived Branches are hidden by default. */}
-            <Checkbox label={`Show archived${archivedCount ? ` (${archivedCount})` : ''}`} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-            <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Branches view" />
+            <Checkbox label={archivedCount ? t('branches.showArchivedCount', { count: archivedCount }) : t('branches.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('branches.viewAria')} />
           </div>
         </div>
       </Card>
@@ -72,13 +74,13 @@ export function BranchesPage() {
       {isLoading ? (
         <Spinner />
       ) : error ? (
-        <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Branches.'} />
+        <ErrorBanner message={error instanceof ApiError ? error.message : t('branches.loadFailed')} />
       ) : (
         <Card>
           {branches.length === 0 ? (
             <EmptyState
-              title={cityFilter ? 'No Branches match that city' : 'No Branches yet'}
-              description={cityFilter ? 'Try a different city, or clear the filter.' : 'Add your first Branch to get started.'}
+              title={cityFilter ? t('branches.noMatchTitle') : t('branches.emptyTitle')}
+              description={cityFilter ? t('branches.noMatchDescription') : t('branches.emptyDescription')}
             />
           ) : viewMode === 'grid' ? (
             <CardGrid>
@@ -87,7 +89,7 @@ export function BranchesPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                     <strong>{b.name}</strong>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      {b.archivedAt ? <Badge variant="default">Archived</Badge> : null}
+                      {b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}
                       {b.timezone ? <Badge>{b.timezone}</Badge> : null}
                     </div>
                   </div>
@@ -97,14 +99,14 @@ export function BranchesPage() {
                     {/* Decision 231 — a dedicated settings screen replaces the
                         previous edit-via-modal path. */}
                     <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
-                      Settings
+                      {t('branches.settings')}
                     </Button>
                     <RowActionsMenu
-                      label={`Actions for ${b.name}`}
+                      label={t('branches.rowActionsAria', { name: b.name })}
                       actions={[
                         b.archivedAt
-                          ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Branch.') }); } }
-                          : { label: 'Archive', onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Branch.') }); } },
+                          ? { label: t('branches.unarchive'), onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.unarchiveFailed')) }); } }
+                          : { label: t('branches.archive'), onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.archiveFailed')) }); } },
                       ]}
                     />
                   </div>
@@ -115,10 +117,10 @@ export function BranchesPage() {
             <Table<BranchResponse>
               rows={branches}
               columns={[
-                { key: 'name', header: 'Name', render: (b) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{b.name}{b.archivedAt ? <Badge variant="default">Archived</Badge> : null}</div>) },
-                { key: 'address', header: 'Address', render: (b) => b.address ?? '—' },
-                { key: 'phone', header: 'Contact phone', render: (b) => b.contactPhone ?? '—' },
-                { key: 'timezone', header: 'Timezone', render: (b) => (b.timezone ? <Badge>{b.timezone}</Badge> : '—') },
+                { key: 'name', header: t('branches.columnName'), render: (b) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{b.name}{b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}</div>) },
+                { key: 'address', header: t('branches.columnAddress'), render: (b) => b.address ?? '—' },
+                { key: 'phone', header: t('branches.columnContactPhone'), render: (b) => b.contactPhone ?? '—' },
+                { key: 'timezone', header: t('branches.columnTimezone'), render: (b) => (b.timezone ? <Badge>{b.timezone}</Badge> : '—') },
                 {
                   key: 'actions',
                   header: '',
@@ -127,14 +129,14 @@ export function BranchesPage() {
                       {/* Decision 231 — a dedicated settings screen replaces the
                           previous edit-via-modal path. */}
                       <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
-                        Settings
+                        {t('branches.settings')}
                       </Button>
                       <RowActionsMenu
-                        label={`Actions for ${b.name}`}
+                        label={t('branches.rowActionsAria', { name: b.name })}
                         actions={[
                           b.archivedAt
-                            ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Branch.') }); } }
-                            : { label: 'Archive', onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Branch.') }); } },
+                            ? { label: t('branches.unarchive'), onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.unarchiveFailed')) }); } }
+                            : { label: t('branches.archive'), onClick: () => { setActionError(null); archiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.archiveFailed')) }); } },
                         ]}
                       />
                     </div>
@@ -148,7 +150,7 @@ export function BranchesPage() {
 
       {creating ? (
         <BranchFormModal
-          title="Add branch"
+          title={t('branches.addBranch')}
           schoolId={schoolId}
           submitting={createBranch.isPending}
           onSubmit={async (values) => {

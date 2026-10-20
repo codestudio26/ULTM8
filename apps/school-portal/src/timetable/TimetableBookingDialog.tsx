@@ -5,6 +5,9 @@ import type { StudentSummary } from '../students/studentQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import { useBookClass } from '../bookings/bookingQueries';
 import { useTimetableOccurrence } from './timetableQueries';
+import { useT } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
+import { formatLocale } from '../i18n/format';
 
 /**
  * The Timetable redesign's click-to-book confirmation dialog — backlog doc's own
@@ -41,12 +44,13 @@ export function TimetableBookingDialog({
   onClose: () => void;
   onBooked: () => void;
 }) {
+  const t = useT();
   const occurrence = useTimetableOccurrence(slotId, date);
   const bookClass = useBookClass();
   const [studentId, setStudentId] = useState('');
   const [bookError, setBookError] = useState<string | null>(null);
 
-  const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+  const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString(formatLocale(), {
     weekday: 'long',
     year: 'numeric',
     month: 'short',
@@ -54,7 +58,7 @@ export function TimetableBookingDialog({
   });
 
   return (
-    <Modal title={`Book — ${slotTitle}`} onClose={onClose}>
+    <Modal title={t('timetable.booking.title', { title: slotTitle })} onClose={onClose}>
       {occurrence.isLoading ? (
         <Spinner />
       ) : occurrence.error instanceof ApiError && occurrence.error.status === 404 ? (
@@ -65,19 +69,21 @@ export function TimetableBookingDialog({
         // fly from a booking click.
         <>
           <p>
-            <strong>Not bookable yet.</strong> This occurrence ({dateLabel}) hasn't been generated as a real
-            Class yet — Classes are generated up to 4 weeks ahead of time. Check back closer to the date, or
-            confirm this slot is turned On.
+            <Trans
+              k="timetable.booking.notBookable"
+              vars={{ date: dateLabel }}
+              nodes={{ notBookableTitle: <strong>{t('timetable.booking.notBookableTitle')}</strong> }}
+            />
           </p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <Button variant="secondary" onClick={onClose}>
-              Close
+              {t('timetable.booking.close')}
             </Button>
           </div>
         </>
       ) : occurrence.error ? (
         <ErrorBanner
-          message={occurrence.error instanceof ApiError ? occurrence.error.message : 'Could not load this occurrence.'}
+          message={occurrence.error instanceof ApiError ? occurrence.error.message : t('timetable.booking.loadFailed')}
         />
       ) : occurrence.data ? (
         <BookingForm
@@ -96,7 +102,7 @@ export function TimetableBookingDialog({
               await bookClass.mutateAsync({ classId: occurrence.data!.id, body: { studentId } });
               onBooked();
             } catch (err) {
-              setBookError(err instanceof ApiError ? err.message : 'Could not create this Booking.');
+              setBookError(err instanceof ApiError ? err.message : t('timetable.booking.bookFailed'));
             }
           }}
         />
@@ -128,55 +134,56 @@ function BookingForm({
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  const t = useT();
   const instructor = instructors.find((i) => i.userId === occurrence.instructorId);
-  const timings = `${new Date(occurrence.startDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} – ${new Date(
+  const timings = `${new Date(occurrence.startDate).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' })} – ${new Date(
     occurrence.endDate,
-  ).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+  ).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' })}`;
 
   return (
     <>
       {bookError ? <ErrorBanner message={bookError} /> : null}
 
-      <Field label="Student" htmlFor="booking-student" hint="Required — the dialog won't Confirm without one.">
+      <Field label={t('timetable.booking.studentLabel')} htmlFor="booking-student" hint={t('timetable.booking.studentHint')}>
         <SelectField
           id="booking-student"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
           options={[
-            { value: '', label: 'Select a Student…' },
+            { value: '', label: t('timetable.booking.selectStudent') },
             ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
           ]}
         />
       </Field>
 
       <div className="ultm8-field">
-        <span className="ultm8-field__label">Class</span>
+        <span className="ultm8-field__label">{t('timetable.booking.classLabel')}</span>
         <p style={{ margin: '4px 0 0' }}>{occurrence.title}</p>
       </div>
 
       <div className="ultm8-field">
-        <span className="ultm8-field__label">Instructor</span>
+        <span className="ultm8-field__label">{t('timetable.booking.instructorLabel')}</span>
         <p style={{ margin: '4px 0 0' }}>
           {instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—'}
         </p>
       </div>
 
       <div className="ultm8-field">
-        <span className="ultm8-field__label">Class Timings</span>
+        <span className="ultm8-field__label">{t('timetable.booking.timingsLabel')}</span>
         <p style={{ margin: '4px 0 0' }}>{timings}</p>
       </div>
 
       <div className="ultm8-field">
-        <span className="ultm8-field__label">Class Date</span>
+        <span className="ultm8-field__label">{t('timetable.booking.dateLabel')}</span>
         <p style={{ margin: '4px 0 0' }}>{dateLabel}</p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
         <Button variant="secondary" onClick={onClose} disabled={submitting}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button onClick={onConfirm} disabled={!studentId} loading={submitting}>
-          Confirm
+          {t('timetable.booking.confirm')}
         </Button>
       </div>
     </>

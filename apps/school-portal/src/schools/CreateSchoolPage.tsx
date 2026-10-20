@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useCreateSchool } from './schoolQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Self-service School creation (Decision 79) — the creator becomes SCHOOL_OWNER_MANAGER
@@ -19,6 +20,7 @@ import { useCreateSchool } from './schoolQueries';
  * (see that file's own header comment on why).
  */
 export function CreateSchoolPage() {
+  const t = useT();
   const { logout, setAccessToken } = useAuth();
   const navigate = useNavigate();
   const createSchool = useCreateSchool();
@@ -79,81 +81,78 @@ export function CreateSchoolPage() {
         setCreated(true);
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   if (created) {
     return (
-      <AuthCard title="School created" subtitle="You're now its Owner/Manager.">
-        <p>
-          Your access token doesn't reflect your new role until you log in again — session claims are only
-          rebuilt at login (there's no live-refresh mechanism yet). Please log back in to continue.
-        </p>
+      <AuthCard title={t('schools.create.createdTitle')} subtitle={t('schools.create.createdSubtitle')}>
+        <p>{t('schools.create.reloginBody')}</p>
         <Button fullWidth onClick={logout}>
-          Log out and log back in
+          {t('schools.create.reloginButton')}
         </Button>
       </AuthCard>
     );
   }
 
   return (
-    <AuthCard title="Create your School" subtitle="You'll become its Owner/Manager automatically.">
+    <AuthCard title={t('schools.create.title')} subtitle={t('schools.create.subtitle')}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="School name" htmlFor="school-name">
+        <Field label={t('schools.form.schoolName')} htmlFor="school-name">
           <TextField required value={form.name} onChange={(e) => set('name', e.target.value)} />
         </Field>
-        <Field label="Mobile number" htmlFor="school-mobile">
+        <Field label={t('schools.form.mobileNumber')} htmlFor="school-mobile">
           <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Field label="Address" htmlFor="school-address">
+        <Field label={t('schools.form.address')} htmlFor="school-address">
           <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
         </Field>
-        <Field label="Business type" htmlFor="school-businessType">
+        <Field label={t('schools.form.businessType')} htmlFor="school-businessType">
           <TextField value={form.businessType} onChange={(e) => set('businessType', e.target.value)} />
         </Field>
-        <Field label="Activities" htmlFor="school-activities" hint="Comma-separated, e.g. Jiu Jitsu, Karate">
+        <Field label={t('schools.form.activities')} htmlFor="school-activities" hint={t('schools.form.activitiesHintExample')}>
           <TextField value={form.activities} onChange={(e) => set('activities', e.target.value)} />
         </Field>
-        <Field label="Facilities" htmlFor="school-facilities" hint="Comma-separated">
+        <Field label={t('schools.form.facilities')} htmlFor="school-facilities" hint={t('schools.form.commaSeparated')}>
           <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
         </Field>
-        <Field label="Default language" htmlFor="school-language">
+        <Field label={t('schools.form.defaultLanguage')} htmlFor="school-language">
           <SelectField
             id="school-language"
             value={form.defaultLanguage}
             onChange={(e) => set('defaultLanguage', e.target.value)}
-            options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+            options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
           />
         </Field>
-        <Field label="Default currency" htmlFor="school-currency">
+        <Field label={t('schools.form.defaultCurrency')} htmlFor="school-currency">
           <CurrencyField
             id="school-currency"
             value={form.defaultCurrency}
             onChange={(code) => set('defaultCurrency', code)}
-            options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
-            placeholder="Not set"
+            options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
+            placeholder={t('schools.form.notSet')}
           />
         </Field>
-        <Field label="Timezone" htmlFor="school-timezone" hint="Used for classes without a branch timezone.">
+        <Field label={t('schools.form.timezone')} htmlFor="school-timezone" hint={t('schools.form.timezoneHint')}>
           <TimezoneField value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
         </Field>
-        <Field label="Description" htmlFor="school-description">
+        <Field label={t('schools.form.description')} htmlFor="school-description">
           <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
         </Field>
-        <Field label="Class cancellation policy" htmlFor="school-policy">
+        <Field label={t('schools.form.cancellationPolicy')} htmlFor="school-policy">
           <SelectField
             value={form.classCancellationPolicy}
             onChange={(e) => set('classCancellationPolicy', e.target.value as typeof form.classCancellationPolicy)}
             options={[
-              { value: 'MANUAL', label: 'Manual (default)' },
-              { value: 'AUTO_REFUND', label: 'Auto-Refund' },
-              { value: 'AUTO_CREDIT', label: 'Auto-Credit' },
+              { value: 'MANUAL', label: t('schools.form.policyManual') },
+              { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
+              { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
             ]}
           />
         </Field>
-        <Field label="Waitlist claim window (minutes)" htmlFor="school-waitlist">
+        <Field label={t('schools.form.waitlistWindow')} htmlFor="school-waitlist">
           <TextField
             type="number"
             min={1}
@@ -162,13 +161,13 @@ export function CreateSchoolPage() {
           />
         </Field>
         <Checkbox
-          label="Enable belt/rank tracking"
+          label={t('schools.form.ranksToggle')}
           checked={form.ranksToggle}
           onChange={(e) => set('ranksToggle', e.target.checked)}
         />
         <div style={{ marginTop: 16 }}>
           <Button type="submit" fullWidth loading={createSchool.isPending}>
-            Create School
+            {t('schools.create.submit')}
           </Button>
         </div>
       </form>

@@ -23,6 +23,7 @@ import { InstructorFormModal } from './InstructorFormModal';
 import { AddInstructorManuallyModal } from './AddInstructorManuallyModal';
 import { InviteToInstructorRoleModal } from './InviteToInstructorRoleModal';
 import { InstructorBeltsSection } from './InstructorBeltsSection';
+import { useT } from '../i18n/I18nProvider';
 
 /** Up to 3 specialization badges, then a "+N" overflow badge — keeps a long
  * specializations list from blowing out the row height instead of silently
@@ -42,6 +43,7 @@ function SpecializationBadges({ specializations }: { specializations: string[] }
 }
 
 export function InstructorsPage() {
+  const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const schoolId = useOwnedSchoolId();
@@ -75,7 +77,7 @@ export function InstructorsPage() {
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Instructors.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('instructors.loadFailed')} />;
 
   const allInstructors = data?.items ?? [];
   const archivedCount = allInstructors.filter((i) => i.archivedAt).length;
@@ -90,17 +92,17 @@ export function InstructorsPage() {
       {inviteRoleNotice?.kind === 'ok' ? <SuccessBanner message={inviteRoleNotice.text} /> : null}
       {inviteRoleNotice?.kind === 'warn' ? <ErrorBanner message={inviteRoleNotice.text} /> : null}
       <PageHeader
-        title="Instructors"
-        subtitle="Instructor profiles at your School. The User must already hold an Instructor role — invite an existing user to the role, or add one manually below."
+        title={t('instructors.title')}
+        subtitle={t('instructors.subtitle')}
         actions={
           <>
             <Button variant="secondary" onClick={() => setInvitingExisting(true)}>
-              Invite existing user
+              {t('instructors.inviteExisting')}
             </Button>
             <Button variant="secondary" onClick={() => setAddingManually(true)}>
-              Add manually
+              {t('instructors.addManually')}
             </Button>
-            <Button onClick={() => setCreating(true)}>Add instructor</Button>
+            <Button onClick={() => setCreating(true)}>{t('instructors.addInstructor')}</Button>
           </>
         }
       />
@@ -108,12 +110,12 @@ export function InstructorsPage() {
       <Card>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
           {/* Decision 226 — archived Instructor profiles are hidden by default. */}
-          <Checkbox label={`Show archived${archivedCount ? ` (${archivedCount})` : ''}`} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+          <Checkbox label={archivedCount ? t('instructors.showArchivedCount', { count: archivedCount }) : t('instructors.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
         </div>
         {instructors.length === 0 ? (
           <EmptyState
-            title="No Instructor profiles yet"
-            description="Grant someone the Instructor role on the Staff page, then add their profile here."
+            title={t('instructors.emptyTitle')}
+            description={t('instructors.emptyDescription')}
           />
         ) : (
           <Table<InstructorResponse>
@@ -121,52 +123,52 @@ export function InstructorsPage() {
             columns={[
               {
                 key: 'image',
-                header: 'Image',
+                header: t('instructors.columnImage'),
                 render: (i) => <Avatar firstName={i.firstName} surname={i.surname} photoUrl={i.photoUrl} />,
               },
-              { key: 'name', header: 'Instructor', render: (i) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{`${i.firstName} ${i.surname}`.trim()}{i.archivedAt ? <Badge variant="default">Archived</Badge> : null}</div>) },
+              { key: 'name', header: t('instructors.columnInstructor'), render: (i) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{`${i.firstName} ${i.surname}`.trim()}{i.archivedAt ? <Badge variant="default">{t('instructors.archived')}</Badge> : null}</div>) },
               {
                 key: 'specializations',
-                header: 'Specializations',
+                header: t('instructors.columnSpecializations'),
                 render: (i) => <SpecializationBadges specializations={i.specializations} />,
               },
               {
                 key: 'scope',
-                header: 'Scope',
-                render: (i) => (i.branchId ? branches.find((b) => b.id === i.branchId)?.name ?? i.branchId : 'All branches'),
+                header: t('instructors.columnScope'),
+                render: (i) => (i.branchId ? branches.find((b) => b.id === i.branchId)?.name ?? i.branchId : t('instructors.allBranches')),
               },
               // No backend concept of an Instructor "login" state exists yet
               // (see the Instructor model's own comment: a profile requires an
               // already-active RoleGrant, granted immediately — there's no
               // pending-invite state to show). Shown as "—" rather than a
               // fabricated status.
-              { key: 'login', header: 'Login', render: () => '—' },
-              { key: 'phone', header: 'Phone Number', render: (i) => i.phone ?? '—' },
+              { key: 'login', header: t('instructors.columnLogin'), render: () => '—' },
+              { key: 'phone', header: t('instructors.columnPhone'), render: (i) => i.phone ?? '—' },
               // RoleGrant.revokedAt (Active/Revoked) isn't resolved onto
               // InstructorResponseDto yet — same "—" placeholder as Login,
               // rather than hardcoding "Active" for every row.
-              { key: 'status', header: 'Status', render: () => '—' },
+              { key: 'status', header: t('instructors.columnStatus'), render: () => '—' },
               {
                 key: 'actions',
                 header: '',
                 render: (i) => (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <Button variant="secondary" onClick={() => navigate(`/instructors/${i.id}`)}>
-                      View
+                      {t('instructors.view')}
                     </Button>
                     <Button variant="secondary" onClick={() => setEditing(i)}>
-                      Edit
+                      {t('instructors.edit')}
                     </Button>
                     {/* Decision 226 — School Owner/Manager only, idempotent,
                         blocked (409) by an upcoming Class/TimetableSlot
                         assignment. Never touches the underlying User or
                         their INSTRUCTOR RoleGrant. */}
                     <RowActionsMenu
-                      label={`Actions for ${i.firstName} ${i.surname}`.trim()}
+                      label={t('instructors.rowActionsAria', { name: `${i.firstName} ${i.surname}`.trim() })}
                       actions={[
                         i.archivedAt
-                          ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this Instructor profile.') }); } }
-                          : { label: 'Archive', onClick: () => { setActionError(null); archiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this Instructor profile.') }); } },
+                          ? { label: t('instructors.unarchive'), onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.unarchiveFailed')) }); } }
+                          : { label: t('instructors.archive'), onClick: () => { setActionError(null); archiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.archiveFailed')) }); } },
                       ]}
                     />
                   </div>
@@ -181,7 +183,7 @@ export function InstructorsPage() {
 
       {creating ? (
         <InstructorFormModal
-          title="Add instructor"
+          title={t('instructors.addInstructor')}
           schoolId={schoolId}
           branches={branches}
           disciplines={disciplines}
@@ -210,8 +212,8 @@ export function InstructorsPage() {
             const created = await createInstructorManually.mutateAsync(values);
             setAddManuallyNotice(
               created.emailSent
-                ? { kind: 'ok', text: `${created.firstName} ${created.surname} was added — a temporary passcode was emailed to ${created.email}.` }
-                : { kind: 'warn', text: `${created.firstName} ${created.surname} was added, but the email couldn't be sent. They'll need the temporary passcode another way.` },
+                ? { kind: 'ok', text: t('instructors.addedEmailSent', { name: `${created.firstName} ${created.surname}`, email: created.email }) }
+                : { kind: 'warn', text: t('instructors.addedEmailFailed', { name: `${created.firstName} ${created.surname}` }) },
             );
             setAddingManually(false);
           }}
@@ -236,8 +238,8 @@ export function InstructorsPage() {
             queryClient.invalidateQueries({ queryKey: ['instructors', 'eligible-users', schoolId] });
             setInviteRoleNotice(
               granted.emailSent
-                ? { kind: 'ok', text: 'Instructor role granted — they were emailed to let them know. Use "Add instructor" to add their profile.' }
-                : { kind: 'warn', text: 'Instructor role granted, but the notification email could not be sent. Use "Add instructor" to add their profile.' },
+                ? { kind: 'ok', text: t('instructors.roleGrantedEmailSent') }
+                : { kind: 'warn', text: t('instructors.roleGrantedEmailFailed') },
             );
             setInvitingExisting(false);
           }}
@@ -261,10 +263,11 @@ function EditInstructorModal({
   instructor: InstructorResponse;
   onClose: () => void;
 }) {
+  const t = useT();
   const updateInstructor = useUpdateInstructor(schoolId, instructor.id);
   return (
     <InstructorFormModal
-      title="Edit instructor"
+      title={t('instructors.editInstructor')}
       schoolId={schoolId}
       initial={instructor}
       branches={branches}

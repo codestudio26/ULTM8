@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useRequestVideoUploadUrl, type LessonResponse } from './curriculumQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /** First video-upload UI in the app (Decision 101's pipeline, now wired —
  * see `useRequestVideoUploadUrl`'s own header comment). Deliberately NOT
@@ -45,6 +46,7 @@ export function VideoUploadModal({
   const requestUploadUrl = useRequestVideoUploadUrl(schoolId);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   async function handleFileSelected(file: File) {
     setError(null);
@@ -59,29 +61,28 @@ export function VideoUploadModal({
       // "uploading" state is enough for now.
       const putRes = await fetch(uploadUrl, { method: 'PUT', body: file });
       if (!putRes.ok) {
-        throw new Error('The video could not be uploaded — please try again.');
+        throw new Error(t('curriculum.video.failed'));
       }
       onUploaded();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'The video could not be uploaded — please try again.');
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : t('curriculum.video.failed'));
     } finally {
       setUploading(false);
     }
   }
 
   return (
-    <Modal title={`Upload video — ${lesson.title}`} onClose={onClose}>
+    <Modal title={t('curriculum.video.title', { title: lesson.title })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
       <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-        Choose a video file. It uploads straight to Cloudflare Stream — captioning finishes later, on its own, and can take
-        a few minutes; this Lesson's status moves from "Processing video" to "Video ready" once it does.
+        {t('curriculum.video.hint')}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input
           type="file"
           accept="video/*"
           disabled={uploading}
-          aria-label={`Video file for ${lesson.title}`}
+          aria-label={t('curriculum.video.fileAria', { title: lesson.title })}
           onChange={(e) => {
             const file = e.target.files?.[0];
             e.target.value = ''; // allows picking the exact same file again later
@@ -92,7 +93,7 @@ export function VideoUploadModal({
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <Button type="button" variant="secondary" onClick={onClose} disabled={uploading}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </Modal>

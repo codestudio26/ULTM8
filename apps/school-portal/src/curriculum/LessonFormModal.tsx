@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import type { InstructorResponse } from '../instructors/instructorQueries';
 import type { DisciplineSkillGroup } from './curriculumQueries';
 import type { LessonCategory, LessonResponse } from './curriculumQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /** Fields match CreateLessonDto/UpdateLessonDto exactly —
  * apps/api/src/curriculum/dto/create-lesson.dto.ts. `videoRef`/`captionStatus`/
@@ -58,6 +59,7 @@ export function LessonFormModal({
     skillIds: initial?.skillIds ?? [],
   });
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   function toggleSkill(skillId: string, checked: boolean) {
     setForm((f) => ({
@@ -70,7 +72,7 @@ export function LessonFormModal({
     e.preventDefault();
     setError(null);
     if (form.skillIds.length === 0) {
-      setError('Select at least one Skill this Lesson teaches.');
+      setError(t('curriculum.form.skillRequired'));
       return;
     }
     try {
@@ -85,7 +87,7 @@ export function LessonFormModal({
         skillIds: form.skillIds,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -93,26 +95,26 @@ export function LessonFormModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Title" htmlFor="lesson-title">
+        <Field label={t('curriculum.form.titleLabel')} htmlFor="lesson-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
-        <Field label="Category" htmlFor="lesson-category" hint="A new category puts the lesson at its end. Add categories on the Curriculum page.">
+        <Field label={t('curriculum.form.categoryLabel')} htmlFor="lesson-category" hint={t('curriculum.form.categoryHint')}>
           <SelectField
             id="lesson-category"
             value={form.categoryId}
             onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
-            options={[{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+            options={[{ value: '', label: t('curriculum.noCategory') }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           />
         </Field>
         <Checkbox
-          label="Free for everyone at the School"
+          label={t('curriculum.form.free')}
           checked={form.free}
           onChange={(e) => setForm((f) => ({ ...f, free: e.target.checked }))}
         />
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          Otherwise only members whose plan includes lessons for this lesson's styles can watch it.
+          {t('curriculum.form.freeHint')}
         </p>
-        <Field label="Duration (seconds)" htmlFor="lesson-duration">
+        <Field label={t('curriculum.form.duration')} htmlFor="lesson-duration">
           <TextField
             type="number"
             min={1}
@@ -120,25 +122,25 @@ export function LessonFormModal({
             onChange={(e) => setForm((f) => ({ ...f, durationSeconds: e.target.value }))}
           />
         </Field>
-        <Field label="Description" htmlFor="lesson-description">
+        <Field label={t('curriculum.form.description')} htmlFor="lesson-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
-        <Field label="Format" htmlFor="lesson-format">
+        <Field label={t('curriculum.form.format')} htmlFor="lesson-format">
           <SelectField
             value={form.format}
             onChange={(e) => setForm((f) => ({ ...f, format: e.target.value as 'PRERECORDED' | 'LIVE' }))}
             options={[
-              { value: 'PRERECORDED', label: 'Prerecorded' },
-              { value: 'LIVE', label: 'Live' },
+              { value: 'PRERECORDED', label: t('curriculum.formatPrerecorded') },
+              { value: 'LIVE', label: t('curriculum.formatLive') },
             ]}
           />
         </Field>
-        <Field label="Instructor" htmlFor="lesson-instructor" hint="Optional — leave unselected if no single Instructor owns this Lesson.">
+        <Field label={t('curriculum.form.instructor')} htmlFor="lesson-instructor" hint={t('curriculum.form.instructorHint')}>
           <SelectField
             value={form.instructorId}
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
-              { value: '', label: 'None' },
+              { value: '', label: t('curriculum.form.none') },
               ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() || i.userId })),
             ]}
           />
@@ -146,13 +148,13 @@ export function LessonFormModal({
 
         <div className="ultm8-field" style={{ marginTop: 16 }}>
           <p className="ultm8-field__label" style={{ marginBottom: 8 }}>
-            Skills taught
+            {t('curriculum.form.skillsTaught')}
           </p>
           <p className="ultm8-field__hint" style={{ marginBottom: 8 }}>
-            At least one required — every Skill must belong to this School, from any Discipline.
+            {t('curriculum.form.skillsHint')}
           </p>
           {skillGroups.length === 0 ? (
-            <p className="ultm8-field__hint">No Skills exist at this School yet — add one on the Disciplines page first.</p>
+            <p className="ultm8-field__hint">{t('curriculum.form.noSkills')}</p>
           ) : (
             skillGroups.map((group) =>
               group.skills.length === 0 ? null : (
@@ -174,10 +176,10 @@ export function LessonFormModal({
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>
