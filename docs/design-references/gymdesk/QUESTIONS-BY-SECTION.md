@@ -165,7 +165,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
     - Answer:
 
 52. 🟠 **Check-in rules as School settings:** Gymdesk lets each School choose (require active membership, require waiver, block overdue payers, require booking, time window before/after class start, check in at other branches). Should ULTM8 schools choose too, or keep one fixed rule for everyone? (I'll first check exactly what ULTM8 does today.)
-    - Answer:
+    - Answer: **(20 Oct 2026) YES, each School chooses its own check-in rules** (Gymdesk-style switches: active membership, signed waiver, block overdue payers, booking required, time window before/after start, other branches, etc.). Defaults should match today's ULTM8 behaviour, so nothing changes for a School that never touches them.
 53. 🟠 **AT7 Open gym:** check in without a scheduled class (open mat / free training)?
     - Answer:
 54. 🟢 **IA1 Import attendance** from another system (CSV), for schools moving to ULTM8?
