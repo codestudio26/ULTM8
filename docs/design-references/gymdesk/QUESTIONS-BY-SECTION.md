@@ -24,6 +24,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 4. 🔴 **D6 Trial banner:** do Schools get a free trial of ULTM8 itself? (Platform-billing rule.)
    - Answer: **Build the ability, use it only if needed** (20 Oct 2026). A Platform Admin switch to give a School a free trial of ULTM8.
      - Follow-ups: default trial length? Card required up front? At the end of the trial, does the School drop into the existing "degraded portal" state until it subscribes?
+     - **Follow-up answered (20 Oct 2026):** trial length is **configurable**. It's managed **only by ULTM8 HQ (Platform Admin)**, never by School owners. **No card up front.**
 5. 🟢 **D7 Chat bubble:** do we want in-app support chat? Any preferred vendor?
    - Answer:
 
@@ -31,6 +32,8 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 6. 🔴 **M6 Visitors:** what is a Visitor in ULTM8, e.g. a lead with no login and no membership? Can a Visitor only take a Trial? How do they become a Student?
    - Answer: (20 Oct 2026) A Visitor is **not a member of the School but is allowed to use the facilities**. A Visitor **can buy a membership**, and their **visitor period expires**.
      - Follow-ups: how long is the visitor period, and does each School set it? Can a Visitor book classes and check in? Must they sign the waiver first (likely yes, for liability)? Child visitors need a Guardian? How is this different from ULTM8's existing **Trial Membership** (max 30 days, Decision 54/64)? Is a Visitor simply someone on a Trial, or a separate status?
+     - **Follow-up answered (20 Oct 2026):** the **School sets the visitor period**. A Visitor **follows the same process as members** (waiver, booking, check-in). **A Visitor is essentially ULTM8's Trial Membership.**
+     - ⚠️ Check: Trial Membership has a platform cap (max 30 days per trial, 30 days in any rolling 12 months; SKILL.md §6, Decisions 54/64). If "Visitor = Trial", a School's visitor period can't exceed 30 days. Confirm that's OK, or a Visitor needs its own status. *(Ask with the next Members batch.)*
 7. 🟠 **M7 Personal check-in code:** a personal PIN as well as QR? Chosen by the member, or generated? 4 or 6 digits? Unique per School or per Branch? Can a Guardian use a child's code?
    - Answer:
 8. 🟢 **M8/M11 Extra contacts:** how many secondary phones/emails? Are emergency contacts separate from Guardians?
@@ -43,6 +46,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
     - Answer: **Yes** (20 Oct 2026). The password is **temporary**, and the member must change it at first login.
      - Note: ULTM8 already has this mechanism. Login is a 6-digit passcode (Decision 72), and `User.mustChangePasscode` forces a change after someone else set it (used today by Instructor "Add Manually"). Extending it to Students is small.
      - Follow-ups: does staff type the temporary passcode, or does the system generate it? For children: is it set on the Guardian's account instead?
+     - Follow-up (staff types vs system generates): reply was "yes", which doesn't pick one. *Re-ask with the next Members batch.*
 12. 🟠 **M15 Import from spreadsheet:** which columns? What happens with duplicates? For children, who gives consent?
     - Answer:
 
@@ -50,12 +54,14 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 13. 🔴 **P2/P12 Family plans and discounts:** is a family the Guardian plus their children only, or any group of adults too? Who pays? Discount as % or fixed amount, set per School?
     - Answer: (20 Oct 2026) **Anyone the School owner chooses**, not only Guardian + children. **Look deeper at how Gymdesk does family accounts** before deciding the details.
      - Needed: screenshots of Gymdesk's **"Manage family account"** screen (member profile, left panel) and of a family membership being set up.
+     - **Deferred (20 Oct 2026):** ask again later, together with Gymdesk's "Manage family account" screen.
 14. 🟠 **P10 Sign-up fee:** fixed amount per plan? Refundable?
     - Answer:
 15. 🔴 **P11 Late fees:** fixed or %? Charged automatically by card, or only recorded? Apply to cash/bank-transfer payers? Default grace period?
     - Answer: (20 Oct 2026) **Fixed amount or %.** **Applies to every payment method.** **Automatic charging: not decided yet**, needs looking into.
      - Note: a cash or bank-transfer payer can't be charged automatically, so their late fee would be added to their **member balance** (Q28) and paid at the desk.
      - Needed: screenshots of Gymdesk's late-fee settings and of an overdue member's billing.
+     - **Agreed (20 Oct 2026):** cash/bank-transfer late fees go onto the member balance (Q28).
 16. 🟠 **P9/P13/P14:** "start on first check-in", fixed-date terms (e.g. a 6-week camp), and "at end of term, switch to another plan": do you want all three?
     - Answer:
 17. 🟢 **P17 Income categories / accounting codes:** which accounting software do Schools use (Xero, QuickBooks, none)?
@@ -105,6 +111,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 ## A7. Settings: Billing
 34. 🔴 **B5 Card-fee surcharge (reworded 20 Oct 2026).** When a member pays by card, Stripe charges the School a fee (roughly 1.5–3%). Gymdesk has a setting (**Billing Settings → Processing Fees**, seen in the recording) that **adds that fee on top of the member's payment**, so the member pays it instead of the School. **In the UK and the EU this is illegal for consumer card payments.** In other countries (e.g. the US, Brazil) it's generally allowed, with conditions. **Do you want this setting, switched on only for Schools in countries where it's legal?**
     - Answer:
+     - **Answer (20 Oct 2026): YES**, the card-fee surcharge setting is available **only to Schools in countries where it's legal**. Backend needs a country allow-list (legal review before launch).
 35. 🟠 **B6 Tax / VAT:** handled by ULTM8, by Stripe Tax, or out of scope?
     - Answer:
 36. 🟢 **B2 Failed payments:** let each School choose how many days before retrying?
