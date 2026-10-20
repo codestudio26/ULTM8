@@ -196,11 +196,14 @@ Five nav + info-panel designs were compared in the vision prototype (A = the Gym
 
 The vision canvas now holds only the six approved screens and the colour reference. The exploration boards (5 nav ideas, shells A–E, the colour versions and the letter-spacing comparison) have been removed; earlier versions of the artifact still contain them. Every new page follows these rules:
 
-- **Left:** the labelled 200px slate menu, with the active item at #5d7081 and a 4px #def2e2 marker.
+- **Left:** the labelled 200px menu. The product owner chose its colours on 20 Oct 2026 from 6 colours × plain/coloured icons; plain icons were chosen in both modes:
+  - **Light mode: white (F1).** The menu is white with a #e1e3e5 right border and #383d42 text. The selected item has a pale-green (#def2e2) fill and a 4px success-green (#1f7a4d) bar.
+  - **Dark mode: Pine (B1).** The menu is #1f3d33 with #cfe3d6 text. The selected item is #2c5446 with white text and a 4px pale-green bar.
+  - Both modes are set as the `--nav-*` colour settings in `packages/ui/src/tokens.css` and DESIGN.md. These replace the slate rail and panel settings (`--nav-rail`, `--nav-panel`, `--nav-panel-band`, `--nav-panel-width`), which nothing used.
 - **Page header:** white. The title is 30px light with 0.02em letter spacing, and any subtitle is grey (#969ea6). A "‹ Parent" link sits above the title where the page has a parent. Section tabs sit under the title, with a 3px slate underline on the selected tab.
 - **Body:** white cards on #f1f2f3 with light card headers. Primary buttons are pale green (#def2e2) with #50575e text. No bold: 500 is the strongest weight.
 - **Right:** a 340px white inspector on every page. Its first line is a 13px grey uppercase label, and it holds the page's context (the selected record, a summary, a preview or alerts).
-- **Dark surfaces** are only for the menu and for screens the student looks at, such as the check-in kiosk or a preview of the student app.
+- **Dark surfaces** (in light mode) are only for screens the student looks at, such as the check-in kiosk or a preview of the student app.
 - **Check-in screen colour (product owner, 20 Oct 2026): Slate 500** (`--color-accent-500` #5d7081), chosen over Slate 800 (#2f3941), which was too dark. It was compared with Slate 200, Slate 100 and pale green.
   - Text is white, with the subtitle in #edf0f2.
   - The code box and number keys use Slate 600 (#4d5d6b) with white text.

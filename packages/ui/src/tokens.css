@@ -102,17 +102,21 @@
   --fill-action-hover: var(--fill-success-hover);
   --on-action: var(--color-neutral-600);
 
-  /* Redesign navigation (product owner 20 Oct 2026). Three slate shades mark the
-     three navigation areas, darkest to lightest: main rail, detail side panel
-     (e.g. the student profile panel, ~420px wide), and its "Back to…" band.
-     The selected rail item gets a 4px pale-green bar on its left edge. */
-  --nav-rail: var(--color-accent-800);
-  --nav-panel: var(--color-accent-700);
-  --nav-panel-band: var(--color-accent-500);
-  --nav-active-bg: var(--color-accent-500);
-  --nav-active-marker: var(--fill-action);
+  /* Redesign navigation: design D, product owner 20 Oct 2026. A 200px labelled
+     side menu plus a 340px white right-side inspector on every page. Light mode
+     uses a white menu (option F1); the selected item gets a pale-green fill and
+     a 4px success-green bar on its left edge. Dark mode uses Pine (option B1),
+     overridden in the two dark blocks below. */
+  --nav-bg: #ffffff;
+  --nav-border: var(--color-neutral-200);
+  --nav-text: var(--color-neutral-700);
+  --nav-text-muted: var(--color-neutral-500);
+  --nav-active-bg: var(--fill-action);
+  --nav-active-text: var(--color-accent-900);
+  --nav-active-marker: var(--color-success);
   --nav-active-marker-width: 4px;
-  --nav-panel-width: 420px;
+  --nav-width: 200px;
+  --inspector-width: 340px;
 
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
@@ -204,6 +208,15 @@
     --on-accent: var(--color-neutral-900);
     --text-accent: var(--color-accent-300);
 
+    /* Redesign navigation, dark mode: Pine (option B1) */
+    --nav-bg: #1f3d33;
+    --nav-border: #2c5446;
+    --nav-text: #cfe3d6;
+    --nav-text-muted: #9fbfac;
+    --nav-active-bg: #2c5446;
+    --nav-active-text: #ffffff;
+    --nav-active-marker: var(--fill-action);
+
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.45);
@@ -227,6 +240,15 @@
   --fill-accent-hover: var(--color-accent-300);
   --on-accent: var(--color-neutral-900);
   --text-accent: var(--color-accent-300);
+
+  /* Redesign navigation, dark mode: Pine (option B1) */
+  --nav-bg: #1f3d33;
+  --nav-border: #2c5446;
+  --nav-text: #cfe3d6;
+  --nav-text-muted: #9fbfac;
+  --nav-active-bg: #2c5446;
+  --nav-active-text: #ffffff;
+  --nav-active-marker: var(--fill-action);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);

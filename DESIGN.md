@@ -108,6 +108,17 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
   --fill-action-hover: var(--fill-success-hover);
   --on-action: var(--color-neutral-600);     /* #50575e soft grey, 6.3:1 on the fill; no outline */
 
+  /* Side menu, design D — 20 Oct 2026. Light = white menu (option F1); dark mode = Pine (option B1) */
+  --nav-bg: #ffffff;                         /* dark: #1f3d33 Pine */
+  --nav-border: var(--color-neutral-200);    /* dark: #2c5446 */
+  --nav-text: var(--color-neutral-700);      /* dark: #cfe3d6 */
+  --nav-text-muted: var(--color-neutral-500);/* dark: #9fbfac */
+  --nav-active-bg: var(--fill-action);       /* #def2e2; dark: #2c5446 */
+  --nav-active-text: var(--color-accent-900);/* dark: #ffffff */
+  --nav-active-marker: var(--color-success); /* 4px bar on the left; dark: #def2e2 */
+  --nav-width: 200px;
+  --inspector-width: 340px;                  /* right-side white panel on every page */
+
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
   --bg-danger: color-mix(in srgb, var(--color-danger) 12%, white);
