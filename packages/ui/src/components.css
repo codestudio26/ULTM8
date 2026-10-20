@@ -1077,6 +1077,9 @@
   display: flex;
   gap: var(--space-10);
   align-items: flex-start;
+  /* Soft fields are grey (--form-field-bg); the form always sits on white so
+     they never blend into a grey page background. */
+  background: var(--surface-1);
 }
 .ultm8-chapter-form__body {
   flex: 1;

@@ -117,6 +117,10 @@
   --nav-active-marker-width: 4px;
   --nav-width: 248px;
   --inspector-width: 340px;
+  /* Switch knob: white with an outline, so it stays visible on the pale-green
+     "on" track (--fill-action) */
+  --switch-knob: #ffffff;
+  --switch-knob-ring: 0 0 0 1px rgba(21, 23, 25, 0.18), 0 1px 3px rgba(0, 0, 0, 0.3);
 
   /* Redesign form pattern "F" — numbered chapters + live preview (product owner,
      20 Oct 2026). The feel and style for every form across the site; component
@@ -245,10 +249,13 @@
 
     /* Redesign form pattern "F", dark mode */
     --form-field-bg: var(--color-neutral-700);
-    --form-field-bg-focus: var(--color-neutral-800);
+    /* not --surface-1, so a focused field never matches the card behind it */
+    --form-field-bg-focus: var(--surface-2);
     --form-field-focus-ring: var(--color-accent-300);
     --form-label-color: var(--color-neutral-400);
     --form-chapter-number-color: var(--color-neutral-600);
+    /* the light-mode green is too dark on a dark page */
+    --form-chapter-number-done: color-mix(in srgb, var(--color-success) 60%, white);
     --form-pill-track: var(--color-neutral-700);
     --form-pill-on-bg: var(--color-accent-300);
     --form-pill-on-text: var(--color-neutral-900);
@@ -290,10 +297,13 @@
 
   /* Redesign form pattern "F", dark mode */
   --form-field-bg: var(--color-neutral-700);
-  --form-field-bg-focus: var(--color-neutral-800);
+  /* not --surface-1, so a focused field never matches the card behind it */
+  --form-field-bg-focus: var(--surface-2);
   --form-field-focus-ring: var(--color-accent-300);
   --form-label-color: var(--color-neutral-400);
   --form-chapter-number-color: var(--color-neutral-600);
+  /* the light-mode green is too dark on a dark page */
+  --form-chapter-number-done: color-mix(in srgb, var(--color-success) 60%, white);
   --form-pill-track: var(--color-neutral-700);
   --form-pill-on-bg: var(--color-accent-300);
   --form-pill-on-text: var(--color-neutral-900);

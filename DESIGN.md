@@ -262,6 +262,19 @@ The product owner chose this on 20 Oct 2026 as the feel and style for every form
 
 **Settings:** `--form-*` in `packages/ui/src/tokens.css`, with light and dark values.
 
+### Never the same colour twice (product owner, 20 Oct 2026)
+
+A selected, active, focused or "on" state must never use the same colour as the surface behind it, or as a control sitting on it. Otherwise the control disappears.
+
+The cases found so far, with their fixes:
+- **Round icon button in a selected list row:** the button turns white with an outline, because the row highlight is the same grey.
+- **Status badge on a selected row:** it gets a 1px outline in a darker shade of its own colour.
+- **Switch knob on the pale-green "on" track:** the knob is outlined (`--switch-knob-ring`).
+- **Soft form fields:** these are grey, so a form always sits on white (`.ultm8-chapter-form`).
+- **A focused field in dark mode:** it uses `--surface-2`, not the card colour.
+
+When a new state colour is added, check it against every surface it can appear on, in light and dark mode.
+
 ## Motion
 
 ```css
