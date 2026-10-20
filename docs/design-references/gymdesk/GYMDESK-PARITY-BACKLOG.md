@@ -359,7 +359,7 @@ in code. Every toggle below would be a new School-level setting (one settings en
 | MS3 | Visitors can access the portal | ❌ No visitors (Q6) |
 | MS4 | Show payments / membership cards in member accounts | 🟡 Fixed |
 | MS5 | Members can remove their payment method | ❓ |
-| MS6 | **Members can update their own rank** | ⚠️ Conflicts with grading: students can't self-promote. Instructors pick their own belt (Decision 188). Grading follows Gus's rules (Decision 124) |
+| MS6 | **Members can update their own rank** | **Decided 20 Oct 2026: no, coaches only.** New: students can *request a belt correction* for a coach to approve (MS6a) |
 | MS7 | Show promotion criteria to members | 🟡 Guardians can see progress/skills (Decision 132) |
 | MS8 | Members can renew / add memberships / **request cancellation / cancel** | 🟡 Purchase ✅ (Checkout); self-cancel ❓ |
 | MS9 | Members/visitors can use **manual payments** (cash/bank) | 🟡 Cash/Bank Transfer transactions exist (staff-recorded) |

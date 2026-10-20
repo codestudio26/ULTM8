@@ -34,8 +34,10 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
      - Follow-ups: how long is the visitor period, and does each School set it? Can a Visitor book classes and check in? Must they sign the waiver first (likely yes, for liability)? Child visitors need a Guardian? How is this different from ULTM8's existing **Trial Membership** (max 30 days, Decision 54/64)? Is a Visitor simply someone on a Trial, or a separate status?
      - **Follow-up answered (20 Oct 2026):** the **School sets the visitor period**. A Visitor **follows the same process as members** (waiver, booking, check-in). **A Visitor is essentially ULTM8's Trial Membership.**
      - ⚠️ Check: Trial Membership has a platform cap (max 30 days per trial, 30 days in any rolling 12 months; SKILL.md §6, Decisions 54/64). If "Visitor = Trial", a School's visitor period can't exceed 30 days. Confirm that's OK, or a Visitor needs its own status. *(Ask with the next Members batch.)*
+     - **Decided (20 Oct 2026): Visitors get their OWN status, separate from Trial Membership, with no platform limit.** The visitor period is set by the **account owner and staff with permission**. (Trial Membership's 30-day caps stay as they are.)
 7. 🟠 **M7 Personal check-in code:** a personal PIN as well as QR? Chosen by the member, or generated? 4 or 6 digits? Unique per School or per Branch? Can a Guardian use a child's code?
    - Answer:
+     - **Answer (20 Oct 2026): YES**, a personal check-in code **as a fallback** when the QR doesn't work or the member has no phone.
 8. 🟢 **M8/M11 Extra contacts:** how many secondary phones/emails? Are emergency contacts separate from Guardians?
    - Answer:
 9. 🟢 **M9 Join date:** may staff set or back-date a member's join date?
@@ -47,6 +49,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
      - Note: ULTM8 already has this mechanism. Login is a 6-digit passcode (Decision 72), and `User.mustChangePasscode` forces a change after someone else set it (used today by Instructor "Add Manually"). Extending it to Students is small.
      - Follow-ups: does staff type the temporary passcode, or does the system generate it? For children: is it set on the Guardian's account instead?
      - Follow-up (staff types vs system generates): reply was "yes", which doesn't pick one. *Re-ask with the next Members batch.*
+     - **Decided (20 Oct 2026): ULTM8 generates the temporary passcode** (no extra cost; the server already generates temporary passcodes for Instructor "Add Manually").
 12. 🟠 **M15 Import from spreadsheet:** which columns? What happens with duplicates? For children, who gives consent?
     - Answer:
 
@@ -122,6 +125,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
     - Answer:
 38. 🔴 **MS6 Students updating their own rank:** Gymdesk lets a School allow it. In ULTM8 only coaches promote students (Gus's grading rules). Keep it that way?
     - Answer:
+     - **Decided (20 Oct 2026): coaches only.** New item: **students can REQUEST a belt correction** if their recorded belt is wrong, and a coach approves or rejects it. Check against the grading decisions (Gus's rules, Decision 124+) before building.
 39. 🔴 **DS2 Minor age:** Gymdesk lets each School set the age (default 18). Fixed at 18, set per country, or per School?
     - Answer:
 40. 🟠 **DS3 Both signatures:** option to require the child's signature as well as the Guardian's?
@@ -144,11 +148,14 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 
 48. 🟠 **PR10 Note tasks:** Gymdesk can turn a note into a task with a due date. Want staff tasks? Who gets reminded? And may a note be **shown to the member** (portal/check-in)?
     - Answer: **(20 Oct 2026) No tasks for now.** Still open: may a note be shown to the member?
+     - **Answer (20 Oct 2026): YES**, staff can mark a note to be shown to the member (in the app / at check-in). Tasks stay out for now.
 49. 🟠 **PR11/PR12 Sales tax and discounts on staff-created charges:** add tax per charge (VAT/sales tax)? Discount as % or fixed? Email an invoice?
     - Answer: **(20 Oct 2026) Tax is fixed per country**, not set per charge. **Discounts: % or fixed amount.** Still open: email an invoice?
+     - Email-invoice part: reworded and re-asked 20 Oct 2026.
 50. 🟢 **PR5 Printable membership card:** want printable cards (photo + barcode/QR) for check-in at the desk?
     - Answer: **(20 Oct 2026) QR code only** (no barcode option). Still open: a printable card carrying the QR, or just the QR in the app? *(Product owner note, 20 Oct 2026: in Gymdesk's settings the School chooses the card's code type: barcode or QR. Still to confirm: do we want printable cards in ULTM8, with the same barcode/QR choice?)*
 
+     - **Decided (20 Oct 2026): no printable card. A DIGITAL membership card in the app** (photo, name, QR, personal check-in code, current membership), if a card is needed at all.
 51. 🟢 **A8 Hours trained:** track hours as well as number of classes? (Some schools grade on mat hours.) Gus's grading rules decide whether it matters for promotion.
     - Answer:
 
