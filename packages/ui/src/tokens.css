@@ -126,6 +126,9 @@
   /* Settings-row label (see --text-setting-label) — redesign vision, 20 Oct 2026 */
   --font-size-setting-label: 15px;
   --font-weight-setting-label: var(--font-weight-regular);
+  /* Redesign titles and row titles (card titles, settings rows, list-row names):
+     slight extra letter spacing, Gymdesk-style — product owner 20 Oct 2026. */
+  --letter-spacing-title: 0.06em;
 
   /* ---- Spacing (DESIGN.md "Layout & spacing") ---- */
   --space-1: 0.25rem; /* 4px */

@@ -20,6 +20,7 @@ Figtree, self-hosted as a single variable font (`@fontsource-variable/figtree`, 
 | `--font-size-setting-label` | 15px, regular weight | Label of a toggle/select row on a Settings page (redesign vision, 20 Oct 2026); colour `--text-setting-label` (`--color-neutral-500` light, `--color-neutral-400` dark). The value inside that row's `<select>`/`<input>` uses the same 15px Figtree and the same colour, `--text-setting-value` (= `--text-setting-label`) |
 | `--font-size-body` | 16px | Default body copy — never go smaller than this for body text |
 | `--font-size-input` | 16px | Any `<input>`/`<select>`/`<textarea>` — below 16px triggers iOS auto-zoom on focus |
+| `--letter-spacing-title` | 0.06em | Redesign card titles, Settings row titles and list-row names (product owner, 20 Oct 2026). Body text, descriptions and form values stay at normal spacing |
 | `--font-size-field` | 15px desktop / 16px under 768px | Redesign form fields (product owner, 20 Oct 2026): Figtree regular; typed value in `--text-field-value` (= settings-label grey `#6c767f`), hint text in `--text-placeholder` (`#969ea6`, ~2.6:1, accepted by the product owner) |
 | `--font-size-heading-sm` | `clamp(1.125rem, 1rem + 0.5vw, 1.25rem)` | Card/section titles |
 | `--font-size-heading-md` | `clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem)` | Screen titles |
