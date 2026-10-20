@@ -46,6 +46,8 @@
   /* Settings-row label (toggle/select rows on Settings pages) — redesign vision,
      product owner 20 Oct 2026. Gymdesk-style soft grey; 4.6:1 on white. */
   --text-setting-label: var(--color-neutral-500);
+  /* Value text inside a Settings-row <select>/<input> — same size as the label */
+  --text-setting-value: var(--color-neutral-600);
   --border: var(--color-neutral-200);
   --border-strong: var(--color-neutral-300);
 
@@ -77,6 +79,14 @@
   --fill-success: #def2e2;
   --fill-success-hover: color-mix(in srgb, var(--color-success) 20%, white);
   --on-success: var(--color-neutral-900);
+
+  /* Primary action buttons (Save, Add) and "on" switches — redesign vision,
+     product owner 20 Oct 2026: pale green fill, soft grey text (#50575e on
+     #def2e2 = 6.3:1), no outline. Mode-stable like --fill-success above (no dark
+     override), so --on-action is a literal ramp ref, not --text-secondary. */
+  --fill-action: var(--fill-success);
+  --fill-action-hover: var(--fill-success-hover);
+  --on-action: var(--color-neutral-600);
 
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
@@ -140,6 +150,7 @@
     --text-secondary: var(--color-neutral-400);
     --text-muted: var(--color-neutral-500);
     --text-setting-label: var(--color-neutral-400);
+    --text-setting-value: var(--color-neutral-300);
     --border: var(--color-neutral-700);
     --border-strong: var(--color-neutral-600);
 
@@ -161,6 +172,7 @@
   --text-secondary: var(--color-neutral-400);
   --text-muted: var(--color-neutral-500);
   --text-setting-label: var(--color-neutral-400);
+  --text-setting-value: var(--color-neutral-300);
   --border: var(--color-neutral-700);
   --border-strong: var(--color-neutral-600);
 

@@ -17,7 +17,7 @@ Figtree, self-hosted as a single variable font (`@fontsource-variable/figtree`, 
 |---|---|---|
 | `--font-size-caption` | 13px | Metadata, timestamps, helper text |
 | `--font-size-footnote` | 14px | Secondary labels |
-| `--font-size-setting-label` | 15px, regular weight | Label of a toggle/select row on a Settings page (redesign vision, 20 Oct 2026); colour `--text-setting-label` (`--color-neutral-500` light, `--color-neutral-400` dark) |
+| `--font-size-setting-label` | 15px, regular weight | Label of a toggle/select row on a Settings page (redesign vision, 20 Oct 2026); colour `--text-setting-label` (`--color-neutral-500` light, `--color-neutral-400` dark). The value inside that row's `<select>`/`<input>` uses the same 15px Figtree in `--text-setting-value` (`--color-neutral-600` light, `--color-neutral-300` dark) |
 | `--font-size-body` | 16px | Default body copy — never go smaller than this for body text |
 | `--font-size-input` | 16px | Any `<input>`/`<select>`/`<textarea>` — below 16px triggers iOS auto-zoom on focus |
 | `--font-size-heading-sm` | `clamp(1.125rem, 1rem + 0.5vw, 1.25rem)` | Card/section titles |
@@ -97,6 +97,11 @@ Neutral-dominant, one accent. Most of the UI is grayscale; slate blue appears on
   --fill-success: #def2e2;
   --fill-success-hover: color-mix(in srgb, var(--color-success) 20%, white);
   --on-success: var(--color-neutral-900); /* literal ramp ref, not --text-primary — see tokens.css comment for why */
+
+  /* Primary action buttons (Save, Add) and "on" switches — redesign vision, 20 Oct 2026 */
+  --fill-action: var(--fill-success);        /* #def2e2 pale green */
+  --fill-action-hover: var(--fill-success-hover);
+  --on-action: var(--color-neutral-600);     /* #50575e soft grey, 6.3:1 on the fill; no outline */
 
   --bg-warning: color-mix(in srgb, var(--color-warning) 15%, white);
   --text-warning: #6b4a10;
