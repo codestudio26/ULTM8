@@ -1,7 +1,7 @@
 # Gymdesk parity — feature comparison and backend backlog
 
 **Status:** living document, started 19 Oct 2026, on the redesign branch only.
-**Companion to:** `DESIGN-BRIEF.md` (layout and visual decisions) in this folder.
+**Companion to:** `DESIGN-BRIEF.md` (layout and visual decisions) and `QUESTIONS-BY-SECTION.md` (the product owner's answer sheet + capture checklist) in this folder.
 
 ## Product-owner direction (19 Oct 2026)
 
@@ -50,7 +50,8 @@ into the decision log under the next free numbers.**
 | Member profile page (all tabs) | ✅ recordings 20.08, 20.10 | §8 |
 | Members → Settings tab; Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
 | Gym → Bookings, Managers & Staff, Payroll, Programs | ❌ not yet | — |
-| Billing, Marketing, Website, Sales, Competitions, Front Desk | ❌ not yet | — |
+| Billing, Marketing, Website, Sales, Front Desk | ❌ not yet | — |
+| Competitions | ⏸ deferred (product owner, 20 Oct 2026) | — |
 | Settings → Gym, Bookings, Members, Attendance, Schedule, Marketing, Sales, Email, Integrations | ❌ not yet | — |
 
 **Needed from the product owner:** screenshots or short recordings of every ❌ row above,
@@ -236,7 +237,7 @@ inside the band.
 
 ## 8. Member profile page (recordings 20.08 + 20.10, 19 Oct 2026)
 
-Not saved as images: every frame shows a real person's address, phone and date of birth.
+Keyframes in `recordings-keyframes/` (`add-member-photo-editor`, `member-profile-*`). The member shown is dummy data the product owner created.
 
 **Layout.** A **dark left panel (about 330px)** holds: "‹ Back to members list", round photo,
 name, "Member since", Edit pill, **check-in code in large type**, four round quick-action
@@ -272,18 +273,30 @@ next rank, history), plus `/students/:id/edit` (`StudentUpdatePage`).
 | PR14 | Attendance tab: totals + **Log Attendance** modal (date, choose session, add note, Single/Bulk) | 🟡 | Roll-call check-in exists. Back-dated manual attendance with a note ❌ |
 | PR15 | Documents tab: add document / use template / **upload file** | 🟡 | Waiver signatures ✅; arbitrary file upload per member ❌ |
 | PR16 | Ranks tab: add rank (belt dropdown with stripes), date, time, "add promotion fee" | ✅/🟡 | Grading/promotion ✅ (`StudentGradingPage`). **Promotion fee** ❌ |
-| PR17 | Competitions tab (third-party: Smoothcomp integration) | ❌ | |
+| PR17 | Competitions tab (third-party: Smoothcomp integration) | ⏸ deferred | Product owner, 20 Oct 2026 |
 | PR18 | Photo crop: zoom, rotate, reposition | 🟡 | Upload exists; crop UI is frontend-only |
+
+**Answers (product owner, 20 Oct 2026):**
+- **PR13 messaging and minors: messages to a minor go to the Guardian.** Direct messages to the
+  minor are allowed **only if the Guardian has authorised it** on a **message-settings page**,
+  and the Guardian is **always copied**. To-do: new item **PR13a**, a Guardian message-settings
+  page (per-child "allow direct messages" toggle) plus always-CC delivery. Builds on the
+  Guardian consent model (SKILL.md §14, Decision 236). Note SKILL.md confirms there is
+  "no person-to-person messaging yet" (Decision 184).
+- **PR17 Competitions: not now.** Deferred; competitions get their own look later. No
+  Smoothcomp integration.
+- **PR7/PR11/PR12 staff-created charges: agreed they need their own decision** before
+  building. Still open; see `QUESTIONS-BY-SECTION.md`.
 
 **Questions:**
 - **PR6:** Tags: free text or a per-School list? Visible to the member?
 - **PR7/PR11/PR12:** May staff create ad-hoc charges and recurring payments outside a Membership Plan? This is a big payments-model change (Spec 55 payments flow), so it needs its own decision.
 - **PR10:** Who sees notes (all staff, or Owner only)? Is the member ever shown them? Retention (GDPR)?
-- **PR13:** Email only, or SMS too (vendor + cost)? For minors, does messaging go to the Guardian?
+- **PR13:** Email only, or SMS too (vendor + cost)? *(Minors: answered above.)*
 - **PR14:** May staff back-date attendance? How far? Does it consume Class Pack credits?
 - **PR15:** File types and size limits, and who can see uploaded files.
 - **PR16:** Promotion fee: charged automatically on promotion? Grading rules follow Gus's prototype (Decision 124+), so check the grading log first.
-- **PR17:** Smoothcomp is the competition platform Gymdesk integrates with. Integrate with it too, or build our own? Note the open Chrome tab "Smoothcomp + Gymdesk" in the recordings.
+- **PR17:** *Answered: deferred, 20 Oct 2026.*
 
 ## 9. Code checks
 
