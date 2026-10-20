@@ -129,6 +129,10 @@
   /* Redesign titles and row titles (card titles, settings rows, list-row names):
      slight extra letter spacing, Gymdesk-style — product owner 20 Oct 2026. */
   --letter-spacing-title: 0.06em;
+  /* Redesign: NO bold text. The heaviest weight anywhere (titles, names, buttons,
+     numbers) is medium 500; everything else regular 400 — product owner 20 Oct 2026.
+     Use this instead of --font-weight-semibold in redesigned screens. */
+  --font-weight-strong: var(--font-weight-medium);
 
   /* ---- Spacing (DESIGN.md "Layout & spacing") ---- */
   --space-1: 0.25rem; /* 4px */
