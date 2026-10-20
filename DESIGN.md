@@ -319,13 +319,14 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
 - **Labels:** 12px uppercase, 0.06em letter spacing, grey. Keep them short.
 - **"Soon" goes under the number,** never inside the label, so the label stays one line.
 
-### Avatars: people vs classes
+### Avatars: one shape, the circle (product owner, 20 Oct 2026)
 
-- **People** (students, coaches, staff) have **round** avatars: their photo, or their initials on a soft grey circle.
-- **Classes** have **rounded-square** avatars: 40px on a computer and 44px on a phone, with 10–12px corners.
-  - They show the class's own **banner image** (`Class.bannerUrl`, uploaded on the class form), cropped to a square.
-  - With no banner, a soft tile shows the class initials (for example "AG" for Advanced (Gi)).
-- **The different shapes tell people and classes apart at a glance.** Use class avatars wherever a class appears in a list: attendance history, today's classes, bookings and the timetable.
+- **Every avatar is a circle**: people and classes alike. Two shapes side by side looks unfinished, so square or rounded-square avatars are never used.
+- **People** (students, coaches, staff): their photo, or their initials on a soft grey circle.
+- **Classes**: 40px on a computer, 44px on a phone.
+  - They show the class's own **banner image** (`Class.bannerUrl`, uploaded on the class form), cropped to a circle.
+  - With no banner, a soft-coloured circle shows the class initials (for example "AG" for Advanced (Gi)). The colour, not the shape, tells one class from another.
+- Use class avatars wherever a class appears in a list: attendance history, today's classes, bookings and the timetable.
 - **Order in every class row: avatar → class name (with coach/branch underneath) → time or date → the rest.** For example, the booked count or check-in method.
   - On narrow cards, secondary numbers go under the time: "Done · 18/24 booked".
   - On a computer, the columns in a class row have capped widths, so they sit close together. Spare width goes to the end of the row, never between the class name and the date.
