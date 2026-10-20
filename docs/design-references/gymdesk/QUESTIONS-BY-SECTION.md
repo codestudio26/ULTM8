@@ -35,6 +35,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
      - **Follow-up answered (20 Oct 2026):** the **School sets the visitor period**. A Visitor **follows the same process as members** (waiver, booking, check-in). **A Visitor is essentially ULTM8's Trial Membership.**
      - ⚠️ Check: Trial Membership has a platform cap (max 30 days per trial, 30 days in any rolling 12 months; SKILL.md §6, Decisions 54/64). If "Visitor = Trial", a School's visitor period can't exceed 30 days. Confirm that's OK, or a Visitor needs its own status. *(Ask with the next Members batch.)*
      - **Decided (20 Oct 2026): Visitors get their OWN status, separate from Trial Membership, with no platform limit.** The visitor period is set by the **account owner and staff with permission**. (Trial Membership's 30-day caps stay as they are.)
+     - Confirmed (20 Oct 2026): the visitor period can be **any length the School sets** (e.g. 1 day, 1 week).
 7. 🟠 **M7 Personal check-in code:** a personal PIN as well as QR? Chosen by the member, or generated? 4 or 6 digits? Unique per School or per Branch? Can a Guardian use a child's code?
    - Answer:
      - **Answer (20 Oct 2026): YES**, a personal check-in code **as a fallback** when the QR doesn't work or the member has no phone.
@@ -89,6 +90,7 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
     - Answer:
 25. 🔴 **G3 Freeze memberships:** allow freezing (pause billing and access)? Maximum length? Fee? Who can request it (a Guardian for a child)? (Today a Membership can only be Active or Expired, Decision 6.)
     - Answer:
+     - **Answer (20 Oct 2026): YES, freezing is allowed. The maximum freeze length is set by each School.** ⚠️ Changes Decision 6 (Membership is Active/Expired only), so it needs its own decision entry at merge. Still open: fee? who can request (Guardian for a child)? does billing pause?
 26. 🔴 **L3 Print / Export members:** who may export? Which columns? Should children's details be left out?
     - Answer: (20 Oct 2026) **Export covers all members** (children not excluded). Gymdesk's export (screenshot received): Settings → Members → Import/Export/Merge → **Export member data (CSV)**, filter *active and archived / active only / members only / visitors only*.
      - Follow-up: **which staff roles** may export (Owner only, or Branch Staff too)?
@@ -149,13 +151,16 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 48. 🟠 **PR10 Note tasks:** Gymdesk can turn a note into a task with a due date. Want staff tasks? Who gets reminded? And may a note be **shown to the member** (portal/check-in)?
     - Answer: **(20 Oct 2026) No tasks for now.** Still open: may a note be shown to the member?
      - **Answer (20 Oct 2026): YES**, staff can mark a note to be shown to the member (in the app / at check-in). Tasks stay out for now.
+     - Detail (20 Oct 2026): a **tick box** on the note, "show to member".
 49. 🟠 **PR11/PR12 Sales tax and discounts on staff-created charges:** add tax per charge (VAT/sales tax)? Discount as % or fixed? Email an invoice?
     - Answer: **(20 Oct 2026) Tax is fixed per country**, not set per charge. **Discounts: % or fixed amount.** Still open: email an invoice?
      - Email-invoice part: reworded and re-asked 20 Oct 2026.
+     - **Answer (20 Oct 2026): the invoice/receipt appears in the member's account** (in the app). No email required.
 50. 🟢 **PR5 Printable membership card:** want printable cards (photo + barcode/QR) for check-in at the desk?
     - Answer: **(20 Oct 2026) QR code only** (no barcode option). Still open: a printable card carrying the QR, or just the QR in the app? *(Product owner note, 20 Oct 2026: in Gymdesk's settings the School chooses the card's code type: barcode or QR. Still to confirm: do we want printable cards in ULTM8, with the same barcode/QR choice?)*
 
      - **Decided (20 Oct 2026): no printable card. A DIGITAL membership card in the app** (photo, name, QR, personal check-in code, current membership), if a card is needed at all.
+     - **Updated (20 Oct 2026): BOTH.** A digital card in the app *and* a printable card, each with the member's QR. Replaces the earlier "no printable card".
 51. 🟢 **A8 Hours trained:** track hours as well as number of classes? (Some schools grade on mat hours.) Gus's grading rules decide whether it matters for promotion.
     - Answer:
 
