@@ -326,6 +326,8 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
   - They show the class's own **banner image** (`Class.bannerUrl`, uploaded on the class form), cropped to a square.
   - With no banner, a soft tile shows the class initials (for example "AG" for Advanced (Gi)).
 - **The different shapes tell people and classes apart at a glance.** Use class avatars wherever a class appears in a list: attendance history, today's classes, bookings and the timetable.
+- **Order in every class row: avatar → class name (with coach/branch underneath) → time or date → the rest.** For example, the booked count or check-in method.
+  - On narrow cards, secondary numbers go under the time: "Done · 18/24 booked".
 
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
