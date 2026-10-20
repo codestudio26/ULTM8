@@ -149,6 +149,16 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 50. 🟢 **PR5 Printable membership card:** want printable cards (photo + barcode/QR) for check-in at the desk?
     - Answer:
 
+51. 🟢 **A8 Hours trained:** track hours as well as number of classes? (Some schools grade on mat hours.) Gus's grading rules decide whether it matters for promotion.
+    - Answer:
+
+52. 🟠 **Check-in rules as School settings:** Gymdesk lets each School choose (require active membership, require waiver, block overdue payers, require booking, time window before/after class start, check in at other branches). Should ULTM8 schools choose too, or keep one fixed rule for everyone? (I'll first check exactly what ULTM8 does today.)
+    - Answer:
+53. 🟠 **AT7 Open gym:** check in without a scheduled class (open mat / free training)?
+    - Answer:
+54. 🟢 **IA1 Import attendance** from another system (CSV), for schools moving to ULTM8?
+    - Answer:
+
 ### Already answered (summary)
 - **Q4, Q6, Q11, Q13, Q15, Q26, Q28:** answered 20 Oct 2026, inline above, some with follow-ups.
 - **Competitions (PR17):** deferred. No Smoothcomp integration for now. *20 Oct 2026*
@@ -163,12 +173,11 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 menu.** A short recording is best for forms that change as you pick options. Dummy data is fine.
 
 ## B1. Members → Attendance inner tabs
-- [ ] Check-ins: the full history list and its filters
-- [ ] Promotions: how promotions show up here
-- [ ] Members: attendance per member
+- [x] Check-ins list, Promotions, Members, Log Attendance modal (received 20 Oct 2026)
+- [ ] Check-ins: the **Filter** menu opened
 - [ ] Sessions: list, and opening one session
 - [ ] Multiple Check-in: checking several people in at once
-- [ ] Attendance → Settings
+- [x] Attendance → Settings (received 20 Oct 2026)
 
 ## B2. Members → Settings tab: mostly done (20 Oct 2026)
 - [x] Rows, Member Portal, Notifications, Member list, Membership, Documents, Sign-up Forms

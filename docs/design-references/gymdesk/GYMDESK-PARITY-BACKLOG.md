@@ -189,6 +189,43 @@ inside the band.
 | A3 | Attendance chart: check-ins by day/week/month, date range | ❌ | |
 | A4 | Sub-tab: Promotions | 🟡 | Grading/promotion events exist (Grading Board). Linking them to attendance (e.g. "classes since last promotion") to verify |
 | A5 | Sub-tab: Multiple Check-in (bulk) | ✅ | Roll call checks a whole class in |
+| A6 | Sub-tab **Check-ins** (`16`): School-wide check-in history with search, filter, **Print**, **Export** | ❌ | Per-class roll call only (K5). Export ties to Q26 |
+| A7 | Sub-tab **Promotions** (`15`): promotion history list + **Promote** button; empty state points to "Manage programs" (promotion settings live per programme) | ✅/🟡 | ULTM8 grading is richer (Grading Board, ladders, skills; Gus's rules). A School-wide promotion *history list* with print/export to verify |
+| A8 | Sub-tab **Members** (`14`): per member **sessions**, **hours**, last-7-days sparkline, **Check-ins** button, **+** to log attendance | ❌ | Attendance counts feed grading progress; **hours trained** ❌ (ULTM8 counts classes, not hours) |
+| A9 | **Log Attendance** modal (`13`): tabs **Session / Bulk**, date picker, choose a session on that date, **+ Add note**, "Log attendance" | 🟡 | Same as PR14 (back-dated attendance). Bulk = several members at once |
+| A10 | Sub-tabs **Sessions**, **Multiple Check-in** | ❓ | Not captured yet |
+
+### Attendance settings (chat screenshots, 20 Oct 2026)
+Rows: **Attendance Tracking · Check-in control · Check-in Waiver · Membership Cards · Import Attendance** (button).
+ULTM8 check-in behaviour is fixed in code today, so each toggle would be a new School setting. "Verify" = check
+the current check-in rules in code before deciding.
+
+| # | Gymdesk setting | ULTM8 |
+|---|---|---|
+| AT1 | Enable attendance tracking; show recent check-ins; allow check-in by **name search** | ✅ always on (QR + staff manual) |
+| AT2 | **Check-out** for exact visit-duration tracking | ❌ (ties to Q51 hours) |
+| AT3 | Allow logging out of **front-desk mode** | ❌ (no kiosk mode, K1) |
+| AT4 | Managers can add **unscheduled sessions** | ❌ (K4) |
+| AT5 | Members can **edit their own check-in code**; **code digit count** (4) | ❌ (M7) |
+| AT6 | Check-in notification sound | ❌ small, frontend |
+| AT7 | Attendance tracking **with no schedule/classes** (open gym) | ❌ ULTM8 check-in is always tied to a Class |
+| AT8 | Show **promotion progress on the check-in screen** | 🟡 Grading progress exists (Grading Board); not shown at check-in |
+| CC1 | **Require active membership** (and for roster-only members) | ❓ verify |
+| CC2 | Members check in **through their online account** (self check-in) | ✅ self-service QR / 6-digit code (Decision 235) |
+| CC3 | **Require card on file** | ❌ |
+| CC4 | **Require document signature** / **Check-in Waiver** (read and agree before check-in) | ❓ verify whether check-in is blocked without a signed waiver |
+| CC5 | **Disable check-in for overdue payments** (No / after N days…) | ❓ `paymentRestrictedAt` exists on User; verify what it blocks |
+| CC6 | **Require booking** for bookable sessions | ❓ verify (ULTM8 check-in is booking-based) |
+| CC7 | Check in at **other locations** of the same account | 🟡 Branches exist; cross-Branch check-in rule ❓ |
+| CC8 | Email staff on **failed check-ins** | ❌ |
+| CC9 | Show **leads** in check-in name search | ❌ (no leads, M6) |
+| CC10 | Allow **frozen** members to check in | ❌ (no freeze, Q25) |
+| CC11 | Check in **only before session starts**; **time window before class**; **allow check-in after class started** (Always / N min) | ❓ verify ULTM8's QR token window |
+| CC12 | **First membership payment required** to check in | ❓ (Membership is created only when payment settles, Decision 6, so likely ✅ by design) |
+| CC13 | Check in to **multiple sessions at once**; **auto check-in to first available session** | ❌ |
+| CC14 | Allow **unconfirmed website sign-ups** to check in | ❌ (SF4) |
+| MC1 | **Membership cards** settings | ❌ (PR5, Q50) |
+| IA1 | **Import attendance** (CSV) | ❌ (migration from another system) |
 
 **Questions:** A1/A3: who sees analytics (Owner only, or Branch Staff for their Branch)? Do counts include Trial/Friend Pass students?
 
