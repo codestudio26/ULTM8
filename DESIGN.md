@@ -292,6 +292,10 @@ The desktop design is made phone-friendly. The student app (`apps/student`) borr
   - Form pattern F's chapters stack, with the number and title above the fields.
 - **Settings categories** become a row of buttons you swipe sideways.
 - **Wide tables** (Students list) scroll sideways inside their card.
+- **Short history lists** (for example the attendance sessions on a profile) become **cards on a phone**:
+  - Line 1: the main item (class) on the left, the date on the right.
+  - Line 2: the secondary detail (coach) on the left, the type as a small tag on the right (QR / Code / Front desk).
+  - On a computer they stay one tidy row with aligned columns.
 - **Toolbars:** on a phone, search takes its own full-width row. The main actions follow on one row (for example Filter · + Add student · Invite), ending in a **⋯ More** button. Secondary actions (Print, Export CSV) live under More and open as a small stacked list. On a computer every action stays visible.
 - **Lists with a details panel** (for example the Students list):
   - Tapping a row **shrinks the list to that one row**, hiding the headings and footer, and shows the details directly underneath.
