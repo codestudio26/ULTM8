@@ -277,6 +277,26 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
   3. **A picture of the setting, where one helps.** For example, the check-in window is shown as a timeline (opens 17:30 → class 18:00 → closes 18:15) that moves as the times change.
 - **Wording:** explanations only describe what a setting does, as decided. Features that aren't built yet say "coming soon" and point to `docs/v1.3-backend-backlog.md`.
 
+### Phone layout (product owner, 20 Oct 2026)
+
+The desktop design is made phone-friendly. The student app (`apps/student`) borrows this style for now; its own UI/UX redesign comes later. Under 768px:
+
+- **Side menu → top bar.**
+  - It sticks to the top of the screen.
+  - It shows the School logo, then the sections as a row of rounded buttons you swipe sideways.
+  - The selected section is pale green.
+  - The search box and user row are hidden.
+- **Right-hand panel → below the page.** This covers the details, preview and "About this setting" panels. They run full width with a top border instead of a side shadow.
+- **Grids drop to one column:** cards, form fields and settings groups.
+  - Some small grids keep their shape: the 4 quick-action buttons in a panel, and the 3×4 check-in keypad.
+  - Form pattern F's chapters stack, with the number and title above the fields.
+- **Settings categories** become a row of buttons you swipe sideways.
+- **Wide tables** (Students list) scroll sideways inside their card.
+- **Form fields** use 16px text, so iOS doesn't zoom in when a field is tapped.
+- **Page side padding** is 16px.
+
+**Reference:** the vision's "Phone · …" boards show all six screens at 390px wide. The rules live in each vision screen's styles. When the real menu and panel components are built in `packages/ui`, they must follow the same rules.
+
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
 A selected, active, focused or "on" state must never use the same colour as the surface behind it, or as a control sitting on it. Otherwise the control disappears.
