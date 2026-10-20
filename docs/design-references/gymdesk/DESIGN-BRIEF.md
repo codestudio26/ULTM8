@@ -191,3 +191,13 @@ Five nav + info-panel designs were compared in the vision prototype (A = the Gym
   - Check-in: recent check-ins. The check-in screen itself stays dark, because it faces the student.
   - Settings: a preview.
 - **Visual only:** this is layout and styling. It changes no business rules, data model or API, and student tags remain a parity-backlog item.
+
+### Template rules: design D is the approved template from now on (20 Oct 2026)
+
+The vision canvas now holds only the six approved screens and the colour reference. The exploration boards (5 nav ideas, shells A–E, the colour versions and the letter-spacing comparison) have been removed; earlier versions of the artifact still contain them. Every new page follows these rules:
+
+- **Left:** the labelled 200px slate menu, with the active item at #5d7081 and a 4px #def2e2 marker.
+- **Page header:** white. The title is 30px light with 0.02em letter spacing, and any subtitle is grey (#969ea6). A "‹ Parent" link sits above the title where the page has a parent. Section tabs sit under the title, with a 3px slate underline on the selected tab.
+- **Body:** white cards on #f1f2f3 with light card headers. Primary buttons are pale green (#def2e2) with #50575e text. No bold: 500 is the strongest weight.
+- **Right:** a 340px white inspector on every page. Its first line is a 13px grey uppercase label, and it holds the page's context (the selected record, a summary, a preview or alerts).
+- **Dark surfaces** are only for the menu and for screens the student looks at, such as the check-in kiosk or a preview of the student app.
