@@ -306,6 +306,15 @@ The desktop design is made phone-friendly. The student app (`apps/student`) borr
 
 **Reference:** the vision's "Phone · …" boards show all six screens at 390px wide. The rules live in each vision screen's styles. When the real menu and panel components are built in `packages/ui`, they must follow the same rules.
 
+### Stat rows (numbers with labels)
+
+For example: Sessions / Hours / This month, or Check-ins / Students per class / Classes per student.
+
+- **Columns:** the stats sit in equal-width columns side by side, on phones as well.
+- **Numbers always line up on one line.** Each label sits in the same fixed-height slot, room for two short lines, so a label that wraps never pushes its number down.
+- **Labels:** 12px uppercase, 0.06em letter spacing, grey. Keep them short.
+- **"Soon" goes under the number,** never inside the label, so the label stays one line.
+
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
 A selected, active, focused or "on" state must never use the same colour as the surface behind it, or as a control sitting on it. Otherwise the control disappears.
