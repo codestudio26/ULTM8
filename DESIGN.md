@@ -328,6 +328,7 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
 - **The different shapes tell people and classes apart at a glance.** Use class avatars wherever a class appears in a list: attendance history, today's classes, bookings and the timetable.
 - **Order in every class row: avatar → class name (with coach/branch underneath) → time or date → the rest.** For example, the booked count or check-in method.
   - On narrow cards, secondary numbers go under the time: "Done · 18/24 booked".
+  - On a computer, the columns in a class row have capped widths, so they sit close together. Spare width goes to the end of the row, never between the class name and the date.
 
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
