@@ -143,11 +143,11 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
     - Answer:
 
 48. 🟠 **PR10 Note tasks:** Gymdesk can turn a note into a task with a due date. Want staff tasks? Who gets reminded? And may a note be **shown to the member** (portal/check-in)?
-    - Answer:
+    - Answer: **(20 Oct 2026) No tasks for now.** Still open: may a note be shown to the member?
 49. 🟠 **PR11/PR12 Sales tax and discounts on staff-created charges:** add tax per charge (VAT/sales tax)? Discount as % or fixed? Email an invoice?
-    - Answer:
+    - Answer: **(20 Oct 2026) Tax is fixed per country**, not set per charge. **Discounts: % or fixed amount.** Still open: email an invoice?
 50. 🟢 **PR5 Printable membership card:** want printable cards (photo + barcode/QR) for check-in at the desk?
-    - Answer: *(Product owner note, 20 Oct 2026: in Gymdesk's settings the School chooses the card's code type: barcode or QR. Still to confirm: do we want printable cards in ULTM8, with the same barcode/QR choice?)*
+    - Answer: **(20 Oct 2026) QR code only** (no barcode option). Still open: a printable card carrying the QR, or just the QR in the app? *(Product owner note, 20 Oct 2026: in Gymdesk's settings the School chooses the card's code type: barcode or QR. Still to confirm: do we want printable cards in ULTM8, with the same barcode/QR choice?)*
 
 51. 🟢 **A8 Hours trained:** track hours as well as number of classes? (Some schools grade on mat hours.) Gus's grading rules decide whether it matters for promotion.
     - Answer:
