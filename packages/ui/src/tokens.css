@@ -46,6 +46,10 @@
   /* Redesign main text (headings, names, table text) — a softer charcoal than
      --text-primary, product owner 20 Oct 2026 (Gymdesk-style). 10.9:1 on white. */
   --text-strong: var(--color-neutral-700);
+  /* Redesign description / secondary text (row descriptions, meta lines, table
+     sub-text) — Gymdesk-style light grey, product owner 20 Oct 2026. ~2.6:1 on
+     white, below WCAG 4.5:1 for text; accepted by the product owner. */
+  --text-description: var(--color-neutral-400);
   /* Settings-row label (toggle/select rows on Settings pages) — redesign vision,
      product owner 20 Oct 2026. Gymdesk-style soft grey; 4.6:1 on white. */
   --text-setting-label: var(--color-neutral-500);
@@ -171,6 +175,7 @@
     --text-muted: var(--color-neutral-500);
     --text-setting-label: var(--color-neutral-400);
     --text-strong: var(--color-neutral-200);
+    --text-description: var(--color-neutral-500);
     --text-placeholder: var(--color-neutral-500);
     --border: var(--color-neutral-700);
     --border-strong: var(--color-neutral-600);
@@ -194,6 +199,7 @@
   --text-muted: var(--color-neutral-500);
   --text-setting-label: var(--color-neutral-400);
   --text-strong: var(--color-neutral-200);
+  --text-description: var(--color-neutral-500);
   --text-placeholder: var(--color-neutral-500);
   --border: var(--color-neutral-700);
   --border-strong: var(--color-neutral-600);
