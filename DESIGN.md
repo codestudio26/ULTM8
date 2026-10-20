@@ -322,6 +322,7 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
 ### Avatars: one shape, the circle (product owner, 20 Oct 2026)
 
 - **Every avatar is a circle**: people and classes alike. Two shapes side by side looks unfinished, so square or rounded-square avatars are never used.
+- **The school logo is the only exception**: a small rounded square (8px corners), shown whole on a plain tile and never cropped, because real logos come in any shape. It appears once, in the menu or top bar, never in a list beside avatars.
 - **People** (students, coaches, staff): their photo, or their initials on a soft grey circle.
 - **Classes**: same sizes as people (see the size table below).
   - They show the class's own **banner image** (`Class.bannerUrl`, uploaded on the class form), cropped to a circle.
