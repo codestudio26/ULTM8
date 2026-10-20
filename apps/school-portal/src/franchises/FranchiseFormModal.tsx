@@ -6,6 +6,7 @@ import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { FranchiseResponse } from './franchiseQueries';
 import { useT } from '../i18n/I18nProvider';
+import { languageName } from '../i18n/format';
 
 const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
 
@@ -162,7 +163,7 @@ export function FranchiseFormModal({
             id="franchise-language"
             value={form.defaultLanguage}
             onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
-            options={[{ value: '', label: t('franchises.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+            options={[{ value: '', label: t('franchises.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
           />
         </Field>
         <Field label={t('franchises.form.currencyLabel')} htmlFor="franchise-currency">

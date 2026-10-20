@@ -3921,7 +3921,7 @@ User, approving both of the Developer's recommendations (delete the stale label;
 
 ### What this does NOT resolve
 
-The student app (`apps/student`) and Platform Admin are not translated (both deferred for this testing round). Server-generated messages (API error text, notification bodies) stay English. Money formatting is unchanged. Dates follow the picked language, except English (UK), which keeps following the browser's own settings as before.
+The student app (`apps/student`) and Platform Admin are not translated (both deferred for this testing round). Dates and money follow the picked language, except English (UK), which keeps following the browser's own settings and the existing money format as before. Server-generated text is translated on the portal side, not by the API: every API error message is extracted into `apps/school-portal/src/i18n/server/` with a translation per language (an untranslated one shows a translated general message for its HTTP status instead of the English), and the titles and bodies the background jobs write into Notifications are matched and translated the same way. A School's broadcast, which a person wrote, is shown as written. The user asked for nothing to show in English once a language is picked (20 Oct 2026); names the API stores in English (template belt names, generated stripe names) remain data and are not rewritten.
 
 ### Recorded by
 

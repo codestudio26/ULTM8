@@ -41,6 +41,8 @@ export const ranks = {
     reorderTitle: 'Reorder belts?',
   },
   editor: {
+    /** Stands in for the belt name while it is still blank. */
+    unnamedRank: 'Rank',
     nameRequired: 'Give this rank a name.',
     colourRequired: 'Pick a base colour.',
     lineRequired: 'A belt needs at least one line: the plain belt or a stripe.',

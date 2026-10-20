@@ -12,7 +12,7 @@ import { useNotifications } from '../notifications/notificationQueries';
 import { useGradingBoard, useMyGrading, useStudentEligibility, type StudentEligibility } from '../grading/gradingQueries';
 import { flattenLadder } from '../grading/ladder';
 import { BeltChip } from '../grading/BeltChip';
-import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { useI18n, useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
@@ -190,9 +190,9 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
 }
 
 function NotificationsSection() {
-  const t = useT();
+  const { t, serverText } = useI18n();
   const notifications = useNotifications();
-  const items = (notifications.data?.items ?? []).slice(0, 5);
+  const items = (notifications.data?.items ?? []).slice(0, 5).map((n) => ({ ...n, ...serverText.notification(n) }));
   const unread = (notifications.data?.items ?? []).filter((n) => !n.read).length;
   return (
     <Section

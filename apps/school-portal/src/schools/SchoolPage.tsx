@@ -6,6 +6,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool, type SchoolResponse } from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
+import { languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
@@ -127,7 +128,7 @@ export function SchoolPage() {
               id="edit-language"
               value={form.defaultLanguage}
               onChange={(e) => set('defaultLanguage', e.target.value)}
-              options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+              options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
             />
           </Field>
           <Field label={t('schools.form.defaultCurrency')} htmlFor="edit-currency">

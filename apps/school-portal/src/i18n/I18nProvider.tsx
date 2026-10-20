@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { unwrap } from '@ultm8/api-client';
+import { setApiErrorMessageTranslator, unwrap } from '@ultm8/api-client';
 import { DEFAULT_UI_STRINGS, UiStringsProvider, type UiStrings } from '@ultm8/ui';
 import { apiClient } from '../api';
 import { useAuth } from '../auth/AuthContext';
@@ -8,6 +8,7 @@ import { useCurrentUser } from '../auth/currentUserQueries';
 import { messages as english, type EnglishMessages } from './messages/en-GB';
 import { DEFAULT_LOCALE, LOCALE_LOADERS, directionFor, resolveLocale } from './locales';
 import { setFormatLocale } from './format';
+import { SERVER_MESSAGE_LOADERS, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
 import type { Message, MessageKey, MessageTree, MessageVars, PartialMessages } from './types';
 
 /**
@@ -36,7 +37,15 @@ interface I18nContextValue {
   /** Remembers a choice in this browser; saving it to the profile is the
    * caller's job (the header's language picker already does that). */
   rememberLocale: (code: string) => void;
+  /** The API's own English text (errors, job-written notifications) in this
+   * locale; English passes it through unchanged. */
+  serverText: ServerTextTranslator;
 }
+
+const PASS_THROUGH: ServerTextTranslator = {
+  error: (_status, _code, message) => message,
+  notification: ({ title, body }) => ({ title, body }),
+};
 
 const STORAGE_KEY = 'ultm8.language';
 
@@ -100,6 +109,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     enabled: locale !== DEFAULT_LOCALE,
     staleTime: Infinity,
   });
+  const serverMessages = useQuery({
+    queryKey: ['i18n', 'server', locale],
+    queryFn: () => SERVER_MESSAGE_LOADERS[locale]!(),
+    enabled: locale !== DEFAULT_LOCALE && !!SERVER_MESSAGE_LOADERS[locale],
+    staleTime: Infinity,
+  });
   const overrides = useQuery({
     queryKey: ['i18n', 'overrides', locale],
     queryFn: () => fetchOverrides(locale),
@@ -130,7 +145,23 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [overrides.data, catalogue.data, locale],
   );
 
-  const value = useMemo(() => ({ locale, dir, t, rememberLocale }), [locale, dir, t, rememberLocale]);
+  const serverText = useMemo(
+    () =>
+      locale === DEFAULT_LOCALE
+        ? PASS_THROUGH
+        : createServerTextTranslator(t as (key: string, vars?: MessageVars) => string, locale, serverMessages.data),
+    [t, locale, serverMessages.data],
+  );
+  // Error messages are rewritten where every request's error is built
+  // (@ultm8/api-client's unwrap), so each page's own error display needs no change.
+  setApiErrorMessageTranslator(locale === DEFAULT_LOCALE ? null : serverText.error);
+
+  // The browser tab's title, which index.html starts in English.
+  useEffect(() => {
+    document.title = t('layout.brand');
+  }, [t]);
+
+  const value = useMemo(() => ({ locale, dir, t, rememberLocale, serverText }), [locale, dir, t, rememberLocale, serverText]);
   // The shared `@ultm8/ui` components read their text from this, so they follow
   // the picker too. English keeps the package's own country names and order.
   const uiStrings = useMemo(

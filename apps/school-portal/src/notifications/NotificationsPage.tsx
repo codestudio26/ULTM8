@@ -70,7 +70,7 @@ function isSnoozed(n: NotificationResponse): boolean {
  * comment on why). */
 export function NotificationsPage() {
   const schoolId = useOwnedSchoolId();
-  const { t } = useI18n();
+  const { t, serverText } = useI18n();
   const { data, isLoading, error } = useNotifications();
   // v1.2 backend backlog (Decision 204's Concept 5 finding) — a SEPARATE
   // query against the new dedicated counts endpoint, deliberately NOT
@@ -98,7 +98,8 @@ export function NotificationsPage() {
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('notifications.loadFailed')} />;
 
-  const notifications = data?.items ?? [];
+  // Titles/bodies the API's jobs wrote in English, shown in the picked language.
+  const notifications = (data?.items ?? []).map((n) => ({ ...n, ...serverText.notification(n) }));
 
   async function handleMarkRead(id: string) {
     setActionError(null);

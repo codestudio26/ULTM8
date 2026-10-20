@@ -74,7 +74,9 @@ export function InstructorDetailPage() {
               </span>
               <span>
                 <strong>{t('instructors.detail.status')}</strong>{' '}
-                <Badge variant={instructor.status === 'ACTIVE' ? 'success' : undefined}>{instructor.status}</Badge>
+                <Badge variant={instructor.status === 'ACTIVE' ? 'success' : undefined}>
+                  {instructor.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
+                </Badge>
               </span>
               {instructor.phone ? (
                 <span>

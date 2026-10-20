@@ -13,6 +13,7 @@ function bookingStatusBadge(status: string, t: TranslateFn) {
   if (status === 'UPCOMING') return <Badge variant="success">{t('classes.detail.bookingUpcoming')}</Badge>;
   if (status === 'CANCELLED') return <Badge>{t('classes.detail.bookingCancelled')}</Badge>;
   if (status === 'COMPLETED') return <Badge variant="accent">{t('classes.detail.bookingCompleted')}</Badge>;
+  if (status === 'NO_SHOW') return <Badge variant="accent">{t('classes.detail.bookingNoShow')}</Badge>;
   return <Badge variant="accent">{titleCase(status)}</Badge>;
 }
 

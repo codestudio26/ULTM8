@@ -23,6 +23,7 @@ import { franchises } from './en/franchises';
 import { roleGrants } from './en/roleGrants';
 import { disciplines } from './en/disciplines';
 import { ui } from './en/ui';
+import { server } from './en/server';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -59,6 +60,7 @@ export const messages = {
   roleGrants,
   disciplines,
   ui,
+  server,
 };
 
 export type EnglishMessages = typeof messages;

@@ -298,9 +298,31 @@ function composeE164(country: CountryCode | undefined, digits: string): string {
   }
 }
 
-function formatTimezoneOption(zone: string, at: Date): string {
+/** The zone's own name in `locale` ("米国東部時間" for America/New_York), or
+ * undefined when there's no locale or the browser only knows an offset for it. */
+function localTimezoneName(zone: string, at: Date, locale: string | undefined): string | undefined {
+  if (!locale) return undefined;
+  try {
+    const name = new Intl.DateTimeFormat(locale, { timeZone: zone, timeZoneName: 'longGeneric' })
+      .formatToParts(at)
+      .find((p) => p.type === 'timeZoneName')?.value;
+    return name && !/^(GMT|UTC)/.test(name) ? name : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function formatTimezoneOption(zone: string, at: Date, locale?: string): string {
   const offset = getUtcOffsetLabel(zone, at);
-  return offset ? `${zone} (${offset})` : zone;
+  const label = offset ? `${zone} (${offset})` : zone;
+  const local = localTimezoneName(zone, at, locale);
+  return local ? `${local} · ${label}` : label;
+}
+
+/** A stored IANA zone as people read it: "America/New_York (UTC-05:00)", led by
+ * the zone's own name in `locale` when one is given. */
+export function formatTimezone(zone: string, locale?: string): string {
+  return formatTimezoneOption(zone, new Date(), locale);
 }
 
 const TIMEZONE_MAX_RESULTS = 50;
@@ -339,7 +361,7 @@ export function TimezoneField({
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: TimezoneFieldProps) {
-  const { strings } = useUiStrings();
+  const { strings, locale } = useUiStrings();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -363,10 +385,16 @@ export function TimezoneField({
           // "new york" still finds "America/New_York") — still a plain substring
           // match on the zone name, just normalized for the one punctuation
           // difference between how these names are typed vs. written.
-          return normalized.includes(q) || normalized.replace(/_/g, ' ').includes(q);
+          return (
+            normalized.includes(q) ||
+            normalized.replace(/_/g, ' ').includes(q) ||
+            // ...and, in another language, the zone's name in it ("東部").
+            !!localTimezoneName(zone, now, locale)?.toLowerCase().includes(q)
+          );
         });
     return matches.slice(0, TIMEZONE_MAX_RESULTS);
-  }, [query]);
+    // `now` is a fresh Date each render; only the query and language change the matches.
+  }, [query, locale]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -431,7 +459,7 @@ export function TimezoneField({
 
   // While open, the input shows what's being typed (`query`); while closed, it
   // shows the committed value's formatted "zone (offset)" label.
-  const displayValue = isOpen ? query : value ? formatTimezoneOption(value, now) : '';
+  const displayValue = isOpen ? query : value ? formatTimezoneOption(value, now, locale) : '';
 
   return (
     <div className="ultm8-combobox" ref={containerRef}>
@@ -478,7 +506,7 @@ export function TimezoneField({
                 onClick={() => selectZone(zone)}
                 onMouseEnter={() => setActiveIndex(i)}
               >
-                {formatTimezoneOption(zone, now)}
+                {formatTimezoneOption(zone, now, locale)}
               </li>
             ))
           )}
@@ -1509,8 +1537,14 @@ export function EmptyState({ title, description, action }: { title: string; desc
 }
 
 export function ErrorBanner({ message }: { message: string }) {
+  // Brought into view whenever a message appears or changes: a save that fails
+  // on a long form would otherwise report its error above the fold, unseen.
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, [message]);
   return (
-    <div className="ultm8-banner ultm8-banner--error" role="alert">
+    <div ref={ref} className="ultm8-banner ultm8-banner--error" role="alert">
       {message}
     </div>
   );

@@ -288,7 +288,7 @@ export function BeltEditorModal({
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {rungs.map((r, i) => {
             const held = r.id ? holders.get(r.id) ?? [] : [];
-            const label = r.name.trim() || generatedName(name || 'Rank', total(r.segments));
+            const label = r.name.trim() || generatedName(name || t('ranks.editor.unnamedRank'), total(r.segments));
             const open = openKey === r.key;
             return (
               <li
@@ -376,7 +376,7 @@ function RungFields({
   const setSegment = (i: number, patch: Partial<Segment>) => onChange({ segments: r.segments.map((s, j) => (j === i ? { ...s, ...patch } : s)) });
   return (
     <div style={{ marginTop: 12 }}>
-      <Field label={t('ranks.editor.stripeName')} htmlFor={id('name')} hint={t('ranks.editor.stripeNameHint', { name: generatedName(beltName || 'Rank', total(r.segments)) })}>
+      <Field label={t('ranks.editor.stripeName')} htmlFor={id('name')} hint={t('ranks.editor.stripeNameHint', { name: generatedName(beltName || t('ranks.editor.unnamedRank'), total(r.segments)) })}>
         <TextField maxLength={100} value={r.name} onChange={(e) => onChange({ name: e.target.value })} />
       </Field>
 

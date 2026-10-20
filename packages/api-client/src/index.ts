@@ -185,6 +185,19 @@ export type ApiClient = ReturnType<typeof createApiClient>;
  * a shared-infrastructure bug in place once a second one exists — so this is fixed
  * here, not worked around per call site.
  */
+/** Rewrites an error's message before it reaches the screen — an app showing
+ * another language sets this to translate the API's English messages. Left
+ * unset, messages pass through unchanged. */
+let errorMessageTranslator: ((status: number, code: string, message: string) => string) | null = null;
+
+export function setApiErrorMessageTranslator(fn: ((status: number, code: string, message: string) => string) | null): void {
+  errorMessageTranslator = fn;
+}
+
+function errorMessage(status: number, code: string, message: string): string {
+  return errorMessageTranslator ? errorMessageTranslator(status, code, message) : message;
+}
+
 export async function unwrap<T>(
   resultPromise: Promise<{
     data?: T;
@@ -192,19 +205,33 @@ export async function unwrap<T>(
     response: Response;
   }>,
 ): Promise<T> {
-  const result = await resultPromise;
+  let result: Awaited<typeof resultPromise>;
+  try {
+    result = await resultPromise;
+  } catch (err) {
+    // fetch() itself rejected: no answer came back at all (offline, the server
+    // unreachable or still starting, or a gateway error the browser blocked for
+    // having no CORS headers). Said as such, so a screen can tell this apart from
+    // the server refusing the request — before, it surfaced as a bare TypeError
+    // and every screen fell back to "Something went wrong".
+    if (err instanceof TypeError) {
+      throw new ApiError(0, 'NETWORK_ERROR', errorMessage(0, 'NETWORK_ERROR', 'Could not reach the server. Check your connection and try again.'));
+    }
+    throw err;
+  }
   if (!result.response.ok) {
     const body = result.error as { error?: { code?: string; message?: string } } | undefined;
+    const code = body?.error?.code ?? 'UNKNOWN_ERROR';
     throw new ApiError(
       result.response.status,
-      body?.error?.code ?? 'UNKNOWN_ERROR',
-      body?.error?.message ?? `Request failed with status ${result.response.status}`,
+      code,
+      errorMessage(result.response.status, code, body?.error?.message ?? `Request failed with status ${result.response.status}`),
     );
   }
   // A real success with nothing to return (204) has no `data` — only flag a missing
   // body as a problem when the status implied one should have been there.
   if (result.data === undefined && result.response.status !== 204) {
-    throw new ApiError(result.response.status, 'EMPTY_RESPONSE', 'Request succeeded but returned no data');
+    throw new ApiError(result.response.status, 'EMPTY_RESPONSE', errorMessage(result.response.status, 'EMPTY_RESPONSE', 'Request succeeded but returned no data'));
   }
   return result.data as T;
 }

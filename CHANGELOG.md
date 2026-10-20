@@ -24,10 +24,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Platform Admin Translation row for the same screen and key replaces it.
   Every School Portal page is translated, including sign-in, the footer and
   the shared form controls (phone field country names, photo upload,
-  Rows/Grid toggle); dates follow the picked language. Not translated: data
-  people enter, server error messages, money formatting, Platform Admin and
-  the student app. Non-English text is a first draft awaiting
-  native-speaker review.
+  Rows/Grid toggle); dates, money, language names and time zones follow the
+  picked language. The API's error messages and the notifications its
+  background jobs write (waitlist spot, ready to grade, promotions, waivers,
+  payment disputes) are translated too; an error message with no translation
+  shows a translated general message for its kind of failure, never the
+  English. Status, role and payment-method labels (e.g. "BANK_TRANSFER")
+  now show as words in every language, English included. Not translated:
+  data people enter (including a School's broadcasts), names the server
+  stores in English (style template belt names, generated stripe names),
+  Platform Admin and the student app. Non-English text is a first draft
+  awaiting native-speaker review.
+- **Clearer errors** — an error banner now scrolls into view when it appears,
+  and a request that gets no answer at all says "Could not reach the server"
+  instead of "Something went wrong". The Curriculum list's Instructor column
+  shows the coach's name instead of an id.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

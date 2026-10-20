@@ -90,6 +90,7 @@ export const classes = {
     bookingUpcoming: 'Upcoming',
     bookingCancelled: 'Cancelled',
     bookingCompleted: 'Completed',
+    bookingNoShow: 'No-show',
     waitlistWaiting: 'Waiting',
     waitlistNotified: 'Notified',
     waitlistClaimed: 'Claimed',

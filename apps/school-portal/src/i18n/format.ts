@@ -13,3 +13,14 @@ export function setFormatLocale(locale: string | undefined): void {
 export function formatLocale(): string | undefined {
   return current;
 }
+
+/** A language from GET /settings/languages, named in the picked language
+ * ("英語（イギリス）"); English keeps the server's own name. */
+export function languageName(code: string, serverName: string): string {
+  if (!current) return serverName;
+  try {
+    return new Intl.DisplayNames([current], { type: 'language' }).of(code) ?? serverName;
+  } catch {
+    return serverName;
+  }
+}

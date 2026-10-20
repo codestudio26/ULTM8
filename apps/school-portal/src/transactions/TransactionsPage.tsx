@@ -7,6 +7,7 @@ import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { useTransactionReceiptUrl, useTransactions, type TransactionResponse } from './transactionQueries';
 import { useT } from '../i18n/I18nProvider';
+import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
 
 /** One "Receipt" cell — a drill-down from the table, not a bulk action, so it's
@@ -143,7 +144,7 @@ export function TransactionsPage() {
               },
               { key: 'amount', header: t('transactions.columnAmount'), render: (t) => formatMoney(t.amount, t.currency) },
               { key: 'status', header: t('transactions.columnStatus'), render: (t) => paymentStatusBadge(t.status) },
-              { key: 'paymentMethod', header: t('transactions.columnMethod'), render: (t) => t.paymentMethod },
+              { key: 'paymentMethod', header: t('transactions.columnMethod'), render: (row) => (PAYMENT_METHOD_LABELS[row.paymentMethod] ? t(PAYMENT_METHOD_LABELS[row.paymentMethod]!) : row.paymentMethod) },
               { key: 'refunded', header: t('transactions.columnRefunded'), render: (t) => (t.refundedAmount ? formatMoney(t.refundedAmount, t.currency) : '—') },
               { key: 'disputed', header: t('transactions.columnDisputed'), render: (t) => (t.disputedAmount ? formatMoney(t.disputedAmount, t.currency) : '—') },
               { key: 'receipt', header: t('transactions.columnReceipt'), render: (t) => <ReceiptCell transactionId={t.id} /> },

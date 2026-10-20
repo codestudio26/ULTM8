@@ -7,6 +7,7 @@ import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useBranch, useUpdateBranch } from './branchQueries';
 import { useT } from '../i18n/I18nProvider';
+import { languageName } from '../i18n/format';
 
 /**
  * Decision 231 — a dedicated Branch settings screen, replacing the previous
@@ -157,7 +158,7 @@ export function BranchSettingsPage() {
               id="branch-settings-language"
               value={form.defaultLanguage}
               onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
-              options={[{ value: '', label: t('branches.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+              options={[{ value: '', label: t('branches.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
             />
           </Field>
           <Field label={t('branches.form.description')} htmlFor="branch-settings-description">

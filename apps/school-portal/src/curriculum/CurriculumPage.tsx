@@ -148,7 +148,13 @@ export function CurriculumPage() {
     {
       key: 'instructor',
       header: t('curriculum.columnInstructor'),
-      render: (l: LessonResponse) => (l.instructorId ? instructors.find((i) => i.userId === l.instructorId)?.userId ?? l.instructorId : t('common.none')),
+      render: (l: LessonResponse) => {
+        if (!l.instructorId) return t('common.none');
+        const instructor = instructors.find((i) => i.userId === l.instructorId);
+        // The coach's name, as the lesson form's own picker shows it; an id only
+        // if they're no longer in this School's instructor list.
+        return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() || instructor.userId : l.instructorId;
+      },
     },
     { key: 'skills', header: t('curriculum.columnSkills'), render: (l: LessonResponse) => l.skillIds.length },
     {

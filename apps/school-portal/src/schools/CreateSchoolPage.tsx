@@ -7,6 +7,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useCreateSchool } from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
+import { languageName } from '../i18n/format';
 
 /**
  * Self-service School creation (Decision 79) — the creator becomes SCHOOL_OWNER_MANAGER
@@ -123,7 +124,7 @@ export function CreateSchoolPage() {
             id="school-language"
             value={form.defaultLanguage}
             onChange={(e) => set('defaultLanguage', e.target.value)}
-            options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+            options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
           />
         </Field>
         <Field label={t('schools.form.defaultCurrency')} htmlFor="school-currency">

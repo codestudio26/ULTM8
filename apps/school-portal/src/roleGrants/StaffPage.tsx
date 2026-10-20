@@ -16,6 +16,7 @@ import {
 import { CoachInvitesSection } from './CoachInvitesSection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
 import { useT } from '../i18n/I18nProvider';
+import { ROLE_LABELS } from '../lib/enumLabels';
 import { Trans } from '../i18n/Trans';
 
 /**
@@ -290,7 +291,7 @@ export function StaffPage() {
               <Table<RoleGrantResponse>
                 rows={lookupResult}
                 columns={[
-                  { key: 'role', header: t('roleGrants.staff.columnRole'), render: (g) => <Badge variant="accent">{g.role}</Badge> },
+                  { key: 'role', header: t('roleGrants.staff.columnRole'), render: (g) => <Badge variant="accent">{ROLE_LABELS[g.role] ? t(ROLE_LABELS[g.role]!) : g.role}</Badge> },
                   { key: 'branch', header: t('roleGrants.staff.columnBranch'), render: (g) => g.branchId ?? t('roleGrants.staff.wholeSchool') },
                   {
                     key: 'status',

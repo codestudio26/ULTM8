@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useArchiveBranch, useBranches, useCreateBranch, useUnarchiveBranch, type BranchResponse } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
 import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
+
+/** English shows the stored zone as it always has; another language leads with its own name for it. */
+const timezoneLabel = (zone: string) => (formatLocale() ? formatTimezone(zone, formatLocale()) : zone);
 
 export function BranchesPage() {
   const t = useT();
@@ -90,7 +94,7 @@ export function BranchesPage() {
                     <strong>{b.name}</strong>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}
-                      {b.timezone ? <Badge>{b.timezone}</Badge> : null}
+                      {b.timezone ? <Badge>{timezoneLabel(b.timezone)}</Badge> : null}
                     </div>
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.address ?? '—'}</p>
@@ -120,7 +124,7 @@ export function BranchesPage() {
                 { key: 'name', header: t('branches.columnName'), render: (b) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{b.name}{b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}</div>) },
                 { key: 'address', header: t('branches.columnAddress'), render: (b) => b.address ?? '—' },
                 { key: 'phone', header: t('branches.columnContactPhone'), render: (b) => b.contactPhone ?? '—' },
-                { key: 'timezone', header: t('branches.columnTimezone'), render: (b) => (b.timezone ? <Badge>{b.timezone}</Badge> : '—') },
+                { key: 'timezone', header: t('branches.columnTimezone'), render: (b) => (b.timezone ? <Badge>{timezoneLabel(b.timezone)}</Badge> : '—') },
                 {
                   key: 'actions',
                   header: '',

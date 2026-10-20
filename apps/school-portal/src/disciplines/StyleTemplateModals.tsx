@@ -4,6 +4,10 @@ import { ApiError } from '@ultm8/api-client';
 import { useCreateFromTemplate, useDuplicateDiscipline, useStyleTemplates, type DisciplineResponse, type StyleTemplateId } from './disciplineQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
+/** Templates this app has its own (translated) wording for; any other id the
+ * API adds later shows the API's text. */
+const TEMPLATE_KEYS: Record<StyleTemplateId, true> = { ibjjf: true, ibjjf_kids_red: true, ibjjf_kids_yellow: true };
+
 const errorText = (err: unknown, t: TranslateFn) => (err instanceof ApiError ? err.message : t('common.tryAgain'));
 
 /** "Start from template" (Decisions 131, 182): one of the three IBJJF ladders
@@ -55,9 +59,11 @@ export function TemplateModal({ schoolId, onCreated, onClose }: { schoolId: stri
                   style={{ marginTop: 3 }}
                 />
                 <span>
-                  <strong>{tpl.name}</strong>
+                  <strong>{tpl.id in TEMPLATE_KEYS ? t(`disciplines.template.options.${tpl.id as StyleTemplateId}.name`) : tpl.name}</strong>
                   <br />
-                  <span style={{ color: 'var(--text-secondary)' }}>{tpl.description}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    {tpl.id in TEMPLATE_KEYS ? t(`disciplines.template.options.${tpl.id as StyleTemplateId}.description`) : tpl.description}
+                  </span>
                 </span>
               </label>
             ))}
