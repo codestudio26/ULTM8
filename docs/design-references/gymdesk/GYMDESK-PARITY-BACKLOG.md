@@ -193,7 +193,9 @@ inside the band.
 | A7 | Sub-tab **Promotions** (`15`): promotion history list + **Promote** button; empty state points to "Manage programs" (promotion settings live per programme) | ✅/🟡 | ULTM8 grading is richer (Grading Board, ladders, skills; Gus's rules). A School-wide promotion *history list* with print/export to verify |
 | A8 | Sub-tab **Members** (`14`): per member **sessions**, **hours**, last-7-days sparkline, **Check-ins** button, **+** to log attendance | ❌ | Attendance counts feed grading progress; **hours trained** ❌ (ULTM8 counts classes, not hours) |
 | A9 | **Log Attendance** modal (`13`): tabs **Session / Bulk**, date picker, choose a session on that date, **+ Add note**, "Log attendance" | 🟡 | Same as PR14 (back-dated attendance). Bulk = several members at once |
-| A10 | Sub-tabs **Sessions**, **Multiple Check-in** | ❓ | Not captured yet |
+| A10 | Sub-tab **Sessions**: list of held sessions with filter, print, export | 🟡 | Classes exist; a past-sessions report with export ❌ |
+| A11 | Sub-tab **Multiple Check-in**: left dark panel with date, **select session**, filters (**programme and rank**, *has active membership*, *bookings only*, *include staff*); right panel "Select members to check in", counter "N members selected", **Check-in members** | ✅/🟡 | Roll call does this per class. Rank / active-membership / include-staff filters ❌ |
+| A12 | Member profile → Attendance tab: **Sessions / Hours / Time** totals, **current rank card** (programme, belt graphic, date), **+ Attendance** | 🟡 | Ties to PR14, Q51 |
 
 ### Attendance settings (chat screenshots, 20 Oct 2026)
 Rows: **Attendance Tracking · Check-in control · Check-in Waiver · Membership Cards · Import Attendance** (button).
@@ -213,7 +215,7 @@ the current check-in rules in code before deciding.
 | CC1 | **Require active membership** (and for roster-only members) | ❓ verify |
 | CC2 | Members check in **through their online account** (self check-in) | ✅ self-service QR / 6-digit code (Decision 235) |
 | CC3 | **Require card on file** | ❌ |
-| CC4 | **Require document signature** / **Check-in Waiver** (read and agree before check-in) | ❓ verify whether check-in is blocked without a signed waiver |
+| CC4 | **Require document signature**; **Check-in Waiver** page = single toggle *show check-in waiver* (read and agree before checking in) | ❓ verify whether check-in is blocked without a signed waiver |
 | CC5 | **Disable check-in for overdue payments** (No / after N days…) | ❓ `paymentRestrictedAt` exists on User; verify what it blocks |
 | CC6 | **Require booking** for bookable sessions | ❓ verify (ULTM8 check-in is booking-based) |
 | CC7 | Check in at **other locations** of the same account | 🟡 Branches exist; cross-Branch check-in rule ❓ |
@@ -224,7 +226,7 @@ the current check-in rules in code before deciding.
 | CC12 | **First membership payment required** to check in | ❓ (Membership is created only when payment settles, Decision 6, so likely ✅ by design) |
 | CC13 | Check in to **multiple sessions at once**; **auto check-in to first available session** | ❌ |
 | CC14 | Allow **unconfirmed website sign-ups** to check in | ❌ (SF4) |
-| MC1 | **Membership cards** settings | ❌ (PR5, Q50) |
+| MC1 | **Membership cards** settings: code type **Barcode or QR code**; *show current membership on card* | ❌ (PR5, Q50). If built, use **QR** so it matches ULTM8's existing QR check-in |
 | IA1 | **Import attendance** (CSV) | ❌ (migration from another system) |
 
 **Questions:** A1/A3: who sees analytics (Owner only, or Branch Staff for their Branch)? Do counts include Trial/Friend Pass students?

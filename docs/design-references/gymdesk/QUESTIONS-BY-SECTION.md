@@ -175,8 +175,7 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 ## B1. Members → Attendance inner tabs
 - [x] Check-ins list, Promotions, Members, Log Attendance modal (received 20 Oct 2026)
 - [ ] Check-ins: the **Filter** menu opened
-- [ ] Sessions: list, and opening one session
-- [ ] Multiple Check-in: checking several people in at once
+- [x] Sessions, Multiple Check-in, member Attendance tab, Check-in Waiver, Membership Cards (received 20 Oct 2026)
 - [x] Attendance → Settings (received 20 Oct 2026)
 
 ## B2. Members → Settings tab: mostly done (20 Oct 2026)
