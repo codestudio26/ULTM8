@@ -183,4 +183,11 @@ Five nav + info-panel designs were compared in the vision prototype (A = the Gym
   - details grouped under small headings: Contact (phone, email), Training (belt, home branch) and Account (membership, balance, family)
   - tags, with "+ tag"
 - **Settings:** categories sit in a white card inside the page, with the active category in pale green. A "Preview" inspector on the right shows what the student sees at check-in and updates as the rules change.
+- **Applied to every page (20 Oct 2026):** each page has a white header (a "‹ back" link where there is a parent page) and its own right-side inspector:
+  - Dashboard: "Needs attention" (notifications). Search moved from the dark header to the sidebar.
+  - Students list: the selected student.
+  - Student profile: the full summary (the Shell A details plus birthday, gender and programme, with an Edit button and "Manage family account"). The tabs stay in the main area, and the dark card headers are now light.
+  - Add student: the new student's summary, a list of the form's sections and the Add button.
+  - Check-in: recent check-ins. The check-in screen itself stays dark, because it faces the student.
+  - Settings: a preview.
 - **Visual only:** this is layout and styling. It changes no business rules, data model or API, and student tags remain a parity-backlog item.
