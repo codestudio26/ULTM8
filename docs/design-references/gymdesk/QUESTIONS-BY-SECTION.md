@@ -22,13 +22,15 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 3. 🟢 **D5 "What's new?":** who writes the product updates (Platform Admin)? In every language?
    - Answer:
 4. 🔴 **D6 Trial banner:** do Schools get a free trial of ULTM8 itself? (Platform-billing rule.)
-   - Answer:
+   - Answer: **Build the ability, use it only if needed** (20 Oct 2026). A Platform Admin switch to give a School a free trial of ULTM8.
+     - Follow-ups: default trial length? Card required up front? At the end of the trial, does the School drop into the existing "degraded portal" state until it subscribes?
 5. 🟢 **D7 Chat bubble:** do we want in-app support chat? Any preferred vendor?
    - Answer:
 
 ## A2. Members: Add / Edit Member
 6. 🔴 **M6 Visitors:** what is a Visitor in ULTM8, e.g. a lead with no login and no membership? Can a Visitor only take a Trial? How do they become a Student?
-   - Answer:
+   - Answer: (20 Oct 2026) A Visitor is **not a member of the School but is allowed to use the facilities**. A Visitor **can buy a membership**, and their **visitor period expires**.
+     - Follow-ups: how long is the visitor period, and does each School set it? Can a Visitor book classes and check in? Must they sign the waiver first (likely yes, for liability)? Child visitors need a Guardian? How is this different from ULTM8's existing **Trial Membership** (max 30 days, Decision 54/64)? Is a Visitor simply someone on a Trial, or a separate status?
 7. 🟠 **M7 Personal check-in code:** a personal PIN as well as QR? Chosen by the member, or generated? 4 or 6 digits? Unique per School or per Branch? Can a Guardian use a child's code?
    - Answer:
 8. 🟢 **M8/M11 Extra contacts:** how many secondary phones/emails? Are emergency contacts separate from Guardians?
@@ -38,17 +40,22 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 10. 🟠 **M12 "How did you hear about us":** a fixed list of options, or each School makes its own?
     - Answer:
 11. 🔴 **M13 Staff setting a member's password:** allow it (as Gymdesk does), or keep invite-only? (Recommendation: invite-only.)
-    - Answer:
+    - Answer: **Yes** (20 Oct 2026). The password is **temporary**, and the member must change it at first login.
+     - Note: ULTM8 already has this mechanism. Login is a 6-digit passcode (Decision 72), and `User.mustChangePasscode` forces a change after someone else set it (used today by Instructor "Add Manually"). Extending it to Students is small.
+     - Follow-ups: does staff type the temporary passcode, or does the system generate it? For children: is it set on the Guardian's account instead?
 12. 🟠 **M15 Import from spreadsheet:** which columns? What happens with duplicates? For children, who gives consent?
     - Answer:
 
 ## A3. Memberships: Add Membership Option
 13. 🔴 **P2/P12 Family plans and discounts:** is a family the Guardian plus their children only, or any group of adults too? Who pays? Discount as % or fixed amount, set per School?
-    - Answer:
+    - Answer: (20 Oct 2026) **Anyone the School owner chooses**, not only Guardian + children. **Look deeper at how Gymdesk does family accounts** before deciding the details.
+     - Needed: screenshots of Gymdesk's **"Manage family account"** screen (member profile, left panel) and of a family membership being set up.
 14. 🟠 **P10 Sign-up fee:** fixed amount per plan? Refundable?
     - Answer:
 15. 🔴 **P11 Late fees:** fixed or %? Charged automatically by card, or only recorded? Apply to cash/bank-transfer payers? Default grace period?
-    - Answer:
+    - Answer: (20 Oct 2026) **Fixed amount or %.** **Applies to every payment method.** **Automatic charging: not decided yet**, needs looking into.
+     - Note: a cash or bank-transfer payer can't be charged automatically, so their late fee would be added to their **member balance** (Q28) and paid at the desk.
+     - Needed: screenshots of Gymdesk's late-fee settings and of an overdue member's billing.
 16. 🟠 **P9/P13/P14:** "start on first check-in", fixed-date terms (e.g. a 6-week camp), and "at end of term, switch to another plan": do you want all three?
     - Answer:
 17. 🟢 **P17 Income categories / accounting codes:** which accounting software do Schools use (Xero, QuickBooks, none)?
@@ -74,13 +81,16 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
 25. 🔴 **G3 Freeze memberships:** allow freezing (pause billing and access)? Maximum length? Fee? Who can request it (a Guardian for a child)? (Today a Membership can only be Active or Expired, Decision 6.)
     - Answer:
 26. 🔴 **L3 Print / Export members:** who may export? Which columns? Should children's details be left out?
-    - Answer:
+    - Answer: (20 Oct 2026) **Export covers all members** (children not excluded). You'll send an image of how Gymdesk does it.
+     - Follow-up: **which staff roles** may export (Owner only, or Branch Staff too)?
 
 ## A6. Member profile page
 27. 🟢 **PR6 Tags:** free text, or a list each School manages? Can members see their own tags?
     - Answer:
 28. 🔴 **PR7/PR11/PR12 Staff-created charges:** may staff create one-off charges and recurring payments outside a Membership Plan? A member balance? *(You agreed this needs its own decision; this is it.)*
-    - Answer:
+    - Answer: **Yes to both** (20 Oct 2026): staff may create one-off charges and recurring payments outside a Membership Plan, and members have a balance.
+     - This changes Spec 55's payments model, so it gets its own decision entry when the branch merges.
+     - Follow-ups: can a balance go into credit (prepaid)? Who may create charges (Owner / Branch Staff)? Can a member pay their balance in the app?
 29. 🟠 **PR10 Staff notes:** who sees them? Is the member ever shown them? How long are they kept?
     - Answer:
 30. 🟠 **PR13 Messaging:** email only, or SMS too (needs a vendor, costs per message)?
@@ -93,14 +103,33 @@ Part A covers sections already seen. Part B lists **what to capture for each sec
     - Answer:
 
 ## A7. Settings: Billing
-34. 🔴 **B5 Passing card fees to members:** allowed? (Restricted in the UK/EU.)
+34. 🔴 **B5 Card-fee surcharge (reworded 20 Oct 2026).** When a member pays by card, Stripe charges the School a fee (roughly 1.5–3%). Gymdesk has a setting (**Billing Settings → Processing Fees**, seen in the recording) that **adds that fee on top of the member's payment**, so the member pays it instead of the School. **In the UK and the EU this is illegal for consumer card payments.** In other countries (e.g. the US, Brazil) it's generally allowed, with conditions. **Do you want this setting, switched on only for Schools in countries where it's legal?**
     - Answer:
 35. 🟠 **B6 Tax / VAT:** handled by ULTM8, by Stripe Tax, or out of scope?
     - Answer:
 36. 🟢 **B2 Failed payments:** let each School choose how many days before retrying?
     - Answer:
 
-### Already answered
+## A8. Settings → Members (added 20 Oct 2026)
+37. 🟠 **Member-portal switches:** should each School get switches like Gymdesk's (edit profile, cancel own membership, remove payment method, pay early…)? Or do we start with only the most important? Suggested first set: edit profile, self-cancel, family sign-up, show payments.
+    - Answer:
+38. 🔴 **MS6 Students updating their own rank:** Gymdesk lets a School allow it. In ULTM8 only coaches promote students (Gus's grading rules). Keep it that way?
+    - Answer:
+39. 🔴 **DS2 Minor age:** Gymdesk lets each School set the age (default 18). Fixed at 18, set per country, or per School?
+    - Answer:
+40. 🟠 **DS3 Both signatures:** option to require the child's signature as well as the Guardian's?
+    - Answer:
+41. 🟠 **MN3/MN7/MB2 Reminders:** want expiry reminder (1 week before), absence alert (no check-in for N weeks), weekly expiring-memberships report for staff?
+    - Answer:
+42. 🟠 **MB5 Recharge at check-in:** when a Class Pack runs out, let the member buy another at check-in?
+    - Answer:
+43. 🟠 **SF1/SF2/SF4 Sign-up form builder:** several forms per School (front desk, website, invite), each section shown/hidden/required, and staff approval of website sign-ups. All of it?
+    - Answer:
+44. 🔴 **SF6 Medical conditions:** collect medical information at sign-up? It's health data (special category under GDPR/LGPD), so it needs explicit consent, tighter access (who can see it?) and a retention period.
+    - Answer:
+
+### Already answered (summary)
+- **Q4, Q6, Q11, Q13, Q15, Q26, Q28:** answered 20 Oct 2026, inline above, some with follow-ups.
 - **Competitions (PR17):** deferred. No Smoothcomp integration for now. *20 Oct 2026*
 - **Messaging children (PR13):** see Q30. *20 Oct 2026*
 
@@ -120,8 +149,10 @@ menu.** A short recording is best for forms that change as you pick options. Dum
 - [ ] Multiple Check-in: checking several people in at once
 - [ ] Attendance → Settings
 
-## B2. Members → Settings tab
-- [ ] Every settings row, and one opened
+## B2. Members → Settings tab: mostly done (20 Oct 2026)
+- [x] Rows, Member Portal, Notifications, Member list, Membership, Documents, Sign-up Forms
+- [ ] Still needed: **Custom Member Fields, Custom Member Statuses, Manage Tags, Import / Export / Merge**, and the bottom of the sign-up form (Additional forms / post sign-up)
+- [ ] Member Portal sub-pages: **Manage member portal messaging, Dashboard Quick Actions, Member Content Settings**
 
 ## B3. Gym
 - [ ] **Bookings:** list, and creating a booking

@@ -48,7 +48,8 @@ into the decision log under the next free numbers.**
 | Members → Check-in, Attendance, Rosters | ✅ 10–12 | §7 |
 | Members → Documents, Content, Growth, member list | ✅ chat-only screenshots (not saved: images arrived inline, and the list shows a real member's phone/DOB) | §7 |
 | Member profile page (all tabs) | ✅ recordings 20.08, 20.10 | §8 |
-| Members → Settings tab; Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
+| Settings → Members (all rows + sign-up form builder) | ✅ chat screenshots | §9 |
+| Members → Attendance sub-tabs (Check-ins, Promotions, Members, Sessions, Multiple Check-in, Settings) | ❌ not yet | — |
 | Gym → Bookings, Managers & Staff, Payroll, Programs | ❌ not yet | — |
 | Billing, Marketing, Website, Sales, Front Desk | ❌ not yet | — |
 | Competitions | ⏸ deferred (product owner, 20 Oct 2026) | — |
@@ -298,7 +299,95 @@ next rank, history), plus `/students/:id/edit` (`StudentUpdatePage`).
 - **PR16:** Promotion fee: charged automatically on promotion? Grading rules follow Gus's prototype (Decision 124+), so check the grading log first.
 - **PR17:** *Answered: deferred, 20 Oct 2026.*
 
-## 9. Code checks
+## 9. Settings → Members (14 screenshots, chat only, 19 Oct 2026)
+
+Pattern: the Settings layout from the design brief (second dark panel + rows with ›).
+Detail pages are **toggle lists** (label left, YES/NO pill right) with one full-width
+"Save changes" button.
+
+**Members Settings rows:** Member Portal · Member Notifications · Member list settings ·
+Membership settings · Document Settings · Sign-up Forms · Custom Member Fields · Custom
+Member Statuses · Manage Tags · Import / Export / Merge.
+
+ULTM8 today has **no per-School settings for any of these**. Student-app behaviour is fixed
+in code. Every toggle below would be a new School-level setting (one settings entity, many fields).
+
+### Member Portal toggles
+| # | Gymdesk setting | ULTM8 behaviour today |
+|---|---|---|
+| MS1 | Enable member portal | Always on (`apps/student`) |
+| MS2 | Members/visitors can edit their profile | 🟡 Fixed: students edit their own profile |
+| MS3 | Visitors can access the portal | ❌ No visitors (Q6) |
+| MS4 | Show payments / membership cards in member accounts | 🟡 Fixed |
+| MS5 | Members can remove their payment method | ❓ |
+| MS6 | **Members can update their own rank** | ⚠️ Conflicts with grading: students can't self-promote. Instructors pick their own belt (Decision 188). Grading follows Gus's rules (Decision 124) |
+| MS7 | Show promotion criteria to members | 🟡 Guardians can see progress/skills (Decision 132) |
+| MS8 | Members can renew / add memberships / **request cancellation / cancel** | 🟡 Purchase ✅ (Checkout); self-cancel ❓ |
+| MS9 | Members/visitors can use **manual payments** (cash/bank) | 🟡 Cash/Bank Transfer transactions exist (staff-recorded) |
+| MS10 | Assign new payment method to overdue/scheduled payments; pay before due date | ❌ |
+| MS11 | Customise name on invoices | ❌ |
+| MS12 | **Members can sign up family members through their account** | 🟡 Guardian adds minors ✅. Adults adding other adults ❌ (Q13) |
+| MS13 | Show "Book a Class" quick action | ✅ Booking exists |
+| MS14 | Hide "Other" gender option | ❌ (gender is free text) |
+| MS15 | Manage member-portal messaging · Dashboard quick actions · Member content settings | ❌ (sub-pages not captured) |
+
+### Member Notifications
+| # | Gymdesk setting | ULTM8 |
+|---|---|---|
+| MN1 | Welcome email to new sign-ups (editable text) | ❓ Invite emails exist; welcome email to verify |
+| MN2 | Happy-birthday notices | ❌ (Q1 birthdays) |
+| MN3 | Remind of membership expiry 1 week before | ❌ `membership-expiry-sweep` expires Memberships but sends no reminder |
+| MN4 | Membership expired notification | ❓ |
+| MN5 | Show upcoming birthdays on dashboard (toggle) | ❌ This answers D3's "who decides": **the School switches it on** |
+| MN6 | Email staff when a member/lead sends a message | ❌ (ties to PR13 messaging) |
+| MN7 | **Absence alert**: dashboard notice when a member hasn't checked in for N weeks | ❌ |
+
+### Member list settings
+| MLS1 | Members per page, default sort (e.g. Join Date) | ❌ Small; frontend + one setting |
+
+### Membership settings
+| # | Gymdesk setting | ULTM8 |
+|---|---|---|
+| MB1 | **Auto-adjust family pricing** when family members are added, removed, frozen or reactivated | ❌ (Q13 family, Q25 freeze) |
+| MB2 | Weekly **expiring-memberships report** to staff | ❌ |
+| MB3 | Staff notifications for new / frozen / cancelled memberships | ❓ |
+| MB4 | **Bookings deduct remaining sessions** | ✅ Class Pack credits are spent by bookings |
+| MB5 | **Recharge membership at check-in** when sessions run out | ❌ |
+
+### Document Settings
+| # | Gymdesk setting | ULTM8 |
+|---|---|---|
+| DS1 | Require Guardian signature for minors | ✅ Built in (Guardian consent model, SKILL.md §14), not optional |
+| DS2 | **Minor age** configurable per School (default 18) | ⚠️ ULTM8 decides adult vs minor from DOB (Decision 67). Whether the age threshold is fixed or per country/School: to verify |
+| DS3 | Require both minor and Guardian signatures | ❌ |
+| DS4 | Email signed copy: no / to manager / to manager and member / to member | ❓ |
+| DS5 | Email membership contracts for signature | 🟡 Waiver signature requests exist (`waiver-signature-requests` job) |
+
+### Sign-up Forms (form builder)
+List: forms with tags for where each is the default (**Manager form · Front-desk · Website ·
+Email invite**), with edit, delete and a **QR code** to open the form on a phone. Settings:
+**manually confirm website sign-ups**; notify staff on new sign-up.
+
+Edit form = the Add Member section-card layout, plus **per-section SHOW/HIDE switches**
+(top-right of each card), **"Require …" checkboxes** per section (address, contact info,
+photo, document signature, source), and **per-field eye icons** to hide single fields.
+Settings: contact type (Visitor/Member) + default type + "allow type selection".
+Sections: Form details · Member details · Address · Contacts · Photo · **Documents** (pick
+which to sign) · **Medical Conditions** · How did you hear · Interface language · Account
+password · **Selected membership + credit card payment** · Additional forms / post sign-up.
+
+| # | Element | ULTM8 |
+|---|---|---|
+| SF1 | Multiple configurable sign-up forms per School | ❌ One fixed self-registration flow |
+| SF2 | Per-section show/hide/require, per-field hide | ❌ |
+| SF3 | QR code / shareable link to a form | 🟡 QR is used for check-in; sign-up link QR ❌ |
+| SF4 | Staff approval of website sign-ups | ❌ |
+| SF5 | Pick documents to sign during sign-up | 🟡 Waiver signing exists; per-form choice ❌ |
+| SF6 | **Medical conditions** | ❌ Health data is special-category personal data (GDPR Art. 9 / LGPD). Needs a decision |
+| SF7 | Pay for a membership inside the form | 🟡 ULTM8 pays via **Stripe hosted Checkout** (Decisions 238/243). Copy the layout, but keep card entry on Stripe's hosted page, not in our own form fields |
+| SF8 | Custom member fields / custom statuses / tags / import-export-merge | ❌ (sub-pages not captured; tags = PR6, export = Q26) |
+
+## 10. Code checks
 
 All ❓ items from the first pass were checked against `schema.prisma` on 19 Oct 2026
 and resolved above. Field-level only: a 🟡 may still need its service/endpoint checked
