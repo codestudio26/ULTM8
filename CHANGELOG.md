@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **School Portal translation, 15 languages** (Decision 273) — the header's
+  language picker now actually switches the portal's text instead of only
+  saving a preference. Languages: English (UK), Portuguese (BR), Spanish,
+  Arabic, French, German, Italian, Dutch, Polish, Russian, Turkish, Japanese,
+  Korean, Chinese (Simplified) and Thai, each listed in its own script.
+  Arabic switches the layout to right-to-left. Text ships built in, and a
+  Platform Admin Translation row for the same screen and key replaces it.
+  Translated so far: the menu, header and Notifications page; the rest of
+  the portal follows page group by page group and shows English until then.
+  Non-English text is a first draft awaiting native-speaker review.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

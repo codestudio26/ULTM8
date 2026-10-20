@@ -3905,3 +3905,24 @@ Item 2 is a scope/direction decision, not a completed migration — reconciling 
 ### Recorded by
 
 User, approving both of the Developer's recommendations (delete the stale label; unify the controlled list) 16 Oct 2026.
+
+---
+
+## Decision 273 — School Portal translation: built-in text with Platform Admin overrides, 15 languages
+
+**Date:** 20 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the School Portal's language picker saved a preference but changed no text (`TopBar.tsx`: "this app has no translation runtime yet"), and Spec 55 §11.1's observed list of 4 languages.
+
+### Decision
+
+1. **Text source: built in, with server overrides.** The portal ships its own text for every language, so it always renders. A row in the existing `Translation` table (edited in the Platform Admin Translations tool) for the same locale replaces the built-in text for that key, mapped as `${screen}.${labelKey}`. A missing translation falls back to English, never to blank text.
+2. **15 languages:** English (UK), Portuguese (BR), Spanish, Arabic (the original 4), plus French, German, Italian, Dutch, Polish, Russian, Turkish, Japanese, Korean, Chinese (Simplified) and Thai. Arabic is the only right-to-left language; the portal switches layout direction for it.
+3. Non-English text is a first draft and needs a native-speaker review before real users rely on it.
+
+### What this does NOT resolve
+
+The student app (`apps/student`) and Platform Admin are not translated (both deferred for this testing round). Server-generated messages (API error text, notification bodies) stay English. Currency and date formats are unchanged by this decision.
+
+### Recorded by
+
+User (Code), choosing option 1 of two offered (built-in plus overrides vs server-only) and approving the proposed 15-language list, 20 Oct 2026.

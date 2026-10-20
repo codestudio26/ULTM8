@@ -12,10 +12,11 @@ export type UpdateCurrentUserInput = components['schemas']['UpdateUserDto'];
  * grants — see that file's own header comment on why they're never trusted
  * for authorization), which carry no display name; this is the real source
  * for the app-shell header's profile name/photo/language. */
-export function useCurrentUser() {
+export function useCurrentUser(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['currentUser'],
     queryFn: () => unwrap(apiClient.GET('/v1/users/me', {})),
+    enabled: options.enabled ?? true,
   });
 }
 

@@ -1,0 +1,112 @@
+/**
+ * English (UK) — the source catalogue every other locale translates, and the
+ * fallback for any key a locale leaves out. Grouped by screen; the group name
+ * is the `screen` a Platform Admin Translation row uses to override a key.
+ *
+ * `{name}` is filled from the variables passed to `t()`; an object with
+ * `one`/`other` (and, for Arabic etc., `zero`/`two`/`few`/`many`) is picked by
+ * the `count` variable.
+ */
+export const messages = {
+  common: {
+    loadFailed: 'Could not load this page.',
+    tryAgain: 'Something went wrong — please try again.',
+    done: 'Done',
+    cancel: 'Cancel',
+    save: 'Save',
+    none: '—',
+  },
+  layout: {
+    brand: 'ULTM8 School Portal',
+    logOut: 'Log out',
+    searchPlaceholder: 'Search (coming soon)',
+    searchAria: 'Search — not available yet',
+    notificationsAria: 'Notifications',
+    languageAria: 'Language',
+    roles: {
+      owner: 'School Owner',
+      branchStaff: 'Branch Staff',
+      coach: 'Coach',
+      student: 'Student',
+    },
+    nav: {
+      dashboard: 'Dashboard',
+      school: 'School',
+      branches: 'Branches',
+      staff: 'Staff',
+      disciplines: 'Disciplines',
+      instructors: 'Instructors',
+      students: 'Students',
+      gradingBoard: 'Grading Board',
+      gradingPermissions: 'Grading Permissions',
+      classes: 'Classes',
+      curriculum: 'Curriculum',
+      timetable: 'Timetable',
+      membershipPlans: 'Membership Plans',
+      transactions: 'Transactions',
+      waivers: 'Waivers',
+      franchises: 'Franchises',
+      notifications: 'Notifications',
+      inviteCoaches: 'Invite coaches',
+      myBelts: 'My belts',
+      completeProfile: 'Complete your profile',
+    },
+  },
+  notifications: {
+    title: 'Notifications',
+    subtitle: 'Updates sent to your own account.',
+    loadFailed: 'Could not load Notifications.',
+    broadcastButton: 'Broadcast to Students',
+    statTotal: 'Total',
+    statUnread: 'Unread',
+    statReadWithin24h: 'Read within 24h',
+    emptyTitle: 'No notifications yet',
+    emptyDescription: "You're all caught up.",
+    statusSnoozed: 'Snoozed',
+    statusRead: 'Read',
+    statusNew: 'New',
+    columnTitle: 'Title',
+    columnMessage: 'Message',
+    columnReceived: 'Received',
+    rowActionsAria: 'Actions for {title}',
+    markRead: 'Mark read',
+    snooze: 'Snooze',
+    markReadFailed: 'Could not mark this notification as read — please try again.',
+    snoozeModal: {
+      title: 'Snooze notification',
+      explanation:
+        'Hide {title} from your unread count until the time you choose. It returns to your unread list automatically once that time passes.',
+      durationLabel: 'Snooze for',
+      submit: 'Snooze',
+      failed: 'Could not snooze this notification — please try again.',
+      oneHour: '1 hour',
+      fourHours: '4 hours',
+      tomorrow: 'Tomorrow (24 hours)',
+      threeDays: '3 days',
+      oneWeek: '1 week',
+    },
+    broadcastModal: {
+      title: 'Broadcast to Students',
+      sentTitle: 'Broadcast sent',
+      sentTo: { one: 'Sent to {count} Student.', other: 'Sent to {count} Students.' },
+      titleLabel: 'Title',
+      messageLabel: 'Message',
+      audienceLabel: 'Send to',
+      audienceHint: 'All Students at your School, one Branch, or everyone booked into one Class.',
+      audienceAll: 'All Students',
+      audienceBranch: 'Students at a Branch',
+      audienceClass: 'Students booked into a Class',
+      branchLabel: 'Branch',
+      branchPlaceholder: 'Select a Branch…',
+      classLabel: 'Class',
+      classPlaceholder: 'Select a Class…',
+      submit: 'Send broadcast',
+      required: 'Title and message are both required.',
+      selectBranch: 'Select the Branch to notify.',
+      selectClass: 'Select the Class to notify.',
+      failed: 'Could not send this broadcast — please try again.',
+    },
+  },
+};
+
+export type EnglishMessages = typeof messages;
