@@ -382,6 +382,12 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - A selected card gets a slate ring.
     - A ticked card turns pale green.
     - Clicking a card fills the right panel: the large belt, "Toward {next} — %", the ticks and the skills.
+  - **When the right panel shows** (product owner, 21 Oct 2026):
+    - **Nothing opened, nothing ticked:** no right panel; the board uses the full width.
+    - **Click a student:** their panel opens, sticky on desktop so it stays in view while the board scrolls. A round ✕ in its header closes it.
+    - **Tick students:** a compact **Selection** panel shows instead. It has "N selected", one row per student (32px avatar, name, belt picture → next rank, a ✕ to take them out), then **Promote N students** and **Clear selection**. Clicking a name opens that student's panel.
+    - **– (make small)** shrinks the Selection panel to a floating pill at the bottom right: "N selected ▴" plus **Promote**. Tapping "N selected" opens it again. The pill also shows while a student's panel is open and others are ticked, so the selection is never hidden.
+    - **Phone:** both panels are bottom sheets (up to 72% of the screen, rounded top corners) instead of sitting below the whole board. The pill spans the screen width.
   - **Right panel, below the skills** (product owner, 21 Oct 2026):
     - **Grading history:** the last 4 entries, newest first. Each shows Promoted / Stripe awarded, the date, the two belt pictures (from → to), "from → to", who graded, and any system note ("Skipped N rank(s) in between."). A promotion made on the board appears at the top straight away. "See full history ›" opens the student's Ranks tab.
     - **Buttons:** Promote (pale green) · Move to another column · Open grading page › · **Open full student view ›** (dark), which opens the student profile on its Profile tab. They sit straight under the history, 16px below it, never pinned to the bottom of the panel (product owner, 21 Oct 2026).
