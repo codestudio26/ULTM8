@@ -3976,3 +3976,20 @@ User ("Let's set it as per market standards, country field etc."), 21 Oct 2026, 
 ### Recorded by
 
 User ("Go for the notification change"), approving the recommendation to add Delete and "Clear all read" as a hide-not-erase soft delete, 21 Oct 2026.
+
+---
+
+## Decision 279 — New Schools start with a 60-minute waitlist claim window (was 120)
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Changes:** the default Spec 55 §6.1 / domain rules §10 give for `School.waitlistClaimWindowMinutes` (120 minutes). The product owner changed it directly; this is a default value only, not a change to how the waitlist works.
+
+### Decision
+
+New Schools default to **60 minutes**. Only one person is offered a freed seat at a time, so a shorter window lets more people on the list get a chance before class (a seat freed four hours before class reaches up to four people instead of two). It isn't shorter because students are told only in the app until push/SMS delivery is live (Decision 267); revisit 30 minutes once it is.
+
+Existing Schools keep the window they already have (the migration changes the column default only), and owners can still set any value of 1 minute or more on the School page. The deadline is still capped at the class start time.
+
+### Recorded by
+
+User, approving the recommendation of 60 minutes ("go for it .. and then merge it"), 21 Oct 2026.

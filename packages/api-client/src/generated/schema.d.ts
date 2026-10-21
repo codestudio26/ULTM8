@@ -3666,7 +3666,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
         };
         SchoolResponseDto: {
@@ -3740,7 +3740,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
             mobileNumber?: string | null;
             address?: string | null;

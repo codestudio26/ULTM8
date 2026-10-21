@@ -11118,7 +11118,7 @@
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+            "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279)."
           }
         },
         "required": [
@@ -11391,7 +11391,7 @@
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+            "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279)."
           },
           "mobileNumber": {
             "type": "string",
