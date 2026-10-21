@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthCard, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhoneField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
+import { AddressFields, AuthCard, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhoneField, SelectField, TextField, TimezoneField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -28,7 +28,7 @@ export function CreateSchoolPage() {
   const [form, setForm] = useState({
     name: '',
     mobileNumber: '',
-    address: '',
+    address: postalAddressFromRecord(null, guessDefaultCountry()),
     businessType: '',
     activities: '',
     facilities: '',
@@ -40,6 +40,7 @@ export function CreateSchoolPage() {
     classCancellationPolicy: 'MANUAL' as 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT',
     waitlistClaimWindowMinutes: 120,
   });
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
 
@@ -50,11 +51,17 @@ export function CreateSchoolPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const prepared = preparePostalAddress(form.address);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       const result = await createSchool.mutateAsync({
         name: form.name,
         mobileNumber: form.mobileNumber || undefined,
-        address: form.address || undefined,
+        postalAddress: prepared.postalAddress ?? undefined,
         businessType: form.businessType || undefined,
         activities: form.activities ? form.activities.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
         facilities: form.facilities ? form.facilities.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
@@ -107,9 +114,7 @@ export function CreateSchoolPage() {
         <Field label="Mobile number" htmlFor="school-mobile">
           <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Field label="Address" htmlFor="school-address">
-          <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
-        </Field>
+        <AddressFields idPrefix="school-address" value={form.address} onChange={(v) => set('address', v)} errors={addressErrors} />
         <Field label="Business type" htmlFor="school-businessType">
           <TextField value={form.businessType} onChange={(e) => set('businessType', e.target.value)} />
         </Field>

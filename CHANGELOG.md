@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Country-first addresses** (Decision 276) — every address form in the
+  School Portal (School profile and creation, Branch add and settings,
+  Franchise, Instructor profile, Student profile, registration) now starts with
+  a Country picker and then shows that country's own fields: e.g. ZIP code and
+  a State list for the US, Postcode for the UK, Emirate and no postcode for the
+  UAE, CEP for Brazil. Required fields and postal-code formats are checked per
+  country, in the form and again by the API. Addresses are stored as separate
+  fields; the one-line address shown elsewhere is built from them. Existing
+  one-line addresses are kept and can be converted the next time they're
+  edited. Google Places suggestions can be plugged in once an API key exists.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, PageHeader, SuccessBanner, TextArea, TextField } from '@ultm8/ui';
+import { AddressFields, Button, Checkbox, ErrorBanner, Field, PageHeader, SuccessBanner, TextArea, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCompleteMyInstructorProfile, useRequestCertificationUploadUrl } from './instructorQueries';
 
 const ALLOWED_CERTIFICATION_TYPES = ['application/pdf', 'image/png', 'image/jpeg'] as const;
@@ -17,7 +18,9 @@ export function CompleteInstructorProfilePage() {
   const complete = useCompleteMyInstructorProfile();
   const requestUploadUrl = useRequestCertificationUploadUrl();
 
-  const [address, setAddress] = useState('');
+  const [initialAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
+  const [address, setAddress] = useState(initialAddress);
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [activities, setActivities] = useState('');
   const [certificationFile, setCertificationFile] = useState<File | null>(null);
   const [certificationConsent, setCertificationConsent] = useState(false);
@@ -45,10 +48,16 @@ export function CompleteInstructorProfilePage() {
     e.preventDefault();
     setError(null);
     setSaved(false);
+    const prepared = preparePostalAddress(address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       const certificationKey = await uploadCertificationIfAny();
       await complete.mutateAsync({
-        ...(address ? { address } : {}),
+        ...(prepared.postalAddress ? { postalAddress: prepared.postalAddress } : {}),
         ...(activities.trim() ? { activities: activities.split(',').map((a) => a.trim()).filter(Boolean) } : {}),
         ...(certificationKey ? { certificationKey } : {}),
         ...(certificationConsent ? { certificationConsent: true } : {}),
@@ -67,9 +76,7 @@ export function CompleteInstructorProfilePage() {
       {saved ? <SuccessBanner message="Your profile was updated." /> : null}
       {error ? <ErrorBanner message={error} /> : null}
       <form onSubmit={handleSubmit}>
-        <Field label="Address" htmlFor="complete-profile-address">
-          <TextField value={address} onChange={(e) => setAddress(e.target.value)} />
-        </Field>
+        <AddressFields idPrefix="complete-profile-address" value={address} onChange={setAddress} errors={addressErrors} />
         <Field label="Activities" htmlFor="complete-profile-activities" hint="Comma-separated, e.g. BJJ, Judo">
           <TextArea value={activities} onChange={(e) => setActivities(e.target.value)} />
         </Field>

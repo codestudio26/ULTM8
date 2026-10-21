@@ -3512,6 +3512,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        PostalAddressDto: {
+            /** @description Street address, line 1. */
+            line1?: string;
+            /** @description Apartment, suite, building, floor, etc. */
+            line2?: string;
+            /** @description City, town, post town or suburb, depending on the country. */
+            city?: string;
+            /** @description State, province, county, emirate, prefecture, etc. For countries with a fixed list (US, CA, AU, AE, BR, MY) this is the list value, e.g. "CA" for California. */
+            region?: string;
+            /** @description Postal code / ZIP / postcode, validated against the country’s own format. */
+            postalCode?: string;
+            /** @description ISO 3166-1 alpha-2 country code, e.g. "GB". Required unless every other field is blank. */
+            country: string;
+        };
         RegisterDto: {
             email: string;
             /** @description E.164 format */
@@ -3530,6 +3544,7 @@ export interface components {
             language?: string;
             currency?: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
         };
         AuthMessageResponseDto: {
             message: string;
@@ -3588,6 +3603,7 @@ export interface components {
             name: string;
             mobileNumber?: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             businessType?: string;
             activities?: string[];
             facilities?: string[];
@@ -3622,6 +3638,14 @@ export interface components {
             waitlistClaimWindowMinutes?: number;
         };
         SchoolResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             franchiseId?: string | null;
             name: string;
@@ -3675,6 +3699,7 @@ export interface components {
         };
         UpdateSchoolDto: {
             name?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             facilities?: string[];
             ranksToggle?: boolean;
@@ -3754,6 +3779,7 @@ export interface components {
             currency?: string | null;
             /** @description Null clears it. */
             address?: string | null;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             profilePhotoUrl?: string;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
@@ -3763,6 +3789,14 @@ export interface components {
             beltSize?: string | null;
         };
         UserResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             email: string;
             phone: string;
@@ -3817,6 +3851,7 @@ export interface components {
         CreateBranchDto: {
             name: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             contactPhone?: string;
             /** @description IANA timezone name. */
             timezone?: string;
@@ -3831,6 +3866,14 @@ export interface components {
             bannerUrl?: string;
         };
         BranchResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             schoolId: string;
             name: string;
@@ -3861,6 +3904,7 @@ export interface components {
         };
         UpdateBranchDto: {
             name?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             facilities?: string[];
             address?: string | null;
@@ -3877,7 +3921,7 @@ export interface components {
         };
         CreateRoleGrantDto: {
             /** @enum {string} */
-            role: "INSTRUCTOR" | "BRANCH_STAFF";
+            role: "INSTRUCTOR" | "BRANCH_STAFF" | "SCHOOL_OWNER_MANAGER";
             schoolId: string;
             /** @description Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates. */
             branchId?: string;
@@ -3957,6 +4001,7 @@ export interface components {
             name: string;
             mobileNumber?: string;
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             type?: string;
             activities?: string[];
             facilities?: string[];
@@ -3978,6 +4023,14 @@ export interface components {
             perHeadcountRate?: number;
         };
         FranchiseResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             name: string;
             mobileNumber?: string | null;
@@ -4008,6 +4061,7 @@ export interface components {
         };
         UpdateFranchiseDto: {
             name?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             facilities?: string[];
             /**
@@ -4257,6 +4311,7 @@ export interface components {
             currency?: string | null;
             /** @description Null clears it. */
             address?: string | null;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             profilePhotoUrl?: string;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             weightCategory?: string | null;
@@ -4676,6 +4731,14 @@ export interface components {
             bio?: string;
         };
         InstructorResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             userId: string;
             firstName: string;
@@ -4758,6 +4821,14 @@ export interface components {
             branchId?: string;
         };
         CreateInstructorManuallyResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
             id: string;
             userId: string;
             firstName: string;
@@ -4792,6 +4863,7 @@ export interface components {
         };
         CompleteInstructorProfileDto: {
             address?: string;
+            postalAddress?: components["schemas"]["PostalAddressDto"] | null;
             activities?: string[];
             /** @description The key returned by POST /instructors/me/certification-upload-url, after uploading to it. */
             certificationKey?: string;
@@ -11383,6 +11455,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 8-character School join code. */
                 code: string;
             };
             cookie?: never;
