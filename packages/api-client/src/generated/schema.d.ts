@@ -3618,7 +3618,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 277). */
             waitlistClaimWindowMinutes?: number;
         };
         SchoolResponseDto: {
@@ -3683,7 +3683,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 277). */
             waitlistClaimWindowMinutes?: number;
             mobileNumber?: string | null;
             address?: string | null;
@@ -3877,7 +3877,7 @@ export interface components {
         };
         CreateRoleGrantDto: {
             /** @enum {string} */
-            role: "INSTRUCTOR" | "BRANCH_STAFF";
+            role: "INSTRUCTOR" | "BRANCH_STAFF" | "SCHOOL_OWNER_MANAGER";
             schoolId: string;
             /** @description Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates. */
             branchId?: string;
@@ -11383,6 +11383,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 8-character School join code. */
                 code: string;
             };
             cookie?: never;

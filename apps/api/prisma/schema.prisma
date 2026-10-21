@@ -865,7 +865,7 @@ model School {
   footerTwitterUrl     String?
 
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
-  waitlistClaimWindowMinutes     Int                             @default(120)
+  waitlistClaimWindowMinutes     Int                             @default(60)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own

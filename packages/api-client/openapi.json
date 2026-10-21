@@ -8935,6 +8935,7 @@
             "name": "code",
             "required": true,
             "in": "path",
+            "description": "8-character School join code.",
             "schema": {
               "type": "string"
             }
@@ -11015,7 +11016,7 @@
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+            "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 277)."
           }
         },
         "required": [
@@ -11254,7 +11255,7 @@
           },
           "waitlistClaimWindowMinutes": {
             "type": "number",
-            "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+            "description": "Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 277)."
           },
           "mobileNumber": {
             "type": "string",
@@ -11913,7 +11914,8 @@
             "type": "string",
             "enum": [
               "INSTRUCTOR",
-              "BRANCH_STAFF"
+              "BRANCH_STAFF",
+              "SCHOOL_OWNER_MANAGER"
             ]
           },
           "schoolId": {

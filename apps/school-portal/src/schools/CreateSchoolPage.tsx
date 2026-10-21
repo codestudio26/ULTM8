@@ -41,7 +41,7 @@ export function CreateSchoolPage() {
     timezone: '',
     description: '',
     classCancellationPolicy: 'MANUAL' as 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT',
-    waitlistClaimWindowMinutes: 120,
+    waitlistClaimWindowMinutes: 60,
   });
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
