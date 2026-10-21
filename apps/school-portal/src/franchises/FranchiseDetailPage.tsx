@@ -12,6 +12,9 @@ import {
   useRefundFeeCharge,
   type FranchiseFeeChargeResponse,
 } from './franchiseQueries';
+import { useT, type TranslateFn } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
+import { formatLocale } from '../i18n/format';
 
 // FOUND ON REVIEW: an earlier version of this file hand-rolled a local
 // `FranchiseSchool` type here instead of reusing the generated
@@ -21,11 +24,11 @@ import {
 // every other query/page in this codebase follows.
 type FranchiseSchool = components['schemas']['SchoolResponseDto'];
 
-function subscriptionStatusBadge(status: FranchiseSchool['franchiseFeeSubscriptionStatus']) {
-  if (status === 'ACTIVE') return <Badge variant="success">Active</Badge>;
-  if (status === 'PAST_DUE') return <Badge variant="danger">Past due</Badge>;
-  if (status === 'CANCELED') return <Badge>Canceled</Badge>;
-  return <Badge>Not billing yet</Badge>;
+function subscriptionStatusBadge(status: FranchiseSchool['franchiseFeeSubscriptionStatus'], t: TranslateFn) {
+  if (status === 'ACTIVE') return <Badge variant="success">{t('franchises.detail.subscriptionActive')}</Badge>;
+  if (status === 'PAST_DUE') return <Badge variant="danger">{t('franchises.detail.subscriptionPastDue')}</Badge>;
+  if (status === 'CANCELED') return <Badge>{t('franchises.detail.subscriptionCanceled')}</Badge>;
+  return <Badge>{t('franchises.detail.subscriptionNotBilling')}</Badge>;
 }
 
 /** A Franchise's own member-School roster + franchise-fee charge history and
@@ -36,6 +39,7 @@ function subscriptionStatusBadge(status: FranchiseSchool['franchiseFeeSubscripti
  * are written exclusively by franchise-fee-usage-reporting and Stripe
  * webhook handlers — see FranchiseFeesController's own header comment). */
 export function FranchiseDetailPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const franchiseId = id ?? null;
   const { data: franchise, isLoading: franchiseLoading, error: franchiseError } = useFranchise(franchiseId);
@@ -47,13 +51,13 @@ export function FranchiseDetailPage() {
   if (!franchiseId) return null;
   if (franchiseLoading || schoolsLoading || chargesLoading) return <Spinner />;
   if (franchiseError) {
-    return <ErrorBanner message={franchiseError instanceof ApiError ? franchiseError.message : 'Could not load this Franchise.'} />;
+    return <ErrorBanner message={franchiseError instanceof ApiError ? franchiseError.message : t('franchises.detail.loadFailed')} />;
   }
   if (schoolsError) {
-    return <ErrorBanner message={schoolsError instanceof ApiError ? schoolsError.message : 'Could not load its member Schools.'} />;
+    return <ErrorBanner message={schoolsError instanceof ApiError ? schoolsError.message : t('franchises.detail.schoolsLoadFailed')} />;
   }
   if (chargesError) {
-    return <ErrorBanner message={chargesError instanceof ApiError ? chargesError.message : 'Could not load its fee-charge history.'} />;
+    return <ErrorBanner message={chargesError instanceof ApiError ? chargesError.message : t('franchises.detail.chargesLoadFailed')} />;
   }
 
   const schools: FranchiseSchool[] = schoolData?.items ?? [];
@@ -62,27 +66,29 @@ export function FranchiseDetailPage() {
   return (
     <>
       <PageHeader
-        title={franchise?.name ?? 'Franchise'}
-        subtitle={`Fee model: ${franchise?.feeModel === 'PER_HEADCOUNT' ? 'Per-headcount' : 'Flat'}`}
+        title={franchise?.name ?? t('franchises.detail.fallbackTitle')}
+        subtitle={t('franchises.detail.subtitle', {
+          feeModel: franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.feeModels.perHeadcount') : t('franchises.feeModels.flat'),
+        })}
       />
 
       <div style={{ marginBottom: 24 }}>
         <Card>
           <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-            Member Schools
+            {t('franchises.detail.memberSchools')}
           </h2>
           {schools.length === 0 ? (
             <EmptyState
-              title="No member Schools yet"
-              description="A School joins this Franchise itself, from its own School settings — there's no invite-from-here flow yet."
+              title={t('franchises.detail.noSchoolsTitle')}
+              description={t('franchises.detail.noSchoolsDescription')}
             />
           ) : (
             <Table<FranchiseSchool>
               rows={schools}
               columns={[
-                { key: 'name', header: 'Name', render: (s) => s.name },
-                { key: 'type', header: 'Type', render: (s) => s.businessType ?? '—' },
-                { key: 'billing', header: 'Fee billing', render: (s) => subscriptionStatusBadge(s.franchiseFeeSubscriptionStatus) },
+                { key: 'name', header: t('franchises.detail.columnName'), render: (s) => s.name },
+                { key: 'type', header: t('franchises.detail.columnType'), render: (s) => s.businessType ?? '—' },
+                { key: 'billing', header: t('franchises.detail.columnFeeBilling'), render: (s) => subscriptionStatusBadge(s.franchiseFeeSubscriptionStatus, t) },
               ]}
             />
           )}
@@ -91,12 +97,12 @@ export function FranchiseDetailPage() {
 
       <Card>
         <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-          Fee charges
+          {t('franchises.detail.feeCharges')}
         </h2>
         {charges.length === 0 ? (
           <EmptyState
-            title="No fee charges yet"
-            description="Charges appear here once a member School's franchise-fee billing has actually run."
+            title={t('franchises.detail.noChargesTitle')}
+            description={t('franchises.detail.noChargesDescription')}
           />
         ) : (
           <Table<FranchiseFeeChargeResponse>
@@ -104,25 +110,29 @@ export function FranchiseDetailPage() {
             columns={[
               {
                 key: 'period',
-                header: 'Billing period',
-                render: (c) => `${new Date(c.billingPeriodStart).toLocaleDateString()} – ${new Date(c.billingPeriodEnd).toLocaleDateString()}`,
+                header: t('franchises.detail.columnBillingPeriod'),
+                render: (c) => `${new Date(c.billingPeriodStart).toLocaleDateString(formatLocale())} – ${new Date(c.billingPeriodEnd).toLocaleDateString(formatLocale())}`,
               },
               {
                 key: 'school',
-                header: 'School',
+                header: t('franchises.detail.columnSchool'),
                 render: (c) => schools.find((s) => s.id === c.schoolId)?.name ?? c.schoolId.slice(0, 8),
               },
-              { key: 'basis', header: 'Basis', render: (c) => (c.feeBasisSnapshot === 'PER_HEADCOUNT' ? 'Per-headcount' : 'Flat') },
-              { key: 'amount', header: 'Amount', render: (c) => formatMoney(c.amount, c.currency) },
-              { key: 'status', header: 'Status', render: (c) => paymentStatusBadge(c.status) },
-              { key: 'refunded', header: 'Refunded', render: (c) => (c.refundedAmount ? formatMoney(c.refundedAmount, c.currency) : '—') },
+              {
+                key: 'basis',
+                header: t('franchises.detail.columnBasis'),
+                render: (c) => (c.feeBasisSnapshot === 'PER_HEADCOUNT' ? t('franchises.feeModels.perHeadcount') : t('franchises.feeModels.flat')),
+              },
+              { key: 'amount', header: t('franchises.detail.columnAmount'), render: (c) => formatMoney(c.amount, c.currency) },
+              { key: 'status', header: t('franchises.detail.columnStatus'), render: (c) => paymentStatusBadge(c.status) },
+              { key: 'refunded', header: t('franchises.detail.columnRefunded'), render: (c) => (c.refundedAmount ? formatMoney(c.refundedAmount, c.currency) : '—') },
               {
                 key: 'actions',
                 header: '',
                 render: (c) =>
                   c.status === 'SUCCESSFUL' && (c.refundedAmount ?? 0) < c.amount ? (
                     <Button variant="danger" onClick={() => setRefunding(c)}>
-                      Refund
+                      {t('franchises.detail.refund')}
                     </Button>
                   ) : null,
               },
@@ -172,6 +182,7 @@ function RefundModal({
   // (its own header comment flags zero-decimal currencies like JPY as a
   // known, pre-existing, project-wide limitation), so this conversion adds
   // no new limitation beyond what already exists everywhere money is shown.
+  const t = useT();
   const remainingMinorUnits = charge.amount - (charge.refundedAmount ?? 0);
   const remainingMajorUnits = remainingMinorUnits / 100;
   const [amount, setAmount] = useState('');
@@ -186,21 +197,28 @@ function RefundModal({
       // convert the major-unit form value back to minor units for the API.
       await onSubmit(amount ? Math.round(Number(amount) * 100) : undefined);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
-    <Modal title="Refund fee charge" onClose={onClose}>
+    <Modal title={t('franchises.refundModal.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <p>
-          Remaining refundable: <strong>{formatMoney(remainingMinorUnits, charge.currency)}</strong>
+          <Trans
+            k="franchises.refundModal.remaining"
+            nodes={{ amount: <strong>{formatMoney(remainingMinorUnits, charge.currency)}</strong> }}
+          />
         </p>
         <Field
-          label={`Amount to refund${charge.currency ? ` (${charge.currency})` : ''}`}
+          label={
+            charge.currency
+              ? t('franchises.refundModal.amountLabelWithCurrency', { currency: charge.currency })
+              : t('franchises.refundModal.amountLabel')
+          }
           htmlFor="refund-amount"
-          hint="Same currency and units as the balance above. Leave blank to refund the full remaining balance."
+          hint={t('franchises.refundModal.amountHint')}
         >
           <TextField
             type="number"
@@ -213,10 +231,10 @@ function RefundModal({
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" variant="danger" loading={submitting}>
-            Confirm refund
+            {t('franchises.refundModal.confirm')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

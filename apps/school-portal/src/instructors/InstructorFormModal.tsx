@@ -6,6 +6,7 @@ import type { BranchResponse } from '../branches/branchQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { EligibleInstructorUser, InstructorResponse } from './instructorQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /** Fields match CreateInstructorDto/UpdateInstructorDto exactly —
  * apps/api/src/instructors/dto/create-instructor.dto.ts. `userId` is a
@@ -59,6 +60,7 @@ export function InstructorFormModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
     userId: initial?.userId ?? '',
@@ -95,7 +97,7 @@ export function InstructorFormModal({
         bio: form.bio || null,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -105,16 +107,16 @@ export function InstructorFormModal({
         {error ? <ErrorBanner message={error} /> : null}
         {isEdit ? null : (
           <Field
-            label="User"
+            label={t('instructors.form.user')}
             htmlFor="instructor-userId"
-            hint="Must already hold an active Instructor role at this School — grant it first on the Staff page."
+            hint={t('instructors.form.userHint')}
           >
             <SelectField
               required
               value={form.userId}
               onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
               options={[
-                { value: '', label: 'Select a user…' },
+                { value: '', label: t('instructors.form.userPlaceholder') },
                 ...(eligibleUsers ?? []).map((u) => ({
                   value: u.id,
                   label: `${u.firstName} ${u.surname} (${u.email})`,
@@ -123,14 +125,14 @@ export function InstructorFormModal({
             />
           </Field>
         )}
-        <Field label="Branch" htmlFor="instructor-branch" hint="Leave unselected for a School-wide profile.">
+        <Field label={t('instructors.form.branch')} htmlFor="instructor-branch" hint={t('instructors.form.branchHint')}>
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: 'Whole School' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('instructors.form.wholeSchool') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
           />
         </Field>
-        <Field label="Photo" htmlFor="instructor-photo">
+        <Field label={t('instructors.form.photo')} htmlFor="instructor-photo">
           <PhotoUploadField
             value={form.photoUrl}
             onChange={(photoUrl) => setForm((f) => ({ ...f, photoUrl }))}
@@ -145,7 +147,7 @@ export function InstructorFormModal({
           />
         </Field>
         {usesStyles ? (
-          <Field label="Specializations" htmlFor="instructor-specializations" hint="The styles this instructor teaches.">
+          <Field label={t('instructors.form.specializations')} htmlFor="instructor-specializations" hint={t('instructors.form.specializationsStylesHint')}>
             <div id="instructor-specializations">
               {disciplines.map((d) => (
                 <Checkbox
@@ -158,21 +160,21 @@ export function InstructorFormModal({
             </div>
           </Field>
         ) : (
-          <Field label="Specializations" htmlFor="instructor-specializations" hint="Comma-separated">
+          <Field label={t('instructors.form.specializations')} htmlFor="instructor-specializations" hint={t('instructors.form.specializationsHint')}>
             <TextField
               value={form.specializations}
               onChange={(e) => setForm((f) => ({ ...f, specializations: e.target.value }))}
             />
           </Field>
         )}
-        <Field label="Phone" htmlFor="instructor-phone">
+        <Field label={t('instructors.form.phone')} htmlFor="instructor-phone">
           <PhoneField
             value={form.phone}
             onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label="Years of experience" htmlFor="instructor-experience">
+        <Field label={t('instructors.form.yearsOfExperience')} htmlFor="instructor-experience">
           <TextField
             type="number"
             min={0}
@@ -180,15 +182,15 @@ export function InstructorFormModal({
             onChange={(e) => setForm((f) => ({ ...f, yearsOfExperience: e.target.value }))}
           />
         </Field>
-        <Field label="Bio" htmlFor="instructor-bio">
+        <Field label={t('instructors.form.bio')} htmlFor="instructor-bio">
           <TextArea value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

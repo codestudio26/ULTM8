@@ -4,8 +4,11 @@ import { AuthCard, Button, ErrorBanner, Field, PhoneField } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useT } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
 
 export function ForgotPasscodePage() {
+  const t = useT();
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +25,7 @@ export function ForgotPasscodePage() {
       await unwrap(apiClient.POST('/v1/auth/forgot-password', { body: { phone } }));
       navigate('/reset-passcode', { state: { phone } });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
@@ -30,21 +33,19 @@ export function ForgotPasscodePage() {
 
   return (
     <AuthCard
-      title="Reset your passcode"
-      subtitle="We'll text a verification code to your phone."
+      title={t('auth.forgot.title')}
+      subtitle={t('auth.forgot.subtitle')}
       footer={
-        <>
-          Remembered it? <Link to="/login">Log in</Link>
-        </>
+        <Trans k="auth.forgot.remembered" nodes={{ link: <Link to="/login">{t('auth.logIn')}</Link> }} />
       }
     >
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Phone" htmlFor="forgot-phone">
+        <Field label={t('auth.phoneLabel')} htmlFor="forgot-phone">
           <PhoneField required value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
         <Button type="submit" fullWidth loading={submitting}>
-          Send code
+          {t('auth.forgot.sendCode')}
         </Button>
       </form>
     </AuthCard>

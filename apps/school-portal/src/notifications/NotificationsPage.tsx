@@ -17,6 +17,8 @@ import {
 } from './notificationQueries';
 import { BroadcastNotificationModal } from './BroadcastNotificationModal';
 import { SnoozeNotificationModal } from './SnoozeNotificationModal';
+import { useI18n } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 /** Small, page-local summary tile — same shape/style as TransactionsPage's and
  * MembershipPlansPage's own `StatTile` (not promoted to @ultm8/ui yet, per
@@ -72,6 +74,7 @@ function isSnoozed(n: NotificationResponse): boolean {
  * comment on why). */
 export function NotificationsPage() {
   const schoolId = useOwnedSchoolId();
+  const { t, serverText } = useI18n();
   const { data, isLoading, error } = useNotifications();
   // v1.2 backend backlog (Decision 204's Concept 5 finding) — a SEPARATE
   // query against the new dedicated counts endpoint, deliberately NOT
@@ -101,16 +104,17 @@ export function NotificationsPage() {
   const broadcast = useBroadcastNotification(schoolId ?? '');
 
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Notifications.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('notifications.loadFailed')} />;
 
-  const notifications = data?.items ?? [];
+  // Titles/bodies the API's jobs wrote in English, shown in the picked language.
+  const notifications = (data?.items ?? []).map((n) => ({ ...n, ...serverText.notification(n) }));
 
   async function handleMarkRead(id: string) {
     setActionError(null);
     try {
       await markRead.mutateAsync(id);
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : 'Could not mark this notification as read — please try again.');
+      setActionError(err instanceof ApiError ? err.message : t('notifications.markReadFailed'));
     }
   }
 
@@ -123,8 +127,8 @@ export function NotificationsPage() {
   return (
     <>
       <PageHeader
-        title="Notifications"
-        subtitle="Updates sent to your own account."
+        title={t('notifications.title')}
+        subtitle={t('notifications.subtitle')}
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {/* Decision 277 — every User can clear their own read
@@ -143,7 +147,7 @@ export function NotificationsPage() {
                 product owner. School-Owner-only: schoolId is null for a
                 Branch Staff/Instructor viewing their own inbox on this same
                 page. */}
-            {schoolId ? <Button onClick={() => setBroadcasting(true)}>Broadcast to Students</Button> : null}
+            {schoolId ? <Button onClick={() => setBroadcasting(true)}>{t('notifications.broadcastButton')}</Button> : null}
           </div>
         }
       />
@@ -155,14 +159,14 @@ export function NotificationsPage() {
           list below. A failed counts fetch degrades to an em dash rather than
           blocking the whole page — the list is still perfectly usable without it. */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatTile label="Total" value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.total} />
-        <StatTile label="Unread" value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.unread} />
+        <StatTile label={t('notifications.statTotal')} value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.total} />
+        <StatTile label={t('notifications.statUnread')} value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.unread} />
         {/* v1.2 backend backlog — Read within 24h metric, approved by the
             product owner. `null` (nothing read yet) renders as an em dash,
             same convention the other two tiles already use for a failed fetch —
             here it's a genuinely empty metric, not an error. */}
         <StatTile
-          label="Read within 24h"
+          label={t('notifications.statReadWithin24h')}
           value={
             counts.isLoading ? (
               <Spinner />
@@ -178,7 +182,7 @@ export function NotificationsPage() {
       {actionError ? <ErrorBanner message={actionError} /> : null}
       <Card>
         {notifications.length === 0 ? (
-          <EmptyState title="No notifications yet" description="You're all caught up." />
+          <EmptyState title={t('notifications.emptyTitle')} description={t('notifications.emptyDescription')} />
         ) : (
           <Table<NotificationResponse>
             rows={notifications}
@@ -188,16 +192,16 @@ export function NotificationsPage() {
                 header: '',
                 render: (n) =>
                   isSnoozed(n) ? (
-                    <Badge>Snoozed</Badge>
+                    <Badge>{t('notifications.statusSnoozed')}</Badge>
                   ) : n.read ? (
-                    <Badge>Read</Badge>
+                    <Badge>{t('notifications.statusRead')}</Badge>
                   ) : (
-                    <Badge variant="accent">New</Badge>
+                    <Badge variant="accent">{t('notifications.statusNew')}</Badge>
                   ),
               },
-              { key: 'title', header: 'Title', render: (n) => n.title },
-              { key: 'body', header: 'Message', render: (n) => n.body },
-              { key: 'createdAt', header: 'Received', render: (n) => new Date(n.createdAt).toLocaleString() },
+              { key: 'title', header: t('notifications.columnTitle'), render: (n) => n.title },
+              { key: 'body', header: t('notifications.columnMessage'), render: (n) => n.body },
+              { key: 'createdAt', header: t('notifications.columnReceived'), render: (n) => new Date(n.createdAt).toLocaleString(formatLocale()) },
               {
                 key: 'actions',
                 header: '',
@@ -210,10 +214,10 @@ export function NotificationsPage() {
                 // itself should always offer a consistent set of items per row.
                 render: (n) => (
                   <RowActionsMenu
-                    label={`Actions for ${n.title}`}
+                    label={t('notifications.rowActionsAria', { title: n.title })}
                     actions={[
-                      { label: 'Mark read', onClick: () => handleMarkRead(n.id), disabled: n.read },
-                      { label: 'Snooze', onClick: () => setSnoozing(n) },
+                      { label: t('notifications.markRead'), onClick: () => handleMarkRead(n.id), disabled: n.read },
+                      { label: t('notifications.snooze'), onClick: () => setSnoozing(n) },
                       { label: 'Delete', onClick: () => setDeleting(n), variant: 'danger' },
                     ]}
                   />

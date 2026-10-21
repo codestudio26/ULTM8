@@ -5,6 +5,8 @@ import { Card, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useClass } from '../classes/classQueries';
 import { useClassQrToken } from './attendanceQueries';
+import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 /** Phase 52 — the School Portal's own QR-display screen (Decision 107, Phase 51
  * shipped the endpoint this calls). Meant to be left open on a shared,
@@ -22,6 +24,7 @@ import { useClassQrToken } from './attendanceQueries';
  * manage there; a separate, standalone Class picker screen would just be a
  * second, redundant way to do the same thing. */
 export function ClassQrCodePage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const classId = id ?? null;
   const { data: cls, isLoading: classLoading, error: classError } = useClass(classId);
@@ -30,12 +33,12 @@ export function ClassQrCodePage() {
   if (!classId) return null;
   if (classLoading || (tokenLoading && !qrToken)) return <Spinner />;
   if (classError) {
-    return <ErrorBanner message={classError instanceof ApiError ? classError.message : 'Could not load this Class.'} />;
+    return <ErrorBanner message={classError instanceof ApiError ? classError.message : t('attendance.qrCode.loadFailed')} />;
   }
   if (tokenError) {
     return (
       <ErrorBanner
-        message={tokenError instanceof ApiError ? tokenError.message : 'Could not generate a QR code for this Class.'}
+        message={tokenError instanceof ApiError ? tokenError.message : t('attendance.qrCode.tokenFailed')}
       />
     );
   }
@@ -43,8 +46,8 @@ export function ClassQrCodePage() {
   return (
     <>
       <PageHeader
-        title={cls ? `QR check-in — ${cls.title}` : 'QR check-in'}
-        subtitle={cls ? `${new Date(cls.startDate).toLocaleString()} – ${new Date(cls.endDate).toLocaleString()}` : undefined}
+        title={cls ? t('attendance.qrCode.titleWithClass', { title: cls.title }) : t('attendance.qrCode.title')}
+        subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
       />
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '32px 0' }}>
@@ -54,12 +57,12 @@ export function ClassQrCodePage() {
             <Spinner />
           )}
           <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', maxWidth: 360 }}>
-            Students scan this from their own device to check in. It refreshes automatically — no action needed.
+            {t('attendance.qrCode.explanation')}
           </p>
           {qrToken?.code && (
             <div style={{ textAlign: 'center', opacity: isRefetching ? 0.6 : 1 }}>
               <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '0 0 4px' }}>
-                No camera? Students can type this code instead:
+                {t('attendance.qrCode.typeCodeHint')}
               </p>
               <p style={{ fontSize: 28, fontWeight: 600, letterSpacing: 4, margin: 0, fontFamily: 'monospace' }}>
                 {qrToken.code}

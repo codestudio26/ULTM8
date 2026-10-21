@@ -118,18 +118,18 @@ test('Broadcast to Students — All Students (default) reaches every active Stud
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');
 
-  await page.getByRole('button', { name: 'Broadcast to Students' }).click();
-  await expect(page.getByRole('heading', { name: 'Broadcast to Students' })).toBeVisible();
+  await page.getByRole('button', { name: 'Send a message to students' }).click();
+  await expect(page.getByRole('heading', { name: 'Send a message to students' })).toBeVisible();
   await page.getByLabel('Title').fill('Holiday schedule');
-  await page.getByLabel('Message').fill('The school will be closed next Monday.');
+  await page.getByLabel('Message', { exact: true }).fill('The school will be closed next Monday.');
   // Audience defaults to "All Students" — left unchanged.
-  await page.getByRole('button', { name: 'Send broadcast' }).click();
+  await page.getByRole('button', { name: 'Send message' }).click();
 
   // Exactly `student` + `newStudent` from seedGradingSchool() — no other
   // active Student exists at this School.
   await expect(page.getByText('Sent to 2 Students')).toBeVisible();
   await page.getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByRole('heading', { name: 'Broadcast to Students' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Send a message to students' })).toHaveCount(0);
 });
 
 test('Broadcast to Students — Branch audience reaches only that Branch', async ({ page }) => {
@@ -142,12 +142,12 @@ test('Broadcast to Students — Branch audience reaches only that Branch', async
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');
 
-  await page.getByRole('button', { name: 'Broadcast to Students' }).click();
+  await page.getByRole('button', { name: 'Send a message to students' }).click();
   await page.getByLabel('Title').fill('Uptown closure');
-  await page.getByLabel('Message').fill('Uptown is closed for maintenance.');
+  await page.getByLabel('Message', { exact: true }).fill('Uptown is closed for maintenance.');
   await page.getByLabel('Send to').selectOption('BRANCH');
   await page.getByLabel('Branch').selectOption({ label: 'Uptown' });
-  await page.getByRole('button', { name: 'Send broadcast' }).click();
+  await page.getByRole('button', { name: 'Send message' }).click();
 
   // Only `newStudent` has a home Branch at Uptown — `student` does not.
   await expect(page.getByText('Sent to 1 Student')).toBeVisible();
