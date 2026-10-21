@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Поиск пока недоступен",
     notificationsAria: "Уведомления",
     languageAria: "Язык",
+    accountMenu: {
+      label: "Аккаунт",
+      myProfile: "Мой профиль",
+      schoolSettings: "Настройки школы",
+    },
     roles: {
       owner: "Владелец школы",
       branchStaff: "Сотрудник филиала",
@@ -2139,5 +2144,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Поддержка",
     comingSoon: "{label} (скоро)",
     notAvailableYet: "{label} — пока недоступно",
+  },
+  profile: {
+    title: "Мой профиль",
+    loadFailed: "Не удалось загрузить ваш профиль.",
+    signInNote: "Вы входите по эл. почте и номеру телефона, поэтому их нельзя изменить здесь.",
   },
 };

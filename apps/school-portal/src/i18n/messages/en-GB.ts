@@ -24,6 +24,7 @@ import { roleGrants } from './en/roleGrants';
 import { disciplines } from './en/disciplines';
 import { ui } from './en/ui';
 import { server } from './en/server';
+import { profile } from './en/profile';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -61,6 +62,7 @@ export const messages = {
   disciplines,
   ui,
   server,
+  profile,
 };
 
 export type EnglishMessages = typeof messages;

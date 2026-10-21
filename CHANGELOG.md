@@ -35,6 +35,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   stores in English (style template belt names, generated stripe names),
   Platform Admin and the student app. Non-English text is a first draft
   awaiting native-speaker review.
+- **Account menu and My profile page** (School Portal) — the header's avatar,
+  name and role are now a menu button: it shows your name, email and role,
+  then My profile, School settings (only for those who see School in the
+  sidebar) and Log out (the same sign-out as the sidebar button). It works
+  from the keyboard and closes on Escape or a click outside. The new My
+  profile page (`/profile`, open to every portal user) edits your own photo,
+  first name, surname, username, date of birth, language, currency and
+  address through the existing `PATCH /users/me`; email and phone are shown
+  read-only, since they're how you sign in. Saving a new language switches
+  the portal's text, as the header picker does. Translated into all 15
+  languages, and a new check fails if any language is missing a key.
 - **Saving after 15 minutes on a page works again** — when the access token
   had expired, the session refreshed correctly but the save itself was never
   re-sent (the retry called the browser's fetch the wrong way), so e.g. saving
@@ -59,6 +70,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   fields; the one-line address shown elsewhere is built from them. Existing
   one-line addresses are kept and can be converted the next time they're
   edited. Google Places suggestions can be plugged in once an API key exists.
+- **Delete notifications** (Decision 277) — each notification's ⋮ menu on
+  the Notifications page now has **Delete**, and the page header has
+  **Clear all read**, which removes every notification you have already
+  read (unread ones stay). Both ask for confirmation. Removed notifications
+  are hidden, not erased, so payment and waiver alerts stay on record.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

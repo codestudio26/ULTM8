@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "검색은 아직 사용할 수 없습니다",
     notificationsAria: "알림",
     languageAria: "언어",
+    accountMenu: {
+      label: "계정",
+      myProfile: "내 프로필",
+      schoolSettings: "도장 설정",
+    },
     roles: {
       owner: "도장 원장",
       branchStaff: "지점 직원",
@@ -2022,5 +2027,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "지원",
     comingSoon: "{label}(준비 중)",
     notAvailableYet: "{label} — 아직 사용할 수 없음",
+  },
+  profile: {
+    title: "내 프로필",
+    loadFailed: "프로필을 불러올 수 없습니다.",
+    signInNote: "이메일과 전화번호는 로그인에 사용되므로 여기서 변경할 수 없습니다.",
   },
 };

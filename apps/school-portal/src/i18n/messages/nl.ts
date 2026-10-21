@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Zoeken — nog niet beschikbaar",
     notificationsAria: "Meldingen",
     languageAria: "Taal",
+    accountMenu: {
+      label: "Account",
+      myProfile: "Mijn profiel",
+      schoolSettings: "Schoolinstellingen",
+    },
     roles: {
       owner: "Schooleigenaar",
       branchStaff: "Vestigingsmedewerker",
@@ -2061,5 +2066,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Ondersteuning",
     comingSoon: "{label} (binnenkort)",
     notAvailableYet: "{label} — nog niet beschikbaar",
+  },
+  profile: {
+    title: "Mijn profiel",
+    loadFailed: "Je profiel kon niet worden geladen.",
+    signInNote: "Je logt in met je e-mailadres en telefoonnummer, daarom kunnen die hier niet worden gewijzigd.",
   },
 };
