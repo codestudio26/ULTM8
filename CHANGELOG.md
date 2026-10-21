@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Forms brought in line with the shared address, currency and translation
+  work** — My profile now uses the same country-first address fields as every
+  other form (and no longer wipes a structured address on save); the address
+  fields themselves, and their country list, are now translated in all 15
+  languages; Register and Student update pick Language and Currency from the
+  real lists (USD, GBP, EUR and BRL first) instead of free text; and the
+  Notifications page's Delete and Clear all read text is translated.
 - **Shorter default waitlist claim window** (Decision 279) — new Schools now
   give a waitlisted student 60 minutes (was 120) to claim a freed seat, so
   more people on the list get a chance before class. Existing Schools keep
