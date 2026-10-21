@@ -379,12 +379,15 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - Amber: needs a look ("Skills not signed off", "n days short").
   - Red: blocked or unverified ("Skills required", "Not verified").
   - Grey: Inactive.
-- **Belt editor.** Two chapters: **01 Belt** (name and colours) and **02 Grades** (product owner, 21 Oct 2026).
-  - A grade is each step a student can reach on the belt: the plain belt first, then each stripe.
-  - Each grade is one box: "Grade 1 · White Belt" with a "Plain belt — no stripes" tag, then "Grade 2 · White Belt · 1 Stripe", and so on.
-  - Pressing Edit opens that grade's settings inside the same box, one at a time, under "What it takes to reach this grade". Settings never sit in a separate section away from the grade.
-  - Inside a grade: "Grade name", "Stripes on this grade" (for the plain belt: "None — this is the plain belt."), and "n students on this grade".
-  - Don't call the lines "Stripes": the plain belt isn't a stripe.
+- **Belt editor: one grade at a time** (product owner, 21 Oct 2026, following the flow of the earlier grading prototype). A grade is each step a student can reach on a belt: the plain belt first, then each stripe.
+  - **Top:** "Grades of White Belt", a row of pills, one per grade: belt picture plus "Plain belt", "1 stripe", "2 stripes"…, with a small count of students holding it.
+    - Tapping a pill picks the grade being edited.
+    - "+ Add stripe grade" adds the next stripe.
+    - Under the pills: "Grade 5 of 5 · 1 student on this grade", with ↑ ↓ and Delete grade.
+  - **01 Belt and stripes:** the rank name and colours (shared by every grade of the belt), then "This grade: White Belt · 4 Stripes" with its Grade name and Stripes on this grade.
+  - **02 What it takes:** the picked grade's requirements.
+  - **Preview:** the live preview shows the picked grade.
+  - No list of expanding boxes, and never two sections for the same grade.
 - **Stripe colours.** A stripe can have more than one colour group (e.g. 2 red + 2 white).
   - Each group is a box with a round selector and its name ("Colour 2 · 1 stripe"). Tap the box to select it.
   - One **Remove** button sits beside "Add stripes of another colour". It removes the selected group, and its label names it ("Remove colour 2"); with one group it just says "Remove".
