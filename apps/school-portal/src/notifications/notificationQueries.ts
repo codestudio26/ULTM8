@@ -68,7 +68,7 @@ export function useSnoozeNotification() {
   });
 }
 
-/** Decision 274 — Delete hides one Notification (a soft delete on the API;
+/** Decision 277 — Delete hides one Notification (a soft delete on the API;
  * the record is kept). Same self-only scoping and list + counts invalidation
  * as useMarkNotificationRead. */
 export function useDeleteNotification() {
@@ -82,7 +82,7 @@ export function useDeleteNotification() {
   });
 }
 
-/** Decision 274 — "Clear all read": hides every read Notification the caller
+/** Decision 277 — "Clear all read": hides every read Notification the caller
  * has, across every page, not just the rows loaded here. */
 export function useClearReadNotifications() {
   const queryClient = useQueryClient();

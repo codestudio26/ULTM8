@@ -73,7 +73,7 @@ test('row action menu — Mark read and Snooze are real, and update the stats ri
   expect(snoozed.snoozedUntil!.getTime()).toBeGreaterThan(Date.now());
 });
 
-test('Delete and Clear all read — hide notifications from the list and the stats, keeping the records (Decision 274)', async ({ page }) => {
+test('Delete and Clear all read — hide notifications from the list and the stats, keeping the records (Decision 277)', async ({ page }) => {
   const n1 = await db.notification.create({
     data: { id: randomUUID(), userId: s.ownerId, title: 'Old alert', body: 'Delete me.' },
   });

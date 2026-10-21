@@ -94,7 +94,7 @@ export class NotificationsService {
    * unread Notification is excluded from both the numerator and denominator
    * rather than counted as a miss.
    *
-   * Deleted Notifications (Decision 274, `deletedAt` set) are left out of
+   * Deleted Notifications (Decision 277, `deletedAt` set) are left out of
    * `total`/`unread`, matching the list, but still count towards the
    * Read-within-24h metric: they were read, and "Clear all read" would
    * otherwise reset that metric to empty every time it is used.
@@ -146,7 +146,7 @@ export class NotificationsService {
       // RLS returns null (not another User's row) for a Notification outside the
       // caller's scope — a genuine 404 and an isolation-blocked read are
       // indistinguishable at this layer by design (ultm8-tenant-isolation §2).
-      // A deleted Notification (Decision 274) is a 404 too: it is gone from
+      // A deleted Notification (Decision 277) is a 404 too: it is gone from
       // the caller's point of view.
       if (!existing || existing.deletedAt) {
         throw new NotFoundException('Notification not found');
@@ -192,7 +192,7 @@ export class NotificationsService {
   }
 
   /**
-   * DELETE /notifications/:id (Decision 274). A soft delete: sets `deletedAt`
+   * DELETE /notifications/:id (Decision 277). A soft delete: sets `deletedAt`
    * so the row leaves the caller's list and counts, but the record itself is
    * kept (Decision 244 — Notifications stay a permanent record, so payment
    * and waiver alerts are never actually erased). `updateMany` with a
@@ -214,7 +214,7 @@ export class NotificationsService {
   }
 
   /**
-   * POST /notifications/me/clear-read (Decision 274). Soft-deletes every one
+   * POST /notifications/me/clear-read (Decision 277). Soft-deletes every one
    * of the caller's read Notifications in one go, the "Clear all read" action.
    * Unread ones are never touched, snoozed or not. Returns how many were
    * cleared so the page can say so; clearing an inbox with nothing read is a

@@ -3908,7 +3908,7 @@ User, approving both of the Developer's recommendations (delete the stale label;
 
 ---
 
-## Decision 274 — Notifications: users can Delete one or "Clear all read"; a soft delete that keeps the record
+## Decision 277 — Notifications: users can Delete one or "Clear all read"; a soft delete that keeps the record
 
 **Date:** 21 Oct 2026 · **Status:** Approved by product owner
 **Resolves:** the Delete item `docs/v1.2-backend-backlog.md` ("Notifications page") still listed as open, and Decision 242's note that Delete was out of scope. **Amends Decision 244** (no delete): the record-keeping half of 244 stands, the "never user-deletable" half does not.

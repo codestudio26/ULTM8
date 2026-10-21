@@ -465,7 +465,7 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   });
 
   // ---------------------------------------------------------------------------
-  // Soft delete + "Clear all read" (Decision 274).
+  // Soft delete + "Clear all read" (Decision 277).
   // ---------------------------------------------------------------------------
 
   describe('DELETE /notifications/:id and POST /notifications/me/clear-read', () => {

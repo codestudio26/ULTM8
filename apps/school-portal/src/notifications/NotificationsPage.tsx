@@ -62,7 +62,7 @@ function isSnoozed(n: NotificationResponse): boolean {
  * Branch Staff, or Instructor using this portal has one, same as a Student
  * would in the mobile app (GET /notifications/me is not School-scoped).
  * Mark-read and Snooze (v1.2 backend backlog, approved by the product owner)
- * and Delete (Decision 274) live in each row's action menu, with a "Clear all
+ * and Delete (Decision 277) live in each row's action menu, with a "Clear all
  * read" header action beside them; Broadcast/compose (same backlog entry) is
  * a School-Owner-only PageHeader action, since the backend endpoint it calls
  * is School-Owner-gated — a Branch Staff/Instructor using this same page
@@ -127,7 +127,7 @@ export function NotificationsPage() {
         subtitle="Updates sent to your own account."
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {/* Decision 274 — every User can clear their own read
+            {/* Decision 277 — every User can clear their own read
                 notifications. Disabled when Total equals Unread, from the
                 counts endpoint rather than the loaded page (a snoozed unread
                 row also counts towards the gap, so this can occasionally

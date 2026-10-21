@@ -15,7 +15,7 @@ import { SnoozeNotificationDto } from './dto/snooze-notification.dto';
 /**
  * Phase 15 scope: read-side notifications (list/mark-read/counts) and
  * DeviceToken registration. v1.2 backend backlog (approved by the product
- * owner) adds snooze (below), and Decision 274 adds soft delete and "Clear
+ * owner) adds snooze (below), and Decision 277 adds soft delete and "Clear
  * all read" — still the caller's own notifications only, no
  * cross-user write here. See NotificationsService's own header comment for
  * what's deliberately not here (the fan-out WRITE side lives in
@@ -51,7 +51,7 @@ export class NotificationsController {
     return this.notificationsService.getCountsForCaller(user.sub);
   }
 
-  /** Decision 274 — "Clear all read": soft-deletes every read Notification
+  /** Decision 277 — "Clear all read": soft-deletes every read Notification
    * the caller has. A static `me/clear-read` segment, declared before the
    * `:id` routes below, same convention as `me/counts` above. */
   @ApiOkResponse({ type: ClearReadNotificationsResponseDto })
@@ -75,7 +75,7 @@ export class NotificationsController {
     return this.notificationsService.snooze(user.sub, id, dto);
   }
 
-  /** Decision 274 — hides one Notification (soft delete, the record is kept).
+  /** Decision 277 — hides one Notification (soft delete, the record is kept).
    * See NotificationsService.softDelete's own header comment. */
   @ApiNoContentResponse()
   @HttpCode(204)
