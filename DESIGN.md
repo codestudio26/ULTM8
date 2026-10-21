@@ -465,15 +465,24 @@ The grading system as built, shown in the new look. Every label and rule stays a
 - **Closed:** a soft grey field with the value and a chevron. Placeholder text ("Choose a branch") is grey. It gets a slate outline while open.
 - **Width:** exactly as wide as its longest option (plus padding and the chevron), never stretched to fill the row. It doesn't jump when the value changes. The only limit is the width of its container.
 - **Open:** the list opens under the field and pushes the content down, so a dialog or a card never clips it. It is a white card, 12px corners, at most 264px tall and scrolling.
-- **Options:** 40px rows (48px and 16px text on phones). Hover is light grey. The chosen option is pale green (#def2e2) with a ✓ in #3f7d5c. Picking closes the list.
-- **Inside a soft form** (`.ultm8-soft-field`) the field is 52px with 15px text, to match the inputs.
+- **Options:** 40px rows (48px and 16px text on phones). Hover is light grey. The chosen option is pale green (#def2e2) with a ✓ in #3a7556. Picking closes the list.
+- **Font:** Figtree everywhere, and the options always use the same size as their field. That's 14px, or 15px inside a soft form (`.ultm8-soft-field`, where the field is 52px to match the inputs), and 16px on phones.
+- The **Promote to** picker uses the same drop-down, with a belt picture before each rank.
 - Built as `role="listbox"` / `role="option"`. In the vision pages it comes from `dd()` / `ddMake()`.
 
 ### Greens: mint, not dark green (product owner, 21 Oct 2026)
 - **Fills** (progress bars at 100%, the Ready to Grade strip, ticks, switch tracks, the menu's selected bar): **mint #9fd3b2**, a soft matte green, never a bold solid one.
-- **Green text and icons** (100%, ✓): **#3f7d5c**, so they stay readable on white.
-- The old dark green (#1f7a4d) is no longer used in the new look. The live app keeps its own `--color-success` until the new look goes live.
+- **Green text and icons** (100%, ✓, the text of green tags such as "Signed off" and "Active"): **#3a7556**. It passes 4.5:1 on white and on pale green.
+- The old dark greens (#1f7a4d, #1f6440, #1f4d36) are no longer used in the new look. The live app keeps its own `--color-success` until the new look goes live.
 - **The secondary dark button** ("Open full student view", "Invite") is **soft blue: #e5ecf6 with #2b4f80 text**, not black.
+
+### Progress bar colours: one soft colour per board level (product owner, 21 Oct 2026)
+- Every progress bar takes the colour of the student's board level, never a dark one:
+  - **Just Starting:** soft peach **#f4c7a1**
+  - **Getting There:** soft sky **#a8c5ea**
+  - **Ready to Grade:** mint **#9fd3b2**
+- The same colour marks the group's left edge in Rows, and the bar in the right panel and on the Ranks tab.
+- The % next to a bar carries the meaning, so the soft bar colour doesn't need text contrast. The track stays #e1e3e5.
 
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
