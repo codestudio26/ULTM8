@@ -4050,3 +4050,47 @@ Decision 280 combined Kids and Adult into one linked ladder. That was a misreadi
 ### Recorded by
 
 User, correcting the combined ladder on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 282 — Bulk promote has no limit a coach can see; the portal sends 200 at a time
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Builds:** Spec 55 Section 7 (bulk-grading batch cap), Decision 130
+
+The stress test (20 academies, 300–500 students, 50–90% graded at once) found the School Portal sent every ticked student in one request. Over 200 students, the API refused the whole batch. The product owner asked: *"Since when we have limit, who has agreed with that, we should not have a limit."*
+
+Where the 200 came from: Spec 55's logic review of 27 Aug 2026 put a fixed cap on each bulk-grading **request** (e.g. 200 students), *"with the School Portal client batching sequential calls beyond it"*. Decision 130 repeated the cap. The cap was always meant to be per request, never a limit for the coach. The portal never did the batching.
+
+### Decision
+
+1. **No limit for the coach.** A coach can tick and promote any number of students in one go.
+2. **The portal sends them 200 at a time**, one request after another, and joins the answers. The check before promoting (the dry run) works the same way. The API keeps its 200-per-request guard.
+3. **If a later batch fails**, the students the earlier batches promoted stay promoted. The window says *"Promoted N of M, then something went wrong"* and the report lists the ones done.
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.
+
+---
+
+## Decision 283 — Only active students are graded up; unverified students can still be graded
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision
+
+The stress test showed inactive students could be ticked and promoted. Asked whether they should be, the product owner said: *"No, only active students"*. Asked the same about students whose rank is self-declared and not yet verified: *"Yes, because grading is a human decision done by the coach"*.
+
+### Decision
+
+1. **Active means** what the Grading Board already shows (Decision 152): the student's **Active switch** on the board if a coach has set it, otherwise **a live membership** at the School.
+2. **Promote and stripe award need an active student.** This covers a single grade and bulk promote. Bulk promote lists an inactive student under "can't be promoted" (*"inactive (only active students can be graded)"*) and skips them. A single grade is refused with *"Only active students can be graded. Make the student active on the Grading Board, or give them a live membership."*
+3. **The board does not let an inactive student be ticked.** Their tick box is off, with the reason.
+4. **Moving a student down is still allowed** when inactive. It is a correction, not a grade up.
+5. **Unverified (self-declared) students can be graded.** No change: grading never checked verification.
+
+### Still open
+
+- **A first rank** (a student with no rank in the style yet) is not checked. It records where the student starts, not a grade up. Confirm whether an inactive student may be given a first rank.
+
+### Recorded by
+
+User, replying to the grading stress-test findings, 21 Oct 2026.

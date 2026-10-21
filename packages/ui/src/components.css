@@ -1323,6 +1323,8 @@
   .ultm8-option-cards {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
 /* ---------------------------------------------------------------- Address (Decision 276) */
 /* A fieldset of ordinary .ultm8-field rows; city/region/postal code share one
    row on wide screens and stack on narrow ones. */

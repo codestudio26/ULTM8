@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { giveLiveMembership } from './live-membership';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -57,9 +58,10 @@ describeIfDb('Bulk promote (Phase 3c)', () => {
   }
 
   /** A student on a rung (or none), whose rank date was `daysInRank` days ago. */
-  async function student(label: string, at: string | null, daysInRank = 400, branchId = downtown.id) {
+  async function student(label: string, at: string | null, daysInRank = 400, branchId = downtown.id, live = true) {
     const u = await mkUser(label);
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id } });
+    if (live) await giveLiveMembership(superuser, school.id, u.id);
     await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: u.id, branchId } });
     if (at) {
       await superuser.studentRank.create({
@@ -225,6 +227,34 @@ describeIfDb('Bulk promote (Phase 3c)', () => {
     expect(res.status).toBe(201);
     expect(ids(res.body.ready)).toEqual([mine]);
     expect(res.body.cannotPromote).toEqual([{ studentId: theirs, reasons: ['not a student you can grade in this style'] }]);
+  });
+
+  it('only active students are graded up (Decision 283): no live membership is skipped, the board\'s Active switch counts', async () => {
+    const lapsed = await student('lapsed', 'white-2', 60, downtown.id, false);
+    const switchedOn = await student('switchedOn', 'white-2', 60, downtown.id, false);
+    await superuser.studentRank.updateMany({ where: { studentId: switchedOn }, data: { boardActiveOverride: true } });
+    const paying = await student('paying', 'white-2', 60);
+    const res = await bulk({ studentIds: [lapsed, switchedOn, paying] });
+    expect(res.status).toBe(201);
+    expect(ids(res.body.ready)).toEqual([switchedOn, paying].sort());
+    expect(res.body.cannotPromote).toEqual([{ studentId: lapsed, reasons: ['inactive (only active students can be graded)'] }]);
+    expect((await rankOf(lapsed))?.currentStripeId).toBe(rung['white-2'].id);
+
+    // The single promote says the same; taking a student down is still allowed.
+    const single = (path: string, body: object = {}) =>
+      request(app.getHttpServer()).post(`/v1/students/${lapsed}/ranks/${bjj.id}/${path}`).set('Authorization', `Bearer ${token.owner}`).send(body);
+    const one = await single('promote');
+    expect(one.status).toBe(400);
+    expect(one.body.error.message).toMatch(/Only active students can be graded/);
+    expect((await single('downgrade', { targetRungId: rung['white-1'].id, reason: 'Re-grade' })).status).toBe(201);
+  });
+
+  it('the board counts students already on the top rank (they have nowhere to go)', async () => {
+    await student('topA', 'black-0');
+    await student('topB', 'black-0');
+    const res = await request(app.getHttpServer()).get(`/v1/schools/${school.id}/grading-board?disciplineId=${bjj.id}`).set('Authorization', `Bearer ${token.owner}`);
+    expect(res.status).toBe(200);
+    expect(res.body.atTopRank).toBeGreaterThanOrEqual(2);
   });
 
   it('at most 200 students, no duplicates', async () => {

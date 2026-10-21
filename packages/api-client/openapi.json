@@ -17831,11 +17831,16 @@
           "hiddenInactive": {
             "type": "number",
             "description": "Students left out by activeOnly."
+          },
+          "atTopRank": {
+            "type": "number",
+            "description": "Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items."
           }
         },
         "required": [
           "items",
-          "hiddenInactive"
+          "hiddenInactive",
+          "atTopRank"
         ]
       },
       "BoardThresholdsDto": {

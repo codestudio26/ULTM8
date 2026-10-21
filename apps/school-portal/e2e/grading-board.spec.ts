@@ -93,6 +93,8 @@ test('students with no home branch are in the owner\'s "No branch" group until g
 });
 
 test('bulk promote: calling order, "Needs a look" acknowledgement, and the printable report', async ({ page }) => {
+  // Only active students are graded up (Decision 283): Sam has no membership, so switch him on.
+  await db.studentRank.updateMany({ where: { studentId: s.student.id }, data: { boardActiveOverride: true } });
   await page.goto('/grading');
   await page.getByLabel(`Select ${s.student.name}`).check();
   await page.getByLabel(`Select ${ben.name}`).check();
@@ -132,6 +134,8 @@ test('bulk promote: calling order, "Needs a look" acknowledgement, and the print
 });
 
 test('bulk promote: one click removes a student from the batch (Decision 130)', async ({ page }) => {
+  // Only active students are graded up (Decision 283): Sam has no membership, so switch him on.
+  await db.studentRank.updateMany({ where: { studentId: s.student.id }, data: { boardActiveOverride: true } });
   await page.goto('/grading');
   await page.getByLabel(`Select ${s.student.name}`).check();
   await page.getByLabel(`Select ${ben.name}`).check();
@@ -148,6 +152,40 @@ test('bulk promote: one click removes a student from the batch (Decision 130)', 
   await expect(page.getByRole('dialog', { name: 'Students promoted' })).toBeVisible();
   const promoted = await db.promotionEvent.findMany({ where: { schoolId: s.schoolId, voidedAt: null, type: { in: ['BULK_PROMOTION', 'BULK_STRIPE_AWARD'] } } });
   expect(promoted.map((e) => e.studentId)).toEqual([ben.id]);
+});
+
+test('bulk promote has no limit: over 200 students go through, 200 at a time (Decision 282)', async ({ page }) => {
+  test.setTimeout(120_000);
+  for (let i = 0; i < 205; i++) await addStudent(s, 'Bulk', `Student ${String(i).padStart(3, '0')}`, { rung: 'White 0', activeOverride: true });
+  await page.goto('/grading');
+  const starting = column(page, 'Just Starting');
+  await expect(starting.getByRole('button', { name: 'Show all 206' })).toBeVisible(); // 25 cards until asked
+  await starting.getByRole('checkbox', { name: 'Select all in Just Starting' }).check();
+  await expect(page.getByText('206 selected')).toBeVisible();
+  await page.getByRole('button', { name: 'Promote selected' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Promote these students' });
+  await dialog.getByRole('button', { name: 'Promote 206 students' }).click();
+  await expect(page.getByRole('dialog', { name: 'Students promoted' }).getByText('You promoted 206 students.')).toBeVisible({ timeout: 60_000 });
+  expect(await db.promotionEvent.count({ where: { schoolId: s.schoolId, type: 'BULK_STRIPE_AWARD' } })).toBe(206);
+});
+
+test('an inactive student can\'t be ticked (Decision 283)', async ({ page }) => {
+  await page.goto('/grading');
+  await expect(card(page, s.student.name).getByText('Inactive')).toBeVisible();
+  await expect(page.getByLabel(`${s.student.name} can't be selected: inactive`)).toBeDisabled();
+  await expect(page.getByLabel(`Select ${ben.name}`)).toBeEnabled();
+});
+
+test('ticked students a search hides are counted, and "Show them" brings them back', async ({ page }) => {
+  await page.goto('/grading');
+  await page.getByLabel(`Select ${ben.name}`).check();
+  await page.getByLabel(`Select ${cat.name}`).check();
+  await page.getByLabel('Search students').fill('cat');
+  await expect(page.getByText('2 selected')).toBeVisible();
+  await expect(page.getByText('1 of them hidden by your search')).toBeVisible();
+  await page.getByRole('button', { name: 'Show them' }).click();
+  await expect(page.getByLabel('Search students')).toHaveValue('');
+  await expect(page.getByRole('link', { name: ben.name })).toBeVisible();
 });
 
 test('a style that requires skills: a student missing them can\'t be ticked', async ({ page }) => {
