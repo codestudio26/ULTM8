@@ -23,3 +23,14 @@ export function matchesPersonName(firstName: string | null | undefined, surname:
 export function trimSearch(value: unknown): unknown {
   return typeof value === 'string' ? value.trim() : value;
 }
+
+/**
+ * Escapes the LIKE wildcards (`%`, `_`) and the escape character itself in a
+ * `search` value before it goes into a Prisma `contains` filter, which Prisma
+ * turns into `ILIKE '%' || value || '%'` without escaping — so "%" or "_" typed
+ * into a search box would otherwise match unrelated names. Backslash is
+ * Postgres's default LIKE escape character (no ESCAPE clause needed).
+ */
+export function escapeLike(s: string): string {
+  return s.replace(/[\\%_]/g, '\\$&');
+}

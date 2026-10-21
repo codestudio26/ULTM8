@@ -4,6 +4,7 @@ import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { SchoolsService } from '../schools/schools.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
+import { escapeLike } from '../../common/search/name-search';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 
@@ -79,7 +80,7 @@ export class BranchesService {
               schoolId,
               ...(city ? { address: { contains: city, mode: 'insensitive' } } : {}),
               // Decision 278 — header Global Search, same idiom as ClassesService's `search`.
-              ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
+              ...(search ? { name: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
               ...(includeArchived ? {} : { archivedAt: null }),
             },
           }),

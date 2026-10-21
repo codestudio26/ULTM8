@@ -20,11 +20,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Instructors, Classes, Branches and Franchises by name (any part of a first
   name, surname or full name; a class's title), grouped by type, and opens
   the one you pick. It works from the keyboard (arrows, Enter, Escape) and
-  closes on a click outside. Only School Owners/Managers see it, matching
-  the sidebar; results are limited to what each list already shows them, and
-  archived records are left out. The Students, Instructors, Branches and
-  Franchises list endpoints gained an optional `search` param for it, like
-  Classes'. Translated into all 15 languages.
+  closes on a click outside, and screen readers hear the number of results.
+  Everyone sees it except a coach or Branch Staff member who doesn't own a
+  School, matching the sidebar; results are limited to what each list
+  already shows them, and archived records are left out. The Students,
+  Instructors, Branches and Franchises list endpoints gained an optional
+  `search` param for it, like Classes' (`%` and `_` now match literally);
+  `GET /franchises` also gained an optional `excludeArchived` param.
+  Translated into all 15 languages.
 - **School Portal translation, 15 languages** (Decision 273) — the header's
   language picker now actually switches the portal's text instead of only
   saving a preference. Languages: English (UK), Portuguese (BR), Spanish,

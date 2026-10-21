@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useIsCoachOnly, useOwnedSchoolId } from '../auth/AuthContext';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
 
 /** Start searching only from this many characters, and wait this long after the
  * last keystroke — keeps one word from firing five requests per letter. */
@@ -30,6 +31,23 @@ const GROUPS: Array<{ type: ResultType; heading: TranslationKey }> = [
   { type: 'franchises', heading: 'layout.nav.franchises' },
 ];
 
+/** Visually hidden but read by screen readers (the result-count announcement). */
+const SR_ONLY: React.CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
+/** A stable identity for a result, so the keyboard highlight stays on the same
+ * record when a slower group arrives and shifts positions. */
+const resultKey = (r: SearchResult) => `${r.type}:${r.id}`;
+
 function fullName(firstName: string | null | undefined, surname: string | null | undefined): string {
   return `${firstName ?? ''} ${surname ?? ''}`.trim();
 }
@@ -49,13 +67,13 @@ function fullName(firstName: string | null | undefined, surname: string | null |
  * caller's own, as on the Franchises page.
  *
  * An ARIA 1.2 combobox: arrow keys move through the results, Enter opens one,
- * Escape (or a click outside) closes the list.
+ * Escape (or a click outside) closes the list. A status region outside the list
+ * announces "Searching…", the number of results, "No results" or a failure.
  */
 export function GlobalSearch() {
-  const coachSchoolId = useCoachSchoolId();
   const ownedSchoolId = useOwnedSchoolId();
   // Same test Shell.tsx uses to pick COACH_NAV over OWNER_NAV.
-  const isCoachOnly = !ownedSchoolId && !!coachSchoolId;
+  const isCoachOnly = useIsCoachOnly();
   if (isCoachOnly) return null;
   return <GlobalSearchBox schoolId={ownedSchoolId} />;
 }
@@ -70,7 +88,8 @@ function GlobalSearchBox({ schoolId }: { schoolId: string | null }) {
   const [input, setInput] = useState('');
   const [term, setTerm] = useState('');
   const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  // The highlighted result, by `resultKey` — its position is worked out at render.
+  const [activeKey, setActiveKey] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -154,26 +173,41 @@ function GlobalSearchBox({ schoolId }: { schoolId: string | null }) {
         queryKey: ['globalSearch', 'franchises', term],
         enabled,
         queryFn: async (): Promise<SearchResult[]> => {
-          const res = await unwrap(apiClient.GET('/v1/franchises', { params: { query: { search: term, limit: PER_TYPE } } }));
-          // GET /franchises also returns closed (archived) Franchises; search leaves them out.
-          return res.items.filter((f) => !f.archivedAt).map((f) => ({ type: 'franchises' as const, id: f.id, label: f.name, href: `/franchises/${f.id}` }));
+          // GET /franchises lists closed (archived) Franchises by default; search asks the server to leave them out.
+          const res = await unwrap(
+            apiClient.GET('/v1/franchises', { params: { query: { search: term, limit: PER_TYPE, excludeArchived: true } } }),
+          );
+          return res.items.map((f) => ({ type: 'franchises' as const, id: f.id, label: f.name, href: `/franchises/${f.id}` }));
         },
       },
     ],
   });
 
-  const loading = enabled && (input.trim() !== term || queries.some((q) => q.isPending && q.fetchStatus !== 'idle'));
-  const failed = enabled && queries.some((q) => q.isError);
+  const trimmed = input.trim();
+  const typed = trimmed.length >= MIN_CHARS;
+  // The debounced term has caught up with what's in the box.
+  const settled = trimmed === term;
+  // Still waiting while the debounce hasn't fired yet, or any enabled query is
+  // fetching — so "No results" never shows before the server has answered.
+  const loading = typed && (!settled || queries.some((q) => q.isPending && q.fetchStatus !== 'idle'));
+  const enabledQueries = queries.filter((_, i) => (i === GROUPS.length - 1 ? enabled : schoolEnabled));
+  const failedCount = enabledQueries.filter((q) => q.isError).length;
+  const failed = enabled && failedCount > 0;
+  const allFailed = failed && failedCount === enabledQueries.length;
   // Results in display order; each option's index in this list is its keyboard position.
   const groups = enabled
     ? GROUPS.map((g, i) => ({ ...g, items: queries[i].data ?? [] })).filter((g) => g.items.length > 0)
     : [];
   const flat = groups.flatMap((g) => g.items);
+  const activeIndex = activeKey ? flat.findIndex((r) => resultKey(r) === activeKey) : -1;
 
-  useEffect(() => setActiveIndex(-1), [term]);
+  useEffect(() => setActiveKey(null), [term, schoolId]);
 
-  const showPopup = open && input.trim().length >= MIN_CHARS;
+  const showPopup = open && typed;
   const expanded = showPopup && flat.length > 0;
+  const noResults = showPopup && !loading && !failed && flat.length === 0;
+  // `<bdi>` keeps a search word in one script from reordering a sentence in another (e.g. English inside Arabic).
+  const noResultsText = <Trans k="layout.search.noResults" nodes={{ query: <bdi>{trimmed}</bdi> }} />;
 
   function choose(result: SearchResult) {
     setOpen(false);
@@ -186,21 +220,22 @@ function GlobalSearchBox({ schoolId }: { schoolId: string | null }) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setOpen(true);
-      if (flat.length) setActiveIndex((i) => (i + 1) % flat.length);
+      if (flat.length) setActiveKey(resultKey(flat[(activeIndex + 1) % flat.length]));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setOpen(true);
-      if (flat.length) setActiveIndex((i) => (i <= 0 ? flat.length - 1 : i - 1));
+      if (flat.length) setActiveKey(resultKey(flat[activeIndex <= 0 ? flat.length - 1 : activeIndex - 1]));
     } else if (e.key === 'Enter') {
-      if (showPopup && activeIndex >= 0 && flat[activeIndex]) {
+      // Nothing while the box holds a newer word than the results on screen.
+      if (showPopup && settled && activeIndex >= 0) {
         e.preventDefault();
         choose(flat[activeIndex]);
       }
     } else if (e.key === 'Escape') {
-      if (open) {
+      if (showPopup) {
         e.preventDefault();
         setOpen(false);
-        setActiveIndex(-1);
+        setActiveKey(null);
       } else if (input) {
         e.preventDefault();
         setInput('');
@@ -278,7 +313,7 @@ function GlobalSearchBox({ schoolId }: { schoolId: string | null }) {
                       e.preventDefault();
                       choose(r);
                     }}
-                    onMouseEnter={() => setActiveIndex(i)}
+                    onMouseEnter={() => setActiveKey(resultKey(r))}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -294,15 +329,32 @@ function GlobalSearchBox({ schoolId }: { schoolId: string | null }) {
             </div>
           ))}
         </div>
-        <div role="status" style={{ padding: flat.length && !loading && !failed ? 0 : '8px 12px', fontSize: 13, color: 'var(--text-secondary)' }}>
+        {/* What the status region below announces, shown; hidden from screen readers so it isn't read twice. */}
+        <div aria-hidden="true" style={{ padding: flat.length && !loading && !failed ? 0 : '8px 12px', fontSize: 13, color: 'var(--text-secondary)' }}>
           {loading
             ? t('layout.search.loading')
-            : failed
-              ? t('layout.search.loadFailed')
-              : showPopup && flat.length === 0
-                ? t('layout.search.noResults', { query: input.trim() })
-                : null}
+            : allFailed
+              ? t('layout.search.allFailed')
+              : failed
+                ? t('layout.search.loadFailed')
+                : noResults
+                  ? noResultsText
+                  : null}
         </div>
+      </div>
+      {/* Outside the list, which is `hidden` while closed, so it is always in the page and its changes are announced. */}
+      <div role="status" style={SR_ONLY}>
+        {!showPopup
+          ? null
+          : loading
+            ? t('layout.search.loading')
+            : allFailed
+              ? t('layout.search.allFailed')
+              : flat.length > 0
+                ? `${t('layout.search.resultCount', { count: flat.length })}${failed ? ` ${t('layout.search.loadFailed')}` : ''}`
+                : failed
+                  ? t('layout.search.loadFailed')
+                  : noResultsText}
       </div>
     </div>
   );

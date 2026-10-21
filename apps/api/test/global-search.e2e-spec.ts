@@ -4,7 +4,9 @@
  * (Students, Instructors, Branches, Franchises; Classes' own `search` is covered by
  * classes.e2e-spec.ts) only ever narrows what the caller could already list:
  *  - case-insensitive substring on names (first name, surname, full name for people),
- *  - archived rows stay excluded, as the endpoints' own default,
+ *  - archived rows stay excluded, as the endpoints' own default (Franchises: with
+ *    the opt-in `excludeArchived=true` the search box sends),
+ *  - `%` and `_` match themselves, not any text (Branches, Franchises, Classes),
  *  - and, per endpoint, a search never returns another School's (or another
  *    Franchise owner's) rows even when the names match.
  *
@@ -50,6 +52,10 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
   let branchA2: { id: string };
   let branchA3Archived: { id: string };
   let branchB1: { id: string };
+  let branchA4Percent: { id: string };
+  let classA1: { id: string };
+  let classA2Percent: { id: string };
+  let franchiseAArchived: { id: string };
   let franchiseA: { id: string };
   let franchiseB: { id: string };
   let studentA: { id: string };
@@ -96,6 +102,13 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
       data: { id: randomUUID(), schoolId: schoolA.id, name: `${WORD} Old Dojo`, archivedAt: new Date(), purgeAt: new Date(Date.now() + 86_400_000) },
     });
     branchB1 = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolB.id, name: `${WORD} North Dojo` } });
+    branchA4Percent = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolA.id, name: `${WORD} 100% Club` } });
+    classA1 = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: schoolA.id, title: `${WORD} North Kata`, startDate: new Date(), endDate: new Date() },
+    });
+    classA2Percent = await superuser.class.create({
+      data: { id: randomUUID(), schoolId: schoolA.id, title: `${WORD} 100% Kata`, startDate: new Date(), endDate: new Date() },
+    });
 
     const ownerA = await mkUser('owner-a', 'Owner', 'Alpha');
     const ownerB = await mkUser('owner-b', 'Owner', 'Bravo');
@@ -131,29 +144,41 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
 
     franchiseA = await superuser.franchise.create({ data: { id: randomUUID(), name: `${WORD} Martial Arts Group` } });
     franchiseB = await superuser.franchise.create({ data: { id: randomUUID(), name: `${WORD} Martial Arts Group` } });
+    franchiseAArchived = await superuser.franchise.create({
+      data: { id: randomUUID(), name: `${WORD} Martial Arts Closed`, archivedAt: new Date(), purgeAt: new Date(Date.now() + 86_400_000) },
+    });
     await superuser.roleGrant.createMany({
       data: [
         { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: franchiseOwnerA.id, franchiseId: franchiseA.id },
+        { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: franchiseOwnerA.id, franchiseId: franchiseAArchived.id },
         { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: franchiseOwnerB.id, franchiseId: franchiseB.id },
       ],
     });
 
     tokenOwnerA = sign(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolA.id, branchId: null }]);
     tokenBranchStaffA1 = sign(branchStaffA1, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: schoolA.id, branchId: branchA1.id }]);
-    tokenFranchiseOwnerA = sign(franchiseOwnerA, [{ role: 'FRANCHISE_OWNER', franchiseId: franchiseA.id, schoolId: null, branchId: null }]);
+    tokenFranchiseOwnerA = sign(franchiseOwnerA, [
+      { role: 'FRANCHISE_OWNER', franchiseId: franchiseA.id, schoolId: null, branchId: null },
+      { role: 'FRANCHISE_OWNER', franchiseId: franchiseAArchived.id, schoolId: null, branchId: null },
+    ]);
   });
 
   afterAll(async () => {
-    await superuser.instructor.deleteMany({ where: { schoolId: { in: [schoolA.id, schoolB.id] } } });
+    // Guarded: if setup failed partway, some of these were never created — clean up
+    // whatever exists rather than throwing on an undefined fixture.
+    const schoolIds = [schoolA?.id, schoolB?.id].filter((id): id is string => !!id);
+    const franchiseIds = [franchiseA?.id, franchiseB?.id, franchiseAArchived?.id].filter((id): id is string => !!id);
+    await superuser.class.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.instructor.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({
-      where: { OR: [{ schoolId: { in: [schoolA.id, schoolB.id] } }, { franchiseId: { in: [franchiseA.id, franchiseB.id] } }] },
+      where: { OR: [{ schoolId: { in: schoolIds } }, { franchiseId: { in: franchiseIds } }] },
     });
-    await superuser.branch.deleteMany({ where: { schoolId: { in: [schoolA.id, schoolB.id] } } });
-    await superuser.franchise.deleteMany({ where: { id: { in: [franchiseA.id, franchiseB.id] } } });
+    await superuser.branch.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.franchise.deleteMany({ where: { id: { in: franchiseIds } } });
     await superuser.user.deleteMany({ where: { email: { contains: `global-search-${tag}-` } } });
-    await superuser.school.deleteMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });
+    await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
-    await app.close();
+    await app?.close();
   });
 
   const ids = (res: request.Response) => (res.body.items as Array<{ id: string }>).map((i) => i.id);
@@ -253,10 +278,28 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
   // ---------------------------------------------------------------------------
 
   it('Franchises: matches by name, only Franchises the caller owns', async () => {
-    const res = await get('/v1/franchises', tokenFranchiseOwnerA, { search: `${WORD.toLowerCase()} martial` });
+    const res = await get('/v1/franchises', tokenFranchiseOwnerA, { search: `${WORD.toLowerCase()} martial arts g` });
     expect(res.status).toBe(200);
     expect(ids(res)).toEqual([franchiseA.id]);
     expect(ids(res)).not.toContain(franchiseB.id);
+  });
+
+  it('Franchises: excludeArchived=true leaves a matching archived Franchise out; without it, it is still listed', async () => {
+    const q = `${WORD.toLowerCase()} martial`;
+    const excluded = await get('/v1/franchises', tokenFranchiseOwnerA, { search: q, excludeArchived: 'true' });
+    expect(excluded.status).toBe(200);
+    expect(ids(excluded)).toEqual([franchiseA.id]);
+
+    // Today's default is unchanged: the Franchises page still lists closed Franchises.
+    for (const query of [{ search: q }, { search: q, excludeArchived: 'false' }] as Array<Record<string, string>>) {
+      const res = await get('/v1/franchises', tokenFranchiseOwnerA, query);
+      expect(res.status).toBe(200);
+      expect(ids(res)).toEqual(expect.arrayContaining([franchiseA.id, franchiseAArchived.id]));
+      expect(ids(res)).not.toContain(franchiseB.id);
+    }
+
+    const bad = await get('/v1/franchises', tokenFranchiseOwnerA, { excludeArchived: 'yes' });
+    expect(bad.status).toBe(400);
   });
 
   it('Franchises: a School Owner with no Franchise grant finds none, even by an exact name', async () => {
@@ -286,5 +329,53 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
     const res = await get(`/v1/schools/${schoolA.id}/branches`, tokenOwnerA, { search: `   ${WORD} south   ` });
     expect(res.status).toBe(200);
     expect(ids(res)).toEqual([branchA2.id]);
+  });
+
+  it('Classes: trims surrounding spaces too, and a search of only spaces means no filter', async () => {
+    const res = await get(`/v1/schools/${schoolA.id}/classes`, tokenOwnerA, { search: `   ${WORD} north   ` });
+    expect(res.status).toBe(200);
+    expect(ids(res)).toEqual([classA1.id]);
+
+    const blank = await get(`/v1/schools/${schoolA.id}/classes`, tokenOwnerA, { search: '   ' });
+    expect(blank.status).toBe(200);
+    expect(ids(blank)).toEqual(expect.arrayContaining([classA1.id, classA2Percent.id]));
+  });
+
+  // ---------------------------------------------------------------------------
+  // LIKE wildcards — `%` and `_` are matched literally
+  // ---------------------------------------------------------------------------
+
+  it('`%` matches a literal percent sign, not any text (Branches, Classes, Franchises)', async () => {
+    const branches = await get(`/v1/schools/${schoolA.id}/branches`, tokenOwnerA, { search: '100%' });
+    expect(ids(branches)).toEqual([branchA4Percent.id]);
+    const branchesWild = await get(`/v1/schools/${schoolA.id}/branches`, tokenOwnerA, { search: `${WORD}%Dojo` });
+    expect(ids(branchesWild)).toEqual([]);
+
+    const classes = await get(`/v1/schools/${schoolA.id}/classes`, tokenOwnerA, { search: '100%' });
+    expect(ids(classes)).toEqual([classA2Percent.id]);
+    const classesWild = await get(`/v1/schools/${schoolA.id}/classes`, tokenOwnerA, { search: `${WORD}%Kata` });
+    expect(ids(classesWild)).toEqual([]);
+
+    const franchises = await get('/v1/franchises', tokenFranchiseOwnerA, { search: `${WORD}%Group` });
+    expect(franchises.status).toBe(200);
+    expect(ids(franchises)).toEqual([]);
+  });
+
+  it('`_` matches a literal underscore, not any one character (Branches, Classes, Franchises)', async () => {
+    const branches = await get(`/v1/schools/${schoolA.id}/branches`, tokenOwnerA, { search: `${WORD} N_rth` });
+    expect(branches.status).toBe(200);
+    expect(ids(branches)).toEqual([]);
+
+    const classes = await get(`/v1/schools/${schoolA.id}/classes`, tokenOwnerA, { search: `${WORD} N_rth` });
+    expect(classes.status).toBe(200);
+    expect(ids(classes)).toEqual([]);
+
+    const franchises = await get('/v1/franchises', tokenFranchiseOwnerA, { search: `${WORD} M_rtial` });
+    expect(franchises.status).toBe(200);
+    expect(ids(franchises)).toEqual([]);
+
+    // Control: the same searches without the wildcard do match.
+    const control = await get(`/v1/schools/${schoolA.id}/branches`, tokenOwnerA, { search: `${WORD} North` });
+    expect(ids(control)).toEqual([branchA1.id]);
   });
 });

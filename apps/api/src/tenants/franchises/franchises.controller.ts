@@ -29,7 +29,7 @@ export class FranchisesController {
   @ApiOkResponse({ type: FranchiseListResponseDto })
   @Get()
   findAll(@CurrentUser() user: JwtPayload, @Query() query: FranchisesQueryDto) {
-    return this.franchisesService.findAllForCaller(user.sub, query.cursor, query.limit, query.feeModel, query.activity, query.search);
+    return this.franchisesService.findAllForCaller(user.sub, query.cursor, query.limit, query.feeModel, query.activity, query.search, query.excludeArchived);
   }
 
   @ApiOkResponse({ type: FranchiseResponseDto })

@@ -22,6 +22,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       loading: "検索中…",
       noResults: "「{query}」に一致する結果はありません",
       loadFailed: "一部の結果を読み込めませんでした。",
+      allFailed: "検索結果を読み込めませんでした。",
+      resultCount: {
+        other: "{count} 件の結果",
+      },
     },
     notificationsAria: "通知",
     languageAria: "言語",

@@ -22,6 +22,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       loading: "Bezig met zoeken…",
       noResults: "Geen resultaten voor ‘{query}’",
       loadFailed: "Sommige resultaten konden niet worden geladen.",
+      allFailed: "De zoekresultaten konden niet worden geladen.",
+      resultCount: {
+        one: "{count} resultaat",
+        other: "{count} resultaten",
+      },
     },
     notificationsAria: "Meldingen",
     languageAria: "Taal",

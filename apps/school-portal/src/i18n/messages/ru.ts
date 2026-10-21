@@ -22,6 +22,13 @@ export const messages: PartialMessages<EnglishMessages> = {
       loading: "Идёт поиск…",
       noResults: "Нет результатов по запросу «{query}»",
       loadFailed: "Не удалось загрузить некоторые результаты.",
+      allFailed: "Не удалось загрузить результаты поиска.",
+      resultCount: {
+        one: "{count} результат",
+        few: "{count} результата",
+        many: "{count} результатов",
+        other: "{count} результата",
+      },
     },
     notificationsAria: "Уведомления",
     languageAria: "Язык",

@@ -22,6 +22,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       loading: "검색 중…",
       noResults: "‘{query}’에 대한 결과가 없습니다",
       loadFailed: "일부 결과를 불러오지 못했습니다.",
+      allFailed: "검색 결과를 불러올 수 없습니다.",
+      resultCount: {
+        other: "결과 {count}개",
+      },
     },
     notificationsAria: "알림",
     languageAria: "언어",

@@ -7104,6 +7104,8 @@ export interface operations {
                 activity?: string;
                 /** @description Case-insensitive substring match against Franchise.name. */
                 search?: string;
+                /** @description Leave archived Franchises out (they are listed by default). */
+                excludeArchived?: boolean;
             };
             header?: never;
             path?: never;

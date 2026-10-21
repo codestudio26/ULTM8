@@ -1438,6 +1438,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "excludeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Leave archived Franchises out (they are listed by default).",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

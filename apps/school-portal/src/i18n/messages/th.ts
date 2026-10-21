@@ -22,6 +22,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       loading: "กำลังค้นหา…",
       noResults: "ไม่พบผลลัพธ์สำหรับ “{query}”",
       loadFailed: "ไม่สามารถโหลดผลลัพธ์บางรายการได้",
+      allFailed: "ไม่สามารถโหลดผลการค้นหาได้",
+      resultCount: {
+        other: "{count} ผลลัพธ์",
+      },
     },
     notificationsAria: "การแจ้งเตือน",
     languageAria: "ภาษา",

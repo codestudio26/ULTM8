@@ -34,6 +34,10 @@ test.afterAll(async () => {
 
 const searchBox = (page: Page) => page.getByRole('combobox', { name: 'Search', exact: true });
 const results = (page: Page) => page.getByRole('listbox', { name: 'Search results' });
+/** The box's own status region (outside the list), which announces "Searching…",
+ * the result count, "No results" or a failure. Waiting on the count is how a test
+ * knows every group has answered before checking that something never appears. */
+const searchStatus = (page: Page) => searchBox(page).locator('..').getByRole('status');
 
 test('an owner finds a student by part of their name and opens them', async ({ page }) => {
   const student = await addStudent(s, `${word}ina`, 'Harrow', { rung: 'White 1' });
@@ -44,6 +48,7 @@ test('an owner finds a student by part of their name and opens them', async ({ p
   await searchBox(page).fill(word.slice(0, 7).toLowerCase());
   const option = results(page).getByRole('option', { name: student.name });
   await expect(option).toBeVisible();
+  await expect(searchStatus(page)).toHaveText('1 result');
   await expect(results(page).getByRole('option', { name: 'Someone Else' })).toHaveCount(0);
 
   // Keyboard: arrow down to the result, Enter opens it.
@@ -99,6 +104,8 @@ test("another School's records never appear", async ({ page }) => {
 
   await searchBox(page).fill(word);
   await expect(results(page).getByRole('option', { name: mine.name })).toBeVisible();
+  // Every group has answered (not still "Searching…") before checking what's absent.
+  await expect(searchStatus(page)).toHaveText('1 result');
   await expect(results(page).getByRole('option')).toHaveCount(1);
   await expect(page.getByText(`${word} Theirs`)).toHaveCount(0);
   await expect(page.getByText(`${word} Their Dojo`)).toHaveCount(0);
@@ -110,9 +117,14 @@ test('shows "No results", and Escape or a click outside closes the list', async 
   await page.goto('/dashboard');
 
   await searchBox(page).fill(`${word}-nobody`);
-  await expect(page.getByRole('status').filter({ hasText: `No results for “${word}-nobody”` })).toBeVisible();
+  // Before the debounced search has run, it's "Searching…", never an early "No results".
+  expect(await searchStatus(page).textContent()).not.toContain('No results');
+  await expect(searchStatus(page)).toHaveText(`No results for “${word}-nobody”`);
+  // …and shown in the open popup (the box's next sibling) too.
+  await expect(searchBox(page).locator('xpath=following-sibling::div[1]').getByText(`No results for “${word}-nobody”`, { exact: true })).toBeVisible();
 
   await searchBox(page).fill(word);
+  await expect(searchStatus(page)).toHaveText('1 result');
   await expect(results(page).getByRole('option')).toHaveCount(1);
   await expect(searchBox(page)).toHaveAttribute('aria-expanded', 'true');
   await searchBox(page).press('Escape');
@@ -124,6 +136,54 @@ test('shows "No results", and Escape or a click outside closes the list', async 
   // The page's top corner (the header logo), well away from the list.
   await page.mouse.click(4, 4);
   await expect(results(page)).toBeHidden();
+});
+
+test('fewer than 2 letters searches nothing and shows nothing', async ({ page }) => {
+  await addStudent(s, word, 'Student', { rung: 'White 1' });
+  await signIn(page, s.ownerToken);
+  await page.goto('/dashboard');
+  const searchRequests: string[] = [];
+  page.on('request', (req) => {
+    if (/[?&]search=/.test(req.url())) searchRequests.push(req.url());
+  });
+
+  await searchBox(page).fill(word.slice(0, 1));
+  // Longer than the debounce, so a search would have been sent by now.
+  await page.waitForTimeout(600);
+  expect(searchRequests).toEqual([]);
+  await expect(results(page)).toBeHidden();
+  await expect(searchBox(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(searchStatus(page)).toHaveText('');
+});
+
+test('Escape clears the box when fewer than 2 letters are typed', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/dashboard');
+
+  await searchBox(page).fill('Z');
+  await searchBox(page).press('Escape');
+  await expect(searchBox(page)).toHaveValue('');
+});
+
+test('a closed (archived) Franchise is not offered', async ({ page }) => {
+  const open = await db.franchise.create({ data: { id: randomUUID(), name: `${word} Open Group` } });
+  const closed = await db.franchise.create({
+    data: { id: randomUUID(), name: `${word} Closed Group`, archivedAt: new Date(), purgeAt: new Date(Date.now() + 86_400_000) },
+  });
+  franchiseIds.push(open.id, closed.id);
+  await db.roleGrant.createMany({
+    data: [
+      { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: s.ownerId, franchiseId: open.id },
+      { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: s.ownerId, franchiseId: closed.id },
+    ],
+  });
+  await signIn(page, s.ownerToken);
+  await page.goto('/dashboard');
+
+  await searchBox(page).fill(word);
+  await expect(results(page).getByRole('group', { name: 'Franchises' }).getByRole('option', { name: open.name })).toBeVisible();
+  await expect(searchStatus(page)).toHaveText('1 result');
+  await expect(results(page).getByRole('option', { name: closed.name })).toHaveCount(0);
 });
 
 test('a coach, whose sidebar has none of these pages, gets no search box', async ({ page }) => {
@@ -147,6 +207,9 @@ test('works in Portuguese', async ({ page }) => {
   const list = page.getByRole('listbox', { name: 'Resultados da pesquisa' });
   await expect(list.getByRole('group', { name: 'Alunos' }).getByRole('option', { name: student.name })).toBeVisible();
 
+  const status = box.locator('..').getByRole('status');
+  await expect(status).toHaveText('1 resultado');
+
   await box.fill(`${word}-ninguem`);
-  await expect(page.getByRole('status').filter({ hasText: `Nenhum resultado para “${word}-ninguem”` })).toBeVisible();
+  await expect(status).toHaveText(`Nenhum resultado para “${word}-ninguem”`);
 });

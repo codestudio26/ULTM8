@@ -22,6 +22,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       loading: "正在搜索…",
       noResults: "没有与“{query}”匹配的结果",
       loadFailed: "部分结果无法加载。",
+      allFailed: "无法加载搜索结果。",
+      resultCount: {
+        other: "{count} 个结果",
+      },
     },
     notificationsAria: "通知",
     languageAria: "语言",

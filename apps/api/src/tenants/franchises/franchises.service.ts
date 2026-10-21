@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
+import { escapeLike } from '../../common/search/name-search';
 import { AuthService } from '../../auth/auth.service';
 import { CreateFranchiseDto, FeeModelDto } from './dto/create-franchise.dto';
 import { FranchiseFeeRateChangeStrategyDto, UpdateFranchiseDto } from './dto/update-franchise.dto';
@@ -146,7 +147,10 @@ export class FranchisesService {
    * exactly as before either filter existed.
    *
    * Decision 278 — `search` (header Global Search): case-insensitive substring on
-   * `name`, one more condition on the same RLS-scoped query; never widens it. */
+   * `name`, one more condition on the same RLS-scoped query; never widens it.
+   * `excludeArchived` (default false, so the Franchises page still lists closed
+   * Franchises as before) leaves archived Franchises out — the search box asks
+   * for it so a closed Franchise can't take one of its few result slots. */
   async findAllForCaller(
     callerId: string,
     cursor?: string,
@@ -154,6 +158,7 @@ export class FranchisesService {
     feeModel?: FeeModelDto,
     activity?: string,
     search?: string,
+    excludeArchived?: boolean,
   ): Promise<CursorPage<{ id: string }>> {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
@@ -164,7 +169,8 @@ export class FranchisesService {
               ...(feeModel ? { feeModel } : {}),
               ...(activity ? { activities: { has: activity } } : {}),
               // Decision 278 — header Global Search, same idiom as ClassesService's `search`.
-              ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
+              ...(search ? { name: { contains: escapeLike(search), mode: 'insensitive' } } : {}),
+              ...(excludeArchived ? { archivedAt: null } : {}),
             },
             select: FRANCHISE_PUBLIC_SELECT,
           }),

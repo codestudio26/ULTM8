@@ -8,6 +8,11 @@ export const layout = {
     loading: 'Searching…',
     noResults: 'No results for “{query}”',
     loadFailed: "Some results couldn't be loaded.",
+    allFailed: "Search results couldn't be loaded.",
+    resultCount: {
+      one: '{count} result',
+      other: '{count} results',
+    },
   },
   notificationsAria: 'Notifications',
   languageAria: 'Language',

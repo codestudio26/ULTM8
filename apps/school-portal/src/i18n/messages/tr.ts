@@ -22,6 +22,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       loading: "Aranıyor…",
       noResults: "“{query}” için sonuç bulunamadı",
       loadFailed: "Bazı sonuçlar yüklenemedi.",
+      allFailed: "Arama sonuçları yüklenemedi.",
+      resultCount: {
+        one: "{count} sonuç",
+        other: "{count} sonuç",
+      },
     },
     notificationsAria: "Bildirimler",
     languageAria: "Dil",
