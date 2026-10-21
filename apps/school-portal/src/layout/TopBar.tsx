@@ -5,8 +5,8 @@ import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
 import { useNotifications } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
-import { Avatar } from '../lib/Avatar';
 import { SchoolSwitcher } from '../coach/SchoolSwitcher';
+import { AccountMenu } from './AccountMenu';
 import type { RoleGrantClaim } from '../auth/types';
 import { useI18n, type TranslateFn } from '../i18n/I18nProvider';
 
@@ -33,7 +33,8 @@ function nativeName(code: string, fallback: string): string {
 /**
  * App-shell header — rendered once by AppShell, above every page's own
  * content, not just Instructors'. Notifications and the profile are wired to
- * real data (GET /notifications/me, GET/PATCH /users/me); language is a real,
+ * real data (GET /notifications/me, GET/PATCH /users/me), and the avatar
+ * block opens the account menu (AccountMenu.tsx); language is a real,
  * working preference backed by the confirmed GET /settings/languages list —
  * picking one saves it to the profile and switches the portal's text
  * (I18nProvider, Decision 273). Search has no backing feature
@@ -114,17 +115,7 @@ export function TopBar() {
 
         <SchoolSwitcher />
 
-        {me ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Avatar firstName={me.firstName} surname={me.surname} photoUrl={me.profilePhotoUrl} size={34} />
-            <div style={{ lineHeight: 1.25 }}>
-              <div style={{ fontSize: 14 }}>
-                {me.firstName} {me.surname}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{roleLabel(claims?.grants, t)}</div>
-            </div>
-          </div>
-        ) : null}
+        {me ? <AccountMenu me={me} roleLabel={roleLabel(claims?.grants, t)} /> : null}
 
         {languages?.length ? (
           <SelectField

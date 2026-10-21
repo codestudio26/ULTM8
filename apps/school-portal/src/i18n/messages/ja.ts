@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "検索はまだ利用できません",
     notificationsAria: "通知",
     languageAria: "言語",
+    accountMenu: {
+      label: "アカウント",
+      myProfile: "マイプロフィール",
+      schoolSettings: "スクールの設定",
+    },
     roles: {
       owner: "スクールオーナー",
       branchStaff: "支店スタッフ",
@@ -2022,5 +2027,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "サポート",
     comingSoon: "{label}(近日公開)",
     notAvailableYet: "{label} — まだご利用いただけません",
+  },
+  profile: {
+    title: "マイプロフィール",
+    loadFailed: "プロフィールを読み込めませんでした。",
+    signInNote: "メールアドレスと電話番号はログインに使うため、ここでは変更できません。",
   },
 };

@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Arama henüz kullanılamıyor",
     notificationsAria: "Bildirimler",
     languageAria: "Dil",
+    accountMenu: {
+      label: "Hesap",
+      myProfile: "Profilim",
+      schoolSettings: "Okul ayarları",
+    },
     roles: {
       owner: "Okul sahibi",
       branchStaff: "Şube personeli",
@@ -2061,5 +2066,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Destek",
     comingSoon: "{label} (yakında)",
     notAvailableYet: "{label} — henüz kullanılamıyor",
+  },
+  profile: {
+    title: "Profilim",
+    loadFailed: "Profiliniz yüklenemedi.",
+    signInNote: "Giriş yaparken e-posta adresinizi ve telefon numaranızı kullanırsınız, bu yüzden burada değiştirilemezler.",
   },
 };

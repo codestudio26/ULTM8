@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "Búsqueda — aún no disponible",
     notificationsAria: "Notificaciones",
     languageAria: "Idioma",
+    accountMenu: {
+      label: "Cuenta",
+      myProfile: "Mi perfil",
+      schoolSettings: "Ajustes de la escuela",
+    },
     roles: {
       owner: "Propietario de la escuela",
       branchStaff: "Personal de sede",
@@ -2074,5 +2079,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "Soporte",
     comingSoon: "{label} (próximamente)",
     notAvailableYet: "{label} — aún no disponible",
+  },
+  profile: {
+    title: "Mi perfil",
+    loadFailed: "No se pudo cargar tu perfil.",
+    signInNote: "Inicias sesión con tu correo electrónico y tu teléfono, por eso no se pueden cambiar aquí.",
   },
 };

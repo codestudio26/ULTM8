@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "การค้นหายังไม่พร้อมใช้งาน",
     notificationsAria: "การแจ้งเตือน",
     languageAria: "ภาษา",
+    accountMenu: {
+      label: "บัญชี",
+      myProfile: "โปรไฟล์ของฉัน",
+      schoolSettings: "การตั้งค่าโรงเรียน",
+    },
     roles: {
       owner: "เจ้าของโรงเรียน",
       branchStaff: "พนักงานสาขา",
@@ -2022,5 +2027,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "ฝ่ายสนับสนุน",
     comingSoon: "{label} (เร็ว ๆ นี้)",
     notAvailableYet: "{label} — ยังไม่พร้อมใช้งาน",
+  },
+  profile: {
+    title: "โปรไฟล์ของฉัน",
+    loadFailed: "ไม่สามารถโหลดโปรไฟล์ของคุณได้",
+    signInNote: "คุณใช้อีเมลและหมายเลขโทรศัพท์ในการเข้าสู่ระบบ จึงไม่สามารถเปลี่ยนได้ที่นี่",
   },
 };
