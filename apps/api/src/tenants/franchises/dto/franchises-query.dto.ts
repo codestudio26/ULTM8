@@ -1,5 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { trimSearch } from '../../../common/search/name-search';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { FeeModelDto } from './create-franchise.dto';
 
@@ -29,4 +31,13 @@ export class FranchisesQueryDto extends PaginationQueryDto {
   @IsString()
   @MaxLength(100)
   activity?: string;
+
+  /** Decision 278 — the header Global Search: case-insensitive substring match against
+   * `Franchise.name`. Trimmed; blank means no filter. Same length limit as ClassesQueryDto.search. */
+  @ApiPropertyOptional({ description: 'Case-insensitive substring match against Franchise.name.' })
+  @IsOptional()
+  @Transform(({ value }) => trimSearch(value))
+  @IsString()
+  @MaxLength(200)
+  search?: string;
 }

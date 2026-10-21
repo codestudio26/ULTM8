@@ -3877,7 +3877,7 @@ export interface components {
         };
         CreateRoleGrantDto: {
             /** @enum {string} */
-            role: "INSTRUCTOR" | "BRANCH_STAFF";
+            role: "INSTRUCTOR" | "BRANCH_STAFF" | "SCHOOL_OWNER_MANAGER";
             schoolId: string;
             /** @description Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates. */
             branchId?: string;
@@ -6662,6 +6662,8 @@ export interface operations {
             query?: {
                 /** @description Defaults to ACTIVE (the pre-existing behavior) when omitted. */
                 status?: "ACTIVE" | "INACTIVE" | "ALL";
+                /** @description Case-insensitive substring match against first name, surname, or full name ("first surname"). */
+                search?: string;
             };
             header?: never;
             path: {
@@ -6835,6 +6837,8 @@ export interface operations {
                 city?: string;
                 /** @description Include archived Branches too (excluded by default). */
                 includeArchived?: boolean;
+                /** @description Case-insensitive substring match against Branch.name. */
+                search?: string;
             };
             header?: never;
             path: {
@@ -7098,6 +7102,8 @@ export interface operations {
                 feeModel?: "FLAT" | "PER_HEADCOUNT";
                 /** @description Exact match against one element of Franchise.activities. */
                 activity?: string;
+                /** @description Case-insensitive substring match against Franchise.name. */
+                search?: string;
             };
             header?: never;
             path?: never;
@@ -8823,6 +8829,8 @@ export interface operations {
                 limit?: number;
                 /** @description Include archived Instructor profiles too (excluded by default). */
                 includeArchived?: boolean;
+                /** @description Case-insensitive substring match against first name, surname, or full name ("first surname"). */
+                search?: string;
             };
             header?: never;
             path: {
@@ -11383,6 +11391,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 8-character School join code. */
                 code: string;
             };
             cookie?: never;

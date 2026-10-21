@@ -540,6 +540,15 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against first name, surname, or full name (\"first surname\").",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -922,6 +931,15 @@
             "schema": {
               "default": false,
               "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Branch.name.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1408,6 +1426,15 @@
             "required": false,
             "in": "query",
             "description": "Exact match against one element of Franchise.activities.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against Franchise.name.",
             "schema": {
               "type": "string"
             }
@@ -4359,6 +4386,15 @@
             "schema": {
               "default": false,
               "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match against first name, surname, or full name (\"first surname\").",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -8935,6 +8971,7 @@
             "name": "code",
             "required": true,
             "in": "path",
+            "description": "8-character School join code.",
             "schema": {
               "type": "string"
             }
@@ -11913,7 +11950,8 @@
             "type": "string",
             "enum": [
               "INSTRUCTOR",
-              "BRANCH_STAFF"
+              "BRANCH_STAFF",
+              "SCHOOL_OWNER_MANAGER"
             ]
           },
           "schoolId": {

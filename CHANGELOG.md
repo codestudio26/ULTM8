@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Global Search in the School Portal header** (Decision 278) — the header's
+  search box, until now disabled ("coming soon"), finds Students,
+  Instructors, Classes, Branches and Franchises by name (any part of a first
+  name, surname or full name; a class's title), grouped by type, and opens
+  the one you pick. It works from the keyboard (arrows, Enter, Escape) and
+  closes on a click outside. Only School Owners/Managers see it, matching
+  the sidebar; results are limited to what each list already shows them, and
+  archived records are left out. The Students, Instructors, Branches and
+  Franchises list endpoints gained an optional `search` param for it, like
+  Classes'. Translated into all 15 languages.
 - **School Portal translation, 15 languages** (Decision 273) — the header's
   language picker now actually switches the portal's text instead of only
   saving a preference. Languages: English (UK), Portuguese (BR), Spanish,

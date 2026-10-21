@@ -1,5 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { trimSearch } from '../../../common/search/name-search';
 
 /** A roster row's own resolved status — never ALL, which is only a request-side
  * filter value (StudentRosterStatusDto below), not a row status. Kept as its own
@@ -35,4 +37,13 @@ export class StudentRosterQueryDto {
   @IsOptional()
   @IsEnum(StudentRosterStatusDto)
   status?: StudentRosterStatusDto;
+
+  /** Decision 278 — the header Global Search: case-insensitive substring match against
+   * the Student's first name, surname, or full name "first surname". Trimmed; blank means no filter. Same length limit as ClassesQueryDto.search. */
+  @ApiPropertyOptional({ description: 'Case-insensitive substring match against first name, surname, or full name ("first surname").' })
+  @IsOptional()
+  @Transform(({ value }) => trimSearch(value))
+  @IsString()
+  @MaxLength(200)
+  search?: string;
 }

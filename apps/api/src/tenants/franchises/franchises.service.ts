@@ -143,20 +143,29 @@ export class FranchisesService {
    *
    * `feeModel`/`activity` — additive, optional filters (School Portal's Franchises
    * page Fee model / Activity filters, FranchisesQueryDto). Both omitted behaves
-   * exactly as before either filter existed. */
+   * exactly as before either filter existed.
+   *
+   * Decision 278 — `search` (header Global Search): case-insensitive substring on
+   * `name`, one more condition on the same RLS-scoped query; never widens it. */
   async findAllForCaller(
     callerId: string,
     cursor?: string,
     limit?: number,
     feeModel?: FeeModelDto,
     activity?: string,
+    search?: string,
   ): Promise<CursorPage<{ id: string }>> {
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
         (args) =>
           tx.franchise.findMany({
             ...args,
-            where: { ...(feeModel ? { feeModel } : {}), ...(activity ? { activities: { has: activity } } : {}) },
+            where: {
+              ...(feeModel ? { feeModel } : {}),
+              ...(activity ? { activities: { has: activity } } : {}),
+              // Decision 278 — header Global Search, same idiom as ClassesService's `search`.
+              ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
+            },
             select: FRANCHISE_PUBLIC_SELECT,
           }),
         cursor,

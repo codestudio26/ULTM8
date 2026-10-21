@@ -15,8 +15,14 @@ export const messages: PartialMessages<EnglishMessages> = {
   layout: {
     brand: "ULTM8 学校门户",
     logOut: "退出登录",
-    searchPlaceholder: "搜索（即将推出）",
-    searchAria: "搜索功能暂不可用",
+    search: {
+      label: "搜索",
+      placeholder: "按名称搜索…",
+      resultsLabel: "搜索结果",
+      loading: "正在搜索…",
+      noResults: "没有与“{query}”匹配的结果",
+      loadFailed: "部分结果无法加载。",
+    },
     notificationsAria: "通知",
     languageAria: "语言",
     accountMenu: {

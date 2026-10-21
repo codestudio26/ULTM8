@@ -1,8 +1,14 @@
 export const layout = {
   brand: 'ULTM8 School Portal',
   logOut: 'Log out',
-  searchPlaceholder: 'Search (coming soon)',
-  searchAria: 'Search — not available yet',
+  search: {
+    label: 'Search',
+    placeholder: 'Search by name…',
+    resultsLabel: 'Search results',
+    loading: 'Searching…',
+    noResults: 'No results for “{query}”',
+    loadFailed: "Some results couldn't be loaded.",
+  },
   notificationsAria: 'Notifications',
   languageAria: 'Language',
   accountMenu: {

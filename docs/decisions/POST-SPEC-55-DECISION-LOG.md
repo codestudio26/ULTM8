@@ -3926,3 +3926,30 @@ The student app (`apps/student`) and Platform Admin are not translated (both def
 ### Recorded by
 
 User (Code), choosing option 1 of two offered (built-in plus overrides vs server-only) and approving the proposed 15-language list, 20 Oct 2026.
+
+---
+
+## Decision 278 — Global Search in the School Portal header: names across five types, through each type's own list endpoint
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** §A of `docs/decisions/DRAFT-global-search-and-footer-scoping.md` (the header's disabled "Search (coming soon)" box, `v1.2-backend-backlog.md`'s "Global search" item), including its three open questions.
+
+### Decision
+
+1. **Scope: option (a).** One header box searches Students, Instructors, Classes, Branches and Franchises. Results are grouped by type, up to 5 per type, and each opens that record's existing page (`/students/:id`, `/instructors/:id`, `/classes/:id`, `/branches/:id`, `/franchises/:id`).
+2. **Match: case-insensitive substring on names only.** Students and Instructors: first name, surname, or the full name "first surname" ("jo" finds "John"). Classes: title. Branches and Franchises: name. Never email or phone. The box waits for 2 characters and 250 ms after the last keystroke.
+3. **Who sees what: the sidebar's own rule.** A type is searched only if the person's sidebar offers its page (`Shell.tsx`). Today that means School Owners/Managers get all five, and a coach or Branch Staff member who doesn't own the School (`COACH_NAV`) gets none, so the box isn't shown to them. Separately, the server still applies each list endpoint's own, unchanged authorization: the search can only narrow a list the caller could already read.
+4. **Archived records are excluded**, as each list endpoint already does by default (Decision 226's `archivedAt`; for Students, the roster's default "Active" filter). The open question the draft parked on Decision 226 is answered by what Decision 226 actually shipped.
+5. **Backend: approach 2, no new endpoint.** `GET /schools/:id/students`, `GET /schools/:schoolId/instructors`, `GET /schools/:schoolId/branches` and `GET /franchises` gain an optional `search` param, the same shape `GET /schools/:schoolId/classes` already had (trimmed, at most 200 characters, blank means no filter). Branches and Franchises add one Prisma `contains` + `mode: 'insensitive'` condition to their existing RLS-scoped query. Students and Instructors names live on `User`, whose RLS visibility doesn't cover every row these lists show (Decision 117), so their match runs on the rows the endpoint has already authorized: the Students roster is filtered after its unchanged query; for Instructors, the unchanged scoped query gives the profiles' user ids, `resolveUserNames` reads the names of exactly those ids, and the matching ids become one more condition on the paginated query. The portal fires the five requests in parallel.
+
+### Relation to Decision 116
+
+Decision 116 chose "exact email or phone match only, never a name search" for the Staff invite lookup, which reads Users the caller has no relationship with yet. That stays as it is. This decision allows name search **only inside lists the caller can already see at their own School** (and the Franchises they own); it is never a lookup across tenants or of Users outside those lists.
+
+### What this does NOT resolve
+
+No search over other records (Curriculum, Membership Plans, Transactions, Waivers), no fuzzy or accent-insensitive matching, and no search for coaches or Branch Staff: if their sidebar gains any of these pages, the box should follow it. Franchises: `GET /franchises` lists closed (archived) Franchises by default; the search box leaves them out, like every other archived record. Only Franchises the caller owns are ever listed.
+
+### Recorded by
+
+User (product owner), agreeing to the recommended option (a) with approach 2, substring name matching, sidebar-mirroring role scoping and archived records excluded, 21 Oct 2026; built the same day.

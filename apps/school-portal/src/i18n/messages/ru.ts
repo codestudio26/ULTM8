@@ -15,8 +15,14 @@ export const messages: PartialMessages<EnglishMessages> = {
   layout: {
     brand: "Портал школы ULTM8",
     logOut: "Выйти",
-    searchPlaceholder: "Поиск (скоро)",
-    searchAria: "Поиск пока недоступен",
+    search: {
+      label: "Поиск",
+      placeholder: "Поиск по имени…",
+      resultsLabel: "Результаты поиска",
+      loading: "Идёт поиск…",
+      noResults: "Нет результатов по запросу «{query}»",
+      loadFailed: "Не удалось загрузить некоторые результаты.",
+    },
     notificationsAria: "Уведомления",
     languageAria: "Язык",
     accountMenu: {

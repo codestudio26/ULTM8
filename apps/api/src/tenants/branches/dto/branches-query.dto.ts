@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { trimSearch } from '../../../common/search/name-search';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 /**
@@ -31,4 +32,13 @@ export class BranchesQueryDto extends PaginationQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   includeArchived?: boolean;
+
+  /** Decision 278 — the header Global Search: case-insensitive substring match against
+   * `Branch.name`. Trimmed; blank means no filter. Same length limit as ClassesQueryDto.search. */
+  @ApiPropertyOptional({ description: 'Case-insensitive substring match against Branch.name.' })
+  @IsOptional()
+  @Transform(({ value }) => trimSearch(value))
+  @IsString()
+  @MaxLength(200)
+  search?: string;
 }

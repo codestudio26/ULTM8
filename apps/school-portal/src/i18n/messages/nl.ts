@@ -15,8 +15,14 @@ export const messages: PartialMessages<EnglishMessages> = {
   layout: {
     brand: "ULTM8 Schoolportaal",
     logOut: "Uitloggen",
-    searchPlaceholder: "Zoeken (binnenkort)",
-    searchAria: "Zoeken — nog niet beschikbaar",
+    search: {
+      label: "Zoeken",
+      placeholder: "Zoeken op naam…",
+      resultsLabel: "Zoekresultaten",
+      loading: "Bezig met zoeken…",
+      noResults: "Geen resultaten voor ‘{query}’",
+      loadFailed: "Sommige resultaten konden niet worden geladen.",
+    },
     notificationsAria: "Meldingen",
     languageAria: "Taal",
     accountMenu: {
