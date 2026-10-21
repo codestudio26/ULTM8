@@ -4,8 +4,11 @@ import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, T
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from './AuthContext';
 import { takeReturnTo } from './returnTo';
+import { useT } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
 
 export function LoginPage() {
+  const t = useT();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: { pathname: string } } };
@@ -28,7 +31,7 @@ export function LoginPage() {
       }
       setLoggedIn(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
@@ -41,8 +44,8 @@ export function LoginPage() {
   if (loggedIn) {
     return (
       <AuthSuccessCard
-        title="Successful"
-        subtitle="You are successfully logged in to your account."
+        title={t('auth.login.successTitle')}
+        subtitle={t('auth.login.successSubtitle')}
         onContinue={handleContinue}
       />
     );
@@ -50,8 +53,8 @@ export function LoginPage() {
 
   return (
     <AuthCard
-      title="Welcome back"
-      subtitle="Email and your 6-digit passcode — that's your whole login (no separate password)."
+      title={t('auth.login.title')}
+      subtitle={t('auth.login.subtitle')}
       rail={
         <div className="ultm8-auth-rail">
           <span className="ultm8-auth-rail__mark" aria-hidden="true">
@@ -59,15 +62,15 @@ export function LoginPage() {
           </span>
           <div className="ultm8-auth-rail__copy">
             <strong>ULTM8</strong>
-            Every belt, every booking, one place.
+            {t('auth.login.railTagline')}
           </div>
         </div>
       }
-      footer={<>New School? <Link to="/register">Create an account</Link></>}
+      footer={<Trans k="auth.login.newSchool" nodes={{ link: <Link to="/register">{t('auth.createAccountLink')}</Link> }} />}
     >
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Email" htmlFor="login-email">
+        <Field label={t('auth.emailLabel')} htmlFor="login-email">
           <TextField
             type="email"
             autoComplete="email"
@@ -77,12 +80,12 @@ export function LoginPage() {
           />
         </Field>
         <Field
-          label="Passcode"
+          label={t('auth.passcodeLabel')}
           htmlFor="login-passcode"
-          hint="6 digits"
+          hint={t('auth.passcodeHint')}
           labelAction={
             <Link to="/forgot-passcode" className="ultm8-field__label-action">
-              Forgot your passcode?
+              {t('auth.login.forgotPasscode')}
             </Link>
           }
         >
@@ -97,7 +100,7 @@ export function LoginPage() {
           />
         </Field>
         <Button type="submit" fullWidth loading={submitting}>
-          Log in
+          {t('auth.logIn')}
         </Button>
       </form>
     </AuthCard>

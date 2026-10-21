@@ -9,6 +9,7 @@ import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { SkillFormModal } from '../skills/SkillFormModal';
 import { useRanks } from '../ranks/rankQueries';
 import { LadderSection } from '../ranks/LadderSection';
+import { useT } from '../i18n/I18nProvider';
 
 /** A Discipline's own Skills and Ranks catalog. Reached via a "Manage
  * skills" link from DisciplinesPage's own table — both Skill and Rank CRUD
@@ -16,6 +17,7 @@ import { LadderSection } from '../ranks/LadderSection';
  * `/styles/:disciplineId/ranks`), so there's no School-wide list to build a
  * standalone top-level page against for either. */
 export function DisciplineDetailPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const disciplineId = id ?? null;
   const { data: discipline, isLoading: disciplineLoading, error: disciplineError } = useDiscipline(disciplineId);
@@ -30,13 +32,13 @@ export function DisciplineDetailPage() {
   if (!disciplineId) return null;
   if (disciplineLoading || skillsLoading || ranksLoading) return <Spinner />;
   if (disciplineError) {
-    return <ErrorBanner message={disciplineError instanceof ApiError ? disciplineError.message : 'Could not load this Discipline.'} />;
+    return <ErrorBanner message={disciplineError instanceof ApiError ? disciplineError.message : t('disciplines.detail.loadFailed')} />;
   }
   if (skillsError) {
-    return <ErrorBanner message={skillsError instanceof ApiError ? skillsError.message : 'Could not load Skills.'} />;
+    return <ErrorBanner message={skillsError instanceof ApiError ? skillsError.message : t('disciplines.detail.skillsLoadFailed')} />;
   }
   if (ranksError) {
-    return <ErrorBanner message={ranksError instanceof ApiError ? ranksError.message : 'Could not load Ranks.'} />;
+    return <ErrorBanner message={ranksError instanceof ApiError ? ranksError.message : t('disciplines.detail.ranksLoadFailed')} />;
   }
 
   const skills = skillData?.items ?? [];
@@ -45,7 +47,7 @@ export function DisciplineDetailPage() {
   return (
     <>
       <PageHeader
-        title={discipline?.name ?? 'Discipline'}
+        title={discipline?.name ?? t('disciplines.detail.fallbackTitle')}
         subtitle={discipline?.classTypesOffered.length ? discipline.classTypesOffered.join(', ') : undefined}
       />
 
@@ -54,30 +56,30 @@ export function DisciplineDetailPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <div>
               <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 4 }}>
-                Skills
+                {t('disciplines.detail.skillsHeading')}
               </h2>
-              <p style={{ margin: 0 }}>Named Skills a Student can be signed off on within this Discipline.</p>
+              <p style={{ margin: 0 }}>{t('disciplines.detail.skillsIntro')}</p>
             </div>
-            <Button onClick={() => setCreatingSkill(true)}>Add skill</Button>
+            <Button onClick={() => setCreatingSkill(true)}>{t('disciplines.detail.addSkill')}</Button>
           </div>
           {skills.length === 0 ? (
-            <EmptyState title="No Skills yet" description="Add your first Skill to get started." />
+            <EmptyState title={t('disciplines.detail.emptyTitle')} description={t('disciplines.detail.emptyDescription')} />
           ) : (
             <Table<SkillResponse>
               rows={skills}
               columns={[
-                { key: 'name', header: 'Name', render: (s) => s.name },
-                { key: 'description', header: 'Description', render: (s) => s.description ?? '—' },
+                { key: 'name', header: t('disciplines.detail.columnName'), render: (s) => s.name },
+                { key: 'description', header: t('disciplines.detail.columnDescription'), render: (s) => s.description ?? '—' },
                 {
                   key: 'actions',
                   header: '',
                   render: (s) => (
                     <div style={{ display: 'flex', gap: 8 }}>
                       <Button variant="secondary" onClick={() => setEditingSkill(s)}>
-                        Edit
+                        {t('disciplines.detail.edit')}
                       </Button>
-                      <Button variant="secondary" onClick={() => setDeletingSkill(s)} aria-label={`Delete ${s.name}`}>
-                        Delete
+                      <Button variant="secondary" onClick={() => setDeletingSkill(s)} aria-label={t('disciplines.detail.deleteAria', { name: s.name })}>
+                        {t('disciplines.detail.delete')}
                       </Button>
                     </div>
                   ),
@@ -92,7 +94,7 @@ export function DisciplineDetailPage() {
 
       {creatingSkill ? (
         <SkillFormModal
-          title="Add skill"
+          title={t('disciplines.detail.addSkillTitle')}
           submitting={createSkill.isPending}
           onSubmit={async (values) => {
             // Create has nothing to "clear" — map the form's null back to
@@ -106,8 +108,8 @@ export function DisciplineDetailPage() {
 
       {deletingSkill ? (
         <ConfirmDeleteModal
-          title={`Delete ${deletingSkill.name}?`}
-          description="It comes off the stripes and lessons that list it. A skill can only be deleted while no student has been marked on it."
+          title={t('disciplines.detail.deleteTitle', { name: deletingSkill.name })}
+          description={t('disciplines.detail.deleteDescription')}
           onConfirm={() => deleteSkill.mutateAsync(deletingSkill.id)}
           onClose={() => setDeletingSkill(null)}
         />
@@ -122,10 +124,11 @@ export function DisciplineDetailPage() {
 }
 
 function EditSkillModal({ disciplineId, skill, onClose }: { disciplineId: string; skill: SkillResponse; onClose: () => void }) {
+  const t = useT();
   const updateSkill = useUpdateSkill(disciplineId, skill.id);
   return (
     <SkillFormModal
-      title="Edit skill"
+      title={t('disciplines.detail.editSkillTitle')}
       initial={skill}
       submitting={updateSkill.isPending}
       onSubmit={async (values) => {

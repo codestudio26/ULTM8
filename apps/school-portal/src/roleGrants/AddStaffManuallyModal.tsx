@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Decision 251 — Staff "Add Manually": a real User + RoleGrant (role:
@@ -24,6 +25,7 @@ export function AddStaffManuallyModal({
   onSubmit: (values: { firstName: string; surname: string; email: string; branchId: string }) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [form, setForm] = useState({ firstName: '', surname: '', email: '', branchId: '' });
   const [error, setError] = useState<string | null>(null);
 
@@ -38,33 +40,33 @@ export function AddStaffManuallyModal({
         branchId: form.branchId,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
-    <Modal title="Add staff manually" onClose={onClose}>
+    <Modal title={t('roleGrants.addManually.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="First name" htmlFor="add-staff-manually-firstName">
+        <Field label={t('roleGrants.addManually.firstNameLabel')} htmlFor="add-staff-manually-firstName">
           <TextField required value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} />
         </Field>
-        <Field label="Surname" htmlFor="add-staff-manually-surname">
+        <Field label={t('roleGrants.addManually.surnameLabel')} htmlFor="add-staff-manually-surname">
           <TextField required value={form.surname} onChange={(e) => setForm((f) => ({ ...f, surname: e.target.value }))} />
         </Field>
-        <Field label="Email" htmlFor="add-staff-manually-email" hint="A temporary passcode is emailed here — they'll choose their own on first login.">
+        <Field label={t('roleGrants.addManually.emailLabel')} htmlFor="add-staff-manually-email" hint={t('roleGrants.addManually.emailHint')}>
           <TextField required type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         </Field>
-        <Field label="Branch" htmlFor="add-staff-manually-branch" hint="Branch Staff always belongs to a specific Branch.">
+        <Field label={t('roleGrants.addManually.branchLabel')} htmlFor="add-staff-manually-branch" hint={t('roleGrants.addManually.branchHint')}>
           <SelectField
             required
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: 'Select a branch…' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('roleGrants.addManually.selectBranch') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
           />
         </Field>
         <Button type="submit" loading={submitting}>
-          Add staff
+          {t('roleGrants.addManually.submit')}
         </Button>
       </form>
     </Modal>

@@ -5,6 +5,8 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { FranchiseResponse } from './franchiseQueries';
+import { useT } from '../i18n/I18nProvider';
+import { languageName } from '../i18n/format';
 
 const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
 
@@ -67,6 +69,7 @@ export function FranchiseFormModal({
   onSubmit: (values: FranchiseFormValues) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const { data: languages } = useLanguages();
   const { data: currencies } = useCurrencies();
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
@@ -103,9 +106,7 @@ export function FranchiseFormModal({
     e.preventDefault();
     setError(null);
     if (feeRateChangeDecisionRequired && !feeRateChangeStrategy) {
-      setError(
-        `This Franchise has ${schoolsAlreadyBillingCount} School${schoolsAlreadyBillingCount === 1 ? '' : 's'} already billing at the current rate — choose how this change applies before saving.`,
-      );
+      setError(t('franchises.form.rateChangeRequired', { count: schoolsAlreadyBillingCount }));
       return;
     }
     try {
@@ -127,7 +128,7 @@ export function FranchiseFormModal({
         feeRateChangeStrategy: feeRateChangeDecisionRequired && feeRateChangeStrategy ? feeRateChangeStrategy : undefined,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -135,49 +136,49 @@ export function FranchiseFormModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Franchise name" htmlFor="franchise-name">
+        <Field label={t('franchises.form.nameLabel')} htmlFor="franchise-name">
           <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </Field>
-        <Field label="Mobile number" htmlFor="franchise-mobile">
+        <Field label={t('franchises.form.mobileLabel')} htmlFor="franchise-mobile">
           <PhoneField
             value={form.mobileNumber}
             onChange={(v) => setForm((f) => ({ ...f, mobileNumber: v }))}
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label="Address" htmlFor="franchise-address">
+        <Field label={t('franchises.form.addressLabel')} htmlFor="franchise-address">
           <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
         </Field>
-        <Field label="Type" htmlFor="franchise-type">
+        <Field label={t('franchises.form.typeLabel')} htmlFor="franchise-type">
           <TextField value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} />
         </Field>
-        <Field label="Activities" htmlFor="franchise-activities" hint="Comma-separated, e.g. Jiu Jitsu, Karate, Judo">
+        <Field label={t('franchises.form.activitiesLabel')} htmlFor="franchise-activities" hint={t('franchises.form.activitiesHint')}>
           <TextField value={form.activities} onChange={(e) => setForm((f) => ({ ...f, activities: e.target.value }))} />
         </Field>
-        <Field label="Facilities" htmlFor="franchise-facilities" hint="Comma-separated">
+        <Field label={t('franchises.form.facilitiesLabel')} htmlFor="franchise-facilities" hint={t('franchises.form.facilitiesHint')}>
           <TextField value={form.facilities} onChange={(e) => setForm((f) => ({ ...f, facilities: e.target.value }))} />
         </Field>
-        <Field label="Default language" htmlFor="franchise-language">
+        <Field label={t('franchises.form.languageLabel')} htmlFor="franchise-language">
           <SelectField
             id="franchise-language"
             value={form.defaultLanguage}
             onChange={(e) => setForm((f) => ({ ...f, defaultLanguage: e.target.value }))}
-            options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+            options={[{ value: '', label: t('franchises.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
           />
         </Field>
-        <Field label="Default currency" htmlFor="franchise-currency">
+        <Field label={t('franchises.form.currencyLabel')} htmlFor="franchise-currency">
           <CurrencyField
             id="franchise-currency"
             value={form.defaultCurrency}
             onChange={(code) => setForm((f) => ({ ...f, defaultCurrency: code }))}
-            options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
-            placeholder="Not set"
+            options={[{ code: '', name: t('franchises.form.notSet') }, ...(currencies ?? [])]}
+            placeholder={t('franchises.form.notSet')}
           />
         </Field>
-        <Field label="Description" htmlFor="franchise-description">
+        <Field label={t('franchises.form.descriptionLabel')} htmlFor="franchise-description">
           <TextField value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
-        <Field label="Logo" htmlFor="franchise-logo">
+        <Field label={t('franchises.form.logoLabel')} htmlFor="franchise-logo">
           <PhotoUploadField
             value={form.logoUrl}
             onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
@@ -190,7 +191,7 @@ export function FranchiseFormModal({
             }
           />
         </Field>
-        <Field label="Banner" htmlFor="franchise-banner">
+        <Field label={t('franchises.form.bannerLabel')} htmlFor="franchise-banner">
           <PhotoUploadField
             value={form.bannerUrl}
             onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
@@ -203,24 +204,20 @@ export function FranchiseFormModal({
             }
           />
         </Field>
-        <Field label="Fee model" htmlFor="franchise-feeModel">
+        <Field label={t('franchises.form.feeModelLabel')} htmlFor="franchise-feeModel">
           <SelectField
             value={form.feeModel}
             onChange={(e) => setForm((f) => ({ ...f, feeModel: e.target.value as (typeof FEE_MODELS)[number] }))}
             options={[
-              { value: 'FLAT', label: 'Flat' },
-              { value: 'PER_HEADCOUNT', label: 'Per-headcount' },
+              { value: 'FLAT', label: t('franchises.feeModels.flat') },
+              { value: 'PER_HEADCOUNT', label: t('franchises.feeModels.perHeadcount') },
             ]}
           />
         </Field>
         <Field
-          label="Flat fee amount"
+          label={t('franchises.form.flatFeeLabel')}
           htmlFor="franchise-flatFee"
-          hint={
-            initial
-              ? "Minor currency unit (e.g. cents). Only meaningful when Fee model is Flat. Changing it once billing has started requires choosing how the change applies, below."
-              : 'Minor currency unit (e.g. cents). Only meaningful when Fee model is Flat.'
-          }
+          hint={initial ? t('franchises.form.flatFeeHintEditing') : t('franchises.form.flatFeeHint')}
         >
           <TextField
             type="number"
@@ -230,13 +227,9 @@ export function FranchiseFormModal({
           />
         </Field>
         <Field
-          label="Per-headcount rate"
+          label={t('franchises.form.perHeadcountLabel')}
           htmlFor="franchise-perHeadcount"
-          hint={
-            initial
-              ? "Minor currency unit (e.g. cents) per active Student per month. Only meaningful when Fee model is Per-headcount. Changing it once billing has started requires choosing how the change applies, below."
-              : 'Minor currency unit (e.g. cents) per active Student per month. Only meaningful when Fee model is Per-headcount.'
-          }
+          hint={initial ? t('franchises.form.perHeadcountHintEditing') : t('franchises.form.perHeadcountHint')}
         >
           <TextField
             type="number"
@@ -252,11 +245,10 @@ export function FranchiseFormModal({
           // blocked (handleSubmit's own check) until one is picked. Same
           // two-button-choice shape MembershipPlanFormPage's own price-change
           // prompt already establishes.
-          <Field label="This rate change affects already-billing Schools" htmlFor="franchise-fee-rate-change-strategy">
+          <Field label={t('franchises.form.rateChangeLabel')} htmlFor="franchise-fee-rate-change-strategy">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-                {schoolsAlreadyBillingCount} School{schoolsAlreadyBillingCount === 1 ? '' : 's'} currently billing at the old rate.
-                Choose how this change applies before saving.
+                {t('franchises.form.rateChangeBilling', { count: schoolsAlreadyBillingCount })}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <Button
@@ -264,34 +256,34 @@ export function FranchiseFormModal({
                   variant={feeRateChangeStrategy === 'MIGRATE_NEXT_CYCLE' ? 'primary' : 'secondary'}
                   onClick={() => setFeeRateChangeStrategy('MIGRATE_NEXT_CYCLE')}
                 >
-                  Apply from next billing cycle
+                  {t('franchises.form.applyNextCycle')}
                 </Button>
                 <Button
                   type="button"
                   variant={feeRateChangeStrategy === 'MIGRATE_IMMEDIATE' ? 'primary' : 'secondary'}
                   onClick={() => setFeeRateChangeStrategy('MIGRATE_IMMEDIATE')}
                 >
-                  Apply immediately
+                  {t('franchises.form.applyImmediately')}
                 </Button>
               </div>
               <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
                 {feeRateChangeStrategy === 'MIGRATE_NEXT_CYCLE'
-                  ? 'Every already-billing School keeps paying the old rate for its current billing period — the new rate starts at their next renewal.'
+                  ? t('franchises.form.nextCycleExplanation')
                   : feeRateChangeStrategy === 'MIGRATE_IMMEDIATE'
                     ? form.feeModel === 'PER_HEADCOUNT'
-                      ? "Takes effect right away. Because Per-headcount billing can't split a period between two rates, this re-rates each School's ENTIRE current billing period at the new rate, not just the days remaining."
-                      : 'Takes effect right away — Schools are charged a prorated difference for the remaining days of their current billing period.'
-                    : 'Pick one to continue.'}
+                      ? t('franchises.form.immediatePerHeadcountExplanation')
+                      : t('franchises.form.immediateFlatExplanation')
+                    : t('franchises.form.pickOne')}
               </p>
             </div>
           </Field>
         ) : null}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

@@ -5,6 +5,8 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { Avatar } from '../lib/Avatar';
 import { useStudents, type StudentRosterStatus, type StudentSummary } from './studentQueries';
+import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 /**
  * Read-only Student roster, apart from one entry point: there is no in-line
@@ -16,6 +18,7 @@ import { useStudents, type StudentRosterStatus, type StudentSummary } from './st
  * the dedicated /students/invite page linked below, not this page itself.
  */
 export function StudentsPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const navigate = useNavigate();
   // Active/Inactive/All filter (GET /schools/:id/students?status=) — defaults to
@@ -37,43 +40,39 @@ export function StudentsPage() {
   return (
     <>
       <PageHeader
-        title="Students"
-        subtitle="Everyone currently enrolled at your School. Open a student to see and change their ranks."
-        actions={<Button onClick={() => navigate('/students/invite')}>Invite a Student</Button>}
+        title={t('students.title')}
+        subtitle={t('students.subtitle')}
+        actions={<Button onClick={() => navigate('/students/invite')}>{t('students.inviteButton')}</Button>}
       />
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ maxWidth: 220 }}>
-            <Field label="Status" htmlFor="students-status-filter">
+            <Field label={t('students.statusLabel')} htmlFor="students-status-filter">
               <SelectField
                 id="students-status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as StudentRosterStatus)}
                 options={[
-                  { value: 'ACTIVE', label: 'Active' },
-                  { value: 'INACTIVE', label: 'Inactive' },
-                  { value: 'ALL', label: 'All' },
+                  { value: 'ACTIVE', label: t('students.statusActive') },
+                  { value: 'INACTIVE', label: t('students.statusInactive') },
+                  { value: 'ALL', label: t('students.statusAll') },
                 ]}
               />
             </Field>
           </div>
-          <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Students view" />
+          <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('students.viewAria')} />
         </div>
       </Card>
       {isLoading ? (
         <Spinner />
       ) : error ? (
-        <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Students.'} />
+        <ErrorBanner message={error instanceof ApiError ? error.message : t('students.loadFailed')} />
       ) : (
         <Card>
           {students.length === 0 ? (
             <EmptyState
-              title={statusFilter === 'ACTIVE' ? 'No Students yet' : 'No Students match this filter'}
-              description={
-                statusFilter === 'ACTIVE'
-                  ? 'Students appear here once they join your School (or a Guardian enrolls them).'
-                  : 'Try a different status filter.'
-              }
+              title={statusFilter === 'ACTIVE' ? t('students.emptyTitle') : t('students.emptyFilteredTitle')}
+              description={statusFilter === 'ACTIVE' ? t('students.emptyDescription') : t('students.emptyFilteredDescription')}
             />
           ) : viewMode === 'grid' ? (
             <CardGrid>
@@ -84,10 +83,10 @@ export function StudentsPage() {
                       <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={32} />
                       <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link>
                     </div>
-                    <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? 'Active' : 'Inactive'}</Badge>
+                    <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{s.email}</p>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>Enrolled {new Date(s.enrolledAt).toLocaleDateString()}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{t('students.enrolledOn', { date: new Date(s.enrolledAt).toLocaleDateString(formatLocale()) })}</p>
                 </Card>
               ))}
             </CardGrid>
@@ -100,14 +99,14 @@ export function StudentsPage() {
                   header: '',
                   render: (s) => <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={32} />,
                 },
-                { key: 'name', header: 'Name', render: (s) => <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link> },
-                { key: 'email', header: 'Email', render: (s) => s.email },
+                { key: 'name', header: t('students.columnName'), render: (s) => <Link to={`/students/${s.id}`}>{`${s.firstName} ${s.surname}`.trim()}</Link> },
+                { key: 'email', header: t('students.columnEmail'), render: (s) => s.email },
                 {
                   key: 'status',
-                  header: 'Status',
-                  render: (s) => <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? 'Active' : 'Inactive'}</Badge>,
+                  header: t('students.columnStatus'),
+                  render: (s) => <Badge variant={s.status === 'ACTIVE' ? 'success' : 'default'}>{s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}</Badge>,
                 },
-                { key: 'enrolledAt', header: 'Enrolled', render: (s) => new Date(s.enrolledAt).toLocaleDateString() },
+                { key: 'enrolledAt', header: t('students.columnEnrolled'), render: (s) => new Date(s.enrolledAt).toLocaleDateString(formatLocale()) },
               ]}
             />
           )}

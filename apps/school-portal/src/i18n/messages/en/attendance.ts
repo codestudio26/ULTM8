@@ -1,0 +1,32 @@
+export const attendance = {
+  scanModal: {
+    title: "Scan Student's check-in code",
+    cameraFailed: 'Could not access the camera — check browser permissions.',
+    hint: "Point the camera at the code shown on the Student's own device.",
+  },
+  qrCode: {
+    loadFailed: 'Could not load this Class.',
+    tokenFailed: 'Could not generate a QR code for this Class.',
+    title: 'QR check-in',
+    titleWithClass: 'QR check-in — {title}',
+    explanation: 'Students scan this from their own device to check in. It refreshes automatically — no action needed.',
+    typeCodeHint: 'No camera? Students can type this code instead:',
+  },
+  rollCall: {
+    loadFailed: 'Could not load this Class.',
+    bookingsLoadFailed: 'Could not load this Class’s bookings.',
+    title: 'Roll call',
+    titleWithClass: 'Roll call — {title}',
+    emptyTitle: 'No Bookings',
+    emptyDescription: 'Nobody is booked into this Class.',
+    checkInFailed: 'Could not check in this Student — please try again.',
+    methodSelfService: 'Self check-in',
+    methodInstructorScan: 'Scanned by you',
+    methodInstructorManual: 'Confirmed by you',
+    present: 'Present ✓',
+    scan: 'Scan',
+    confirmPresent: 'Confirm present',
+    statusCancelled: 'CANCELLED',
+    statusNoShow: 'NO_SHOW',
+  },
+};
