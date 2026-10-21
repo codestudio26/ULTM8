@@ -353,7 +353,9 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
 
 The grading system as built, shown in the new look. Every label and rule stays as it is in the code; only layout and look change.
 
-- **Where things live.** "Grading" in the menu opens three tabs: **Board**, **Styles & belts** (the ladder and belt editor) and **Permissions**. A student's grading is the **Ranks** tab of their profile.
+- **Where things live.** "Grading" in the menu opens five tabs, in this order: **Board** · **Styles & Belts** (the ladder and belt editor) · **Skills** · **Permissions** · **Settings** (product owner, 21 Oct 2026). A student's grading is the **Ranks** tab of their profile. "Styles & Belts" is always written with a capital B.
+  - **Skills tab:** pick a style, then a list of its Skills with **+ Add skill**, and Edit and Delete on every row. Each row shows how many grades require the skill and how many students are working on it. The right panel shows the selected skill. Adding or editing asks for a name (required, unique within the style) and an optional description. A skill that students are already being signed off on can't be deleted; the dialog says why.
+  - **Settings tab:** the same page as **Settings → Grading**, a new category after Check-in, laid out like Check-in rules (sections of settings on the left, "About this setting" panel on the right, Discard / Save changes bar). Sections: How ranks are shown, Grading rules, Grading Board columns, Whole school.
 - **Ranks without a belt** (product owner, 21 Oct 2026), e.g. No-Gi: Beginner, Intermediate, Advanced.
   - Each style is set up as **either Belts or Levels**, never a mix: "Ranks shown as: Belts / Levels (no belt)" in the Add/Edit discipline dialog and in "About this style".
   - **The level badge:** a rounded tag in a colour the school picks (colour wheel as for belts), with dots for the step: "●●○" = step 2 of 3. Same sizes as the belt picture (72 × 16, large 168 × 30); text is dark or white to suit the colour.
@@ -384,6 +386,9 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - A coloured strip on the group's left edge marks it: green for Ready to Grade, slate for Getting There, grey for Just Starting.
     - On phones each row keeps the tick box, the name (with the belt and tags under it) and the progress.
   - Ticking, Select all, Promote selected, Move and the right panel work the same in both views.
+  - **No branch** follows the switch too (product owner, 21 Oct 2026): in Rows, its students are rows like the groups below, with the "Choose a branch" picker and Assign on a line under each row.
+- **Promote selected: pick the rank** (product owner, 21 Oct 2026; skipping is Decision 128 item 7). Each student in the bulk promote dialog has a **Promote to** picker. It starts on the next rank and lists only higher ranks, so a student can go from White Belt · 2 Stripes straight to Blue Belt. A skip shows "Skips N rank(s) in between. This is recorded on the history." in blue, and the result list says "(skipped N)".
+  - ⚠️ **Open:** which rank's requirements apply when a student skips. The design copies the single-student Grade dialog: the "Needs a look" checks (skills, days short) only apply to the next rank, so they drop away on a skip. Students blocked by "Skills required" still can't be promoted and get no picker. This needs a product-owner decision before the API is built.
 - **Tags:**
   - Green: Ready.
   - Amber: needs a look ("Skills not signed off", "n days short").
