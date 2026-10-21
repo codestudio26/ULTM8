@@ -277,6 +277,10 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
   3. **A picture of the setting, where one helps.** For example, the check-in window is shown as a timeline (opens 17:30 → class 18:00 → closes 18:15) that moves as the times change.
 - **Wording:** explanations only describe what a setting does, as decided. Features that aren't built yet say "coming soon" and point to `docs/v1.3-backend-backlog.md`.
 
+### Side menu stays in view (product owner, 21 Oct 2026)
+
+On a computer the side menu is pinned to the screen (`position: sticky; top: 0; height: 100vh`). Its foot (Settings, Help and the signed-in account) is always visible, however long the page, and the menu scrolls on its own if the screen is very short. On phones the menu is the pinned top bar, with Settings in its row.
+
 ### Phone layout (product owner, 20 Oct 2026)
 
 **Every feature added to the desktop must also be on the phone version** (product owner, 21 Oct 2026). Never ship a desktop-only control. Each change is checked at phone width before it's called done.
