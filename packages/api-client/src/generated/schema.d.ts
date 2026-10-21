@@ -5681,6 +5681,8 @@ export interface components {
             items: components["schemas"]["GradingBoardItemDto"][];
             /** @description Students left out by activeOnly. */
             hiddenInactive: number;
+            /** @description Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items. */
+            atTopRank: number;
         };
         BoardThresholdsDto: {
             /** @example 33 */
