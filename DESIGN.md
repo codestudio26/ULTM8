@@ -387,6 +387,16 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - **01 Belt and stripes:** the rank name and colours (shared by every grade of the belt), then "This grade: White Belt · 4 Stripes" with its Grade name and Stripes on this grade.
   - **02 What it takes:** the picked grade's requirements.
   - **Preview:** the live preview shows the picked grade.
+  - **Adding a rank:**
+    - The title stays **"Add rank"**, because a rank can be something other than a belt (e.g. No-Gi levels).
+    - Chapter 01 has **"Where it goes in the ladder"**: "First, before White Belt" / "After Blue Belt" / … / "Last, after Black Belt". The default is last, and the preview shows "Belt 4 of 6".
+    - The new rank is saved at that place.
+  - **Requirements check:** "Ready to save" has a fourth line.
+    - It reads "Every grade says what it takes" once each grade has classes or days set.
+    - Otherwise it's an amber "Check what it takes: Plain belt, 1 stripe (0 classes and 0 days)".
+    - It's a warning, not a block: the live app allows 0.
+    - The very first grade of the whole ladder may be empty.
+  - **New stripe grades** copy the previous grade's numbers and class types (not its skills).
   - No list of expanding boxes, and never two sections for the same grade.
 - **Stripe colours.** A stripe can have more than one colour group (e.g. 2 red + 2 white).
   - Each group is a box with a round selector and its name ("Colour 2 · 1 stripe"). Tap the box to select it.
