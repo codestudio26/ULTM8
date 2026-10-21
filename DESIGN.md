@@ -402,6 +402,11 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - The title stays **"Add rank"**, because a rank can be something other than a belt (e.g. No-Gi levels).
     - Chapter 01 has **"Where it goes in the ladder"**: "First, before White Belt" / "After Blue Belt" / … / "Last, after Black Belt". The default is last, and the preview shows "Belt 4 of 6".
     - The new rank is saved at that place.
+  - **Drag and drop on the ladder** (product owner, 21 Oct 2026):
+    - Grab a rank by its ⠿ handle and drop it above or below another. A green line shows where it will land, and the dragged row fades.
+    - It works with a mouse and a finger (pointer events, not the browser's own drag), and never selects text.
+    - The ↑ ↓ arrows stay for keyboard users.
+    - A drop is a reorder like the arrows: "The new order isn't saved yet", then Save order, with "Reorder belts?" when students are affected.
   - **Duplicate a rank** (product owner, 21 Oct 2026):
     - Each ladder row has **Duplicate** next to Edit; the rank's side panel has it next to "Edit this belt".
     - It opens the editor titled "Duplicate Blue Belt", already filled with a copy: the colours, every grade and what each takes.
