@@ -83,9 +83,6 @@ export class GradingBoardResponseDto {
 
   @ApiProperty({ description: 'Students left out by activeOnly.' })
   hiddenInactive!: number;
-
-  @ApiProperty({ description: 'Students on the top rank of this style (shown as a count, not as cards: there is no next rank to work toward). Follows the same search and active filters as items.' })
-  atTopRank!: number;
 }
 
 /** Bulk promote (Decision 130): each student moves up one rung, on one date. */

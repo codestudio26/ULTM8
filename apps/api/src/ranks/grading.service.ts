@@ -64,20 +64,6 @@ function studentRankFromJson(json: Record<string, unknown>) {
   return row as unknown as Prisma.StudentRankGetPayload<{ include: { skillStatuses: { select: { skillId: true; status: true } } } }>;
 }
 
-/** Only active students are graded up (Decision 283): the coach's "Grading Board" setting when there is one, otherwise a live membership at the School (the board's own rule). */
-const INACTIVE_MESSAGE = 'Only active students can be graded (Decision 283). Make the student active on the Grading Board, or give them a live membership.';
-async function isActiveForGrading(
-  tx: Prisma.TransactionClient,
-  sr: { boardActiveOverride: boolean | null },
-  studentId: string,
-  schoolId: string,
-): Promise<boolean> {
-  if (sr.boardActiveOverride !== null) return sr.boardActiveOverride;
-  const memberships = await tx.membership.findMany({ where: { schoolId, studentId }, select: { status: true, expiryDate: true, classesRemaining: true } });
-  const now = new Date();
-  return memberships.some((m) => isMembershipLive(m, now));
-}
-
 /**
  * Phase 10b scope only: single-Student grading actions (promote/downgrade/
  * stripe-award/skill-sign-off) + reads (ranks, eligibility, rank-history).
@@ -627,10 +613,6 @@ export class GradingService {
         );
       }
       const from = existing ? ladder[fromIndex] : null;
-      // Only active students are graded up (Decision 283). A first rank is not a grading, so it isn't checked.
-      if (existing && type !== 'DOWNGRADE' && !(await isActiveForGrading(tx, existing, studentId, discipline.schoolId))) {
-        throw new BadRequestException(INACTIVE_MESSAGE);
-      }
       if (dto.expectedCurrentRungId !== undefined && (from?.id ?? null) !== dto.expectedCurrentRungId) {
         throw new ConflictException('This student\'s rank has changed since you opened it. Reload and try again.');
       }
@@ -904,7 +886,6 @@ export class GradingService {
           include: { skillStatuses: { select: { skillId: true, status: true } } },
         });
         if (!sr) return { cannot: 'no rank in this style' };
-        if (!(await isActiveForGrading(tx, sr, studentId, schoolId))) return { cannot: 'inactive (only active students can be graded)' };
         const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
         const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;
         if (!next) return { cannot: 'no next rank' };
@@ -1091,8 +1072,6 @@ export class GradingService {
     const needle = opts.search?.trim().toLowerCase();
     const now = new Date();
     let hiddenInactive = 0;
-    // Students on the style's top rank have nothing to progress toward, so they aren't cards; the board still says how many there are.
-    let atTopRank = 0;
     const items: Array<{
       studentId: string;
       firstName: string;
@@ -1120,10 +1099,7 @@ export class GradingService {
       }
       if (needle && !`${student.firstName} ${student.surname}`.toLowerCase().includes(needle)) continue;
       const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now, thresholdsOf(discipline));
-      if (!eligibility.hasNext) {
-        atTopRank++; // nothing to progress toward: not a card (prototype), but counted
-        continue;
-      }
+      if (!eligibility.hasNext) continue; // nothing to progress toward: not on the board (prototype)
       items.push({
         studentId: student.id,
         firstName: student.firstName,
@@ -1146,7 +1122,7 @@ export class GradingService {
         a.surname.localeCompare(b.surname) ||
         a.firstName.localeCompare(b.firstName),
     );
-    return { items, hiddenInactive, atTopRank };
+    return { items, hiddenInactive };
   }
 
   /** Shared start of the board writes: the same staff check and School gates as

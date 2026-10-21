@@ -16,7 +16,6 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../src/jobs/queue.constants';
-import { giveLiveMembership } from './live-membership';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -65,7 +64,6 @@ describeIfDb('Grading notifications (Decisions 145, 178)', () => {
     await superuser.roleGrant.create({
       data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id, revokedAt: opts.enrolled === false ? new Date() : null },
     });
-    await giveLiveMembership(superuser, school.id, u.id);
     if (opts.branchId) {
       await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: u.id, branchId: opts.branchId } });
     }
@@ -167,17 +165,7 @@ describeIfDb('Grading notifications (Decisions 145, 178)', () => {
     await superuser.discipline.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.branch.deleteMany({ where: { schoolId: school.id } });
-    // A notification job can still be writing as the suite ends: clear and retry.
-    for (let attempt = 0; ; attempt++) {
-      await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
-      try {
-        await superuser.user.deleteMany({ where: { id: { in: userIds } } });
-        break;
-      } catch (err) {
-        if (attempt >= 20) throw err;
-        await new Promise((r) => setTimeout(r, 250));
-      }
-    }
+    await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.delete({ where: { id: school.id } });
     await superuser.$disconnect();
     await app.close();
@@ -324,7 +312,6 @@ describeIfDb('Grading notifications (Decisions 145, 178)', () => {
     it('a student declaring their belt', async () => {
       const u = await mkUser('dee');
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id } });
-      await giveLiveMembership(superuser, school.id, u.id);
       await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: u.id, branchId: downtown.id } });
       const token = jwt.sign({ sub: u.id, email: u.email, grants: [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }] });
       const res = await request(app.getHttpServer())

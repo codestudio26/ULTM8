@@ -21,9 +21,6 @@ export const COLUMNS: Array<{ key: BoardColumn; label: TranslationKey }> = [
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
-/** Cards shown per column before "Show all" — keeps a 500-student board quick. */
-const PAGE = 25;
-
 /**
  * Grading Board (roadmap Phase 4, item 3; Decisions 128, 130, 136, 152, 176):
  * every student with a next rank in one style, in three columns by progress
@@ -50,7 +47,6 @@ export function GradingBoardPage() {
   const [promoting, setPromoting] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [editingThresholds, setEditingThresholds] = useState(false);
-  const [expanded, setExpanded] = useState<string[]>([]);
 
   useEffect(() => {
     if (!disciplineId && styles.length > 0) setDisciplineId(styles[0].id);
@@ -75,23 +71,11 @@ export function GradingBoardPage() {
   // sit in their own group, not in the columns, until they have one.
   const noBranch = visible.filter((i) => i.noHomeBranch);
   const byColumn = (col: BoardColumn) => visible.filter((i) => !i.noHomeBranch && i.eligibility.boardColumn === col);
-  // Only active students are graded up (Decision 283).
-  const selectable = (i: GradingBoardItem) => !i.hardBlocked && i.active;
+  const selectable = (i: GradingBoardItem) => !i.hardBlocked;
   const isSelected = (id: string) => selected.includes(id);
   const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   // Selected students still on the board, in the order they were ticked.
   const selectedItems = selected.map((id) => items.find((i) => i.studentId === id)).filter((i): i is GradingBoardItem => !!i && selectable(i));
-  // Ticked students a search now hides are still in the batch: say so.
-  const hiddenSelected = term ? selectedItems.filter((i) => !visible.includes(i)).length : 0;
-  const shown = (key: string, list: GradingBoardItem[]) => (expanded.includes(key) ? list : list.slice(0, PAGE));
-  const showAll = (key: string, total: number) =>
-    total > PAGE && !expanded.includes(key) ? (
-      <div style={{ marginTop: 10 }}>
-        <Button variant="secondary" fullWidth onClick={() => setExpanded((x) => [...x, key])}>
-          {t('grading.board.showAll', { count: total })}
-        </Button>
-      </div>
-    ) : null;
 
   return (
     <>
@@ -118,7 +102,6 @@ export function GradingBoardPage() {
                     onChange={(e) => {
                       setDisciplineId(e.target.value);
                       setSelected([]);
-                      setExpanded([]);
                     }}
                     options={styles.map((d) => ({ value: d.id, label: d.name }))}
                   />
@@ -133,9 +116,6 @@ export function GradingBoardPage() {
                 <Checkbox label={t('grading.board.activeOnly')} checked={activeOnly} onChange={(e) => setActiveOnly(e.target.checked)} />
                 {activeOnly && board.data && board.data.hiddenInactive > 0 ? (
                   <span className="ultm8-field__hint"> {t('grading.board.inactiveHidden', { count: board.data.hiddenInactive })}</span>
-                ) : null}
-                {board.data && board.data.atTopRank > 0 ? (
-                  <span className="ultm8-field__hint"> {t('grading.board.atTopRank', { count: board.data.atTopRank })}</span>
                 ) : null}
               </div>
               {style ? (
@@ -153,14 +133,6 @@ export function GradingBoardPage() {
               <div style={{ flex: 1 }} />
               <div style={{ paddingBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
                 {canPromote && selectedItems.length > 0 ? <strong>{t('grading.board.selectedCount', { count: selectedItems.length })}</strong> : null}
-                {canPromote && hiddenSelected > 0 ? (
-                  <span className="ultm8-field__hint">
-                    {t('grading.board.hiddenBySearch', { count: hiddenSelected })}{' '}
-                    <Button variant="secondary" onClick={() => setSearch('')}>
-                      {t('grading.board.showThem')}
-                    </Button>
-                  </span>
-                ) : null}
                 {canPromote ? (
                   <Button onClick={() => setPromoting(true)} disabled={selectedItems.length === 0}>
                     {t('grading.board.promoteSelected')}
@@ -186,7 +158,7 @@ export function GradingBoardPage() {
                     {t('grading.board.noBranchHint')}
                   </p>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-                    {shown('NO_BRANCH', noBranch).map((item) => (
+                    {noBranch.map((item) => (
                       <BoardCard
                         key={item.studentId}
                         item={item}
@@ -198,7 +170,6 @@ export function GradingBoardPage() {
                       />
                     ))}
                   </ul>
-                  {showAll('NO_BRANCH', noBranch.length)}
                 </Card>
               </section>
             ) : null}
@@ -253,7 +224,7 @@ export function GradingBoardPage() {
                         </p>
                       ) : (
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
-                          {shown(col.key, list).map((item) => (
+                          {list.map((item) => (
                             <BoardCard
                               key={item.studentId}
                               item={item}
@@ -266,7 +237,6 @@ export function GradingBoardPage() {
                           ))}
                         </ul>
                       )}
-                      {showAll(col.key, list.length)}
                     </Card>
                   </section>
                 );
@@ -343,16 +313,10 @@ function BoardCard({
           <input
             type="checkbox"
             checked={selected}
-            disabled={item.hardBlocked || !item.active}
+            disabled={item.hardBlocked}
             onChange={onToggle}
-            aria-label={
-              item.hardBlocked
-                ? t('grading.board.card.cantSelectAria', { name })
-                : !item.active
-                  ? t('grading.board.card.inactiveAria', { name })
-                  : t('grading.board.card.selectAria', { name })
-            }
-            title={item.hardBlocked ? t('grading.board.card.cantSelectTitle') : !item.active ? t('grading.board.card.inactiveTitle') : undefined}
+            aria-label={item.hardBlocked ? t('grading.board.card.cantSelectAria', { name }) : t('grading.board.card.selectAria', { name })}
+            title={item.hardBlocked ? t('grading.board.card.cantSelectTitle') : undefined}
           />
         ) : null}
         {rung ? <BeltChip rung={rung} /> : null}

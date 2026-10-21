@@ -12,7 +12,6 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { giveLiveMembership } from './live-membership';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -86,7 +85,6 @@ describeIfDb('Deleting what was never used (Decision 198)', () => {
     await person('owner', 'SCHOOL_OWNER_MANAGER', school);
     await person('coach', 'INSTRUCTOR', school);
     await person('student', 'STUDENT', school);
-    await giveLiveMembership(superuser, school, id.student);
     await person('otherOwner', 'SCHOOL_OWNER_MANAGER', other);
   });
 
@@ -103,7 +101,6 @@ describeIfDb('Deleting what was never used (Decision 198)', () => {
     await superuser.lesson.deleteMany({ where });
     await superuser.class.deleteMany({ where });
     await superuser.instructor.deleteMany({ where });
-    await superuser.membership.deleteMany({ where });
     await superuser.membershipPlan.deleteMany({ where });
     await superuser.rankStripeTierRequiredSkill.deleteMany({ where: { skill: where } });
     await superuser.rankStripeTier.deleteMany({ where });

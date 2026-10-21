@@ -21,7 +21,6 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { giveLiveMembership, giveLiveMemberships } from './live-membership';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -133,7 +132,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
         { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: school.id },
       ],
     });
-    await giveLiveMemberships(superuser, school.id, [studentA.id, studentB.id]);
 
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenBranchStaff = signAccessToken(branchStaff, [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: null }]);
@@ -639,7 +637,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
 
     const unranked = await mkExtraUser('unranked');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: unranked.id, schoolId: school.id } });
-    await giveLiveMembership(superuser, school.id, unranked.id);
     const noRank = await request(app.getHttpServer())
       .post(`/v1/students/${unranked.id}/ranks/${disciplineId}/downgrade`)
       .set('Authorization', `Bearer ${tokenOwner}`)
@@ -650,7 +647,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
   it('two concurrent grading actions on the same Student: exactly one succeeds, the other is refused (409, or 400 if it ran second)', async () => {
     const racer = await mkExtraUser('racer');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: racer.id, schoolId: school.id } });
-    await giveLiveMembership(superuser, school.id, racer.id);
 
     const first = await request(app.getHttpServer())
       .post(`/v1/students/${racer.id}/ranks/${disciplineId}/promote`)
@@ -680,7 +676,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
       data: { dateOfBirth: new Date('2016-05-01'), phoneVerifiedAt: null },
     });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: school.id } });
-    await giveLiveMembership(superuser, school.id, minor.id);
     const graded = await request(app.getHttpServer())
       .post(`/v1/students/${minor.id}/ranks/${disciplineId}/promote`)
       .set('Authorization', `Bearer ${tokenOwner}`)
@@ -1283,7 +1278,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     const mkStudent = async (label: string) => {
       const u = await mkExtraUser(label);
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id } });
-      await giveLiveMembership(superuser, school.id, u.id);
       return { user: u, token: signAccessToken(u, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]) };
     };
 
@@ -1636,12 +1630,10 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
         const t = signAccessToken(u, []);
         const joined = await request(app.getHttpServer()).post(`/v1/schools/${schoolP.id}/join`).set('Authorization', `Bearer ${t}`).send({ branchId });
         expect(joined.status).toBe(201);
-        await giveLiveMembership(superuser, schoolP.id, u.id);
         people[label] = { user: u, token: joined.body.accessToken };
       }
       const noor = await mkExtraUser('branches-noor');
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: noor.id, schoolId: schoolP.id } });
-      await giveLiveMembership(superuser, schoolP.id, noor.id);
       people.noor = { user: noor, token: signAccessToken(noor, [{ role: 'STUDENT', franchiseId: null, schoolId: schoolP.id, branchId: null }]) };
     });
 
@@ -1812,7 +1804,6 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     const mkStudent = async (label: string) => {
       const u = await mkExtraUser(`declared-${label}`);
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: u.id, schoolId: school.id } });
-      await giveLiveMembership(superuser, school.id, u.id);
       return { user: u, token: signAccessToken(u, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]) };
     };
 
