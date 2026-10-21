@@ -19,6 +19,7 @@ import { SetHomeBranchDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 import { matchesPersonName } from '../../common/search/name-search';
+import { addressWriteData } from '../../common/address/postal-address.dto';
 
 @Injectable()
 export class SchoolsService {
@@ -113,7 +114,7 @@ export class SchoolsService {
           id: schoolId,
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           businessType: dto.businessType,
           activities: dto.activities ?? [],
           facilities: dto.facilities ?? [],
@@ -702,7 +703,7 @@ export class SchoolsService {
         data: {
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           businessType: dto.businessType,
           activities: dto.activities,
           facilities: dto.facilities,

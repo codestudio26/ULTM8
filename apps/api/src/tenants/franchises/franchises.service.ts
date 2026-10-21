@@ -12,6 +12,7 @@ import { CreateFranchiseDto, FeeModelDto } from './dto/create-franchise.dto';
 import { FranchiseFeeRateChangeStrategyDto, UpdateFranchiseDto } from './dto/update-franchise.dto';
 import { FRANCHISE_FEE_RATE_MIGRATION_QUEUE } from '../../jobs/queue.constants';
 import { FranchiseFeeRateMigrationJobData } from '../../jobs/franchise-fee-rate-migration.types';
+import { addressWriteData } from '../../common/address/postal-address.dto';
 
 /**
  * FOUND ON REVIEW, before this ever shipped: `FranchiseResponseDto`'s own header
@@ -38,6 +39,12 @@ const FRANCHISE_PUBLIC_SELECT = {
   name: true,
   mobileNumber: true,
   address: true,
+  addressLine1: true,
+  addressLine2: true,
+  addressCity: true,
+  addressRegion: true,
+  addressPostalCode: true,
+  addressCountry: true,
   type: true,
   activities: true,
   facilities: true,
@@ -99,7 +106,7 @@ export class FranchisesService {
           id: franchiseId,
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           type: dto.type,
           activities: dto.activities ?? [],
           facilities: dto.facilities ?? [],
@@ -307,7 +314,7 @@ export class FranchisesService {
         data: {
           name: dto.name,
           mobileNumber: dto.mobileNumber,
-          address: dto.address,
+          ...addressWriteData(dto),
           type: dto.type,
           activities: dto.activities,
           facilities: dto.facilities,

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
+import React, { useEffect, useState } from 'react';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField, isPostalAddressEmpty, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useSchool } from '../schools/schoolQueries';
 import { useCurrencies } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { BranchResponse } from './branchQueries';
@@ -49,7 +50,7 @@ export function BranchFormModal({
   submitting: boolean;
   onSubmit: (values: {
     name: string;
-    address?: string | null;
+    postalAddress?: PostalAddress | null;
     contactPhone?: string | null;
     timezone?: string | null;
     currencyOverride?: string | null;
@@ -62,23 +63,37 @@ export function BranchFormModal({
   const { data: currencies } = useCurrencies();
   const [form, setForm] = useState({
     name: initial?.name ?? '',
-    address: initial?.address ?? '',
+    address: postalAddressFromRecord(initial, guessDefaultCountry()),
     contactPhone: initial?.contactPhone ?? '',
     timezone: initial?.timezone ?? '',
     currencyOverride: initial?.currencyOverride ?? '',
     logoUrl: initial?.logoUrl ?? '',
     bannerUrl: initial?.bannerUrl ?? '',
   });
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
+  // A new branch is most likely in the School's own country: once the School
+  // loads, start the (still empty) address there instead of the browser guess.
+  const { data: school } = useSchool(schoolId);
+  useEffect(() => {
+    if (!school?.addressCountry) return;
+    setForm((f) => (isPostalAddressEmpty(f.address) && !initial ? { ...f, address: { ...f.address, country: school.addressCountry! } } : f));
+  }, [school?.addressCountry, initial]);
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const prepared = preparePostalAddress(form.address);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       await onSubmit({
         name: form.name,
-        address: form.address || null,
+        postalAddress: prepared.postalAddress,
         contactPhone: form.contactPhone || null,
         timezone: form.timezone || null,
         currencyOverride: form.currencyOverride || null,
@@ -97,9 +112,12 @@ export function BranchFormModal({
         <Field label={t('branches.form.branchName')} htmlFor="branch-name">
           <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </Field>
-        <Field label={t('branches.form.address')} htmlFor="branch-address">
-          <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
-        </Field>
+        <AddressFields
+          idPrefix="branch-address"
+          value={form.address}
+          onChange={(address) => setForm((f) => ({ ...f, address }))}
+          errors={addressErrors}
+        />
         <Field label={t('branches.form.contactPhone')} htmlFor="branch-phone">
           <PhoneField
             value={form.contactPhone}

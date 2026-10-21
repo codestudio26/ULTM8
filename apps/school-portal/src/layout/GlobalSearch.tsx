@@ -318,6 +318,8 @@ function GlobalSearchBox({ schoolId }: { schoolId: string | null }) {
                       display: 'flex',
                       alignItems: 'center',
                       textAlign: 'start',
+                      // A long single-word name wraps instead of scrolling the list sideways.
+                      overflowWrap: 'anywhere',
                       boxSizing: 'border-box',
                       background: active ? 'var(--color-accent-100)' : undefined,
                     }}

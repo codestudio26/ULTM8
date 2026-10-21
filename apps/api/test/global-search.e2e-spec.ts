@@ -61,6 +61,7 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
   let studentA: { id: string };
   let studentA2: { id: string };
   let studentB: { id: string };
+  let studentAInactive: { id: string };
   let instructorProfileA: { id: string };
   let instructorProfileAArchived: { id: string };
   let instructorProfileB: { id: string };
@@ -118,6 +119,7 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
     studentA = await mkUser('student-a', `${WORD}Jonathan`, 'Smithers');
     studentA2 = await mkUser('student-a2', 'Mary', 'Other');
     studentB = await mkUser('student-b', `${WORD}Jonathan`, 'Smithers');
+    studentAInactive = await mkUser('student-a-old', `${WORD}Jonathan`, 'Leftschool');
     const coachA = await mkUser('coach-a', `${WORD}Coach`, 'Kowalski');
     const coachAArchived = await mkUser('coach-a-old', `${WORD}Coach`, 'Retired');
     const coachB = await mkUser('coach-b', `${WORD}Coach`, 'Kowalski');
@@ -130,6 +132,7 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
         { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: schoolA.id },
         { id: randomUUID(), role: 'STUDENT', userId: studentA2.id, schoolId: schoolA.id },
         { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: schoolB.id },
+        { id: randomUUID(), role: 'STUDENT', userId: studentAInactive.id, schoolId: schoolA.id, revokedAt: new Date() },
         { id: randomUUID(), role: 'INSTRUCTOR', userId: coachA.id, schoolId: schoolA.id },
         { id: randomUUID(), role: 'INSTRUCTOR', userId: coachAArchived.id, schoolId: schoolA.id },
         { id: randomUUID(), role: 'INSTRUCTOR', userId: coachB.id, schoolId: schoolB.id },
@@ -206,6 +209,16 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
       expect(res.status).toBe(200);
       expect(ids(res)).toEqual(expect.arrayContaining([studentA.id, studentA2.id]));
     }
+  });
+
+  it('Students: an inactive (revoked) Student is left out, as on the roster\'s default Active view', async () => {
+    const res = await get(`/v1/schools/${schoolA.id}/students`, tokenOwnerA, { search: 'leftschool' });
+    expect(res.status).toBe(200);
+    expect(ids(res)).toEqual([]);
+    // Still findable when the caller asks for inactive Students explicitly.
+    const inactive = await get(`/v1/schools/${schoolA.id}/students`, tokenOwnerA, { search: 'leftschool', status: 'INACTIVE' });
+    expect(inactive.status).toBe(200);
+    expect(ids(inactive)).toEqual([studentAInactive.id]);
   });
 
   it('Students: names only — an email fragment matches nothing', async () => {

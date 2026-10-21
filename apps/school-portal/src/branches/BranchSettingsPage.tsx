@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField } from '@ultm8/ui';
+import { AddressFields, Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, TimezoneField, EMPTY_POSTAL_ADDRESS, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -32,7 +32,7 @@ export function BranchSettingsPage() {
 
   const [form, setForm] = useState({
     name: '',
-    address: '',
+    address: EMPTY_POSTAL_ADDRESS as PostalAddress,
     contactPhone: '',
     timezone: '',
     currencyOverride: '',
@@ -44,6 +44,8 @@ export function BranchSettingsPage() {
     logoUrl: '',
     bannerUrl: '',
   });
+  const [initialAddress, setInitialAddress] = useState<PostalAddress | undefined>(undefined);
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -53,9 +55,12 @@ export function BranchSettingsPage() {
   // those start blank; this one pre-fills from a real existing row.
   useEffect(() => {
     if (!branch) return;
+    const address = postalAddressFromRecord(branch, guessDefaultCountry());
+    setInitialAddress(address);
+    setAddressErrors({});
     setForm({
       name: branch.name,
-      address: branch.address ?? '',
+      address,
       contactPhone: branch.contactPhone ?? '',
       timezone: branch.timezone ?? '',
       currencyOverride: branch.currencyOverride ?? '',
@@ -80,13 +85,19 @@ export function BranchSettingsPage() {
     e.preventDefault();
     setSaveError(null);
     setSaved(false);
+    const prepared = preparePostalAddress(form.address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       // Explicit `null` clears a nullable field; activities/facilities always
       // send a real (possibly empty) array — same convention
       // UpdateBranchDto/UpdateFranchiseDto already established.
       await updateBranch.mutateAsync({
         name: form.name,
-        address: form.address || null,
+        postalAddress: prepared.postalAddress,
         contactPhone: form.contactPhone || null,
         timezone: form.timezone || null,
         currencyOverride: form.currencyOverride || null,
@@ -122,9 +133,13 @@ export function BranchSettingsPage() {
           <Field label={t('branches.form.branchName')} htmlFor="branch-settings-name">
             <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </Field>
-          <Field label={t('branches.form.address')} htmlFor="branch-settings-address">
-            <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
-          </Field>
+          <AddressFields
+            idPrefix="branch-settings-address"
+            value={form.address}
+            onChange={(address) => setForm((f) => ({ ...f, address }))}
+            errors={addressErrors}
+            legacy={hasLegacyAddressOnly(branch) && !form.address.country}
+          />
           <Field label={t('branches.form.contactPhone')} htmlFor="branch-settings-phone">
             <PhoneField
               value={form.contactPhone}

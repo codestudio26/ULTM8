@@ -7,6 +7,7 @@ import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-pagin
 import { escapeLike } from '../../common/search/name-search';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
+import { addressWriteData } from '../../common/address/postal-address.dto';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -32,7 +33,7 @@ export class BranchesService {
           id: branchId,
           schoolId,
           name: dto.name,
-          address: dto.address,
+          ...addressWriteData(dto),
           contactPhone: dto.contactPhone,
           timezone: dto.timezone,
           currencyOverride: dto.currencyOverride,
@@ -112,7 +113,7 @@ export class BranchesService {
         where: { id: branchId },
         data: {
           name: dto.name,
-          address: dto.address,
+          ...addressWriteData(dto),
           contactPhone: dto.contactPhone,
           timezone: dto.timezone,
           currencyOverride: dto.currencyOverride,

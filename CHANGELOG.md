@@ -15,6 +15,10 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Shorter default waitlist claim window** (Decision 279) — new Schools now
+  give a waitlisted student 60 minutes (was 120) to claim a freed seat, so
+  more people on the list get a chance before class. Existing Schools keep
+  their current setting, which owners can still change on the School page.
 - **Global Search in the School Portal header** (Decision 278) — the header's
   search box, until now disabled ("coming soon"), finds Students,
   Instructors, Classes, Branches and Franchises by name (any part of a first
@@ -73,6 +77,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   they appear, and a request that gets no answer at all says "Could not reach
   the server" instead of "Something went wrong". The Curriculum list's Instructor column
   shows the coach's name instead of an id.
+- **Country-first addresses** (Decision 276) — every address form in the
+  School Portal (School profile and creation, Branch add and settings,
+  Franchise, Instructor profile, Student profile, registration) now starts with
+  a Country picker and then shows that country's own fields: e.g. ZIP code and
+  a State list for the US, Postcode for the UK, Emirate and no postcode for the
+  UAE, CEP for Brazil. Required fields and postal-code formats are checked per
+  country, in the form and again by the API. Addresses are stored as separate
+  fields; the one-line address shown elsewhere is built from them. Existing
+  one-line addresses are kept and can be converted the next time they're
+  edited. Google Places suggestions can be plugged in once an API key exists.
+- **Delete notifications** (Decision 277) — each notification's ⋮ menu on
+  the Notifications page now has **Delete**, and the page header has
+  **Clear all read**, which removes every notification you have already
+  read (unread ones stay). Both ask for confirmation. Removed notifications
+  are hidden, not erased, so payment and waiver alerts stay on record.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

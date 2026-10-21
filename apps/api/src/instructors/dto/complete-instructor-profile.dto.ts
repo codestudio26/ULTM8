@@ -1,5 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PostalAddressDto } from '../../common/address/postal-address.dto';
 
 /**
  * `PATCH /instructors/me/profile` — Decision 1/217's self-service completion
@@ -26,6 +28,15 @@ export class CompleteInstructorProfileDto {
   @IsString()
   @MaxLength(500)
   address?: string;
+
+  /** Decision 276 — the structured, country-aware address. When sent it takes
+   * precedence over `address`, which the API then rebuilds from it; `null`
+   * clears the address. See common/address/postal-address.dto.ts. */
+  @ApiPropertyOptional({ type: () => PostalAddressDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostalAddressDto)
+  postalAddress?: PostalAddressDto | null;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

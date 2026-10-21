@@ -273,6 +273,11 @@ const PHONE_COUNTRIES: Array<[CountryCode, string, string]> = [
 /** `AA` → 🇦🇦 via the "regional indicator symbol" Unicode block — standard trick,
  * degrades gracefully to the plain two letters on platforms without flag-emoji
  * rendering (older Windows browsers) rather than erroring. */
+/** Decision 276 — [ISO code, English name] for every country above, for the
+ * address form's country picker (`AddressFields`). Same list as the phone
+ * picker so the two never offer different countries. */
+export const COUNTRY_NAMES: ReadonlyArray<readonly [string, string]> = PHONE_COUNTRIES.map(([code, name]) => [code, name] as const);
+
 function flagEmoji(iso2: string): string {
   return iso2
     .toUpperCase()
