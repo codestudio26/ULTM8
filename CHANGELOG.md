@@ -15,6 +15,13 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Branch archive fixes** (Decision 280) — archiving a Branch now asks
+  first and, if something still belongs to it, says what inside the dialog.
+  Weekly timetable slots now block archiving (before, sessions kept being
+  created for the archived Branch). Archived Branches no longer appear in
+  Branch pickers across the portal, except on a record that already uses
+  one. The 90-day purge now rechecks before deleting, so students, staff or
+  classes added to an archived Branch are never silently removed with it.
 - **Shorter default waitlist claim window** (Decision 279) — new Schools now
   give a waitlisted student 60 minutes (was 120) to claim a freed seat, so
   more people on the list get a chance before class. Existing Schools keep

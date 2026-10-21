@@ -4,6 +4,7 @@ import { Job, Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
+import { countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
 
 /** Same daily cadence as tenant-lifecycle-purge's own sweep (Decision 110) —
  * purgeAt is date-granular (90 days out), not a tight real-time window. See
@@ -173,7 +174,9 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     let skipped = 0;
     let waiversSkipped = 0;
 
-    deleted += await this.sweepSimple('branch', now);
+    const branchOutcome = await this.sweepBranches(now);
+    deleted += branchOutcome.deleted;
+    skipped += branchOutcome.skipped;
     deleted += await this.sweepSimple('class', now);
     deleted += await this.sweepSimple('timetableSlot', now);
     deleted += await this.sweepSimple('instructor', now);
@@ -195,16 +198,46 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     );
   }
 
-  /** Shared sweep for the 5 entities with nothing beyond a plain
-   * DELETE-and-catch-P2003 (Branch, Class, TimetableSlot, Instructor,
-   * Lesson) — Rank and Waiver each need their own method (see this file's
+  /** Branch's own sweep (Decision 280). Every FK pointing at Branch is
+   * CASCADE or SET NULL, never RESTRICT, so a plain delete always succeeds:
+   * anything attached after archiving (a home-branch Student, a staff role,
+   * a coach invite, a Class) would be silently deleted or detached. Rechecks
+   * BranchesService.archive()'s own dependents rule right before deleting,
+   * the same way sweepRanks() does, and leaves the Branch archived if it
+   * fails. */
+  private async sweepBranches(now: Date): Promise<{ deleted: number; skipped: number }> {
+    const due = await this.prismaJobs.branch.findMany({ where: { purgeAt: { lte: now }, purgedAt: null }, select: { id: true } });
+    let deleted = 0;
+    let skipped = 0;
+    for (const { id } of due) {
+      try {
+        const counts = await countBranchDependents(this.prismaJobs, id);
+        if (hasBranchDependents(counts)) {
+          this.logger.warn(
+            `entity-offboarding-purge: branch ${id} is no longer safe to remove ` +
+              `(${describeBranchDependents(counts).join(', ')}) — left archived, will retry.`,
+          );
+          skipped += 1;
+          continue;
+        }
+        await this.prismaJobs.branch.delete({ where: { id } });
+        deleted += 1;
+      } catch (err) {
+        this.logger.error(`entity-offboarding-purge: failed to purge branch ${id}`, err as Error);
+      }
+    }
+    return { deleted, skipped };
+  }
+
+  /** Shared sweep for the 4 entities with nothing beyond a plain
+   * DELETE-and-catch-P2003 (Class, TimetableSlot, Instructor, Lesson) — Rank and Waiver each need their own method (see this file's
    * own header comment for why). Typed loosely (`any`-ish via a narrow
-   * model-name union) since these 5 share an identical purgeAt/purgedAt/id
+   * model-name union) since these 4 share an identical purgeAt/purgedAt/id
    * shape and identical delete-by-id call, and Prisma's own per-model client
    * types don't factor into one common interface cleanly enough to avoid it
    * — contained entirely inside this one private method, never exposed. */
   private async sweepSimple(
-    model: 'branch' | 'class' | 'timetableSlot' | 'instructor' | 'lesson',
+    model: 'class' | 'timetableSlot' | 'instructor' | 'lesson',
     now: Date,
   ): Promise<number> {
     const client = this.prismaJobs[model] as unknown as {

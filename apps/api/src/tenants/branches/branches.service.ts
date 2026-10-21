@@ -7,6 +7,7 @@ import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-pagin
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 import { addressWriteData } from '../../common/address/postal-address.dto';
+import { countBranchDependents, describeBranchDependents, hasBranchDependents } from './branch-dependents';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -152,26 +153,14 @@ export class BranchesService {
    * Instructor RoleGrant scoped to it would silently destroy that person's
    * access grant, not just "remove a Branch" — the task's own standing
    * instruction to apply the safest reasonable rule when a hint turns out to
-   * be incomplete once checked against the real schema. */
+   * be incomplete once checked against the real schema. Decision 280 adds
+   * TimetableSlot; the counting lives in branch-dependents.ts so the purge
+   * job rechecks exactly the same rule before deleting. */
   private async assertNoActiveDependents(callerId: string, branchId: string): Promise<void> {
-    const [classCount, instructorCount, studentCount, roleGrantCount] = await this.prismaApp.withTenantContext(
-      callerId,
-      (tx) =>
-        Promise.all([
-          tx.class.count({ where: { branchId } }),
-          tx.instructor.count({ where: { branchId } }),
-          tx.studentHomeBranch.count({ where: { branchId } }),
-          tx.roleGrant.count({ where: { branchId, revokedAt: null } }),
-        ]),
-    );
-    const reasons: string[] = [];
-    if (classCount > 0) reasons.push(`${classCount} Class${classCount === 1 ? '' : 'es'}`);
-    if (instructorCount > 0) reasons.push(`${instructorCount} Instructor profile${instructorCount === 1 ? '' : 's'}`);
-    if (studentCount > 0) reasons.push(`${studentCount} Student${studentCount === 1 ? '' : 's'} with this as their home branch`);
-    if (roleGrantCount > 0) reasons.push(`${roleGrantCount} active staff/instructor role grant${roleGrantCount === 1 ? '' : 's'} scoped to it`);
-    if (reasons.length > 0) {
+    const counts = await this.prismaApp.withTenantContext(callerId, (tx) => countBranchDependents(tx, branchId));
+    if (hasBranchDependents(counts)) {
       throw new ConflictException(
-        `This Branch can't be archived while it still has ${reasons.join(', ')}. Move or remove them first.`,
+        `This Branch can't be archived while it still has ${describeBranchDependents(counts).join(', ')}. Move or remove them first.`,
       );
     }
   }

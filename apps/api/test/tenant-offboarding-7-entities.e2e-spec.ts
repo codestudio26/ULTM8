@@ -233,6 +233,37 @@ describeIfDb('Decision 226 — entity-level tenant offboarding (7 entities)', ()
       expect(succeeds.status).toBe(201);
       expect(succeeds.body.archivedAt).toBeTruthy();
     });
+
+    // Decision 280 — the class-occurrence-generation job copies a slot's
+    // branchId onto every Class it creates, so a slot left on an archived
+    // Branch would keep adding Classes to it.
+    it('is blocked (409) while a weekly timetable slot still points at it, and succeeds once the slot is gone', async () => {
+      const branch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: schoolA.id, name: 'Offboarding Branch — has a slot' } });
+      branchIds.push(branch.id);
+      const slot = await superuser.timetableSlot.create({
+        data: {
+          id: randomUUID(),
+          schoolId: schoolA.id,
+          branchId: branch.id,
+          weekday: 'TUESDAY',
+          startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)),
+          endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)),
+          title: 'Blocks Branch Archive',
+          activities: ['Yoga'],
+        },
+      });
+      timetableSlotIds.push(slot.id);
+
+      const blocked = await request(app.getHttpServer()).post(`/v1/branches/${branch.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(blocked.status).toBe(409);
+      expect(blocked.body.error.message).toContain('1 weekly timetable slot');
+
+      await superuser.timetableSlot.delete({ where: { id: slot.id } });
+      timetableSlotIds.splice(timetableSlotIds.indexOf(slot.id), 1);
+
+      const succeeds = await request(app.getHttpServer()).post(`/v1/branches/${branch.id}/archive`).set('Authorization', `Bearer ${tokenOwnerA}`);
+      expect(succeeds.status).toBe(201);
+    });
   });
 
   // ===========================================================================

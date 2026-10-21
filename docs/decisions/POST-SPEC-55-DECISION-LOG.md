@@ -3993,3 +3993,26 @@ Existing Schools keep the window they already have (the migration changes the co
 ### Recorded by
 
 User, approving the recommendation of 60 minutes ("go for it .. and then merge it"), 21 Oct 2026.
+
+---
+
+## Decision 280 — Branch archive fixes: timetable slots block it, the purge rechecks, pickers hide archived Branches, and archiving asks first
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Fixes:** four gaps in Decision 252's Branch archive, found in a review of the Branches page. Decision 252's rules are unchanged; these make the build follow them.
+
+### Decision
+
+1. **Weekly timetable slots block archiving.** `TimetableSlot` was missing from the Branch dependents check. The class-occurrence-generation job copies a slot's `branchId` onto every Class it creates, so a slot left on an archived Branch kept adding Classes to it. Counted the same way as Class (every slot, archived or not), to keep Decision 252's "any Class" rule; whether only live slots should count is part of the separate fix 5 question below.
+2. **The purge job rechecks the dependents rule before deleting a Branch**, as it already does for Rank. Every FK pointing at Branch is `CASCADE` or `SET NULL`, never `RESTRICT`, so the old plain delete always succeeded: a home-branch Student, staff role or coach invite added after archiving was deleted with the Branch, and Classes or slots were moved to "whole School". A Branch that fails the recheck stays archived and is retried daily. The counting lives in one place (`branch-dependents.ts`) shared by `BranchesService.archive()` and the purge job.
+3. **Archived Branches are left out of every School Portal Branch picker** (Staff invite and add manually, coach invites, Invite Student, Grading Board home branch, broadcast, Instructor invite/add/edit, Class and Timetable forms). An edit form keeps the Branch the record already points at, labelled "(Archived)", so it doesn't look lost. `useBranches` still returns every Branch, so existing rows keep showing their Branch name.
+4. **Archive asks first.** The Branches row menu opens a confirmation naming the Branch and explaining the 90-day removal. If the API refuses, the reason (what still belongs to the Branch) shows inside the dialog instead of a page banner.
+
+### What this does NOT resolve
+
+- The API still accepts a new assignment to an archived Branch if one is sent directly (Decision 252's own "nothing stops a new dependent" note). The picker change and the purge recheck cover the School Portal and the data-loss risk; an API-side block is a separate change.
+- Fixes 5 to 7 from the same review (only live dependents block archiving, a "Close branch" move flow, never purging a Branch with history) change Decision 252 itself and are being decided separately.
+
+### Recorded by
+
+User ("open a PR for bug fixes 1 to 4"), 21 Oct 2026.

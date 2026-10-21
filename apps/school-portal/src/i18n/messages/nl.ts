@@ -294,6 +294,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Dearchiveren",
     archiveFailed: "Deze vestiging kon niet worden gearchiveerd.",
     unarchiveFailed: "Deze vestiging kon niet worden gedearchiveerd.",
+    archiveConfirmTitle: "{name} archiveren?",
+    archiveConfirmDescription: "Hij wordt verborgen in lijsten en vestigingskeuzes en na 90 dagen definitief verwijderd, tenzij je hem herstelt. Horen er nog lessen, roosterslots, instructeurs, leerlingen of medewerkers bij, dan zie je wat je eerst moet verplaatsen.",
     columnName: "Naam",
     columnAddress: "Adres",
     columnContactPhone: "Contacttelefoon",
