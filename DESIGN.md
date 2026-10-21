@@ -402,6 +402,12 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - The title stays **"Add rank"**, because a rank can be something other than a belt (e.g. No-Gi levels).
     - Chapter 01 has **"Where it goes in the ladder"**: "First, before White Belt" / "After Blue Belt" / … / "Last, after Black Belt". The default is last, and the preview shows "Belt 4 of 6".
     - The new rank is saved at that place.
+  - **Duplicate a rank** (product owner, 21 Oct 2026):
+    - Each ladder row has **Duplicate** next to Edit; the rank's side panel has it next to "Edit this belt".
+    - It opens the editor titled "Duplicate Blue Belt", already filled with a copy: the colours, every grade and what each takes.
+      - It's named "Blue Belt (copy)", with no students, and placed right after the original.
+      - A blue note says: "Give it a new name and colour, then save."
+    - On phones the six row buttons sit three per row.
   - **Requirements check:** "Ready to save" has a fourth line.
     - It reads "Every grade says what it takes" once each grade has classes or days set.
     - Otherwise it's an amber "Check what it takes: Plain belt, 1 stripe (0 classes and 0 days)".
