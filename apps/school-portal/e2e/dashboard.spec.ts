@@ -29,15 +29,19 @@ test.beforeEach(async () => {
   });
   extraIds.membership = membership.id;
 
-  // "Today", well inside the current Mon–Sun week the API's own default range
-  // resolves to (this School has no timezone set, so UTC — same fallback
-  // BookingsService.getWeeklySummary's own default uses).
-  const today = new Date();
-  today.setUTCHours(12, 0, 0, 0);
+  // Inside the current Mon–Sun week the API's own default range resolves to
+  // (this School has no timezone set, so UTC — same fallback
+  // BookingsService.getWeeklySummary's own default uses), and not yet ended:
+  // the 15-minute no-show sweep marks a Booking NO_SHOW once its Class has
+  // ended, so a fixed midday Class stopped counting as Upcoming in afternoon
+  // runs. Starts shortly from now, pulled back if that would cross into next week.
+  const now = new Date();
+  const weekEnd = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - ((now.getUTCDay() + 6) % 7) + 7);
+  const startMs = Math.min(now.getTime() + 5 * 60_000, weekEnd - 20 * 60_000);
   const cls = await db.class.create({
     data: {
       id: randomUUID(), schoolId: s.schoolId, title: 'Dashboard Spec Judo', activities: ['Judo'],
-      startDate: today, endDate: new Date(today.getTime() + 3_600_000),
+      startDate: new Date(startMs), endDate: new Date(startMs + 15 * 60_000),
     },
   });
   extraIds.class = cls.id;

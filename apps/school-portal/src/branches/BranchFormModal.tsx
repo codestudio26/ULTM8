@@ -6,6 +6,7 @@ import { useSchool } from '../schools/schoolQueries';
 import { useCurrencies } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { BranchResponse } from './branchQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
  * apps/api/src/tenants/branches/dto/create-branch.dto.ts, re-verified before writing.
@@ -58,6 +59,7 @@ export function BranchFormModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const { data: currencies } = useCurrencies();
   const [form, setForm] = useState({
     name: initial?.name ?? '',
@@ -99,7 +101,7 @@ export function BranchFormModal({
         bannerUrl: form.bannerUrl || null,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -107,7 +109,7 @@ export function BranchFormModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Branch name" htmlFor="branch-name">
+        <Field label={t('branches.form.branchName')} htmlFor="branch-name">
           <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </Field>
         <AddressFields
@@ -116,26 +118,26 @@ export function BranchFormModal({
           onChange={(address) => setForm((f) => ({ ...f, address }))}
           errors={addressErrors}
         />
-        <Field label="Contact phone" htmlFor="branch-phone">
+        <Field label={t('branches.form.contactPhone')} htmlFor="branch-phone">
           <PhoneField
             value={form.contactPhone}
             onChange={(v) => setForm((f) => ({ ...f, contactPhone: v }))}
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label="Timezone" htmlFor="branch-timezone">
+        <Field label={t('branches.form.timezone')} htmlFor="branch-timezone">
           <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
         </Field>
-        <Field label="Currency override" htmlFor="branch-currency">
+        <Field label={t('branches.form.currencyOverride')} htmlFor="branch-currency">
           <CurrencyField
             id="branch-currency"
             value={form.currencyOverride}
             onChange={(code) => setForm((f) => ({ ...f, currencyOverride: code }))}
-            options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
-            placeholder="Not set"
+            options={[{ code: '', name: t('branches.form.notSet') }, ...(currencies ?? [])]}
+            placeholder={t('branches.form.notSet')}
           />
         </Field>
-        <Field label="Logo" htmlFor="branch-logo">
+        <Field label={t('branches.form.logo')} htmlFor="branch-logo">
           <PhotoUploadField
             value={form.logoUrl}
             onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
@@ -144,7 +146,7 @@ export function BranchFormModal({
             }
           />
         </Field>
-        <Field label="Banner" htmlFor="branch-banner">
+        <Field label={t('branches.form.banner')} htmlFor="branch-banner">
           <PhotoUploadField
             value={form.bannerUrl}
             onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
@@ -155,10 +157,10 @@ export function BranchFormModal({
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

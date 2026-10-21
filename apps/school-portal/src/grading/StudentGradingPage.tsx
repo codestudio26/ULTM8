@@ -26,7 +26,10 @@ import {
   useMyGrading,
   useStudentEligibility,
 } from './gradingQueries';
+import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
 import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal, RankDateModal, VerifyRankModal, VoidEntryModal } from './GradingModals';
+import { formatLocale } from '../i18n/format';
 
 type Lesson = { id: string; title: string; skillIds: string[] };
 
@@ -41,7 +44,7 @@ function dayOf(iso: string): string {
 }
 
 function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 /**
@@ -58,6 +61,7 @@ export function StudentGradingPage() {
   const studentId = id ?? null;
   const schoolId = useGradingSchoolId();
   const navigate = useNavigate();
+  const t = useT();
   const { claims } = useAuth();
   // The board passes the name along: a coach can't list the School's students.
   const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
@@ -88,16 +92,20 @@ export function StudentGradingPage() {
   if (students.isLoading || disciplines.isLoading || eligibility.isLoading || my.isLoading) return <Spinner />;
   const loadError = students.error ?? disciplines.error ?? eligibility.error ?? my.error;
   if (loadError) {
-    return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : 'Could not load this student\'s grading.'} />;
+    return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : t('grading.student.loadFailed')} />;
   }
 
   const student = students.data?.items.find((s) => s.id === studentId);
   // A coach sees the styles they grade in (Decisions 181, 184).
   const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const ranks = eligibility.data?.items ?? [];
-  const studentName = student ? `${student.firstName} ${student.surname}`.trim() : passedName ?? 'Student';
+  const studentName = student ? `${student.firstName} ${student.surname}`.trim() : passedName ?? t('grading.studentFallback');
   const performerName = (userId: string | null | undefined) =>
-    !userId ? 'Former instructor' : userId === claims?.sub ? 'You' : staffNames.get(userId) ?? 'Staff member';
+    !userId
+      ? t('grading.student.formerInstructor')
+      : userId === claims?.sub
+        ? t('grading.student.you')
+        : staffNames.get(userId) ?? t('grading.student.staffMember');
   // Revoke Enrollment is School Owner-only (matches the backend's own
   // assertSchoolOwner gate on DELETE /users/{userId}/role-grants/{id}) — a
   // coach visiting via /grading never sees this action.
@@ -108,11 +116,11 @@ export function StudentGradingPage() {
   return (
     <>
       <p style={{ margin: '0 0 8px' }}>
-        {my.isOwner ? <Link to="/students">← Students</Link> : <Link to="/grading">← Grading Board</Link>}
+        {my.isOwner ? <Link to="/students">{t('grading.student.backToStudents')}</Link> : <Link to="/grading">{t('grading.student.backToBoard')}</Link>}
       </p>
       <PageHeader
         title={studentName}
-        subtitle="Ranks, progress toward the next grade, skills and history, for each style at your School."
+        subtitle={t('grading.student.subtitle')}
         actions={
           <>
             {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — any Staff
@@ -125,12 +133,12 @@ export function StudentGradingPage() {
               * comment for why. */}
             {student ? (
               <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
-                Edit profile
+                {t('grading.student.editProfile')}
               </Button>
             ) : null}
             {my.isOwner && activeStudentGrant ? (
               <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
-                Revoke enrollment
+                {t('grading.student.revokeEnrollment')}
               </Button>
             ) : null}
           </>
@@ -140,12 +148,12 @@ export function StudentGradingPage() {
       <div style={{ marginBottom: 24 }}>
         <Card>
           <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-            Upcoming Booking
+            {t('grading.student.upcomingBooking')}
           </h2>
           {bookings.isLoading ? (
             <Spinner />
           ) : bookings.error ? (
-            <ErrorBanner message={bookings.error instanceof ApiError ? bookings.error.message : 'Could not load Bookings.'} />
+            <ErrorBanner message={bookings.error instanceof ApiError ? bookings.error.message : t('grading.student.bookingsLoadFailed')} />
           ) : (
             <UpcomingBooking bookings={bookings.data?.items ?? []} />
           )}
@@ -155,9 +163,9 @@ export function StudentGradingPage() {
       {styles.length === 0 ? (
         <Card>
           {my.isOwner ? (
-            <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page before grading students." />
+            <EmptyState title={t('grading.noStylesTitle')} description={t('grading.student.noStylesDescription')} />
           ) : (
-            <EmptyState title="No styles to grade yet" description="The School owner hasn't given you grading in any style yet." />
+            <EmptyState title={t('grading.noStylesToGradeTitle')} description={t('grading.noStylesToGradeDescription')} />
           )}
         </Card>
       ) : (
@@ -177,14 +185,14 @@ export function StudentGradingPage() {
           />
         ))
       )}
-      <Checkbox label="Show voided history entries" checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
+      <Checkbox label={t('grading.student.showVoided')} checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
 
       {confirmingRevoke && activeStudentGrant ? (
         <ConfirmDeleteModal
-          title={`Revoke ${studentName}'s enrollment?`}
-          description="They lose their Student role at this School immediately. This can't be undone from here — they would need to enroll again."
-          confirmLabel="Revoke"
-          genericErrorMessage="Could not revoke this enrollment. Please try again."
+          title={t('grading.student.revokeTitle', { name: studentName })}
+          description={t('grading.student.revokeDescription')}
+          confirmLabel={t('grading.student.revokeConfirm')}
+          genericErrorMessage={t('grading.student.revokeFailed')}
           onConfirm={async () => {
             await revokeGrant.mutateAsync({ targetUserId: activeStudentGrant.userId, roleGrantId: activeStudentGrant.id });
             navigate('/students');
@@ -202,18 +210,19 @@ export function StudentGradingPage() {
  * (no pagination UI exists here yet, same convention as every other list on
  * this page). */
 function UpcomingBooking({ bookings }: { bookings: StudentBookingResponse[] }) {
+  const t = useT();
   const upcoming = bookings
     .filter((b) => b.status === 'UPCOMING')
     .sort((a, b) => new Date(a.classStartDate).getTime() - new Date(b.classStartDate).getTime());
   const next = upcoming[0];
   if (!next) {
-    return <p className="ultm8-field__hint" style={{ margin: 0 }}>No upcoming Booking.</p>;
+    return <p className="ultm8-field__hint" style={{ margin: 0 }}>{t('grading.student.noUpcomingBooking')}</p>;
   }
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
       <strong>{next.classTitle}</strong>
       <span className="ultm8-field__hint">{formatDay(next.classStartDate)}</span>
-      {upcoming.length > 1 ? <Badge>+{upcoming.length - 1} more</Badge> : null}
+      {upcoming.length > 1 ? <Badge>{t('grading.student.moreBookings', { count: upcoming.length - 1 })}</Badge> : null}
     </div>
   );
 }
@@ -255,6 +264,7 @@ function DisciplineGradingCard({
 }) {
   const ranks = useRanks(discipline.id);
   const skills = useSkills(discipline.id);
+  const t = useT();
   const [dialog, setDialog] = useState<Dialog>(null);
   const changeNote = useChangeHistoryNote(studentId, schoolId);
   const [noteError, setNoteError] = useState<string | null>(null);
@@ -265,7 +275,7 @@ function DisciplineGradingCard({
   const current = studentRank ? ladder.find((r) => r.id === studentRank.currentStripeId) ?? null : null;
   const eligibility = (studentRank?.eligibility ?? null) as Eligibility | null;
   const entries = studentRank ? history.filter((h) => h.studentRankId === studentRank.id) : [];
-  const rungName = (rungId: string | null | undefined) => ladder.find((r) => r.id === rungId)?.name ?? 'Unknown rank';
+  const rungName = (rungId: string | null | undefined) => ladder.find((r) => r.id === rungId)?.name ?? t('grading.student.unknownRank');
 
   return (
     <section aria-label={discipline.name} style={{ marginBottom: 24 }}>
@@ -278,37 +288,37 @@ function DisciplineGradingCard({
             {ranks.isLoading ? (
               <Spinner />
             ) : !studentRank ? (
-              <p style={{ margin: 0 }}>No rank in this style yet.</p>
+              <p style={{ margin: 0 }}>{t('grading.student.noRankYet')}</p>
             ) : !current ? (
-              <ErrorBanner message="This student's rank isn't on the ladder any more. Give them a rank again to fix it." />
+              <ErrorBanner message={t('grading.student.rankOffLadder')} />
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <BeltChip rung={current} />
                 <strong>{current.name}</strong>
-                <span className="ultm8-field__hint">since {formatDay(studentRank.dateOfCurrentRank)}</span>
-                {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">Self-declared — not verified</Badge> : null}
-                {eligibility?.hasNext && eligibility.eligible ? <Badge variant="success">Ready to grade</Badge> : null}
+                <span className="ultm8-field__hint">{t('grading.student.since', { date: formatDay(studentRank.dateOfCurrentRank) })}</span>
+                {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.student.selfDeclared')}</Badge> : null}
+                {eligibility?.hasNext && eligibility.eligible ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
               </div>
             )}
           </div>
           {ladder.length > 0 ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {studentRank?.verificationStatus === 'UNVERIFIED' && current && can('canVerifyRanks') ? (
-                <Button onClick={() => setDialog('verify')}>Verify rank</Button>
+                <Button onClick={() => setDialog('verify')}>{t('grading.student.verifyRank')}</Button>
               ) : null}
               {can('canPromote') ? (
                 <Button onClick={() => setDialog('grade')} disabled={!!studentRank && !current}>
-                  {studentRank ? 'Grade' : 'Give first rank'}
+                  {studentRank ? t('grading.student.grade') : t('grading.student.giveFirstRank')}
                 </Button>
               ) : null}
               {current && current.index > 0 && can('canDowngrade') ? (
                 <Button variant="secondary" onClick={() => setDialog('downgrade')}>
-                  Move down
+                  {t('grading.student.moveDown')}
                 </Button>
               ) : null}
               {current && can('canAdjustProgress') ? (
                 <Button variant="secondary" onClick={() => setDialog('date')}>
-                  Correct date
+                  {t('grading.student.correctDate')}
                 </Button>
               ) : null}
             </div>
@@ -317,7 +327,10 @@ function DisciplineGradingCard({
 
         {!ranks.isLoading && ladder.length === 0 ? (
           <p className="ultm8-field__hint">
-            This style has no ranks yet. <Link to={`/disciplines/${discipline.id}`}>Set up its ladder</Link> first.
+            <Trans
+              k="grading.student.noRanks"
+              nodes={{ link: <Link to={`/disciplines/${discipline.id}`}>{t('grading.student.setUpLadder')}</Link> }}
+            />
           </p>
         ) : null}
 
@@ -329,7 +342,7 @@ function DisciplineGradingCard({
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
             {eligibility?.hasNext && !eligibility.timeOnly ? (
               <Button variant="secondary" onClick={() => setDialog('log-class')}>
-                Log a class (+1)
+                {t('grading.student.logClass')}
               </Button>
             ) : null}
             <AttendingSwitch studentId={studentId} disciplineId={discipline.id} disciplineName={discipline.name} value={studentRank.boardActiveOverride ?? null} />
@@ -362,7 +375,7 @@ function DisciplineGradingCard({
                     try {
                       await changeNote.mutateAsync({ eventId: e.id, hidden: !e.noteHiddenAt });
                     } catch (err) {
-                      setNoteError(err instanceof ApiError ? err.message : 'Could not change the note.');
+                      setNoteError(err instanceof ApiError ? err.message : t('grading.student.noteChangeFailed'));
                     }
                   }
                 : undefined
@@ -405,16 +418,17 @@ function DisciplineGradingCard({
  * 152, 176): follow the student's membership, or set by hand. */
 function AttendingSwitch({ studentId, disciplineId, disciplineName, value }: { studentId: string; disciplineId: string; disciplineName: string; value: boolean | null }) {
   const setActive = useSetBoardActive(disciplineId);
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const current = value === null ? 'AUTO' : value ? 'ACTIVE' : 'INACTIVE';
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       <label htmlFor={`attending-${disciplineId}`} className="ultm8-field__label" style={{ margin: 0 }}>
-        Grading Board
+        {t('grading.student.attending.label')}
       </label>
       <SelectField
         id={`attending-${disciplineId}`}
-        aria-label={`Currently attending ${disciplineName}`}
+        aria-label={t('grading.student.attending.aria', { style: disciplineName })}
         value={current}
         disabled={setActive.isPending}
         onChange={async (e) => {
@@ -423,13 +437,13 @@ function AttendingSwitch({ studentId, disciplineId, disciplineName, value }: { s
           try {
             await setActive.mutateAsync({ studentId, active: v === 'AUTO' ? null : v === 'ACTIVE' });
           } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Could not change this — please try again.');
+            setError(err instanceof ApiError ? err.message : t('grading.student.attending.failed'));
           }
         }}
         options={[
-          { value: 'AUTO', label: 'Active if they have a membership' },
-          { value: 'ACTIVE', label: 'Active (set by hand)' },
-          { value: 'INACTIVE', label: 'Inactive (set by hand)' },
+          { value: 'AUTO', label: t('grading.student.attending.auto') },
+          { value: 'ACTIVE', label: t('grading.student.attending.active') },
+          { value: 'INACTIVE', label: t('grading.student.attending.inactive') },
         ]}
       />
       {error ? <span role="alert" className="ultm8-field__error">{error}</span> : null}
@@ -455,10 +469,11 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
 /** Progress toward the next rank (Decisions 136, 149, 171): classes (or days
  * on a time-only rank), minimum days and skills, each with its own tick. */
 function Progress({ eligibility, nextName }: { eligibility: Eligibility; nextName: string | null }) {
+  const t = useT();
   if (!eligibility.hasNext) {
     return (
       <p style={{ marginTop: 16 }}>
-        {eligibility.dataError ? 'Progress can\'t be worked out: this rank is not on the ladder.' : 'Top of the ladder: there is no next rank.'}
+        {eligibility.dataError ? t('grading.student.progress.dataError') : t('grading.student.progress.top')}
       </p>
     );
   }
@@ -467,29 +482,36 @@ function Progress({ eligibility, nextName }: { eligibility: Eligibility; nextNam
   return (
     <div style={{ marginTop: 16 }}>
       <h3 style={{ fontSize: 15, margin: '0 0 4px' }}>
-        Toward {nextName} — {percent}%
+        {t('grading.student.progress.toward', { name: nextName ?? '', percent })}
       </h3>
-      <ProgressBar percent={percent} label={`Progress toward ${nextName}`} />
+      <ProgressBar percent={percent} label={t('grading.student.progress.towardAria', { name: nextName ?? '' })} />
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
         {eligibility.timeOnly ? null : eligibility.byType && eligibility.byType.length > 0 ? (
-          eligibility.byType.map((t) => (
-            <li key={t.classType}>
-              {tick(t.counted >= t.required)} {t.classType}: {t.counted} of {t.required} classes
+          eligibility.byType.map((row) => (
+            <li key={row.classType}>
+              {tick(row.counted >= row.required)}{' '}
+              {t('grading.student.progress.byType', { type: row.classType, counted: row.counted, required: row.required })}
             </li>
           ))
         ) : (
           <li>
-            {tick(eligibility.classesOk)} Classes: {eligibility.countedClasses} of {eligibility.requiredClasses}
+            {tick(eligibility.classesOk)}{' '}
+            {t('grading.student.progress.classes', { counted: eligibility.countedClasses ?? '', required: eligibility.requiredClasses ?? '' })}
           </li>
         )}
         <li>
-          {tick(eligibility.daysOk)} Time at this rank:{' '}
-          {eligibility.requiredDays ? `${eligibility.elapsedDays} of ${eligibility.requiredDays} days` : `${eligibility.elapsedDays} days (no minimum)`}
+          {tick(eligibility.daysOk)}{' '}
+          {eligibility.requiredDays
+            ? t('grading.student.progress.timeWithMinimum', { elapsed: eligibility.elapsedDays ?? 0, required: eligibility.requiredDays })
+            : t('grading.student.progress.timeNoMinimum', { elapsed: eligibility.elapsedDays ?? 0 })}
         </li>
         {eligibility.timeOnly ? null : (
           <li>
-            {tick(eligibility.skillsOk)} Skills: {(eligibility.requiredSkillIds?.length ?? 0) - (eligibility.missingSkillIds?.length ?? 0)} of{' '}
-            {eligibility.requiredSkillIds?.length ?? 0} signed off
+            {tick(eligibility.skillsOk)}{' '}
+            {t('grading.student.progress.skills', {
+              done: (eligibility.requiredSkillIds?.length ?? 0) - (eligibility.missingSkillIds?.length ?? 0),
+              required: eligibility.requiredSkillIds?.length ?? 0,
+            })}
           </li>
         )}
       </ul>
@@ -497,8 +519,16 @@ function Progress({ eligibility, nextName }: { eligibility: Eligibility; nextNam
   );
 }
 
-const STATUS_LABEL: Record<string, string> = { NOT_STARTED: 'Not started', LEARNING: 'Learning', SIGNED_OFF: 'Signed off' };
-const NEXT_STATUS: Record<string, string> = { NOT_STARTED: 'Learning', LEARNING: 'Signed off', SIGNED_OFF: 'Not started' };
+const STATUS_LABEL: Record<string, TranslationKey> = {
+  NOT_STARTED: 'grading.student.skills.notStarted',
+  LEARNING: 'grading.student.skills.learning',
+  SIGNED_OFF: 'grading.student.skills.signedOff',
+};
+const NEXT_STATUS: Record<string, TranslationKey> = {
+  NOT_STARTED: 'grading.student.skills.learning',
+  LEARNING: 'grading.student.skills.signedOff',
+  SIGNED_OFF: 'grading.student.skills.notStarted',
+};
 
 /** The skills for the next rank (Decision 127): required, or optional after a
  * time-only rank. Each cycles Not started → Learning → Signed off; lessons
@@ -519,6 +549,7 @@ function SkillsForNext({
   canSignOff: boolean;
 }) {
   const cycle = useCycleSkill(studentId);
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const required = eligibility.requiredSkillIds ?? [];
   const optional = eligibility.optionalSkillIds ?? [];
@@ -530,39 +561,39 @@ function SkillsForNext({
     try {
       await cycle.mutateAsync(skillId);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not change this skill — please try again.');
+      setError(err instanceof ApiError ? err.message : t('grading.student.skills.failed'));
     }
   }
 
   return (
     <div style={{ marginTop: 16 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>Skills for the next rank</h3>
+      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('grading.student.skills.title')}</h3>
       {error ? <ErrorBanner message={error} /> : null}
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
         {ids.map((skillId) => {
           const skill = skills.find((s) => s.id === skillId);
           const status = statuses.find((s) => s.skillId === skillId)?.status ?? 'NOT_STARTED';
           const linked = lessons.filter((l) => l.skillIds.includes(skillId));
-          const name = skill?.name ?? 'Skill';
+          const name = skill?.name ?? t('grading.student.skills.fallbackName');
           return (
             <li key={skillId} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <Button
                 variant="secondary"
                 onClick={() => onCycle(skillId)}
                 disabled={cycle.isPending || !canSignOff}
-                title={canSignOff ? undefined : 'You can\'t sign off skills in this style.'}
-                aria-label={`${name}: ${STATUS_LABEL[status]}. Change to ${NEXT_STATUS[status]}`}
+                title={canSignOff ? undefined : t('grading.student.skills.cantSignOff')}
+                aria-label={t('grading.student.skills.cycleAria', { name, status: t(STATUS_LABEL[status]), next: t(NEXT_STATUS[status]) })}
               >
-                {STATUS_LABEL[status]}
+                {t(STATUS_LABEL[status])}
               </Button>
               <span>
                 {name}
-                {optional.includes(skillId) ? <span className="ultm8-field__hint"> (optional)</span> : null}
+                {optional.includes(skillId) ? <span className="ultm8-field__hint"> {t('grading.student.skills.optional')}</span> : null}
               </span>
               {status === 'SIGNED_OFF' ? <Badge variant="success">✓</Badge> : null}
               {linked.length > 0 ? (
                 <span className="ultm8-field__hint">
-                  Watch:{' '}
+                  {t('grading.student.skills.watch')}{' '}
                   {linked.map((l, i) => (
                     <React.Fragment key={l.id}>
                       {i > 0 ? ', ' : ''}
@@ -579,15 +610,15 @@ function SkillsForNext({
   );
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  PROMOTION: 'Promoted',
-  BULK_PROMOTION: 'Promoted (bulk)',
-  STRIPE_AWARD: 'Stripe awarded',
-  BULK_STRIPE_AWARD: 'Stripe awarded (bulk)',
-  DOWNGRADE: 'Moved down',
-  SELF_DECLARED: 'Self-declared',
-  RANK_CORRECTION: 'Rank corrected',
-  ADJUSTMENT: 'Adjusted',
+const TYPE_LABEL: Record<string, TranslationKey> = {
+  PROMOTION: 'grading.student.history.types.promotion',
+  BULK_PROMOTION: 'grading.student.history.types.bulkPromotion',
+  STRIPE_AWARD: 'grading.student.history.types.stripeAward',
+  BULK_STRIPE_AWARD: 'grading.student.history.types.bulkStripeAward',
+  DOWNGRADE: 'grading.student.history.types.downgrade',
+  SELF_DECLARED: 'grading.student.history.types.selfDeclared',
+  RANK_CORRECTION: 'grading.student.history.types.rankCorrection',
+  ADJUSTMENT: 'grading.student.history.types.adjustment',
 };
 
 /** The rank history for this style (Decisions 129, 166): what changed, the
@@ -616,68 +647,73 @@ function History({
   onNoteLog?: (entry: PromotionEvent, summary: string) => void;
   noteError?: string | null;
 }) {
+  const t = useT();
   return (
     <div style={{ marginTop: 16 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>History</h3>
+      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('grading.student.history.title')}</h3>
       {noteError ? <ErrorBanner message={noteError} /> : null}
       {loading ? (
         <Spinner />
       ) : entries.length === 0 ? (
-        <p className="ultm8-field__hint">No history yet.</p>
+        <p className="ultm8-field__hint">{t('grading.student.history.empty')}</p>
       ) : (
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
           {entries.map((e) => {
-            const label = TYPE_LABEL[e.type] ?? e.type;
+            const labelKey = TYPE_LABEL[e.type];
+            const label = labelKey ? t(labelKey) : e.type;
             const change =
               e.fromStripeTierId && e.fromStripeTierId !== e.toStripeTierId
                 ? `${rungName(e.fromStripeTierId)} → ${rungName(e.toStripeTierId)}`
                 : rungName(e.toStripeTierId);
-            const summary = `${label}: ${change}, ${formatDay(e.effectiveDate)}`;
+            const summary = t('grading.student.history.summary', { label, change, date: formatDay(e.effectiveDate) });
             return (
               <li key={e.id} style={{ borderTop: '1px solid var(--border)', paddingTop: 8, opacity: e.voidedAt ? 0.6 : 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                   <span>
-                    <strong>{label}</strong> {change} · {formatDay(e.effectiveDate)} · by {performerName(e.performedById)}
-                    {e.voidedAt ? <Badge variant="danger">Voided</Badge> : null}
+                    <strong>{label}</strong>{' '}
+                    {t('grading.student.history.line', { change, date: formatDay(e.effectiveDate), name: performerName(e.performedById) })}
+                    {e.voidedAt ? <Badge variant="danger">{t('grading.student.history.voided')}</Badge> : null}
                   </span>
                   {e.voidedAt || !onVoid ? null : (
-                    <Button variant="secondary" onClick={() => onVoid(e, summary)} aria-label={`Void entry: ${summary}`}>
-                      Void
+                    <Button variant="secondary" onClick={() => onVoid(e, summary)} aria-label={t('grading.student.history.voidAria', { summary })}>
+                      {t('grading.student.history.void')}
                     </Button>
                   )}
                 </div>
-                {e.acknowledgedWithoutSkillSignoff ? <div className="ultm8-field__hint">Graded without all skills signed off (acknowledged).</div> : null}
-                {e.reason ? <div>Reason: {e.reason}</div> : null}
+                {e.acknowledgedWithoutSkillSignoff ? <div className="ultm8-field__hint">{t('grading.student.history.acknowledged')}</div> : null}
+                {e.reason ? <div>{t('grading.student.history.reason', { reason: e.reason })}</div> : null}
                 {e.systemNote ? <div className="ultm8-field__hint">{e.systemNote}</div> : null}
                 {e.note ? (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span>Note: {e.note}</span>
-                    {e.noteEditedAt ? <Badge>Edited {formatDay(e.noteEditedAt)}</Badge> : null}
-                    {e.noteHiddenAt ? <Badge variant="danger">Hidden from the student</Badge> : null}
+                    <span>{t('grading.student.history.note', { note: e.note })}</span>
+                    {e.noteEditedAt ? <Badge>{t('grading.student.history.edited', { date: formatDay(e.noteEditedAt) })}</Badge> : null}
+                    {e.noteHiddenAt ? <Badge variant="danger">{t('grading.student.history.hiddenFromStudent')}</Badge> : null}
                   </div>
                 ) : null}
                 {!e.voidedAt && (onEditNote || onNoteLog) ? (
                   <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                     {onEditNote ? (
-                      <Button variant="secondary" onClick={() => onEditNote(e, summary)} aria-label={`${e.note ? 'Edit' : 'Add'} note: ${summary}`}>
-                        {e.note ? 'Edit note' : 'Add note'}
+                      <Button variant="secondary" onClick={() => onEditNote(e, summary)} aria-label={e.note ? t('grading.student.history.editNoteAria', { summary }) : t('grading.student.history.addNoteAria', { summary })}
+                      >
+                        {e.note ? t('grading.student.history.editNote') : t('grading.student.history.addNote')}
                       </Button>
                     ) : null}
                     {onToggleHidden && e.note ? (
-                      <Button variant="secondary" onClick={() => onToggleHidden(e)} aria-label={`${e.noteHiddenAt ? 'Show' : 'Hide'} note: ${summary}`}>
-                        {e.noteHiddenAt ? 'Show note to student' : 'Hide note from student'}
+                      <Button variant="secondary" onClick={() => onToggleHidden(e)} aria-label={e.noteHiddenAt ? t('grading.student.history.showNoteAria', { summary }) : t('grading.student.history.hideNoteAria', { summary })}
+                      >
+                        {e.noteHiddenAt ? t('grading.student.history.showNote') : t('grading.student.history.hideNote')}
                       </Button>
                     ) : null}
                     {onNoteLog && (e.note || e.noteEditedAt) ? (
-                      <Button variant="secondary" onClick={() => onNoteLog(e, summary)} aria-label={`Note changes: ${summary}`}>
-                        Note changes
+                      <Button variant="secondary" onClick={() => onNoteLog(e, summary)} aria-label={t('grading.student.history.noteChangesAria', { summary })}>
+                        {t('grading.student.history.noteChanges')}
                       </Button>
                     ) : null}
                   </div>
                 ) : null}
                 {e.voidedAt ? (
                   <div className="ultm8-field__hint">
-                    Voided {formatDay(e.voidedAt)} by {performerName(e.voidedById)}: {e.voidReason}
+                    {t('grading.student.history.voidedBy', { date: formatDay(e.voidedAt), name: performerName(e.voidedById), reason: e.voidReason ?? '' })}
                   </div>
                 ) : null}
               </li>

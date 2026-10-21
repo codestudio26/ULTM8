@@ -3908,6 +3908,27 @@ User, approving both of the Developer's recommendations (delete the stale label;
 
 ---
 
+## Decision 273 — School Portal translation: built-in text with Platform Admin overrides, 15 languages
+
+**Date:** 20 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the School Portal's language picker saved a preference but changed no text (`TopBar.tsx`: "this app has no translation runtime yet"), and Spec 55 §11.1's observed list of 4 languages.
+
+### Decision
+
+1. **Text source: built in, with server overrides.** The portal ships its own text for every language, so it always renders. A row in the existing `Translation` table (edited in the Platform Admin Translations tool) for the same locale replaces the built-in text for that key, mapped as `${screen}.${labelKey}`. A missing translation falls back to English, never to blank text.
+2. **15 languages:** English (UK), Portuguese (BR), Spanish, Arabic (the original 4), plus French, German, Italian, Dutch, Polish, Russian, Turkish, Japanese, Korean, Chinese (Simplified) and Thai. Arabic is the only right-to-left language; the portal switches layout direction for it.
+3. Non-English text is a first draft and needs a native-speaker review before real users rely on it.
+
+### What this does NOT resolve
+
+The student app (`apps/student`) and Platform Admin are not translated (both deferred for this testing round). Dates and money follow the picked language, except English (UK), which keeps following the browser's own settings and the existing money format as before. Server-generated text is translated on the portal side, not by the API: every API error message is extracted into `apps/school-portal/src/i18n/server/` with a translation per language (an untranslated one shows a translated general message for its HTTP status instead of the English), and the titles and bodies the background jobs write into Notifications are matched and translated the same way. A School's broadcast, which a person wrote, is shown as written. The user asked for nothing to show in English once a language is picked (20 Oct 2026); names the API stores in English (template belt names, generated stripe names) remain data and are not rewritten.
+
+### Recorded by
+
+User (Code), choosing option 1 of two offered (built-in plus overrides vs server-only) and approving the proposed 15-language list, 20 Oct 2026.
+
+---
+
 ## Decision 276 — Addresses are structured and country-first (market-standard address form)
 
 **Date:** 21 Oct 2026 · **Status:** Approved by product owner

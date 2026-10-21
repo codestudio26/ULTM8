@@ -1,0 +1,38 @@
+export const waivers = {
+  title: 'Waivers',
+  subtitle: 'Liability waivers Students sign before joining your School.',
+  addWaiver: 'Add waiver',
+  editWaiver: 'Edit waiver',
+  loadFailed: 'Could not load Waivers.',
+  showArchived: 'Show archived',
+  showArchivedCount: 'Show archived ({count})',
+  emptyTitle: 'No Waivers yet',
+  emptyDescription: 'Add your first Waiver to get started.',
+  archived: 'Archived',
+  // English keeps its existing "1 words" wording (no `one` form) so rendered
+  // text is unchanged; other locales supply their own plural forms.
+  wordCount: { one: '{count} word', other: '{count} words' },
+  readingTime: { other: '~{count} min read' },
+  lastUpdated: 'Last updated {date}',
+  edit: 'Edit',
+  archive: 'Archive',
+  unarchive: 'Unarchive',
+  archiveFailed: 'Could not archive this Waiver.',
+  unarchiveFailed: 'Could not unarchive this Waiver.',
+  signatures: {
+    heading: 'Signatures',
+    summary: '{signed} of {total} signed',
+    loadFailed: 'Could not load signatures.',
+    empty: 'No one has signed this Waiver yet.',
+    unknownStudent: 'Unknown Student',
+    statusSigned: 'SIGNED',
+    statusUnsigned: 'UNSIGNED',
+    statusExpired: 'EXPIRED',
+    statusPending: 'PENDING',
+  },
+  form: {
+    titleLabel: 'Title',
+    bodyLabel: 'Waiver text',
+    bodyHint: 'The full document body a Student sees before signing.',
+  },
+};

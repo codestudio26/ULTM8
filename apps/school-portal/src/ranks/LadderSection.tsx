@@ -8,8 +8,9 @@ import { BeltEditorModal, type BeltValues } from './BeltEditorModal';
 import { moveItem, useDragReorder } from './dragReorder';
 import { type RankResponse, useArchiveRank, useCreateRank, useDeleteRank, useReorderRanks, useRungHolders, useUnarchiveRank, useUpdateRank } from './rankQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
+import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
-const stripesLabel = (n: number) => (n === 0 ? 'No stripes' : n === 1 ? '1 stripe' : `${n} stripes`);
+const stripesLabel = (t: TranslateFn, n: number) => (n === 0 ? t('ranks.ladder.noStripes') : t('ranks.ladder.stripes', { count: n }));
 
 type Holder = { studentId: string; firstName: string; surname: string };
 
@@ -43,6 +44,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
   const archiveRank = useArchiveRank(discipline.id);
   const unarchiveRank = useUnarchiveRank(discipline.id);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   const holders = useMemo(() => {
     const map = new Map<string, Holder[]>();
@@ -73,7 +75,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
       setConfirming(null);
     } catch (err) {
       setConfirming(null);
-      setError(err instanceof ApiError ? err.message : 'Could not save the new order — please try again.');
+      setError(err instanceof ApiError ? err.message : t('ranks.ladder.saveOrderFailed'));
     }
   }
 
@@ -90,30 +92,30 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 4 }}>
-            Ladder
+            {t('ranks.ladder.title')}
           </h2>
-          <p style={{ margin: 0 }}>The belts in order, lowest first, each with its stripes and what it takes to be promoted into them.</p>
+          <p style={{ margin: 0 }}>{t('ranks.ladder.description')}</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {changed ? (
             <>
               <Button onClick={askToSave} loading={reorder.isPending}>
-                Save order
+                {t('ranks.ladder.saveOrder')}
               </Button>
               <Button variant="secondary" onClick={() => setOrder(null)}>
-                Undo
+                {t('ranks.ladder.undo')}
               </Button>
             </>
           ) : null}
-          <Button onClick={() => setAdding(true)}>Add rank</Button>
+          <Button onClick={() => setAdding(true)}>{t('ranks.ladder.addRank')}</Button>
         </div>
       </div>
       {error ? <ErrorBanner message={error} /> : null}
 
       {shown.length === 0 ? (
-        <EmptyState title="No ranks yet" description="Add your first rank (belt), with its stripes, to start the ladder." />
+        <EmptyState title={t('ranks.ladder.emptyTitle')} description={t('ranks.ladder.emptyDescription')} />
       ) : (
-        <ol aria-label="Ladder" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+        <ol aria-label={t('ranks.ladder.title')} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {shown.map((rank, i) => {
             const tiers = [...rank.stripeTiers].sort((a, b) => a.order - b.order);
             const onBelt = holdersOfBelt(rank).length;
@@ -129,18 +131,18 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                   <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
                   {tiers[0] ? <BeltChip rung={{ id: tiers[0].id, rankId: rank.id, rank, tier: tiers[0], index: 0, name: tiers[0].name }} /> : null}
                   <strong style={{ flex: 1, minWidth: 120 }}>{rank.name}</strong>
-                  {rank.archivedAt ? <Badge variant="default">Archived</Badge> : null}
+                  {rank.archivedAt ? <Badge variant="default">{t('ranks.ladder.archived')}</Badge> : null}
                   <span className="ultm8-field__hint">
-                    {stripesLabel(Math.max(0, ...tiers.map((t) => t.count)))}
+                    {stripesLabel(t, Math.max(0, ...tiers.map((tier) => tier.count)))}
                   </span>
-                  {onBelt > 0 ? <Badge>{onBelt === 1 ? '1 student' : `${onBelt} students`}</Badge> : null}
-                  <Button variant="secondary" onClick={() => setEditing(rank)} aria-label={`Edit ${rank.name}`}>
-                    Edit
+                  {onBelt > 0 ? <Badge>{t('ranks.ladder.students', { count: onBelt })}</Badge> : null}
+                  <Button variant="secondary" onClick={() => setEditing(rank)} aria-label={t('ranks.editAria', { name: rank.name })}>
+                    {t('ranks.edit')}
                   </Button>
-                  <Button variant="secondary" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${rank.name} up`}>
+                  <Button variant="secondary" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('ranks.moveUpAria', { name: rank.name })}>
                     ↑
                   </Button>
-                  <Button variant="secondary" onClick={() => move(i, 1)} disabled={i === shown.length - 1} aria-label={`Move ${rank.name} down`}>
+                  <Button variant="secondary" onClick={() => move(i, 1)} disabled={i === shown.length - 1} aria-label={t('ranks.moveDownAria', { name: rank.name })}>
                     ↓
                   </Button>
                   {/* Decision 226 — reversible alternative to Delete below,
@@ -149,37 +151,37 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
                   {rank.archivedAt ? (
                     <Button
                       variant="secondary"
-                      onClick={() => { setError(null); unarchiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : 'Could not unarchive this belt.')); }}
-                      aria-label={`Unarchive ${rank.name}`}
+                      onClick={() => { setError(null); unarchiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : t('ranks.ladder.unarchiveFailed'))); }}
+                      aria-label={t('ranks.ladder.unarchiveAria', { name: rank.name })}
                     >
-                      Unarchive
+                      {t('ranks.ladder.unarchive')}
                     </Button>
                   ) : (
                     <Button
                       variant="secondary"
-                      onClick={() => { setError(null); archiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : 'Could not archive this belt.')); }}
+                      onClick={() => { setError(null); archiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : t('ranks.ladder.archiveFailed'))); }}
                       disabled={changed}
-                      aria-label={`Archive ${rank.name}`}
+                      aria-label={t('ranks.ladder.archiveAria', { name: rank.name })}
                     >
-                      Archive
+                      {t('ranks.ladder.archive')}
                     </Button>
                   )}
-                  <Button variant="secondary" onClick={() => setDeleting(rank)} disabled={changed} aria-label={`Delete ${rank.name}`}>
-                    Delete
+                  <Button variant="secondary" onClick={() => setDeleting(rank)} disabled={changed} aria-label={t('ranks.ladder.deleteAria', { name: rank.name })}>
+                    {t('ranks.ladder.delete')}
                   </Button>
                 </div>
                 <ul style={{ listStyle: 'none', padding: '6px 0 0 30px', margin: 0, display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
-                  {tiers.map((t) => (
-                    <li key={t.id} className="ultm8-field__hint">
-                      {t.name}
-                      {t.timeOnly
-                        ? ` · ${Math.round(((t.minimumDaysInRank ?? 0) / 365) * 10) / 10} years`
-                        : t.classCountMode === 'EACH_TYPE'
-                          ? ` · ${(t.classTypeRequirements as Array<{ classType: string; classesRequired: number }>).map((r) => `${r.classesRequired} ${r.classType}`).join(' + ')}`
-                          : t.classesRequired
-                            ? ` · ${t.classesRequired} classes`
+                  {tiers.map((tier) => (
+                    <li key={tier.id} className="ultm8-field__hint">
+                      {tier.name}
+                      {tier.timeOnly
+                        ? ` · ${t('ranks.ladder.tierYears', { years: Math.round(((tier.minimumDaysInRank ?? 0) / 365) * 10) / 10 })}`
+                        : tier.classCountMode === 'EACH_TYPE'
+                          ? ` · ${(tier.classTypeRequirements as Array<{ classType: string; classesRequired: number }>).map((r) => `${r.classesRequired} ${r.classType}`).join(' + ')}`
+                          : tier.classesRequired
+                            ? ` · ${t('ranks.ladder.tierClasses', { count: tier.classesRequired })}`
                             : ''}
-                      {(t.requiredSkillIds?.length ?? 0) > 0 ? ` · ${t.requiredSkillIds!.length} skill${t.requiredSkillIds!.length === 1 ? '' : 's'}` : ''}
+                      {(tier.requiredSkillIds?.length ?? 0) > 0 ? ` · ${t('ranks.ladder.tierSkills', { count: tier.requiredSkillIds!.length })}` : ''}
                     </li>
                   ))}
                 </ul>
@@ -188,15 +190,15 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
           })}
         </ol>
       )}
-      {changed ? <p className="ultm8-field__hint">The new order isn't saved yet.</p> : null}
+      {changed ? <p className="ultm8-field__hint">{t('ranks.ladder.unsavedOrder')}</p> : null}
 
       {deleting ? (
         <ConfirmDeleteModal
-          title={`Delete ${deleting.name}?`}
+          title={t('ranks.ladder.deleteTitle', { name: deleting.name })}
           description={
             holdersOfBelt(deleting).length > 0
-              ? `${holdersOfBelt(deleting).length} student(s) hold this belt, so it can't be deleted.`
-              : 'Its stripes are deleted with it and the belts after it move up. A belt can only be deleted while nobody holds it and it isn\'t in anyone\'s grading history.'
+              ? t('ranks.ladder.deleteHeld', { count: holdersOfBelt(deleting).length })
+              : t('ranks.ladder.deleteDescription')
           }
           onConfirm={() => deleteRank.mutateAsync(deleting.id)}
           onClose={() => setDeleting(null)}
@@ -204,8 +206,8 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
       ) : null}
 
       {confirming ? (
-        <Modal title="Reorder belts?" onClose={() => setConfirming(null)}>
-          <p>These students stay on their stripe, but its place in the ladder changes, so their next rank may change ({confirming.length}):</p>
+        <Modal title={t('ranks.ladder.reorderTitle')} onClose={() => setConfirming(null)}>
+          <p>{t('ranks.reorderAffected', { count: confirming.length })}</p>
           <ul>
             {confirming.map((h) => (
               <li key={h.studentId}>{`${h.firstName} ${h.surname}`.trim()}</li>
@@ -213,10 +215,10 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
           </ul>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <Button onClick={saveOrder} loading={reorder.isPending}>
-              Save order
+              {t('ranks.ladder.saveOrder')}
             </Button>
             <Button variant="secondary" onClick={() => setConfirming(null)}>
-              Back
+              {t('ranks.back')}
             </Button>
           </div>
         </Modal>
@@ -224,7 +226,7 @@ export function LadderSection({ discipline, skills, ranks }: { discipline: Disci
 
       {adding ? (
         <BeltEditorModal
-          title="Add rank"
+          title={t('ranks.ladder.addRank')}
           discipline={discipline}
           skills={skills}
           holders={holders}
@@ -261,9 +263,10 @@ function EditBelt({
   onClose: () => void;
 }) {
   const update = useUpdateRank(discipline.id, rank.id);
+  const t = useT();
   return (
     <BeltEditorModal
-      title={`Edit ${rank.name}`}
+      title={t('ranks.editAria', { name: rank.name })}
       discipline={discipline}
       initial={rank}
       skills={skills}

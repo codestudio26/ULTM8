@@ -3,6 +3,7 @@ import { AddressFields, Button, Checkbox, ErrorBanner, Field, PageHeader, Succes
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCompleteMyInstructorProfile, useRequestCertificationUploadUrl } from './instructorQueries';
+import { useT } from '../i18n/I18nProvider';
 
 const ALLOWED_CERTIFICATION_TYPES = ['application/pdf', 'image/png', 'image/jpeg'] as const;
 
@@ -15,6 +16,7 @@ const ALLOWED_CERTIFICATION_TYPES = ['application/pdf', 'image/png', 'image/jpeg
  * same as the backend: can't set different values per School here).
  */
 export function CompleteInstructorProfilePage() {
+  const t = useT();
   const complete = useCompleteMyInstructorProfile();
   const requestUploadUrl = useRequestCertificationUploadUrl();
 
@@ -31,13 +33,13 @@ export function CompleteInstructorProfilePage() {
   async function uploadCertificationIfAny(): Promise<string | undefined> {
     if (!certificationFile) return undefined;
     if (!ALLOWED_CERTIFICATION_TYPES.includes(certificationFile.type as (typeof ALLOWED_CERTIFICATION_TYPES)[number])) {
-      throw new Error('Certification file must be a PDF, PNG, or JPEG.');
+      throw new Error(t('instructors.completeProfile.invalidFileType'));
     }
     setUploading(true);
     try {
       const { uploadUrl, objectKey } = await requestUploadUrl.mutateAsync(certificationFile.type as (typeof ALLOWED_CERTIFICATION_TYPES)[number]);
       const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': certificationFile.type }, body: certificationFile });
-      if (!putRes.ok) throw new Error('The certification file could not be uploaded — please try again.');
+      if (!putRes.ok) throw new Error(t('instructors.completeProfile.uploadFailed'));
       return objectKey;
     } finally {
       setUploading(false);
@@ -64,7 +66,7 @@ export function CompleteInstructorProfilePage() {
       });
       setSaved(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -72,15 +74,15 @@ export function CompleteInstructorProfilePage() {
 
   return (
     <>
-      <PageHeader title="Complete your profile" subtitle="A few more details for your Instructor profile — all optional, fill in as much as you'd like." />
-      {saved ? <SuccessBanner message="Your profile was updated." /> : null}
+      <PageHeader title={t('instructors.completeProfile.title')} subtitle={t('instructors.completeProfile.subtitle')} />
+      {saved ? <SuccessBanner message={t('instructors.completeProfile.saved')} /> : null}
       {error ? <ErrorBanner message={error} /> : null}
       <form onSubmit={handleSubmit}>
         <AddressFields idPrefix="complete-profile-address" value={address} onChange={setAddress} errors={addressErrors} />
-        <Field label="Activities" htmlFor="complete-profile-activities" hint="Comma-separated, e.g. BJJ, Judo">
+        <Field label={t('instructors.completeProfile.activities')} htmlFor="complete-profile-activities" hint={t('instructors.completeProfile.activitiesHint')}>
           <TextArea value={activities} onChange={(e) => setActivities(e.target.value)} />
         </Field>
-        <Field label="Certification" htmlFor="complete-profile-certification" hint="PDF, PNG, or JPEG">
+        <Field label={t('instructors.completeProfile.certification')} htmlFor="complete-profile-certification" hint={t('instructors.completeProfile.certificationHint')}>
           <input
             id="complete-profile-certification"
             type="file"
@@ -90,13 +92,13 @@ export function CompleteInstructorProfilePage() {
         </Field>
         {certificationFile ? (
           <Checkbox
-            label="I consent to holding a certification record on file"
+            label={t('instructors.completeProfile.consent')}
             checked={certificationConsent}
             onChange={(e) => setCertificationConsent(e.target.checked)}
           />
         ) : null}
         <Button type="submit" loading={submitting}>
-          Save
+          {t('common.save')}
         </Button>
       </form>
     </>

@@ -3,6 +3,8 @@ import { LEGAL_FOOTER_LINKS } from '@ultm8/ui';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
 import { useDisciplines } from '../disciplines/disciplineQueries';
+import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
 
 const SOCIAL_LINKS = [
   { key: 'footerFacebookUrl', label: 'Facebook', abbr: 'f' },
@@ -11,6 +13,13 @@ const SOCIAL_LINKS = [
   { key: 'footerYoutubeUrl', label: 'YouTube', abbr: 'YT' },
   { key: 'footerTwitterUrl', label: 'X', abbr: 'X' },
 ] as const;
+
+/** `LEGAL_FOOTER_LINKS` (@ultm8/ui) carries English labels; the two shown
+ * here are translated by label, and anything else falls back to the label. */
+const LEGAL_LABELS: Record<string, TranslationKey> = {
+  'Terms of Service': 'layout.footer.termsOfService',
+  'Privacy Policy': 'layout.footer.privacyPolicy',
+};
 
 /**
  * Decision 257 — the School Portal's own richer, per-School footer (columns,
@@ -42,6 +51,7 @@ const SOCIAL_LINKS = [
  * pointing nowhere, so nothing here claims to work that doesn't.
  */
 export function SchoolFooter() {
+  const t = useT();
   const schoolId = useGradingSchoolId();
   const { data: school } = useSchool(schoolId);
   const { data: disciplines } = useDisciplines(schoolId);
@@ -59,14 +69,14 @@ export function SchoolFooter() {
         <div className="ultm8-school-footer__brand-col">
           <p className="ultm8-school-footer__brand">{school.name}</p>
           <label className="ultm8-school-footer__search-label" htmlFor="school-footer-zip">
-            Find a school near you
+            {t('layout.footer.findSchool')}
           </label>
           <input
             id="school-footer-zip"
             className="ultm8-input"
             disabled
-            placeholder="Enter your zip code"
-            aria-label="Find a school near you — not available yet"
+            placeholder={t('layout.footer.zipPlaceholder')}
+            aria-label={t('layout.footer.findSchoolAria')}
             style={{ width: 200 }}
           />
         </div>
@@ -74,7 +84,7 @@ export function SchoolFooter() {
         <div className="ultm8-school-footer__columns">
           {programs.length > 0 ? (
             <div className="ultm8-school-footer__col">
-              <p className="ultm8-school-footer__col-title">Programs</p>
+              <p className="ultm8-school-footer__col-title">{t('layout.footer.programs')}</p>
               {programs.map((d) => (
                 <p key={d.id} className="ultm8-school-footer__col-item">
                   {d.name}
@@ -84,15 +94,15 @@ export function SchoolFooter() {
           ) : null}
 
           <div className="ultm8-school-footer__col">
-            <p className="ultm8-school-footer__col-title">Company</p>
+            <p className="ultm8-school-footer__col-title">{t('layout.footer.company')}</p>
             <p className="ultm8-school-footer__col-item">
               <a className="ultm8-school-footer__col-link" href="/instructors">
-                Instructors
+                {t('layout.footer.instructors')}
               </a>
             </p>
             <p className="ultm8-school-footer__col-item">
               <a className="ultm8-school-footer__col-link" href="/branches">
-                Locations
+                {t('layout.footer.locations')}
               </a>
             </p>
             {school.footerAboutUs ? (
@@ -101,7 +111,7 @@ export function SchoolFooter() {
           </div>
 
           <div className="ultm8-school-footer__col">
-            <p className="ultm8-school-footer__col-title">Support</p>
+            <p className="ultm8-school-footer__col-title">{t('layout.footer.support')}</p>
             {school.footerContactEmail ? (
               <p className="ultm8-school-footer__col-item">
                 <a className="ultm8-school-footer__col-link" href={`mailto:${school.footerContactEmail}`}>
@@ -116,37 +126,34 @@ export function SchoolFooter() {
                 </a>
               </p>
             ) : null}
-            {legalLinks.map((link) =>
-              link.enabled ? (
+            {legalLinks.map((link) => {
+              const label = LEGAL_LABELS[link.label] ? t(LEGAL_LABELS[link.label]) : link.label;
+              return link.enabled ? (
                 <p key={link.label} className="ultm8-school-footer__col-item">
                   <a className="ultm8-school-footer__col-link" href={link.href}>
-                    {link.label}
+                    {label}
                   </a>
                 </p>
               ) : (
-                <p key={link.label} className="ultm8-school-footer__col-item" style={{ opacity: 0.6 }} aria-label={`${link.label} — not available yet`}>
-                  {`${link.label} (coming soon)`}
+                <p key={link.label} className="ultm8-school-footer__col-item" style={{ opacity: 0.6 }} aria-label={t('layout.footer.linkUnavailableAria', { label })}>
+                  {t('layout.footer.linkComingSoon', { label })}
                 </p>
-              ),
-            )}
+              );
+            })}
           </div>
 
           <div className="ultm8-school-footer__col">
-            <p className="ultm8-school-footer__col-title">Get the app</p>
+            <p className="ultm8-school-footer__col-title">{t('layout.footer.getTheApp')}</p>
             <div className="ultm8-school-footer__qr-tile">
               <div className="ultm8-school-footer__qr-box">QR</div>
               <span className="ultm8-school-footer__qr-caption">
-                Coming soon for
-                <br />
-                iOS
+                <Trans k="layout.footer.comingSoonFor" vars={{ platform: 'iOS' }} nodes={{ br: <br /> }} />
               </span>
             </div>
             <div className="ultm8-school-footer__qr-tile">
               <div className="ultm8-school-footer__qr-box">QR</div>
               <span className="ultm8-school-footer__qr-caption">
-                Coming soon for
-                <br />
-                Android
+                <Trans k="layout.footer.comingSoonFor" vars={{ platform: 'Android' }} nodes={{ br: <br /> }} />
               </span>
             </div>
           </div>
@@ -154,7 +161,7 @@ export function SchoolFooter() {
       </div>
 
       <div className="ultm8-school-footer__bottom">
-        <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-caption)' }}>{`© ${year} ULTM8. All rights reserved.`}</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-caption)' }}>{t('layout.footer.copyright', { year })}</span>
         {activeSocial.length > 0 ? (
           <div className="ultm8-school-footer__social">
             {activeSocial.map((s) => (

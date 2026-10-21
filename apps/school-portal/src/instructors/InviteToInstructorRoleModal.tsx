@@ -4,6 +4,8 @@ import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { fetchInviteCandidate, type InviteCandidateResponse } from '../roleGrants/roleGrantQueries';
+import { Trans } from '../i18n/Trans';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * "Invite to Instructor Role" — the gap `instructors.service.ts`'s own
@@ -40,6 +42,7 @@ export function InviteToInstructorRoleModal({
   onSubmit: (values: { targetUserId: string; branchId?: string }) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [candidate, setCandidate] = useState<InviteCandidateResponse | null>(null);
@@ -54,20 +57,20 @@ export function InviteToInstructorRoleModal({
     e.preventDefault();
     setError(null);
     if (!email && !phone) {
-      setError('Enter an email or phone number to search.');
+      setError(t('instructors.inviteModal.enterEmailOrPhone'));
       return;
     }
     setFindLoading(true);
     try {
       const result = await fetchInviteCandidate(schoolId, { email: email || undefined, phone: phone || undefined });
       if (!result.found) {
-        setError('No ULTM8 account found with that email or phone.');
+        setError(t('instructors.inviteModal.notFound'));
         setCandidate(null);
         return;
       }
       setCandidate(result);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not search for this person.');
+      setError(err instanceof ApiError ? err.message : t('instructors.inviteModal.searchFailed'));
       setCandidate(null);
     } finally {
       setFindLoading(false);
@@ -86,62 +89,68 @@ export function InviteToInstructorRoleModal({
     e.preventDefault();
     setError(null);
     if (requiresBranch && !branchId) {
-      setError('Select the Branch this Instructor belongs to.');
+      setError(t('instructors.inviteModal.selectBranch'));
       return;
     }
     try {
       await onSubmit({ targetUserId: candidate!.id!, ...(requiresBranch ? { branchId } : {}) });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
-    <Modal title="Invite to Instructor role" onClose={onClose}>
+    <Modal title={t('instructors.inviteModal.title')} onClose={onClose}>
       {!candidate ? (
         <form onSubmit={handleFind}>
           {error ? <ErrorBanner message={error} /> : null}
-          <p className="ultm8-field">Find an existing ULTM8 account to grant the Instructor role to.</p>
-          <Field label="Email" htmlFor="invite-instructor-email" hint="Exact match only. Provide email or phone (or both).">
+          <p className="ultm8-field">{t('instructors.inviteModal.intro')}</p>
+          <Field label={t('instructors.inviteModal.email')} htmlFor="invite-instructor-email" hint={t('instructors.inviteModal.emailHint')}>
             <TextField type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
-          <Field label="Phone" htmlFor="invite-instructor-phone" hint="Exact match only.">
+          <Field label={t('instructors.inviteModal.phone')} htmlFor="invite-instructor-phone" hint={t('instructors.inviteModal.phoneHint')}>
             <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
           </Field>
           <Button type="submit" loading={findLoading}>
-            Find
+            {t('instructors.inviteModal.find')}
           </Button>
         </form>
       ) : (
         <form onSubmit={handleGrant}>
           {error ? <ErrorBanner message={error} /> : null}
           <p className="ultm8-field">
-            Found{' '}
-            <strong>
-              {candidate.firstName} {candidate.surname}
-            </strong>{' '}
-            ({candidate.email}).
+            <Trans
+              k="instructors.inviteModal.found"
+              vars={{ email: candidate.email ?? '' }}
+              nodes={{
+                name: (
+                  <strong>
+                    {candidate.firstName} {candidate.surname}
+                  </strong>
+                ),
+              }}
+            />
           </p>
           {requiresBranch ? (
             <Field
-              label="Branch"
+              label={t('instructors.inviteModal.branch')}
               htmlFor="invite-instructor-branch"
-              hint="For an instructor who teaches at several branches, invite them once per branch."
+              hint={t('instructors.inviteModal.branchHint')}
             >
               <SelectField
                 required
                 value={branchId}
                 onChange={(e) => setBranchId(e.target.value)}
-                options={[{ value: '', label: 'Select a Branch…' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                options={[{ value: '', label: t('instructors.inviteModal.branchPlaceholder') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
               />
             </Field>
           ) : null}
           <div style={{ display: 'flex', gap: 8 }}>
             <Button type="submit" loading={submitting}>
-              Grant Instructor role
+              {t('instructors.inviteModal.grant')}
             </Button>
             <Button type="button" variant="secondary" onClick={searchAgain}>
-              Search again
+              {t('instructors.inviteModal.searchAgain')}
             </Button>
           </div>
         </form>
