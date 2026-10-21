@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { useT } from '../i18n/I18nProvider';
 import type { BranchResponse } from '../branches/branchQueries';
 import type { ClassResponse } from '../classes/classQueries';
 import type { BroadcastNotificationInput, BroadcastResponse } from './notificationQueries';
@@ -37,20 +38,21 @@ export function BroadcastNotificationModal({
   const [classId, setClassId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<BroadcastResponse | null>(null);
+  const t = useT();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!title.trim() || !body.trim()) {
-      setError('Title and message are both required.');
+      setError(t('notifications.broadcastModal.required'));
       return;
     }
     if (audience === 'BRANCH' && !branchId) {
-      setError('Select the Branch to notify.');
+      setError(t('notifications.broadcastModal.selectBranch'));
       return;
     }
     if (audience === 'CLASS' && !classId) {
-      setError('Select the Class to notify.');
+      setError(t('notifications.broadcastModal.selectClass'));
       return;
     }
     try {
@@ -63,69 +65,69 @@ export function BroadcastNotificationModal({
       });
       setSent(result);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not send this broadcast — please try again.');
+      setError(err instanceof ApiError ? err.message : t('notifications.broadcastModal.failed'));
     }
   }
 
   if (sent) {
     return (
-      <Modal title="Broadcast sent" onClose={onClose}>
+      <Modal title={t('notifications.broadcastModal.sentTitle')} onClose={onClose}>
         <p className="ultm8-field">
-          Sent to <strong>{sent.recipientCount}</strong> Student{sent.recipientCount === 1 ? '' : 's'}.
+          {t('notifications.broadcastModal.sentTo', { count: sent.recipientCount })}
         </p>
         <Button type="button" onClick={onClose}>
-          Done
+          {t('common.done')}
         </Button>
       </Modal>
     );
   }
 
   return (
-    <Modal title="Broadcast to Students" onClose={onClose}>
+    <Modal title={t('notifications.broadcastModal.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Title" htmlFor="broadcast-title">
+        <Field label={t('notifications.broadcastModal.titleLabel')} htmlFor="broadcast-title">
           <TextField id="broadcast-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
         </Field>
-        <Field label="Message" htmlFor="broadcast-body">
+        <Field label={t('notifications.broadcastModal.messageLabel')} htmlFor="broadcast-body">
           <TextArea id="broadcast-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} rows={5} />
         </Field>
-        <Field label="Send to" htmlFor="broadcast-audience" hint="All Students at your School, one Branch, or everyone booked into one Class.">
+        <Field label={t('notifications.broadcastModal.audienceLabel')} htmlFor="broadcast-audience" hint={t('notifications.broadcastModal.audienceHint')}>
           <SelectField
             id="broadcast-audience"
             value={audience}
             onChange={(e) => setAudience(e.target.value as AudienceScope)}
             options={[
-              { value: 'ALL', label: 'All Students' },
-              { value: 'BRANCH', label: 'Students at a Branch' },
-              { value: 'CLASS', label: 'Students booked into a Class' },
+              { value: 'ALL', label: t('notifications.broadcastModal.audienceAll') },
+              { value: 'BRANCH', label: t('notifications.broadcastModal.audienceBranch') },
+              { value: 'CLASS', label: t('notifications.broadcastModal.audienceClass') },
             ]}
           />
         </Field>
         {audience === 'BRANCH' ? (
-          <Field label="Branch" htmlFor="broadcast-branch">
+          <Field label={t('notifications.broadcastModal.branchLabel')} htmlFor="broadcast-branch">
             <SelectField
               id="broadcast-branch"
               required
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
-              options={[{ value: '', label: 'Select a Branch…' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+              options={[{ value: '', label: t('notifications.broadcastModal.branchPlaceholder') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
             />
           </Field>
         ) : null}
         {audience === 'CLASS' ? (
-          <Field label="Class" htmlFor="broadcast-class">
+          <Field label={t('notifications.broadcastModal.classLabel')} htmlFor="broadcast-class">
             <SelectField
               id="broadcast-class"
               required
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
-              options={[{ value: '', label: 'Select a Class…' }, ...classes.map((c) => ({ value: c.id, label: c.title }))]}
+              options={[{ value: '', label: t('notifications.broadcastModal.classPlaceholder') }, ...classes.map((c) => ({ value: c.id, label: c.title }))]}
             />
           </Field>
         ) : null}
         <Button type="submit" loading={submitting}>
-          Send broadcast
+          {t('notifications.broadcastModal.submit')}
         </Button>
       </form>
     </Modal>

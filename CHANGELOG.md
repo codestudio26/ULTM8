@@ -15,15 +15,40 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **School Portal translation, 15 languages** (Decision 273) — the header's
+  language picker now actually switches the portal's text instead of only
+  saving a preference. Languages: English (UK), Portuguese (BR), Spanish,
+  Arabic, French, German, Italian, Dutch, Polish, Russian, Turkish, Japanese,
+  Korean, Chinese (Simplified) and Thai, each listed in its own script.
+  Arabic switches the layout to right-to-left. Text ships built in, and a
+  Platform Admin Translation row for the same screen and key replaces it.
+  Every School Portal page is translated, including sign-in, the footer and
+  the shared form controls (phone field country names, photo upload,
+  Rows/Grid toggle); dates, money, language names and time zones follow the
+  picked language. The API's error messages and the notifications its
+  background jobs write (waitlist spot, ready to grade, promotions, waivers,
+  payment disputes) are translated too; an error message with no translation
+  shows a translated general message for its kind of failure, never the
+  English. Status, role and payment-method labels (e.g. "BANK_TRANSFER")
+  now show as words in every language, English included. Not translated:
+  data people enter (including a School's broadcasts), names the server
+  stores in English (style template belt names, generated stripe names),
+  Platform Admin and the student app. Non-English text is a first draft
+  awaiting native-speaker review.
 - **Saving after 15 minutes on a page works again** — when the access token
   had expired, the session refreshed correctly but the save itself was never
   re-sent (the retry called the browser's fetch the wrong way), so e.g. saving
-  the School profile, archiving a Branch or uploading a logo failed. Lists
-  recovered on their own; saves did not. Fixed in `@ultm8/api-client`, so the
-  student app gets it too.
-- **Save confirmations scroll into view** — on a long form (e.g. Branch
-  settings), the "saved" or error message above the form is brought on screen
-  after pressing Save instead of staying out of sight.
+  the School profile showed "Something went wrong". Lists recovered on their
+  own; saves did not. Fixed in `@ultm8/api-client`, so the student app gets it too.
+- **Common currencies first** — every currency picker now lists USD, GBP,
+  EUR and BRL first, then the rest alphabetically.
+- **"Send a message to students"** — the Notifications page's "Broadcast to
+  Students" button and form are renamed in plain words ("Send message",
+  "Message sent").
+- **Clearer errors** — error and success banners now scroll into view when
+  they appear, and a request that gets no answer at all says "Could not reach
+  the server" instead of "Something went wrong". The Curriculum list's Instructor column
+  shows the coach's name instead of an id.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

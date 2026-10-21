@@ -8,6 +8,7 @@ import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { ClassResponse } from './classQueries';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
+import { useT } from '../i18n/I18nProvider';
 
 export interface ClassFormValues {
   /**
@@ -85,6 +86,7 @@ export function ClassFormModal({
   onSubmit: (values: ClassFormValues) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const [form, setForm] = useState({
     branchId: initial?.branchId ?? '',
     instructorId: initial?.instructorId ?? '',
@@ -115,7 +117,7 @@ export function ClassFormModal({
     const startDate = localInputToIso(form.startDate);
     const endDate = localInputToIso(form.endDate);
     if (!startDate || !endDate) {
-      setError('Start date and end date are required.');
+      setError(t('classes.form.datesRequired'));
       return;
     }
     // FOUND ON REVIEW: `required` on the raw Activities input only guarantees
@@ -126,20 +128,20 @@ export function ClassFormModal({
       .map((s) => s.trim())
       .filter(Boolean);
     if (usesStyles) {
-      const problem = styleSelectionProblem(disciplines, styles);
+      const problem = styleSelectionProblem(disciplines, styles, t);
       if (problem) {
         setError(problem);
         return;
       }
     } else if (activities.length === 0) {
-      setError('At least one activity is required.');
+      setError(t('classes.form.activitiesRequired'));
       return;
     }
     // FOUND ON REVIEW: the backend does enforce this too (assertValidDateRange),
     // but only after a round trip — catch the common case here for immediate
     // feedback.
     if (new Date(endDate).getTime() <= new Date(startDate).getTime()) {
-      setError('End date must be after start date.');
+      setError(t('classes.form.endAfterStart'));
       return;
     }
     try {
@@ -161,7 +163,7 @@ export function ClassFormModal({
         membershipInclusion: form.membershipInclusion,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -169,13 +171,13 @@ export function ClassFormModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Title" htmlFor="class-title">
+        <Field label={t('classes.form.titleLabel')} htmlFor="class-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </Field>
         {usesStyles ? (
           <StylePicker idPrefix="class" disciplines={disciplines} value={styles} onChange={setStyles} />
         ) : (
-          <Field label="Activities" htmlFor="class-activities" hint="Comma-separated, at least one — e.g. Jiu Jitsu, Kids Fundamentals">
+          <Field label={t('classes.form.activitiesLabel')} htmlFor="class-activities" hint={t('classes.form.activitiesHint')}>
             <TextField
               required
               value={form.activities}
@@ -183,24 +185,24 @@ export function ClassFormModal({
             />
           </Field>
         )}
-        <Field label="Branch" htmlFor="class-branch" hint="Leave unselected for a School-wide Class.">
+        <Field label={t('classes.form.branchLabel')} htmlFor="class-branch" hint={t('classes.form.branchHint')}>
           <SelectField
             value={form.branchId}
             onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
-            options={[{ value: '', label: 'Whole School' }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('classes.form.wholeSchool') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
           />
         </Field>
-        <Field label="Instructor" htmlFor="class-instructor">
+        <Field label={t('classes.form.instructorLabel')} htmlFor="class-instructor">
           <SelectField
             value={form.instructorId}
             onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
             options={[
-              { value: '', label: 'Unassigned' },
+              { value: '', label: t('classes.form.unassigned') },
               ...instructors.map((i) => ({ value: i.userId, label: `${i.firstName} ${i.surname}`.trim() })),
             ]}
           />
         </Field>
-        <Field label="Start date" htmlFor="class-startDate">
+        <Field label={t('classes.form.startDateLabel')} htmlFor="class-startDate">
           <TextField
             required
             type="datetime-local"
@@ -208,7 +210,7 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
           />
         </Field>
-        <Field label="End date" htmlFor="class-endDate">
+        <Field label={t('classes.form.endDateLabel')} htmlFor="class-endDate">
           <TextField
             required
             type="datetime-local"
@@ -216,7 +218,7 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
           />
         </Field>
-        <Field label="Capacity" htmlFor="class-capacity" hint="Leave blank for unlimited.">
+        <Field label={t('classes.form.capacityLabel')} htmlFor="class-capacity" hint={t('classes.form.capacityHint')}>
           <TextField
             type="number"
             min={1}
@@ -225,9 +227,9 @@ export function ClassFormModal({
           />
         </Field>
         <Field
-          label="Booking cutoff"
+          label={t('classes.form.bookingCutoffLabel')}
           htmlFor="class-bookingEndAt"
-          hint={initial?.bookingEndAt ? "Can't be cleared from this form yet — set a new date instead." : undefined}
+          hint={initial?.bookingEndAt ? t('classes.form.cantClearHint') : undefined}
         >
           <TextField
             type="datetime-local"
@@ -236,9 +238,9 @@ export function ClassFormModal({
           />
         </Field>
         <Field
-          label="QR check-in window ends"
+          label={t('classes.form.qrWindowEndsLabel')}
           htmlFor="class-qrAttendanceEndAt"
-          hint={initial?.qrAttendanceEndAt ? "Can't be cleared from this form yet — set a new date instead." : undefined}
+          hint={initial?.qrAttendanceEndAt ? t('classes.form.cantClearHint') : undefined}
         >
           <TextField
             type="datetime-local"
@@ -247,9 +249,9 @@ export function ClassFormModal({
           />
         </Field>
         <Field
-          label="Refund/credit cutoff"
+          label={t('classes.form.refundCutoffLabel')}
           htmlFor="class-refundFeeDate"
-          hint={initial?.refundFeeDate ? "Can't be cleared from this form yet — set a new date instead." : undefined}
+          hint={initial?.refundFeeDate ? t('classes.form.cantClearHint') : undefined}
         >
           <TextField
             type="datetime-local"
@@ -257,7 +259,7 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, refundFeeDate: e.target.value }))}
           />
         </Field>
-        <Field label="Cancellation charge" htmlFor="class-cancellationCharge" hint="Minor currency unit (e.g. cents).">
+        <Field label={t('classes.form.cancellationChargeLabel')} htmlFor="class-cancellationCharge" hint={t('classes.form.cancellationChargeHint')}>
           <TextField
             type="number"
             min={0}
@@ -265,7 +267,7 @@ export function ClassFormModal({
             onChange={(e) => setForm((f) => ({ ...f, cancellationCharge: e.target.value }))}
           />
         </Field>
-        <Field label="Banner" htmlFor="class-banner">
+        <Field label={t('classes.form.bannerLabel')} htmlFor="class-banner">
           <PhotoUploadField
             value={form.bannerUrl}
             onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
@@ -279,25 +281,25 @@ export function ClassFormModal({
             }
           />
         </Field>
-        <Field label="Description" htmlFor="class-description">
+        <Field label={t('classes.form.descriptionLabel')} htmlFor="class-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
         <Checkbox
-          label="Requires signed waiver/terms to book"
+          label={t('classes.form.waiverRequired')}
           checked={form.termsWaiverRequired}
           onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
         />
         <Checkbox
-          label="Included in general membership access (no separate ticket required)"
+          label={t('classes.form.membershipInclusion')}
           checked={form.membershipInclusion}
           onChange={(e) => setForm((f) => ({ ...f, membershipInclusion: e.target.checked }))}
         />
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

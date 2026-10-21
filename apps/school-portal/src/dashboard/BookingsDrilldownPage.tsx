@@ -3,9 +3,11 @@ import { Badge, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, TextF
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBookingsSummary, type BookingsSummaryDay } from './dashboardQueries';
+import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 const dayLabel = (iso: string) =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString(formatLocale(), { weekday: 'long', month: 'short', day: 'numeric' });
 
 /**
  * v1.2 backend backlog — Dashboard "Bookings This Week" drill-down, the "See
@@ -24,6 +26,7 @@ const dayLabel = (iso: string) =>
  * shows under both, each counting that one Booking once).
  */
 export function BookingsDrilldownPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   // undefined until the person picks a range — the API's own current-week
   // default (BookingsService.getWeeklySummary) is what loads first, same as
@@ -39,10 +42,10 @@ export function BookingsDrilldownPage() {
 
   return (
     <>
-      <PageHeader title="Bookings" subtitle="Day-by-day, by activity." />
+      <PageHeader title={t('dashboard.drilldown.title')} subtitle={t('dashboard.drilldown.subtitle')} />
       <Card>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <Field label="From" htmlFor="bookings-range-from">
+          <Field label={t('dashboard.drilldown.from')} htmlFor="bookings-range-from">
             <TextField
               id="bookings-range-from"
               type="date"
@@ -50,7 +53,7 @@ export function BookingsDrilldownPage() {
               onChange={(e) => setRange({ from: e.target.value, to: displayTo || e.target.value })}
             />
           </Field>
-          <Field label="To" htmlFor="bookings-range-to">
+          <Field label={t('dashboard.drilldown.to')} htmlFor="bookings-range-to">
             <TextField
               id="bookings-range-to"
               type="date"
@@ -64,10 +67,10 @@ export function BookingsDrilldownPage() {
       {summary.isLoading ? (
         <Spinner />
       ) : summary.error ? (
-        <ErrorBanner message={summary.error instanceof ApiError ? summary.error.message : 'Could not load Bookings.'} />
+        <ErrorBanner message={summary.error instanceof ApiError ? summary.error.message : t('dashboard.loadFailed')} />
       ) : !summary.data || summary.data.totalBookings === 0 ? (
         <Card>
-          <EmptyState title="No Bookings in this range" description="Try a different date range." />
+          <EmptyState title={t('dashboard.drilldown.emptyTitle')} description={t('dashboard.drilldown.emptyDescription')} />
         </Card>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
@@ -81,6 +84,7 @@ export function BookingsDrilldownPage() {
 }
 
 function DayCard({ day }: { day: BookingsSummaryDay }) {
+  const t = useT();
   return (
     <Card>
       <div
@@ -97,7 +101,7 @@ function DayCard({ day }: { day: BookingsSummaryDay }) {
           {dayLabel(day.date)}
         </h2>
         <span style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
-          {day.totalBookings} booking{day.totalBookings === 1 ? '' : 's'} · {day.upcomingBookings} upcoming
+          {t('dashboard.drilldown.bookingsCount', { count: day.totalBookings, upcoming: day.upcomingBookings })}
         </span>
       </div>
       {day.activities.length > 0 ? (
@@ -106,7 +110,7 @@ function DayCard({ day }: { day: BookingsSummaryDay }) {
             <li key={a.activity} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <Badge>{a.activity}</Badge>
               <span style={{ fontSize: 13 }}>
-                {a.totalBookings} booking{a.totalBookings === 1 ? '' : 's'} · {a.upcomingBookings} upcoming
+                {t('dashboard.drilldown.bookingsCount', { count: a.totalBookings, upcoming: a.upcomingBookings })}
               </span>
             </li>
           ))}

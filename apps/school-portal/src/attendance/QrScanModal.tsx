@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
 import { Modal } from '@ultm8/ui';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Camera-scan half of Instructor roll-call (Decision 107's `INSTRUCTOR_SCAN`
@@ -18,6 +19,7 @@ import { Modal } from '@ultm8/ui';
  * second, stale decode firing after the caller has already acted on the first.
  */
 export function QrScanModal({ onScan, onClose }: { onScan: (token: string) => void; onClose: () => void }) {
+  const t = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function QrScanModal({ onScan, onClose }: { onScan: (token: string) => vo
     );
     scannerRef.current = scanner;
     scanner.start().catch((err) => {
-      setError(err instanceof Error ? err.message : 'Could not access the camera — check browser permissions.');
+      setError(err instanceof Error ? err.message : t('attendance.scanModal.cameraFailed'));
     });
 
     return () => {
@@ -52,7 +54,7 @@ export function QrScanModal({ onScan, onClose }: { onScan: (token: string) => vo
   }, []);
 
   return (
-    <Modal title="Scan Student's check-in code" onClose={onClose}>
+    <Modal title={t('attendance.scanModal.title')} onClose={onClose}>
       {error ? (
         <p style={{ color: 'var(--color-danger)' }}>{error}</p>
       ) : (
@@ -61,7 +63,7 @@ export function QrScanModal({ onScan, onClose }: { onScan: (token: string) => vo
         </div>
       )}
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 12 }}>
-        Point the camera at the code shown on the Student's own device.
+        {t('attendance.scanModal.hint')}
       </p>
     </Modal>
   );

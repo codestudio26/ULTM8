@@ -8,14 +8,26 @@ import { useLanguages } from '../settings/settingsQueries';
 import { Avatar } from '../lib/Avatar';
 import { SchoolSwitcher } from '../coach/SchoolSwitcher';
 import type { RoleGrantClaim } from '../auth/types';
+import { useI18n, type TranslateFn } from '../i18n/I18nProvider';
 
-function roleLabel(grants: RoleGrantClaim[] | undefined): string {
+function roleLabel(grants: RoleGrantClaim[] | undefined, t: TranslateFn): string {
   if (!grants?.length) return '';
-  if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return 'School Owner';
-  if (grants.some((g) => g.role === 'BRANCH_STAFF')) return 'Branch Staff';
-  if (grants.some((g) => g.role === 'INSTRUCTOR')) return 'Coach';
-  if (grants.some((g) => g.role === 'STUDENT')) return 'Student';
+  if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return t('layout.roles.owner');
+  if (grants.some((g) => g.role === 'BRANCH_STAFF')) return t('layout.roles.branchStaff');
+  if (grants.some((g) => g.role === 'INSTRUCTOR')) return t('layout.roles.coach');
+  if (grants.some((g) => g.role === 'STUDENT')) return t('layout.roles.student');
   return grants[0].role;
+}
+
+/** Each language listed in its own script ("Deutsch", "العربية"), so a
+ * reader can find theirs whatever the page is showing now. */
+function nativeName(code: string, fallback: string): string {
+  try {
+    const name = new Intl.DisplayNames([code], { type: 'language' }).of(code);
+    return name ? name.charAt(0).toLocaleUpperCase(code) + name.slice(1) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 /**
@@ -23,8 +35,8 @@ function roleLabel(grants: RoleGrantClaim[] | undefined): string {
  * content, not just Instructors'. Notifications and the profile are wired to
  * real data (GET /notifications/me, GET/PATCH /users/me); language is a real,
  * working preference backed by the confirmed GET /settings/languages list —
- * this app has no translation runtime yet, so picking one saves the
- * preference without changing any UI text. Search has no backing feature
+ * picking one saves it to the profile and switches the portal's text
+ * (I18nProvider, Decision 273). Search has no backing feature
  * anywhere in this codebase (no search endpoint exists anywhere) — shown
  * disabled rather than omitted or faked, so it reads as "not built yet," not
  * broken.
@@ -35,6 +47,7 @@ export function TopBar() {
   const { data: me } = useCurrentUser();
   const { data: languages } = useLanguages();
   const updateCurrentUser = useUpdateCurrentUser();
+  const { t, locale, rememberLocale } = useI18n();
 
   const hasUnread = (notifications?.items ?? []).some((n) => !n.read);
 
@@ -63,14 +76,14 @@ export function TopBar() {
         <input
           disabled
           className="ultm8-input"
-          placeholder="Search (coming soon)"
-          aria-label="Search — not available yet"
+          placeholder={t('layout.searchPlaceholder')}
+          aria-label={t('layout.searchAria')}
           style={{ width: 200, minHeight: 40 }}
         />
 
         <Link
           to="/notifications"
-          aria-label="Notifications"
+          aria-label={t('layout.notificationsAria')}
           style={{ position: 'relative', display: 'inline-flex', color: 'var(--text-secondary)' }}
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -108,20 +121,22 @@ export function TopBar() {
               <div style={{ fontSize: 14 }}>
                 {me.firstName} {me.surname}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{roleLabel(claims?.grants)}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{roleLabel(claims?.grants, t)}</div>
             </div>
           </div>
         ) : null}
 
         {languages?.length ? (
           <SelectField
-            aria-label="Language"
-            value={me?.language ?? ''}
+            aria-label={t('layout.languageAria')}
+            value={me?.language ?? locale}
             onChange={(e) => {
               const value = e.target.value;
-              if (value) updateCurrentUser.mutate({ language: value });
+              if (!value) return;
+              rememberLocale(value);
+              updateCurrentUser.mutate({ language: value });
             }}
-            options={[{ value: '', label: '—' }, ...languages.map((l) => ({ value: l.code, label: l.name }))]}
+            options={[{ value: '', label: t('common.none') }, ...languages.map((l) => ({ value: l.code, label: nativeName(l.code, l.name) }))]}
             style={{ width: 'auto', minHeight: 36, padding: '4px 8px' }}
           />
         ) : null}

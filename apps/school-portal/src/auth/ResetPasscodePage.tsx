@@ -4,8 +4,10 @@ import { AuthCard, AuthSuccessCard, Button, ErrorBanner, Field, PasscodeField, P
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useT } from '../i18n/I18nProvider';
 
 export function ResetPasscodePage() {
+  const t = useT();
   const navigate = useNavigate();
   const location = useLocation() as { state?: { phone?: string } };
   const [phone, setPhone] = useState(location.state?.phone ?? '');
@@ -21,7 +23,7 @@ export function ResetPasscodePage() {
     setError(null);
 
     if (newPasscode !== confirmPasscode) {
-      setError('New passcode and confirmation must match.');
+      setError(t('auth.newPasscodeMismatch'));
       return;
     }
 
@@ -30,7 +32,7 @@ export function ResetPasscodePage() {
       await unwrap(apiClient.POST('/v1/auth/reset-password', { body: { phone, code, newPasscode } }));
       setChanged(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
@@ -39,24 +41,24 @@ export function ResetPasscodePage() {
   if (changed) {
     return (
       <AuthSuccessCard
-        title="Passcode changed"
-        subtitle="Log in with your new 6-digit passcode."
+        title={t('auth.reset.successTitle')}
+        subtitle={t('auth.reset.successSubtitle')}
         onContinue={() => navigate('/login')}
       />
     );
   }
 
   return (
-    <AuthCard title="Set a new passcode" subtitle="Enter the code we sent, then choose a new 6-digit passcode.">
+    <AuthCard title={t('auth.reset.title')} subtitle={t('auth.reset.subtitle')}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Phone" htmlFor="reset-phone">
+        <Field label={t('auth.phoneLabel')} htmlFor="reset-phone">
           <PhoneField required value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Field label="Verification code" htmlFor="reset-code">
+        <Field label={t('auth.verificationCodeLabel')} htmlFor="reset-code">
           <SegmentedCodeInput value={code} onChange={setCode} required />
         </Field>
-        <Field label="New passcode" htmlFor="reset-newPasscode" hint="6 digits">
+        <Field label={t('auth.newPasscodeLabel')} htmlFor="reset-newPasscode" hint={t('auth.passcodeHint')}>
           <PasscodeField
             inputMode="numeric"
             pattern="\d{6}"
@@ -66,7 +68,7 @@ export function ResetPasscodePage() {
             onChange={(e) => setNewPasscode(e.target.value)}
           />
         </Field>
-        <Field label="Confirm new passcode" htmlFor="reset-confirmPasscode">
+        <Field label={t('auth.confirmNewPasscodeLabel')} htmlFor="reset-confirmPasscode">
           <PasscodeField
             inputMode="numeric"
             pattern="\d{6}"
@@ -77,7 +79,7 @@ export function ResetPasscodePage() {
           />
         </Field>
         <Button type="submit" fullWidth loading={submitting}>
-          Set new passcode
+          {t('auth.reset.submit')}
         </Button>
       </form>
     </AuthCard>

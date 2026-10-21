@@ -5,12 +5,16 @@ import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useJoinFranchise, useLeaveFranchise, useSchool, useUpdateSchool, type SchoolResponse } from './schoolQueries';
+import { useT } from '../i18n/I18nProvider';
+import { languageName } from '../i18n/format';
+import { Trans } from '../i18n/Trans';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
  * their own School"). Field list matches UpdateSchoolDto exactly, same as
  * CreateSchoolPage. No delete action — general tenant offboarding is [UNRESOLVED]
  * (ultm8-domain-rules §2), and apps/api has no DELETE /schools endpoint to call. */
 export function SchoolPage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data: school, isLoading, error: loadError } = useSchool(schoolId);
   const updateSchool = useUpdateSchool(schoolId ?? '');
@@ -87,73 +91,73 @@ export function SchoolPage() {
       });
       setSaved(true);
     } catch (err) {
-      setSaveError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setSaveError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   if (isLoading || !form) return <Spinner />;
-  if (loadError) return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : 'Could not load your School.'} />;
+  if (loadError) return <ErrorBanner message={loadError instanceof ApiError ? loadError.message : t('schools.profile.loadFailed')} />;
 
   return (
     <>
-      <PageHeader title="School profile" subtitle={school?.name} />
+      <PageHeader title={t('schools.profile.title')} subtitle={school?.name} />
       <Card>
         <form onSubmit={handleSubmit}>
           {saveError ? <ErrorBanner message={saveError} /> : null}
-          {saved ? <SuccessBanner message="Saved." /> : null}
-          <Field label="School name" htmlFor="edit-name">
+          {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+          <Field label={t('schools.form.schoolName')} htmlFor="edit-name">
             <TextField required value={form.name} onChange={(e) => set('name', e.target.value)} />
           </Field>
-          <Field label="Mobile number" htmlFor="edit-mobile">
+          <Field label={t('schools.form.mobileNumber')} htmlFor="edit-mobile">
             <PhoneField value={form.mobileNumber} onChange={(v) => set('mobileNumber', v)} defaultCountry={guessDefaultCountry()} />
           </Field>
-          <Field label="Address" htmlFor="edit-address">
+          <Field label={t('schools.form.address')} htmlFor="edit-address">
             <TextField value={form.address} onChange={(e) => set('address', e.target.value)} />
           </Field>
-          <Field label="Business type" htmlFor="edit-businessType">
+          <Field label={t('schools.form.businessType')} htmlFor="edit-businessType">
             <TextField value={form.businessType} onChange={(e) => set('businessType', e.target.value)} />
           </Field>
-          <Field label="Activities" htmlFor="edit-activities" hint="Comma-separated">
+          <Field label={t('schools.form.activities')} htmlFor="edit-activities" hint={t('schools.form.commaSeparated')}>
             <TextField value={form.activities} onChange={(e) => set('activities', e.target.value)} />
           </Field>
-          <Field label="Facilities" htmlFor="edit-facilities" hint="Comma-separated">
+          <Field label={t('schools.form.facilities')} htmlFor="edit-facilities" hint={t('schools.form.commaSeparated')}>
             <TextField value={form.facilities} onChange={(e) => set('facilities', e.target.value)} />
           </Field>
-          <Field label="Default language" htmlFor="edit-language">
+          <Field label={t('schools.form.defaultLanguage')} htmlFor="edit-language">
             <SelectField
               id="edit-language"
               value={form.defaultLanguage}
               onChange={(e) => set('defaultLanguage', e.target.value)}
-              options={[{ value: '', label: 'Not set' }, ...(languages ?? []).map((l) => ({ value: l.code, label: l.name }))]}
+              options={[{ value: '', label: t('schools.form.notSet') }, ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) }))]}
             />
           </Field>
-          <Field label="Default currency" htmlFor="edit-currency">
+          <Field label={t('schools.form.defaultCurrency')} htmlFor="edit-currency">
             <CurrencyField
               id="edit-currency"
               value={form.defaultCurrency}
               onChange={(code) => set('defaultCurrency', code)}
-              options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
-              placeholder="Not set"
+              options={[{ code: '', name: t('schools.form.notSet') }, ...(currencies ?? [])]}
+              placeholder={t('schools.form.notSet')}
             />
           </Field>
-          <Field label="Timezone" htmlFor="edit-timezone" hint="Used for classes without a branch timezone.">
+          <Field label={t('schools.form.timezone')} htmlFor="edit-timezone" hint={t('schools.form.timezoneHint')}>
             <TimezoneField value={form.timezone} onChange={(timezone) => set('timezone', timezone)} />
           </Field>
-          <Field label="Description" htmlFor="edit-description">
+          <Field label={t('schools.form.description')} htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
           </Field>
-          <Field label="Class cancellation policy" htmlFor="edit-policy">
+          <Field label={t('schools.form.cancellationPolicy')} htmlFor="edit-policy">
             <SelectField
               value={form.classCancellationPolicy}
               onChange={(e) => set('classCancellationPolicy', e.target.value as typeof form.classCancellationPolicy)}
               options={[
-                { value: 'MANUAL', label: 'Manual (default)' },
-                { value: 'AUTO_REFUND', label: 'Auto-Refund' },
-                { value: 'AUTO_CREDIT', label: 'Auto-Credit' },
+                { value: 'MANUAL', label: t('schools.form.policyManual') },
+                { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
+                { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
               ]}
             />
           </Field>
-          <Field label="Waitlist claim window (minutes)" htmlFor="edit-waitlist">
+          <Field label={t('schools.form.waitlistWindow')} htmlFor="edit-waitlist">
             <TextField
               type="number"
               min={1}
@@ -162,13 +166,13 @@ export function SchoolPage() {
             />
           </Field>
           <Checkbox
-            label="Enable belt/rank tracking"
+            label={t('schools.form.ranksToggle')}
             checked={form.ranksToggle}
             onChange={(e) => set('ranksToggle', e.target.checked)}
           />
           <div style={{ marginTop: 16 }}>
             <Button type="submit" loading={updateSchool.isPending}>
-              Save changes
+              {t('schools.profile.saveChanges')}
             </Button>
           </div>
         </form>
@@ -191,6 +195,7 @@ export function SchoolPage() {
  * above already uses for its own optional fields.
  */
 function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
+  const t = useT();
   const updateFooter = useUpdateSchool(schoolId);
   const [form, setForm] = useState({
     footerAboutUs: school.footerAboutUs ?? '',
@@ -226,49 +231,48 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
       });
       setSaved(true);
     } catch (err) {
-      setSaveError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setSaveError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
     <Card>
       <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-        Footer
+        {t('schools.footerSettings.title')}
       </h2>
       <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13, marginBottom: 12 }}>
-        Shown at the bottom of every page in this portal. Leave a field blank to hide it — About us, Contact, and each
-        social icon only appear once you've filled them in.
+        {t('schools.footerSettings.explanation')}
       </p>
       <form onSubmit={handleSubmit}>
         {saveError ? <ErrorBanner message={saveError} /> : null}
-        {saved ? <SuccessBanner message="Saved." /> : null}
-        <Field label="About us" htmlFor="footer-about">
+        {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+        <Field label={t('schools.footerSettings.aboutUs')} htmlFor="footer-about">
           <TextArea id="footer-about" rows={3} value={form.footerAboutUs} onChange={(e) => set('footerAboutUs', e.target.value)} />
         </Field>
-        <Field label="Contact email" htmlFor="footer-email">
+        <Field label={t('schools.footerSettings.contactEmail')} htmlFor="footer-email">
           <TextField id="footer-email" type="email" value={form.footerContactEmail} onChange={(e) => set('footerContactEmail', e.target.value)} />
         </Field>
-        <Field label="Contact phone" htmlFor="footer-phone">
+        <Field label={t('schools.footerSettings.contactPhone')} htmlFor="footer-phone">
           <PhoneField value={form.footerContactPhone} onChange={(v) => set('footerContactPhone', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Field label="Facebook URL" htmlFor="footer-fb">
+        <Field label={t('schools.footerSettings.facebookUrl')} htmlFor="footer-fb">
           <TextField id="footer-fb" value={form.footerFacebookUrl} onChange={(e) => set('footerFacebookUrl', e.target.value)} placeholder="https://facebook.com/..." />
         </Field>
-        <Field label="Instagram URL" htmlFor="footer-ig">
+        <Field label={t('schools.footerSettings.instagramUrl')} htmlFor="footer-ig">
           <TextField id="footer-ig" value={form.footerInstagramUrl} onChange={(e) => set('footerInstagramUrl', e.target.value)} placeholder="https://instagram.com/..." />
         </Field>
-        <Field label="TikTok URL" htmlFor="footer-tt">
+        <Field label={t('schools.footerSettings.tiktokUrl')} htmlFor="footer-tt">
           <TextField id="footer-tt" value={form.footerTiktokUrl} onChange={(e) => set('footerTiktokUrl', e.target.value)} placeholder="https://tiktok.com/@..." />
         </Field>
-        <Field label="YouTube URL" htmlFor="footer-yt">
+        <Field label={t('schools.footerSettings.youtubeUrl')} htmlFor="footer-yt">
           <TextField id="footer-yt" value={form.footerYoutubeUrl} onChange={(e) => set('footerYoutubeUrl', e.target.value)} placeholder="https://youtube.com/@..." />
         </Field>
-        <Field label="X (Twitter) URL" htmlFor="footer-x">
+        <Field label={t('schools.footerSettings.twitterUrl')} htmlFor="footer-x">
           <TextField id="footer-x" value={form.footerTwitterUrl} onChange={(e) => set('footerTwitterUrl', e.target.value)} placeholder="https://x.com/..." />
         </Field>
         <div style={{ marginTop: 16 }}>
           <Button type="submit" loading={updateFooter.isPending}>
-            Save changes
+            {t('schools.profile.saveChanges')}
           </Button>
         </div>
       </form>
@@ -286,6 +290,7 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
  * API itself has always taken.
  */
 function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string; franchiseId: string | null }) {
+  const t = useT();
   const joinFranchise = useJoinFranchise(schoolId);
   const leaveFranchise = useLeaveFranchise(schoolId);
   const [franchiseIdInput, setFranchiseIdInput] = useState('');
@@ -298,7 +303,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
       await joinFranchise.mutateAsync(franchiseIdInput);
       setFranchiseIdInput('');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -307,40 +312,39 @@ function FranchiseAffiliationCard({ schoolId, franchiseId }: { schoolId: string;
     try {
       await leaveFranchise.mutateAsync();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
     <Card>
       <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-        Franchise affiliation
+        {t('schools.franchise.title')}
       </h2>
       {error ? <ErrorBanner message={error} /> : null}
       {franchiseId ? (
         <>
           <p>
-            Affiliated with Franchise <Badge>{franchiseId}</Badge>
+            <Trans k="schools.franchise.affiliatedWith" nodes={{ id: <Badge>{franchiseId}</Badge> }} />
           </p>
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
-            Leaving cancels any standing franchise-fee billing for this School. To switch, leave first, then join the
-            new Franchise below.
+            {t('schools.franchise.leaveExplanation')}
           </p>
           <Button variant="danger" onClick={handleLeave} loading={leaveFranchise.isPending}>
-            Leave Franchise
+            {t('schools.franchise.leave')}
           </Button>
         </>
       ) : (
         <>
           <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
-            This School is independent — not affiliated with any Franchise.
+            {t('schools.franchise.independent')}
           </p>
           <form onSubmit={handleJoin}>
-            <Field label="Franchise ID" htmlFor="join-franchise-id">
+            <Field label={t('schools.franchise.franchiseId')} htmlFor="join-franchise-id">
               <TextField required value={franchiseIdInput} onChange={(e) => setFranchiseIdInput(e.target.value)} />
             </Field>
             <Button type="submit" loading={joinFranchise.isPending}>
-              Join Franchise
+              {t('schools.franchise.join')}
             </Button>
           </form>
         </>

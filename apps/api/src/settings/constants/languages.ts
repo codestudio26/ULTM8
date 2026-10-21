@@ -12,10 +12,24 @@ import { CodeNameOption } from './code-name-option';
  * final. See the Phase 7 kickoff prompt for the full reasoning.
  *
  * BCP-47-shaped codes are a Developer convention, not something Spec 55 states.
+ *
+ * Decision 273 (20 Oct 2026): the product owner widened the list to 15
+ * languages — the original 4 plus the 11 below them.
  */
 export const LANGUAGES: readonly CodeNameOption[] = [
   { code: 'en-GB', name: 'English (UK)' },
   { code: 'pt-BR', name: 'Portuguese (BR)' },
   { code: 'es', name: 'Spanish' },
   { code: 'ar', name: 'Arabic' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'nl', name: 'Dutch' },
+  { code: 'pl', name: 'Polish' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'tr', name: 'Turkish' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'ko', name: 'Korean' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)' },
+  { code: 'th', name: 'Thai' },
 ];

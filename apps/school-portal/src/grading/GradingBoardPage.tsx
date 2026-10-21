@@ -10,11 +10,13 @@ import { flattenLadder, type Rung } from './ladder';
 import { useBranches } from '../branches/branchQueries';
 import { type BoardColumn, type GradingBoardItem, useBoardMove, useGradingBoard, useMyGrading, useSetBoardThresholds, useSetHomeBranch } from './gradingQueries';
 import { BulkPromoteModal } from './BulkPromoteModal';
+import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
-export const COLUMNS: Array<{ key: BoardColumn; label: string }> = [
-  { key: 'JUST_STARTING', label: 'Just Starting' },
-  { key: 'GETTING_THERE', label: 'Getting There' },
-  { key: 'READY_TO_GRADE', label: 'Ready to Grade' },
+/** Column labels are translation keys, resolved at render time. */
+export const COLUMNS: Array<{ key: BoardColumn; label: TranslationKey }> = [
+  { key: 'JUST_STARTING', label: 'grading.board.columns.justStarting' },
+  { key: 'GETTING_THERE', label: 'grading.board.columns.gettingThere' },
+  { key: 'READY_TO_GRADE', label: 'grading.board.columns.readyToGrade' },
 ];
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
@@ -34,6 +36,7 @@ export function GradingBoardPage() {
   const schoolId = useGradingSchoolId();
   const disciplines = useDisciplines(schoolId);
   const my = useMyGrading(schoolId);
+  const t = useT();
   // A coach sees only the styles they grade in (Decisions 181, 184).
   const styles = (disciplines.data?.items ?? []).filter((d) => my.mayGradeStyle(d.id));
   const [disciplineId, setDisciplineId] = useState<string | null>(null);
@@ -56,8 +59,8 @@ export function GradingBoardPage() {
 
   if (!schoolId) return null;
   if (disciplines.isLoading || my.isLoading) return <Spinner />;
-  if (disciplines.error) return <ErrorBanner message={disciplines.error instanceof ApiError ? disciplines.error.message : 'Could not load styles.'} />;
-  if (my.error) return <ErrorBanner message={my.error instanceof ApiError ? my.error.message : 'Could not load your grading permissions.'} />;
+  if (disciplines.error) return <ErrorBanner message={disciplines.error instanceof ApiError ? disciplines.error.message : t('grading.board.loadStylesFailed')} />;
+  if (my.error) return <ErrorBanner message={my.error instanceof ApiError ? my.error.message : t('grading.board.loadPermissionsFailed')} />;
   const canPromote = my.can(disciplineId, 'canPromote');
   const canMove = my.can(disciplineId, 'canAdjustProgress');
 
@@ -77,15 +80,15 @@ export function GradingBoardPage() {
   return (
     <>
       <PageHeader
-        title="Grading Board"
-        subtitle="Every student's progress toward their next rank. Tick students to promote them together, or move a student to another column to adjust their progress by hand."
+        title={t('grading.board.title')}
+        subtitle={t('grading.board.subtitle')}
       />
       {styles.length === 0 ? (
         <Card>
           {my.isOwner ? (
-            <EmptyState title="No styles yet" description="Add a style and its ranks on the Disciplines page first." />
+            <EmptyState title={t('grading.noStylesTitle')} description={t('grading.board.noStylesDescription')} />
           ) : (
-            <EmptyState title="No styles to grade yet" description="The School owner hasn't given you grading in any style yet." />
+            <EmptyState title={t('grading.noStylesToGradeTitle')} description={t('grading.noStylesToGradeDescription')} />
           )}
         </Card>
       ) : (
@@ -93,7 +96,7 @@ export function GradingBoardPage() {
           <Card>
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
               <div style={{ minWidth: 180 }}>
-                <Field label="Style" htmlFor="board-style">
+                <Field label={t('grading.board.styleLabel')} htmlFor="board-style">
                   <SelectField
                     value={disciplineId ?? ''}
                     onChange={(e) => {
@@ -105,34 +108,34 @@ export function GradingBoardPage() {
                 </Field>
               </div>
               <div style={{ minWidth: 200 }}>
-                <Field label="Search students" htmlFor="board-search">
+                <Field label={t('grading.board.searchLabel')} htmlFor="board-search">
                   <TextField type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </Field>
               </div>
               <div style={{ paddingBottom: 12 }}>
-                <Checkbox label="Currently attending only" checked={activeOnly} onChange={(e) => setActiveOnly(e.target.checked)} />
+                <Checkbox label={t('grading.board.activeOnly')} checked={activeOnly} onChange={(e) => setActiveOnly(e.target.checked)} />
                 {activeOnly && board.data && board.data.hiddenInactive > 0 ? (
-                  <span className="ultm8-field__hint"> {board.data.hiddenInactive} inactive hidden</span>
+                  <span className="ultm8-field__hint"> {t('grading.board.inactiveHidden', { count: board.data.hiddenInactive })}</span>
                 ) : null}
               </div>
               {style ? (
                 <div style={{ paddingBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span className="ultm8-field__hint">
-                    Columns at {style.boardGettingThere}% / {style.boardReadyToGrade}%
+                    {t('grading.board.columnsAt', { gettingThere: style.boardGettingThere, readyToGrade: style.boardReadyToGrade })}
                   </span>
                   {my.can(style.id, 'canChangeBoardThresholds') ? (
                     <Button variant="secondary" onClick={() => setEditingThresholds(true)}>
-                      Change %
+                      {t('grading.board.changePercent')}
                     </Button>
                   ) : null}
                 </div>
               ) : null}
               <div style={{ flex: 1 }} />
               <div style={{ paddingBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
-                {canPromote && selectedItems.length > 0 ? <strong>{selectedItems.length} selected</strong> : null}
+                {canPromote && selectedItems.length > 0 ? <strong>{t('grading.board.selectedCount', { count: selectedItems.length })}</strong> : null}
                 {canPromote ? (
                   <Button onClick={() => setPromoting(true)} disabled={selectedItems.length === 0}>
-                    Promote selected
+                    {t('grading.board.promoteSelected')}
                   </Button>
                 ) : null}
               </div>
@@ -142,17 +145,17 @@ export function GradingBoardPage() {
           {board.isLoading || ranks.isLoading ? (
             <Spinner />
           ) : board.error ? (
-            <ErrorBanner message={board.error instanceof ApiError ? board.error.message : 'Could not load the board.'} />
+            <ErrorBanner message={board.error instanceof ApiError ? board.error.message : t('grading.board.loadBoardFailed')} />
           ) : (
             <>
             {noBranch.length > 0 && schoolId ? (
-              <section aria-label="No branch" style={{ marginTop: 16 }}>
+              <section aria-label={t('grading.board.noBranch')} style={{ marginTop: 16 }}>
                 <Card>
                   <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: '0 0 4px' }}>
-                    No branch <Badge>{noBranch.length}</Badge>
+                    {t('grading.board.noBranch')} <Badge>{noBranch.length}</Badge>
                   </h2>
                   <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-                    These students have no home branch yet, so only you see them here; no branch coach does. Give each one a branch to put them in the columns below.
+                    {t('grading.board.noBranchHint')}
                   </p>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
                     {noBranch.map((item) => (
@@ -178,7 +181,7 @@ export function GradingBoardPage() {
                 return (
                   <section
                     key={col.key}
-                    aria-label={col.label}
+                    aria-label={t(col.label)}
                     onDragOver={(e) => {
                       if (canMove) e.preventDefault();
                     }}
@@ -193,21 +196,21 @@ export function GradingBoardPage() {
                     <Card>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
                         <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
-                          {col.label} <Badge>{list.length}</Badge>
+                          {t(col.label)} <Badge>{list.length}</Badge>
                           {style ? (
                             <span className="ultm8-field__hint" style={{ fontWeight: 400, marginLeft: 6 }}>
                               {col.key === 'JUST_STARTING'
-                                ? `under ${style.boardGettingThere}%`
+                                ? t('grading.board.rangeUnder', { percent: style.boardGettingThere })
                                 : col.key === 'GETTING_THERE'
-                                  ? `${style.boardGettingThere}–${style.boardReadyToGrade - 1}%`
-                                  : `${style.boardReadyToGrade}%+`}
+                                  ? t('grading.board.rangeBetween', { from: style.boardGettingThere, to: style.boardReadyToGrade - 1 })
+                                  : t('grading.board.rangeFrom', { percent: style.boardReadyToGrade })}
                             </span>
                           ) : null}
                         </h2>
                         {canPromote && pickable.length > 0 ? (
                           <Checkbox
-                            label="Select all"
-                            aria-label={`Select all in ${col.label}`}
+                            label={t('grading.board.selectAll')}
+                            aria-label={t('grading.board.selectAllIn', { column: t(col.label) })}
                             checked={allPicked}
                             onChange={() =>
                               setSelected((s) => (allPicked ? s.filter((id) => !pickable.includes(id)) : [...s, ...pickable.filter((id) => !s.includes(id))]))
@@ -217,7 +220,7 @@ export function GradingBoardPage() {
                       </div>
                       {list.length === 0 ? (
                         <p className="ultm8-field__hint" style={{ textAlign: 'center', padding: '16px 0' }}>
-                          No students here
+                          {t('grading.board.noStudentsHere')}
                         </p>
                       ) : (
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
@@ -281,6 +284,7 @@ function BoardCard({
   /** Extra controls under the card, e.g. assigning a home branch. */
   footer?: React.ReactNode;
 }) {
+  const t = useT();
   const name = fullName(item);
   const e = item.eligibility;
   const percent = e.progressPercent ?? 0;
@@ -311,8 +315,8 @@ function BoardCard({
             checked={selected}
             disabled={item.hardBlocked}
             onChange={onToggle}
-            aria-label={item.hardBlocked ? `${name} can't be selected: required skills not signed off` : `Select ${name}`}
-            title={item.hardBlocked ? 'This style requires every skill for the next rank to be signed off first.' : undefined}
+            aria-label={item.hardBlocked ? t('grading.board.card.cantSelectAria', { name }) : t('grading.board.card.selectAria', { name })}
+            title={item.hardBlocked ? t('grading.board.card.cantSelectTitle') : undefined}
           />
         ) : null}
         {rung ? <BeltChip rung={rung} /> : null}
@@ -320,7 +324,7 @@ function BoardCard({
           <Link to={`/students/${item.studentId}`} state={{ name }} style={{ fontWeight: 700 }}>
             {name}
           </Link>
-          <div className="ultm8-field__hint">{rung?.name ?? 'Rank not on the ladder'}</div>
+          <div className="ultm8-field__hint">{rung?.name ?? t('grading.board.card.rankNotOnLadder')}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: percent >= 100 ? 'var(--text-success)' : undefined }}>{percent}%</div>
@@ -328,7 +332,7 @@ function BoardCard({
       </div>
       <div
         role="progressbar"
-        aria-label={`${name}: progress`}
+        aria-label={t('grading.board.card.progressAria', { name })}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
@@ -337,15 +341,15 @@ function BoardCard({
         <div style={{ width: `${percent}%`, height: '100%', background: percent >= 66 ? 'var(--color-success)' : 'var(--fill-accent)' }} />
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        {e.eligible ? <Badge variant="success">Ready</Badge> : null}
-        {item.hardBlocked ? <Badge variant="danger">Skills required</Badge> : skillsMissing ? <Badge variant="accent">Skills not signed off</Badge> : null}
-        {daysShort > 0 ? <Badge variant="accent">{daysShort} days short</Badge> : null}
-        {item.active ? null : <Badge>Inactive</Badge>}
-        {item.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">Not verified</Badge> : null}
+        {e.eligible ? <Badge variant="success">{t('grading.board.card.ready')}</Badge> : null}
+        {item.hardBlocked ? <Badge variant="danger">{t('grading.board.card.skillsRequired')}</Badge> : skillsMissing ? <Badge variant="accent">{t('grading.board.card.skillsNotSignedOff')}</Badge> : null}
+        {daysShort > 0 ? <Badge variant="accent">{t('grading.board.card.daysShort', { count: daysShort })}</Badge> : null}
+        {item.active ? null : <Badge>{t('grading.board.card.inactive')}</Badge>}
+        {item.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.board.card.notVerified')}</Badge> : null}
         <span style={{ flex: 1 }} />
         {onMove ? (
-          <Button variant="secondary" onClick={onMove} aria-label={`Move ${name} to another column`}>
-            Move
+          <Button variant="secondary" onClick={onMove} aria-label={t('grading.board.card.moveAria', { name })}>
+            {t('grading.board.card.move')}
           </Button>
         ) : null}
       </div>
@@ -360,17 +364,18 @@ function AssignHomeBranch({ schoolId, item }: { schoolId: string; item: GradingB
   const branches = useBranches(schoolId);
   const assign = useSetHomeBranch(schoolId);
   const [branchId, setBranchId] = useState('');
+  const t = useT();
   const name = fullName(item);
   const id = `home-branch-${item.studentId}`;
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginTop: 10, flexWrap: 'wrap' }}>
       <div style={{ flex: 1, minWidth: 140 }}>
-        <Field label={`Home branch for ${name}`} htmlFor={id}>
+        <Field label={t('grading.board.assign.label', { name })} htmlFor={id}>
           <SelectField
             id={id}
             value={branchId}
             onChange={(e) => setBranchId(e.target.value)}
-            options={[{ value: '', label: 'Choose a branch' }, ...(branches.data?.items ?? []).map((b) => ({ value: b.id, label: b.name }))]}
+            options={[{ value: '', label: t('grading.board.assign.placeholder') }, ...(branches.data?.items ?? []).map((b) => ({ value: b.id, label: b.name }))]}
           />
         </Field>
       </div>
@@ -378,11 +383,11 @@ function AssignHomeBranch({ schoolId, item }: { schoolId: string; item: GradingB
         onClick={() => assign.mutate({ studentId: item.studentId, branchId })}
         disabled={!branchId}
         loading={assign.isPending}
-        aria-label={`Assign ${name} to this branch`}
+        aria-label={t('grading.board.assign.aria', { name })}
       >
-        Assign
+        {t('grading.board.assign.submit')}
       </Button>
-      {assign.error ? <ErrorBanner message={assign.error instanceof ApiError ? assign.error.message : 'Could not assign the branch — please try again.'} /> : null}
+      {assign.error ? <ErrorBanner message={assign.error instanceof ApiError ? assign.error.message : t('grading.board.assign.failed')} /> : null}
     </div>
   );
 }
@@ -405,7 +410,9 @@ function MoveDialog({
   const others = COLUMNS.filter((c) => c.key !== item.eligibility.boardColumn);
   const [to, setTo] = useState<BoardColumn>(initialTo ?? others[0].key);
   const [error, setError] = useState<string | null>(null);
-  const label = COLUMNS.find((c) => c.key === to)?.label;
+  const t = useT();
+  const labelKey = COLUMNS.find((c) => c.key === to)?.label;
+  const label = labelKey ? t(labelKey) : undefined;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -414,29 +421,28 @@ function MoveDialog({
       await move.mutateAsync({ studentId: item.studentId, column: to });
       onClose();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
-    <Modal title={`Move ${fullName(item)}`} onClose={onClose}>
+    <Modal title={t('grading.board.moveDialog.title', { name: fullName(item) })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Move to" htmlFor="move-to">
-          <SelectField value={to} onChange={(e) => setTo(e.target.value as BoardColumn)} options={others.map((c) => ({ value: c.key, label: c.label }))} />
+        <Field label={t('grading.board.moveDialog.toLabel')} htmlFor="move-to">
+          <SelectField value={to} onChange={(e) => setTo(e.target.value as BoardColumn)} options={others.map((c) => ({ value: c.key, label: t(c.label) }))} />
         </Field>
         <p className="ultm8-field__hint">
           {item.eligibility.timeOnly
-            ? `This changes their time-at-rank start date so they land in "${label}".`
-            : `This changes their class count so they land in "${label}".`}{' '}
-          The change is recorded on their history.
+            ? t('grading.board.moveDialog.hintTimeOnly', { column: label ?? '' })
+            : t('grading.board.moveDialog.hintClasses', { column: label ?? '' })}
         </p>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={move.isPending}>
-            Move
+            {t('grading.board.moveDialog.submit')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>
@@ -449,6 +455,7 @@ function MoveDialog({
  * There" starts below "Ready to Grade". */
 function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClose: () => void }) {
   const set = useSetBoardThresholds(style.id);
+  const t = useT();
   const [gettingThere, setGettingThere] = useState(String(style.boardGettingThere));
   const [readyToGrade, setReadyToGrade] = useState(String(style.boardReadyToGrade));
   const [error, setError] = useState<string | null>(null);
@@ -463,35 +470,35 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
       await set.mutateAsync({ gettingThere: g, readyToGrade: r });
       onClose();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
   return (
-    <Modal title={`Board columns — ${style.name}`} onClose={onClose}>
+    <Modal title={t('grading.board.thresholds.title', { style: style.name })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          Progress is classes attended out of classes required (time at the rank for a time-only rank). Skills and minimum days aren't part of it.
+          {t('grading.board.thresholds.explanation')}
         </p>
-        <Field label='"Getting There" from (%)' htmlFor="threshold-getting-there">
+        <Field label={t('grading.board.thresholds.gettingThereLabel')} htmlFor="threshold-getting-there">
           <TextField type="number" min={1} max={98} step={1} required value={gettingThere} onChange={(e) => setGettingThere(e.target.value)} />
         </Field>
-        <Field label='"Ready to Grade" from (%)' htmlFor="threshold-ready">
+        <Field label={t('grading.board.thresholds.readyToGradeLabel')} htmlFor="threshold-ready">
           <TextField type="number" min={2} max={99} step={1} required value={readyToGrade} onChange={(e) => setReadyToGrade(e.target.value)} />
         </Field>
         {valid ? (
           <p className="ultm8-field__hint">
-            Just Starting: under {g}% · Getting There: {g}–{r - 1}% · Ready to Grade: {r}% and up
+            {t('grading.board.thresholds.summary', { g, r, r1: r - 1 })}
           </p>
         ) : (
           <p role="alert" className="ultm8-field__error">
-            Whole numbers from 1 to 99, with "Getting There" below "Ready to Grade".
+            {t('grading.board.thresholds.invalid')}
           </p>
         )}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={set.isPending} disabled={!valid}>
-            Save
+            {t('common.save')}
           </Button>
           <Button
             type="button"
@@ -501,10 +508,10 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
               setReadyToGrade('66');
             }}
           >
-            Back to 33% / 66%
+            {t('grading.board.thresholds.reset')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

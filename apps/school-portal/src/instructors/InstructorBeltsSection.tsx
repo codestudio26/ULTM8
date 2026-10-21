@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useRanks } from '../ranks/rankQueries';
 import { flattenLadder } from '../grading/ladder';
 import { useSchoolInstructorBelts, useVerifyInstructorBelt, type InstructorBelt } from './instructorBeltQueries';
+import { useT } from '../i18n/I18nProvider';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 
@@ -13,6 +14,7 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
  * corrects it to the right belt.
  */
 export function InstructorBeltsSection({ schoolId }: { schoolId: string }) {
+  const t = useT();
   const data = useSchoolInstructorBelts(schoolId);
   const verify = useVerifyInstructorBelt(schoolId);
   const [error, setError] = useState<string | null>(null);
@@ -26,34 +28,34 @@ export function InstructorBeltsSection({ schoolId }: { schoolId: string }) {
     try {
       await verify.mutateAsync({ userId: b.userId, disciplineId: b.disciplineId });
     } catch (err) {
-      setError(errorText(err, 'Could not verify this belt.'));
+      setError(errorText(err, t('instructors.belts.verifyFailed')));
     }
   }
 
   return (
     <Card className="ultm8-field">
       <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        Instructors' belts
+        {t('instructors.belts.heading')}
       </h2>
-      <p style={{ marginTop: 0 }}>Instructors choose their own belt in each style. Verify it, or correct it to the right belt.</p>
+      <p style={{ marginTop: 0 }}>{t('instructors.belts.intro')}</p>
       {error ? <ErrorBanner message={error} /> : null}
       {data.isLoading ? (
         <Spinner />
       ) : data.error ? (
-        <ErrorBanner message={errorText(data.error, 'Could not load instructors\' belts.')} />
+        <ErrorBanner message={errorText(data.error, t('instructors.belts.loadFailed'))} />
       ) : belts.length === 0 ? (
-        <EmptyState title="No belts chosen yet" description="Instructors choose theirs on their own My belts page." />
+        <EmptyState title={t('instructors.belts.emptyTitle')} description={t('instructors.belts.emptyDescription')} />
       ) : (
         <Table<InstructorBelt>
           rows={belts}
           columns={[
-            { key: 'name', header: 'Instructor', render: (b) => `${b.firstName} ${b.surname}` },
-            { key: 'style', header: 'Style', render: (b) => b.disciplineName },
-            { key: 'belt', header: 'Belt', render: (b) => b.beltName },
+            { key: 'name', header: t('instructors.belts.columnInstructor'), render: (b) => `${b.firstName} ${b.surname}` },
+            { key: 'style', header: t('instructors.belts.columnStyle'), render: (b) => b.disciplineName },
+            { key: 'belt', header: t('instructors.belts.columnBelt'), render: (b) => b.beltName },
             {
               key: 'status',
-              header: 'Status',
-              render: (b) => (b.verificationStatus === 'VERIFIED' ? <Badge variant="success">Verified</Badge> : <Badge variant="danger">Not verified</Badge>),
+              header: t('instructors.belts.columnStatus'),
+              render: (b) => (b.verificationStatus === 'VERIFIED' ? <Badge variant="success">{t('instructors.belts.verified')}</Badge> : <Badge variant="danger">{t('instructors.belts.notVerified')}</Badge>),
             },
             {
               key: 'actions',
@@ -61,12 +63,12 @@ export function InstructorBeltsSection({ schoolId }: { schoolId: string }) {
               render: (b) => (
                 <div style={{ display: 'flex', gap: 8 }}>
                   {b.verificationStatus === 'UNVERIFIED' ? (
-                    <Button variant="secondary" onClick={() => verifyAsChosen(b)} aria-label={`Verify ${b.firstName} ${b.surname}'s ${b.disciplineName} belt`}>
-                      Verify
+                    <Button variant="secondary" onClick={() => verifyAsChosen(b)} aria-label={t('instructors.belts.verifyAria', { name: `${b.firstName} ${b.surname}`, style: b.disciplineName })}>
+                      {t('instructors.belts.verify')}
                     </Button>
                   ) : null}
-                  <Button variant="secondary" onClick={() => setCorrecting(b)} aria-label={`Correct ${b.firstName} ${b.surname}'s ${b.disciplineName} belt`}>
-                    Correct
+                  <Button variant="secondary" onClick={() => setCorrecting(b)} aria-label={t('instructors.belts.correctAria', { name: `${b.firstName} ${b.surname}`, style: b.disciplineName })}>
+                    {t('instructors.belts.correct')}
                   </Button>
                 </div>
               ),
@@ -75,7 +77,7 @@ export function InstructorBeltsSection({ schoolId }: { schoolId: string }) {
         />
       )}
       {waiting.length > 0 ? (
-        <p className="ultm8-field__hint">Not chosen yet: {waiting.map((i) => `${i.firstName} ${i.surname}`).join(', ')}.</p>
+        <p className="ultm8-field__hint">{t('instructors.belts.notChosenYet', { names: waiting.map((i) => `${i.firstName} ${i.surname}`).join(', ') })}</p>
       ) : null}
       {correcting ? <CorrectBeltModal schoolId={schoolId} belt={correcting} onClose={() => setCorrecting(null)} /> : null}
     </Card>
@@ -83,6 +85,7 @@ export function InstructorBeltsSection({ schoolId }: { schoolId: string }) {
 }
 
 function CorrectBeltModal({ schoolId, belt, onClose }: { schoolId: string; belt: InstructorBelt; onClose: () => void }) {
+  const t = useT();
   const ranks = useRanks(belt.disciplineId);
   const verify = useVerifyInstructorBelt(schoolId);
   const [choice, setChoice] = useState(belt.stripeTierId);
@@ -98,23 +101,23 @@ function CorrectBeltModal({ schoolId, belt, onClose }: { schoolId: string; belt:
       await verify.mutateAsync({ userId: belt.userId, disciplineId: belt.disciplineId, rankId: rung.rankId, stripeTierId: rung.id });
       onClose();
     } catch (err) {
-      setError(errorText(err, 'Could not save the belt.'));
+      setError(errorText(err, t('instructors.belts.saveFailed')));
     }
   }
 
   return (
-    <Modal title={`${belt.firstName} ${belt.surname}'s ${belt.disciplineName} belt`} onClose={onClose}>
+    <Modal title={t('instructors.belts.modalTitle', { name: `${belt.firstName} ${belt.surname}`, style: belt.disciplineName })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
       <form onSubmit={save}>
-        <Field label="Belt" htmlFor="correct-instructor-belt" hint="Saving verifies it.">
+        <Field label={t('instructors.belts.beltLabel')} htmlFor="correct-instructor-belt" hint={t('instructors.belts.beltHint')}>
           <SelectField id="correct-instructor-belt" value={choice} onChange={(e) => setChoice(e.target.value)} options={ladder.map((r) => ({ value: r.id, label: r.name }))} />
         </Field>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button type="submit" loading={verify.isPending} disabled={choice === belt.stripeTierId && belt.verificationStatus === 'VERIFIED'}>
-            Save and verify
+            {t('instructors.belts.saveAndVerify')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>
