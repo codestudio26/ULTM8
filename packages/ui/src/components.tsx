@@ -550,6 +550,16 @@ export interface CurrencyFieldProps {
 
 const CURRENCY_MAX_RESULTS = 50;
 
+/** Listed first, in this order, ahead of the alphabetical rest (product owner,
+ * 21 Oct 2026). "Not set" (code `""`), when offered, stays above them. */
+const PINNED_CURRENCIES = ['USD', 'GBP', 'EUR', 'BRL'];
+
+function currencyRank(code: string): number {
+  if (!code) return -1;
+  const pinned = PINNED_CURRENCIES.indexOf(code);
+  return pinned === -1 ? PINNED_CURRENCIES.length : pinned;
+}
+
 function formatCurrencyOption(opt: CurrencyOption): string {
   return opt.code ? `${opt.code} — ${opt.name}` : opt.name;
 }
@@ -592,7 +602,9 @@ export function CurrencyField({
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matches = !q ? options : options.filter((opt) => opt.code.toLowerCase().includes(q) || opt.name.toLowerCase().includes(q));
-    return matches.slice(0, CURRENCY_MAX_RESULTS);
+    // Stable sort: the rest keep the server's own (alphabetical) order.
+    const ordered = [...matches].sort((a, b) => currencyRank(a.code) - currencyRank(b.code));
+    return ordered.slice(0, CURRENCY_MAX_RESULTS);
   }, [query, options]);
 
   useEffect(() => {

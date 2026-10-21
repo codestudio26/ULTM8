@@ -64,6 +64,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   re-sent (the retry called the browser's fetch the wrong way), so e.g. saving
   the School profile showed "Something went wrong". Lists recovered on their
   own; saves did not. Fixed in `@ultm8/api-client`, so the student app gets it too.
+- **Common currencies first** — every currency picker now lists USD, GBP,
+  EUR and BRL first, then the rest alphabetically.
+- **"Send a message to students"** — the Notifications page's "Broadcast to
+  Students" button and form are renamed in plain words ("Send message",
+  "Message sent").
 - **Clearer errors** — error and success banners now scroll into view when
   they appear, and a request that gets no answer at all says "Could not reach
   the server" instead of "Something went wrong". The Curriculum list's Instructor column
