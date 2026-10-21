@@ -5,6 +5,8 @@ import { ApiError } from '@ultm8/api-client';
 import { useAuth } from './AuthContext';
 import { rememberReturnTo } from './returnTo';
 import { useAcceptCoachInvite, useCoachInviteLink } from '../roleGrants/coachInviteQueries';
+import { useT } from '../i18n/I18nProvider';
+import { Trans } from '../i18n/Trans';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 
@@ -16,6 +18,7 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
  * brings them back here afterwards.
  */
 export function CoachInvitePage() {
+  const t = useT();
   const { token = '' } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { accessToken, claims, setAccessToken, logout } = useAuth();
@@ -28,8 +31,8 @@ export function CoachInvitePage() {
   if (link.isLoading) return <Spinner />;
   if (link.error || !link.data) {
     return (
-      <AuthCard title="Coach invite">
-        <ErrorBanner message={errorText(link.error, 'This invite link is not valid.')} />
+      <AuthCard title={t('auth.coachInvite.title')}>
+        <ErrorBanner message={errorText(link.error, t('auth.coachInvite.invalid'))} />
       </AuthCard>
     );
   }
@@ -39,17 +42,17 @@ export function CoachInvitePage() {
 
   if (accepted) {
     return (
-      <AuthCard title="Coach invite">
-        <SuccessBanner message={`You're now a coach at ${where}.`} />
-        <Button onClick={() => navigate('/coach')}>Go to your coach dashboard</Button>
+      <AuthCard title={t('auth.coachInvite.title')}>
+        <SuccessBanner message={t('auth.coachInvite.accepted', { where })} />
+        <Button onClick={() => navigate('/coach')}>{t('auth.coachInvite.goToDashboard')}</Button>
       </AuthCard>
     );
   }
 
   const closed: Partial<Record<typeof invite.status, string>> = {
-    ACCEPTED: 'This invite has already been used.',
-    CANCELLED: 'This invite was cancelled. Ask the school for a new one.',
-    EXPIRED: 'This invite has expired. Ask the school for a new one.',
+    ACCEPTED: t('auth.coachInvite.alreadyUsed'),
+    CANCELLED: t('auth.coachInvite.cancelled'),
+    EXPIRED: t('auth.coachInvite.expired'),
   };
   const closedText = closed[invite.status];
   const signedInAs = claims?.email ?? null;
@@ -62,22 +65,22 @@ export function CoachInvitePage() {
       setAccessToken(result.accessToken);
       setAccepted(true);
     } catch (err) {
-      setError(errorText(err, 'Could not accept the invite.'));
+      setError(errorText(err, t('auth.coachInvite.acceptFailed')));
     }
   }
 
   return (
-    <AuthCard title="You're invited to coach" subtitle={where}>
+    <AuthCard title={t('auth.coachInvite.invitedTitle')} subtitle={where}>
       {error ? <ErrorBanner message={error} /> : null}
       {closedText ? (
         <ErrorBanner message={closedText} />
       ) : !accessToken ? (
         <>
           <p>
-            This invite is for <strong>{invite.email}</strong>. Log in with that email, or create your account with it, to accept.
+            <Trans k="auth.coachInvite.signedOutBody" nodes={{ email: <strong>{invite.email}</strong> }} />
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button onClick={() => navigate('/login', { state: { from: { pathname: here } } })}>Log in</Button>
+            <Button onClick={() => navigate('/login', { state: { from: { pathname: here } } })}>{t('auth.logIn')}</Button>
             <Button
               variant="secondary"
               onClick={() => {
@@ -85,24 +88,23 @@ export function CoachInvitePage() {
                 navigate('/register', { state: { email: invite.email } });
               }}
             >
-              Create an account
+              {t('auth.createAccountLink')}
             </Button>
           </div>
         </>
       ) : rightAccount ? (
         <>
           <p>
-            Accept to become a coach at <strong>{where}</strong>. Anything else your account has here, like your student membership, stays as
-            it is.
+            <Trans k="auth.coachInvite.acceptBody" nodes={{ where: <strong>{where}</strong> }} />
           </p>
           <Button onClick={handleAccept} loading={accept.isPending}>
-            Accept invite
+            {t('auth.coachInvite.acceptButton')}
           </Button>
         </>
       ) : (
         <>
           <p>
-            This invite is for <strong>{invite.email}</strong>, but you're logged in as <strong>{signedInAs}</strong>.
+            <Trans k="auth.coachInvite.wrongAccountBody" nodes={{ email: <strong>{invite.email}</strong>, signedInAs: <strong>{signedInAs}</strong> }} />
           </p>
           <Button
             variant="secondary"
@@ -111,7 +113,7 @@ export function CoachInvitePage() {
               navigate('/login', { state: { from: { pathname: here } } });
             }}
           >
-            Log in as {invite.email}
+            {t('auth.coachInvite.logInAs', { email: invite.email })}
           </Button>
         </>
       )}

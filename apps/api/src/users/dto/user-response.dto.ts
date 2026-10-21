@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PostalAddressColumnsResponseDto } from '../../common/address/postal-address.dto';
 
 /**
  * Response shape — see class-response.dto.ts's header comment (including why every
@@ -10,7 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * `UpdateUserDto` can't change the first two — GET /users/me is the caller's own full
  * profile, not just the PATCH-able subset.
  */
-export class UserResponseDto {
+export class UserResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   id!: string;
 

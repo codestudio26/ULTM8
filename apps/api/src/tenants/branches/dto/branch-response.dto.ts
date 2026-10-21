@@ -1,9 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PostalAddressColumnsResponseDto } from '../../../common/address/postal-address.dto';
 
 /** Response shape — see school-response.dto.ts's header comment (including why every
  * nullable field passes an explicit `type`). Field-for-field match of the Branch
  * Prisma model (Decision 76's field list, plus Decision 231's four additions). */
-export class BranchResponseDto {
+export class BranchResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   id!: string;
 

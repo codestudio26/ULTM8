@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useState } from 'react';
+import { useT } from '../i18n/I18nProvider';
 
 /** The list with the item at `from` moved to `to`; the others shift along. */
 export function moveItem<T>(list: T[], from: number, to: number): T[] {
@@ -16,6 +17,7 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
 export function useDragReorder(onMove: (from: number, to: number) => void) {
   const [dragging, setDragging] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
+  const t = useT();
   const reset = () => {
     setDragging(null);
     setOver(null);
@@ -26,7 +28,7 @@ export function useDragReorder(onMove: (from: number, to: number) => void) {
     handleProps: (i: number, label: string) => ({
       draggable: true,
       'aria-hidden': true as const,
-      title: `Drag to reorder ${label}`,
+      title: t('ranks.dragToReorder', { label }),
       onDragStart: (e: React.DragEvent) => {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', String(i));

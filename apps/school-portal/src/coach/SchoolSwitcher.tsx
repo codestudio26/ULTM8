@@ -2,6 +2,7 @@ import React from 'react';
 import { SelectField } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useCoachSchoolIds, useOwnedSchoolId, useOwnedSchoolIds } from '../auth/AuthContext';
 import { useSchoolNames } from '../schools/schoolQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * Decision 184 item 4's own named follow-up, resolved: a coach or Branch Staff
@@ -22,6 +23,7 @@ import { useSchoolNames } from '../schools/schoolQueries';
  * `languages?.length` guard does.
  */
 export function SchoolSwitcher() {
+  const t = useT();
   const { setActiveCoachSchoolId, setActiveOwnedSchoolId } = useAuth();
   const ownedSchoolIds = useOwnedSchoolIds();
   const activeOwnedSchoolId = useOwnedSchoolId();
@@ -38,12 +40,12 @@ export function SchoolSwitcher() {
 
   return (
     <SelectField
-      aria-label="Switch School"
+      aria-label={t('coach.schoolSwitcher.aria')}
       value={activeSchoolId ?? ''}
       onChange={(e) => {
         if (e.target.value) setActiveSchoolId(e.target.value);
       }}
-      options={names.map((s) => ({ value: s.id, label: s.name ?? 'Loading…' }))}
+      options={names.map((s) => ({ value: s.id, label: s.name ?? t('coach.schoolSwitcher.loading') }))}
       style={{ width: 'auto', minHeight: 36, padding: '4px 8px' }}
     />
   );

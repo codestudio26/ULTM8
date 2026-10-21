@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { FeeModelDto } from './create-franchise.dto';
+import { PostalAddressColumnsResponseDto } from '../../../common/address/postal-address.dto';
 
 /**
  * Response shape — same convention as school-response.dto.ts (see its own header
@@ -7,7 +8,7 @@ import { FeeModelDto } from './create-franchise.dto';
  * `nullable: true`, and why that matters for packages/api-client generation).
  * Field-for-field match of the Franchise Prisma model (schema.prisma).
  */
-export class FranchiseResponseDto {
+export class FranchiseResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty()
   id!: string;
 

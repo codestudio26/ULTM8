@@ -357,14 +357,22 @@ model User {
   /// above; `UsersService.updateMe()` already refuses to ever CLEAR a
   /// once-set value (its own `dto.dateOfBirth === null` guard), so this only
   /// ever moves from null to set, never back.
-  dateOfBirth     DateTime? @db.Date
-  gender          String?
-  nationality     String?
-  language        String? // one of the 4 confirmed languages; stored as free text pending
+  dateOfBirth       DateTime? @db.Date
+  gender            String?
+  nationality       String?
+  language          String? // one of the 4 confirmed languages; stored as free text pending
   // a confirmed canonical code list (not specified anywhere)
-  currency        String? // one of the 6 confirmed currencies; same caveat as above
-  address         String?
-  profilePhotoUrl String?
+  currency          String? // one of the 6 confirmed currencies; same caveat as above
+  address           String?
+  /// Decision 276 — structured, country-aware address. `address` above stays the
+  /// one-line display text, rebuilt from these whenever they are written.
+  addressLine1      String?
+  addressLine2      String?
+  addressCity       String?
+  addressRegion     String?
+  addressPostalCode String?
+  addressCountry    String? /// ISO 3166-1 alpha-2
+  profilePhotoUrl   String?
 
   /// Decision 220/246 — Student Detail's Measurements fields, approved for build as
   /// real fields (product owner's call, overriding the Developer's "drop for lack of
@@ -635,16 +643,24 @@ model Franchise {
   id   String @id @default(uuid())
   name String
 
-  mobileNumber    String?
-  address         String?
-  type            String?
-  activities      String[] @default([])
-  facilities      String[] @default([])
-  defaultLanguage String?
-  defaultCurrency String?
-  description     String?
-  logoUrl         String?
-  bannerUrl       String?
+  mobileNumber      String?
+  address           String?
+  /// Decision 276 — structured, country-aware address. `address` above stays the
+  /// one-line display text, rebuilt from these whenever they are written.
+  addressLine1      String?
+  addressLine2      String?
+  addressCity       String?
+  addressRegion     String?
+  addressPostalCode String?
+  addressCountry    String? /// ISO 3166-1 alpha-2
+  type              String?
+  activities        String[] @default([])
+  facilities        String[] @default([])
+  defaultLanguage   String?
+  defaultCurrency   String?
+  description       String?
+  logoUrl           String?
+  bannerUrl         String?
 
   feeModel FeeModel @default(FLAT)
 
@@ -804,13 +820,21 @@ model School {
   franchiseId String?
   franchise   Franchise? @relation(fields: [franchiseId], references: [id])
 
-  name         String
-  mobileNumber String?
-  address      String?
-  businessType String?
-  activities   String[] @default([])
-  facilities   String[] @default([])
-  ranksToggle  Boolean  @default(false)
+  name              String
+  mobileNumber      String?
+  address           String?
+  /// Decision 276 — structured, country-aware address. `address` above stays the
+  /// one-line display text, rebuilt from these whenever they are written.
+  addressLine1      String?
+  addressLine2      String?
+  addressCity       String?
+  addressRegion     String?
+  addressPostalCode String?
+  addressCountry    String? /// ISO 3166-1 alpha-2
+  businessType      String?
+  activities        String[] @default([])
+  facilities        String[] @default([])
+  ranksToggle       Boolean  @default(false)
 
   defaultLanguage String?
   defaultCurrency String?
@@ -855,17 +879,17 @@ model School {
   /// Privacy Policy, which stay the fixed platform-wide placeholder links
   /// from Decision 256 (a School isn't a separate legal entity publishing
   /// its own ToS for this software).
-  footerAboutUs        String?
-  footerContactEmail   String?
-  footerContactPhone   String?
-  footerFacebookUrl    String?
-  footerInstagramUrl   String?
-  footerTiktokUrl      String?
-  footerYoutubeUrl     String?
-  footerTwitterUrl     String?
+  footerAboutUs      String?
+  footerContactEmail String?
+  footerContactPhone String?
+  footerFacebookUrl  String?
+  footerInstagramUrl String?
+  footerTiktokUrl    String?
+  footerYoutubeUrl   String?
+  footerTwitterUrl   String?
 
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
-  waitlistClaimWindowMinutes     Int                             @default(120)
+  waitlistClaimWindowMinutes     Int                             @default(60)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
@@ -946,11 +970,19 @@ model Branch {
   schoolId String
   school   School @relation(fields: [schoolId], references: [id])
 
-  name             String
-  address          String?
-  contactPhone     String?
-  timezone         String? // IANA tz name, per the glossary convention (Spec §14)
-  currencyOverride String?
+  name              String
+  address           String?
+  /// Decision 276 — structured, country-aware address. `address` above stays the
+  /// one-line display text, rebuilt from these whenever they are written.
+  addressLine1      String?
+  addressLine2      String?
+  addressCity       String?
+  addressRegion     String?
+  addressPostalCode String?
+  addressCountry    String? /// ISO 3166-1 alpha-2
+  contactPhone      String?
+  timezone          String? // IANA tz name, per the glossary convention (Spec §14)
+  currencyOverride  String?
 
   /// Decision 231 — Branch field-level settings screen. These four mirror
   /// Franchise's own identically-named/typed columns field-for-field
@@ -1269,7 +1301,15 @@ model Instructor {
   /// profile at this School, same "deliberately separate, not assumed
   /// identical" treatment `phone` above already gets against User.phone;
   /// User.address is a different, personal-account field.
-  address String?
+  address           String?
+  /// Decision 276 — structured, country-aware address. `address` above stays the
+  /// one-line display text, rebuilt from these whenever they are written.
+  addressLine1      String?
+  addressLine2      String?
+  addressCity       String?
+  addressRegion     String?
+  addressPostalCode String?
+  addressCountry    String? /// ISO 3166-1 alpha-2
 
   /// Decision 1/217 — "a second Activities list," deliberately distinct from
   /// `specializations` above: `specializations` is scoped to THIS School's own
@@ -3621,6 +3661,15 @@ model Notification {
   /// (NotificationsService.markRead) — never overwritten on a later call, so
   /// this is genuinely "time to first read", not "time of last read".
   readAt DateTime?
+
+  /// Developer-level addition (Decision 277), same treatment as `type`/
+  /// `snoozedUntil`/`readAt` above. Null = visible. Set by DELETE
+  /// /notifications/:id or POST /notifications/me/clear-read: the row is
+  /// hidden from the caller's list and Total/Unread counts but kept on record
+  /// (Decision 244's "permanent record" stands; only the inbox view changes).
+  /// Never cleared once set, and no hard delete exists (ultm8_app has no
+  /// DELETE grant on this table).
+  deletedAt DateTime?
 
   createdAt DateTime @default(now())
 

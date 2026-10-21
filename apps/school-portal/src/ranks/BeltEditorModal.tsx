@@ -5,6 +5,7 @@ import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import type { SkillResponse } from '../skills/skillQueries';
 import { moveItem, useDragReorder } from './dragReorder';
 import type { RankResponse, RankStripeTierInput } from './rankQueries';
+import { useT } from '../i18n/I18nProvider';
 
 type Holder = { studentId: string; firstName: string; surname: string };
 
@@ -80,7 +81,8 @@ function draftFrom(t: RankResponse['stripeTiers'][number]): RungDraft {
   };
 }
 
-/** The API's own name for a rung left unnamed (RanksService.generatedTierName). */
+/** The API's own name for a rung left unnamed (RanksService.generatedTierName).
+ * Deliberately not translated: it previews the name the API will store. */
 const generatedName = (belt: string, count: number) => (count === 0 ? belt : `${belt} · ${count} Stripe${count === 1 ? '' : 's'}`);
 const total = (segments: Segment[]) => segments.reduce((sum, s) => sum + (Number(s.count) || 0), 0);
 const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
@@ -171,6 +173,7 @@ export function BeltEditorModal({
   const [openKey, setOpenKey] = useState<string | null>(rungs.length === 1 ? rungs[0].key : null);
   const [confirming, setConfirming] = useState<Holder[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   const types = discipline.classTypesOffered;
   const originalOrder = (initial?.stripeTiers ?? []).slice().sort((a, b) => a.order - b.order).map((t) => t.id);
@@ -196,13 +199,13 @@ export function BeltEditorModal({
   }
 
   function validate(): string | null {
-    if (!name.trim()) return 'Give this rank a name.';
-    if (!primaryColour.trim()) return 'Pick a base colour.';
-    if (rungs.length === 0) return 'A belt needs at least one line: the plain belt or a stripe.';
+    if (!name.trim()) return t('ranks.editor.nameRequired');
+    if (!primaryColour.trim()) return t('ranks.editor.colourRequired');
+    if (rungs.length === 0) return t('ranks.editor.lineRequired');
     for (const [i, r] of rungs.entries()) {
-      const label = r.name.trim() || `Stripe line ${i + 1}`;
-      if (r.segments.some((s) => !(Number(s.count) >= 1) || !s.colour.trim())) return `${label}: each group of stripes needs a number (1 or more) and a colour.`;
-      if (!r.timeOnly && r.mode === 'EACH_TYPE' && r.types.length === 0) return `${label}: tick the class types that each need their own number.`;
+      const label = r.name.trim() || t('ranks.editor.stripeLine', { number: i + 1 });
+      if (r.segments.some((s) => !(Number(s.count) >= 1) || !s.colour.trim())) return t('ranks.editor.segmentInvalid', { label });
+      if (!r.timeOnly && r.mode === 'EACH_TYPE' && r.types.length === 0) return t('ranks.editor.typesRequired', { label });
     }
     return null;
   }
@@ -219,7 +222,7 @@ export function BeltEditorModal({
       });
     } catch (err) {
       setConfirming(null);
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -240,10 +243,8 @@ export function BeltEditorModal({
 
   if (confirming) {
     return (
-      <Modal title="Reorder stripes?" onClose={() => setConfirming(null)}>
-        <p>
-          These students stay on their stripe, but its place in the ladder changes, so their next rank may change ({confirming.length}):
-        </p>
+      <Modal title={t('ranks.editor.reorderTitle')} onClose={() => setConfirming(null)}>
+        <p>{t('ranks.reorderAffected', { count: confirming.length })}</p>
         <ul>
           {confirming.map((h) => (
             <li key={h.studentId}>{`${h.firstName} ${h.surname}`.trim()}</li>
@@ -251,10 +252,10 @@ export function BeltEditorModal({
         </ul>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="button" loading={submitting} onClick={save}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={() => setConfirming(null)}>
-            Back
+            {t('ranks.back')}
           </Button>
         </div>
       </Modal>
@@ -265,34 +266,34 @@ export function BeltEditorModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Rank name" htmlFor="belt-name" hint='e.g. "Blue Belt". Stripe names are made from it unless you type your own.'>
+        <Field label={t('ranks.editor.rankName')} htmlFor="belt-name" hint={t('ranks.editor.rankNameHint')}>
           <TextField required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Field label="Base colour" htmlFor="belt-colour">
+          <Field label={t('ranks.editor.baseColour')} htmlFor="belt-colour">
             <TextField type="color" value={/^#[0-9a-fA-F]{6}$/.test(primaryColour) ? primaryColour : '#ffffff'} onChange={(e) => setPrimaryColour(e.target.value)} />
           </Field>
-          <Field label="Secondary colour (optional)" htmlFor="belt-colour-2" hint="For a two-tone belt.">
-            <TextField value={secondaryColour} placeholder="none" onChange={(e) => setSecondaryColour(e.target.value)} />
+          <Field label={t('ranks.editor.secondaryColour')} htmlFor="belt-colour-2" hint={t('ranks.editor.secondaryColourHint')}>
+            <TextField value={secondaryColour} placeholder={t('ranks.editor.secondaryColourPlaceholder')} onChange={(e) => setSecondaryColour(e.target.value)} />
           </Field>
-          <Field label="Tag colour (optional)" htmlFor="belt-tag" hint="Where the stripes go. Black when empty.">
+          <Field label={t('ranks.editor.tagColour')} htmlFor="belt-tag" hint={t('ranks.editor.tagColourHint')}>
             <TextField value={tagColour} placeholder="#000000" onChange={(e) => setTagColour(e.target.value)} />
           </Field>
         </div>
 
-        <h3 style={{ fontSize: 15, margin: '8px 0' }}>Stripes</h3>
+        <h3 style={{ fontSize: 15, margin: '8px 0' }}>{t('ranks.editor.stripesHeading')}</h3>
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          The plain belt, then each stripe, lowest first. Each line's requirements are what it takes to be promoted into it.
+          {t('ranks.editor.stripesHint')}
         </p>
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
           {rungs.map((r, i) => {
             const held = r.id ? holders.get(r.id) ?? [] : [];
-            const label = r.name.trim() || generatedName(name || 'Rank', total(r.segments));
+            const label = r.name.trim() || generatedName(name || t('ranks.editor.unnamedRank'), total(r.segments));
             const open = openKey === r.key;
             return (
               <li
                 key={r.key}
-                aria-label={`Stripe line ${i + 1}: ${label}`}
+                aria-label={t('ranks.editor.lineAria', { number: i + 1, label })}
                 {...drag.targetProps(i)}
                 style={{ border: `1px solid ${drag.over === i ? 'var(--fill-accent)' : 'var(--border)'}`, borderRadius: 8, padding: 10 }}
               >
@@ -301,15 +302,15 @@ export function BeltEditorModal({
                   <strong style={{ flex: 1, minWidth: 140 }}>
                     {i + 1}. {label}
                   </strong>
-                  {r.timeOnly ? <Badge variant="accent">Time in rank only</Badge> : null}
-                  {held.length > 0 ? <Badge>{held.length} on this stripe</Badge> : null}
-                  <Button type="button" variant="secondary" onClick={() => setOpenKey(open ? null : r.key)} aria-expanded={open} aria-label={`${open ? 'Close' : 'Edit'} ${label}`}>
-                    {open ? 'Close' : 'Edit'}
+                  {r.timeOnly ? <Badge variant="accent">{t('ranks.editor.timeOnlyBadge')}</Badge> : null}
+                  {held.length > 0 ? <Badge>{t('ranks.editor.onStripe', { count: held.length })}</Badge> : null}
+                  <Button type="button" variant="secondary" onClick={() => setOpenKey(open ? null : r.key)} aria-expanded={open} aria-label={open ? t('ranks.editor.closeAria', { name: label }) : t('ranks.editAria', { name: label })}>
+                    {open ? t('ranks.editor.close') : t('ranks.edit')}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${label} up`}>
+                  <Button type="button" variant="secondary" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('ranks.moveUpAria', { name: label })}>
                     ↑
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => move(i, 1)} disabled={i === rungs.length - 1} aria-label={`Move ${label} down`}>
+                  <Button type="button" variant="secondary" onClick={() => move(i, 1)} disabled={i === rungs.length - 1} aria-label={t('ranks.moveDownAria', { name: label })}>
                     ↓
                   </Button>
                   <Button
@@ -317,8 +318,8 @@ export function BeltEditorModal({
                     variant="secondary"
                     onClick={() => setRungs((rs) => rs.filter((x) => x.key !== r.key))}
                     disabled={held.length > 0 || rungs.length === 1}
-                    aria-label={held.length > 0 ? `${label} can't be removed: ${held.length} student(s) on it` : `Remove ${label}`}
-                    title={held.length > 0 ? 'Students hold this stripe. Move them to another rank first.' : undefined}
+                    aria-label={held.length > 0 ? t('ranks.editor.cantRemoveAria', { label, count: held.length }) : t('ranks.editor.removeAria', { label })}
+                    title={held.length > 0 ? t('ranks.editor.heldTitle') : undefined}
                   >
                     ✕
                   </Button>
@@ -338,16 +339,16 @@ export function BeltEditorModal({
               setOpenKey(r.key);
             }}
           >
-            Add stripe
+            {t('ranks.editor.addStripe')}
           </Button>
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>
@@ -370,83 +371,84 @@ function RungFields({
   beltName: string;
   onChange: (patch: Partial<RungDraft>) => void;
 }) {
+  const t = useT();
   const id = (f: string) => `rung-${index}-${f}`;
   const setSegment = (i: number, patch: Partial<Segment>) => onChange({ segments: r.segments.map((s, j) => (j === i ? { ...s, ...patch } : s)) });
   return (
     <div style={{ marginTop: 12 }}>
-      <Field label="Stripe name" htmlFor={id('name')} hint={`Leave empty for "${generatedName(beltName || 'Rank', total(r.segments))}".`}>
+      <Field label={t('ranks.editor.stripeName')} htmlFor={id('name')} hint={t('ranks.editor.stripeNameHint', { name: generatedName(beltName || t('ranks.editor.unnamedRank'), total(r.segments)) })}>
         <TextField maxLength={100} value={r.name} onChange={(e) => onChange({ name: e.target.value })} />
       </Field>
 
       <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
-        <legend className="ultm8-field__label">Stripes ({total(r.segments)})</legend>
+        <legend className="ultm8-field__label">{t('ranks.editor.stripesCount', { count: total(r.segments) })}</legend>
         {r.segments.map((s, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <Field label="Number" htmlFor={id(`seg-${i}-count`)}>
+            <Field label={t('ranks.editor.number')} htmlFor={id(`seg-${i}-count`)}>
               <TextField type="number" min={1} max={12} value={s.count} onChange={(e) => setSegment(i, { count: e.target.value })} />
             </Field>
-            <Field label="Colour" htmlFor={id(`seg-${i}-colour`)}>
+            <Field label={t('ranks.editor.colour')} htmlFor={id(`seg-${i}-colour`)}>
               <TextField type="color" value={/^#[0-9a-fA-F]{6}$/.test(s.colour) ? s.colour : '#ffffff'} onChange={(e) => setSegment(i, { colour: e.target.value })} />
             </Field>
             <div style={{ paddingBottom: 12 }}>
-              <Button type="button" variant="secondary" onClick={() => onChange({ segments: r.segments.filter((_, j) => j !== i) })} aria-label={`Remove stripe group ${i + 1}`}>
-                Remove
+              <Button type="button" variant="secondary" onClick={() => onChange({ segments: r.segments.filter((_, j) => j !== i) })} aria-label={t('ranks.editor.removeGroupAria', { number: i + 1 })}>
+                {t('ranks.editor.remove')}
               </Button>
             </div>
           </div>
         ))}
         <Button type="button" variant="secondary" onClick={() => onChange({ segments: [...r.segments, { count: '1', colour: '#ffffff' }] })}>
-          {r.segments.length ? 'Add stripes of another colour' : 'Add stripes'}
+          {r.segments.length ? t('ranks.editor.addStripesAnotherColour') : t('ranks.editor.addStripes')}
         </Button>
       </fieldset>
 
       <Checkbox
-        label="Time in rank only — a student leaves this rank after a set number of years. Classes are not counted and skills are optional."
+        label={t('ranks.editor.timeOnlyLabel')}
         checked={r.timeOnly}
         onChange={(e) => onChange({ timeOnly: e.target.checked })}
       />
       {r.timeOnly ? (
         <>
-          <p className="ultm8-field__hint">Promotion into this rank uses the class, day and skill requirements of the rank just below it.</p>
-          <Field label="Min. years in rank" htmlFor={id('years')}>
+          <p className="ultm8-field__hint">{t('ranks.editor.timeOnlyHint')}</p>
+          <Field label={t('ranks.editor.minYears')} htmlFor={id('years')}>
             <TextField type="number" min={0} max={30} step={0.5} value={r.years} onChange={(e) => onChange({ years: e.target.value })} />
           </Field>
         </>
       ) : (
         <>
-          <Field label="Which classes count" htmlFor={id('mode')}>
+          <Field label={t('ranks.editor.whichClasses')} htmlFor={id('mode')}>
             <SelectField
               value={r.mode}
               onChange={(e) => onChange({ mode: e.target.value as RungDraft['mode'] })}
               options={[
-                { value: 'ANY_TYPE', label: 'Any of the ticked class types (or every class when none is ticked)' },
-                { value: 'EACH_TYPE', label: 'A number for each ticked class type' },
+                { value: 'ANY_TYPE', label: t('ranks.editor.modeAnyType') },
+                { value: 'EACH_TYPE', label: t('ranks.editor.modeEachType') },
               ]}
             />
           </Field>
           <Picker
-            legend="Class types that count"
-            options={types.map((t) => ({ value: t, label: t }))}
+            legend={t('ranks.editor.typesLegend')}
+            options={types.map((type) => ({ value: type, label: type }))}
             value={r.types}
             onChange={(v) => onChange({ types: v })}
-            empty="This style has no class types; every class counts."
+            empty={t('ranks.editor.noTypesEveryClassCounts')}
           />
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {r.mode === 'EACH_TYPE' ? (
-              r.types.map((t) => (
-                <Field key={t} label={`${t} classes`} htmlFor={id(`type-${t}`)}>
-                  <TextField type="number" min={0} value={r.perType[t] ?? ''} onChange={(e) => onChange({ perType: { ...r.perType, [t]: e.target.value } })} />
+              r.types.map((type) => (
+                <Field key={type} label={t('ranks.editor.typeClasses', { type })} htmlFor={id(`type-${type}`)}>
+                  <TextField type="number" min={0} value={r.perType[type] ?? ''} onChange={(e) => onChange({ perType: { ...r.perType, [type]: e.target.value } })} />
                 </Field>
               ))
             ) : (
-              <Field label="Classes required" htmlFor={id('classes')}>
+              <Field label={t('ranks.editor.classesRequired')} htmlFor={id('classes')}>
                 <TextField type="number" min={0} value={r.classesRequired} onChange={(e) => onChange({ classesRequired: e.target.value })} />
               </Field>
             )}
-            <Field label="Min. days in rank" htmlFor={id('days')}>
+            <Field label={t('ranks.editor.minDays')} htmlFor={id('days')}>
               <TextField type="number" min={0} value={r.minimumDays} onChange={(e) => onChange({ minimumDays: e.target.value })} />
             </Field>
-            <Field label="Weekly cap" htmlFor={id('cap')} hint="Most classes a week that count. Empty: no cap.">
+            <Field label={t('ranks.editor.weeklyCap')} htmlFor={id('cap')} hint={t('ranks.editor.weeklyCapHint')}>
               <TextField type="number" min={0} value={r.weeklyCap} onChange={(e) => onChange({ weeklyCap: e.target.value })} />
             </Field>
           </div>
@@ -454,18 +456,18 @@ function RungFields({
       )}
 
       <Picker
-        legend={r.timeOnly ? 'Skills (optional)' : 'Required skills'}
+        legend={r.timeOnly ? t('ranks.editor.skillsOptional') : t('ranks.editor.requiredSkills')}
         options={skills.map((s) => ({ value: s.id, label: s.name }))}
         value={r.skills}
         onChange={(v) => onChange({ skills: v })}
-        empty="This style has no skills yet."
+        empty={t('ranks.editor.noSkills')}
       />
       <Picker
-        legend="Unlocks booking for"
-        options={types.map((t) => ({ value: t, label: t }))}
+        legend={t('ranks.editor.unlocks')}
+        options={types.map((type) => ({ value: type, label: type }))}
         value={r.unlocks}
         onChange={(v) => onChange({ unlocks: v })}
-        empty="This style has no class types."
+        empty={t('ranks.editor.noTypes')}
       />
     </div>
   );

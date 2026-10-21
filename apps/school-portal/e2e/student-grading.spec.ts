@@ -218,7 +218,11 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   await expect(page.getByLabel('Phone')).toHaveCount(0);
 
   await page.getByLabel('Surname').fill('Park-Smith');
-  await page.getByLabel('Address').fill('221B Dojo Lane');
+  // Decision 276 — country first; the UK form asks for a post town and postcode.
+  await page.getByLabel('Country').selectOption('GB');
+  await page.getByLabel('Address line 1').fill('221B Dojo Lane');
+  await page.getByLabel('Town/City').fill('London');
+  await page.getByLabel('Postcode').fill('nw1 6xe');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Profile saved.')).toBeVisible();
 
@@ -227,7 +231,9 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   await expect(page.getByRole('heading', { level: 1, name: 'Nia Park-Smith' })).toBeVisible();
   const user = await db.user.findUniqueOrThrow({ where: { id: s.newStudent.id } });
   expect(user.surname).toBe('Park-Smith');
-  expect(user.address).toBe('221B Dojo Lane');
+  expect(user.address).toBe('221B Dojo Lane, London, NW1 6XE, United Kingdom');
+  expect(user.addressCountry).toBe('GB');
+  expect(user.addressPostalCode).toBe('NW1 6XE');
 });
 
 test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ page }) => {

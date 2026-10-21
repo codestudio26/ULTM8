@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useClasses } from '../classes/classQueries';
 import { formatMoney } from '../lib/money';
+import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import {
   useActiveMemberTotal,
   useArchiveMembershipPlan,
@@ -14,12 +15,14 @@ import {
   type MembershipPlanResponse,
 } from './membershipPlanQueries';
 
-const TYPE_LABELS: Record<string, string> = {
-  SUBSCRIPTION: 'Subscription',
-  CLASS_PACK: 'Class Pack',
-  WEEKLY_PASS: 'Weekly Pass',
-  FRIEND_PASS: 'Friend Pass',
-  TRIAL_MEMBERSHIP: 'Trial Membership',
+/** Labels for the `type` enum values, translated at render time — the enum
+ * value itself is what the API sends and receives. */
+const TYPE_LABELS: Record<string, TranslationKey> = {
+  SUBSCRIPTION: 'membershipPlans.types.subscription',
+  CLASS_PACK: 'membershipPlans.types.classPack',
+  WEEKLY_PASS: 'membershipPlans.types.weeklyPass',
+  FRIEND_PASS: 'membershipPlans.types.friendPass',
+  TRIAL_MEMBERSHIP: 'membershipPlans.types.trialMembership',
 };
 
 /** Small, page-local summary tile — not promoted to @ultm8/ui since nothing else
@@ -27,14 +30,27 @@ const TYPE_LABELS: Record<string, string> = {
  * value, an aria-label saying why) rather than omitted — same convention
  * TopBar's disabled search input already established for "not built yet, not
  * broken" (see that component's own header comment). */
-function StatTile({ label, value, proposed, note }: { label: string; value: React.ReactNode; proposed?: boolean; note?: string }) {
+function StatTile({
+  testId,
+  label,
+  value,
+  proposed,
+  note,
+}: {
+  /** The tile's English label — the test id stays fixed whatever the language. */
+  testId: string;
+  label: string;
+  value: React.ReactNode;
+  proposed?: boolean;
+  note?: string;
+}) {
   return (
     <div
       // Stable Playwright hook — "Archived"/"Visible" etc. as plain text
       // aren't unique on this page by themselves (a Badge reading "Archived"
       // also renders in an archived row, same <span> shape) — a `data-testid`
       // keyed on the label is the robust way to locate one specific tile.
-      data-testid={`stat-tile-${label}`}
+      data-testid={`stat-tile-${testId}`}
       aria-label={proposed ? `${label} — ${note}` : undefined}
       title={proposed ? note : undefined}
       style={{
@@ -70,10 +86,11 @@ export function MembershipPlansPage() {
   // must run on every render, loading/error states included) — computed from
   // `data` directly rather than the post-guard `plans` local below.
   const activeMembers = useActiveMemberTotal((data?.items ?? []).map((p) => p.id));
+  const t = useT();
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load Membership Plans.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('membershipPlans.list.loadFailed')} />;
 
   const plans = data?.items ?? [];
   const classes = classData?.items ?? [];
@@ -91,9 +108,9 @@ export function MembershipPlansPage() {
   return (
     <>
       <PageHeader
-        title="Membership Plans"
-        subtitle="Subscription, Class Pack, Weekly Pass, Friend Pass, and Trial plans Students can purchase."
-        actions={<Button onClick={() => navigate('/membership-plans/new')}>Add plan</Button>}
+        title={t('membershipPlans.list.title')}
+        subtitle={t('membershipPlans.list.subtitle')}
+        actions={<Button onClick={() => navigate('/membership-plans/new')}>{t('membershipPlans.list.addPlan')}</Button>}
       />
 
       {/* Stats ribbon (Decision — see POST-SPEC-55-DECISION-LOG.md): Total/Visible/
@@ -105,13 +122,14 @@ export function MembershipPlansPage() {
           the 4th tile — see activePlans/archivedCount above for why Visible/Hidden
           exclude archived plans rather than double-counting them. */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatTile label="Total plans" value={plans.length} />
-        <StatTile label="Visible" value={visibleCount} />
-        <StatTile label="Hidden" value={activePlans.length - visibleCount} />
-        <StatTile label="Archived" value={archivedCount} />
+        <StatTile testId="Total plans" label={t('membershipPlans.list.statTotal')} value={plans.length} />
+        <StatTile testId="Visible" label={t('membershipPlans.list.statVisible')} value={visibleCount} />
+        <StatTile testId="Hidden" label={t('membershipPlans.list.statHidden')} value={activePlans.length - visibleCount} />
+        <StatTile testId="Archived" label={t('membershipPlans.list.statArchived')} value={archivedCount} />
         <StatTile
-          label="Active members"
-          value={activeMembers.isLoading ? <Spinner /> : activeMembers.error ? '—' : activeMembers.total}
+          testId="Active members"
+          label={t('membershipPlans.list.statActiveMembers')}
+          value={activeMembers.isLoading ? <Spinner /> : activeMembers.error ? t('common.none') : activeMembers.total}
         />
       </div>
 
@@ -119,34 +137,38 @@ export function MembershipPlansPage() {
 
       <Card>
         {plans.length === 0 ? (
-          <EmptyState title="No Membership Plans yet" description="Add your first plan to get started." />
+          <EmptyState title={t('membershipPlans.list.emptyTitle')} description={t('membershipPlans.list.emptyDescription')} />
         ) : (
           <Table<MembershipPlanResponse>
             rows={plans}
             columns={[
               {
                 key: 'title',
-                header: 'Title',
+                header: t('membershipPlans.list.columnTitle'),
                 render: (p) => (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {p.title}
-                    {p.archivedAt ? <Badge variant="default">Archived</Badge> : null}
+                    {p.archivedAt ? <Badge variant="default">{t('membershipPlans.list.archivedBadge')}</Badge> : null}
                   </div>
                 ),
               },
-              { key: 'type', header: 'Type', render: (p) => <Badge variant="accent">{TYPE_LABELS[p.type] ?? p.type}</Badge> },
-              { key: 'price', header: 'Price', render: (p) => formatMoney(p.price, p.currency) },
+              {
+                key: 'type',
+                header: t('membershipPlans.list.columnType'),
+                render: (p) => <Badge variant="accent">{TYPE_LABELS[p.type] ? t(TYPE_LABELS[p.type]) : p.type}</Badge>,
+              },
+              { key: 'price', header: t('membershipPlans.list.columnPrice'), render: (p) => formatMoney(p.price, p.currency) },
               {
                 key: 'scopedClass',
-                header: 'Scoped to',
-                render: (p) => classes.find((c) => c.id === p.scopedClassId)?.title ?? (p.scopedClassId ? p.scopedClassId : 'Any class'),
+                header: t('membershipPlans.list.columnScopedTo'),
+                render: (p) => classes.find((c) => c.id === p.scopedClassId)?.title ?? (p.scopedClassId ? p.scopedClassId : t('membershipPlans.list.anyClass')),
               },
               {
                 key: 'visible',
-                header: 'Visibility',
+                header: t('membershipPlans.list.columnVisibility'),
                 render: (p) => (
                   <Checkbox
-                    label="Visible"
+                    label={t('membershipPlans.list.visibleCheckbox')}
                     checked={p.visible}
                     // v1.2 backend backlog "Archive action" — visibility is moot
                     // once archived (an archived plan never appears in the
@@ -161,7 +183,7 @@ export function MembershipPlansPage() {
                         { id: p.id, visible: e.target.checked },
                         {
                           onError: (err) =>
-                            setToggleError(err instanceof ApiError ? err.message : 'Could not update visibility — please try again.'),
+                            setToggleError(err instanceof ApiError ? err.message : t('membershipPlans.list.visibilityFailed')),
                         },
                       );
                     }}
@@ -174,7 +196,7 @@ export function MembershipPlansPage() {
                 render: (p) => (
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <Button variant="secondary" onClick={() => navigate(`/membership-plans/${p.id}/edit`)}>
-                      Edit
+                      {t('membershipPlans.list.edit')}
                     </Button>
                     {/* v1.2 backend backlog "Archive action" — Archive/Unarchive
                         now lives in the row's own action menu (RowActionsMenu,
@@ -184,37 +206,37 @@ export function MembershipPlansPage() {
                         actions rather than splitting them across a growing row
                         of buttons and a menu. */}
                     <RowActionsMenu
-                      label={`Actions for ${p.title}`}
+                      label={t('membershipPlans.list.rowActionsAria', { title: p.title })}
                       actions={[
                         {
-                          label: 'Duplicate',
+                          label: t('membershipPlans.list.duplicate'),
                           onClick: () =>
                             navigate('/membership-plans/new', {
                               state: {
-                                duplicateFrom: { ...p, id: undefined, createdAt: undefined, updatedAt: undefined, title: `${p.title} (copy)` },
+                                duplicateFrom: { ...p, id: undefined, createdAt: undefined, updatedAt: undefined, title: t('membershipPlans.list.copyTitle', { title: p.title }) },
                               },
                             }),
                         },
                         p.archivedAt
                           ? {
-                              label: 'Unarchive',
+                              label: t('membershipPlans.list.unarchive'),
                               disabled: unarchivePlan.isPending && unarchivePlan.variables === p.id,
                               onClick: () => {
                                 setToggleError(null);
                                 unarchivePlan.mutate(p.id, {
                                   onError: (err) =>
-                                    setToggleError(err instanceof ApiError ? err.message : 'Could not unarchive this plan — please try again.'),
+                                    setToggleError(err instanceof ApiError ? err.message : t('membershipPlans.list.unarchiveFailed')),
                                 });
                               },
                             }
                           : {
-                              label: 'Archive',
+                              label: t('membershipPlans.list.archive'),
                               disabled: archivePlan.isPending && archivePlan.variables === p.id,
                               onClick: () => {
                                 setToggleError(null);
                                 archivePlan.mutate(p.id, {
                                   onError: (err) =>
-                                    setToggleError(err instanceof ApiError ? err.message : 'Could not archive this plan — please try again.'),
+                                    setToggleError(err instanceof ApiError ? err.message : t('membershipPlans.list.archiveFailed')),
                                 });
                               },
                             },

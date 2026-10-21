@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField } from '@ultm8/ui';
+import React, { useEffect, useState } from 'react';
+import { AddressFields, Button, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, TextField, TimezoneField, isPostalAddressEmpty, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { useSchool } from '../schools/schoolQueries';
 import { useCurrencies } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { BranchResponse } from './branchQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /** Fields match CreateBranchDto/UpdateBranchDto exactly (Decision 76's field list) —
  * apps/api/src/tenants/branches/dto/create-branch.dto.ts, re-verified before writing.
@@ -48,7 +50,7 @@ export function BranchFormModal({
   submitting: boolean;
   onSubmit: (values: {
     name: string;
-    address?: string | null;
+    postalAddress?: PostalAddress | null;
     contactPhone?: string | null;
     timezone?: string | null;
     currencyOverride?: string | null;
@@ -57,26 +59,41 @@ export function BranchFormModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useT();
   const { data: currencies } = useCurrencies();
   const [form, setForm] = useState({
     name: initial?.name ?? '',
-    address: initial?.address ?? '',
+    address: postalAddressFromRecord(initial, guessDefaultCountry()),
     contactPhone: initial?.contactPhone ?? '',
     timezone: initial?.timezone ?? '',
     currencyOverride: initial?.currencyOverride ?? '',
     logoUrl: initial?.logoUrl ?? '',
     bannerUrl: initial?.bannerUrl ?? '',
   });
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
+  // A new branch is most likely in the School's own country: once the School
+  // loads, start the (still empty) address there instead of the browser guess.
+  const { data: school } = useSchool(schoolId);
+  useEffect(() => {
+    if (!school?.addressCountry) return;
+    setForm((f) => (isPostalAddressEmpty(f.address) && !initial ? { ...f, address: { ...f.address, country: school.addressCountry! } } : f));
+  }, [school?.addressCountry, initial]);
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const prepared = preparePostalAddress(form.address);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       await onSubmit({
         name: form.name,
-        address: form.address || null,
+        postalAddress: prepared.postalAddress,
         contactPhone: form.contactPhone || null,
         timezone: form.timezone || null,
         currencyOverride: form.currencyOverride || null,
@@ -84,7 +101,7 @@ export function BranchFormModal({
         bannerUrl: form.bannerUrl || null,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong — please try again.');
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
 
@@ -92,32 +109,35 @@ export function BranchFormModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label="Branch name" htmlFor="branch-name">
+        <Field label={t('branches.form.branchName')} htmlFor="branch-name">
           <TextField required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
         </Field>
-        <Field label="Address" htmlFor="branch-address">
-          <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
-        </Field>
-        <Field label="Contact phone" htmlFor="branch-phone">
+        <AddressFields
+          idPrefix="branch-address"
+          value={form.address}
+          onChange={(address) => setForm((f) => ({ ...f, address }))}
+          errors={addressErrors}
+        />
+        <Field label={t('branches.form.contactPhone')} htmlFor="branch-phone">
           <PhoneField
             value={form.contactPhone}
             onChange={(v) => setForm((f) => ({ ...f, contactPhone: v }))}
             defaultCountry={guessDefaultCountry()}
           />
         </Field>
-        <Field label="Timezone" htmlFor="branch-timezone">
+        <Field label={t('branches.form.timezone')} htmlFor="branch-timezone">
           <TimezoneField value={form.timezone} onChange={(timezone) => setForm((f) => ({ ...f, timezone }))} />
         </Field>
-        <Field label="Currency override" htmlFor="branch-currency">
+        <Field label={t('branches.form.currencyOverride')} htmlFor="branch-currency">
           <CurrencyField
             id="branch-currency"
             value={form.currencyOverride}
             onChange={(code) => setForm((f) => ({ ...f, currencyOverride: code }))}
-            options={[{ code: '', name: 'Not set' }, ...(currencies ?? [])]}
-            placeholder="Not set"
+            options={[{ code: '', name: t('branches.form.notSet') }, ...(currencies ?? [])]}
+            placeholder={t('branches.form.notSet')}
           />
         </Field>
-        <Field label="Logo" htmlFor="branch-logo">
+        <Field label={t('branches.form.logo')} htmlFor="branch-logo">
           <PhotoUploadField
             value={form.logoUrl}
             onChange={(logoUrl) => setForm((f) => ({ ...f, logoUrl }))}
@@ -126,7 +146,7 @@ export function BranchFormModal({
             }
           />
         </Field>
-        <Field label="Banner" htmlFor="branch-banner">
+        <Field label={t('branches.form.banner')} htmlFor="branch-banner">
           <PhotoUploadField
             value={form.bannerUrl}
             onChange={(bannerUrl) => setForm((f) => ({ ...f, bannerUrl }))}
@@ -137,10 +157,10 @@ export function BranchFormModal({
         </Field>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
-            Save
+            {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

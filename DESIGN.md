@@ -414,7 +414,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - On phones each row keeps the tick box, the name (with the belt and tags under it) and the progress.
   - Ticking, Select all, Promote selected, Move and the right panel work the same in both views.
   - **No branch** follows the switch too (product owner, 21 Oct 2026): in Rows, its students are rows like the groups below, with the "Choose a branch" picker and Assign on a line under each row.
-- **Kids and Adult programs** (product owner, 21 Oct 2026; Decision 274, which corrects 273).
+- **Kids and Adult programs** (product owner, 21 Oct 2026; Decision 281, which corrects 280).
   - Brazilian Jiu-Jitsu has two separate programs, each with its own ladder: **Kids** (White, then the kids belts) and **Adult** (White, Blue, Purple, Brown, Black).
   - **Grading a kid into Adult.** In "Promote to", a Kids student's list goes on past the kids ranks into a small grey heading, **ADULT PROGRAM**, followed by the adult ranks.
     - Picking one shows "Moves to the Adult program. This is recorded on the history." in blue.

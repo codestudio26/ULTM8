@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhotoUploadField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { AddressFields, Button, Card, ErrorBanner, Field, PageHeader, PhotoUploadField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useStudents, useUpdateStudentProfile } from './studentQueries';
+import { useT } from '../i18n/I18nProvider';
 
 /**
  * `StudentUpdate.dc.html` (v1.2 backend backlog — "Update Student page", a
@@ -44,6 +46,7 @@ import { useStudents, useUpdateStudentProfile } from './studentQueries';
  * assumed away.
  */
 export function StudentUpdatePage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const studentId = id ?? null;
   const schoolId = useGradingSchoolId();
@@ -53,7 +56,7 @@ export function StudentUpdatePage() {
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
   const student = students.data?.items.find((s) => s.id === studentId);
-  const studentName = student ? `${student.firstName} ${student.surname}`.trim() : 'Student';
+  const studentName = student ? `${student.firstName} ${student.surname}`.trim() : t('students.update.studentFallback');
 
   const [form, setForm] = useState<{
     firstName: string;
@@ -64,12 +67,16 @@ export function StudentUpdatePage() {
     nationality: string;
     language: string;
     currency: string;
-    address: string;
+    address: PostalAddress;
     profilePhotoUrl: string;
     weightCategory: string;
     kimonoSize: string;
     beltSize: string;
   } | null>(null);
+  // This roster row doesn't carry the Student's current address, so the form
+  // starts blank and only a filled-in address is sent (blank = keep unchanged).
+  const [initialAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -88,7 +95,7 @@ export function StudentUpdatePage() {
       nationality: '',
       language: '',
       currency: '',
-      address: '',
+      address: initialAddress,
       profilePhotoUrl: '',
       weightCategory: '',
       kimonoSize: '',
@@ -99,7 +106,7 @@ export function StudentUpdatePage() {
   if (!schoolId || !studentId) return null;
   if (students.isLoading) return <Spinner />;
   if (students.error) {
-    return <ErrorBanner message={students.error instanceof ApiError ? students.error.message : 'Could not load this Student.'} />;
+    return <ErrorBanner message={students.error instanceof ApiError ? students.error.message : t('students.update.loadFailed')} />;
   }
   if (!student || !form) return null;
   // Narrowed to a stable, non-null local — a nested function declared after an
@@ -113,6 +120,12 @@ export function StudentUpdatePage() {
     e.preventDefault();
     setSaveError(null);
     setSaved(false);
+    const prepared = preparePostalAddress(safeForm.address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       await updateProfile.mutateAsync({
         studentId: safeStudentId,
@@ -125,7 +138,7 @@ export function StudentUpdatePage() {
           nationality: safeForm.nationality || undefined,
           language: safeForm.language || undefined,
           currency: safeForm.currency || undefined,
-          address: safeForm.address || undefined,
+          postalAddress: prepared.postalAddress ?? undefined,
           profilePhotoUrl: safeForm.profilePhotoUrl || undefined,
           weightCategory: safeForm.weightCategory || undefined,
           kimonoSize: safeForm.kimonoSize || undefined,
@@ -134,74 +147,78 @@ export function StudentUpdatePage() {
       });
       setSaved(true);
     } catch (err) {
-      setSaveError(err instanceof ApiError ? err.message : 'Could not update this profile. Please try again.');
+      setSaveError(err instanceof ApiError ? err.message : t('students.update.saveFailed'));
     }
   }
 
   return (
     <>
       <PageHeader
-        title={`Edit ${studentName}'s profile`}
-        subtitle="On this Student's behalf — email and phone can't be changed here; they're this Student's login/OTP identifiers."
+        title={t('students.update.title', { name: studentName })}
+        subtitle={t('students.update.subtitle')}
         actions={
           <Button variant="secondary" onClick={() => navigate(`/students/${studentId}`)}>
-            Back to {studentName}
+            {t('students.update.backTo', { name: studentName })}
           </Button>
         }
       />
-      {saved ? <SuccessBanner message="Profile saved." /> : null}
+      {saved ? <SuccessBanner message={t('students.update.saved')} /> : null}
       {saveError ? <ErrorBanner message={saveError} /> : null}
       <Card>
         <form onSubmit={handleSubmit}>
-          <Field label="First name" htmlFor="student-update-firstName">
+          <Field label={t('students.update.firstName')} htmlFor="student-update-firstName">
             <TextField
               required
               value={form.firstName}
               onChange={(e) => setForm((f) => ({ ...f!, firstName: e.target.value }))}
             />
           </Field>
-          <Field label="Surname" htmlFor="student-update-surname">
+          <Field label={t('students.update.surname')} htmlFor="student-update-surname">
             <TextField
               required
               value={form.surname}
               onChange={(e) => setForm((f) => ({ ...f!, surname: e.target.value }))}
             />
           </Field>
-          <Field label="Username" htmlFor="student-update-username" hint="Mobile app only. Leave blank to keep unchanged.">
+          <Field label={t('students.update.username')} htmlFor="student-update-username" hint={t('students.update.usernameHint')}>
             <TextField value={form.username} onChange={(e) => setForm((f) => ({ ...f!, username: e.target.value }))} />
           </Field>
-          <Field label="Date of birth" htmlFor="student-update-dob" hint="Leave blank to keep unchanged.">
+          <Field label={t('students.update.dateOfBirth')} htmlFor="student-update-dob" hint={t('students.update.keepHint')}>
             <TextField
               type="date"
               value={form.dateOfBirth}
               onChange={(e) => setForm((f) => ({ ...f!, dateOfBirth: e.target.value }))}
             />
           </Field>
-          <Field label="Gender" htmlFor="student-update-gender" hint="Leave blank to keep unchanged.">
+          <Field label={t('students.update.gender')} htmlFor="student-update-gender" hint={t('students.update.keepHint')}>
             <TextField value={form.gender} onChange={(e) => setForm((f) => ({ ...f!, gender: e.target.value }))} />
           </Field>
-          <Field label="Nationality" htmlFor="student-update-nationality" hint="Leave blank to keep unchanged.">
+          <Field label={t('students.update.nationality')} htmlFor="student-update-nationality" hint={t('students.update.keepHint')}>
             <TextField value={form.nationality} onChange={(e) => setForm((f) => ({ ...f!, nationality: e.target.value }))} />
           </Field>
-          <Field label="Language" htmlFor="student-update-language" hint="Leave blank to keep unchanged.">
+          <Field label={t('students.update.language')} htmlFor="student-update-language" hint={t('students.update.keepHint')}>
             <TextField value={form.language} onChange={(e) => setForm((f) => ({ ...f!, language: e.target.value }))} />
           </Field>
-          <Field label="Currency" htmlFor="student-update-currency" hint="Leave blank to keep unchanged.">
+          <Field label={t('students.update.currency')} htmlFor="student-update-currency" hint={t('students.update.keepHint')}>
             <TextField value={form.currency} onChange={(e) => setForm((f) => ({ ...f!, currency: e.target.value }))} />
           </Field>
-          <Field label="Address" htmlFor="student-update-address" hint="Leave blank to keep unchanged.">
-            <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f!, address: e.target.value }))} />
-          </Field>
-          <Field label="Weight category" htmlFor="student-update-weight-category" hint="Free text — no confirmed unit/scale (Decision 220/246). Leave blank to keep unchanged.">
+          <AddressFields
+            idPrefix="student-update-address"
+            value={form.address}
+            onChange={(address) => setForm((f) => ({ ...f!, address }))}
+            errors={addressErrors}
+            hint={t('students.update.keepHint')}
+          />
+          <Field label={t('students.update.weightCategory')} htmlFor="student-update-weight-category" hint={t('students.update.weightCategoryHint')}>
             <TextField value={form.weightCategory} onChange={(e) => setForm((f) => ({ ...f!, weightCategory: e.target.value }))} />
           </Field>
-          <Field label="Kimono size" htmlFor="student-update-kimono-size" hint="Free text — no confirmed size chart (Decision 220/246). Leave blank to keep unchanged.">
+          <Field label={t('students.update.kimonoSize')} htmlFor="student-update-kimono-size" hint={t('students.update.kimonoSizeHint')}>
             <TextField value={form.kimonoSize} onChange={(e) => setForm((f) => ({ ...f!, kimonoSize: e.target.value }))} />
           </Field>
-          <Field label="Belt size" htmlFor="student-update-belt-size" hint="Free text — no confirmed size chart (Decision 220/246). Leave blank to keep unchanged.">
+          <Field label={t('students.update.beltSize')} htmlFor="student-update-belt-size" hint={t('students.update.beltSizeHint')}>
             <TextField value={form.beltSize} onChange={(e) => setForm((f) => ({ ...f!, beltSize: e.target.value }))} />
           </Field>
-          <Field label="Photo" htmlFor="student-update-photo" hint="Leave unchanged to keep the existing photo.">
+          <Field label={t('students.update.photo')} htmlFor="student-update-photo" hint={t('students.update.photoHint')}>
             <PhotoUploadField
               value={form.profilePhotoUrl}
               onChange={(profilePhotoUrl) => setForm((f) => ({ ...f!, profilePhotoUrl }))}
@@ -216,7 +233,7 @@ export function StudentUpdatePage() {
             />
           </Field>
           <Button type="submit" loading={updateProfile.isPending}>
-            Save
+            {t('common.save')}
           </Button>
         </form>
       </Card>

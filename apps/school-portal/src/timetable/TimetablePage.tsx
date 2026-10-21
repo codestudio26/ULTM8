@@ -21,7 +21,7 @@ import { useInstructors, type InstructorResponse } from '../instructors/instruct
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useStudents } from '../students/studentQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { titleCase } from '../lib/text';
+import { useI18n, useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import {
   useArchiveTimetableSlot,
   useCreateTimetableSlot,
@@ -40,15 +40,21 @@ import {
   startOfMonth,
   startOfWeek,
   WEEKDAY_ORDER,
+  weekdayName,
   type DayOccurrences,
 } from './timetableOccurrences';
+import { formatLocale } from '../i18n/format';
 
 type RangeMode = 'day' | 'week' | 'month';
 
 // Plain label map, not `titleCase` — that helper upper-cases a SCREAMING_SNAKE_CASE
 // enum's existing first letter (e.g. "MONDAY" -> "Monday"); 'day'/'week'/'month' are
 // already-lowercase literals, so titleCase would pass them through unchanged.
-const RANGE_MODE_LABELS: Record<RangeMode, string> = { day: 'Day', week: 'Week', month: 'Month' };
+const RANGE_MODE_LABELS: Record<RangeMode, TranslationKey> = {
+  day: 'timetable.rangeDay',
+  week: 'timetable.rangeWeek',
+  month: 'timetable.rangeMonth',
+};
 
 interface BookingTarget {
   slotId: string;
@@ -93,6 +99,7 @@ interface BookingTarget {
  * mode or layout the click came from.
  */
 export function TimetablePage() {
+  const t = useT();
   const schoolId = useOwnedSchoolId();
   const { data, isLoading, error } = useTimetableSlots(schoolId);
   const { data: branchData } = useBranches(schoolId);
@@ -146,7 +153,7 @@ export function TimetablePage() {
 
   if (!schoolId) return null;
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : 'Could not load the Timetable.'} />;
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('timetable.loadFailed')} />;
 
   const branches = branchData?.items ?? [];
   const instructors = instructorData?.items ?? [];
@@ -162,17 +169,17 @@ export function TimetablePage() {
 
   const rangeLabel =
     rangeMode === 'day'
-      ? rangeStart.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      ? rangeStart.toLocaleDateString(formatLocale(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
       : rangeMode === 'week'
-        ? `${rangeStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
-        : rangeStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        ? `${rangeStart.toLocaleDateString(formatLocale(), { month: 'short', day: 'numeric' })} – ${rangeEnd.toLocaleDateString(formatLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : rangeStart.toLocaleDateString(formatLocale(), { month: 'long', year: 'numeric' });
 
   return (
     <>
       <PageHeader
-        title="Timetable"
-        subtitle="The recurring weekly slot template — click any occurrence to book a Student into it."
-        actions={<Button onClick={() => setCreating(true)}>Add slot</Button>}
+        title={t('timetable.title')}
+        subtitle={t('timetable.subtitle')}
+        actions={<Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button>}
       />
 
       {bookedMessage ? <SuccessBanner message={bookedMessage} /> : null}
@@ -180,7 +187,7 @@ export function TimetablePage() {
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="ultm8-view-toggle" role="group" aria-label="Date range">
+            <div className="ultm8-view-toggle" role="group" aria-label={t('timetable.rangeAria')}>
               {(['day', 'week', 'month'] as const).map((mode) => (
                 <button
                   key={mode}
@@ -189,25 +196,25 @@ export function TimetablePage() {
                   aria-pressed={rangeMode === mode}
                   onClick={() => setRangeMode(mode)}
                 >
-                  {RANGE_MODE_LABELS[mode]}
+                  {t(RANGE_MODE_LABELS[mode])}
                 </button>
               ))}
             </div>
             <Button variant="secondary" onClick={() => shiftAnchor(-1)}>
-              ← Prev
+              {t('timetable.prev')}
             </Button>
             <Button variant="secondary" onClick={() => setAnchor(new Date())}>
-              Today
+              {t('timetable.today')}
             </Button>
             <Button variant="secondary" onClick={() => shiftAnchor(1)}>
-              Next →
+              {t('timetable.next')}
             </Button>
             <span style={{ fontWeight: 500 }}>{rangeLabel}</span>
           </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             {/* Decision 226 — archived slots are hidden from the whole calendar by default. */}
-            <Checkbox label={`Show archived${archivedCount ? ` (${archivedCount})` : ''}`} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-            {rangeMode !== 'month' ? <ViewToggle value={viewMode} onChange={setViewMode} aria-label="Timetable view" /> : null}
+            <Checkbox label={archivedCount ? t('timetable.showArchivedCount', { count: archivedCount }) : t('timetable.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            {rangeMode !== 'month' ? <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('timetable.viewAria')} /> : null}
           </div>
         </div>
       </Card>
@@ -216,7 +223,7 @@ export function TimetablePage() {
 
       {!hasAnySlots ? (
         <Card>
-          <EmptyState title="No Timetable slots yet" description="Add your first weekly slot to get started." />
+          <EmptyState title={t('timetable.emptyTitle')} description={t('timetable.emptyDescription')} />
         </Card>
       ) : rangeMode === 'month' ? (
         <MonthGrid
@@ -240,7 +247,7 @@ export function TimetablePage() {
 
       {creating ? (
         <TimetableSlotFormModal
-          title="Add timetable slot"
+          title={t('timetable.addSlotTitle')}
           branches={branches}
           instructors={instructors}
           disciplines={disciplines}
@@ -270,7 +277,7 @@ export function TimetablePage() {
           onClose={() => setBooking(null)}
           onBooked={() => {
             setBooking(null);
-            setBookedMessage(`Booked ${booking.slotTitle} on ${booking.date}.`);
+            setBookedMessage(t('timetable.booked', { title: booking.slotTitle, date: booking.date }));
           }}
         />
       ) : null}
@@ -278,8 +285,8 @@ export function TimetablePage() {
   );
 }
 
-function branchLabel(branches: BranchResponse[], branchId: string | null | undefined) {
-  return branches.find((b) => b.id === branchId)?.name ?? (branchId ? branchId : 'Whole School');
+function branchLabel(branches: BranchResponse[], branchId: string | null | undefined, t: TranslateFn) {
+  return branches.find((b) => b.id === branchId)?.name ?? (branchId ? branchId : t('timetable.wholeSchool'));
 }
 
 /** Decision 226 — shared shape for the archive/unarchive mutations every
@@ -313,6 +320,7 @@ function OccurrenceCard({
   unarchiveSlot: ArchiveMutation;
   setActionError: (message: string | null) => void;
 }) {
+  const t = useT();
   const isOn = slot.status === 'ON';
   const isArchived = !!slot.archivedAt;
   return (
@@ -329,19 +337,19 @@ function OccurrenceCard({
         <div>
           <strong>{slot.title}</strong>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {slot.startTime} – {slot.endTime} · {branchLabel(branches, slot.branchId)}
+            {slot.startTime} – {slot.endTime} · {branchLabel(branches, slot.branchId, t)}
           </div>
         </div>
         <RowActionsMenu
-          label={`Actions for ${slot.title} on ${date}`}
+          label={t('timetable.occurrence.actionsAria', { title: slot.title, date })}
           actions={[
-            ...(isOn && !isArchived ? [{ label: 'Book', onClick: () => onBook({ slotId: slot.id, slotTitle: slot.title, date }) }] : []),
-            { label: 'Edit slot', onClick: () => onEdit(slot) },
+            ...(isOn && !isArchived ? [{ label: t('timetable.occurrence.book'), onClick: () => onBook({ slotId: slot.id, slotTitle: slot.title, date }) }] : []),
+            { label: t('timetable.occurrence.editSlot'), onClick: () => onEdit(slot) },
             // Decision 226 — School Owner/Manager only, idempotent, blocked
             // (409) by an upcoming Booking against a generated Class.
             isArchived
-              ? { label: 'Unarchive', onClick: () => { setActionError(null); unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : 'Could not unarchive this slot.') }); } }
-              : { label: 'Archive', onClick: () => { setActionError(null); archiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : 'Could not archive this slot.') }); } },
+              ? { label: t('timetable.occurrence.unarchive'), onClick: () => { setActionError(null); unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.unarchiveFailed')) }); } }
+              : { label: t('timetable.occurrence.archive'), onClick: () => { setActionError(null); archiveSlot.mutate(slot.id, { onError: (err: unknown) => setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.archiveFailed')) }); } },
           ]}
         />
       </div>
@@ -349,15 +357,15 @@ function OccurrenceCard({
         {slot.activities.map((a, i) => (
           <Badge key={`${a}-${i}`}>{a}</Badge>
         ))}
-        {!isOn ? <Badge>Off</Badge> : null}
-        {isArchived ? <Badge variant="default">Archived</Badge> : null}
+        {!isOn ? <Badge>{t('timetable.occurrence.off')}</Badge> : null}
+        {isArchived ? <Badge variant="default">{t('timetable.occurrence.archived')}</Badge> : null}
       </div>
     </div>
   );
 }
 
 function dayHeading(day: DayOccurrences): string {
-  const label = new Date(`${day.date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  const label = new Date(`${day.date}T00:00:00`).toLocaleDateString(formatLocale(), { weekday: 'long', month: 'short', day: 'numeric' });
   return label;
 }
 
@@ -378,13 +386,14 @@ function DayAgendaCard({
   unarchiveSlot: ArchiveMutation;
   setActionError: (message: string | null) => void;
 }) {
+  const t = useT();
   return (
     <Card>
       <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
         {dayHeading(day)}
       </h2>
       {day.slots.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Nothing scheduled.</p>
+        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('timetable.nothingScheduled')}</p>
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
           {day.slots.map((slot) => (
@@ -439,13 +448,14 @@ function DayColumn({
  * every other view. OFF slots are intentionally not dotted here (nothing to book);
  * Day/Week agenda views remain where an OFF slot is visible/editable. */
 function MonthGrid({ monthStart, days, onBook }: { monthStart: Date; days: DayOccurrences[]; onBook: (target: BookingTarget) => void }) {
+  const { t, locale } = useI18n();
   const leadingBlanks = WEEKDAY_ORDER.indexOf(days[0]?.weekday ?? 'MONDAY');
   return (
     <Card>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 8 }}>
         {WEEKDAY_ORDER.map((wd) => (
           <div key={wd} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>
-            {titleCase(wd).slice(0, 3)}
+            {weekdayName(wd, locale, 'short')}
           </div>
         ))}
       </div>
@@ -472,8 +482,8 @@ function MonthGrid({ monthStart, days, onBook }: { monthStart: Date; days: DayOc
                   <button
                     key={slot.id}
                     type="button"
-                    title={`Book ${slot.title} — ${day.date}`}
-                    aria-label={`Book ${slot.title} on ${day.date}`}
+                    title={t('timetable.month.bookDotTitle', { title: slot.title, date: day.date })}
+                    aria-label={t('timetable.month.bookDotAria', { title: slot.title, date: day.date })}
                     onClick={() => onBook({ slotId: slot.id, slotTitle: slot.title, date: day.date })}
                     style={{
                       width: 10,
@@ -510,10 +520,11 @@ function EditSlotModal({
   slot: TimetableSlotResponse;
   onClose: () => void;
 }) {
+  const t = useT();
   const updateSlot = useUpdateTimetableSlot(schoolId, slot.id);
   return (
     <TimetableSlotFormModal
-      title="Edit timetable slot"
+      title={t('timetable.editSlotTitle')}
       initial={slot}
       branches={branches}
       instructors={instructors}

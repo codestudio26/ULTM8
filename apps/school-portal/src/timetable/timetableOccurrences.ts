@@ -2,6 +2,12 @@ import type { TimetableSlotResponse } from './timetableQueries';
 
 /** Same order TimetablePage.tsx's original weekday-grouped table used. */
 export const WEEKDAY_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
+
+/** A weekday's display name in `locale` (e.g. en-GB "Monday" / "Mon") — 1 Jan
+ * 2024 was a Monday, so a WEEKDAY_ORDER index is a day offset from it. */
+export function weekdayName(weekday: (typeof WEEKDAY_ORDER)[number], locale: string, width: 'long' | 'short'): string {
+  return new Date(2024, 0, 1 + WEEKDAY_ORDER.indexOf(weekday)).toLocaleDateString(locale, { weekday: width });
+}
 export type Weekday = (typeof WEEKDAY_ORDER)[number];
 
 /**
