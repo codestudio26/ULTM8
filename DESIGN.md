@@ -277,6 +277,10 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
   3. **A picture of the setting, where one helps.** For example, the check-in window is shown as a timeline (opens 17:30 → class 18:00 → closes 18:15) that moves as the times change.
 - **Wording:** explanations only describe what a setting does, as decided. Features that aren't built yet say "coming soon" and point to `docs/v1.3-backend-backlog.md`.
 
+### Side menu text (product owner, 21 Oct 2026)
+- Menu links (Dashboard … Notifications, Settings, Help) are **14px, regular weight, no extra letter-spacing**, the same as the right panel's text. Before this they were 15px with 0.04em spacing and looked big and heavy next to the tabs.
+- The School name at the top stays 15px, also with no extra letter-spacing.
+
 ### Side menu stays in view (product owner, 21 Oct 2026)
 
 On a computer the side menu is pinned to the screen (`position: sticky; top: 0; height: 100vh`). Its foot (Settings, Help and the signed-in account) is always visible, however long the page, and the menu scrolls on its own if the screen is very short. On phones the menu is the pinned top bar, with Settings in its row.
