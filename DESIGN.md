@@ -380,11 +380,14 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - Red: blocked or unverified ("Skills required", "Not verified").
   - Grey: Inactive.
 - **Belt editor.** Two chapters: **01 Belt** (name and colours) and **02 Stripes**. Each stripe is one box. Pressing Edit opens that stripe's settings (what it takes to be promoted into it) inside the same box, one stripe at a time. Its settings never sit in a separate section away from the stripe.
-- **Colour choices.** Every colour row (base, secondary, tag and each stripe colour) ends with a **Custom** circle: a rainbow circle with "+".
-  - Tapping it opens the device's colour picker.
-  - Once a custom colour is chosen, the circle shows that colour with the selected ring, and a code box appears beside it (e.g. #2A9D8F).
-  - The code can be typed or pasted. A wrong code shows "Use a colour code like #2A9D8F."
-  - The swatches are shortcuts only; a school can always pick any colour, as it can today.
+- **Colour choices.** Every colour row (base, secondary, tag and each stripe colour) shows the preset circles, then the School's **saved colours**, then a dashed **"+"** circle.
+  - "+" opens a **colour panel** under the row: a grid of 48 colours, a large preview circle and a "Colour code" box (e.g. #2A9D8F). It stays open until **Save colour** or **Cancel**; picking or typing never closes it.
+  - **Save colour** applies the colour and adds it to the saved colours, which then appear in every colour row.
+  - A chosen custom colour shows a line under the row: "Custom colour #2A9D8F", with **Edit** and **Delete**. If the colour isn't saved yet, it says "· not saved" and offers **Save** instead of Delete.
+  - **Edit** reopens the panel and replaces that saved colour.
+  - **Delete** removes it from the saved colours only. Belts already using it keep their colour.
+  - A wrong code shows "Use a colour code like #2A9D8F." and Save stays off.
+  - Never use the browser's own colour picker: it closes when the page updates, and it looks different on every device.
 - **Dialogs.** A centred white card over a dimmed page, up to 560px wide (640px for bulk promote). Cancel and the action sit in a grey footer. On phones the dialog fills the screen and the footer buttons share the width.
 - **Phone.** The columns stack in the order Just Starting, Getting There, Ready to Grade. Permission toggles become one list of switches.
 
