@@ -401,11 +401,15 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - The Ranks tab shows one card per style they hold a rank in, plus "Give first rank" for a discipline they don't train yet. It never offers the other program of a discipline they're already in (an adult doesn't see an empty Kids card).
     - A student who trains both appears on both boards (Gi and No-Gi), each with its own rank and progress.
   - **Click a progress bar to promote** (product owner, 21 Oct 2026). Every progress bar is a button: on a card, in a row and in the right panel. It opens the promote dialog for that one student, titled "Promote {name}", with the same "Promote to", checks and acknowledgement as bulk promote. It doesn't change the ticked students. The bar gets a pale-green ring on hover.
+- **Sorting** (product owner, 21 Oct 2026). Students are sorted **inside each stage** (No branch, Just Starting, Getting There, Ready to Grade), in Grid and Rows.
+  - **Default: by belt, lowest grade first.** Students on the same rank are ordered by surname.
+  - The toolbar has **Sort: Belt · Name** (the same grey switch) and a direction button: "Lowest first ↑" / "Highest first ↓" for belt, "A–Z ↓" / "Z–A ↑" for name.
+  - In Rows, the **Student** and **Belt → Next** headings also sort; clicking the active one flips the direction, and an arrow shows it.
+  - On phones the belt column is hidden, so sorting is from the toolbar.
 - **Grid or Rows.** A switch in the board's toolbar shows the same students two ways:
   - **Grid:** the three columns side by side.
   - **Rows:** three stacked groups, **Ready to Grade on top**, then Getting There, then Just Starting. Each group has its count, its % range and "Select all".
     - Each row, laid out like the Instructors' belts list: tick box, 40px avatar and name, the belt with its rank name and "→ next rank" under it, a progress bar with the %, the "needs" tags, and Move.
-    - Highest progress comes first within each group.
     - A coloured strip on the group's left edge marks it: green for Ready to Grade, slate for Getting There, grey for Just Starting.
     - On phones each row keeps the tick box, the name (with the belt and tags under it) and the progress.
   - Ticking, Select all, Promote selected, Move and the right panel work the same in both views.
