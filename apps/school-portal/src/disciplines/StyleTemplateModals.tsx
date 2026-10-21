@@ -3,6 +3,7 @@ import { Button, ErrorBanner, Field, Modal, Spinner, TextField } from '@ultm8/ui
 import { ApiError } from '@ultm8/api-client';
 import { useCreateFromTemplate, useDuplicateDiscipline, useStyleTemplates, type DisciplineResponse, type StyleTemplateId } from './disciplineQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
 
 /** Templates this app has its own (translated) wording for; any other id the
  * API adds later shows the API's text. */
@@ -26,7 +27,12 @@ export function TemplateModal({ schoolId, onCreated, onClose }: { schoolId: stri
     if (!templateId) return;
     setError(null);
     try {
-      const style = await create.mutateAsync({ templateId, ...(name.trim() ? { name: name.trim() } : {}) });
+      // Left blank, the style is named after the template as this screen shows it.
+      // The API would use its own English name, which in another language isn't
+      // the name the owner just picked.
+      const shownName = formatLocale() && templateId in TEMPLATE_KEYS ? t(`disciplines.template.options.${templateId}.name`) : '';
+      const chosen = name.trim() || shownName;
+      const style = await create.mutateAsync({ templateId, ...(chosen ? { name: chosen } : {}) });
       onCreated(style.id);
     } catch (err) {
       setError(errorText(err, t));
@@ -115,7 +121,8 @@ export function DuplicateModal({
     <Modal title={t('disciplines.duplicate.title', { name: discipline.name })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
       <p style={{ marginTop: 0 }}>
-        {t('disciplines.duplicate.description', { name: discipline.name })}
+        {/* The API always names the copy "… (Copy)", whatever the language. */}
+        {t('disciplines.duplicate.description', { copyName: `${discipline.name} (Copy)` })}
       </p>
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <Button onClick={confirm} loading={duplicate.isPending}>

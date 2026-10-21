@@ -536,7 +536,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "Duplicar {name}",
-      description: "Crea \"{name} (Copia)\" con los mismos cinturones, grados y sus reglas, técnicas, tipos de clase, ajuste de \"técnicas obligatorias\" y columnas del tablero. No se copian alumnos, grados ni permisos de entrenadores.",
+      description: "Crea \"{copyName}\" con los mismos cinturones, grados y sus reglas, técnicas, tipos de clase, ajuste de \"técnicas obligatorias\" y columnas del tablero. No se copian alumnos, grados ni permisos de entrenadores.",
       confirm: "Duplicar",
     },
     form: {

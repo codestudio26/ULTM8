@@ -170,6 +170,22 @@ function createRefreshMiddleware(onUnauthorized: () => Promise<string | null | u
 
 export type ApiClient = ReturnType<typeof createApiClient>;
 
+/** Rewrites an error's message before it reaches the screen — an app showing
+ * another language sets this to translate the API's English messages. It may
+ * return a promise, so a translation table that loads on demand is waited for
+ * rather than missed. Left unset, messages pass through unchanged. */
+export type ApiErrorMessageTranslator = (status: number, code: string, message: string) => string | Promise<string>;
+
+let errorMessageTranslator: ApiErrorMessageTranslator | null = null;
+
+export function setApiErrorMessageTranslator(fn: ApiErrorMessageTranslator | null): void {
+  errorMessageTranslator = fn;
+}
+
+async function errorMessage(status: number, code: string, message: string): Promise<string> {
+  return errorMessageTranslator ? await errorMessageTranslator(status, code, message) : message;
+}
+
 /**
  * Unwraps a `{data, error, response}` result from an openapi-fetch call into either
  * the data or a thrown ApiError — every screen calls its API through this rather than
@@ -191,19 +207,6 @@ export type ApiClient = ReturnType<typeof createApiClient>;
  * a shared-infrastructure bug in place once a second one exists — so this is fixed
  * here, not worked around per call site.
  */
-/** Rewrites an error's message before it reaches the screen — an app showing
- * another language sets this to translate the API's English messages. Left
- * unset, messages pass through unchanged. */
-let errorMessageTranslator: ((status: number, code: string, message: string) => string) | null = null;
-
-export function setApiErrorMessageTranslator(fn: ((status: number, code: string, message: string) => string) | null): void {
-  errorMessageTranslator = fn;
-}
-
-function errorMessage(status: number, code: string, message: string): string {
-  return errorMessageTranslator ? errorMessageTranslator(status, code, message) : message;
-}
-
 export async function unwrap<T>(
   resultPromise: Promise<{
     data?: T;
@@ -221,7 +224,7 @@ export async function unwrap<T>(
     // the server refusing the request — before, it surfaced as a bare TypeError
     // and every screen fell back to "Something went wrong".
     if (err instanceof TypeError) {
-      throw new ApiError(0, 'NETWORK_ERROR', errorMessage(0, 'NETWORK_ERROR', 'Could not reach the server. Check your connection and try again.'));
+      throw new ApiError(0, 'NETWORK_ERROR', await errorMessage(0, 'NETWORK_ERROR', 'Could not reach the server. Check your connection and try again.'));
     }
     throw err;
   }
@@ -231,13 +234,13 @@ export async function unwrap<T>(
     throw new ApiError(
       result.response.status,
       code,
-      errorMessage(result.response.status, code, body?.error?.message ?? `Request failed with status ${result.response.status}`),
+      await errorMessage(result.response.status, code, body?.error?.message ?? `Request failed with status ${result.response.status}`),
     );
   }
   // A real success with nothing to return (204) has no `data` — only flag a missing
   // body as a problem when the status implied one should have been there.
   if (result.data === undefined && result.response.status !== 204) {
-    throw new ApiError(result.response.status, 'EMPTY_RESPONSE', errorMessage(result.response.status, 'EMPTY_RESPONSE', 'Request succeeded but returned no data'));
+    throw new ApiError(result.response.status, 'EMPTY_RESPONSE', await errorMessage(result.response.status, 'EMPTY_RESPONSE', 'Request succeeded but returned no data'));
   }
   return result.data as T;
 }

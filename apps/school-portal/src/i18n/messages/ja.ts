@@ -535,7 +535,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "{name} を複製",
-      description: "同じ帯・ストライプとそのルール、技、クラスの種類、「技の合格が必須」設定、ボードの列を持つ「{name} (コピー)」を作成します。生徒、段級、コーチ権限はコピーされません。",
+      description: "同じ帯・ストライプとそのルール、技、クラスの種類、「技の合格が必須」設定、ボードの列を持つ「{copyName}」を作成します。生徒、段級、コーチ権限はコピーされません。",
       confirm: "複製",
     },
     form: {

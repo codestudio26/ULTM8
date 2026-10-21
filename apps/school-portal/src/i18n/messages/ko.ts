@@ -535,7 +535,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "{name} 복제",
-      description: "같은 띠, 그랄과 그 규칙, 기술, 수업 유형, \"기술 필수\" 설정, 보드 열로 \"{name} (사본)\"을 만듭니다. 수련생, 급, 코치 권한은 복사되지 않습니다.",
+      description: "같은 띠, 그랄과 그 규칙, 기술, 수업 유형, \"기술 필수\" 설정, 보드 열로 \"{copyName}\"을 만듭니다. 수련생, 급, 코치 권한은 복사되지 않습니다.",
       confirm: "복제",
     },
     form: {

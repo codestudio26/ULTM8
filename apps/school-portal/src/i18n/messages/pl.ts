@@ -538,7 +538,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "Duplikuj {name}",
-      description: "Tworzy „{name} (Kopia)” z tymi samymi pasami, belkami i ich zasadami, technikami, rodzajami zajęć, ustawieniem „wymagane techniki” i kolumnami tablicy. Uczniowie, stopnie ani uprawnienia trenerów nie są kopiowane.",
+      description: "Tworzy „{copyName}” z tymi samymi pasami, belkami i ich zasadami, technikami, rodzajami zajęć, ustawieniem „wymagane techniki” i kolumnami tablicy. Uczniowie, stopnie ani uprawnienia trenerów nie są kopiowane.",
       confirm: "Duplikuj",
     },
     form: {

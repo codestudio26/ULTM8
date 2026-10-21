@@ -536,7 +536,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "{name} dupliceren",
-      description: "Maakt \"{name} (Kopie)\" met dezelfde banden, streepjes en hun regels, technieken, lestypen, instelling \"technieken vereist\" en bordkolommen. Er worden geen leerlingen, graden of coachrechten gekopieerd.",
+      description: "Maakt \"{copyName}\" met dezelfde banden, streepjes en hun regels, technieken, lestypen, instelling \"technieken vereist\" en bordkolommen. Er worden geen leerlingen, graden of coachrechten gekopieerd.",
       confirm: "Dupliceren",
     },
     form: {

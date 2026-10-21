@@ -109,12 +109,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     enabled: locale !== DEFAULT_LOCALE,
     staleTime: Infinity,
   });
-  const serverMessages = useQuery({
-    queryKey: ['i18n', 'server', locale],
-    queryFn: () => SERVER_MESSAGE_LOADERS[locale]!(),
-    enabled: locale !== DEFAULT_LOCALE && !!SERVER_MESSAGE_LOADERS[locale],
-    staleTime: Infinity,
-  });
   const overrides = useQuery({
     queryKey: ['i18n', 'overrides', locale],
     queryFn: () => fetchOverrides(locale),
@@ -149,8 +143,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     () =>
       locale === DEFAULT_LOCALE
         ? PASS_THROUGH
-        : createServerTextTranslator(t as (key: string, vars?: MessageVars) => string, locale, serverMessages.data),
-    [t, locale, serverMessages.data],
+        : createServerTextTranslator(t as (key: string, vars?: MessageVars) => string, locale, SERVER_MESSAGE_LOADERS[locale]),
+    [t, locale],
   );
   // Error messages are rewritten where every request's error is built
   // (@ultm8/api-client's unwrap), so each page's own error display needs no change.

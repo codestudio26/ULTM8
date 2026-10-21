@@ -68,7 +68,7 @@ export const disciplines = {
   duplicate: {
     title: 'Duplicate {name}',
     description:
-      'Creates "{name} (Copy)" with the same belts, stripes and their rules, skills, class types, "skills required" setting and board columns. No students, ranks or coach permissions are copied.',
+      'Creates "{copyName}" with the same belts, stripes and their rules, skills, class types, "skills required" setting and board columns. No students, ranks or coach permissions are copied.',
     confirm: 'Duplicate',
   },
   form: {

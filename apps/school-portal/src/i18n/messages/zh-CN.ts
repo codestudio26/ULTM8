@@ -535,7 +535,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "复制 {name}",
-      description: "创建\"{name}(副本)\",包含相同的腰带、条纹及其规则、技术、课程类型、\"必须通过技术\"设置和看板列。不会复制学员、段位或教练权限。",
+      description: "创建\"{copyName}\",包含相同的腰带、条纹及其规则、技术、课程类型、\"必须通过技术\"设置和看板列。不会复制学员、段位或教练权限。",
       confirm: "复制",
     },
     form: {

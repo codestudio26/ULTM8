@@ -536,7 +536,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "Duplicar {name}",
-      description: "Cria \"{name} (Cópia)\" com as mesmas faixas, graus e suas regras, habilidades, tipos de aula, configuração de \"habilidades obrigatórias\" e colunas do quadro. Nenhum aluno, graduação ou permissão de professor é copiado.",
+      description: "Cria \"{copyName}\" com as mesmas faixas, graus e suas regras, habilidades, tipos de aula, configuração de \"habilidades obrigatórias\" e colunas do quadro. Nenhum aluno, graduação ou permissão de professor é copiado.",
       confirm: "Duplicar",
     },
     form: {

@@ -536,7 +536,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "{name} kopyala",
-      description: "Aynı kuşaklar, şeritler ve kuralları, beceriler, ders türleri, \"beceri zorunlu\" ayarı ve pano sütunlarıyla \"{name} (Kopya)\" oluşturur. Öğrenciler, dereceler veya antrenör yetkileri kopyalanmaz.",
+      description: "Aynı kuşaklar, şeritler ve kuralları, beceriler, ders türleri, \"beceri zorunlu\" ayarı ve pano sütunlarıyla \"{copyName}\" oluşturur. Öğrenciler, dereceler veya antrenör yetkileri kopyalanmaz.",
       confirm: "Kopyala",
     },
     form: {

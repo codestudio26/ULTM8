@@ -536,7 +536,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     duplicate: {
       title: "{name} duplizieren",
-      description: "Erstellt „{name} (Kopie)“ mit denselben Gürteln, Streifen und ihren Regeln, Techniken, Kursarten, der Einstellung „Techniken erforderlich“ und den Board-Spalten. Schüler, Grade und Trainerberechtigungen werden nicht kopiert.",
+      description: "Erstellt „{copyName}“ mit denselben Gürteln, Streifen und ihren Regeln, Techniken, Kursarten, der Einstellung „Techniken erforderlich“ und den Board-Spalten. Schüler, Grade und Trainerberechtigungen werden nicht kopiert.",
       confirm: "Duplizieren",
     },
     form: {

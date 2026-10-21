@@ -217,6 +217,12 @@ const DISPUTE_STATUSES = new Set([
 const n = (t: Translate, key: string, vars?: MessageVars) => t(`server.notifications.${key}`, vars);
 const charge = (t: Translate, label: string) => n(t, CHARGES[label]);
 
+/** The style name a grading body ends with in brackets. It may hold brackets of
+ * its own ("Judo (Kids)"), so it is matched as text plus whole bracket pairs —
+ * a plain `(.+)` would cut it at the inner "(" and show "Kids)". */
+const STYLE = String.raw`((?:[^()]|\([^()]*\))+)`;
+const body = (source: string) => new RegExp(source, 's');
+
 /** apps/api/src/jobs/*.processor.ts — every Notification body a job writes. */
 const BODY_RULES: Array<[RegExp, Rule]> = [
   [
@@ -224,24 +230,24 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     (m, { t }) => n(t, 'spotOpenedBody', { class: m[1] }),
   ],
   [
-    /^(.+) is ready for their next rank \((.+)\)\.$/s,
+    body(String.raw`^(.+) is ready for their next rank \(${STYLE}\)\.$`),
     (m, { t }) => n(t, 'readyToGradeBodyNextRank', { name: m[1], style: m[2] }),
   ],
-  [/^(.+) is ready for (.+) \((.+)\)\.$/s, (m, { t }) => n(t, 'readyToGradeBody', { name: m[1], rank: m[2], style: m[3] })],
+  [body(String.raw`^(.+) is ready for (.+) \(${STYLE}\)\.$`), (m, { t }) => n(t, 'readyToGradeBody', { name: m[1], rank: m[2], style: m[3] })],
   [
     /^A Student at your School has been restricted to Cash\/Bank Transfer payment methods only, following a pattern of lost Stripe disputes\.$/,
     (_m, { t }) => n(t, 'paymentRestrictedBody'),
   ],
   [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
-  [/^You've earned (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'youEarned', { rank: m[1], style: m[2] })],
-  [/^You've been promoted to (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'youPromoted', { rank: m[1], style: m[2] })],
-  [/^Your rank has been adjusted to (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'youAdjusted', { rank: m[1], style: m[2] })],
-  [/^Your child has earned (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'yourChildEarned', { rank: m[1], style: m[2] })],
-  [/^Your child has been promoted to (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'yourChildPromoted', { rank: m[1], style: m[2] })],
-  [/^Your child's rank has been adjusted to (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'yourChildAdjusted', { rank: m[1], style: m[2] })],
-  [/^(.+) has earned (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'childEarned', { name: m[1], rank: m[2], style: m[3] })],
-  [/^(.+) has been promoted to (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'childPromoted', { name: m[1], rank: m[2], style: m[3] })],
-  [/^(.+)'s rank has been adjusted to (.+)\. \((.+)\)$/s, (m, { t }) => n(t, 'childAdjusted', { name: m[1], rank: m[2], style: m[3] })],
+  [body(String.raw`^You've earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youEarned', { rank: m[1], style: m[2] })],
+  [body(String.raw`^You've been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youPromoted', { rank: m[1], style: m[2] })],
+  [body(String.raw`^Your rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'youAdjusted', { rank: m[1], style: m[2] })],
+  [body(String.raw`^Your child has earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'yourChildEarned', { rank: m[1], style: m[2] })],
+  [body(String.raw`^Your child has been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'yourChildPromoted', { rank: m[1], style: m[2] })],
+  [body(String.raw`^Your child's rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'yourChildAdjusted', { rank: m[1], style: m[2] })],
+  [body(String.raw`^(.+) has earned (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'childEarned', { name: m[1], rank: m[2], style: m[3] })],
+  [body(String.raw`^(.+) has been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'childPromoted', { name: m[1], rank: m[2], style: m[3] })],
+  [body(String.raw`^(.+)'s rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'childAdjusted', { name: m[1], rank: m[2], style: m[3] })],
   [
     /^A disputed (Membership payment|franchise fee charge) of ([\d.]+) ([A-Z]{3}) was lost — the charge is no longer considered paid\.$/,
     (m, { t, locale }) => n(t, 'disputeLostBody', { charge: charge(t, m[1]), amount: formatAmount(m[2], m[3], locale) }),
@@ -262,38 +268,68 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
 ];
 
 export interface ServerTextTranslator {
-  error: (status: number, code: string, message: string) => string;
+  error: (status: number, code: string, message: string) => string | Promise<string>;
   notification: (n: { title: string; body: string; type?: string | null }) => { title: string; body: string };
 }
 
-export function createServerTextTranslator(t: Translate, locale: string, map: Record<string, string> | undefined): ServerTextTranslator {
-  const ctx: Context = { t, locale };
-  const messages = map ?? {};
-  const patterns = compilePatterns(messages);
-  // Entries the server appends its own text to ("…Not signed off yet: " + ids), or
-  // one sentence the extraction split in two where the API joins two literals.
-  const prefixes = Object.keys(messages).filter((k) => /\s$/.test(k));
+interface CompiledMap {
+  messages: Record<string, string>;
+  patterns: Array<{ re: RegExp; template: string }>;
+  prefixes: string[];
+}
 
-  function known(message: string): string | null {
-    if (messages[message]) return messages[message];
-    for (const prefix of prefixes) {
-      if (!message.startsWith(prefix)) continue;
-      const rest = message.slice(prefix.length);
-      return messages[prefix] + (messages[rest] ?? rest);
-    }
-    for (const { re, template } of patterns) {
-      const m = message.match(re);
-      if (m?.groups) {
-        const groups = m.groups;
-        return template.replace(/\{v(\d+)\}/g, (_, i: string) => groups[`v${i}`] ?? '');
-      }
-    }
-    return null;
+const compiled = new WeakMap<Record<string, string>, CompiledMap>();
+
+function compile(messages: Record<string, string>): CompiledMap {
+  let c = compiled.get(messages);
+  if (!c) {
+    c = {
+      messages,
+      patterns: compilePatterns(messages),
+      // Entries the server appends its own text to ("…Not signed off yet: " + ids), or
+      // one sentence the extraction split in two where the API joins two literals.
+      prefixes: Object.keys(messages).filter((k) => /\s$/.test(k)),
+    };
+    compiled.set(messages, c);
   }
+  return c;
+}
+
+function known({ messages, patterns, prefixes }: CompiledMap, message: string): string | null {
+  if (messages[message]) return messages[message];
+  for (const prefix of prefixes) {
+    if (!message.startsWith(prefix)) continue;
+    const rest = message.slice(prefix.length);
+    return messages[prefix] + (messages[rest] ?? rest);
+  }
+  for (const { re, template } of patterns) {
+    const m = message.match(re);
+    if (m?.groups) {
+      const groups = m.groups;
+      return template.replace(/\{v(\d+)\}/g, (_, i: string) => groups[`v${i}`] ?? '');
+    }
+  }
+  return null;
+}
+
+/** `loadMessages` is the locale's map loader: awaited per error, so an error that
+ * arrives before the map has downloaded still gets its specific translation rather
+ * than the generic one (the module is fetched once and then served from cache). */
+export function createServerTextTranslator(
+  t: Translate,
+  locale: string,
+  loadMessages: (() => Promise<Record<string, string>>) | undefined,
+): ServerTextTranslator {
+  const ctx: Context = { t, locale };
 
   return {
-    error(status, _code, message) {
-      return applyRules(ERROR_RULES, message, ctx) ?? known(message) ?? t(`server.generic.${genericKey(status)}`);
+    async error(status, _code, message) {
+      const ruled = applyRules(ERROR_RULES, message, ctx);
+      if (ruled !== null) return ruled;
+      // A map that fails to load (e.g. a stale chunk after a deploy) still leaves
+      // the generic message below, never the English.
+      const messages = loadMessages ? await loadMessages().catch(() => ({})) : {};
+      return known(compile(messages), message) ?? t(`server.generic.${genericKey(status)}`);
     },
     notification({ title, body, type }) {
       // A broadcast's text is the School's own words, never a template.

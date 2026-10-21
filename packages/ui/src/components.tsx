@@ -375,6 +375,17 @@ export function TimezoneField({
   // DST transition without any extra wiring.
   const now = new Date();
 
+  // Each zone's name in the language, worked out once per language rather than on
+  // every keystroke (one Intl formatter per zone, ~400 of them, was slow to type
+  // into). Generic names ("Eastern Time") don't change with DST, so caching is safe.
+  const localNames = useMemo(() => {
+    const cache = new Map<string, string | undefined>();
+    return (zone: string) => {
+      if (!cache.has(zone)) cache.set(zone, localTimezoneName(zone, new Date(), locale)?.toLowerCase());
+      return cache.get(zone);
+    };
+  }, [locale]);
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matches = !q
@@ -389,12 +400,11 @@ export function TimezoneField({
             normalized.includes(q) ||
             normalized.replace(/_/g, ' ').includes(q) ||
             // ...and, in another language, the zone's name in it ("東部").
-            !!localTimezoneName(zone, now, locale)?.toLowerCase().includes(q)
+            !!localNames(zone)?.includes(q)
           );
         });
     return matches.slice(0, TIMEZONE_MAX_RESULTS);
-    // `now` is a fresh Date each render; only the query and language change the matches.
-  }, [query, locale]);
+  }, [query, localNames]);
 
   useEffect(() => {
     if (!isOpen) return;
