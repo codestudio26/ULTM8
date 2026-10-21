@@ -154,7 +154,13 @@ function createRefreshMiddleware(onUnauthorized: () => Promise<string | null | u
       // same as if onUnauthorized had returned null.
       const retryRequest = new Request(original);
       retryRequest.headers.set('Authorization', `Bearer ${newToken}`);
-      return clientOptions.fetch(retryRequest);
+      // Called unbound: `clientOptions.fetch(...)` ran the browser's fetch with
+      // `this` = clientOptions, which Chrome rejects ("TypeError: Illegal
+      // invocation"). Every retry after a token refresh therefore failed. Queries
+      // hid it by retrying on their own; a save (PATCH/POST) just showed "Something
+      // went wrong" — e.g. saving the School profile after 15 minutes on the page.
+      const fetchRetry = clientOptions.fetch;
+      return fetchRetry(retryRequest);
     },
     onError({ id }) {
       pendingClones.delete(id);

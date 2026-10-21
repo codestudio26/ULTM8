@@ -41,6 +41,7 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await db.roleGrant.deleteMany({ where: { schoolId } });
+  await db.branch.deleteMany({ where: { schoolId } });
   await db.refreshToken.deleteMany({ where: { userId: ownerId } });
   await db.user.delete({ where: { id: ownerId } });
   await db.school.delete({ where: { id: schoolId } });
@@ -103,6 +104,41 @@ test('an expired/invalid access token is silently refreshed mid-session — no b
   // one still-live row for this user, not the original one still sitting unrevoked.
   const stored = await db.refreshToken.findMany({ where: { userId: ownerId } });
   expect(stored.filter((t) => t.revokedAt === null)).toHaveLength(1);
+});
+
+test('a save made after the access token expired goes through once the session is refreshed', async ({ page }) => {
+  const owner = await db.user.findUniqueOrThrow({ where: { id: ownerId } });
+  await realLogin(page, owner.email);
+  await page.goto('/school');
+  await expect(page.getByLabel('School name')).not.toHaveValue('');
+
+  // Expires while the page is open, so the save itself is the request that 401s
+  // and has to be retried — before the fix that retry threw "Illegal invocation"
+  // and the page showed "Something went wrong".
+  await page.evaluate(() => sessionStorage.setItem('ultm8.accessToken', 'not-a-real-token'));
+  await page.getByLabel('School name').fill('Renamed After Refresh');
+  await page.getByRole('button', { name: 'Save changes' }).first().click();
+
+  await expect(page.getByText('Saved.')).toBeVisible();
+  const school = await db.school.findUniqueOrThrow({ where: { id: schoolId } });
+  expect(school.name).toBe('Renamed After Refresh');
+});
+
+test('archiving a Branch after the access token expired goes through once the session is refreshed', async ({ page }) => {
+  const branch = await db.branch.create({ data: { id: randomUUID(), schoolId, name: 'Refresh Archive Branch', address: '1 Test St' } });
+  const owner = await db.user.findUniqueOrThrow({ where: { id: ownerId } });
+  await realLogin(page, owner.email);
+  await page.goto('/branches');
+  await expect(page.getByText('Refresh Archive Branch')).toBeVisible();
+
+  // Same expiry as above, on a POST with no body — before the fix this showed
+  // "Could not archive this Branch."
+  await page.evaluate(() => sessionStorage.setItem('ultm8.accessToken', 'not-a-real-token'));
+  await page.getByRole('button', { name: 'Actions for Refresh Archive Branch' }).click();
+  await page.getByRole('menuitem', { name: 'Archive' }).click();
+
+  await expect(page.getByText('Could not archive this Branch.')).toHaveCount(0);
+  await expect.poll(async () => (await db.branch.findUniqueOrThrow({ where: { id: branch.id } })).archivedAt).not.toBeNull();
 });
 
 test('logging out revokes the refresh token server-side and clears both tokens locally', async ({ page }) => {

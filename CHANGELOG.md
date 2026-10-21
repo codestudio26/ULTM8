@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Saving after 15 minutes on a page works again** — when the access token
+  had expired, the session refreshed correctly but the save itself was never
+  re-sent (the retry called the browser's fetch the wrong way), so e.g. saving
+  the School profile, archiving a Branch or uploading a logo failed. Lists
+  recovered on their own; saves did not. Fixed in `@ultm8/api-client`, so the
+  student app gets it too.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,
