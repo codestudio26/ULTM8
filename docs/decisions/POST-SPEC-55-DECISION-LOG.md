@@ -3905,3 +3905,30 @@ Item 2 is a scope/direction decision, not a completed migration — reconciling 
 ### Recorded by
 
 User, approving both of the Developer's recommendations (delete the stale label; unify the controlled list) 16 Oct 2026.
+
+---
+
+## Decision 273 — Brazilian Jiu-Jitsu: Kids and Adult on one linked ladder, split by an editable age (default under 16)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Resolves:** how kids move up to the adult belts, and how the Grading Board separates them (raised while reviewing the New Portal grading screens)
+
+### Decision
+
+1. **One linked ladder.** Kids and Adult are not separate styles. A Brazilian Jiu-Jitsu style keeps the one ladder the IBJJF templates already build (Decision 131): White Belt, the kids belts (Grey/White to Green/Black), then the adult belts.
+2. **Kids are split by age.** A student under the style's **"Kids until age"** is Kids; from that age they are Adult. The default is **under 16** (the IBJJF adult age). It is a setting in Grading → Settings (and Settings → Grading), and coaches can change it as well as the owner. The product owner's words: *"THE UNDER 16 RULES, however coaches will be able to edit the age too"*.
+3. **The Grading Board shows a Kids · Adult switch** inside the style.
+4. **Kid → Adult is a normal promotion, with a nudge.** Nothing moves on its own. When a student on a kids belt reaches the age, they show under Adult with a **"Ready for Adult belts"** tag. The coach promotes them as usual and picks the adult belt in "Promote to" (e.g. Green Belt → Blue Belt). It is recorded on the history like any grade.
+5. **Adults skip the kids belts.** For an Adult student, the next rank after White Belt · 4 Stripes is **Blue Belt**, not Grey/White Belt, and it is not recorded as a skip.
+
+### Effect
+
+Needs a schema and engine change: the age on the style, a "kids belt" flag on a belt, and the next-rank rule in item 5. See `docs/v1.3-backend-backlog.md` §3.20.
+
+### Still open
+
+- **Which coaches can change the age.** Is it any coach with grading access, or a new permission on the Permissions page?
+- **Which rank's requirements apply when a grade skips ranks.** The built API hard-blocks a skip when the next rank's required skills aren't signed off. It doesn't say whether the target rank's own requirements apply.
+
+### Recorded by
+
+User, answering the Kids/Adult questions on the New Portal grading screens, 21 Oct 2026.

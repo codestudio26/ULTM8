@@ -378,6 +378,10 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - A selected card gets a slate ring.
     - A ticked card turns pale green.
     - Clicking a card fills the right panel: the large belt, "Toward {next} — %", the ticks and the skills.
+  - **Right panel, below the skills** (product owner, 21 Oct 2026):
+    - **Grading history:** the last 4 entries, newest first. Each shows Promoted / Stripe awarded, the date, "from → to", who graded, and any system note ("Skipped N rank(s) in between."). A promotion made on the board appears at the top straight away. "See full history ›" opens the student's Ranks tab.
+    - **Buttons:** Promote (pale green) · Move to another column · Open grading page › · **Open full student view ›** (dark), which opens the student profile on its Profile tab.
+  - **Click a progress bar to promote** (product owner, 21 Oct 2026). Every progress bar is a button: on a card, in a row and in the right panel. It opens the promote dialog for that one student, titled "Promote {name}", with the same "Promote to", checks and acknowledgement as bulk promote. It doesn't change the ticked students. The bar gets a pale-green ring on hover.
 - **Grid or Rows.** A switch in the board's toolbar shows the same students two ways:
   - **Grid:** the three columns side by side.
   - **Rows:** three stacked groups, **Ready to Grade on top**, then Getting There, then Just Starting. Each group has its count, its % range and "Select all".
@@ -387,6 +391,11 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - On phones each row keeps the tick box, the name (with the belt and tags under it) and the progress.
   - Ticking, Select all, Promote selected, Move and the right panel work the same in both views.
   - **No branch** follows the switch too (product owner, 21 Oct 2026): in Rows, its students are rows like the groups below, with the "Choose a branch" picker and Assign on a line under each row.
+- **Kids and Adult** (product owner, 21 Oct 2026; Decision 273). Brazilian Jiu-Jitsu is one style with one linked ladder: White Belt, the kids belts, then the adult belts. There is no separate "Kids BJJ" style.
+  - Next to the style pills, a second switch, **Kids · Adult**, with a count on each. It is followed by the link "Kids: under 16 · change in Settings".
+  - Who is a Kid comes from the age: under **"Kids until age"** (Grading → Settings, default 16, coaches can change it too).
+  - Adults skip the kids belts. Their next rank after White Belt · 4 Stripes is Blue Belt, and "Promote to" doesn't list kids belts.
+  - A student on a kids belt who has reached the age shows under Adult with a blue **"Ready for Adult belts"** tag. The coach promotes them to an adult belt with "Promote to". Nothing moves on its own.
 - **Promote selected: pick the rank** (product owner, 21 Oct 2026; skipping is Decision 128 item 7). Each student in the bulk promote dialog has a **Promote to** picker. It starts on the next rank and lists only higher ranks, so a student can go from White Belt · 2 Stripes straight to Blue Belt. A skip shows "Skips N rank(s) in between. This is recorded on the history." in blue, and the result list says "(skipped N)".
   - **The picker is our own drop-down, not the browser's** (product owner, 21 Oct 2026). A browser `<select>` opens a grey system list that can't be styled. The closed picker is a soft grey 48px field showing the belt picture, the rank name and a chevron; it gets a slate outline while open. The list opens under it inside the dialog: a white card, 14px corners, at most 264px tall and scrolling. Each option is 44px high with its belt picture and name. Hover is light grey; the chosen rank is pale green (#def2e2) with a green ✓. Picking closes the list. It is `role="listbox"` with `role="option"` rows. Use this pattern wherever a choice of ranks or belts needs styling; plain `<select>` stays fine for short text-only lists.
   - ⚠️ **Open:** which rank's requirements apply when a student skips. The design copies the single-student Grade dialog: the "Needs a look" checks (skills, days short) only apply to the next rank, so they drop away on a skip. Students blocked by "Skills required" still can't be promoted and get no picker. This needs a product-owner decision before the API is built.
