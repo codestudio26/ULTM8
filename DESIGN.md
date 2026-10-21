@@ -490,15 +490,17 @@ The grading system as built, shown in the new look. Every label and rule stays a
 - The same colour marks the group's left edge in Rows, and the bar in the right panel and on the Ranks tab.
 - The % next to a bar carries the meaning, so the soft bar colour doesn't need text contrast. The track stays #e1e3e5.
 
-### No dark fills: soft blue instead (product owner, 21 Oct 2026)
-- Nothing in the new look is filled dark slate or black, apart from QR codes and belt colours.
-- **Selected states** use soft blue **#e5ecf6** with **#2b4f80** text: a chosen pill (Student / Visitor), a ticked checkbox (blue tick and border), a selected filter chip, the SJ school logo square, and the "unsaved changes" / undo bars.
-- **Cards that used to be dark slate** use soft blue **#dce6f3** with **#2b4f80** text and **#4a6a93** for the quieter lines: the New student / ID card preview, the Settings check-in preview, and the Check-in keypad panel.
-  - Inside them, circles and wells are #c6d6ec or white.
-  - Keypad keys are white with blue digits, and the ✓ key is mint.
-  - The shadow is light (0 8px 22px rgba(21,23,25,.08)).
-- **Switches that are on** use the pale-green track (#def2e2) with an outlined knob, as on Settings, never dark slate.
-- **Simple charts** (attendance bars, the class-history columns) use soft sky **#a8c5ea**.
+### One accent: mint, with calm grey (product owner, 21 Oct 2026; option C)
+- Soft blue next to pale green didn't work, so the new look has **one accent: mint**. There are no blue fills and nothing filled dark slate or black. The only exceptions are QR codes, belt colours and status tags.
+- **Actions and "where you are"** are mint: the selected menu item, Promote, Save and the other main buttons (#def2e2), Ready, 100% bars and the Ready to Grade strip (#9fd3b2). Green text is #3a7556.
+- **Selections are white or grey, never coloured:**
+  - A chosen pill (Student / Visitor, the style switch) is white with a soft shadow on the grey track.
+  - A ticked checkbox is white with a green tick and border (#3a7556).
+  - A selected filter chip is white with a thin green ring.
+- **Secondary buttons** ("Open full student view", "Invite") are white with a grey outline.
+- **Cards, bars and notes** use calm grey: cards #eef1f3 with #383d42 text and #6c767f for quieter lines. That covers the New student / ID preview, the Settings check-in preview and the Check-in keypad panel (white keys, a mint ✓). The "unsaved changes" and undo bars, info notes and the SJ logo square use #edf0f2.
+- **Switches that are on** use the pale-green track.
+- **Blue stays only** in the "Getting There" progress bar (#a8c5ea) and in status tags that mean something ("Frozen", "Learning", info tags). Small charts (attendance, class history) are mint.
 
 ### Style switch: one look everywhere (product owner, 21 Oct 2026)
 - Picking a style always looks like the Grading Board: a light grey track (#edf0f2) holding the choices, with the chosen one white, raised by a soft shadow. Never dark filled pills or outlined pills.
