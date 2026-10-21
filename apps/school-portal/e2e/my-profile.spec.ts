@@ -76,13 +76,22 @@ test('My profile: change the first name and save; email and phone are read-only'
 
   await expect(page.getByLabel('First name')).toHaveValue('Olive');
   await page.getByLabel('First name').fill('Olivia');
-  await page.getByLabel('Address').fill('1 Mat Street');
+  // Decision 276 — the same country-first address fields as every other form.
+  await page.getByLabel('Country').selectOption('GB');
+  await page.getByLabel('Address line 1').fill('1 Mat Street');
+  await page.getByLabel('Town/City').fill('Leeds');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('Postcode is required.')).toBeVisible();
+  await page.getByLabel('Postcode').fill('ls1 4ap');
   await page.getByRole('button', { name: 'Save changes' }).click();
 
   await expect(page.getByText('Saved.')).toBeVisible();
   const saved = await db.user.findUniqueOrThrow({ where: { id: s.ownerId } });
   expect(saved.firstName).toBe('Olivia');
-  expect(saved.address).toBe('1 Mat Street');
+  expect(saved.addressCountry).toBe('GB');
+  expect(saved.addressLine1).toBe('1 Mat Street');
+  expect(saved.addressCity).toBe('Leeds');
+  expect(saved.addressPostalCode).toBe('LS1 4AP');
   expect(saved.email).toBe(owner.email);
   expect(saved.phone).toBe(owner.phone);
   // The header follows the saved name.

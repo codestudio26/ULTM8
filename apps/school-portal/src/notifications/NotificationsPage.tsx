@@ -141,7 +141,7 @@ export function NotificationsPage() {
               onClick={() => setClearingRead(true)}
               disabled={!counts.data || counts.data.total - counts.data.unread === 0}
             >
-              Clear all read
+              {t('notifications.clearAllRead')}
             </Button>
             {/* v1.2 backend backlog — Broadcast/compose, approved by the
                 product owner. School-Owner-only: schoolId is null for a
@@ -218,7 +218,7 @@ export function NotificationsPage() {
                     actions={[
                       { label: t('notifications.markRead'), onClick: () => handleMarkRead(n.id), disabled: n.read },
                       { label: t('notifications.snooze'), onClick: () => setSnoozing(n) },
-                      { label: 'Delete', onClick: () => setDeleting(n), variant: 'danger' },
+                      { label: t('notifications.delete'), onClick: () => setDeleting(n), variant: 'danger' },
                     ]}
                   />
                 ),
@@ -239,9 +239,9 @@ export function NotificationsPage() {
 
       {deleting ? (
         <ConfirmDeleteModal
-          title="Delete notification?"
-          description={`"${deleting.title}" will be removed from your notifications.`}
-          genericErrorMessage="Could not delete this notification. Please try again."
+          title={t('notifications.deleteModal.title')}
+          description={t('notifications.deleteModal.description', { title: deleting.title })}
+          genericErrorMessage={t('notifications.deleteModal.failed')}
           onConfirm={() => deleteNotification.mutateAsync(deleting.id)}
           onClose={() => setDeleting(null)}
         />
@@ -249,10 +249,10 @@ export function NotificationsPage() {
 
       {clearingRead ? (
         <ConfirmDeleteModal
-          title="Clear all read notifications?"
-          description="Every notification you have already read will be removed from this list. Unread notifications stay."
-          confirmLabel="Clear all read"
-          genericErrorMessage="Could not clear your read notifications. Please try again."
+          title={t('notifications.clearReadModal.title')}
+          description={t('notifications.clearReadModal.description')}
+          confirmLabel={t('notifications.clearAllRead')}
+          genericErrorMessage={t('notifications.clearReadModal.failed')}
           onConfirm={() => clearRead.mutateAsync()}
           onClose={() => setClearingRead(false)}
         />

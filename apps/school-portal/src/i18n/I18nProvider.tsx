@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { setApiErrorMessageTranslator, unwrap } from '@ultm8/api-client';
-import { DEFAULT_UI_STRINGS, UiStringsProvider, type UiStrings } from '@ultm8/ui';
+import { ADDRESS_TEXT, AddressTextProvider, DEFAULT_UI_STRINGS, UiStringsProvider, type AddressText, type UiStrings } from '@ultm8/ui';
 import { apiClient } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser } from '../auth/currentUserQueries';
@@ -93,6 +93,16 @@ async function fetchOverrides(locale: string): Promise<Record<string, string>> {
   return overrides;
 }
 
+/** A copy of `tree` with each string replaced by `t(prefix.path)`. */
+function translateTree(tree: Record<string, unknown>, prefix: string, t: TranslateFn): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(tree).map(([k, v]) => [
+      k,
+      typeof v === 'string' ? t(`${prefix}.${k}` as TranslationKey) : translateTree(v as Record<string, unknown>, `${prefix}.${k}`, t),
+    ]),
+  );
+}
+
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
@@ -163,10 +173,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       Object.fromEntries(Object.keys(DEFAULT_UI_STRINGS).map((k) => [k, t(`ui.${k}` as TranslationKey)])) as UiStrings,
     [t],
   );
+  // Same for every `AddressFields`: its nested text tree maps onto `address.*`.
+  const addressText = useMemo(() => translateTree(ADDRESS_TEXT, 'address', t) as AddressText, [t]);
   return (
     <I18nContext.Provider value={value}>
       <UiStringsProvider strings={uiStrings} locale={locale === DEFAULT_LOCALE ? undefined : locale}>
-        {children}
+        <AddressTextProvider text={addressText}>{children}</AddressTextProvider>
       </UiStringsProvider>
     </I18nContext.Provider>
   );
