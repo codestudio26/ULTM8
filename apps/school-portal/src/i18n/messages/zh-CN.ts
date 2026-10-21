@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "搜索功能暂不可用",
     notificationsAria: "通知",
     languageAria: "语言",
+    accountMenu: {
+      label: "账户",
+      myProfile: "我的资料",
+      schoolSettings: "学校设置",
+    },
     roles: {
       owner: "学校负责人",
       branchStaff: "分校员工",
@@ -2022,5 +2027,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "支持",
     comingSoon: "{label}（即将推出）",
     notAvailableYet: "{label} — 暂不可用",
+  },
+  profile: {
+    title: "我的资料",
+    loadFailed: "无法加载你的资料。",
+    signInNote: "你使用电子邮箱和电话号码登录，因此无法在此修改。",
   },
 };

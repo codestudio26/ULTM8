@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 import { messages as ptBR } from '../src/i18n/messages/pt-BR';
 import { serverMessages as ptBRServer } from '../src/i18n/server/pt-BR';
+import { messages as english } from '../src/i18n/messages/en-GB';
+import { LOCALE_LOADERS } from '../src/i18n/locales';
 
 /**
  * Decision 273 — the portal's language picker switches its text, and a
@@ -109,4 +111,18 @@ test("the API's error messages are shown in the picked language, and an untransl
   await save.click();
   await expect(page.getByText(ptBR.server!.generic!.badRequest!)).toBeVisible();
   await expect(page.getByText('A message nobody has translated yet.')).toHaveCount(0);
+});
+
+test('every locale translates every English key — nothing falls back to English', async () => {
+  const keys = (tree: object, prefix = ''): string[] =>
+    Object.entries(tree).flatMap(([k, v]) =>
+      typeof v === 'string' || typeof (v as { other?: unknown }).other === 'string' ? [prefix + k] : keys(v as object, `${prefix}${k}.`),
+    );
+  const lookup = (tree: unknown, key: string) =>
+    key.split('.').reduce<unknown>((node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), tree);
+  const englishKeys = keys(english);
+  for (const [locale, load] of Object.entries(LOCALE_LOADERS)) {
+    const catalogue = await load();
+    expect(englishKeys.filter((k) => lookup(catalogue, k) === undefined), locale).toEqual([]);
+  }
 });
