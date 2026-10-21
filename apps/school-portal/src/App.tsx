@@ -14,6 +14,7 @@ import { FirstLoginPasscodeChangePage } from './auth/FirstLoginPasscodeChangePag
 import { CoachInvitePage } from './auth/CoachInvitePage';
 import { CreateSchoolPage } from './schools/CreateSchoolPage';
 import { SchoolPage } from './schools/SchoolPage';
+import { MyProfilePage } from './profile/MyProfilePage';
 import { DashboardPage } from './dashboard/DashboardPage';
 import { BookingsDrilldownPage } from './dashboard/BookingsDrilldownPage';
 import { BranchesPage } from './branches/BranchesPage';
@@ -121,6 +122,17 @@ export function App() {
           <RequireAuth>
             <Shell>
               <SchoolPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* The signed-in user's own profile — any portal user, from the header's account menu. */}
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <Shell>
+              <MyProfilePage />
             </Shell>
           </RequireAuth>
         }

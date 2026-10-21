@@ -19,6 +19,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     searchAria: "البحث غير متاح بعد",
     notificationsAria: "الإشعارات",
     languageAria: "اللغة",
+    accountMenu: {
+      label: "الحساب",
+      myProfile: "ملفي الشخصي",
+      schoolSettings: "إعدادات المدرسة",
+    },
     roles: {
       owner: "مالك المدرسة",
       branchStaff: "موظفو الفرع",
@@ -2217,5 +2222,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     support: "الدعم",
     comingSoon: "{label} (قريبًا)",
     notAvailableYet: "{label} — غير متاح بعد",
+  },
+  profile: {
+    title: "ملفي الشخصي",
+    loadFailed: "تعذّر تحميل ملفك الشخصي.",
+    signInNote: "تسجّل الدخول باستخدام بريدك الإلكتروني ورقم هاتفك، لذا لا يمكن تغييرهما هنا.",
   },
 };

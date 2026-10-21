@@ -3622,6 +3622,15 @@ model Notification {
   /// this is genuinely "time to first read", not "time of last read".
   readAt DateTime?
 
+  /// Developer-level addition (Decision 277), same treatment as `type`/
+  /// `snoozedUntil`/`readAt` above. Null = visible. Set by DELETE
+  /// /notifications/:id or POST /notifications/me/clear-read: the row is
+  /// hidden from the caller's list and Total/Unread counts but kept on record
+  /// (Decision 244's "permanent record" stands; only the inbox view changes).
+  /// Never cleared once set, and no hard delete exists (ultm8_app has no
+  /// DELETE grant on this table).
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
 
   // Composite index matching NotificationsService.findAllForCaller's actual

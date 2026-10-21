@@ -73,6 +73,47 @@ test('row action menu — Mark read and Snooze are real, and update the stats ri
   expect(snoozed.snoozedUntil!.getTime()).toBeGreaterThan(Date.now());
 });
 
+test('Delete and Clear all read — hide notifications from the list and the stats, keeping the records (Decision 277)', async ({ page }) => {
+  const n1 = await db.notification.create({
+    data: { id: randomUUID(), userId: s.ownerId, title: 'Old alert', body: 'Delete me.' },
+  });
+  const n2 = await db.notification.create({
+    data: { id: randomUUID(), userId: s.ownerId, title: 'Payment failed', body: 'Already read.', read: true, readAt: new Date() },
+  });
+  const n3 = await db.notification.create({
+    data: { id: randomUUID(), userId: s.ownerId, title: 'Waiver due', body: 'Still unread.' },
+  });
+  notificationIds.push(n1.id, n2.id, n3.id);
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/notifications');
+  const totalTileValue = page.getByText('Total', { exact: true }).locator('xpath=following-sibling::*[1]');
+  await expect(totalTileValue).toHaveText('3');
+
+  // Delete one, through the row menu and a confirmation.
+  await page.getByRole('button', { name: 'Actions for Old alert' }).click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await expect(page.getByRole('heading', { name: 'Delete notification?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.getByRole('row', { name: /Old alert/ })).toHaveCount(0);
+  await expect(totalTileValue).toHaveText('2');
+
+  // Clear all read: removes the read one, keeps the unread one.
+  await page.getByRole('button', { name: 'Clear all read' }).click();
+  await expect(page.getByRole('heading', { name: 'Clear all read notifications?' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Clear all read' }).click();
+  await expect(page.getByRole('row', { name: /Payment failed/ })).toHaveCount(0);
+  await expect(page.getByRole('row', { name: /Waiver due/ })).toBeVisible();
+  await expect(totalTileValue).toHaveText('1');
+  // Nothing read is left, so the action is disabled.
+  await expect(page.getByRole('button', { name: 'Clear all read' })).toBeDisabled();
+
+  // Soft delete: both records are still there, only hidden.
+  const kept = await db.notification.findMany({ where: { id: { in: [n1.id, n2.id] } } });
+  expect(kept).toHaveLength(2);
+  expect(kept.every((n) => n.deletedAt !== null)).toBe(true);
+});
+
 test('Broadcast to Students — All Students (default) reaches every active Student at the School', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/notifications');

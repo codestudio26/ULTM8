@@ -206,7 +206,7 @@ export class CreateSchoolDto {
   // No `default:` in the Swagger metadata, for the same reason as
   // classCancellationPolicy above — the default is documented in the
   // description instead.
-  @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 277).' })
+  @ApiPropertyOptional({ description: 'Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279).' })
   @IsOptional()
   @IsInt()
   @Min(1)

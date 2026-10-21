@@ -820,6 +820,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/me/clear-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NotificationsController_clearRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -850,6 +866,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["NotificationsController_snooze"];
+        trace?: never;
+    };
+    "/v1/notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["NotificationsController_softDelete"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/notifications/device-tokens": {
@@ -3618,7 +3650,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 277). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
         };
         SchoolResponseDto: {
@@ -3683,7 +3715,7 @@ export interface components {
              * @enum {string}
              */
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
-            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 277). */
+            /** @description Minutes; School-configurable waitlist claim window (default 60 — Decision 24, lowered from 120 by Decision 279). */
             waitlistClaimWindowMinutes?: number;
             mobileNumber?: string | null;
             address?: string | null;
@@ -4219,6 +4251,10 @@ export interface components {
             readWithin24hCount: number;
             /** @description How many of the caller's Notifications have ever been read (readAt is set) — the denominator readWithin24hPercent is computed over. */
             readTotalCount: number;
+        };
+        ClearReadNotificationsResponseDto: {
+            /** @description How many read Notifications were cleared (hidden; the records are kept). */
+            cleared: number;
         };
         SnoozeNotificationDto: {
             /** @description Snooze until this exact ISO-8601 timestamp. Must be in the future. Provide this OR `minutes`, not both. */
@@ -7679,6 +7715,25 @@ export interface operations {
             };
         };
     };
+    NotificationsController_clearRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClearReadNotificationsResponseDto"];
+                };
+            };
+        };
+    };
     NotificationsController_markRead: {
         parameters: {
             query?: never;
@@ -7722,6 +7777,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["NotificationResponseDto"];
                 };
+            };
+        };
+    };
+    NotificationsController_softDelete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

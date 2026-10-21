@@ -5,6 +5,11 @@ export const layout = {
   searchAria: 'Search — not available yet',
   notificationsAria: 'Notifications',
   languageAria: 'Language',
+  accountMenu: {
+    label: 'Account',
+    myProfile: 'My profile',
+    schoolSettings: 'School settings',
+  },
   roles: {
     owner: 'School Owner',
     branchStaff: 'Branch Staff',
