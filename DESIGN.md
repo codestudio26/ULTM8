@@ -350,6 +350,12 @@ For example: Sessions / Hours / This month, or Check-ins / Students per class / 
 The grading system as built, shown in the new look. Every label and rule stays as it is in the code; only layout and look change.
 
 - **Where things live.** "Grading" in the menu opens three tabs: **Board**, **Styles & belts** (the ladder and belt editor) and **Permissions**. A student's grading is the **Ranks** tab of their profile.
+- **Ranks without a belt** (product owner, 21 Oct 2026), e.g. No-Gi: Beginner, Intermediate, Advanced.
+  - Each style is set up as **either Belts or Levels**, never a mix: "Ranks shown as: Belts / Levels (no belt)" in the Add/Edit discipline dialog and in "About this style".
+  - **The level badge:** a rounded tag in a colour the school picks (colour wheel as for belts), with dots for the step: "●●○" = step 2 of 3. Same sizes as the belt picture (72 × 16, large 168 × 30); text is dark or white to suit the colour.
+  - **Levels have numbered steps** ("Beginner 1, 2, 3"), each with its own requirements, like stripe grades on a belt.
+  - **In the editor:** "Level and steps", "Badge colour" (no secondary or tag colour, no stripes), "Steps of Beginner", "+ Add step", "Delete step".
+  - The page title stays "Add rank".
 - **Belt picture.** Always drawn like `BeltChip`:
   - The belt colour. A two-tone belt has its **second colour as a band through the middle** (the middle 30%, from 35% to 65%), like a real Grey/White or Grey/Black kids' belt (product owner, 21 Oct 2026). It is never split top and bottom. The live `BeltChip` still splits top/bottom and must change when the redesign is built.
   - A tag with the stripes: 3px stripes with 2px gaps.
@@ -384,7 +390,12 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - Tapping a pill picks the grade being edited.
     - "+ Add stripe grade" adds the next stripe.
     - Under the pills: "Grade 5 of 5 · 1 student on this grade", with ↑ ↓ and Delete grade.
-  - **01 Belt and stripes:** the rank name and colours (shared by every grade of the belt), then "This grade: White Belt · 4 Stripes" with its Grade name and Stripes on this grade.
+  - **01 Belt and stripes:**
+    - The **name box follows the picked grade**:
+      - On the plain belt it's the **Rank name** ("White Belt").
+      - On any other grade it's **"Name of this grade"**, already filled with "White Belt · 2 Stripes". It can be edited there; clearing it goes back to the made-up name.
+      - Renaming the rank renames every grade that hasn't been renamed by hand.
+    - Then the colours, shared by every grade of the belt, and "Stripes on this grade".
   - **02 What it takes:** the picked grade's requirements.
   - **Preview:** the live preview shows the picked grade.
   - **Adding a rank:**
