@@ -380,7 +380,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - Clicking a card fills the right panel: the large belt, "Toward {next} — %", the ticks and the skills.
   - **Right panel, below the skills** (product owner, 21 Oct 2026):
     - **Grading history:** the last 4 entries, newest first. Each shows Promoted / Stripe awarded, the date, "from → to", who graded, and any system note ("Skipped N rank(s) in between."). A promotion made on the board appears at the top straight away. "See full history ›" opens the student's Ranks tab.
-    - **Buttons:** Promote (pale green) · Move to another column · Open grading page › · **Open full student view ›** (dark), which opens the student profile on its Profile tab.
+    - **Buttons:** Promote (pale green) · Move to another column · Open grading page › · **Open full student view ›** (dark), which opens the student profile on its Profile tab. They sit straight under the history, 16px below it, never pinned to the bottom of the panel (product owner, 21 Oct 2026).
   - **Click a progress bar to promote** (product owner, 21 Oct 2026). Every progress bar is a button: on a card, in a row and in the right panel. It opens the promote dialog for that one student, titled "Promote {name}", with the same "Promote to", checks and acknowledgement as bulk promote. It doesn't change the ticked students. The bar gets a pale-green ring on hover.
 - **Grid or Rows.** A switch in the board's toolbar shows the same students two ways:
   - **Grid:** the three columns side by side.
