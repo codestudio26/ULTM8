@@ -405,7 +405,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - **Default: by belt, lowest grade first.** Students on the same rank are ordered by surname.
   - The toolbar has **Sort: Belt · Name** (the same grey switch) and a direction button: "Lowest first ↑" / "Highest first ↓" for belt, "A–Z ↓" / "Z–A ↑" for name.
   - In Rows, the **Student** and **Belt → Next** headings also sort; clicking the active one flips the direction, and an arrow shows it.
-  - On phones the belt column is hidden, so sorting is from the toolbar.
+  - **Phone:** the same Sort switch and direction button are in the toolbar. In Rows, where the belt column is hidden, the heading reads **Student · Belt**, and either word sorts by it, with the same arrows.
 - **Grid or Rows.** A switch in the board's toolbar shows the same students two ways:
   - **Grid:** the three columns side by side.
   - **Rows:** three stacked groups, **Ready to Grade on top**, then Getting There, then Just Starting. Each group has its count, its % range and "Select all".
