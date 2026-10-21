@@ -379,7 +379,12 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - Amber: needs a look ("Skills not signed off", "n days short").
   - Red: blocked or unverified ("Skills required", "Not verified").
   - Grey: Inactive.
-- **Belt editor.** Two chapters: **01 Belt** (name and colours) and **02 Stripes**. Each stripe is one box. Pressing Edit opens that stripe's settings (what it takes to be promoted into it) inside the same box, one stripe at a time. Its settings never sit in a separate section away from the stripe.
+- **Belt editor.** Two chapters: **01 Belt** (name and colours) and **02 Grades** (product owner, 21 Oct 2026).
+  - A grade is each step a student can reach on the belt: the plain belt first, then each stripe.
+  - Each grade is one box: "Grade 1 · White Belt" with a "Plain belt — no stripes" tag, then "Grade 2 · White Belt · 1 Stripe", and so on.
+  - Pressing Edit opens that grade's settings inside the same box, one at a time, under "What it takes to reach this grade". Settings never sit in a separate section away from the grade.
+  - Inside a grade: "Grade name", "Stripes on this grade" (for the plain belt: "None — this is the plain belt."), and "n students on this grade".
+  - Don't call the lines "Stripes": the plain belt isn't a stripe.
 - **Stripe colours.** A stripe can have more than one colour group (e.g. 2 red + 2 white).
   - Each group is a box with a round selector and its name ("Colour 2 · 1 stripe"). Tap the box to select it.
   - One **Remove** button sits beside "Add stripes of another colour". It removes the selected group, and its label names it ("Remove colour 2"); with one group it just says "Remove".
