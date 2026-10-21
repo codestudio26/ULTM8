@@ -4,8 +4,11 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches } from '../branches/branchQueries';
 import { useClasses } from '../classes/classQueries';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import {
   useBroadcastNotification,
+  useClearReadNotifications,
+  useDeleteNotification,
   useMarkNotificationRead,
   useNotificationCounts,
   useNotifications,
@@ -59,7 +62,8 @@ function isSnoozed(n: NotificationResponse): boolean {
  * Branch Staff, or Instructor using this portal has one, same as a Student
  * would in the mobile app (GET /notifications/me is not School-scoped).
  * Mark-read and Snooze (v1.2 backend backlog, approved by the product owner)
- * live in each row's action menu; Broadcast/compose (same backlog entry) is
+ * and Delete (Decision 274) live in each row's action menu, with a "Clear all
+ * read" header action beside them; Broadcast/compose (same backlog entry) is
  * a School-Owner-only PageHeader action, since the backend endpoint it calls
  * is School-Owner-gated — a Branch Staff/Instructor using this same page
  * never sees it (useOwnedSchoolId is null for them, same gate
@@ -79,8 +83,12 @@ export function NotificationsPage() {
   const counts = useNotificationCounts();
   const markRead = useMarkNotificationRead();
   const snooze = useSnoozeNotification();
+  const deleteNotification = useDeleteNotification();
+  const clearRead = useClearReadNotifications();
   const [actionError, setActionError] = useState<string | null>(null);
   const [snoozing, setSnoozing] = useState<NotificationResponse | null>(null);
+  const [deleting, setDeleting] = useState<NotificationResponse | null>(null);
+  const [clearingRead, setClearingRead] = useState(false);
   const [broadcasting, setBroadcasting] = useState(false);
 
   // Broadcast's audience targeting (v1.2 backend backlog) needs the School's
@@ -118,10 +126,25 @@ export function NotificationsPage() {
         title="Notifications"
         subtitle="Updates sent to your own account."
         actions={
-          // v1.2 backend backlog — Broadcast/compose, approved by the product
-          // owner. School-Owner-only: schoolId is null for a Branch Staff/
-          // Instructor viewing their own inbox on this same page.
-          schoolId ? <Button onClick={() => setBroadcasting(true)}>Broadcast to Students</Button> : undefined
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {/* Decision 274 — every User can clear their own read
+                notifications. Disabled when Total equals Unread, from the
+                counts endpoint rather than the loaded page (a snoozed unread
+                row also counts towards the gap, so this can occasionally
+                stay enabled with nothing to clear; that clears 0, harmlessly). */}
+            <Button
+              variant="secondary"
+              onClick={() => setClearingRead(true)}
+              disabled={!counts.data || counts.data.total - counts.data.unread === 0}
+            >
+              Clear all read
+            </Button>
+            {/* v1.2 backend backlog — Broadcast/compose, approved by the
+                product owner. School-Owner-only: schoolId is null for a
+                Branch Staff/Instructor viewing their own inbox on this same
+                page. */}
+            {schoolId ? <Button onClick={() => setBroadcasting(true)}>Broadcast to Students</Button> : null}
+          </div>
         }
       />
 
@@ -191,6 +214,7 @@ export function NotificationsPage() {
                     actions={[
                       { label: 'Mark read', onClick: () => handleMarkRead(n.id), disabled: n.read },
                       { label: 'Snooze', onClick: () => setSnoozing(n) },
+                      { label: 'Delete', onClick: () => setDeleting(n), variant: 'danger' },
                     ]}
                   />
                 ),
@@ -206,6 +230,27 @@ export function NotificationsPage() {
           submitting={snooze.isPending}
           onSubmit={handleSnooze}
           onClose={() => setSnoozing(null)}
+        />
+      ) : null}
+
+      {deleting ? (
+        <ConfirmDeleteModal
+          title="Delete notification?"
+          description={`"${deleting.title}" will be removed from your notifications.`}
+          genericErrorMessage="Could not delete this notification. Please try again."
+          onConfirm={() => deleteNotification.mutateAsync(deleting.id)}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
+
+      {clearingRead ? (
+        <ConfirmDeleteModal
+          title="Clear all read notifications?"
+          description="Every notification you have already read will be removed from this list. Unread notifications stay."
+          confirmLabel="Clear all read"
+          genericErrorMessage="Could not clear your read notifications. Please try again."
+          onConfirm={() => clearRead.mutateAsync()}
+          onClose={() => setClearingRead(false)}
         />
       ) : null}
 

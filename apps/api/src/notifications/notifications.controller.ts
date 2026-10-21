@@ -7,6 +7,7 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { NotificationsService } from './notifications.service';
 import { NotificationListResponseDto, NotificationResponseDto } from './dto/notification-response.dto';
 import { NotificationCountsResponseDto } from './dto/notification-counts-response.dto';
+import { ClearReadNotificationsResponseDto } from './dto/clear-read-notifications-response.dto';
 import { RegisterDeviceTokenDto } from './dto/device-token.dto';
 import { DeviceTokenResponseDto } from './dto/device-token-response.dto';
 import { SnoozeNotificationDto } from './dto/snooze-notification.dto';
@@ -14,7 +15,8 @@ import { SnoozeNotificationDto } from './dto/snooze-notification.dto';
 /**
  * Phase 15 scope: read-side notifications (list/mark-read/counts) and
  * DeviceToken registration. v1.2 backend backlog (approved by the product
- * owner) adds snooze (below) — still the caller's own notifications only, no
+ * owner) adds snooze (below), and Decision 274 adds soft delete and "Clear
+ * all read" — still the caller's own notifications only, no
  * cross-user write here. See NotificationsService's own header comment for
  * what's deliberately not here (the fan-out WRITE side lives in
  * apps/api/src/jobs/notification-fanout.processor.ts, a background job, not
@@ -49,6 +51,16 @@ export class NotificationsController {
     return this.notificationsService.getCountsForCaller(user.sub);
   }
 
+  /** Decision 274 — "Clear all read": soft-deletes every read Notification
+   * the caller has. A static `me/clear-read` segment, declared before the
+   * `:id` routes below, same convention as `me/counts` above. */
+  @ApiOkResponse({ type: ClearReadNotificationsResponseDto })
+  @HttpCode(200)
+  @Post('me/clear-read')
+  clearRead(@CurrentUser() user: JwtPayload) {
+    return this.notificationsService.clearRead(user.sub);
+  }
+
   @ApiOkResponse({ type: NotificationResponseDto })
   @Patch(':id/read')
   markRead(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
@@ -61,6 +73,15 @@ export class NotificationsController {
   @Patch(':id/snooze')
   snooze(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: SnoozeNotificationDto) {
     return this.notificationsService.snooze(user.sub, id, dto);
+  }
+
+  /** Decision 274 — hides one Notification (soft delete, the record is kept).
+   * See NotificationsService.softDelete's own header comment. */
+  @ApiNoContentResponse()
+  @HttpCode(204)
+  @Delete(':id')
+  softDelete(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.notificationsService.softDelete(user.sub, id);
   }
 
   @ApiCreatedResponse({ type: DeviceTokenResponseDto })

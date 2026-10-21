@@ -2327,6 +2327,32 @@
         ]
       }
     },
+    "/v1/notifications/me/clear-read": {
+      "post": {
+        "operationId": "NotificationsController_clearRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClearReadNotificationsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications/{id}/read": {
       "patch": {
         "operationId": "NotificationsController_markRead",
@@ -2395,6 +2421,34 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{id}": {
+      "delete": {
+        "operationId": "NotificationsController_softDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
           }
         },
         "tags": [
@@ -8935,6 +8989,7 @@
             "name": "code",
             "required": true,
             "in": "path",
+            "description": "8-character School join code.",
             "schema": {
               "type": "string"
             }
@@ -11913,7 +11968,8 @@
             "type": "string",
             "enum": [
               "INSTRUCTOR",
-              "BRANCH_STAFF"
+              "BRANCH_STAFF",
+              "SCHOOL_OWNER_MANAGER"
             ]
           },
           "schoolId": {
@@ -13146,6 +13202,18 @@
           "readWithin24hPercent",
           "readWithin24hCount",
           "readTotalCount"
+        ]
+      },
+      "ClearReadNotificationsResponseDto": {
+        "type": "object",
+        "properties": {
+          "cleared": {
+            "type": "number",
+            "description": "How many read Notifications were cleared (hidden; the records are kept)."
+          }
+        },
+        "required": [
+          "cleared"
         ]
       },
       "SnoozeNotificationDto": {

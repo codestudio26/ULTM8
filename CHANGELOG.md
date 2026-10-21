@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Delete notifications** (Decision 274) — each notification's ⋮ menu on
+  the Notifications page now has **Delete**, and the page header has
+  **Clear all read**, which removes every notification you have already
+  read (unread ones stay). Both ask for confirmation. Removed notifications
+  are hidden, not erased, so payment and waiver alerts stay on record.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,
