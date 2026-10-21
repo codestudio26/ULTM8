@@ -279,6 +279,8 @@ Every Settings page follows the chosen layout, "idea A + information in the righ
 
 ### Phone layout (product owner, 20 Oct 2026)
 
+**Every feature added to the desktop must also be on the phone version** (product owner, 21 Oct 2026). Never ship a desktop-only control. Each change is checked at phone width before it's called done.
+
 The desktop design is made phone-friendly. The student app (`apps/student`) borrows this style for now; its own UI/UX redesign comes later. Under 768px:
 
 - **Side menu → top bar.**
@@ -378,6 +380,11 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - Red: blocked or unverified ("Skills required", "Not verified").
   - Grey: Inactive.
 - **Belt editor.** Two chapters: **01 Belt** (name and colours) and **02 Stripes**. Each stripe is one box. Pressing Edit opens that stripe's settings (what it takes to be promoted into it) inside the same box, one stripe at a time. Its settings never sit in a separate section away from the stripe.
+- **Colour choices.** Every colour row (base, secondary, tag and each stripe colour) ends with a **Custom** circle: a rainbow circle with "+".
+  - Tapping it opens the device's colour picker.
+  - Once a custom colour is chosen, the circle shows that colour with the selected ring, and a code box appears beside it (e.g. #2A9D8F).
+  - The code can be typed or pasted. A wrong code shows "Use a colour code like #2A9D8F."
+  - The swatches are shortcuts only; a school can always pick any colour, as it can today.
 - **Dialogs.** A centred white card over a dimmed page, up to 560px wide (640px for bulk promote). Cancel and the action sit in a grey footer. On phones the dialog fills the screen and the footer buttons share the width.
 - **Phone.** The columns stack in the order Just Starting, Getting There, Ready to Grade. Permission toggles become one list of switches.
 
