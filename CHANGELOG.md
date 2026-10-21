@@ -49,6 +49,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   they appear, and a request that gets no answer at all says "Could not reach
   the server" instead of "Something went wrong". The Curriculum list's Instructor column
   shows the coach's name instead of an id.
+- **Delete notifications** (Decision 277) — each notification's ⋮ menu on
+  the Notifications page now has **Delete**, and the page header has
+  **Clear all read**, which removes every notification you have already
+  read (unread ones stay). Both ask for confirmation. Removed notifications
+  are hidden, not erased, so payment and waiver alerts stay on record.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,

@@ -3926,3 +3926,28 @@ The student app (`apps/student`) and Platform Admin are not translated (both def
 ### Recorded by
 
 User (Code), choosing option 1 of two offered (built-in plus overrides vs server-only) and approving the proposed 15-language list, 20 Oct 2026.
+
+---
+
+## Decision 277 — Notifications: users can Delete one or "Clear all read"; a soft delete that keeps the record
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** the Delete item `docs/v1.2-backend-backlog.md` ("Notifications page") still listed as open, and Decision 242's note that Delete was out of scope. **Amends Decision 244** (no delete): the record-keeping half of 244 stands, the "never user-deletable" half does not.
+
+### Decision
+
+1. Each notification's ⋮ menu on the School Portal Notifications page gets **Delete** (with a confirmation), and the page header gets **Clear all read**, which removes every notification the user has already read. Unread notifications are never touched by Clear all read, snoozed or not.
+2. Both are a **soft delete**: a new `Notification.deletedAt` column is set and the row is hidden, never erased. Payment, waiver and other alerts stay on record, which is the part of Decision 244 that still holds. There is still no hard delete: `ultm8_app` has no DELETE grant on `Notification`, and none is added.
+3. API: `DELETE /notifications/:id` (204, self-only, a 404 for someone else's row or one already deleted) and `POST /notifications/me/clear-read` (returns `{ cleared }`). A deleted notification leaves `GET /notifications/me` and the Total/Unread counts of `GET /notifications/me/counts`, and `PATCH :id/read` / `PATCH :id/snooze` on it are a 404.
+4. The Read-within-24h metric keeps counting deleted notifications that were read. They were read, and otherwise every Clear all read would reset that metric to empty. A Developer-level choice, flagged here for review.
+
+### What this does NOT resolve
+
+- No restore/undo, and no "deleted items" view. Nothing reads a deleted row back today; an admin-facing view or a restore action would be a new decision.
+- No automatic clean-up of old notifications (other products clear them after 30 to 90 days). Not requested.
+- `apps/student` gets the API behaviour (deleted rows disappear from its list too) but no Delete button of its own yet.
+- The new School Portal text (Delete, Clear all read, the two confirmations and their error messages) is English only until the translation layer (Decision 273, PR #266) merges; it then needs adding to that catalogue.
+
+### Recorded by
+
+User ("Go for the notification change"), approving the recommendation to add Delete and "Clear all read" as a hide-not-erase soft delete, 21 Oct 2026.
