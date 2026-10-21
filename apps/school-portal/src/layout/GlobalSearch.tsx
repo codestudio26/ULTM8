@@ -231,7 +231,7 @@ function GlobalSearchBox({ schoolId }: { schoolId: string | null }) {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        style={{ width: 240, minHeight: 40 }}
+        style={{ width: 200, minHeight: 40 }}
       />
       <div
         className="ultm8-row-actions__menu"
