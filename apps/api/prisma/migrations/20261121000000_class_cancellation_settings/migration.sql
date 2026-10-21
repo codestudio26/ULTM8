@@ -3,7 +3,10 @@
 -- See schema.prisma's own comments on each field.
 --
 -- No RLS change: every new column sits on a table whose existing policies
--- already cover it (School, Class, Booking, BookingAttendee). Postgres can't
+-- already cover it (School, Class, Booking, BookingAttendee). One column grant:
+-- ultm8_discovery reads Class by column (20260917000000_academies_discovery_
+-- module), and the academy page's upcoming classes now leave out a class the
+-- School cancelled. Postgres can't
 -- add an enum value inside a transaction that then uses it, but nothing below
 -- uses the new RefundResolution values, so ADD VALUE is safe here.
 
@@ -42,3 +45,5 @@ ALTER TABLE "BookingAttendee"
 -- The staff "to resolve" list reads by School + resolution.
 CREATE INDEX "Booking_schoolId_refundResolution_idx" ON "Booking"("schoolId", "refundResolution");
 CREATE INDEX "BookingAttendee_schoolId_refundResolution_idx" ON "BookingAttendee"("schoolId", "refundResolution");
+
+GRANT SELECT ("cancelledAt") ON "Class" TO ultm8_discovery;

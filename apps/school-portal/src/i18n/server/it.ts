@@ -1,5 +1,17 @@
 /** Italian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Solo il Titolare/Responsabile della Scuola o lo Staff di quella sede può farlo.",
+  "This class is already cancelled.": "Questa lezione è già annullata.",
+  "This class has already finished.": "Questa lezione è già terminata.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "Solo il Titolare/Responsabile della Scuola può restituire soldi.",
+  "Guest not found on this booking": "Ospite non trovato in questa prenotazione",
+  "This booking has nothing left to resolve.": "Non c'è più nulla da gestire per questa prenotazione.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "Per questa prenotazione è già dovuto un rimborso: segnalo come pagato quando i soldi sono stati restituiti.",
+  "There is no cash refund owed on this booking yet.": "Per questa prenotazione non è ancora dovuto alcun rimborso in contanti.",
+  "Someone else has already resolved this booking.": "Qualcun altro ha già gestito questa prenotazione.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Questa prenotazione non può essere rimborsata automaticamente (il pagamento è contestato, già rimborsato o non c'è un Carnet pagato). Restituisci il credito o trattienilo.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe non è riuscito a elaborare questo rimborso. Resta nella lista: riprova o restituisci il credito.",
+  "This class has been cancelled by the school.": "Questa lezione è stata annullata dalla scuola.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "«Può invitare allenatori» è riservato allo Staff della sede. Gli allenatori non possono invitare altri allenatori (Spec 55 §8.2).",
   "\"Getting There\" must start below \"Ready to Grade\".": "«Quasi pronto» deve iniziare sotto «Pronto per l'esame».",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Un tutore non può indicare overrideReason: solo un istruttore o lo staff può ignorare il requisito di grado.",

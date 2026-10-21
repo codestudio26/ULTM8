@@ -1,5 +1,17 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Bunu yalnızca Okul Sahibi/Yöneticisi veya o şubenin Şube Personeli yapabilir.",
+  "This class is already cancelled.": "Bu ders zaten iptal edilmiş.",
+  "This class has already finished.": "Bu ders zaten bitti.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "Yalnızca Okul Sahibi/Yöneticisi para iade edebilir.",
+  "Guest not found on this booking": "Bu rezervasyonda misafir bulunamadı",
+  "This booking has nothing left to resolve.": "Bu rezervasyonda çözülecek bir şey kalmadı.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "Bu rezervasyonda zaten iade borcu var — para geri ödendiğinde ödendi olarak işaretleyin.",
+  "There is no cash refund owed on this booking yet.": "Bu rezervasyonda henüz ödenecek bir nakit iade yok.",
+  "Someone else has already resolved this booking.": "Bu rezervasyonu başka biri zaten çözdü.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Bu rezervasyon otomatik olarak iade edilemez (ödeme itiraz altında, zaten iade edilmiş ya da ödenmiş bir Ders Paketi yok). Bunun yerine ders hakkını geri verin veya tutun.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe bu iadeyi işleyemedi. Hâlâ listede bekliyor — tekrar deneyin ya da bunun yerine ders hakkını geri verin.",
+  "This class has been cancelled by the school.": "Bu ders okul tarafından iptal edildi.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "\"Antrenör davet edebilir\" yalnızca şube personeli içindir. Antrenörler antrenör davet edemez (Spec 55 §8.2).",
   "\"Getting There\" must start below \"Ready to Grade\".": "\"Yaklaşıyor\", \"Sınava hazır\" seviyesinin altında başlamalıdır.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Bir veli overrideReason belirtemez — derece şartını yalnızca eğitmen veya personel geçersiz kılabilir.",

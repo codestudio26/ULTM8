@@ -1,5 +1,17 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "Alleen de Eigenaar/Manager van de School of de medewerkers van die vestiging mogen dit doen.",
+  "This class is already cancelled.": "Deze les is al geannuleerd.",
+  "This class has already finished.": "Deze les is al afgelopen.",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "Alleen de Eigenaar/Manager van de School kan geld teruggeven.",
+  "Guest not found on this booking": "Gast niet gevonden in deze boeking",
+  "This booking has nothing left to resolve.": "Er valt voor deze boeking niets meer af te handelen.",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "Voor deze boeking staat al een terugbetaling open — markeer die als betaald zodra het geld terug is.",
+  "There is no cash refund owed on this booking yet.": "Voor deze boeking staat nog geen contante terugbetaling open.",
+  "Someone else has already resolved this booking.": "Iemand anders heeft deze boeking al afgehandeld.",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "Deze boeking kan niet automatisch worden terugbetaald (de betaling wordt betwist, is al terugbetaald of er is geen betaalde Lessenkaart). Geef het tegoed terug of behoud het.",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe kon deze terugbetaling niet verwerken. Hij staat nog in de lijst — probeer het opnieuw of geef het tegoed terug.",
+  "This class has been cancelled by the school.": "Deze les is geannuleerd door de school.",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "‘Mag coaches uitnodigen’ is alleen voor vestigingsmedewerkers. Coaches kunnen geen coaches uitnodigen (Spec 55 §8.2).",
   "\"Getting There\" must start below \"Ready to Grade\".": "‘Bijna klaar’ moet onder ‘Klaar voor examen’ beginnen.",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "Een voogd mag geen overrideReason opgeven: alleen een instructeur of medewerker mag de graadvereiste omzeilen.",

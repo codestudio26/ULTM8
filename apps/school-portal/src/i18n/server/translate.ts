@@ -204,6 +204,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Payment dispute lost': 'disputeLostTitle',
   'Payment dispute resolved': 'disputeResolvedTitle',
   'Payment dispute opened': 'disputeOpenedTitle',
+  'Class cancelled': 'classCancelledTitle',
+  'Cancellations to resolve': 'cancellationsTitle',
 };
 
 const CHARGES: Record<string, string> = {
@@ -225,6 +227,20 @@ const body = (source: string) => new RegExp(source, 's');
 
 /** apps/api/src/jobs/*.processor.ts — every Notification body a job writes. */
 const BODY_RULES: Array<[RegExp, Rule]> = [
+  // Decision 279 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
+  [
+    /^(.+) on (.+?) has been cancelled by the school\. Reason: (.+)$/s,
+    (m, { t }) => n(t, 'classCancelledBodyWithReason', { class: m[1], when: m[2], reason: m[3] }),
+  ],
+  [/^(.+) on (.+?) has been cancelled by the school\.$/s, (m, { t }) => n(t, 'classCancelledBody', { class: m[1], when: m[2] })],
+  [
+    /^A cancelled booking needs a refund decision or a cash refund paid\. See Cancellations to resolve\.$/,
+    (_m, { t }) => n(t, 'cancellationReviewBody'),
+  ],
+  [
+    /^Bookings from the cancelled class (.+) need a refund decision or a cash refund paid \((\d+)\)\. See Cancellations to resolve\.$/s,
+    (m, { t }) => n(t, 'cancellationClassReviewBody', { class: m[1], count: Number(m[2]) }),
+  ],
   [
     /^A spot opened up in (.+)\. Claim it soon — it goes to the next person on the waitlist if you don't\.$/s,
     (m, { t }) => n(t, 'spotOpenedBody', { class: m[1] }),

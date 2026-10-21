@@ -17,6 +17,7 @@ export const classes = {
   emptyDescription: 'Add your first Class to get started.',
   wholeSchool: 'Whole School',
   archived: 'Archived',
+  cancelled: 'Cancelled',
   includedInMembership: 'Included in membership',
   waiverRequired: 'Waiver required',
   capacityLine: 'Capacity: {capacity}',

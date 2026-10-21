@@ -19,6 +19,7 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { PaymentsService } from '../src/payments/payments.service';
+import { BookingNoShowProcessingProcessor } from '../src/jobs/booking-no-show-processing.processor';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -36,6 +37,8 @@ describeIfDb('Decision 279 — class cancellation settings', () => {
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
   let refundSpy: jest.SpyInstance;
+  let chargeSpy: jest.SpyInstance;
+  let noShowProcessor: BookingNoShowProcessingProcessor;
 
   let school: { id: string };
   let paymentAccountId: string;
@@ -106,6 +109,8 @@ describeIfDb('Decision 279 — class cancellation settings', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
     refundSpy = jest.spyOn(moduleRef.get(PaymentsService), 'refundPayment').mockResolvedValue('re_test_refund');
+    chargeSpy = jest.spyOn(moduleRef.get(PaymentsService), 'chargeOffSession').mockResolvedValue({ succeeded: true, paymentIntentId: 'pi_test_no_show' });
+    noShowProcessor = moduleRef.get(BookingNoShowProcessingProcessor);
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Cancellation Policy School' } });
     const mkUser = (label: string) =>
@@ -149,7 +154,7 @@ describeIfDb('Decision 279 — class cancellation settings', () => {
   // Each test owns its pack; drop any still-active ones so selection is deterministic.
   beforeEach(async () => {
     await superuser.membership.updateMany({ where: { studentId: student.id, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
-    await setSchool({ classCancellationPolicy: 'MANUAL', classCancellationPolicyWindow: 'BEFORE_CUTOFF', chargeLateCancellationFee: true, schoolCancelledClassResolution: 'CREDIT_ALL', defaultRefundCutoffHours: null });
+    await setSchool({ classCancellationPolicy: 'MANUAL', classCancellationPolicyWindow: 'BEFORE_CUTOFF', chargeLateCancellationFee: true, schoolCancelledClassResolution: 'CREDIT_ALL', defaultRefundCutoffHours: null, noShowFee: null });
   });
 
   afterAll(async () => {
@@ -354,5 +359,34 @@ describeIfDb('Decision 279 — class cancellation settings', () => {
     const refund = await request(app.getHttpServer()).patch(`/v1/bookings/${b1.id}/resolution`).set('Authorization', `Bearer ${tokenOwner}`).send({ action: 'REFUND' });
     expect(refund.status).toBe(200);
     expect(refund.body.refundResolution).toBe('REFUND_OWED');
+  });
+
+  it('No-show fee: charged to the saved card only when the School sets one, recorded on the booking', async () => {
+    const pack = await mkPack();
+    const ended = async () => {
+      const start = new Date(Date.now() - 3 * 3_600_000);
+      const cls = await mkClass({ startDate: start, endDate: new Date(start.getTime() + 3_600_000) });
+      return superuser.booking.create({ data: { id: randomUUID(), studentId: student.id, classId: cls.id, schoolId: school.id, sourceMembershipId: pack.id, status: 'UPCOMING' } });
+    };
+    const noFee = await ended();
+    await noShowProcessor.process({} as never);
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: noFee.id } })).toMatchObject({ status: 'NO_SHOW', noShowFeeOutcome: null, noShowFeeAmount: null });
+    expect(chargeSpy.mock.calls.filter((c) => c[1] === school.id)).toHaveLength(0);
+
+    await setSchool({ noShowFee: 500 });
+    const withFee = await ended();
+    await noShowProcessor.process({} as never);
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: withFee.id } })).toMatchObject({
+      status: 'NO_SHOW',
+      noShowFeeOutcome: 'CHARGED',
+      noShowFeeAmount: 500,
+      stripeNoShowPaymentIntentId: 'pi_test_no_show',
+    });
+    expect(chargeSpy.mock.calls.filter((c) => c[1] === school.id)).toEqual([[student.id, school.id, 500, expect.any(String), 'No-show fee']]);
+
+    // A second sweep never charges the same booking twice.
+    await noShowProcessor.process({} as never);
+    expect(chargeSpy.mock.calls.filter((c) => c[1] === school.id)).toHaveLength(1);
+    await setSchool({ noShowFee: null });
   });
 });

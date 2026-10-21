@@ -49,6 +49,17 @@ export type CancellationSchoolSettings = Pick<
 >;
 
 const OPEN_RESOLUTIONS: RefundResolution[] = ['PENDING', 'REFUND_OWED'];
+
+/** "Sat 24 Oct 2026, 18:00" in the class's own timezone (its branch's, else the
+ * School's), for the class-cancelled notification. */
+function formatClassTime(date: Date, timeZone: string): string {
+  const opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
+  try {
+    return new Intl.DateTimeFormat('en-GB', { ...opts, timeZone }).format(date);
+  } catch {
+    return `${new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: 'UTC' }).format(date)} UTC`;
+  }
+}
 const MONEY_RESOLUTIONS: RefundResolution[] = ['MONEY_REFUNDED', 'REFUND_OWED'];
 
 /**
@@ -180,7 +191,7 @@ export class CancellationService {
       await this.restoreCredit(tx, seat.membershipId);
       return { resolution: 'REFUNDED', refundAmount: null, stripeRefund: false };
     }
-    const refundAmount = await this.perClassShare(tx, seat.membershipId, payment.amount, payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded);
+    const refundAmount = await this.perClassShare(tx, seat, payment.amount, payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded);
     // Disputed (Decision 55: refunds frozen), nothing left to refund, or a caller
     // who may not send money: a staff decision.
     if (payment.status !== 'SUCCESSFUL' || refundAmount <= 0 || !mayRefund) {
@@ -212,12 +223,19 @@ export class CancellationService {
    * One class's share of a Class Pack's price: the cumulative entitlement after
    * this refund minus the cumulative entitlement before it, each rounded once to
    * the minor unit (domain rules §7). Capped at what's left unrefunded.
+   *
+   * "Before it" counts every other seat on this Membership already refunded,
+   * owed, or waiting with an amount (a Stripe refund in flight, or one waiting
+   * for the Owner) — so two seats resolved together, or one resolved later,
+   * still get consecutive shares. A waiting seat that ends up credited or kept
+   * has its amount cleared and drops out.
    */
-  private async perClassShare(tx: TenantTx, membershipId: string, paid: number, alreadyRefunded: number, classesIncluded: number | null): Promise<number> {
+  private async perClassShare(tx: TenantTx, seat: SeatRef, paid: number, alreadyRefunded: number, classesIncluded: number | null): Promise<number> {
     if (!classesIncluded || classesIncluded <= 0) return 0;
+    const counted = { OR: [{ refundResolution: { in: MONEY_RESOLUTIONS } }, { refundResolution: 'PENDING' as const, refundAmount: { not: null } }] };
     const [bookings, attendees] = await Promise.all([
-      tx.booking.count({ where: { sourceMembershipId: membershipId, refundResolution: { in: MONEY_RESOLUTIONS } } }),
-      tx.bookingAttendee.count({ where: { membershipId, refundResolution: { in: MONEY_RESOLUTIONS } } }),
+      tx.booking.count({ where: { sourceMembershipId: seat.membershipId, ...counted, ...(seat.attendeeId ? {} : { id: { not: seat.bookingId } }) } }),
+      tx.bookingAttendee.count({ where: { membershipId: seat.membershipId, ...counted, ...(seat.attendeeId ? { id: { not: seat.attendeeId } } : {}) } }),
     ]);
     const prior = bookings + attendees;
     if (prior >= classesIncluded) return 0;
@@ -383,14 +401,16 @@ export class CancellationService {
       data: { status: 'CANCELLED' },
     });
 
-    const when = cls.startDate.toISOString().slice(0, 16).replace('T', ' ');
-    const body = `${cls.title} on ${when} UTC has been cancelled by the school.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`;
+    const branch = cls.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: cls.branchId }, select: { timezone: true } }) : null;
+    const when = formatClassTime(cls.startDate, branch?.timezone ?? school.timezone ?? 'UTC');
+    // The portal translates these exact shapes (i18n/server/translate.ts) — keep them in step.
+    const body = `${cls.title} on ${when} has been cancelled by the school.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`;
     const recipients = new Set([...bookings.map((b) => b.studentId), ...waiting.map((w) => w.studentId)]);
     for (const userId of recipients) {
       await this.notify({ notificationId: `class-cancelled-${classId}-${userId}`, userId, title: 'Class cancelled', body, type: 'CLASS_CANCELLED' });
     }
     if (needsStaff > 0) {
-      await this.alertOwners(cls.schoolId, `class-cancelled-review-${classId}`, `${needsStaff} booking(s) from the cancelled class ${cls.title} need a refund decision or a cash refund paid.`);
+      await this.alertOwners(cls.schoolId, `class-cancelled-review-${classId}`, `Bookings from the cancelled class ${cls.title} need a refund decision or a cash refund paid (${needsStaff}). See Cancellations to resolve.`);
     }
 
     return this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUniqueOrThrow({ where: { id: classId } }));

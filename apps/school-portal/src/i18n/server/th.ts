@@ -1,5 +1,17 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only the School Owner/Manager or that branch's Branch Staff may do this.": "เฉพาะเจ้าของ/ผู้จัดการโรงเรียน หรือเจ้าหน้าที่ของสาขานั้นเท่านั้นที่ทำได้",
+  "This class is already cancelled.": "คลาสนี้ถูกยกเลิกไปแล้ว",
+  "This class has already finished.": "คลาสนี้จบไปแล้ว",
+  "Only the School Owner/Manager can send money back (Spec §8.2).": "เฉพาะเจ้าของ/ผู้จัดการโรงเรียนเท่านั้นที่คืนเงินได้",
+  "Guest not found on this booking": "ไม่พบแขกในการจองนี้",
+  "This booking has nothing left to resolve.": "การจองนี้ไม่มีอะไรต้องจัดการแล้ว",
+  "A refund is already owed on this booking — mark it paid once the money has gone back.": "การจองนี้มีเงินค้างคืนอยู่แล้ว — ทำเครื่องหมายว่าคืนแล้วเมื่อคืนเงินเรียบร้อย",
+  "There is no cash refund owed on this booking yet.": "การจองนี้ยังไม่มีเงินสดค้างคืน",
+  "Someone else has already resolved this booking.": "มีคนอื่นจัดการการจองนี้ไปแล้ว",
+  "This booking can't be refunded automatically (its payment is disputed, already refunded, or there's no paid Class Pack). Give the credit back or keep it instead.": "การจองนี้คืนเงินอัตโนมัติไม่ได้ (การชำระเงินอยู่ระหว่างข้อพิพาท คืนเงินไปแล้ว หรือไม่มีแพ็กคลาสที่ชำระแล้ว) ให้คืนสิทธิ์เรียนหรือเก็บไว้แทน",
+  "Stripe could not process this refund. It is still waiting in the list — try again, or give the credit back instead.": "Stripe ไม่สามารถดำเนินการคืนเงินนี้ได้ ยังคงรออยู่ในรายการ — ลองอีกครั้ง หรือคืนสิทธิ์เรียนแทน",
+  "This class has been cancelled by the school.": "คลาสนี้ถูกโรงเรียนยกเลิกแล้ว",
   "\"Can invite coaches\" is for Branch Staff only. Coaches can't invite coaches (Spec 55 §8.2).": "สิทธิ์ \"เชิญโค้ชได้\" ใช้ได้กับพนักงานสาขาเท่านั้น โค้ชไม่สามารถเชิญโค้ชคนอื่นได้",
   "\"Getting There\" must start below \"Ready to Grade\".": "ระดับ \"ใกล้พร้อม\" ต้องเริ่มต่ำกว่าระดับ \"พร้อมเลื่อนระดับ\"",
   "A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.": "ผู้ปกครองไม่สามารถระบุ overrideReason ได้ — เฉพาะครูฝึกหรือพนักงานเท่านั้นที่ข้ามเงื่อนไขระดับได้",
