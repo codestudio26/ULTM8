@@ -35,9 +35,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   stores in English (style template belt names, generated stripe names),
   Platform Admin and the student app. Non-English text is a first draft
   awaiting native-speaker review.
-- **Clearer errors** — an error banner now scrolls into view when it appears,
-  and a request that gets no answer at all says "Could not reach the server"
-  instead of "Something went wrong". The Curriculum list's Instructor column
+- **Saving after 15 minutes on a page works again** — when the access token
+  had expired, the session refreshed correctly but the save itself was never
+  re-sent (the retry called the browser's fetch the wrong way), so e.g. saving
+  the School profile showed "Something went wrong". Lists recovered on their
+  own; saves did not. Fixed in `@ultm8/api-client`, so the student app gets it too.
+- **Clearer errors** — error and success banners now scroll into view when
+  they appear, and a request that gets no answer at all says "Could not reach
+  the server" instead of "Something went wrong". The Curriculum list's Instructor column
   shows the coach's name instead of an id.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now

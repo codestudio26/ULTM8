@@ -1536,13 +1536,24 @@ export function EmptyState({ title, description, action }: { title: string; desc
   );
 }
 
-export function ErrorBanner({ message }: { message: string }) {
-  // Brought into view whenever a message appears or changes: a save that fails
-  // on a long form would otherwise report its error above the fold, unseen.
+/** Brings a banner into view whenever its message appears or changes: a save
+ * on a long form would otherwise report its result above the fold, unseen.
+ * Only scrolls when the banner isn't already fully on screen, and centres it so
+ * a sticky header can't cover it. */
+function useRevealOnChange(message: string) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    const el = ref.current;
+    if (!el?.scrollIntoView) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.top >= 0 && rect.bottom <= window.innerHeight) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [message]);
+  return ref;
+}
+
+export function ErrorBanner({ message }: { message: string }) {
+  const ref = useRevealOnChange(message);
   return (
     <div ref={ref} className="ultm8-banner ultm8-banner--error" role="alert">
       {message}
@@ -1551,8 +1562,9 @@ export function ErrorBanner({ message }: { message: string }) {
 }
 
 export function SuccessBanner({ message }: { message: string }) {
+  const ref = useRevealOnChange(message);
   return (
-    <div className="ultm8-banner ultm8-banner--success" role="status">
+    <div ref={ref} className="ultm8-banner ultm8-banner--success" role="status">
       {message}
     </div>
   );
