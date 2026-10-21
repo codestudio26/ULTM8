@@ -395,11 +395,13 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - On phones each row keeps the tick box, the name (with the belt and tags under it) and the progress.
   - Ticking, Select all, Promote selected, Move and the right panel work the same in both views.
   - **No branch** follows the switch too (product owner, 21 Oct 2026): in Rows, its students are rows like the groups below, with the "Choose a branch" picker and Assign on a line under each row.
-- **Kids and Adult** (product owner, 21 Oct 2026; Decision 273). Brazilian Jiu-Jitsu is one style with one linked ladder: White Belt, the kids belts, then the adult belts. There is no separate "Kids BJJ" style.
-  - Next to the style pills, a second switch, **Kids · Adult**, with a count on each. It is followed by the link "Kids: under 16 · change in Settings".
-  - Who is a Kid comes from the age: under **"Kids until age"** (Grading → Settings, default 16, coaches can change it too).
-  - Adults skip the kids belts. Their next rank after White Belt · 4 Stripes is Blue Belt, and "Promote to" doesn't list kids belts.
-  - A student on a kids belt who has reached the age shows under Adult with a blue **"Ready for Adult belts"** tag. The coach promotes them to an adult belt with "Promote to". Nothing moves on its own.
+- **Kids and Adult programs** (product owner, 21 Oct 2026; Decision 274, which corrects 273).
+  - Brazilian Jiu-Jitsu has two separate programs, each with its own ladder: **Kids** (White, then the kids belts) and **Adult** (White, Blue, Purple, Brown, Black).
+  - **Grading a kid into Adult.** In "Promote to", a Kids student's list goes on past the kids ranks into a small grey heading, **ADULT PROGRAM**, followed by the adult ranks.
+    - Picking one shows "Moves to the Adult program. This is recorded on the history." in blue.
+    - The history entry reads "Moved to Adult program". The result list says "(Adult program)".
+    - The student then appears under Adult. The same choice is in the Grade dialog on the Ranks tab, labelled "{rank} · Adult program".
+  - **"Ready for Adult program"** tag: shown on a Kids student who has reached "Ready for Adult from age" (Grading → Settings, default 16). Nothing moves on its own.
 - **Promote selected: pick the rank** (product owner, 21 Oct 2026; skipping is Decision 128 item 7). Each student in the bulk promote dialog has a **Promote to** picker. It starts on the next rank and lists only higher ranks, so a student can go from White Belt · 2 Stripes straight to Blue Belt. A skip shows "Skips N rank(s) in between. This is recorded on the history." in blue, and the result list says "(skipped N)".
   - **The picker is our own drop-down, not the browser's** (product owner, 21 Oct 2026; now the rule for every drop-down, see "Drop-downs" below). A browser `<select>` opens a grey system list that can't be styled. The closed picker is a soft grey 48px field showing the belt picture, the rank name and a chevron; it gets a slate outline while open. The list opens under it inside the dialog: a white card, 14px corners, at most 264px tall and scrolling. Each option is 44px high with its belt picture and name. Hover is light grey; the chosen rank is pale green (#def2e2) with a green ✓. Picking closes the list. It is `role="listbox"` with `role="option"` rows. Use this pattern wherever a choice of ranks or belts needs styling; plain `<select>` stays fine for short text-only lists.
   - ⚠️ **Open:** which rank's requirements apply when a student skips. The design copies the single-student Grade dialog: the "Needs a look" checks (skills, days short) only apply to the next rank, so they drop away on a skip. Students blocked by "Skills required" still can't be promoted and get no picker. This needs a product-owner decision before the API is built.
@@ -487,6 +489,14 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - **Ready to Grade:** mint **#9fd3b2**
 - The same colour marks the group's left edge in Rows, and the bar in the right panel and on the Ranks tab.
 - The % next to a bar carries the meaning, so the soft bar colour doesn't need text contrast. The track stays #e1e3e5.
+
+### Style switch: one look everywhere (product owner, 21 Oct 2026)
+- Picking a style always looks like the Grading Board: a light grey track (#edf0f2) holding the choices, with the chosen one white, raised by a soft shadow. Never dark filled pills or outlined pills.
+- The disciplines come first (Brazilian Jiu-Jitsu · No-Gi). When a discipline has programs, a second switch **Kids · Adult** follows it, Kids first.
+- The same switch is used on the Board, Styles & Belts, Skills and Settings, desktop and phone. In the vision pages it comes from `style_switch()` / `styleSwitch()`.
+
+### Button pairs (product owner, 21 Oct 2026)
+- Two buttons side by side, like "Edit this belt" and "Duplicate", share the row equally: same height, same width, one line, 8px apart. Never one wide button next to a narrow one.
 
 ### Never the same colour twice (product owner, 20 Oct 2026)
 

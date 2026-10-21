@@ -3932,3 +3932,33 @@ Needs a schema and engine change: the age on the style, a "kids belt" flag on a 
 ### Recorded by
 
 User, answering the Kids/Adult questions on the New Portal grading screens, 21 Oct 2026.
+
+---
+
+## Decision 274 — Kids and Adult stay separate programs; a Kids student can be graded into the Adult program (corrects Decision 273)
+
+**Date:** 21 Oct 2026 · **Status:** Product-owner decision · **Supersedes:** Decision 273 items 1, 2 and 5
+
+Decision 273 combined Kids and Adult into one linked ladder. That was a misreading. The product owner's words: *"before we have the kids and the adult program separate, this is correct. What I did ask was to be able to grade from kids to adult, not to combine them."*
+
+### Decision
+
+1. **Two separate programs.** Each has its own ladder:
+   - **Adult:** White, Blue, Purple, Brown, Black.
+   - **Kids:** White, then the kids belts.
+   
+   Both programs sit under one discipline, Brazilian Jiu-Jitsu. Screens show them as a **Kids · Adult** switch next to the discipline.
+2. **Grading Kids → Adult.** For a Kids student, "Promote to" lists their next kids ranks, then an **"Adult program"** group with the adult ranks. Picking an adult rank moves the student to the Adult program at that rank. Their history records **"Moved to Adult program"**. This works from the board (single and bulk) and from the Ranks tab.
+3. **The age setting is only a reminder** (Decision 273 items 2 and 4, reworded). From **"Ready for Adult from age"** (default 16, editable by the owner and coaches), a Kids student gets the **"Ready for Adult program"** tag. Nothing moves on its own.
+4. **Decision 273 item 5 is withdrawn.** It existed only because of the combined ladder.
+
+### Still open
+
+- **The default adult rank** for a kid at the top of the kids ladder. The sample uses the first adult rank above White Belt (Blue Belt). This is a placeholder, not a confirmed rule.
+- **Whether a coach may grade a kid into Adult before the age.** The design allows it, because the age is only a reminder. Confirm.
+- **What carries over on the move.** This covers classes, skills and history. The design treats it like any grade: counting restarts, sign-offs are wiped (Decision 128 item 16) and history is kept.
+- Decision 273's open item on which coaches can change the age.
+
+### Recorded by
+
+User, correcting the combined ladder on the New Portal grading screens, 21 Oct 2026.
