@@ -490,6 +490,16 @@ The grading system as built, shown in the new look. Every label and rule stays a
 - The same colour marks the group's left edge in Rows, and the bar in the right panel and on the Ranks tab.
 - The % next to a bar carries the meaning, so the soft bar colour doesn't need text contrast. The track stays #e1e3e5.
 
+### No dark fills: soft blue instead (product owner, 21 Oct 2026)
+- Nothing in the new look is filled dark slate or black, apart from QR codes and belt colours.
+- **Selected states** use soft blue **#e5ecf6** with **#2b4f80** text: a chosen pill (Student / Visitor), a ticked checkbox (blue tick and border), a selected filter chip, the SJ school logo square, and the "unsaved changes" / undo bars.
+- **Cards that used to be dark slate** use soft blue **#dce6f3** with **#2b4f80** text and **#4a6a93** for the quieter lines: the New student / ID card preview, the Settings check-in preview, and the Check-in keypad panel.
+  - Inside them, circles and wells are #c6d6ec or white.
+  - Keypad keys are white with blue digits, and the ✓ key is mint.
+  - The shadow is light (0 8px 22px rgba(21,23,25,.08)).
+- **Switches that are on** use the pale-green track (#def2e2) with an outlined knob, as on Settings, never dark slate.
+- **Simple charts** (attendance bars, the class-history columns) use soft sky **#a8c5ea**.
+
 ### Style switch: one look everywhere (product owner, 21 Oct 2026)
 - Picking a style always looks like the Grading Board: a light grey track (#edf0f2) holding the choices, with the chosen one white, raised by a soft shadow. Never dark filled pills or outlined pills.
 - The disciplines come first (Brazilian Jiu-Jitsu · No-Gi). When a discipline has programs, a second switch **Kids · Adult** follows it, Kids first.
