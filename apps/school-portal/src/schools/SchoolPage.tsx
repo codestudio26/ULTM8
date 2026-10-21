@@ -33,7 +33,6 @@ export function SchoolPage() {
     defaultCurrency: string;
     timezone: string;
     description: string;
-    classCancellationPolicy: 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT';
     waitlistClaimWindowMinutes: number;
   } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -53,7 +52,6 @@ export function SchoolPage() {
       defaultCurrency: school.defaultCurrency ?? '',
       timezone: school.timezone ?? '',
       description: school.description ?? '',
-      classCancellationPolicy: school.classCancellationPolicy,
       waitlistClaimWindowMinutes: school.waitlistClaimWindowMinutes,
     });
   }, [school]);
@@ -86,7 +84,6 @@ export function SchoolPage() {
         defaultCurrency: form.defaultCurrency || null,
         timezone: form.timezone || null,
         description: form.description || null,
-        classCancellationPolicy: form.classCancellationPolicy,
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes,
       });
       setSaved(true);
@@ -146,17 +143,6 @@ export function SchoolPage() {
           <Field label={t('schools.form.description')} htmlFor="edit-description">
             <TextField value={form.description} onChange={(e) => set('description', e.target.value)} />
           </Field>
-          <Field label={t('schools.form.cancellationPolicy')} htmlFor="edit-policy">
-            <SelectField
-              value={form.classCancellationPolicy}
-              onChange={(e) => set('classCancellationPolicy', e.target.value as typeof form.classCancellationPolicy)}
-              options={[
-                { value: 'MANUAL', label: t('schools.form.policyManual') },
-                { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
-                { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
-              ]}
-            />
-          </Field>
           <Field label={t('schools.form.waitlistWindow')} htmlFor="edit-waitlist">
             <TextField
               type="number"
@@ -177,9 +163,125 @@ export function SchoolPage() {
           </div>
         </form>
       </Card>
+      {schoolId && school ? <CancellationSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FooterSettingsCard schoolId={schoolId} school={school} /> : null}
       {schoolId && school ? <FranchiseAffiliationCard schoolId={schoolId} franchiseId={school.franchiseId ?? null} /> : null}
     </>
+  );
+}
+
+/**
+ * Decision 279 — the owner's "Class cancellations" settings: what a cancelled
+ * booking gets back, when that applies, the late and no-show fees, and what
+ * happens when the School cancels a whole class. Its own Card and save, same
+ * pattern as FooterSettingsCard below, so saving the main form never
+ * overwrites these. Two rules are fixed and only explained here: a Friend Pass
+ * always gets its credit back, and only an Owner/Manager can send money back.
+ */
+function CancellationSettingsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
+  const t = useT();
+  const update = useUpdateSchool(schoolId);
+  const [form, setForm] = useState({
+    classCancellationPolicy: school.classCancellationPolicy,
+    classCancellationPolicyWindow: school.classCancellationPolicyWindow,
+    chargeLateCancellationFee: school.chargeLateCancellationFee,
+    schoolCancelledClassResolution: school.schoolCancelledClassResolution,
+    defaultRefundCutoffHours: school.defaultRefundCutoffHours?.toString() ?? '',
+    noShowFee: school.noShowFee?.toString() ?? '',
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    try {
+      await update.mutateAsync({
+        classCancellationPolicy: form.classCancellationPolicy,
+        classCancellationPolicyWindow: form.classCancellationPolicyWindow,
+        chargeLateCancellationFee: form.chargeLateCancellationFee,
+        schoolCancelledClassResolution: form.schoolCancelledClassResolution,
+        defaultRefundCutoffHours: form.defaultRefundCutoffHours === '' ? null : Number(form.defaultRefundCutoffHours),
+        noShowFee: form.noShowFee === '' || Number(form.noShowFee) === 0 ? null : Number(form.noShowFee),
+      });
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Card>
+      <form onSubmit={handleSubmit}>
+        <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('schools.cancellations.title')}</h2>
+        <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('schools.cancellations.subtitle')}</p>
+        {error ? <ErrorBanner message={error} /> : null}
+        {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+        <Field label={t('schools.form.cancellationPolicy')} htmlFor="cancel-policy" hint={t(`schools.cancellations.policyHint.${form.classCancellationPolicy}`)}>
+          <SelectField
+            id="cancel-policy"
+            value={form.classCancellationPolicy}
+            onChange={(e) => set('classCancellationPolicy', e.target.value as typeof form.classCancellationPolicy)}
+            options={[
+              { value: 'MANUAL', label: t('schools.form.policyManual') },
+              { value: 'AUTO_REFUND', label: t('schools.form.policyAutoRefund') },
+              { value: 'AUTO_CREDIT', label: t('schools.form.policyAutoCredit') },
+            ]}
+          />
+        </Field>
+        <Field label={t('schools.cancellations.windowLabel')} htmlFor="cancel-window">
+          <SelectField
+            id="cancel-window"
+            value={form.classCancellationPolicyWindow}
+            onChange={(e) => set('classCancellationPolicyWindow', e.target.value as typeof form.classCancellationPolicyWindow)}
+            options={[
+              { value: 'BEFORE_CUTOFF', label: t('schools.cancellations.windowBeforeCutoff') },
+              { value: 'ANY_TIME', label: t('schools.cancellations.windowAnyTime') },
+            ]}
+          />
+        </Field>
+        <Field label={t('schools.cancellations.defaultCutoffLabel')} htmlFor="cancel-default-cutoff" hint={t('schools.cancellations.defaultCutoffHint')}>
+          <TextField
+            id="cancel-default-cutoff"
+            type="number"
+            min={0}
+            value={form.defaultRefundCutoffHours}
+            onChange={(e) => set('defaultRefundCutoffHours', e.target.value)}
+          />
+        </Field>
+        <Checkbox
+          label={t('schools.cancellations.lateFeeLabel')}
+          checked={form.chargeLateCancellationFee}
+          onChange={(e) => set('chargeLateCancellationFee', e.target.checked)}
+        />
+        <Field label={t('schools.cancellations.noShowFeeLabel')} htmlFor="cancel-no-show-fee" hint={t('schools.cancellations.noShowFeeHint')}>
+          <TextField id="cancel-no-show-fee" type="number" min={0} value={form.noShowFee} onChange={(e) => set('noShowFee', e.target.value)} />
+        </Field>
+        <Field label={t('schools.cancellations.classCancelledLabel')} htmlFor="cancel-class-resolution">
+          <SelectField
+            id="cancel-class-resolution"
+            value={form.schoolCancelledClassResolution}
+            onChange={(e) => set('schoolCancelledClassResolution', e.target.value as typeof form.schoolCancelledClassResolution)}
+            options={[
+              { value: 'REFUND_ALL', label: t('schools.cancellations.classCancelledRefund') },
+              { value: 'CREDIT_ALL', label: t('schools.cancellations.classCancelledCredit') },
+              { value: 'FOLLOW_POLICY', label: t('schools.cancellations.classCancelledFollow') },
+            ]}
+          />
+        </Field>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '8px 0 0' }}>{t('schools.cancellations.fixedRules')}</p>
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={update.isPending}>
+            {t('schools.profile.saveChanges')}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }
 

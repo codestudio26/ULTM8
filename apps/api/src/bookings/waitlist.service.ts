@@ -66,6 +66,10 @@ export class WaitlistService {
     // Hoisted to a local const — same closure-narrowing fix bookClass()'s own
     // resolvedClass already applies.
     const resolvedClass = cls;
+    // Decision 279 — the School cancelled this class.
+    if (resolvedClass.cancelledAt) {
+      throw new ConflictException('This class has been cancelled by the school.');
+    }
 
     if (isGuardianAction) {
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
@@ -212,6 +216,9 @@ export class WaitlistService {
     return this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const cls = await tx.class.findUniqueOrThrow({ where: { id: resolvedEntry.classId } });
       const studentId = resolvedEntry.studentId;
+      if (cls.cancelledAt) {
+        throw new ConflictException('This class has been cancelled by the school.');
+      }
 
       if (cls.termsWaiverRequired) {
         const signed = await tx.waiverSignature.findFirst({

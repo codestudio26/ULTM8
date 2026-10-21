@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useClass } from './classQueries';
 import { useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
@@ -8,6 +8,56 @@ import { useClassWaitlist, type WaitlistEntryResponse } from '../waitlist/waitli
 import { titleCase } from '../lib/text';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useCancelClass } from '../cancellations/cancellationQueries';
+
+/** Decision 279 — the School cancels this whole class: every booking is
+ * resolved by the School's "When the school cancels a whole class" setting,
+ * the waitlist is closed, and everyone booked or waiting is notified with the
+ * reason. Owner/Manager or Branch Staff (the API re-checks, and refuses
+ * Instructors). */
+function CancelClassButton({ classId }: { classId: string }) {
+  const t = useT();
+  const cancelClass = useCancelClass(classId);
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirm() {
+    setError(null);
+    try {
+      await cancelClass.mutateAsync(reason);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <>
+      <Button variant="danger" onClick={() => setOpen(true)}>
+        {t('classes.detail.cancelClass')}
+      </Button>
+      {open ? (
+        <Modal title={t('classes.detail.cancelClassTitle')} onClose={() => setOpen(false)}>
+          <p style={{ marginTop: 0 }}>{t('classes.detail.cancelClassBody')}</p>
+          {error ? <ErrorBanner message={error} /> : null}
+          <Field label={t('classes.detail.cancelReasonLabel')} htmlFor="cancel-class-reason" hint={t('classes.detail.cancelReasonHint')}>
+            <TextField id="cancel-class-reason" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </Field>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              {t('classes.detail.cancelClassBack')}
+            </Button>
+            <Button variant="danger" loading={cancelClass.isPending} onClick={confirm}>
+              {t('classes.detail.cancelClassConfirm')}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
+    </>
+  );
+}
 
 function bookingStatusBadge(status: string, t: TranslateFn) {
   if (status === 'UPCOMING') return <Badge variant="success">{t('classes.detail.bookingUpcoming')}</Badge>;
@@ -43,6 +93,7 @@ export function ClassDetailPage() {
   const { data: cls, isLoading: classLoading, error: classError } = useClass(classId);
   const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(classId);
   const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(classId);
+  const mayCancel = !!useOwnedSchoolId() || !!useCoachSchoolId();
 
   if (!classId) return null;
   if (classLoading || bookingsLoading || waitlistLoading) return <Spinner />;
@@ -64,7 +115,14 @@ export function ClassDetailPage() {
       <PageHeader
         title={cls?.title ?? t('classes.detail.fallbackTitle')}
         subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
+        actions={cls && mayCancel && !cls.cancelledAt && new Date(cls.endDate) > new Date() ? <CancelClassButton classId={cls.id} /> : undefined}
       />
+      {cls?.cancelledAt ? (
+        <div style={{ marginBottom: 16 }}>
+          <Badge variant="danger">{t('classes.detail.cancelledBadge')}</Badge>
+          {cls.cancellationReason ? <span style={{ marginLeft: 8 }}>{t('classes.detail.cancelledReason', { reason: cls.cancellationReason })}</span> : null}
+        </div>
+      ) : null}
 
       <div style={{ marginBottom: 24 }}>
         <Card>

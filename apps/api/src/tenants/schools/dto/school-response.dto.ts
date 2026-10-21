@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
-import { ClassCancellationPolicyDto } from './create-school.dto';
+import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from './create-school.dto';
 
 /**
  * Response shape — added in Phase 3 for packages/api-client generation (see
@@ -100,6 +100,21 @@ export class SchoolResponseDto {
 
   @ApiProperty()
   waitlistClaimWindowMinutes!: number;
+
+  @ApiProperty({ enum: ClassCancellationPolicyWindowDto })
+  classCancellationPolicyWindow!: ClassCancellationPolicyWindowDto;
+
+  @ApiProperty()
+  chargeLateCancellationFee!: boolean;
+
+  @ApiProperty({ enum: SchoolCancelledClassResolutionDto })
+  schoolCancelledClassResolution!: SchoolCancelledClassResolutionDto;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  defaultRefundCutoffHours!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  noShowFee!: number | null;
 
   @ApiPropertyOptional({ type: String, nullable: true, enum: ['ACTIVE', 'PAST_DUE', 'CANCELED'] })
   franchiseFeeSubscriptionStatus!: 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | null;

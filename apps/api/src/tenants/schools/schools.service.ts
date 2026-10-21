@@ -134,6 +134,11 @@ export class SchoolsService {
           footerTwitterUrl: dto.footerTwitterUrl,
           classCancellationPolicy: dto.classCancellationPolicy,
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
+          classCancellationPolicyWindow: dto.classCancellationPolicyWindow,
+          chargeLateCancellationFee: dto.chargeLateCancellationFee,
+          schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
+          defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
+          noShowFee: dto.noShowFee,
         },
       });
 
@@ -710,6 +715,11 @@ export class SchoolsService {
           footerTwitterUrl: dto.footerTwitterUrl,
           classCancellationPolicy: dto.classCancellationPolicy,
           waitlistClaimWindowMinutes: dto.waitlistClaimWindowMinutes,
+          classCancellationPolicyWindow: dto.classCancellationPolicyWindow,
+          chargeLateCancellationFee: dto.chargeLateCancellationFee,
+          schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
+          defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
+          noShowFee: dto.noShowFee,
         },
       }),
     );

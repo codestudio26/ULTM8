@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Class cancellations, chosen by each academy** (Decision 279) — the
+  School page's cancellation policy (Manual / Auto-refund / Auto-credit) now
+  actually applies, in its own "Class cancellations" section with new
+  settings: whether it applies only before a class's cutoff or any time, a
+  default cutoff for classes without one, whether the late fee is charged, an
+  optional no-show fee, and what students get when the school cancels a whole
+  class. New **Cancel class** button on a class's page (with a reason sent to
+  students), and a new **Cancellations** page where staff resolve cancelled
+  bookings and mark cash refunds paid. Card refunds go through Stripe. A Friend
+  Pass always gets its credit back, and only an Owner or Manager can send money
+  back.
 - **School Portal translation, 15 languages** (Decision 273) — the header's
   language picker now actually switches the portal's text instead of only
   saving a preference. Languages: English (UK), Portuguese (BR), Spanish,

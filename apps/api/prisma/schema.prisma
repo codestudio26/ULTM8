@@ -67,6 +67,24 @@ enum ClassCancellationPolicy {
   AUTO_CREDIT
 }
 
+/// School.classCancellationPolicyWindow (Decision 279) — whether the policy above
+/// only applies to a cancellation made before the class's refund cutoff
+/// (BEFORE_CUTOFF, the default: after it the seat is kept, as before) or to every
+/// cancellation (ANY_TIME).
+enum ClassCancellationPolicyWindow {
+  BEFORE_CUTOFF
+  ANY_TIME
+}
+
+/// School.schoolCancelledClassResolution (Decision 279) — what every booked seat
+/// gets back when the School cancels a whole class. FOLLOW_POLICY applies the
+/// School's own policy above, ignoring the cutoff (the student didn't cancel).
+enum SchoolCancelledClassResolution {
+  REFUND_ALL
+  CREDIT_ALL
+  FOLLOW_POLICY
+}
+
 /// School.franchiseFeeSubscriptionStatus — synced from the Franchise-fee Stripe
 /// Subscription (domain-rules §2, Spec §6.1). Nullable on the model since it only
 /// applies to a School actually under a Franchise.
@@ -865,6 +883,16 @@ model School {
   footerTwitterUrl     String?
 
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
+  /// Decision 279 — the rest of the owner's "Class cancellations" settings. See
+  /// ClassCancellationPolicyWindow/SchoolCancelledClassResolution above.
+  /// defaultRefundCutoffHours stands in for a class that has no refundFeeDate of
+  /// its own (null = no cutoff, the old behaviour). noShowFee is a minor-unit
+  /// amount charged to a no-show's saved card (null = off).
+  classCancellationPolicyWindow  ClassCancellationPolicyWindow   @default(BEFORE_CUTOFF)
+  chargeLateCancellationFee      Boolean                         @default(true)
+  schoolCancelledClassResolution SchoolCancelledClassResolution  @default(CREDIT_ALL)
+  defaultRefundCutoffHours       Int?
+  noShowFee                      Int?
   waitlistClaimWindowMinutes     Int                             @default(120)
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
@@ -1069,6 +1097,13 @@ model Class {
 
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false) // default is opt-out (confirmed §6)
+
+  // Decision 279 — set when the School cancels this class outright. A cancelled
+  // class can't be booked or waitlisted again; its bookings were resolved by
+  // School.schoolCancelledClassResolution at the time.
+  cancelledAt        DateTime?
+  cancelledById      String?
+  cancellationReason String?
 
   /// Decision 226 — entity-level tenant offboarding (see Branch's own trio
   /// comment for the full shape). Blocked by ClassesService.archive() while
@@ -3183,9 +3218,19 @@ enum CheckInMethod {
 /// refund/restore the spent credit) — REFUNDED/WITHHELD are exclusively the two
 /// outcomes of a Cancellation, chosen by comparing the cancellation time against
 /// the Class's refundFeeDate cutoff (kickoff prompt §1.c).
+///
+/// Decision 279 widens it. REFUNDED keeps its original meaning — the class credit
+/// went back to the Membership, no money moved (so existing rows stay correct).
+/// PENDING: waiting for staff (Manual policy, a refund Branch Staff can't
+/// authorize, or a Stripe refund that failed). MONEY_REFUNDED: money went back
+/// (Stripe, or a cash/bank refund staff marked paid). REFUND_OWED: a cash/bank
+/// refund staff still have to pay out by hand.
 enum RefundResolution {
   REFUNDED
   WITHHELD
+  PENDING
+  MONEY_REFUNDED
+  REFUND_OWED
 }
 
 /// Decision 234 (POST-SPEC-55-DECISION-LOG.md) — Booking.cancellationChargeOutcome's
@@ -3301,6 +3346,16 @@ model Booking {
   cancellationChargeAmount          Int?
   stripeCancellationPaymentIntentId String?
 
+  // Decision 279 — the money side of a refund (refundResolution MONEY_REFUNDED or
+  // REFUND_OWED, or PENDING when a refund is waiting), and the no-show fee, which
+  // reuses CancellationChargeOutcome's value set.
+  refundAmount                  Int?
+  stripeRefundId                String?
+  resolvedAt                    DateTime?
+  noShowFeeOutcome              CancellationChargeOutcome?
+  noShowFeeAmount               Int?
+  stripeNoShowPaymentIntentId   String?
+
   // Guardian Kid Mode (Decision 123). bookedViaKidMode marks a Booking created via
   // a Kid-Mode-scoped token (BookingsController's live BookingDelegation check, not
   // the ordinary Guardian-on-behalf-of path alone) — needed so withdrawing a
@@ -3324,6 +3379,7 @@ model Booking {
   // partial unique index in the migration, same technique as Membership's
   // one-active-general-access-per-school guard (Phase 9) — a Cancelled/
   // Completed/No-Show Booking must never block a fresh re-booking.
+  @@index([schoolId, refundResolution])
   @@index([schoolId])
   @@index([schoolId, branchId])
   @@index([studentId])
@@ -3363,10 +3419,15 @@ model BookingAttendee {
   refundResolution RefundResolution?
   resolvedById     String?
   resolvedBy       User?             @relation("BookingAttendeeResolvedBy", fields: [resolvedById], references: [id])
+  // Decision 279 — same as Booking's own fields of the same names.
+  refundAmount     Int?
+  stripeRefundId   String?
+  resolvedAt       DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([schoolId, refundResolution])
   @@index([schoolId])
   @@index([bookingId])
   @@index([membershipId])

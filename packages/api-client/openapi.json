@@ -8401,6 +8401,134 @@
         ]
       }
     },
+    "/v1/classes/{id}/cancel": {
+      "post": {
+        "operationId": "BookingsController_cancelClass",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelClassDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/cancellations": {
+      "get": {
+        "operationId": "BookingsController_listOpenCancellations",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpenCancellationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/bookings/{id}/resolution": {
+      "patch": {
+        "operationId": "BookingsController_resolveCancellation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveCancellationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "bookings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/waitlist": {
       "post": {
         "operationId": "WaitlistController_joinWaitlist",
@@ -8935,6 +9063,7 @@
             "name": "code",
             "required": true,
             "in": "path",
+            "description": "8-character School join code.",
             "schema": {
               "type": "string"
             }
@@ -11016,6 +11145,37 @@
           "waitlistClaimWindowMinutes": {
             "type": "number",
             "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ],
+            "description": "Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME)."
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean",
+            "description": "Whether a class's late-cancellation fee is charged after its cutoff. Defaults to true."
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ],
+            "description": "What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL."
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default)."
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor-unit amount charged to a no-show's saved card. null = off (the default)."
           }
         },
         "required": [
@@ -11139,6 +11299,32 @@
           "waitlistClaimWindowMinutes": {
             "type": "number"
           },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ]
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean"
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ]
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true
+          },
           "franchiseFeeSubscriptionStatus": {
             "type": "string",
             "nullable": true,
@@ -11179,6 +11365,9 @@
           "joinCode",
           "classCancellationPolicy",
           "waitlistClaimWindowMinutes",
+          "classCancellationPolicyWindow",
+          "chargeLateCancellationFee",
+          "schoolCancelledClassResolution",
           "createdAt",
           "updatedAt"
         ]
@@ -11255,6 +11444,37 @@
           "waitlistClaimWindowMinutes": {
             "type": "number",
             "description": "Minutes; School-configurable waitlist claim window (default 120 — Decision 24)."
+          },
+          "classCancellationPolicyWindow": {
+            "type": "string",
+            "enum": [
+              "BEFORE_CUTOFF",
+              "ANY_TIME"
+            ],
+            "description": "Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME)."
+          },
+          "chargeLateCancellationFee": {
+            "type": "boolean",
+            "description": "Whether a class's late-cancellation fee is charged after its cutoff. Defaults to true."
+          },
+          "schoolCancelledClassResolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_ALL",
+              "CREDIT_ALL",
+              "FOLLOW_POLICY"
+            ],
+            "description": "What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL."
+          },
+          "defaultRefundCutoffHours": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default)."
+          },
+          "noShowFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor-unit amount charged to a no-show's saved card. null = off (the default)."
           },
           "mobileNumber": {
             "type": "string",
@@ -11913,7 +12133,8 @@
             "type": "string",
             "enum": [
               "INSTRUCTOR",
-              "BRANCH_STAFF"
+              "BRANCH_STAFF",
+              "SCHOOL_OWNER_MANAGER"
             ]
           },
           "schoolId": {
@@ -13463,6 +13684,15 @@
           },
           "membershipInclusion": {
             "type": "boolean"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 279 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted."
+          },
+          "cancellationReason": {
+            "type": "string",
+            "nullable": true
           },
           "archivedAt": {
             "type": "string",
@@ -18292,6 +18522,15 @@
           "resolvedById": {
             "type": "string",
             "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -18364,6 +18603,23 @@
           },
           "stripeCancellationPaymentIntentId": {
             "type": "string",
+            "nullable": true
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "noShowFeeOutcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "noShowFeeAmount": {
+            "type": "number",
             "nullable": true
           },
           "attendees": {
@@ -18604,6 +18860,116 @@
           "totalBookings",
           "upcomingBookings",
           "days"
+        ]
+      },
+      "CancelClassDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Shown to every booked or waitlisted student, e.g. \"Coach is ill\"."
+          }
+        }
+      },
+      "OpenCancellationResponseDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "attendeeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "studentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "classId": {
+            "type": "string"
+          },
+          "classTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "classStartDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "classCancelledBySchool": {
+            "type": "boolean"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REFUND_OWED"
+            ]
+          },
+          "refundAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor units."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "planTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "planType": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "STRIPE",
+              "CASH",
+              "BANK_TRANSFER"
+            ]
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "bookingId",
+          "studentId",
+          "classId",
+          "classCancelledBySchool",
+          "resolution",
+          "cancelledAt"
+        ]
+      },
+      "ResolveCancellationDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "REFUND",
+              "CREDIT",
+              "KEEP",
+              "MARK_PAID"
+            ],
+            "description": "REFUND and MARK_PAID are School Owner/Manager only."
+          },
+          "attendeeId": {
+            "type": "string",
+            "description": "A guest seat on this booking; omit for the Student's own seat."
+          }
+        },
+        "required": [
+          "action"
         ]
       },
       "JoinWaitlistDto": {

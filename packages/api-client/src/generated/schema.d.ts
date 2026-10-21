@@ -2804,6 +2804,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/classes/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BookingsController_cancelClass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/cancellations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BookingsController_listOpenCancellations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{id}/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["BookingsController_resolveCancellation"];
+        trace?: never;
+    };
     "/v1/classes/{id}/waitlist": {
         parameters: {
             query?: never;
@@ -3620,6 +3668,22 @@ export interface components {
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
             waitlistClaimWindowMinutes?: number;
+            /**
+             * @description Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME).
+             * @enum {string}
+             */
+            classCancellationPolicyWindow?: "BEFORE_CUTOFF" | "ANY_TIME";
+            /** @description Whether a class's late-cancellation fee is charged after its cutoff. Defaults to true. */
+            chargeLateCancellationFee?: boolean;
+            /**
+             * @description What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL.
+             * @enum {string}
+             */
+            schoolCancelledClassResolution?: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
+            /** @description Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default). */
+            defaultRefundCutoffHours?: number | null;
+            /** @description Minor-unit amount charged to a no-show's saved card. null = off (the default). */
+            noShowFee?: number | null;
         };
         SchoolResponseDto: {
             id: string;
@@ -3653,6 +3717,13 @@ export interface components {
             /** @enum {string} */
             classCancellationPolicy: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             waitlistClaimWindowMinutes: number;
+            /** @enum {string} */
+            classCancellationPolicyWindow: "BEFORE_CUTOFF" | "ANY_TIME";
+            chargeLateCancellationFee: boolean;
+            /** @enum {string} */
+            schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
+            defaultRefundCutoffHours?: number | null;
+            noShowFee?: number | null;
             /** @enum {string|null} */
             franchiseFeeSubscriptionStatus?: "ACTIVE" | "PAST_DUE" | "CANCELED" | null;
             createdAt: string;
@@ -3685,6 +3756,22 @@ export interface components {
             classCancellationPolicy?: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             /** @description Minutes; School-configurable waitlist claim window (default 120 — Decision 24). */
             waitlistClaimWindowMinutes?: number;
+            /**
+             * @description Whether the policy applies only before a class's refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME).
+             * @enum {string}
+             */
+            classCancellationPolicyWindow?: "BEFORE_CUTOFF" | "ANY_TIME";
+            /** @description Whether a class's late-cancellation fee is charged after its cutoff. Defaults to true. */
+            chargeLateCancellationFee?: boolean;
+            /**
+             * @description What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL.
+             * @enum {string}
+             */
+            schoolCancelledClassResolution?: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
+            /** @description Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default). */
+            defaultRefundCutoffHours?: number | null;
+            /** @description Minor-unit amount charged to a no-show's saved card. null = off (the default). */
+            noShowFee?: number | null;
             mobileNumber?: string | null;
             address?: string | null;
             businessType?: string | null;
@@ -3877,7 +3964,7 @@ export interface components {
         };
         CreateRoleGrantDto: {
             /** @enum {string} */
-            role: "INSTRUCTOR" | "BRANCH_STAFF";
+            role: "INSTRUCTOR" | "BRANCH_STAFF" | "SCHOOL_OWNER_MANAGER";
             schoolId: string;
             /** @description Required when role=BRANCH_STAFF (must belong to schoolId). Optional for INSTRUCTOR — Phase 1's schema.prisma models a School-scoped Instructor grant (branchId null) as the default shape; see the Phase 2 summary for the §6.1 wording this follows rather than re-litigates. */
             branchId?: string;
@@ -4328,6 +4415,9 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /** @description Decision 279 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted. */
+            cancelledAt?: string | null;
+            cancellationReason?: string | null;
             /** @description Decision 226 — set when this Class has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Class once this elapses (unless blocked by a FK, logged and retried). */
@@ -5815,6 +5905,9 @@ export interface components {
             membershipId: string;
             refundResolution?: string | null;
             resolvedById?: string | null;
+            refundAmount?: number | null;
+            /** Format: date-time */
+            resolvedAt?: string | null;
         };
         BookingResponseDto: {
             id: string;
@@ -5835,6 +5928,11 @@ export interface components {
             cancellationChargeOutcome?: string | null;
             cancellationChargeAmount?: number | null;
             stripeCancellationPaymentIntentId?: string | null;
+            refundAmount?: number | null;
+            /** Format: date-time */
+            resolvedAt?: string | null;
+            noShowFeeOutcome?: string | null;
+            noShowFeeAmount?: number | null;
             attendees: components["schemas"]["BookingAttendeeResponseDto"][];
             createdAt: string;
             updatedAt: string;
@@ -5894,6 +5992,41 @@ export interface components {
             totalBookings: number;
             upcomingBookings: number;
             days: components["schemas"]["BookingsSummaryDayDto"][];
+        };
+        CancelClassDto: {
+            /** @description Shown to every booked or waitlisted student, e.g. "Coach is ill". */
+            reason?: string;
+        };
+        OpenCancellationResponseDto: {
+            bookingId: string;
+            attendeeId?: string | null;
+            studentId: string;
+            studentName?: string | null;
+            classId: string;
+            classTitle?: string | null;
+            /** Format: date-time */
+            classStartDate?: string | null;
+            classCancelledBySchool: boolean;
+            /** @enum {string} */
+            resolution: "PENDING" | "REFUND_OWED";
+            /** @description Minor units. */
+            refundAmount?: number | null;
+            currency?: string | null;
+            planTitle?: string | null;
+            planType?: string | null;
+            /** @enum {string|null} */
+            paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | null;
+            /** Format: date-time */
+            cancelledAt: string;
+        };
+        ResolveCancellationDto: {
+            /**
+             * @description REFUND and MARK_PAID are School Owner/Manager only.
+             * @enum {string}
+             */
+            action: "REFUND" | "CREDIT" | "KEEP" | "MARK_PAID";
+            /** @description A guest seat on this booking; omit for the Student's own seat. */
+            attendeeId?: string;
         };
         JoinWaitlistDto: {
             /** @description Join on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
@@ -11080,6 +11213,77 @@ export interface operations {
             };
         };
     };
+    BookingsController_cancelClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelClassDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassResponseDto"];
+                };
+            };
+        };
+    };
+    BookingsController_listOpenCancellations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenCancellationResponseDto"][];
+                };
+            };
+        };
+    };
+    BookingsController_resolveCancellation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveCancellationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResponseDto"];
+                };
+            };
+        };
+    };
     WaitlistController_findAllForClass: {
         parameters: {
             query?: never;
@@ -11383,6 +11587,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 8-character School join code. */
                 code: string;
             };
             cookie?: never;

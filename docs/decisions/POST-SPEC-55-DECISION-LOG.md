@@ -3926,3 +3926,42 @@ The student app (`apps/student`) and Platform Admin are not translated (both def
 ### Recorded by
 
 User (Code), choosing option 1 of two offered (built-in plus overrides vs server-only) and approving the proposed 15-language list, 20 Oct 2026.
+
+## Decision 279 — Class cancellations: owner-chosen settings, cancel a whole class, and a staff "to resolve" list
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** `School.classCancellationPolicy` (Manual / Auto-refund / Auto-credit, domain rules §7) was saved but never read; a cancellation only ever followed the class's own refund cutoff. Questions 2–5 of item 2 in the "discuss with Gus" list.
+
+### Decision
+
+The product owner chose to make every open question a School setting the academy owner picks, not a fixed rule, and asked for the field to stay visible. The School page gets a "Class cancellations" section (defaults in brackets):
+
+1. **Policy** — Manual / Auto-refund / Auto-credit (Manual, unchanged).
+2. **When it applies** — only before the class's cutoff / any time (before the cutoff). Past the cutoff under "before the cutoff", the seat is kept, as before.
+3. **Late fee after the cutoff** (Decision 234) — charge / don't charge (charge).
+4. **When the School cancels a whole class** — refund everyone / give everyone their credit back / follow the policy (credit back). The cutoff and late fee never apply here; the student didn't cancel.
+5. **Default cutoff, hours before class** — used for a class with no cutoff of its own (none).
+6. **No-show fee** — charged to the Student's saved card by the no-show sweep, the same way as the late fee (off).
+
+Two rules stay fixed, from the spec, and are explained on the page rather than offered as settings: a Friend Pass always gets its credit back (§7), and only a School Owner/Manager can send money back (§8.2). A refund a Branch Staff member or Instructor would trigger waits as PENDING for an Owner/Manager.
+
+Built alongside it: a **Cancel class** action (Owner/Manager or that branch's Branch Staff; Instructors can't) with an optional reason sent to everyone booked or waitlisted; a **Cancellations to resolve** page listing seats waiting for a decision or a cash/bank refund still owed, where the Owner/Manager can Refund, Give credit back, Keep, or Mark refund paid (Branch Staff: Give credit back or Keep); and in-app alerts to Owners/Managers when something lands there.
+
+### How a refund is worked out
+
+Recommendations the product owner accepted by default (21 Oct 2026, "use your recommendations unless I say otherwise"):
+
+- Money only goes back for a **Class Pack**: one class's share of what was paid, cumulative and rounded once (§7). A Subscription, Weekly Pass or Trial booking has no per-class price, so it falls back to the credit (nothing to give back for general access). A pack with no payment behind it falls back to the credit too.
+- **Card** payments are refunded through Stripe after the cancellation commits (idempotency key per seat); a failure leaves the seat PENDING for staff. **Cash/bank** payments become **REFUND_OWED** until an Owner/Manager marks them paid.
+- A payment under dispute is frozen (Decision 55/111): the seat waits for staff.
+- `RefundResolution` keeps `REFUNDED` meaning "credit back" (so existing rows stay right) and adds `PENDING`, `MONEY_REFUNDED` and `REFUND_OWED`.
+
+### What this does NOT resolve
+
+- Existing Schools all hold the default, Manual, which until now behaved like Auto-credit. After this ships, their cancellations wait in the list until an owner picks another policy.
+- New text is English only; other languages fall back to English until translated (Decision 273). Student notifications are in-app only (push is deferred, Decision 267).
+- Later ideas not built: stopping students cancelling close to class time, and a monthly limit on late cancellations.
+
+### Recorded by
+
+User (Code), 21 Oct 2026: "this must in setting for the academy owners to choose", "These all decisions should be for the academy owner", approving the proposed layout and asking for a deeper comparison before building.

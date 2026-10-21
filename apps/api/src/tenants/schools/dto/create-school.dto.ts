@@ -25,6 +25,19 @@ export enum ClassCancellationPolicyDto {
   AUTO_CREDIT = 'AUTO_CREDIT',
 }
 
+/** Decision 279 — School.classCancellationPolicyWindow. */
+export enum ClassCancellationPolicyWindowDto {
+  BEFORE_CUTOFF = 'BEFORE_CUTOFF',
+  ANY_TIME = 'ANY_TIME',
+}
+
+/** Decision 279 — School.schoolCancelledClassResolution. */
+export enum SchoolCancelledClassResolutionDto {
+  REFUND_ALL = 'REFUND_ALL',
+  CREDIT_ALL = 'CREDIT_ALL',
+  FOLLOW_POLICY = 'FOLLOW_POLICY',
+}
+
 /**
  * Field list verified directly against Spec 55 §6.1's School entity row (not
  * reverse-inferred from Decision 76's Branch description — see the Phase 2 summary).
@@ -211,4 +224,34 @@ export class CreateSchoolDto {
   @IsInt()
   @Min(1)
   waitlistClaimWindowMinutes?: number;
+
+  // Decision 279 — the rest of the owner's "Class cancellations" settings.
+  // Defaults live in the schema and are documented in each description, same
+  // reasoning as classCancellationPolicy above.
+  @ApiPropertyOptional({ enum: ClassCancellationPolicyWindowDto, description: 'Whether the policy applies only before a class\'s refund cutoff (BEFORE_CUTOFF, the default) or to every cancellation (ANY_TIME).' })
+  @IsOptional()
+  @IsEnum(ClassCancellationPolicyWindowDto)
+  classCancellationPolicyWindow?: ClassCancellationPolicyWindowDto;
+
+  @ApiPropertyOptional({ description: 'Whether a class\'s late-cancellation fee is charged after its cutoff. Defaults to true.' })
+  @IsOptional()
+  @IsBoolean()
+  chargeLateCancellationFee?: boolean;
+
+  @ApiPropertyOptional({ enum: SchoolCancelledClassResolutionDto, description: 'What booked students get back when the School cancels a whole class. Defaults to CREDIT_ALL.' })
+  @IsOptional()
+  @IsEnum(SchoolCancelledClassResolutionDto)
+  schoolCancelledClassResolution?: SchoolCancelledClassResolutionDto;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Hours before start; the refund cutoff for a class that has none of its own. null = no cutoff (the default).' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  defaultRefundCutoffHours?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Minor-unit amount charged to a no-show\'s saved card. null = off (the default).' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  noShowFee?: number | null;
 }

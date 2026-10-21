@@ -3,6 +3,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE, BOOKING_NO_SHOW_PROCESSING_QUEUE } from './queue.constants';
+import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 
 /** How often the sweep runs — SKILL.md §10 says only "set by a background job once a
  * Class's end time... passes", no number. Every 15 minutes is a Developer-level
@@ -81,6 +82,7 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
   constructor(
     private readonly prismaJobs: PrismaJobsService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
+    private readonly paymentsService: PaymentsService,
   ) {
     super();
   }
@@ -98,10 +100,17 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
           ],
         },
       },
-      select: { id: true, classId: true },
+      select: { id: true, classId: true, studentId: true, schoolId: true, sourceMembershipId: true },
     });
+    // Decision 279 — each School's no-show fee (Booking has no School relation).
+    const schools = await this.prismaJobs.school.findMany({
+      where: { id: { in: [...new Set(overdueUpcoming.map((b) => b.schoolId))] } },
+      select: { id: true, noShowFee: true },
+    });
+    const noShowFeeBySchool = new Map(schools.map((sc) => [sc.id, sc.noShowFee]));
 
     let marked = 0;
+    const toCharge: Array<{ booking: (typeof overdueUpcoming)[number]; fee: number }> = [];
     // FOUND ON REVIEW: deduping by classId into a Set and enqueueing only ONE
     // seat-freed job per Class silently under-cascaded — notifyNextWaitingEntry()
     // only ever notifies a single next Waiting entry per job, so a Class with N
@@ -129,7 +138,18 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
       if (result.count > 0) {
         marked += 1;
         affectedClassIds.push(booking.classId);
+        const fee = noShowFeeBySchool.get(booking.schoolId);
+        if (fee !== null && fee !== undefined && fee > 0) toCharge.push({ booking, fee });
       }
+    }
+
+    // Decision 279 — the School's optional no-show fee, charged to the
+    // Student's saved card exactly like Decision 234's late-cancellation fee:
+    // only after the status flip committed, never blocking it, outcome recorded
+    // on the Booking. Only a booking this run actually flipped is charged, so a
+    // re-run can't charge twice.
+    for (const { booking, fee } of toCharge) {
+      await this.chargeNoShowFee(booking, fee);
     }
 
     for (const classId of affectedClassIds) {
@@ -141,5 +161,34 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
     }
 
     this.logger.log(`booking-no-show-processing: ${marked} Booking(s) marked No-Show, ${affectedClassIds.length} seat-freed job(s) enqueued.`);
+  }
+
+  private async chargeNoShowFee(
+    booking: { id: string; studentId: string; schoolId: string; sourceMembershipId: string },
+    amount: number,
+  ): Promise<void> {
+    const membership = await this.prismaJobs.membership.findUnique({
+      where: { id: booking.sourceMembershipId },
+      select: { membershipPlan: { select: { currency: true } } },
+    });
+    const currency = membership?.membershipPlan.currency ?? 'usd';
+    let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
+    let paymentIntentId: string | null = null;
+    try {
+      const charge = await this.paymentsService.chargeOffSession(booking.studentId, booking.schoolId, amount, currency, 'No-show fee');
+      outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
+      paymentIntentId = charge.paymentIntentId || null;
+    } catch (err) {
+      if (err instanceof NoSavedPaymentMethodError) {
+        outcome = 'NO_SAVED_PAYMENT_METHOD';
+      } else {
+        outcome = 'FAILED';
+        this.logger.error(`No-show fee failed for Booking ${booking.id} (Student ${booking.studentId}, School ${booking.schoolId}).`, err as Error);
+      }
+    }
+    await this.prismaJobs.booking.update({
+      where: { id: booking.id },
+      data: { noShowFeeOutcome: outcome, noShowFeeAmount: amount, stripeNoShowPaymentIntentId: paymentIntentId },
+    });
   }
 }
