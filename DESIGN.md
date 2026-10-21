@@ -377,6 +377,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - Amber: needs a look ("Skills not signed off", "n days short").
   - Red: blocked or unverified ("Skills required", "Not verified").
   - Grey: Inactive.
+- **Belt editor.** Two chapters: **01 Belt** (name and colours) and **02 Stripes**. Each stripe is one box. Pressing Edit opens that stripe's settings (what it takes to be promoted into it) inside the same box, one stripe at a time. Its settings never sit in a separate section away from the stripe.
 - **Dialogs.** A centred white card over a dimmed page, up to 560px wide (640px for bulk promote). Cancel and the action sit in a grey footer. On phones the dialog fills the screen and the footer buttons share the width.
 - **Phone.** The columns stack in the order Just Starting, Getting There, Ready to Grade. Permission toggles become one list of switches.
 
