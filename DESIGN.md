@@ -380,6 +380,11 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - Red: blocked or unverified ("Skills required", "Not verified").
   - Grey: Inactive.
 - **Belt editor.** Two chapters: **01 Belt** (name and colours) and **02 Stripes**. Each stripe is one box. Pressing Edit opens that stripe's settings (what it takes to be promoted into it) inside the same box, one stripe at a time. Its settings never sit in a separate section away from the stripe.
+- **Stripe colours.** A stripe can have more than one colour group (e.g. 2 red + 2 white).
+  - Each group is a box with a round selector and its name ("Colour 2 · 1 stripe"). Tap the box to select it.
+  - One **Remove** button sits beside "Add stripes of another colour". It removes the selected group, and its label names it ("Remove colour 2"); with one group it just says "Remove".
+  - There are no per-group Remove buttons.
+  - A new colour group is selected as soon as it's added.
 - **Colour choices.** Every colour row (base, secondary, tag and each stripe colour) shows the preset circles, then the School's **saved colours**, then a dashed **"+"** circle.
   - "+" opens a **colour panel** under the row. It has:
     - a **colour wheel**, so any colour can be chosen: tap or drag; the centre is white and the edge is full colour
