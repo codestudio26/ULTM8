@@ -466,7 +466,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
 
 ### Drop-downs (product owner, 21 Oct 2026)
 - **Every drop-down in the new look is our own, never a browser `<select>`.** The browser draws its list as a grey system box that CSS can't style.
-- **Closed:** a soft grey field with the value and a chevron. Placeholder text ("Choose a branch") is grey. It gets a slate outline while open.
+- **Closed:** a soft grey field with the value and a chevron. The value and every option use the same text colour (#383d42), the chosen option included. Placeholder text ("Choose a branch") is only slightly softer (#50575e), never pale grey, so it doesn't look like a different font. It gets a slate outline while open.
 - **Width:** exactly as wide as its longest option (plus padding and the chevron), never stretched to fill the row. It doesn't jump when the value changes. The only limit is the width of its container.
 - **Open:** the list opens under the field and pushes the content down, so a dialog or a card never clips it. It is a white card, 12px corners, at most 264px tall and scrolling.
 - **Options:** 40px rows (48px and 16px text on phones). Hover is light grey. The chosen option is pale green (#def2e2) with a ✓ in #3a7556. Picking closes the list.
