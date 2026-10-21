@@ -379,7 +379,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
     - A ticked card turns pale green.
     - Clicking a card fills the right panel: the large belt, "Toward {next} — %", the ticks and the skills.
   - **Right panel, below the skills** (product owner, 21 Oct 2026):
-    - **Grading history:** the last 4 entries, newest first. Each shows Promoted / Stripe awarded, the date, "from → to", who graded, and any system note ("Skipped N rank(s) in between."). A promotion made on the board appears at the top straight away. "See full history ›" opens the student's Ranks tab.
+    - **Grading history:** the last 4 entries, newest first. Each shows Promoted / Stripe awarded, the date, the two belt pictures (from → to), "from → to", who graded, and any system note ("Skipped N rank(s) in between."). A promotion made on the board appears at the top straight away. "See full history ›" opens the student's Ranks tab.
     - **Buttons:** Promote (pale green) · Move to another column · Open grading page › · **Open full student view ›** (dark), which opens the student profile on its Profile tab. They sit straight under the history, 16px below it, never pinned to the bottom of the panel (product owner, 21 Oct 2026).
   - **Click a progress bar to promote** (product owner, 21 Oct 2026). Every progress bar is a button: on a card, in a row and in the right panel. It opens the promote dialog for that one student, titled "Promote {name}", with the same "Promote to", checks and acknowledgement as bulk promote. It doesn't change the ticked students. The bar gets a pale-green ring on hover.
 - **Grid or Rows.** A switch in the board's toolbar shows the same students two ways:
@@ -397,7 +397,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - Adults skip the kids belts. Their next rank after White Belt · 4 Stripes is Blue Belt, and "Promote to" doesn't list kids belts.
   - A student on a kids belt who has reached the age shows under Adult with a blue **"Ready for Adult belts"** tag. The coach promotes them to an adult belt with "Promote to". Nothing moves on its own.
 - **Promote selected: pick the rank** (product owner, 21 Oct 2026; skipping is Decision 128 item 7). Each student in the bulk promote dialog has a **Promote to** picker. It starts on the next rank and lists only higher ranks, so a student can go from White Belt · 2 Stripes straight to Blue Belt. A skip shows "Skips N rank(s) in between. This is recorded on the history." in blue, and the result list says "(skipped N)".
-  - **The picker is our own drop-down, not the browser's** (product owner, 21 Oct 2026). A browser `<select>` opens a grey system list that can't be styled. The closed picker is a soft grey 48px field showing the belt picture, the rank name and a chevron; it gets a slate outline while open. The list opens under it inside the dialog: a white card, 14px corners, at most 264px tall and scrolling. Each option is 44px high with its belt picture and name. Hover is light grey; the chosen rank is pale green (#def2e2) with a green ✓. Picking closes the list. It is `role="listbox"` with `role="option"` rows. Use this pattern wherever a choice of ranks or belts needs styling; plain `<select>` stays fine for short text-only lists.
+  - **The picker is our own drop-down, not the browser's** (product owner, 21 Oct 2026; now the rule for every drop-down, see "Drop-downs" below). A browser `<select>` opens a grey system list that can't be styled. The closed picker is a soft grey 48px field showing the belt picture, the rank name and a chevron; it gets a slate outline while open. The list opens under it inside the dialog: a white card, 14px corners, at most 264px tall and scrolling. Each option is 44px high with its belt picture and name. Hover is light grey; the chosen rank is pale green (#def2e2) with a green ✓. Picking closes the list. It is `role="listbox"` with `role="option"` rows. Use this pattern wherever a choice of ranks or belts needs styling; plain `<select>` stays fine for short text-only lists.
   - ⚠️ **Open:** which rank's requirements apply when a student skips. The design copies the single-student Grade dialog: the "Needs a look" checks (skills, days short) only apply to the next rank, so they drop away on a skip. Students blocked by "Skills required" still can't be promoted and get no picker. This needs a product-owner decision before the API is built.
 - **Tags:**
   - Green: Ready.
@@ -459,6 +459,21 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - The wheel is our own, not the browser's colour picker. The browser's picker closes when the page updates, and it looks different on every device.
 - **Dialogs.** A centred white card over a dimmed page, up to 560px wide (640px for bulk promote). Cancel and the action sit in a grey footer. On phones the dialog fills the screen and the footer buttons share the width.
 - **Phone.** The columns stack in the order Just Starting, Getting There, Ready to Grade. Permission toggles become one list of switches.
+
+### Drop-downs (product owner, 21 Oct 2026)
+- **Every drop-down in the new look is our own, never a browser `<select>`.** The browser draws its list as a grey system box that CSS can't style.
+- **Closed:** a soft grey field with the value and a chevron. Placeholder text ("Choose a branch") is grey. It gets a slate outline while open.
+- **Width:** exactly as wide as its longest option (plus padding and the chevron), never stretched to fill the row. It doesn't jump when the value changes. The only limit is the width of its container.
+- **Open:** the list opens under the field and pushes the content down, so a dialog or a card never clips it. It is a white card, 12px corners, at most 264px tall and scrolling.
+- **Options:** 40px rows (48px and 16px text on phones). Hover is light grey. The chosen option is pale green (#def2e2) with a ✓ in #3f7d5c. Picking closes the list.
+- **Inside a soft form** (`.ultm8-soft-field`) the field is 52px with 15px text, to match the inputs.
+- Built as `role="listbox"` / `role="option"`. In the vision pages it comes from `dd()` / `ddMake()`.
+
+### Greens: mint, not dark green (product owner, 21 Oct 2026)
+- **Fills** (progress bars at 100%, the Ready to Grade strip, ticks, switch tracks, the menu's selected bar): **mint #9fd3b2**, a soft matte green, never a bold solid one.
+- **Green text and icons** (100%, ✓): **#3f7d5c**, so they stay readable on white.
+- The old dark green (#1f7a4d) is no longer used in the new look. The live app keeps its own `--color-success` until the new look goes live.
+- **The secondary dark button** ("Open full student view", "Invite") is **soft blue: #e5ecf6 with #2b4f80 text**, not black.
 
 ### Never the same colour twice (product owner, 20 Oct 2026)
 
