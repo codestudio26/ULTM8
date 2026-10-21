@@ -385,6 +385,11 @@ The grading system as built, shown in the new look. Every label and rule stays a
   - **Right panel, below the skills** (product owner, 21 Oct 2026):
     - **Grading history:** the last 4 entries, newest first. Each shows Promoted / Stripe awarded, the date, the two belt pictures (from → to), "from → to", who graded, and any system note ("Skipped N rank(s) in between."). A promotion made on the board appears at the top straight away. "See full history ›" opens the student's Ranks tab.
     - **Buttons:** Promote (pale green) · Move to another column · Open grading page › · **Open full student view ›** (dark), which opens the student profile on its Profile tab. They sit straight under the history, 16px below it, never pinned to the bottom of the panel (product owner, 21 Oct 2026).
+  - **The selected student's own data, everywhere** (product owner, 21 Oct 2026).
+    - Selecting a student on the board (Gi or No-Gi, Kids or Adult) and opening "Open full student view" or "Open grading page" always shows that student. That covers name, check-in code, phone, email, birthday and age, gender (Female/Male), member since, home branch and membership.
+    - The Training section lists **every rank they hold, one row per style**, e.g. "Brazilian Jiu-Jitsu · Adult: Blue Belt · 2 Stripes" and "No-Gi: Advanced 1". The Programme row reads "Brazilian Jiu-Jitsu · No-Gi".
+    - The Ranks tab shows one card per style they hold a rank in, plus "Give first rank" for a discipline they don't train yet. It never offers the other program of a discipline they're already in (an adult doesn't see an empty Kids card).
+    - A student who trains both appears on both boards (Gi and No-Gi), each with its own rank and progress.
   - **Click a progress bar to promote** (product owner, 21 Oct 2026). Every progress bar is a button: on a card, in a row and in the right panel. It opens the promote dialog for that one student, titled "Promote {name}", with the same "Promote to", checks and acknowledgement as bulk promote. It doesn't change the ticked students. The bar gets a pale-green ring on hover.
 - **Grid or Rows.** A switch in the board's toolbar shows the same students two ways:
   - **Grid:** the three columns side by side.
