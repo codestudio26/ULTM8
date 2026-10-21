@@ -21,6 +21,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the School profile, archiving a Branch or uploading a logo failed. Lists
   recovered on their own; saves did not. Fixed in `@ultm8/api-client`, so the
   student app gets it too.
+- **Save confirmations scroll into view** — on a long form (e.g. Branch
+  settings), the "saved" or error message above the form is brought on screen
+  after pressing Save instead of staying out of sight.
 - **School Portal refresh-token logic** (Decision 262) — a session no longer
   silently dies 15 minutes after login with no recovery. School Portal now
   stores and uses the refresh token `POST /auth/login` already handed it,
