@@ -168,6 +168,48 @@ describeIfDb('BranchesModule — Decision 231 settings fields', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Decision 276 — structured, country-aware address. The API validates it
+  // against the country's own rules, stores the six columns, and rebuilds the
+  // one-line `address` every existing reader still uses.
+  // ---------------------------------------------------------------------------
+
+  it('stores a structured postalAddress, rebuilds `address`, and enforces the country rules', async () => {
+    const created = await request(app.getHttpServer())
+      .post(`/v1/schools/${school.id}/branches`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({
+        name: 'Structured Address Branch',
+        postalAddress: { line1: '100 Queen St W', city: 'Toronto', region: 'Ontario', postalCode: 'm5h 2n2', country: 'CA' },
+      });
+    expect(created.status).toBe(201);
+    branchIds.push(created.body.id);
+    expect(created.body).toMatchObject({
+      address: '100 Queen St W, Toronto ON M5H 2N2, Canada',
+      addressLine1: '100 Queen St W',
+      addressCity: 'Toronto',
+      addressRegion: 'ON',
+      addressPostalCode: 'M5H 2N2',
+      addressCountry: 'CA',
+    });
+
+    // A US ZIP isn't a Canadian postal code — rejected, nothing changes.
+    const bad = await request(app.getHttpServer())
+      .patch(`/v1/branches/${created.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ postalAddress: { line1: '100 Queen St W', city: 'Toronto', region: 'ON', postalCode: '90210', country: 'CA' } });
+    expect(bad.status).toBe(400);
+    expect(JSON.stringify(bad.body)).toContain('postalAddress.postalCode');
+
+    // `null` clears every address column at once.
+    const cleared = await request(app.getHttpServer())
+      .patch(`/v1/branches/${created.body.id}`)
+      .set('Authorization', `Bearer ${tokenOwner}`)
+      .send({ postalAddress: null });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body).toMatchObject({ address: null, addressLine1: null, addressCountry: null });
+  });
+
+  // ---------------------------------------------------------------------------
   // GET /schools/:schoolId/branches?city= — v1.2 backend backlog, "Branches page",
   // City filter: previously client-side only, no backend filter param existed.
   // Branch has no dedicated city column (schema.prisma), so this is a

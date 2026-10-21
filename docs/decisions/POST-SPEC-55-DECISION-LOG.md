@@ -3929,6 +3929,31 @@ User (Code), choosing option 1 of two offered (built-in plus overrides vs server
 
 ---
 
+## Decision 276 — Addresses are structured and country-first (market-standard address form)
+
+**Date:** 21 Oct 2026 · **Status:** Approved by product owner
+**Resolves:** every address in the product (School, Branch, Franchise, Instructor profile, and a person's own `User` address) was one free-text box. The product owner asked for addresses to work the way most worldwide apps do: "Let's set it as per market standards, country field etc."
+
+### Decision
+
+1. **Country first, then that country's fields.** Every address form starts with a Country picker; the country decides which of city / state-or-region / postal code are shown, what each is called (ZIP code, Postcode, Eircode, CEP, PIN code; State, Province, County, Emirate, Prefecture…), which are required, and what a valid postal code looks like. Countries with a short fixed list of regions (US, CA, AU, AE, BR, MY) get a dropdown. The rules follow the per-country address metadata Google publishes for its own address forms (libaddressinput), hand-trimmed for ~45 countries covering the platform's launch currencies; every other country gets a forgiving default (street and city required, region and postal code optional, no format check), so no country is ever blocked. The country defaults to the browser's locale (a new Branch defaults to its School's country).
+2. **Stored as structured columns, with the old text kept in step.** `User`, `Franchise`, `School`, `Branch` and `Instructor` each gain `addressLine1`, `addressLine2`, `addressCity`, `addressRegion`, `addressPostalCode`, `addressCountry` (ISO 3166-1 alpha-2). The existing `address` column stays and is rebuilt by the API as one line in the country's own order ("Unter den Linden 1, 10117 Berlin, Germany") whenever the structured fields are written, so every existing reader — Academies discovery, the School footer, platform-admin, `apps/student` — keeps working unchanged.
+3. **API contract.** Write DTOs take a nested `postalAddress` object (`null` clears the address). The API enforces the same per-country rules as the form and answers 400 naming the field (`postalAddress.postalCode …`). The legacy `address` string is still accepted (`apps/student`'s profile and registration still send it); it clears the structured columns so the two can never disagree. Responses carry the six flat columns next to `address`.
+4. **Existing data is not rewritten.** The migration is purely additive. A record saved before this decision keeps its text; the School Portal shows it in line 1 with a note and asks for the country the next time someone edits it. An untouched legacy address is left out of the save, so it never blocks editing the rest of a form.
+5. **One shared rule file.** `packages/ui/src/postalAddress.ts` (pure TypeScript) is used by the portal; `apps/api/src/common/address/postal-address.ts` is a byte-identical copy (apps/api doesn't import workspace packages), and a unit test fails if they drift.
+
+### What this does NOT resolve
+
+- **Google Places autocomplete** (Decision 212) is still not connected: it needs a Google Cloud API key with the Places API enabled, which hasn't been provisioned, and it stays deferred to v1.3 (Decision 267). `AddressFields` already accepts an `autocomplete` provider (suggest + resolve), so connecting Places means writing that one adapter and passing it in — no form or API change.
+- **`apps/student`** (Track B) still uses its own single address field; it keeps working through the legacy `address` path. Bringing the country-first form to the mobile app is separate work.
+- The form's text is English, collected in one `ADDRESS_TEXT` object so the translation layer (Decision 273) can supply translations through the `text` prop.
+
+### Recorded by
+
+User ("Let's set it as per market standards, country field etc."), 21 Oct 2026, after the recommendation to follow the Shopify/Stripe/Airbnb country-first pattern.
+
+---
+
 ## Decision 277 — Notifications: users can Delete one or "Clear all read"; a soft delete that keeps the record
 
 **Date:** 21 Oct 2026 · **Status:** Approved by product owner

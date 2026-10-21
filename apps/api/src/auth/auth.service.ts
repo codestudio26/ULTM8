@@ -23,6 +23,7 @@ import { ConfirmPasscodeResetDto } from './dto/confirm-passcode-reset.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
+import { addressWriteData } from '../common/address/postal-address.dto';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -112,7 +113,7 @@ export class AuthService {
           nationality: dto.nationality,
           language: dto.language,
           currency: dto.currency,
-          address: dto.address,
+          ...addressWriteData(dto),
         },
       }),
     );

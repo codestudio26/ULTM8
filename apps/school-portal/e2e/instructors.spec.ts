@@ -140,13 +140,20 @@ test("an Instructor completes their own profile's deferred fields", async ({ pag
   await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
   await signIn(page, coach.token);
   await page.goto('/complete-instructor-profile');
-  await page.getByLabel('Address').fill('123 Mat Street');
+  await page.getByLabel('Country').selectOption('GB');
+  await page.getByLabel('Address line 1').fill('123 Mat Street');
+  // A UK address needs a postcode: the form says so before anything is sent.
+  await page.getByLabel('Town/City').fill('Leeds');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Postcode is required.')).toBeVisible();
+  await page.getByLabel('Postcode').fill('LS1 4AP');
   await page.getByLabel('Activities', { exact: false }).fill('BJJ, Judo');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Your profile was updated.')).toBeVisible();
 
   const updated = await db.instructor.findFirstOrThrow({ where: { userId: coach.id, schoolId: s.schoolId } });
-  expect(updated.address).toBe('123 Mat Street');
+  expect(updated.address).toBe('123 Mat Street, Leeds, LS1 4AP, United Kingdom');
+  expect(updated.addressCity).toBe('Leeds');
   expect(updated.activities).toEqual(['BJJ', 'Judo']);
 });
 

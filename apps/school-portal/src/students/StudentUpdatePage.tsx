@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhotoUploadField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { AddressFields, Button, Card, ErrorBanner, Field, PageHeader, PhotoUploadField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
+import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useStudents, useUpdateStudentProfile } from './studentQueries';
 import { useT } from '../i18n/I18nProvider';
@@ -66,12 +67,16 @@ export function StudentUpdatePage() {
     nationality: string;
     language: string;
     currency: string;
-    address: string;
+    address: PostalAddress;
     profilePhotoUrl: string;
     weightCategory: string;
     kimonoSize: string;
     beltSize: string;
   } | null>(null);
+  // This roster row doesn't carry the Student's current address, so the form
+  // starts blank and only a filled-in address is sent (blank = keep unchanged).
+  const [initialAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
+  const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -90,7 +95,7 @@ export function StudentUpdatePage() {
       nationality: '',
       language: '',
       currency: '',
-      address: '',
+      address: initialAddress,
       profilePhotoUrl: '',
       weightCategory: '',
       kimonoSize: '',
@@ -115,6 +120,12 @@ export function StudentUpdatePage() {
     e.preventDefault();
     setSaveError(null);
     setSaved(false);
+    const prepared = preparePostalAddress(safeForm.address, initialAddress);
+    if (!prepared.ok) {
+      setAddressErrors(prepared.errors);
+      return;
+    }
+    setAddressErrors({});
     try {
       await updateProfile.mutateAsync({
         studentId: safeStudentId,
@@ -127,7 +138,7 @@ export function StudentUpdatePage() {
           nationality: safeForm.nationality || undefined,
           language: safeForm.language || undefined,
           currency: safeForm.currency || undefined,
-          address: safeForm.address || undefined,
+          postalAddress: prepared.postalAddress ?? undefined,
           profilePhotoUrl: safeForm.profilePhotoUrl || undefined,
           weightCategory: safeForm.weightCategory || undefined,
           kimonoSize: safeForm.kimonoSize || undefined,
@@ -191,9 +202,13 @@ export function StudentUpdatePage() {
           <Field label={t('students.update.currency')} htmlFor="student-update-currency" hint={t('students.update.keepHint')}>
             <TextField value={form.currency} onChange={(e) => setForm((f) => ({ ...f!, currency: e.target.value }))} />
           </Field>
-          <Field label={t('students.update.address')} htmlFor="student-update-address" hint={t('students.update.keepHint')}>
-            <TextField value={form.address} onChange={(e) => setForm((f) => ({ ...f!, address: e.target.value }))} />
-          </Field>
+          <AddressFields
+            idPrefix="student-update-address"
+            value={form.address}
+            onChange={(address) => setForm((f) => ({ ...f!, address }))}
+            errors={addressErrors}
+            hint={t('students.update.keepHint')}
+          />
           <Field label={t('students.update.weightCategory')} htmlFor="student-update-weight-category" hint={t('students.update.weightCategoryHint')}>
             <TextField value={form.weightCategory} onChange={(e) => setForm((f) => ({ ...f!, weightCategory: e.target.value }))} />
           </Field>

@@ -10762,6 +10762,38 @@
       }
     },
     "schemas": {
+      "PostalAddressDto": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string",
+            "description": "Street address, line 1."
+          },
+          "line2": {
+            "type": "string",
+            "description": "Apartment, suite, building, floor, etc."
+          },
+          "city": {
+            "type": "string",
+            "description": "City, town, post town or suburb, depending on the country."
+          },
+          "region": {
+            "type": "string",
+            "description": "State, province, county, emirate, prefecture, etc. For countries with a fixed list (US, CA, AU, AE, BR, MY) this is the list value, e.g. \"CA\" for California."
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Postal code / ZIP / postcode, validated against the country’s own format."
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code, e.g. \"GB\". Required unless every other field is blank."
+          }
+        },
+        "required": [
+          "country"
+        ]
+      },
       "RegisterDto": {
         "type": "object",
         "properties": {
@@ -10807,6 +10839,14 @@
           },
           "address": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           }
         },
         "required": [
@@ -10990,6 +11030,14 @@
           "address": {
             "type": "string"
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "businessType": {
             "type": "string"
           },
@@ -11080,6 +11128,32 @@
       "SchoolResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -11282,6 +11356,14 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "activities": {
             "type": "array",
@@ -11538,6 +11620,14 @@
             "description": "Null clears it.",
             "nullable": true
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "profilePhotoUrl": {
             "type": "string"
           },
@@ -11561,6 +11651,32 @@
       "UserResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -11749,6 +11865,14 @@
           "address": {
             "type": "string"
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "contactPhone": {
             "type": "string"
           },
@@ -11795,6 +11919,32 @@
       "BranchResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -11908,6 +12058,14 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "activities": {
             "type": "array",
@@ -12281,6 +12439,14 @@
           "address": {
             "type": "string"
           },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
+          },
           "type": {
             "type": "string"
           },
@@ -12337,6 +12503,32 @@
       "FranchiseResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -12458,6 +12650,14 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "activities": {
             "type": "array",
@@ -13325,6 +13525,14 @@
             "type": "string",
             "description": "Null clears it.",
             "nullable": true
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "profilePhotoUrl": {
             "type": "string"
@@ -14612,6 +14820,32 @@
       "InstructorResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -14919,6 +15153,32 @@
       "CreateInstructorManuallyResponseDto": {
         "type": "object",
         "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
           "id": {
             "type": "string"
           },
@@ -15043,6 +15303,14 @@
         "properties": {
           "address": {
             "type": "string"
+          },
+          "postalAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PostalAddressDto"
+              }
+            ]
           },
           "activities": {
             "type": "array",

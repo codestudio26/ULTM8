@@ -15,6 +15,7 @@ import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { CreateInstructorManuallyDto } from './dto/create-instructor-manually.dto';
 import { CompleteInstructorProfileDto } from './dto/complete-instructor-profile.dto';
 import { RequestCertificationUploadUrlDto } from './dto/request-certification-upload-url.dto';
+import { addressWriteData } from '../common/address/postal-address.dto';
 
 const BCRYPT_ROUNDS = 12;
 const RETENTION_WINDOW_DAYS = 90;
@@ -232,7 +233,7 @@ export class InstructorsService {
       tx.instructor.updateMany({
         where: { userId: callerId },
         data: {
-          address: dto.address,
+          ...addressWriteData(dto),
           activities: dto.activities,
           certificationKey: dto.certificationKey,
           // Can only move from unset to set, never clear — see this DTO's own
