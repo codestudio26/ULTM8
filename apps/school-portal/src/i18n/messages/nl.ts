@@ -1159,6 +1159,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "Deze leerlingen konden niet worden gecontroleerd. Probeer het opnieuw.",
       stoppedPartWay: "{done} van {total} gepromoveerd, daarna ging er iets mis. De rest is niet gepromoveerd — probeer het opnieuw met hen.",
+      tryRemaining: {
+        one: "Probeer de overgebleven leerling opnieuw",
+        other: "Probeer de overgebleven {count} leerlingen opnieuw",
+      },
+      stopHere: "Hier stoppen en het rapport bekijken",
+      notReached: "niet gepromoveerd: de reeks stopte ervoor",
       doneTitle: "Leerlingen gepromoveerd",
       notPromoted: "Niet gepromoveerd: {list}.",
       openReport: "Afdrukbaar rapport openen",

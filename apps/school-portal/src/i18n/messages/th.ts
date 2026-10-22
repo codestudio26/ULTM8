@@ -1131,6 +1131,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "ตรวจสอบนักเรียนเหล่านี้ไม่ได้ โปรดลองอีกครั้ง",
       stoppedPartWay: "เลื่อนระดับแล้ว {done} จาก {total} คน จากนั้นเกิดปัญหา คนที่เหลือยังไม่ได้เลื่อนระดับ — โปรดลองอีกครั้ง",
+      tryRemaining: {
+        other: "ลองอีกครั้งกับ {count} คนที่เหลือ",
+      },
+      stopHere: "หยุดตรงนี้และดูรายงาน",
+      notReached: "ยังไม่ได้เลื่อนระดับ: การทำงานหยุดก่อนถึง",
       doneTitle: "เลื่อนระดับนักเรียนแล้ว",
       notPromoted: "ไม่ได้เลื่อนระดับ: {list}",
       openReport: "เปิดรายงานสำหรับพิมพ์",

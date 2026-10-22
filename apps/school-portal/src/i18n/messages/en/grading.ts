@@ -123,7 +123,10 @@ export const grading = {
   },
   bulk: {
     checkFailed: 'Could not check these students — please try again.',
-    stoppedPartWay: 'Promoted {done} of {total}, then something went wrong. The rest were not promoted — please try them again.',
+    stoppedPartWay: 'Promoted {done} of {total}, then something went wrong. The rest were not promoted yet.',
+    tryRemaining: { one: 'Try the remaining student again', other: 'Try the remaining {count} students again' },
+    stopHere: 'Stop here and see the report',
+    notReached: 'not promoted: the batch stopped before them',
     doneTitle: 'Students promoted',
     youPromoted: { one: 'You promoted {count} student.', other: 'You promoted {count} students.' },
     notPromoted: 'Not promoted: {list}.',

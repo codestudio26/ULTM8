@@ -887,6 +887,8 @@ export class GradingService {
     }
     const ladder = await this.prismaApp.withTenantContext(callerId, (tx) => loadLadder(tx, dto.disciplineId));
     const batch = { discipline, ladder, authorize };
+    // Where each student was when the coach checked the batch (Decision 284).
+    const expected = new Map((dto.expected ?? []).map((e) => [e.studentId, e.rungId]));
 
     for (const studentId of dto.studentIds) {
       try {
@@ -904,6 +906,12 @@ export class GradingService {
           include: { skillStatuses: { select: { skillId: true, status: true } } },
         });
         if (!sr) return { cannot: 'no rank in this style' };
+        // Moved since the check: never promote twice when a batch is sent again (Decision 284).
+        const was = expected.get(studentId);
+        if (was !== undefined && sr.currentStripeId !== was) {
+          const wasIndex = rungIndex(ladder, was);
+          return { cannot: wasIndex >= 0 && ladder[wasIndex + 1]?.id === sr.currentStripeId ? 'already promoted since the check' : 'rank changed since the check' };
+        }
         if (!(await isActiveForGrading(tx, sr, studentId, schoolId))) return { cannot: 'inactive (only active students can be graded)' };
         const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
         const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;

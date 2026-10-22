@@ -1159,6 +1159,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "Bu öğrenciler kontrol edilemedi. Lütfen tekrar deneyin.",
       stoppedPartWay: "{total} kişiden {done} tanesi terfi etti, sonra bir sorun oluştu. Diğerleri terfi etmedi — onlarla tekrar deneyin.",
+      tryRemaining: {
+        one: "Kalan öğrenciyi tekrar dene",
+        other: "Kalan {count} öğrenciyi tekrar dene",
+      },
+      stopHere: "Burada dur ve raporu gör",
+      notReached: "terfi etmedi: toplu işlem ondan önce durdu",
       doneTitle: "Öğrenciler terfi etti",
       notPromoted: "Terfi etmeyenler: {list}.",
       openReport: "Yazdırılabilir raporu aç",

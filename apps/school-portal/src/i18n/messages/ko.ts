@@ -1131,6 +1131,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     bulk: {
       checkFailed: "이 수련생들을 확인하지 못했습니다. 다시 시도해 주세요.",
       stoppedPartWay: "{total}명 중 {done}명을 승급한 뒤 문제가 발생했습니다. 나머지는 승급되지 않았습니다. 다시 시도해 주세요.",
+      tryRemaining: {
+        other: "남은 {count}명 다시 시도",
+      },
+      stopHere: "여기서 멈추고 보고서 보기",
+      notReached: "승급되지 않음: 일괄 처리가 그 전에 멈춤",
       doneTitle: "수련생 승급 완료",
       notPromoted: "승급되지 않음: {list}.",
       openReport: "인쇄용 보고서 열기",

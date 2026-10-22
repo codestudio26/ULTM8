@@ -258,6 +258,34 @@ describeIfDb('Bulk promote (Phase 3c)', () => {
     expect((await rankOf(newcomer))?.currentStripeId).toBe(rung['blue-0'].id);
   });
 
+  it('sending a batch again never promotes twice: each student must still be where the check found them (Decision 284)', async () => {
+    const a = await student('retryA', 'white-2', 60);
+    const b = await student('retryB', 'white-2', 60);
+    const moved = await student('retryMoved', 'white-2', 60);
+    const expected = [a, b, moved].map((studentId) => ({ studentId, rungId: rung['white-2'].id }));
+    // Someone moves one student down to White 0 between the check and the send.
+    await superuser.studentRank.updateMany({ where: { studentId: moved }, data: { currentStripeId: rung['white-0'].id } });
+
+    const first = await bulk({ studentIds: [a, b, moved], expected });
+    expect(first.status).toBe(201);
+    expect(ids(first.body.ready)).toEqual([a, b].sort());
+    expect(first.body.cannotPromote).toEqual([{ studentId: moved, reasons: ['rank changed since the check'] }]);
+
+    // The same batch again, as after a lost reply: nobody moves a second time.
+    const again = await bulk({ studentIds: [a, b], expected });
+    expect(again.status).toBe(201);
+    expect(again.body.ready).toEqual([]);
+    expect(again.body.cannotPromote).toEqual(
+      expect.arrayContaining([
+        { studentId: a, reasons: ['already promoted since the check'] },
+        { studentId: b, reasons: ['already promoted since the check'] },
+      ]),
+    );
+    expect((await rankOf(a))?.currentStripeId).toBe(rung['blue-0'].id);
+    expect(await superuser.promotionEvent.count({ where: { studentId: a } })).toBe(1);
+    expect((await bulk({ studentIds: [a], expected: [{ studentId: a, rungId: 'not-a-uuid' }] })).status).toBe(400);
+  });
+
   it('the board counts students already on the top rank (they have nowhere to go)', async () => {
     await student('topA', 'black-0');
     await student('topB', 'black-0');
