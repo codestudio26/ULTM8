@@ -299,6 +299,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "取消归档",
     archiveFailed: "无法归档此分校。",
     unarchiveFailed: "无法取消归档此分校。",
+    archiveConfirmTitle: "归档 {name}?",
+    archiveConfirmDescription: "它将从列表和分校选择中隐藏,除非你取消归档,否则 90 天后会被永久删除。如果仍有课程、每周课表、教练、学员或员工属于它,你会看到需要先转移哪些内容。",
     columnName: "名称",
     columnAddress: "地址",
     columnContactPhone: "联系电话",

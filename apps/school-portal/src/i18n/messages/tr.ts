@@ -300,6 +300,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Arşivden çıkar",
     archiveFailed: "Bu şube arşivlenemedi.",
     unarchiveFailed: "Bu şube arşivden çıkarılamadı.",
+    archiveConfirmTitle: "{name} arşivlensin mi?",
+    archiveConfirmDescription: "Listelerden ve şube seçicilerden gizlenecek, geri almazsan 90 gün sonra kalıcı olarak silinecek. Hâlâ bağlı dersler, haftalık program saatleri, eğitmenler, öğrenciler veya personel varsa önce neyi taşıman gerektiğini göreceksin.",
     columnName: "Ad",
     columnAddress: "Adres",
     columnContactPhone: "İletişim telefonu",

@@ -26,6 +26,8 @@ export const branches = {
   unarchive: 'Unarchive',
   archiveFailed: 'Could not archive this Branch.',
   unarchiveFailed: 'Could not unarchive this Branch.',
+  archiveConfirmTitle: "Archive {name}?",
+  archiveConfirmDescription: "It will be hidden from lists and Branch pickers, and permanently removed after 90 days unless you unarchive it. If classes, timetable slots, instructors, students or staff still belong to it, you'll see what to move first.",
   columnName: 'Name',
   columnAddress: 'Address',
   columnContactPhone: 'Contact phone',

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useBranches } from '../branches/branchQueries';
+import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import {
   useCancelCoachInvite,
   useCoachInvites,
@@ -108,7 +108,7 @@ export function CoachInvitesSection({
                 required
                 value={branchId}
                 onChange={(e) => setBranchId(e.target.value)}
-                options={[{ value: '', label: t('roleGrants.coachInvites.selectBranch') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                options={[{ value: '', label: t('roleGrants.coachInvites.selectBranch') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
               />
             </Field>
           ) : null}

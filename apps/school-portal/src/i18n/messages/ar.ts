@@ -304,6 +304,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "إلغاء الأرشفة",
     archiveFailed: "تعذّرت أرشفة هذا الفرع.",
     unarchiveFailed: "تعذّر إلغاء أرشفة هذا الفرع.",
+    archiveConfirmTitle: "أرشفة {name}؟",
+    archiveConfirmDescription: "سيُخفى الفرع من القوائم ومن خيارات اختيار الفرع، وسيُحذف نهائيًا بعد 90 يومًا ما لم تُلغِ أرشفته. إذا كانت لا تزال هناك حصص أو مواعيد أسبوعية أو مدربون أو طلاب أو موظفون تابعون له، فسترى ما يجب نقله أولًا.",
     columnName: "الاسم",
     columnAddress: "العنوان",
     columnContactPhone: "هاتف التواصل",

@@ -299,6 +299,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "เลิกเก็บถาวร",
     archiveFailed: "ไม่สามารถเก็บถาวรสาขานี้ได้",
     unarchiveFailed: "ไม่สามารถเลิกเก็บถาวรสาขานี้ได้",
+    archiveConfirmTitle: "เก็บถาวร {name} หรือไม่?",
+    archiveConfirmDescription: "สาขานี้จะถูกซ่อนจากรายการและตัวเลือกสาขา และจะถูกลบถาวรหลัง 90 วัน เว้นแต่คุณจะกู้คืน หากยังมีคลาส ตารางรายสัปดาห์ ผู้สอน นักเรียน หรือพนักงานอยู่ในสาขานี้ คุณจะเห็นว่าต้องย้ายอะไรก่อน",
     columnName: "ชื่อ",
     columnAddress: "ที่อยู่",
     columnContactPhone: "โทรศัพท์ติดต่อ",

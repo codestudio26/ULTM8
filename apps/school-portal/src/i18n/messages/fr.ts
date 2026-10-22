@@ -300,6 +300,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Désarchiver",
     archiveFailed: "Impossible d’archiver cette succursale.",
     unarchiveFailed: "Impossible de désarchiver cette succursale.",
+    archiveConfirmTitle: "Archiver {name} ?",
+    archiveConfirmDescription: "Elle sera masquée des listes et des sélecteurs de site, puis supprimée définitivement après 90 jours, sauf si vous la restaurez. Si des cours, créneaux d'emploi du temps, instructeurs, élèves ou membres du personnel y sont encore rattachés, vous verrez ce qu'il faut déplacer d'abord.",
     columnName: "Nom",
     columnAddress: "Adresse",
     columnContactPhone: "Téléphone de contact",

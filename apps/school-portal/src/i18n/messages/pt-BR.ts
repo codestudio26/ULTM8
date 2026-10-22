@@ -300,6 +300,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Desarquivar",
     archiveFailed: "Não foi possível arquivar esta filial.",
     unarchiveFailed: "Não foi possível desarquivar esta filial.",
+    archiveConfirmTitle: "Arquivar {name}?",
+    archiveConfirmDescription: "Ela ficará oculta nas listas e nos seletores de filial e será removida definitivamente após 90 dias, a menos que você a restaure. Se ainda houver aulas, horários semanais, instrutores, alunos ou equipe vinculados, você verá o que precisa mover primeiro.",
     columnName: "Nome",
     columnAddress: "Endereço",
     columnContactPhone: "Telefone de contato",

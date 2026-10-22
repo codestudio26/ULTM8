@@ -302,6 +302,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Przywróć z archiwum",
     archiveFailed: "Nie udało się zarchiwizować tego oddziału.",
     unarchiveFailed: "Nie udało się przywrócić tego oddziału z archiwum.",
+    archiveConfirmTitle: "Zarchiwizować {name}?",
+    archiveConfirmDescription: "Zostanie ukryty na listach i w wyborze oddziału, a po 90 dniach trwale usunięty, chyba że go przywrócisz. Jeśli nadal należą do niego zajęcia, terminy w planie, instruktorzy, uczniowie lub personel, zobaczysz, co trzeba najpierw przenieść.",
     columnName: "Nazwa",
     columnAddress: "Adres",
     columnContactPhone: "Telefon kontaktowy",

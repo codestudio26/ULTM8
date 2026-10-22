@@ -78,6 +78,22 @@ export function useBranches(schoolId: string | null, filters: BranchFilters = {}
   });
 }
 
+/** Branch picker options (Decision 293): archived Branches are left out, so
+ * nothing new gets assigned to a Branch that is waiting to be purged —
+ * except `keepId`, the Branch the record being edited already points at,
+ * shown with an "(Archived)" suffix so the form doesn't look like it lost
+ * it. `useBranches` still returns every Branch, so name lookups for
+ * existing rows keep working. */
+export function branchSelectOptions(
+  branches: BranchResponse[],
+  archivedLabel: string,
+  keepId?: string | null,
+): { value: string; label: string }[] {
+  return branches
+    .filter((b) => !b.archivedAt || b.id === keepId)
+    .map((b) => ({ value: b.id, label: b.archivedAt ? `${b.name} (${archivedLabel})` : b.name }));
+}
+
 export function useCreateBranch(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -100,8 +116,9 @@ export function useUpdateBranch(schoolId: string, branchId: string) {
 }
 
 /** Decision 226 — School Owner/Manager only, idempotent, blocked (409) by
- * active dependents (any Class, Instructor profile, Student, or active
- * staff/instructor role grant scoped to this Branch). */
+ * active dependents (any Class, weekly timetable slot (Decision 293),
+ * Instructor profile, Student, or active staff/instructor role grant scoped
+ * to this Branch). */
 export function useArchiveBranch(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({

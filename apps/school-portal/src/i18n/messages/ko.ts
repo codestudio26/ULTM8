@@ -299,6 +299,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "보관 해제",
     archiveFailed: "이 지점을 보관하지 못했습니다.",
     unarchiveFailed: "이 지점의 보관을 해제하지 못했습니다.",
+    archiveConfirmTitle: "{name}을(를) 보관할까요?",
+    archiveConfirmDescription: "목록과 지점 선택에서 숨겨지며, 복원하지 않으면 90일 후 영구 삭제됩니다. 수업, 주간 시간표, 강사, 학생 또는 직원이 아직 속해 있다면 먼저 옮겨야 할 항목이 표시됩니다.",
     columnName: "이름",
     columnAddress: "주소",
     columnContactPhone: "연락처 전화번호",
