@@ -4110,3 +4110,25 @@ Since Decision 282 the portal sends a large batch 200 students at a time. If som
 ### Recorded by
 
 User, choosing option A for a batch that stops part-way, 22 Oct 2026.
+
+---
+
+## Decision 294 — Branches list: City means the city, one search box, every Branch A to Z
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 252 and 276
+
+A test of the Branches City filter found it searched the whole one-line address. "London" also found "22 London Road, Manchester", "Lyon" found "Rue de Lyon, Paris", and "Sao Paulo" found nothing because of the accent. `%` and `_` acted as wildcards. The list also returned 20 Branches per page ordered by id, and the portal never asked for a second page, so a School with more than 20 Branches saw only 20 on the Branches page and in every Branch picker. The product owner chose the fixes plus the extras: *"Fixes plus the extras"*.
+
+### Decision
+
+1. **City matches the city field only** (`addressCity`), ignoring case and accents. A Branch saved before Decision 276 has no city field, so for it alone the City filter falls back to its free-text address containing the city.
+2. **The City filter is a dropdown** of the School's own cities with a count each, e.g. "London (3)", instead of a free-text box.
+3. **One search box** finds a Branch by name, city or postcode. Case and accents are ignored, and spaces in a postcode don't matter ("sw1a1aa" finds "SW1A 1AA"). Street names are not searched.
+4. **A Country filter**, shown only when the School has Branches in more than one country.
+5. **`%` and `_` are plain characters.** Matching is done in the API's own code rather than SQL, because the database has no `unaccent` extension and a School's Branch list is small.
+6. **Every Branch, A to Z.** The list is sorted by name (case and accents ignored). Paging uses the last row's name and id, so a page never skips or repeats a Branch. The portal loads every page, on the Branches page and in every Branch picker.
+7. **Students and upcoming classes per Branch.** Each row shows how many Students have it as their home Branch and how many classes there are from now on, not counting archived ones. Read only; nothing about how either is stored changes.
+
+### Recorded by
+
+User, choosing "Fixes plus the extras" for the Branches filter, 22 Oct 2026.

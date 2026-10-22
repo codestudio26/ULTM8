@@ -24,3 +24,12 @@ export function languageName(code: string, serverName: string): string {
     return serverName;
   }
 }
+
+/** A country by its ISO code ("GB" → "United Kingdom"), named in the picked language. */
+export function countryDisplayName(code: string): string {
+  try {
+    return new Intl.DisplayNames([current ?? 'en-GB'], { type: 'region' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}

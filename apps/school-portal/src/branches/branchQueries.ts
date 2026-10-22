@@ -18,26 +18,54 @@ export function useBranch(branchId: string | null) {
   });
 }
 
-/** `city` — additive, optional filter (Branches page's City filter, now wired to the
- * real `GET /schools/:schoolId/branches?city=` server-side filter instead of
- * filtering an already-fetched list client-side). Omitted (the default, used by
- * every other caller of this hook — Instructors/Classes/Timetable's Branch
- * dropdowns), behaves exactly as before this filter existed. */
-/** Decision 226 — always fetches `includeArchived: true` so the Branches
+export type BranchListItem = components['schemas']['BranchListItemDto'];
+
+/** Decision 294 — the Branches page's filters, all optional and combinable. */
+export interface BranchFilters {
+  /** Exact city (case and accents ignored), from the page's City dropdown. */
+  city?: string;
+  /** Branch name, city or postcode. */
+  q?: string;
+  /** ISO 3166-1 alpha-2. */
+  country?: string;
+}
+
+/** Every Branch of the School, sorted by name, archived ones included.
+ *
+ * Decision 294 — follows `nextCursor` until the list ends. The endpoint pages
+ * at 20 by default and nothing here asked for more, so a School with over 20
+ * Branches silently lost the rest on the Branches page and in every Branch
+ * picker (Instructors/Classes/Timetable/Staff/... all call this hook).
+ *
+ * Decision 226 — always fetches `includeArchived: true` so the Branches
  * page can compute an accurate "Archived" count and let the caller toggle
- * their visibility client-side, same "excluded by default, visible via a
- * filter" convention this build applies to every one of the 7 entities;
- * the actual default-hide happens in BranchesPage's own render, not here. */
-export function useBranches(schoolId: string | null, city?: string) {
+ * their visibility client-side; the actual default-hide happens in
+ * BranchesPage's own render, not here. */
+export function useBranches(schoolId: string | null, filters: BranchFilters = {}) {
+  const { city, q, country } = filters;
   return useQuery({
-    queryKey: ['branches', schoolId, city ?? null],
-    queryFn: () =>
-      unwrap(
-        apiClient.GET('/v1/schools/{schoolId}/branches', {
-          params: { path: { schoolId: schoolId! }, query: { city: city || undefined, includeArchived: true } },
-        }),
-      ),
+    queryKey: ['branches', schoolId, city ?? null, q ?? null, country ?? null],
+    queryFn: async () => {
+      const items: BranchListItem[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/branches', {
+            params: {
+              path: { schoolId: schoolId! },
+              query: { city: city || undefined, q: q || undefined, country: country || undefined, includeArchived: true, limit: 100, cursor },
+            },
+          }),
+        );
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return { items };
+    },
     enabled: !!schoolId,
+    // Typing in the search box keeps showing the last results until the new
+    // ones arrive, instead of flashing the spinner on every keystroke.
+    placeholderData: (previous) => previous,
     // FOUND ON REVIEW (Phase 17): Instructors/Classes/Timetable all call this
     // same hook to populate a Branch dropdown, and the global QueryClient
     // default is staleTime: 0 — without this, navigating between those

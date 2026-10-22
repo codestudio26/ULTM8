@@ -1,35 +1,65 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, Spinner, Table, TextField, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, Table, TextField, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { useArchiveBranch, useBranches, useCreateBranch, useUnarchiveBranch, type BranchResponse } from './branchQueries';
+import { useArchiveBranch, useBranches, useCreateBranch, useUnarchiveBranch, type BranchListItem } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
 import { useT } from '../i18n/I18nProvider';
-import { formatLocale } from '../i18n/format';
+import { countryDisplayName, formatLocale } from '../i18n/format';
 
 /** English shows the stored zone as it always has; another language leads with its own name for it. */
 const timezoneLabel = (zone: string) => (formatLocale() ? formatTimezone(zone, formatLocale()) : zone);
+
+/** Case and accents ignored, so "São Paulo" and "Sao Paulo" are one city. */
+const cityKey = (city: string) => city.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+
+/** Decision 294 — the City dropdown's choices, built from the School's own
+ * Branches (structured address city only) with how many Branches each has,
+ * so nobody has to type a city and nothing can be misspelled. */
+function cityOptions(branches: BranchListItem[]): { value: string; label: string }[] {
+  const byKey = new Map<string, { city: string; count: number }>();
+  for (const b of branches) {
+    if (!b.addressCity) continue;
+    const key = cityKey(b.addressCity);
+    const entry = byKey.get(key);
+    if (entry) entry.count += 1;
+    else byKey.set(key, { city: b.addressCity, count: 1 });
+  }
+  return [...byKey.values()]
+    .sort((a, b) => a.city.localeCompare(b.city, formatLocale(), { sensitivity: 'base' }))
+    .map(({ city, count }) => ({ value: city, label: `${city} (${count})` }));
+}
+
+function countryOptions(branches: BranchListItem[]): { value: string; label: string }[] {
+  const codes = [...new Set(branches.map((b) => b.addressCountry).filter((c): c is string => !!c))];
+  return codes
+    .map((code) => ({ value: code, label: countryDisplayName(code) }))
+    .sort((a, b) => a.label.localeCompare(b.label, formatLocale(), { sensitivity: 'base' }));
+}
 
 export function BranchesPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
   const navigate = useNavigate();
-  // Server-side City filter (GET /schools/:schoolId/branches?city=) — Branch has no
-  // dedicated city column, so this matches against the free-text address field
-  // (see useBranches'/BranchesQueryDto's own header comments). Applied on every
-  // keystroke, same immediacy as a client-side filter would have had — no "Filter"
-  // submit button, since a single-field substring filter doesn't need one the way
-  // TranslationsPage's two-field form does.
+  // Decision 294 — search (name, city or postcode), a City dropdown and,
+  // for a School in more than one country, a Country dropdown. All three
+  // filter on the server, ignoring case and accents; the dropdowns' choices
+  // come from the School's full, unfiltered Branch list (the same cached
+  // list every Branch picker uses).
+  const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
   // Rows/Grid is a pure presentation choice over the same fetched data — kept as
   // local, in-memory state (defaulting to "Rows"), not persisted: no school-portal
   // page persists a view/UI preference today (no localStorage usage exists in this
   // app), so there's no existing convention to match, and a per-session default is
   // the documented low-effort choice here.
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
-  const { data, isLoading, error } = useBranches(schoolId, cityFilter.trim() || undefined);
+  const filtering = !!(search.trim() || cityFilter || countryFilter);
+  const allBranchesQuery = useBranches(schoolId);
+  const { data, isLoading, error } = useBranches(schoolId, { q: search.trim() || undefined, city: cityFilter || undefined, country: countryFilter || undefined });
   const createBranch = useCreateBranch(schoolId ?? '');
   const archiveBranch = useArchiveBranch(schoolId ?? '');
   const unarchiveBranch = useUnarchiveBranch(schoolId ?? '');
@@ -47,6 +77,9 @@ export function BranchesPage() {
   const allBranches = data?.items ?? [];
   const archivedCount = allBranches.filter((b) => b.archivedAt).length;
   const branches = showArchived ? allBranches : allBranches.filter((b) => !b.archivedAt);
+  const schoolBranches = (allBranchesQuery.data?.items ?? []).filter((b) => showArchived || !b.archivedAt);
+  const cities = cityOptions(schoolBranches);
+  const countries = countryOptions(schoolBranches);
 
   return (
     <>
@@ -57,15 +90,24 @@ export function BranchesPage() {
       />
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 220 }}>
-            <Field label={t('branches.cityLabel')} htmlFor="branches-city-filter" hint={t('branches.cityHint')}>
-              <TextField
-                id="branches-city-filter"
-                placeholder={t('branches.cityPlaceholder')}
-                value={cityFilter}
-                onChange={(e) => setCityFilter(e.target.value)}
-              />
-            </Field>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 220 }}>
+              <Field label={t('branches.searchLabel')} htmlFor="branches-search">
+                <TextField id="branches-search" type="search" placeholder={t('branches.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
+              </Field>
+            </div>
+            <div style={{ minWidth: 180 }}>
+              <Field label={t('branches.cityLabel')} htmlFor="branches-city-filter">
+                <SelectField value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} options={[{ value: '', label: t('branches.cityAll') }, ...cities]} />
+              </Field>
+            </div>
+            {countries.length > 1 || countryFilter ? (
+              <div style={{ minWidth: 180 }}>
+                <Field label={t('branches.countryLabel')} htmlFor="branches-country-filter">
+                  <SelectField value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)} options={[{ value: '', label: t('branches.countryAll') }, ...countries]} />
+                </Field>
+              </div>
+            ) : null}
           </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             {/* Decision 226 — archived Branches are hidden by default. */}
@@ -83,8 +125,8 @@ export function BranchesPage() {
         <Card>
           {branches.length === 0 ? (
             <EmptyState
-              title={cityFilter ? t('branches.noMatchTitle') : t('branches.emptyTitle')}
-              description={cityFilter ? t('branches.noMatchDescription') : t('branches.emptyDescription')}
+              title={filtering ? t('branches.noMatchTitle') : t('branches.emptyTitle')}
+              description={filtering ? t('branches.noMatchDescription') : t('branches.emptyDescription')}
             />
           ) : viewMode === 'grid' ? (
             <CardGrid>
@@ -99,6 +141,9 @@ export function BranchesPage() {
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.address ?? '—'}</p>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.contactPhone ?? '—'}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                    {t('branches.cardCounts', { students: b.studentCount, classes: b.upcomingClassCount })}
+                  </p>
                   <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
                     {/* Decision 231 — a dedicated settings screen replaces the
                         previous edit-via-modal path. */}
@@ -118,13 +163,15 @@ export function BranchesPage() {
               ))}
             </CardGrid>
           ) : (
-            <Table<BranchResponse>
+            <Table<BranchListItem>
               rows={branches}
               columns={[
                 { key: 'name', header: t('branches.columnName'), render: (b) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{b.name}{b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}</div>) },
                 { key: 'address', header: t('branches.columnAddress'), render: (b) => b.address ?? '—' },
                 { key: 'phone', header: t('branches.columnContactPhone'), render: (b) => b.contactPhone ?? '—' },
                 { key: 'timezone', header: t('branches.columnTimezone'), render: (b) => (b.timezone ? <Badge>{timezoneLabel(b.timezone)}</Badge> : '—') },
+                { key: 'students', header: t('branches.columnStudents'), render: (b) => b.studentCount },
+                { key: 'upcomingClasses', header: t('branches.columnUpcomingClasses'), render: (b) => b.upcomingClassCount },
                 {
                   key: 'actions',
                   header: '',
