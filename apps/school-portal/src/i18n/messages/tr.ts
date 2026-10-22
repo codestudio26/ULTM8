@@ -951,6 +951,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Geri alındı",
       active: "Aktif",
       revoke: "Geri al",
+      revokeTitle: "{name} kişisinden {role} rolü kaldırılsın mı?",
+      revokeDescription: "Bu rol ({branch}) hemen sona erer (oturum açıksa 15 dakika içinde). Buradaki son antrenör veya personel rolüyse, kuşak yetkileri ve “Antrenör davet edebilir” de silinir; rol yeniden verilirse sıfırdan başlar.",
       addedEmailed: "{name} eklendi — {email} adresine geçici bir giriş kodu gönderildi.",
       addedNoEmail: "{name} eklendi, ancak e-posta gönderilemedi. Geçici giriş kodunu başka bir yolla iletmeniz gerekecek.",
     },

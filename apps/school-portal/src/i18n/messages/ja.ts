@@ -928,6 +928,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "取り消し済み",
       active: "有効",
       revoke: "取り消す",
+      revokeTitle: "{name}から{role}の役割を外しますか？",
+      revokeDescription: "この役割（{branch}）はすぐに終了します（ログイン中の場合は15分以内）。ここでの最後のコーチまたはスタッフの役割だった場合、昇級権限と「コーチを招待できる」も消去されるため、役割を再付与すると最初からになります。",
       addedEmailed: "{name} さんを追加しました。仮パスコードを {email} に送信しました。",
       addedNoEmail: "{name} さんを追加しましたが、メールを送信できませんでした。仮パスコードは別の方法で伝えてください。",
     },

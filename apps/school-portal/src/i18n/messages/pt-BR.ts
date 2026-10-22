@@ -964,6 +964,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Revogada",
       active: "Ativa",
       revoke: "Revogar",
+      revokeTitle: "Remover o papel {role} de {name}?",
+      revokeDescription: "Essa pessoa perde este papel ({branch}) na hora (em até 15 minutos se estiver conectada). Se era o último papel de instrutor ou equipe aqui, as permissões de graduação e \"Pode convidar instrutores\" também são apagadas, então ao receber o papel de novo ela começa do zero.",
       addedEmailed: "{name} foi adicionado(a) — uma senha temporária foi enviada para {email}.",
       addedNoEmail: "{name} foi adicionado(a), mas o e-mail não pôde ser enviado. A pessoa precisará receber a senha temporária de outra forma.",
     },

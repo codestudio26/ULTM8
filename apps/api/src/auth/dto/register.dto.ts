@@ -12,10 +12,12 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PostalAddressDto } from '../../common/address/postal-address.dto';
+import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 
 /** Confirmed base User fields (ultm8-domain-rules §3, Spec §6.1) collected at registration. */
 export class RegisterDto {
   @ApiProperty()
+  @NormalizeEmail()
   @IsEmail()
   email!: string;
 

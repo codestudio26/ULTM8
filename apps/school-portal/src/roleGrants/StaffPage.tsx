@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Badge, Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useBranches } from '../branches/branchQueries';
@@ -15,6 +16,7 @@ import {
 } from './roleGrantQueries';
 import { CoachInvitesSection } from './CoachInvitesSection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
+import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useT } from '../i18n/I18nProvider';
 import { ROLE_LABELS } from '../lib/enumLabels';
 import { Trans } from '../i18n/Trans';
@@ -74,9 +76,14 @@ export function StaffPage() {
   const [lookupResult, setLookupResult] = useState<RoleGrantResponse[] | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
+  const [confirmingRevoke, setConfirmingRevoke] = useState<RoleGrantResponse | null>(null);
 
-  if (!schoolId) return null;
+  // Owner only (it isn't in the coach nav): anyone else goes to their own
+  // home screen rather than a blank page (Decision 296).
+  if (!schoolId) return <Navigate to="/" replace />;
   const branches = branchData?.items ?? [];
+  const branchName = (id: string | null | undefined) =>
+    id ? branches.find((b) => b.id === id)?.name ?? t('common.none') : t('roleGrants.staff.wholeSchool');
   // Branch Staff always need a branch. An Instructor needs one whenever the
   // School has branches; with none, the School itself is the branch
   // (Decisions 168, 169).
@@ -156,13 +163,10 @@ export function StaffPage() {
     }
   }
 
+  // Errors show in the confirm dialog (ConfirmDeleteModal), which stays open.
   async function handleRevoke(grant: RoleGrantResponse) {
-    try {
-      await revokeGrant.mutateAsync({ targetUserId: grant.userId, roleGrantId: grant.id });
-      setLookupResult((rows) => rows?.map((g) => (g.id === grant.id ? { ...g, revokedAt: new Date().toISOString() } : g)) ?? null);
-    } catch (err) {
-      setLookupError(err instanceof ApiError ? err.message : t('roleGrants.staff.revokeFailed'));
-    }
+    await revokeGrant.mutateAsync({ targetUserId: grant.userId, roleGrantId: grant.id });
+    setLookupResult((rows) => rows?.map((g) => (g.id === grant.id ? { ...g, revokedAt: new Date().toISOString() } : g)) ?? null);
   }
 
   return (
@@ -292,7 +296,7 @@ export function StaffPage() {
                 rows={lookupResult}
                 columns={[
                   { key: 'role', header: t('roleGrants.staff.columnRole'), render: (g) => <Badge variant="accent">{ROLE_LABELS[g.role] ? t(ROLE_LABELS[g.role]!) : g.role}</Badge> },
-                  { key: 'branch', header: t('roleGrants.staff.columnBranch'), render: (g) => g.branchId ?? t('roleGrants.staff.wholeSchool') },
+                  { key: 'branch', header: t('roleGrants.staff.columnBranch'), render: (g) => branchName(g.branchId) },
                   {
                     key: 'status',
                     header: t('roleGrants.staff.columnStatus'),
@@ -308,7 +312,7 @@ export function StaffPage() {
                     header: '',
                     render: (g) =>
                       g.revokedAt ? null : (
-                        <Button variant="danger" onClick={() => handleRevoke(g)}>
+                        <Button variant="danger" onClick={() => setConfirmingRevoke(g)}>
                           {t('roleGrants.staff.revoke')}
                         </Button>
                       ),
@@ -319,6 +323,22 @@ export function StaffPage() {
           )
         ) : null}
       </Card>
+
+      {confirmingRevoke ? (
+        <ConfirmDeleteModal
+          title={t('roleGrants.staff.revokeTitle', {
+            role: ROLE_LABELS[confirmingRevoke.role] ? t(ROLE_LABELS[confirmingRevoke.role]!) : confirmingRevoke.role,
+            name: `${confirmingRevoke.userFirstName} ${confirmingRevoke.userSurname}`,
+          })}
+          description={t('roleGrants.staff.revokeDescription', {
+            branch: confirmingRevoke.branchId ? branchName(confirmingRevoke.branchId) : t('roleGrants.coachInvites.wholeSchool'),
+          })}
+          confirmLabel={t('roleGrants.staff.revoke')}
+          genericErrorMessage={t('roleGrants.staff.revokeFailed')}
+          onConfirm={() => handleRevoke(confirmingRevoke)}
+          onClose={() => setConfirmingRevoke(null)}
+        />
+      ) : null}
 
       {addingManually ? (
         <AddStaffManuallyModal

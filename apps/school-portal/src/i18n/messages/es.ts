@@ -964,6 +964,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Revocado",
       active: "Activo",
       revoke: "Revocar",
+      revokeTitle: "¿Quitar el rol {role} a {name}?",
+      revokeDescription: "Pierde este rol ({branch}) de inmediato (en 15 minutos como máximo si tiene la sesión iniciada). Si era su último rol de instructor o personal aquí, también se borran sus permisos de graduación y «Puede invitar instructores», así que si se le devuelve el rol empieza de cero.",
       addedEmailed: "Se añadió a {name} — se envió una clave temporal a {email}.",
       addedNoEmail: "Se añadió a {name}, pero no se pudo enviar el correo. Necesitará la clave temporal por otra vía.",
     },

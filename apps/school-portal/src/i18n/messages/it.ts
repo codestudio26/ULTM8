@@ -964,6 +964,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       revoked: "Revocata",
       active: "Attiva",
       revoke: "Revoca",
+      revokeTitle: "Rimuovere il ruolo {role} a {name}?",
+      revokeDescription: "Perde questo ruolo ({branch}) subito (entro 15 minuti se ha effettuato l'accesso). Se era il suo ultimo ruolo di istruttore o staff qui, vengono cancellati anche i permessi di graduazione e «Può invitare istruttori», quindi se riottiene il ruolo riparte da zero.",
       addedEmailed: "{name} è stato aggiunto — è stato inviato un codice temporaneo a {email}.",
       addedNoEmail: "{name} è stato aggiunto, ma non è stato possibile inviare l'email. Servirà fargli avere il codice temporaneo in un altro modo.",
     },
