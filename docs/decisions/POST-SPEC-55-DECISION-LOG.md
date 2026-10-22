@@ -4091,3 +4091,22 @@ The stress test showed inactive students could be ticked and promoted. Asked whe
 ### Recorded by
 
 User, replying to the grading stress-test findings, 21 Oct 2026.
+
+---
+
+## Decision 284 — A bulk promote that stops part-way can be finished safely
+
+**Date:** 22 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 130, 185 and 282
+
+Since Decision 282 the portal sends a large batch 200 students at a time. If something breaks part-way (the connection drops, the server restarts), the groups already sent stay promoted and the rest are not. Three fixes were offered: a "try the rest" button, all-or-nothing (which needs Spec 55's per-request cap changed), or undoing the part that went through. The product owner chose the first: *"go with A, build it"*.
+
+### Decision
+
+1. **One automatic retry.** A group that gets no answer (no reply, or a server error) is sent once more on its own after a short pause. A refusal (4xx, e.g. too many requests) is not retried automatically.
+2. **"Try the remaining N again".** If the retry also fails, the window says *"Promoted 200 of 450, then something went wrong. The rest were not promoted yet."* It offers **Try the remaining N again**, which sends only the students not yet promoted, and **Stop here and see the report**, which lists them as *"not promoted: the batch stopped before them"*.
+3. **Never promoted twice.** With each student, the portal sends the rung the check found them on (`expected`). A student who has moved since is skipped, not promoted again: *"already promoted since the check"* (one rung up, e.g. a batch whose reply was lost) or *"rank changed since the check"* (anything else). This is the same guard a single grade already has (Decision 185). It makes every retry safe.
+4. **Fewer checks.** Removing a student from the batch no longer re-checks the whole batch, because each student's check stands on its own. Only a date change, or a failed check, runs it again. This keeps a large batch inside the bulk endpoint's limit of 30 requests a minute, which is unchanged.
+
+### Recorded by
+
+User, choosing option A for a batch that stops part-way, 22 Oct 2026.
