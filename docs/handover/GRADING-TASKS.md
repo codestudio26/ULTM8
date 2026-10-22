@@ -2,7 +2,7 @@
 
 **Date:** 22 Oct 2026. **Where things stand:** the grading people use today is built and tested against the real backend: every pull request runs all the API grading tests on a real database, plus the portal browser tests. What's left is the New Portal grading redesign, Kids and Adult programs, and the items below.
 
-Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–305).
+Details for the backend team: [`GRADING-BACKEND-HANDOVER.md`](GRADING-BACKEND-HANDOVER.md). Decisions: `docs/decisions/POST-SPEC-55-DECISION-LOG.md` (280–290, 297–307).
 
 ---
 
@@ -12,8 +12,8 @@ All five questions were answered on 22 Oct 2026 (Decisions 297–301):
 - **Grading settings right:** "Change board %" becomes "Change grading settings" (per style); the promotion fee switches are owner-only (297).
 - **Kids → Adult sign-offs:** carried over when the Adult ladder has a skill with the same name (298).
 - **Belt corrections:** reviewed by the owner and coaches with "Verify ranks"; any rank, with a note (299).
-- **Promotion fee:** a price per belt or stripe (none = free); the student accepts before paying; an owner switch decides whether grading waits for payment (300).
-- **Hours:** from the class length; each grade requires classes, hours or both; open mat has its own switch (301).
+- **Promotion fee:** a price per belt or stripe (none = free); the student accepts before paying; an owner switch decides whether grading waits for payment (300). Both switches are off by default, prices are hidden while the fee is off, and waiving or cancelling never promotes on its own: the coach decides (307).
+- **Hours:** logged from the class length, as a record only; grading doesn't change (301, corrected by 306). Open mat has its own switch.
 
 The two related topics are answered too: **student charges and balances** (Decision 303: credit allowed; owner, Branch Staff and anyone with "Can create charges"; pay in the app) and **open mat** (Decision 304: scheduled and unplanned; always booked; credit on by default; only the owner and permitted staff start one; in-app alerts, push opt-in).
 
@@ -30,7 +30,7 @@ The two related topics are answered too: **student charges and balances** (Decis
 | B5 | Saved belt colours per School | ✅ ready |
 | B8 | Students can ask for a belt correction (any rank, note required); owner or "Verify ranks" coaches approve or reject | ✅ ready |
 | B9 | Belt progress on the check-in screen (with the check-in rules, v1.3 §3.5) | ✅ ready |
-| B11 | Attendance hours: classes, hours or both per grade; progress breakdown | ✅ ready |
+| B11 | Hours trained, logged only (grading unchanged); progress breakdown | ✅ ready |
 | B10 | Promotion fee: price per grade, student accepts, waiting/declined, waive | ✅ ready (payment step after C1) |
 | C1 | Staff-created charges and member balances, paid in the app (Decision 303) | ✅ ready |
 | C2 | Open mat sessions: scheduled and unplanned, walk-in bookings, credits, alerts (Decision 304) | ✅ ready |
@@ -50,9 +50,9 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 | Avatars on the board and panels | B6 |
 | Kids · Adult switch, "Adult program" in Promote to, "Ready for Adult program" tag | B1 |
 | Grading → Settings page | B2, B10, B11 |
-| Belt editor: price per grade; classes / hours / both per grade | B10, B11 |
-| Board: "Waiting for fee" / "Fee declined"; owner waives or cancels a fee | B10 |
-| Student page: grading progress breakdown per requirement | B11 |
+| Belt editor: price per grade, shown only while the fee is on | B10 |
+| Board: "Waiting for fee" / "Fee declined" / "Promotion to decide"; owner waives or cancels a fee; the coach confirms any promotion after that | B10 |
+| Student page: progress breakdown per requirement, and hours trained | B11 |
 | Belt editor: one grade at a time, insert position, duplicate a rank, drag and drop with touch, stripe colour groups | — |
 | Colour wheel with saved colours | B5 |
 | Levels badge | B4 |
