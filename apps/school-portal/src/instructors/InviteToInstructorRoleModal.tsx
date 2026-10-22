@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, ErrorBanner, Field, Modal, PhoneField, SelectField, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import type { BranchResponse } from '../branches/branchQueries';
+import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { fetchInviteCandidate, type InviteCandidateResponse } from '../roleGrants/roleGrantQueries';
 import { Trans } from '../i18n/Trans';
@@ -141,7 +141,7 @@ export function InviteToInstructorRoleModal({
                 required
                 value={branchId}
                 onChange={(e) => setBranchId(e.target.value)}
-                options={[{ value: '', label: t('instructors.inviteModal.branchPlaceholder') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+                options={[{ value: '', label: t('instructors.inviteModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
               />
             </Field>
           ) : null}

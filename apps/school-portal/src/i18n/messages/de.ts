@@ -294,6 +294,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Wiederherstellen",
     archiveFailed: "Diese Filiale konnte nicht archiviert werden.",
     unarchiveFailed: "Diese Filiale konnte nicht wiederhergestellt werden.",
+    archiveConfirmTitle: "{name} archivieren?",
+    archiveConfirmDescription: "Sie wird in Listen und Filialauswahlen ausgeblendet und nach 90 Tagen endgültig entfernt, sofern du sie nicht wiederherstellst. Gehören ihr noch Kurse, Stundenplan-Termine, Ausbilder, Schüler oder Mitarbeiter an, siehst du, was du zuerst verschieben musst.",
     columnName: "Name",
     columnAddress: "Adresse",
     columnContactPhone: "Kontakttelefon",

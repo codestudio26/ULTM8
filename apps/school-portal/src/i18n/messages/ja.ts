@@ -293,6 +293,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "アーカイブを解除",
     archiveFailed: "この支店をアーカイブできませんでした。",
     unarchiveFailed: "この支店のアーカイブを解除できませんでした。",
+    archiveConfirmTitle: "{name} をアーカイブしますか?",
+    archiveConfirmDescription: "一覧と支部の選択肢から非表示になり、元に戻さない限り 90 日後に完全に削除されます。クラス、週間スケジュール、インストラクター、生徒、スタッフがまだ所属している場合は、先に移動が必要なものが表示されます。",
     columnName: "名前",
     columnAddress: "住所",
     columnContactPhone: "連絡先電話番号",

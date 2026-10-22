@@ -42,9 +42,10 @@ test('a belt a student holds, and a style a student has a rank in, are kept with
   await page.goto(`/disciplines/${s.disciplineId}`);
   await page.getByRole('button', { name: 'Delete White' }).click();
   let dialog = page.getByRole('dialog', { name: 'Delete White?' });
-  await expect(dialog.getByText(/hold this belt/)).toBeVisible();
+  await expect(dialog.getByText(/holds? this belt/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Delete' }).click();
-  await expect(dialog.getByText(/can't be deleted/)).toBeVisible();
+  // The API's refusal, in the error banner (the description says it too).
+  await expect(dialog.getByRole('alert')).toContainText("can't be deleted");
   await dialog.getByRole('button', { name: 'Close' }).click();
 
   await page.goto('/disciplines');

@@ -296,6 +296,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchive: "Из архива",
     archiveFailed: "Не удалось отправить филиал в архив.",
     unarchiveFailed: "Не удалось вернуть филиал из архива.",
+    archiveConfirmTitle: "Архивировать {name}?",
+    archiveConfirmDescription: "Филиал будет скрыт из списков и выбора филиала и окончательно удалён через 90 дней, если вы его не восстановите. Если к нему ещё относятся занятия, слоты расписания, инструкторы, ученики или сотрудники, вы увидите, что нужно перенести сначала.",
     columnName: "Название",
     columnAddress: "Адрес",
     columnContactPhone: "Телефон для связи",

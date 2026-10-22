@@ -33,8 +33,8 @@ export const ranks = {
     unsavedOrder: "The new order isn't saved yet.",
     deleteTitle: 'Delete {name}?',
     deleteHeld: {
-      one: "{count} student(s) hold this belt, so it can't be deleted.",
-      other: "{count} student(s) hold this belt, so it can't be deleted.",
+      one: "{count} student holds this belt, so it can't be deleted.",
+      other: "{count} students hold this belt, so it can't be deleted.",
     },
     deleteDescription:
       "Its stripes are deleted with it and the belts after it move up. A belt can only be deleted while nobody holds it and it isn't in anyone's grading history.",
