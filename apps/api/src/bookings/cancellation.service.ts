@@ -553,7 +553,7 @@ export class CancellationService {
 
       if (action === 'MARK_PAID') {
         const amount = (attendee ?? booking).refundAmount ?? 0;
-        const payment = await tx.transaction.findFirst({ where: { membershipId: seat.membershipId }, orderBy: { billingDate: 'desc' } });
+        const payment = await tx.transaction.findFirst({ where: { membershipId: seat.membershipId, status: { in: ['SUCCESSFUL', 'REFUNDED'] } }, orderBy: { billingDate: 'desc' } });
         if (payment && amount > 0) {
           const newRefunded = (payment.refundedAmount ?? 0) + amount;
           await tx.transaction.update({

@@ -85,6 +85,19 @@ export function TimetableBookingDialog({
         <ErrorBanner
           message={occurrence.error instanceof ApiError ? occurrence.error.message : t('timetable.booking.loadFailed')}
         />
+      ) : occurrence.data?.cancelledAt ? (
+        // Decision 291 — the School cancelled this occurrence; it can't be booked.
+        <>
+          <p>
+            <strong>{t('classes.detail.cancelledBadge')}</strong>
+            {occurrence.data.cancellationReason ? ` — ${t('classes.detail.cancelledReason', { reason: occurrence.data.cancellationReason })}` : null}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+            <Button variant="secondary" onClick={onClose}>
+              {t('timetable.booking.close')}
+            </Button>
+          </div>
+        </>
       ) : occurrence.data ? (
         <BookingForm
           occurrence={occurrence.data}
