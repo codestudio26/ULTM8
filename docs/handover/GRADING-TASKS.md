@@ -78,7 +78,6 @@ Build the New Portal grading redesign (DESIGN.md → "Grading screens"; the publ
 | Task | Notes |
 |---|---|
 | Update `skills/ultm8-domain-rules/SKILL.md` with Decisions 280–290 | Only with the product owner's approval (the skill's own rule). |
-| Fix the clashing decision numbers on two unmerged branches | `claude/project-thread-203tsv` uses 279 (class cancellations); `claude/project-thread-dpnk7k` uses 280 (branch archive). Master already uses both. Renumber them to the next free numbers when they merge. |
 
 ## Deferred on purpose
 
