@@ -129,7 +129,7 @@ export function DisciplineDetailPage() {
                     if (!canEdit) return null;
                     const i = skills.findIndex((x) => x.id === s.id);
                     return (
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         <Button variant="secondary" onClick={() => void moveSkill(i, -1)} disabled={i === 0 || reorderSkills.isPending} aria-label={t('disciplines.detail.moveUpAria', { name: s.name })}>
                           ↑
                         </Button>
